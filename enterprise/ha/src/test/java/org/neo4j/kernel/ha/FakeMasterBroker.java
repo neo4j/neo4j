@@ -19,32 +19,22 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Map;
-
+import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.ha.zookeeper.Machine;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.ha.zookeeper.ZooClient;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    private Map<String, String> config;
-    private StoreId storeId = new StoreId();
+    private ZooClient.Configuration zooClientConfig;
 
-    public FakeMasterBroker( int myMachineId, AbstractGraphDatabase graphDb,
-            Map<String, String> config )
+    public FakeMasterBroker( Configuration conf, ZooClient.Configuration zooClientConfig )
     {
-        super( myMachineId, graphDb );
-        this.config = config;
-    }
-
-    @Override
-    public StoreId getClusterStoreId()
-    {
-        return storeId; // Master will always win
+        super( conf );
+        this.zooClientConfig = zooClientConfig;
     }
 
     public Machine getMasterMachine()
@@ -56,7 +46,6 @@ public class FakeMasterBroker extends AbstractBroker
     {
         return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(),
                 0, 1, -1, null ) );
-        // throw new UnsupportedOperationException( "I am master" );
     }
 
     public Pair<Master, Machine> getMasterReally( boolean allowChange )
@@ -70,10 +59,10 @@ public class FakeMasterBroker extends AbstractBroker
         return getMyMachineId() == 0;
     }
 
-    public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
+    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb, config ), Protocol.PORT, graphDb.getMessageLog(),
-                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ),
-                HaConfig.getClientLockReadTimeoutFromConfig( config ), TxChecksumVerifier.ALWAYS_MATCH );
+        return new MasterServer( new MasterImpl( graphDb, zooClientConfig.lock_read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ) ),
+                Protocol.PORT, graphDb.getMessageLog(), zooClientConfig.max_concurrent_channels_per_slave( Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+                zooClientConfig.lock_read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ), TxChecksumVerifier.ALWAYS_MATCH );
     }
 }

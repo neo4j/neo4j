@@ -44,14 +44,15 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -83,16 +84,12 @@ public class MasterClient extends Client<Master> implements Master
     };
     private final int lockReadTimeout;
 
-    public MasterClient( String hostNameOrIp, int port,
-            AbstractGraphDatabase graphDb,
-            ConnectionLostHandler connectionLostHandler,
+    public MasterClient( String hostNameOrIp, int port, StringLogger stringLogger, StoreIdGetter storeIdGetter,ConnectionLostHandler connectionLostHandler,
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
     {
-        super( hostNameOrIp, port, graphDb.getMessageLog(),
-                Client.storeIdGetterForDb( graphDb ),
-                MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, maxConcurrentChannels,
-                connectionLostHandler );
+        super( hostNameOrIp, port, stringLogger, storeIdGetter,
+                MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
+                maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),connectionLostHandler );
         this.lockReadTimeout = lockReadTimeout;
     }
 

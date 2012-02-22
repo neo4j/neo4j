@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 @Ignore
@@ -32,7 +33,7 @@ public class StartLocalHaDb
     {
         String path = args[0];
         String configFile = args[1];
-        Map<String, String> config = HighlyAvailableGraphDatabase.loadConfigurations( configFile );
+        Map<String, String> config = AbstractGraphDatabase.loadConfigurations( configFile );
         final GraphDatabaseService graphDb = new HighlyAvailableGraphDatabase( path, config );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {

@@ -64,6 +64,12 @@ public class MultiJvmTest extends AbstractHaTest
         for ( StandaloneDatabase jvm : jvms )
             jvm.awaitStarted();
     }
+    
+    @Override
+    protected void createBigMasterStore( int numberOfMegabytes )
+    {
+        throw new UnsupportedOperationException();
+    }
 
     protected static String[] buildExtraArgs( Map<String, String> config )
     {

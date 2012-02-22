@@ -21,7 +21,6 @@ package org.neo4j.backup;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.File;
@@ -38,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 
@@ -77,7 +77,7 @@ public class TestBackupToolEmbedded
     public void makeSureBackupCannotBePerformedWithInvalidArgs() throws Exception
     {
         if ( osIsWindows() ) return;
-        startDb( "true" );
+        startDb( null );
         // No args at all
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode() );
         // no targets
@@ -110,7 +110,7 @@ public class TestBackupToolEmbedded
     public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
     {
         if ( osIsWindows() ) return;
-        startDb( "true" );
+        startDb( null );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
@@ -131,7 +131,7 @@ public class TestBackupToolEmbedded
     {
         if ( osIsWindows() ) return;
         int port = 4445;
-        startDb( "port=" + port );
+        startDb( "" + port );
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
@@ -153,16 +153,16 @@ public class TestBackupToolEmbedded
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
 
-    private void startDb( String backupConfigValue )
+    private void startDb( String backupPort )
     {
-        if ( backupConfigValue == null )
+        db = new EmbeddedGraphDatabase( PATH, stringMap( "online_backup_enabled", "true", "online_backup_port", backupPort) )
         {
-            db = new EmbeddedGraphDatabase( PATH );
-        }
-        else
-        {
-            db = new EmbeddedGraphDatabase( PATH, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
-        }
+            @Override
+            protected StringLogger createStringLogger()
+            {
+                return StringLogger.SYSTEM;
+            }
+        };
         createSomeData( db );
     }
 

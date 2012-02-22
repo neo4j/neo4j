@@ -35,6 +35,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.ha.AbstractHAGraphDatabase;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.management.HighAvailability;
@@ -66,24 +67,24 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HAGraphDb;
+        return management.getKernelData().graphDatabase() instanceof AbstractHAGraphDatabase;
     }
 
     private static class HighAvailibilityImpl extends Neo4jMBean implements HighAvailability
     {
-        private final HAGraphDb db;
+        private final HighlyAvailableGraphDatabase db;
 
         HighAvailibilityImpl( ManagementData management )
                 throws NotCompliantMBeanException
         {
             super( management );
-            this.db = (HAGraphDb) management.getKernelData().graphDatabase();
+            this.db = ((AbstractHAGraphDatabase) management.getKernelData().graphDatabase()).getHighlyAvailableGraphDatabase();
         }
 
         HighAvailibilityImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
-            this.db = (HAGraphDb) management.getKernelData().graphDatabase();
+            this.db = ((AbstractHAGraphDatabase) management.getKernelData().graphDatabase()).getHighlyAvailableGraphDatabase();
         }
 
         public String getMachineId()

@@ -19,6 +19,10 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -44,10 +48,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-
-import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 
 class RebuildFromLogs
 {
@@ -91,7 +91,7 @@ class RebuildFromLogs
 
     private static XaDataSource getDataSource( AbstractGraphDatabase graphdb, String name )
     {
-        XaDataSource datasource = graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( name );
+        XaDataSource datasource = graphdb.getXaDataSourceManager().getXaDataSource( name );
         if ( datasource == null ) throw new NullPointerException( "Could not access " + name );
         return datasource;
     }

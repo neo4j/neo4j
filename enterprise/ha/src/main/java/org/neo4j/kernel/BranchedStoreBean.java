@@ -32,7 +32,8 @@ import org.neo4j.jmx.impl.KernelBean;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.HAGraphDb.BranchedDataPolicy;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase.BranchedDataPolicy;
+import org.neo4j.kernel.ha.AbstractHAGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.management.BranchedStore;
@@ -64,7 +65,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HAGraphDb;
+        return management.getKernelData().graphDatabase() instanceof AbstractHAGraphDatabase;
     }
 
     private static class BranchedStoreImpl extends Neo4jMBean implements

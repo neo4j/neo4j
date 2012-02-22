@@ -39,4 +39,6 @@ public interface ResponseReceiver extends ConnectionLostHandler
     void newMaster( Exception cause );
 
     void reconnect( Exception cause );
+
+    int getMasterForTx( long tx );
 }

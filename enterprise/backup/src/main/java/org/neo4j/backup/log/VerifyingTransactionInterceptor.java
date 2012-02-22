@@ -94,12 +94,12 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
     private final StringLogger difflog;
 
-    VerifyingTransactionInterceptor( NeoStoreXaDataSource ds, CheckerMode mode, boolean rejectInconsistentTransactions,
-                                     Map<String, String> extraConfig )
+    VerifyingTransactionInterceptor( NeoStoreXaDataSource ds, StringLogger stringLogger, CheckerMode mode,
+            boolean rejectInconsistentTransactions, Map<String, String> extraConfig )
     {
         this.rejectInconsistentTransactions = rejectInconsistentTransactions;
         this.diffs = new DiffStore( ds.getNeoStore() );
-        this.msgLog = ds.getMsgLog();
+        this.msgLog = stringLogger;
         this.mode = mode;
         String log = extraConfig.get( "log" );
         this.difflog = log == null ? null : ( "true".equalsIgnoreCase( log )

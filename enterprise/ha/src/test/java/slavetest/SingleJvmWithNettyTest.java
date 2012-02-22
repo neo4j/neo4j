@@ -54,8 +54,9 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -85,23 +87,27 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         initializeDbs( 1 );
         assertTrue(
                 "Slave Broker is not a client",
-                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getRawHaDb().getBroker().getMaster().first() instanceof MasterClient );
+                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getBroker().getMaster().first() instanceof MasterClient );
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb, Map<String, String> config )
+    protected Broker makeSlaveBroker( TestMaster master, int masterId, int id, HighlyAvailableGraphDatabase db, Map<String, String> config )
     {
+        config.put( "server_id", Integer.toString( id ) );
+        AbstractBroker.Configuration conf = ConfigProxy.config( config, AbstractBroker.Configuration.class );
+        
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
         int readTimeout = getConfigInt( config, CONFIG_KEY_READ_TIMEOUT, TEST_READ_TIMEOUT );
         final Master client = new MasterClient(
                 masterMachine.getServer().first(),
                 masterMachine.getServer().other(),
-                graphDb,
+                db.getMessageLog(),
+                db.getStoreIdGetter(),
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, CONFIG_KEY_LOCK_READ_TIMEOUT, readTimeout ),
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
-        return new AbstractBroker( id, graphDb )
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+        return new AbstractBroker( conf )
         {
             public boolean iAmMaster()
             {
@@ -124,7 +130,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return Pair.of( client, masterMachine );
             }
 
-            public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
+            public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
             {
                 throw new UnsupportedOperationException(
                         "cannot instantiate master server on slave" );
@@ -245,8 +251,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
     private HighlyAvailableGraphDatabase getMasterHaDb()
     {
-        PlaceHolderGraphDatabaseService db = (PlaceHolderGraphDatabaseService) getMaster().getGraphDb();
-        return (HighlyAvailableGraphDatabase) db.getDb();
+        return (HighlyAvailableGraphDatabase) getMaster().getGraphDb();
     }
 
     @Test
@@ -332,8 +337,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     @Test
     public void halfWayCopyWithSuccessfulRetry() throws Exception
     {
-        createBigMasterStore( 10 );
         startUpMaster( MapUtil.stringMap() );
+        createBigMasterStore( 10 );
         int slaveMachineId = addDb( MapUtil.stringMap(), false );
         awaitAllStarted();
         shutdownDb( slaveMachineId );
@@ -375,8 +380,9 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
         // Restart the master
         getMasterHaDb().shutdown();
-        ((PlaceHolderGraphDatabaseService)getMaster().getGraphDb()).setDb(
-                startUpMasterDb( MapUtil.stringMap() ).getDb() );
+        HighlyAvailableGraphDatabase newMaster = startUpMasterDb( MapUtil.stringMap() );
+        getMaster().setGraphDb( newMaster );
+        
 
         // Try to commit the tx from the slave and make sure it cannot do that
         slaveTx.success();
@@ -399,8 +405,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     public void committsAndRollbacksCountCorrectlyOnMaster() throws Exception
     {
         initializeDbs( 1 );
-        GraphDatabaseService master = getMaster().getGraphDb();
-        GraphDatabaseService slave = getSlave( 0 );
+        GraphDatabaseSPI master = getMaster().getGraphDb();
+        GraphDatabaseSPI slave = getSlave( 0 );
 
         // A successful tx on the master should increment number of commits on master
         Pair<Integer, Integer> masterTxsBefore = getTransactionCounts( master );
@@ -544,7 +550,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     {
         final long lockTimeout = 1;
         initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
-        final long id = executeJob( new CommonJobs.CreateNodeJob( true ), 0 );
+        final long[] id = new long[1];
         final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
         Thread lockHolder = new Thread( new Runnable()
         {
@@ -555,10 +561,22 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 try
                 {
                     final GraphDatabaseService slaveDb = getSlave( 0 );
-                    Node node = slaveDb.getNodeById( id );
-                    final Config config = ( (AbstractGraphDatabase) slaveDb ).getConfig();
-                    config.getLockManager().getReadLock( node );
-                    config.getLockReleaser().addLockToTransaction( node, LockType.READ );
+                    Node node;
+                    Transaction tx = slaveDb.beginTx();
+                    try
+                    {
+                        node = slaveDb.createNode();
+                        tx.success();
+                    }
+                    finally
+                    {
+                        tx.finish();
+                    }
+                    ( (GraphDatabaseSPI) slaveDb ).getLockManager().getReadLock( node );
+                    ( (GraphDatabaseSPI) slaveDb ).getLockReleaser().addLockToTransaction( node, LockType.READ );
+                    id[0] = node.getId();
+                    latch.countDownFirst();
+                    latch.awaitSecond();
                 }
                 catch ( Exception e )
                 {
@@ -586,7 +604,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         try
         {
             long startTime = System.currentTimeMillis();
-            masterDb.getNodeById(id).setProperty( "name", "David" );
+            masterDb.getNodeById(id[0]).setProperty( "name", "David" );
             long duration = System.currentTimeMillis() - startTime;
             latch.countDownSecond();
             assertTrue( "Read lock was acquired but not released.", duration < lockTimeout*1000 );
@@ -653,10 +671,10 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         }
     }
 
-    private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
+    private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseSPI master )
     {
         return Pair.of(
-                ((AbstractGraphDatabase)master).getConfig().getTxModule().getCommittedTxCount(),
-                ((AbstractGraphDatabase)master).getConfig().getTxModule().getRolledbackTxCount() );
+            ( (TxManager) master.getTxManager() ).getCommittedTxCount(),
+            ((TxManager)master.getTxManager()).getRolledbackTxCount() );
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import javax.transaction.Transaction;
 
 import org.neo4j.com.ComException;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
@@ -30,11 +30,13 @@ public class SlaveTxHook implements TxHook
 {
     private final Broker broker;
     private final ResponseReceiver receiver;
+    private GraphDatabaseSPI spi;
 
-    public SlaveTxHook( Broker broker, ResponseReceiver receiver )
+    public SlaveTxHook( Broker broker, ResponseReceiver receiver, GraphDatabaseSPI spi )
     {
         this.broker = broker;
         this.receiver = receiver;
+        this.spi = spi;
     }
     
     @Override
@@ -58,7 +60,7 @@ public class SlaveTxHook implements TxHook
     
     public boolean hasAnyLocks( Transaction tx )
     {
-        return ((AbstractGraphDatabase) receiver).getConfig().getLockReleaser().hasLocks( tx );
+        return spi.getLockReleaser().hasLocks( tx );
     }
 
     public void finishTransaction( int eventIdentifier, boolean success )

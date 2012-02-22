@@ -41,17 +41,14 @@ import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -73,18 +70,18 @@ public class MasterImpl implements Master
     private static final int ID_GRAB_SIZE = 1000;
     public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 5;
 
-    private final GraphDatabaseService graphDb;
+    private final GraphDatabaseSPI graphDb;
     private final StringLogger msgLog;
 
     private final Map<SlaveContext, MasterTransaction> transactions = synchronizedMap( new HashMap<SlaveContext, MasterTransaction>() );
     private final ScheduledExecutorService unfinishedTransactionsExecutor;
     private int unfinishedTransactionThreshold;
 
-    public MasterImpl( GraphDatabaseService db, Map<String, String> config )
+    public MasterImpl( GraphDatabaseSPI db, int timeOut )
     {
         this.graphDb = db;
-        this.msgLog = ((AbstractGraphDatabase) db ).getMessageLog();
-        this.unfinishedTransactionThreshold = HaConfig.getClientLockReadTimeoutFromConfig( config );
+        this.msgLog = graphDb.getMessageLog();
+        this.unfinishedTransactionThreshold = timeOut;
         this.unfinishedTransactionsExecutor = Executors.newSingleThreadScheduledExecutor();
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
         {
@@ -132,16 +129,11 @@ public class MasterImpl implements Master
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
     }
 
-    public GraphDatabaseService getGraphDb()
+    public GraphDatabaseSPI getGraphDb()
     {
         return this.graphDb;
     }
-
-    private Config getGraphDbConfig()
-    {
-        return ((AbstractGraphDatabase)this.graphDb).getConfig();
-    }
-
+    
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -162,8 +154,8 @@ public class MasterImpl implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
-            LockManager lockManager = getGraphDbConfig().getLockManager();
-            LockReleaser lockReleaser = getGraphDbConfig().getLockReleaser();
+            LockManager lockManager = graphDb.getLockManager();
+            LockReleaser lockReleaser = graphDb.getLockReleaser();
             for ( Object entity : entities )
             {
                 lockGrabber.grab( lockManager, lockReleaser, entity );
@@ -212,7 +204,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
+            TransactionManager txManager = graphDb.getTxManager();
             txManager.begin();
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, new MasterTransaction( tx ) );
@@ -232,7 +224,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
+            TransactionManager txManager = graphDb.getTxManager();
             Transaction otherTx = txManager.getTransaction();
             Transaction transaction = getTx( txId );
             if ( otherTx != null && otherTx == transaction )
@@ -290,7 +282,7 @@ public class MasterImpl implements Master
                 return;
             }
             
-            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
+            TransactionManager txManager = graphDb.getTxManager();
             
             // update time stamp to current time so that we know that this tx just completed
             // a request and can now again start to be monitored, so that it can be
@@ -313,8 +305,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
-            Transaction tx = txManager.getTransaction();
+            TransactionManager txManager = graphDb.getTxManager();
             if ( success ) txManager.commit();
             else txManager.rollback();
             transactions.remove( txId );
@@ -363,7 +354,7 @@ public class MasterImpl implements Master
 
     private PropertyContainer graphProperties()
     {
-        return getGraphDbConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        return graphDb.getNodeManager().getGraphProperties();
     }
 
     private Node[] nodesById( long[] ids )
@@ -388,7 +379,7 @@ public class MasterImpl implements Master
 
     public Response<IdAllocation> allocateIds( IdType idType )
     {
-        IdGenerator generator = getGraphDbConfig().getIdGeneratorFactory().get( idType );
+        IdGenerator generator = graphDb.getIdGeneratorFactory().get( idType );
         IdAllocation result = new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
         return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, result );
@@ -400,7 +391,7 @@ public class MasterImpl implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
-            XaDataSource dataSource = getGraphDbConfig().getTxModule().getXaDataSourceManager()
+            XaDataSource dataSource = graphDb.getXaDataSourceManager()
                     .getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
@@ -441,9 +432,8 @@ public class MasterImpl implements Master
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
     {
-        Config config = getGraphDbConfig();
-        config.getRelationshipTypeHolder().addValidRelationshipType( name, true );
-        return packResponse( context, config.getRelationshipTypeHolder().getIdFor( name ) );
+        graphDb.getRelationshipTypeHolder().addValidRelationshipType( name, true );
+        return packResponse( context, graphDb.getRelationshipTypeHolder().getIdFor( name ) );
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
@@ -453,8 +443,8 @@ public class MasterImpl implements Master
 
     public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId storeId )
     {
-        XaDataSource nioneoDataSource = getGraphDbConfig().getTxModule().getXaDataSourceManager()
-                .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource nioneoDataSource = graphDb.getXaDataSourceManager()
+                .getNeoStoreDataSource();
         try
         {
             Pair<Integer, Long> masterId = nioneoDataSource.getMasterForCommittedTx( txId );

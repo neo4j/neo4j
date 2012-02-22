@@ -19,16 +19,16 @@
  */
 package slavetest;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
 
 public class StartHaDb
 {

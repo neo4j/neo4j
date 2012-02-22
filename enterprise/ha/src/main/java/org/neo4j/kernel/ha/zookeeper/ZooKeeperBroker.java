@@ -30,36 +30,36 @@ import java.util.Map;
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.ConfigurationPrefix;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterImpl;
-import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.ha.shell.ZooClientFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
-    private volatile ZooClient zooClient;
-    private final String haServer;
-    private int clientLockReadTimeout;
-    private final Map<String, String> config;
-    private int fetchInfoTimeout;
-    private final ResponseReceiver receiver;
-
-    public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
+    @ConfigurationPrefix( "ha." )
+    public interface Configuration
+        extends AbstractBroker.Configuration
     {
-        super( HaConfig.getMachineIdFromConfig( config ), graphDb );
-        this.config = config;
-        haServer = HaConfig.getHaServerFromConfig( config );
-        clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
-        fetchInfoTimeout = HaConfig.getFetchInfoTimeoutFromConfig( config );
-        this.receiver = receiver;
+        int coordinator_fetch_info_timeout( int def );
+    }
+    
+    private final ZooClientFactory zooClientFactory;
+    private volatile ZooClient zooClient;
+    private int fetchInfoTimeout;
+
+    public ZooKeeperBroker( Configuration conf, ZooClientFactory zooClientFactory )
+    {
+        super( conf );
+        this.zooClientFactory = zooClientFactory;
+        fetchInfoTimeout = conf.coordinator_fetch_info_timeout(HaConfig.CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT);
         start();
     }
 
@@ -140,7 +140,7 @@ public class ZooKeeperBroker extends AbstractBroker
     public void setConnectionInformation( KernelData kernel )
     {
         String instanceId = kernel.instanceId();
-        JMXServiceURL url = Neo4jManager.getConnectionURL( kernel );
+        JMXServiceURL url = Neo4jManager.getConnectionURL(kernel);
         if ( instanceId != null && url != null )
         {
             zooClient.setJmxConnectionData( url, instanceId );
@@ -195,13 +195,9 @@ public class ZooKeeperBroker extends AbstractBroker
         return zooClient.getMasterBasedOn( machines.values() );
     }
 
-    public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
+    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
     {
-        MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
-                Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog(),
-                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ), clientLockReadTimeout,
-                new BranchDetectingTxVerifier( graphDb ) );
-        return server;
+        return zooClient.instantiateMasterServer( graphDb );
     }
 
     @Override
@@ -223,7 +219,7 @@ public class ZooKeeperBroker extends AbstractBroker
             throw new IllegalStateException(
                     "Broker already started, ZooClient is " + zooClient );
         }
-        this.zooClient = new ZooClient( getGraphDb(), config, receiver );
+        this.zooClient = zooClientFactory.newZooClient();
     }
 
     @Override

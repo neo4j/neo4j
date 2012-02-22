@@ -36,15 +36,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.SlaveContext.Tx;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -55,9 +54,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class MasterUtil
 {
-    private static File getBaseDir( GraphDatabaseService graphDb )
+    private static File getBaseDir( GraphDatabaseSPI graphDb )
     {
-        File file = new File( ((AbstractGraphDatabase) graphDb).getStoreDir() );
+        File file = new File( graphDb.getStoreDir() );
         try
         {
             return file.getCanonicalFile().getAbsoluteFile();
@@ -91,11 +90,10 @@ public class MasterUtil
             return path.substring( 1 );
         return path;
     }
-
-    public static Tx[] rotateLogs( GraphDatabaseService graphDb )
+    
+    public static Tx[] rotateLogs( GraphDatabaseSPI graphDb )
     {
-        XaDataSourceManager dsManager =
-                ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         Collection<XaDataSource> sources = dsManager.getAllRegisteredDataSources();
 
         Tx[] appliedTransactions = new Tx[sources.size()];
@@ -106,25 +104,26 @@ public class MasterUtil
             {
                 appliedTransactions[i++] = lastAppliedTx( ds.getName(), ds.getXaContainer().getResourceManager().rotateLogicalLog() );
             }
-            catch ( Throwable e )
-            {   // This must be treated as a kernel panic, failure to rotate is bad.
-                ((AbstractGraphDatabase)graphDb).getMessageLog().logMessage(
+            catch ( IOException e )
+            {
+                // TODO: what about error message?
+                graphDb.getMessageLog().logMessage(
                         "Unable to rotate log for " + ds, e );
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.
-                ((AbstractGraphDatabase)graphDb).getConfig().getKernelPanicGenerator().generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+                graphDb.getKernelPanicGenerator().generateEvent( ErrorState.TX_MANAGER_NOT_OK );
                 throw new MasterFailureException( e );
             }
         }
         return appliedTransactions;
     }
 
-    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb,
+    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseSPI graphDb,
             boolean includeLogicalLogs, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
-                ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+                graphDb.getXaDataSourceManager();
         SlaveContext context = SlaveContext.anonymous( rotateLogs( graphDb ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024*1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
@@ -160,7 +159,7 @@ public class MasterUtil
         }
         return context;
     }
-
+    
     /**
      * For a given {@link XaDataSource} it extracts the transaction stream from
      * startTxId up to endTxId (inclusive) in the provided {@link List} and
@@ -280,12 +279,12 @@ public class MasterUtil
      *            those that evaluate to true
      * @return The response, packed with the latest transactions
      */
-    public static <T> Response<T> packResponse( GraphDatabaseService graphDb,
+    public static <T> Response<T> packResponse( GraphDatabaseSPI graphDb,
             SlaveContext context, T response, Predicate<Long> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
-        XaDataSourceManager dsManager = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         final List<LogExtractor> logExtractors = new ArrayList<LogExtractor>();
         try
         {
@@ -305,9 +304,8 @@ public class MasterUtil
                         filter );
                 logExtractors.add( logExtractor );
             }
-            StoreId storeId = ((NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME )).getStoreId();
-            return new Response<T>( response, storeId, createTransactionStream(
-                    resourceNames, stream, logExtractors ),
+            StoreId storeId = dsManager.getNeoStoreDataSource().getStoreId();
+            return new Response<T>( response, storeId, createTransactionStream( resourceNames, stream, logExtractors ),
                     ResourceReleaser.NO_OP );
         }
         catch ( Throwable t )
@@ -331,11 +329,11 @@ public class MasterUtil
      * @return A {@link Response} object containing a transaction stream with
      *         the requested transactions from the specified data source.
      */
-    public static Response<Void> getTransactions( GraphDatabaseService graphDb,
+    public static Response<Void> getTransactions( GraphDatabaseSPI graphDb,
             String dataSourceName, long startTx, long endTx )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
-        XaDataSourceManager dsManager = ( (AbstractGraphDatabase) graphDb ).getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         final XaDataSource dataSource = dsManager.getXaDataSource( dataSourceName );
         if ( dataSource == null )
         {
@@ -374,11 +372,10 @@ public class MasterUtil
         };
     }
 
-    public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseService graphDb,
+    public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseSPI graphDb,
             SlaveContext context, T response )
     {
-        XaDataSource ds = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule()
-                .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource ds = graphDb.getXaDataSourceManager().getNeoStoreDataSource();
         StoreId storeId = ((NeoStoreXaDataSource) ds).getStoreId();
         return new Response<T>( response, storeId, TransactionStream.EMPTY,
                 ResourceReleaser.NO_OP );
@@ -393,9 +390,9 @@ public class MasterUtil
         }
     };
 
-    public static <T> void applyReceivedTransactions( Response<T> response, GraphDatabaseService graphDb, TxHandler txHandler ) throws IOException
+    public static <T> void applyReceivedTransactions( Response<T> response, GraphDatabaseSPI graphDb, TxHandler txHandler ) throws IOException
     {
-        XaDataSourceManager dataSourceManager = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager dataSourceManager = graphDb.getXaDataSourceManager();
         try
         {
             for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )

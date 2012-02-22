@@ -51,7 +51,7 @@ public class TestHaBean
     @BeforeClass
     public static void startDb() throws Exception
     {
-        zk = new LocalhostZooKeeperCluster( dir,/*ports:*/2181, 2182 );
+        zk = LocalhostZooKeeperCluster.standardZoo( TestHaBean.class );
         File storeDir = dir.graphDbDir( /*clean=*/true );
         CreateEmptyDb.at( storeDir );
         db = Neo4jHaCluster.single( zk, storeDir, /*HA port:*/3377, //
@@ -80,8 +80,7 @@ public class TestHaBean
     @Test
     public void canGetBranchedStoreBean() throws Exception
     {
-        Neo4jManager neo4j = new Neo4jManager(
-                db.getSingleManagementBean( Kernel.class ) );
+        Neo4jManager neo4j = new Neo4jManager(db.getSingleManagementBean( Kernel.class ) );
         BranchedStore bs = neo4j.getBranchedStoreBean();
         assertNotNull( "could not get ha bean", bs );
         assertEquals( "no branched stores for new db", 0,

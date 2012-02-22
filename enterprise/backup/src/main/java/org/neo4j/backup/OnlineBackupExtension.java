@@ -20,20 +20,26 @@
 package org.neo4j.backup;
 
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 import static org.neo4j.kernel.Config.parseMapFromConfigValue;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation( KernelExtension.class )
 public class OnlineBackupExtension extends KernelExtension<BackupServer>
 {
     static final String KEY = "online backup";
+    
+    public interface Configuration
+    {
+        boolean online_backup_enabled(boolean def);
+        int online_backup_port(int def);
+    }
 
     public OnlineBackupExtension()
     {
@@ -43,25 +49,20 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
     @Override
     protected void loadConfiguration( KernelData kernel )
     {
-        if ( parsePort( (String) kernel.getParam( ENABLE_ONLINE_BACKUP ) ) != null )
-        {
-            // Means that online backup will be enabled
-            kernel.getConfig().getParams().put( KEEP_LOGICAL_LOGS, "true" );
-        }
     }
 
     @Override
     protected BackupServer load( KernelData kernel )
     {
-        Integer port = parsePort( (String) kernel.getParam( ENABLE_ONLINE_BACKUP ) );
-        if ( port != null )
+        Configuration config = ConfigProxy.config( kernel.getConfigParams(), Configuration.class );
+        
+        if (config.online_backup_enabled( false ))
         {
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
-            BackupServer server = new BackupServer( backup, port.intValue(),
-                    (StringLogger) kernel.getConfig().getParams().get( StringLogger.class ) );
-            return server;
-        }
-        return null;
+            return new BackupServer( backup, config.online_backup_port( BackupServer.DEFAULT_PORT ),
+                                                    (( GraphDatabaseSPI)kernel.graphDatabase()).getMessageLog());
+        } else
+            return null;
     }
 
     public static Integer parsePort( String backupConfigValue )

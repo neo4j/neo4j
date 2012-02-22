@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,16 +27,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.IdAllocation;
 import org.neo4j.kernel.ha.LockResult;
@@ -50,46 +48,57 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
  * the current master in the cluster.
  */
-public abstract class AbstractZooKeeperManager implements Watcher
+public abstract class AbstractZooKeeperManager
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
 
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
             new HashMap<Integer, String>() );
-    private volatile Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
+    protected volatile Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
 
-    private final AbstractGraphDatabase graphDb;
-    private final StringLogger msgLog;
-    private final int maxConcurrentChannelsPerSlave;
-    private final int clientReadTimeout;
-    private final int clientLockReadTimeout;
+    protected final StringLogger msgLog;
+    protected final int maxConcurrentChannelsPerSlave;
+    protected final int clientReadTimeout;
+    protected final int clientLockReadTimeout;
     private final long sessionTimeout;
 
-    public AbstractZooKeeperManager( String servers,
-            AbstractGraphDatabase graphDb, int clientReadTimeout,
-            int clientLockReadTimeout, int maxConcurrentChannelsPerSlave,
-            long sessionTimeout )
+    private final StoreIdGetter storeIdGetter;
+
+    public AbstractZooKeeperManager( String servers, StoreIdGetter storeIdGetter, StringLogger msgLog,
+            int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave, int sessionTimeout )
     {
+        assert msgLog != null;
+
         this.servers = servers;
-        this.graphDb = graphDb;
+        this.storeIdGetter = storeIdGetter;
+        this.msgLog = msgLog;
         this.clientLockReadTimeout = clientLockReadTimeout;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
         this.clientReadTimeout = clientReadTimeout;
         this.sessionTimeout = sessionTimeout;
-        this.msgLog = graphDb != null ? graphDb.getMessageLog() : StringLogger.DEV_NULL;
     }
 
-    protected ZooKeeper instantiateZooKeeper()
+    protected String asRootPath( StoreId storeId )
+    {
+        return "/" + storeId.getCreationTime() + "_" + storeId.getRandomId();
+    }
+
+    protected StoreId getClusterStoreId( ZooKeeper keeper, String clusterName )
     {
         try
         {
-            return new ZooKeeper( getServers(), getSessionTimeout(), this );
+            byte[] child = keeper.getData( "/" + clusterName, false, null );
+            return StoreId.deserialize( child );
         }
-        catch ( IOException e )
+        catch ( KeeperException e )
         {
-            throw new ZooKeeperException(
-                "Unable to create zoo keeper client", e );
+            if ( e.code() == KeeperException.Code.NONODE ) return null;
+            throw new ZooKeeperException( "Error getting store id", e );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new ZooKeeperException( "Interrupted", e );
         }
     }
 
@@ -105,11 +114,6 @@ public abstract class AbstractZooKeeperManager implements Watcher
     public abstract ZooKeeper getZooKeeper( boolean sync );
 
     public abstract String getRoot();
-
-    protected AbstractGraphDatabase getGraphDb()
-    {
-        return graphDb;
-    }
 
     protected Pair<Integer, Integer> parseChild( String child )
     {
@@ -181,8 +185,8 @@ public abstract class AbstractZooKeeperManager implements Watcher
             return NO_MASTER;
         }
         return new MasterClient( master.getServer().first(),
-                master.getServer().other(), graphDb,
-                getConnectionLostHandler(), clientReadTimeout,
+                master.getServer().other(), this.msgLog, storeIdGetter,
+                ConnectionLostHandler.NO_ACTION, clientReadTimeout,
                 clientLockReadTimeout, maxConcurrentChannelsPerSlave );
     }
 
@@ -239,11 +243,6 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             return ZooKeeperMachine.NO_MACHINE;
         }
-    }
-
-    protected ConnectionLostHandler getConnectionLostHandler()
-    {
-        return ConnectionLostHandler.NO_ACTION;
     }
 
     protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait )
@@ -371,7 +370,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         return servers;
     }
 
-    private static final Master NO_MASTER = new Master()
+    protected static final Master NO_MASTER = new Master()
     {
         @Override
         public void shutdown() {}

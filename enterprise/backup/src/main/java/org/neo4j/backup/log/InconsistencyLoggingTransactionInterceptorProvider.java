@@ -22,11 +22,13 @@ package org.neo4j.backup.log;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation( TransactionInterceptorProvider.class )
 public class InconsistencyLoggingTransactionInterceptorProvider extends
@@ -47,7 +49,7 @@ public class InconsistencyLoggingTransactionInterceptorProvider extends
 
     @Override
     public VerifyingTransactionInterceptor create( XaDataSource ds,
-            Object options )
+            Object options, DependencyResolver dependencyResolver )
     {
         if ( !( options instanceof String ) )
         {
@@ -63,28 +65,22 @@ public class InconsistencyLoggingTransactionInterceptorProvider extends
         {
             return null;
         }
+
         Map<String, String> extra = new HashMap<String, String>();
         for ( int i = 1; i < config.length; i++ )
         {
             String[] parts = config[i].split( "=", 2 );
             extra.put( parts[0].toLowerCase(), parts.length == 1 ? "true" : parts[1] );
         }
-        return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds, mode, false, extra );
+        return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds, dependencyResolver.resolveDependency( StringLogger.class ), mode, false, extra );
     }
 
     @Override
-    public TransactionInterceptor create( TransactionInterceptor next,
-            XaDataSource ds, Object options )
+    public VerifyingTransactionInterceptor create( TransactionInterceptor next,
+            XaDataSource ds, Object options, DependencyResolver dependencyResolver )
     {
-        VerifyingTransactionInterceptor result = create( ds, options );
-        if ( result != null )
-        {
-            result.setNext( next );
-            return result;
-        }
-        else
-        {
-            return next;
-        }
+        VerifyingTransactionInterceptor result = create( ds, options, dependencyResolver );
+        result.setNext( next );
+        return result;
     }
 }

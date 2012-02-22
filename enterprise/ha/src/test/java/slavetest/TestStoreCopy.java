@@ -31,8 +31,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.HAGraphDb;
 import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
@@ -46,8 +46,8 @@ public class TestStoreCopy
 {
     private static LocalhostZooKeeperCluster zoo;
 
-    private HAGraphDb master;
-    private HAGraphDb slave;
+    private HighlyAvailableGraphDatabase master;
+    private HighlyAvailableGraphDatabase slave;
     private File slaveDir;
     private File sandboxed;
     private long nodeId;
@@ -76,9 +76,9 @@ public class TestStoreCopy
     {
         slaveDir = TargetDirectory.forTest( TestStoreCopy.class ).directory(
                 "slave-sandboxed", true );
-        sandboxed = new File( slaveDir, HAGraphDb.COPY_FROM_MASTER_TEMP );
+        sandboxed = new File( slaveDir, HighlyAvailableGraphDatabase.COPY_FROM_MASTER_TEMP );
 
-        master = new HAGraphDb(
+        master = new HighlyAvailableGraphDatabase(
                 TargetDirectory.forTest( TestStoreCopy.class ).directory(
                         "master-sandboxed", true ).getAbsolutePath(),
                 MapUtil.stringMap(
@@ -93,7 +93,7 @@ public class TestStoreCopy
         masterTx.success();
         masterTx.finish();
 
-        slave = new HAGraphDb( slaveDir.getAbsolutePath(),
+        slave = new HighlyAvailableGraphDatabase( slaveDir.getAbsolutePath(),
                 MapUtil.stringMap( HaConfig.CONFIG_KEY_COORDINATORS,
                         zoo.getConnectionString(),
                         HaConfig.CONFIG_KEY_SERVER_ID, "2" ) );
@@ -153,14 +153,14 @@ public class TestStoreCopy
         secondMasterTx.success();
         secondMasterTx.finish();
 
-        File sandboxed = new File( slaveDir, HAGraphDb.COPY_FROM_MASTER_TEMP );
+        File sandboxed = new File( slaveDir, HighlyAvailableGraphDatabase.COPY_FROM_MASTER_TEMP );
         FileUtils.moveToDirectory( new File( slaveDir, "neostore" ), sandboxed,
                 false );
         FileUtils.moveToDirectory( new File( slaveDir,
                 "neostore.propertystore.db" ), sandboxed, false );
         Assert.assertEquals( 3, sandboxed.listFiles().length );
 
-        slave = new HAGraphDb( slaveDir.getAbsolutePath(), MapUtil.stringMap(
+        slave = new HighlyAvailableGraphDatabase( slaveDir.getAbsolutePath(), MapUtil.stringMap(
                 HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString(),
                 HaConfig.CONFIG_KEY_SERVER_ID, "2" ) );
 

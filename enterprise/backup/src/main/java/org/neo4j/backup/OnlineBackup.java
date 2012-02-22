@@ -43,12 +43,11 @@ import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -95,7 +94,7 @@ public class OnlineBackup
         {
             Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
                     new ToFileStoreWriter( targetDirectory ) ) );
-            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory,
+            GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory,
                     VerificationLevel.NONE /* run full check instead */ );
             try
             {
@@ -108,14 +107,15 @@ public class OnlineBackup
             bumpLogFile( targetDirectory, timestamp );
             if ( verification )
             {
-                StoreAccess newStore = new StoreAccess( targetDirectory );
+                EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( targetDirectory );
+                StoreAccess newStore = new StoreAccess( graphdb );
                 try
                 {
                     ConsistencyCheck.run( newStore, false );
                 }
                 finally
                 {
-                    newStore.close();
+                    graphdb.shutdown();
                 }
             }
         }
@@ -194,7 +194,7 @@ public class OnlineBackup
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
+        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
 
         long backupStartTime = System.currentTimeMillis();
         OnlineBackup result = null;
@@ -219,9 +219,9 @@ public class OnlineBackup
         return result;
     }
 
-    public OnlineBackup incremental( GraphDatabaseService targetDb )
+    public OnlineBackup incremental( GraphDatabaseSPI targetDb )
     {
-        BackupClient client = new BackupClient( hostNameOrIp, port, ((AbstractGraphDatabase)targetDb).getMessageLog(),
+        BackupClient client = new BackupClient( hostNameOrIp, port, targetDb.getMessageLog(),
                 Client.storeIdGetterForDb( targetDb ) );
         try
         {
@@ -235,7 +235,7 @@ public class OnlineBackup
         return this;
     }
 
-    private void unpackResponse( Response<Void> response, GraphDatabaseService graphDb, TxHandler txHandler )
+    private void unpackResponse( Response<Void> response, GraphDatabaseSPI graphDb, TxHandler txHandler )
     {
         try
         {
@@ -248,18 +248,17 @@ public class OnlineBackup
         }
     }
 
-    private void getLastCommittedTxs( GraphDatabaseService graphDb )
+    private void getLastCommittedTxs( GraphDatabaseSPI graphDb )
     {
-        for ( XaDataSource ds : ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        for ( XaDataSource ds : graphDb.getXaDataSourceManager().getAllRegisteredDataSources() )
         {
             lastCommittedTxs.put( ds.getName(), ds.getLastCommittedTxId() );
         }
     }
 
-    private SlaveContext slaveContextOf( GraphDatabaseService graphDb )
+    private SlaveContext slaveContextOf( GraphDatabaseSPI graphDb )
     {
-        XaDataSourceManager dsManager =
-                ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         List<Tx> txs = new ArrayList<Tx>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {

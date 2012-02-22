@@ -19,30 +19,6 @@
  */
 package org.neo4j.backup.check;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-
-import org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency;
-import org.neo4j.helpers.Args;
-import org.neo4j.helpers.ProgressIndicator;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-
 import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.DYNAMIC_NOT_IN_USE;
 import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.ILLEGAL_PROPERTY_TYPE;
 import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.INVALID_PROPERTY_KEY;
@@ -91,6 +67,30 @@ import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TY
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_KEY_NAME;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_TYPE_NAME;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency;
+import org.neo4j.helpers.Args;
+import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+
 /**
  * Finds inconsistency in a Neo4j store.
  *
@@ -127,19 +127,22 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
             System.exit( -1 );
             return;
         }
+        EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( args[ 0 ] );
+        StoreAccess stores = new StoreAccess( graphdb );
+        
         // TODO: check for the existence of active logical logs and report:
         // * that this might be a source of inconsistencies
         // * you can run recovery before starting by using the --recovery flag
         // This should probably be reported both before and after the tool runs
-        if ( recovery ) new EmbeddedGraphDatabase( args[0] ).shutdown();
-        StoreAccess stores = new StoreAccess( args[0] );
+//        if ( recovery ) new EmbeddedGraphDatabase( args[0] ).shutdown();
+//        StoreAccess stores = new StoreAccess( args[0] );
         try
         {
             run( stores, propowner );
         }
         finally
         {
-            stores.close();
+            graphdb.shutdown();
         }
     }
 
@@ -398,7 +401,10 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
     @Override
     public void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
     {
-        if ( checkDynamic( store, string ) ) brokenStrings++;
+        if ( checkDynamic( store, string ) )
+        {
+            brokenStrings++;
+        }
     }
 
     @Override

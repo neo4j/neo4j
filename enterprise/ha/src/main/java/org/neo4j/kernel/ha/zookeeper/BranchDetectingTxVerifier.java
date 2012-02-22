@@ -24,17 +24,17 @@ import java.io.IOException;
 import org.neo4j.com.ComException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
-    private final AbstractGraphDatabase db;
+    private final GraphDatabaseSPI db;
     private XaDataSource dataSource;
 
-    BranchDetectingTxVerifier( AbstractGraphDatabase db /* I'd like to get in StringLogger, XaDataSource instead */ )
+    BranchDetectingTxVerifier( GraphDatabaseSPI db /* I'd like to get in StringLogger, XaDataSource instead */ )
     {
         /* We cannot pass in XaResourceManager because it this time we don't have a
          * proper db, merely the HA graph db which is a layer around a not-yet-started db
@@ -66,7 +66,7 @@ class BranchDetectingTxVerifier implements TxChecksumVerifier
     
     private XaDataSource dataSource()
     {
-        if ( dataSource == null ) dataSource = db.getConfig().getTxModule().getXaDataSourceManager()
+        if ( dataSource == null ) dataSource = db.getXaDataSourceManager()
                 .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         return dataSource;
     }

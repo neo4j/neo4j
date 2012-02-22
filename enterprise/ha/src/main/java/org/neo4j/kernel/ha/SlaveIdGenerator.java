@@ -33,7 +33,6 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class SlaveIdGenerator implements IdGenerator
 {
@@ -73,11 +72,6 @@ public class SlaveIdGenerator implements IdGenerator
         public IdGenerator get( IdType idType )
         {
             return generators.get( idType );
-        }
-
-        public void updateIdGenerators( NeoStore store )
-        {
-            store.updateIdGenerators();
         }
 
         public void forgetIdAllocationsFromMaster()

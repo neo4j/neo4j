@@ -22,9 +22,9 @@ package slavetest;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public interface Job<T> extends Serializable
 {
-    T execute( GraphDatabaseService db ) throws RemoteException;
+    T execute( GraphDatabaseSPI db ) throws RemoteException;
 }

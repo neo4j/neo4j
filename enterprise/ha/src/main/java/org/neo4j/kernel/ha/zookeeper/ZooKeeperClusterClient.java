@@ -21,24 +21,27 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import static org.neo4j.com.Server.DEFAULT_BACKUP_PORT;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.com.Client;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements ClusterClient
 {
+    protected static final int SESSION_TIME_OUT = 5000;
+
     private final ZooKeeper zooKeeper;
     private String rootPath;
     private KeeperState state = KeeperState.Disconnected;
@@ -46,42 +49,47 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
 
     public ZooKeeperClusterClient( String zooKeeperServers )
     {
-        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, null,
-                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
+        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
     }
 
-    public ZooKeeperClusterClient( String zooKeeperServers,
-            AbstractGraphDatabase db )
-    {
-        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, db,
-                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
-    }
+//    public ZooKeeperClusterClient( String zooKeeperServers,
+//            AbstractGraphDatabase db )
+//    {
+//<<<<<<< HEAD
+//        super(zooKeeperServers, StringLogger.SYSTEM, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//              Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//              Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+//=======
+//        this( zooKeeperServers, StringLogger.SYSTEM, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, db,
+//                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
+//    }
 
     public ZooKeeperClusterClient( String zooKeeperServers, String clusterName )
     {
-        this( zooKeeperServers, clusterName, null,
+        this( zooKeeperServers, StringLogger.SYSTEM, clusterName,
                 HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
     }
 
-    public ZooKeeperClusterClient( String zooKeeperServers, String clusterName,
-            AbstractGraphDatabase db, long sessionTimeout )
+    public ZooKeeperClusterClient( String zooKeeperServers, StringLogger msgLog, String clusterName,
+            int sessionTimeout )
     {
-        super( zooKeeperServers, db,
+        super( zooKeeperServers, Client.NO_STORE_ID_GETTER, msgLog,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 sessionTimeout );
         this.clusterName = clusterName;
-        this.zooKeeper = instantiateZooKeeper();
+        try
+        {
+            zooKeeper = new ZooKeeper( zooKeeperServers, SESSION_TIME_OUT, new WatcherImpl() );
+        }
+        catch ( IOException e )
+        {
+            throw new ZooKeeperException(
+                "Unable to create zoo keeper client", e );
+        }
     }
-
-    @Override
-    protected int getMyMachineId()
-    {
-        throw new UnsupportedOperationException( "Not implemented ClusterManager.getMyMachineId()" );
-    }
-
-    @Override
+    
     public void waitForSyncConnected()
     {
         long startTime = System.currentTimeMillis();
@@ -107,16 +115,6 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
     {
         int port = readHaServer( machineId, true ).other();
         return port != 0 ? port : DEFAULT_BACKUP_PORT;
-    }
-
-    public void process( WatchedEvent event )
-    {
-        // System.out.println( "Got event: " + event );
-        String path = event.getPath();
-        if ( path == null )
-        {
-            state = event.getState();
-        }
     }
 
     public Machine getMaster()
@@ -158,30 +156,13 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
                                            // "' not found" );
         return asRootPath( storeId );
     }
-
-    public static String asRootPath( StoreId storeId )
+    
+    @Override
+    protected int getMyMachineId()
     {
-        return "/" + storeId.getCreationTime() + "_" + storeId.getRandomId();
+        throw new UnsupportedOperationException();
     }
-
-    public static StoreId getClusterStoreId( ZooKeeper keeper, String clusterName )
-    {
-        try
-        {
-            byte[] child = keeper.getData( "/" + clusterName, false, null );
-            return StoreId.deserialize( child );
-        }
-        catch ( KeeperException e )
-        {
-            if ( e.code() == KeeperException.Code.NONODE ) return null;
-            throw new ZooKeeperException( "Error getting store id", e );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ZooKeeperException( "Interrupted", e );
-        }
-    }
-
+    
     /**
      * Returns the disconnected slaves in this cluster so that all slaves
      * which are specified in the HA servers configuration, but not in the
@@ -217,5 +198,19 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
     {
         if ( sync ) this.zooKeeper.sync( getRoot(), null, null );
         return this.zooKeeper;
+    }
+
+    private class WatcherImpl
+        implements Watcher
+    {
+        public void process( WatchedEvent event )
+        {
+            // System.out.println( "Got event: " + event );
+            String path = event.getPath();
+            if ( path == null )
+            {
+                state = event.getState();
+            }
+        }
     }
 }

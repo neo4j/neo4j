@@ -27,8 +27,8 @@ import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmT
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.HaConfig.CONFIG_KEY_COORDINATORS;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
 import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
 
 import java.io.File;
 import java.util.ArrayList;

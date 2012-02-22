@@ -21,14 +21,12 @@ package slavetest.manual;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
 public class ManualTest1
 {
@@ -37,9 +35,6 @@ public class ManualTest1
         
     public static void main( String[] args ) throws Exception
     {
-        NeoStoreUtil store = new NeoStoreUtil( PATH.getPath() );
-        System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
-                " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         GraphDatabaseService db = startDb();
         System.out.println( "Waiting for ENTER (for clean shutdown)" );
         System.in.read();
@@ -49,10 +44,11 @@ public class ManualTest1
     private static GraphDatabaseService startDb() throws IOException
     {
         return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HaConfig.CONFIG_KEY_OLD_SERVER_ID, "1",
-                HaConfig.CONFIG_KEY_OLD_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
+                HaConfig.CONFIG_KEY_SERVER_ID, "1",
+                HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
                 HaConfig.CONFIG_KEY_SERVER, ME,
                 Config.ENABLE_REMOTE_SHELL, "true",
-                Config.KEEP_LOGICAL_LOGS, "true" ) );
+                Config.KEEP_LOGICAL_LOGS, "true",
+                Config.ENABLE_ONLINE_BACKUP, "true" ) );
     }
 }
