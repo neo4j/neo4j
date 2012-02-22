@@ -27,9 +27,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.rrd4j.core.RrdDb;
@@ -38,13 +37,13 @@ public class Database
 {
     public static Logger log = Logger.getLogger( Database.class );
 
-    public AbstractGraphDatabase graph;
+    public GraphDatabaseSPI graph;
 
     private final String databaseStoreDirectory;
     private RrdDb rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
-    public Database( AbstractGraphDatabase db )
+    public Database( GraphDatabaseSPI db )
     {
         this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
@@ -64,7 +63,7 @@ public class Database
         this( createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static AbstractGraphDatabase createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
+    private static GraphDatabaseSPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
             Map<String, String> databaseProperties )
     {
         log.info( "Using database at " + databaseStoreDirectory );
@@ -167,10 +166,5 @@ public class Database
     public StatisticCollector statisticCollector()
     {
         return statisticCollector;
-    }
-
-    public StringLogger getStringLogger()
-    {
-        return graph.getMessageLog();
     }
 }

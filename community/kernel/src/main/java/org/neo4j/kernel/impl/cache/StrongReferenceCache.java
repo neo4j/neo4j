@@ -76,7 +76,7 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
         return cache.remove( key );
     }
 
-    private final HitCounter counter = HitCounter.create();
+    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()

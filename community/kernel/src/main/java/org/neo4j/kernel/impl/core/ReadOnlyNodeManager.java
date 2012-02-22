@@ -32,16 +32,16 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class ReadOnlyNodeManager extends NodeManager
+public class ReadOnlyNodeManager extends NodeManager
 {
-    ReadOnlyNodeManager( GraphDatabaseService graphDbService,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
-            LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            CacheType cacheType )
+    public ReadOnlyNodeManager(NodeManager.Configuration config, GraphDatabaseService graphDb,
+                               AdaptiveCacheManager cacheManager, LockManager lockManager, LockReleaser lockReleaser,
+                               TransactionManager transactionManager, PersistenceManager persistenceManager,
+                               EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
+                               CacheType cacheType, PropertyIndexManager propertyIndexManager,
+                               NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups)
     {
-        super( graphDbService, cacheManager, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator, null, cacheType );
+        super(config, graphDb, cacheManager, lockManager, lockReleaser, transactionManager, persistenceManager, idGenerator, relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups);
     }
 
     @Override

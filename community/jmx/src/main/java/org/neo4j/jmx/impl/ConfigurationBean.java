@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
-    private final Map<Object, Object> config;
+    private final Map<String, String> config;
 
     ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
@@ -86,7 +86,7 @@ public final class ConfigurationBean extends Neo4jMBean
     private MBeanAttributeInfo[] keys()
     {
         List<MBeanAttributeInfo> keys = new ArrayList<MBeanAttributeInfo>();
-        for ( Map.Entry<Object, Object> entry : config.entrySet() )
+        for ( Map.Entry<String, String> entry : config.entrySet() )
         {
             if ( entry.getKey() instanceof String )
             {

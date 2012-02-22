@@ -25,10 +25,10 @@ final class HitCounter
 {
     private final Counter hits, miss;
 
-    public HitCounter( Counter hits, Counter miss )
+    public HitCounter( )
     {
-        this.hits = hits;
-        this.miss = miss;
+        this.hits = new Counter();
+        this.miss = new Counter();
     }
 
     public <T> T count( T item )
@@ -45,10 +45,5 @@ final class HitCounter
     public long getMissCount()
     {
         return miss.count();
-    }
-
-    public static HitCounter create()
-    {
-        return new HitCounter( Counter.atomic(), Counter.atomic() );
     }
 }

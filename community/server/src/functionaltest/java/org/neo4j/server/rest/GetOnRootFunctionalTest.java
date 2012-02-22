@@ -51,7 +51,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
         Transaction tx = db.beginTx();
         long referenceNodeId = data.get().get("I").getId();
-        db.getConfig().getGraphDbModule().setReferenceNodeId( referenceNodeId );
+        db.getNodeManager().setReferenceNodeId( referenceNodeId );
         tx.success();
         tx.finish();
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();

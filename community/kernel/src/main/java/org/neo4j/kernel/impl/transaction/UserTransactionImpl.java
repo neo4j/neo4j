@@ -27,9 +27,6 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.AbstractGraphDatabase;
-
 public class UserTransactionImpl implements UserTransaction
 {
     private TransactionManager tm;
@@ -38,9 +35,9 @@ public class UserTransactionImpl implements UserTransaction
     {
     }
     
-    public UserTransactionImpl( GraphDatabaseService neo4j )
+    public UserTransactionImpl( TransactionManager tm)
     {
-        this.tm = ((AbstractGraphDatabase) neo4j).getConfig().getTxModule().getTxManager();
+        this.tm = tm;
     }
     
     public void begin() throws NotSupportedException, SystemException

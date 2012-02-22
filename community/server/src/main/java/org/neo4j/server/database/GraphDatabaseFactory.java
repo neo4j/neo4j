@@ -21,9 +21,9 @@ package org.neo4j.server.database;
 
 import java.util.Map;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public interface GraphDatabaseFactory
 {
-    AbstractGraphDatabase createDatabase( String databaseStoreDirectory, Map<String, String> databaseProperties );
+    GraphDatabaseSPI createDatabase( String databaseStoreDirectory, Map<String, String> databaseProperties );
 }

@@ -65,7 +65,7 @@ import org.neo4j.test.TargetDirectory;
 
 public class ImdbExampleTest
 {
-    private static GraphDatabaseService graphDb;
+    private static EmbeddedGraphDatabase graphDb;
     private Transaction tx;
 
     @BeforeClass

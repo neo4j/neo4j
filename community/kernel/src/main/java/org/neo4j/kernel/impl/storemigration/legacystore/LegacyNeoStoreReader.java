@@ -25,7 +25,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
@@ -41,7 +40,7 @@ public class LegacyNeoStoreReader
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         windowPool = new PersistenceWindowPool( fileName,
-                RECORD_LENGTH, fileChannel, CommonAbstractStore.calculateMappedMemory( null, fileName ),
+                RECORD_LENGTH, fileChannel, 0,
                 true, true );
     }
 

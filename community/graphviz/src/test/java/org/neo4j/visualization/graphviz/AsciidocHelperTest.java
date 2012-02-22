@@ -19,7 +19,7 @@
  */
 package org.neo4j.visualization.graphviz;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;

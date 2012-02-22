@@ -43,9 +43,10 @@ public class RelationshipTypeHolder
     private final EntityIdGenerator idGenerator;
     private final RelationshipTypeCreator relTypeCreator;
 
-    RelationshipTypeHolder( TransactionManager transactionManager,
-        PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-        RelationshipTypeCreator relTypeCreator )
+    public RelationshipTypeHolder( TransactionManager transactionManager,
+                                   PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
+                                   RelationshipTypeCreator relTypeCreator
+    )
     {
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;

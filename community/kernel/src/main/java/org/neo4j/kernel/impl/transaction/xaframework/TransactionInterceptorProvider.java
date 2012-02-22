@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.util.List;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 
@@ -56,7 +57,7 @@ public abstract class TransactionInterceptorProvider extends Service
      *         options say so.
      */
     public abstract TransactionInterceptor create( XaDataSource ds,
-            Object options );
+            Object options, DependencyResolver dependencyResolver );
 
     /**
      * Creates a TransactionInterceptor with the given datasource and options
@@ -72,7 +73,7 @@ public abstract class TransactionInterceptorProvider extends Service
      *         options say so.
      */
     public abstract TransactionInterceptor create( TransactionInterceptor next,
-            XaDataSource ds, Object options );
+            XaDataSource ds, Object options, DependencyResolver dependencyResolver );
 
     /**
      * A utility method that given some TransactionInterceptorProviders and
@@ -88,7 +89,7 @@ public abstract class TransactionInterceptorProvider extends Service
      */
     public static TransactionInterceptor resolveChain(
             List<Pair<TransactionInterceptorProvider, Object>> providers,
-            XaDataSource ds )
+            XaDataSource ds, DependencyResolver dependencyResolver )
     {
         TransactionInterceptor first = null;
         for ( Pair<TransactionInterceptorProvider, Object> providerAndConfig : providers )
@@ -97,12 +98,12 @@ public abstract class TransactionInterceptorProvider extends Service
             Object config = providerAndConfig.other();
             if ( first == null )
             {
-                first = provider.create( ds, config );
+                first = provider.create( ds, config, dependencyResolver );
             }
             else
             {
                 TransactionInterceptor temp = provider.create( first, ds,
-                        config );
+                        config, dependencyResolver );
                 if ( temp != null )
                 {
                     first = temp;

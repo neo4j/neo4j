@@ -24,7 +24,7 @@ import org.mortbay.component.LifeCycle;
  * @author tbaum
  * @since 01.12.11
  */
-public class JettyLifecycleListenerAdapter implements LifeCycle.Listener
+public class JettyLifeCycleListenerAdapter implements LifeCycle.Listener
 {
     @Override
     public void lifeCycleStopping( LifeCycle arg0 )

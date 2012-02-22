@@ -24,30 +24,29 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class AbstractNameStore<T extends AbstractNameRecord> extends AbstractStore implements Store, RecordStore<T>
 {
+    public interface Configuration
+        extends AbstractStore.Configuration
+    {
+        
+    }
+    
     private DynamicStringStore nameStore;
-    protected static final int NAME_STORE_BLOCK_SIZE = 30;
+    public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    public AbstractNameStore( String fileName, Map<?, ?> config, IdType idType )
+    public AbstractNameStore(String fileName, Configuration configuration, IdType idType,
+                             IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                             DynamicStringStore nameStore)
     {
-        super( fileName, config, idType );
+        super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        this.nameStore = nameStore;
     }
-
-    @Override
-    protected void initStorage()
-    {
-        nameStore = new DynamicStringStore( getStorageFileName() + getNameStorePostfix(), getConfig(), getNameIdType() );
-    }
-
-    protected abstract IdType getNameIdType();
-
-    protected abstract String getNameStorePostfix();
 
     DynamicStringStore getNameStore()
     {
@@ -384,9 +383,4 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         return list;
     }
 
-    @Override
-    public void logIdUsage( StringLogger.LineLogger logger )
-    {
-        NeoStore.logIdUsage( logger, this );
-    }
 }

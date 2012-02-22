@@ -41,6 +41,6 @@ public abstract class TransactionManagerProvider extends Service
         super( name );
     }
 
-    protected abstract AbstractTransactionManager loadTransactionManager( String txLogDir,
+    public abstract AbstractTransactionManager loadTransactionManager( String txLogDir,
             KernelPanicEventGenerator kpe, TxHook rollbackHook, StringLogger msgLog, FileSystemAbstraction fileSystem );
 }

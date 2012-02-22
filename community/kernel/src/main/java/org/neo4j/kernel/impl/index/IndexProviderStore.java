@@ -75,7 +75,7 @@ public class IndexProviderStore
         }
     }
     
-    static void create( File file, FileSystemAbstraction fileSystem, long indexVersion )
+    private void create( File file, FileSystemAbstraction fileSystem, long indexVersion )
     {
         if ( file.exists() )
         {
@@ -98,7 +98,7 @@ public class IndexProviderStore
         }
     }
 
-    private static void writeBuffer( FileChannel fileChannel, ByteBuffer buf ) throws IOException
+    private void writeBuffer( FileChannel fileChannel, ByteBuffer buf ) throws IOException
     {
         int written = fileChannel.write( buf );
         if ( written != FILE_LENGTH )

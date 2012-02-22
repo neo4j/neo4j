@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphmatching;
 
+import java.util.LinkedList;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
-
-import java.util.LinkedList;
 
 /**
  * Represents a pattern for matching a {@link Node}.

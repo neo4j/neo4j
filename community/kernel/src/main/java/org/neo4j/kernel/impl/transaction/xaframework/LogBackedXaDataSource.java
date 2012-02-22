@@ -21,18 +21,24 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Map;
 
 import org.neo4j.helpers.Pair;
 
 public abstract class LogBackedXaDataSource extends XaDataSource
 {
+    public interface Configuration
+    {
+        // TODO This config should be split into a boolean and a string (keep_logical_logs vs kept_logical_logs)
+        String keep_logical_logs(String def);
+
+        boolean online_backup_enabled( boolean def );
+    }
+
     private XaLogicalLog logicalLog;
 
-    public LogBackedXaDataSource( Map<?, ?> params )
-            throws InstantiationException
+    public LogBackedXaDataSource( byte branchId[], String name)
     {
-        super( params );
+        super( branchId, name );
     }
 
     /**

@@ -23,10 +23,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
@@ -55,29 +53,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 
         this.xaResource = new NeoStoreXaResource(
             neoStore.getStorageFileName(), xaRm, branchId );
-    }
-
-    /**
-     * Made public for testing, dont use.
-     */
-    public PropertyStore getPropertyStore()
-    {
-        return neoStore.getPropertyStore();
-    }
-
-    CommonAbstractStore getNodeStore()
-    {
-        return neoStore.getNodeStore();
-    }
-
-    RelationshipStore getRelationshipStore()
-    {
-        return neoStore.getRelationshipStore();
-    }
-
-    public RelationshipTypeStore getRelationshipTypeStore()
-    {
-        return neoStore.getRelationshipTypeStore();
     }
 
     public XAResource getXaResource()
@@ -127,4 +102,15 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             return false;
         }
     };
+
+    // TEST These methods are only used by tests - refactor away if possible
+    public PropertyStore getPropertyStore()
+    {
+        return neoStore.getPropertyStore();
+    }
+
+    public RelationshipTypeStore getRelationshipTypeStore()
+    {
+        return neoStore.getRelationshipTypeStore();
+    }
 }

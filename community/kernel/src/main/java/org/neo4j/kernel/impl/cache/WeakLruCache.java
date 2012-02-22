@@ -106,7 +106,7 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
         cache.clear();
     }
 
-    private final HitCounter counter = HitCounter.create();
+    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()

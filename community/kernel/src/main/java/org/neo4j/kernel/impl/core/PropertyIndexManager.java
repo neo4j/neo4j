@@ -32,12 +32,14 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class PropertyIndexManager
+    implements Lifecycle
 {
     private ArrayMap<String,List<PropertyIndex>> indexMap = 
         new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
@@ -53,7 +55,7 @@ public class PropertyIndexManager
 
     private boolean hasAll = false;
 
-    PropertyIndexManager( TransactionManager transactionManager,
+    public PropertyIndexManager( TransactionManager transactionManager,
         PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
     {
         this.transactionManager = transactionManager;
@@ -61,11 +63,27 @@ public class PropertyIndexManager
         this.idGenerator = idGenerator;
     }
 
-    void clear()
+    @Override
+    public void init()
+    {
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
     {
         indexMap = new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
         idToIndexMap = new ArrayMap<Integer,PropertyIndex>( 9, true, false );
         txCommitHooks.clear();
+    }
+
+    @Override
+    public void shutdown()
+    {
     }
 
     public Iterable<PropertyIndex> index( String key )

@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
@@ -63,7 +62,7 @@ public class LegacyDynamicStoreReader
         blockSize = buffer.getInt();
 
         windowPool = new PersistenceWindowPool( fileName,
-                blockSize, fileChannel, CommonAbstractStore.calculateMappedMemory( null, fileName ),
+                blockSize, fileChannel, 0,
                 true, true );
     }
 

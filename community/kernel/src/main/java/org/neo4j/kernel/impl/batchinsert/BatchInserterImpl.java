@@ -19,53 +19,22 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.AutoConfigurator;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.*;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.store.*;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.File;
+import java.util.*;
+import java.util.Map.Entry;
+
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -86,7 +55,7 @@ public class BatchInserterImpl implements BatchInserter
 
     public BatchInserterImpl( String storeDir )
     {
-        this( storeDir, Collections.<String, String>emptyMap() );
+        this( storeDir, new HashMap<String, String>() );
     }
 
     public BatchInserterImpl( String storeDir,
@@ -94,7 +63,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.logger( storeDir );
-        Map<Object,Object> params = getDefaultParams();
+        Map<String,String> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
         new AutoConfigurator( storeDir, false, dump ).configure( params );
@@ -104,17 +73,17 @@ public class BatchInserterImpl implements BatchInserter
         }
         this.storeDir = storeDir;
         this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
-        params.put( IdGeneratorFactory.class, idGeneratorFactory );
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
-        params.put( FileSystemAbstraction.class, fileSystem );
-        String store = fixPath( storeDir, params );
-        params.put( "neo_store", store );
+        final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+
+        StoreFactory sf = new StoreFactory(params,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
+
+        String store = fixPath( storeDir, sf );
         if ( dump )
         {
-            Config.dumpConfiguration( params );
+            dumpConfiguration( params );
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
-        neoStore = new NeoStore( params );
+        neoStore = sf.newNeoStore(store);
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
@@ -131,7 +100,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public boolean nodeHasProperty( long node, String propertyName )
     {
-        return primitiveHasProperty( getNodeRecord( node ), propertyName );
+        return primitiveHasProperty( getNodeRecord(node), propertyName );
     }
 
     @Override
@@ -146,7 +115,7 @@ public class BatchInserterImpl implements BatchInserter
     public void setNodeProperty( long node, String propertyName,
             Object propertyValue )
     {
-        NodeRecord nodeRec = getNodeRecord( node );
+        NodeRecord nodeRec = getNodeRecord(node);
         if ( setPrimitiveProperty( nodeRec, propertyName, propertyValue ) )
         {
             getNodeStore().updateRecord( nodeRec );
@@ -157,8 +126,8 @@ public class BatchInserterImpl implements BatchInserter
     public void setRelationshipProperty( long relationship,
             String propertyName, Object propertyValue )
     {
-        RelationshipRecord relRec = getRelationshipRecord( relationship );
-        if ( setPrimitiveProperty( relRec, propertyName, propertyValue ) )
+        RelationshipRecord relRec = getRelationshipRecord(relationship);
+        if ( setPrimitiveProperty(relRec, propertyName, propertyValue) )
         {
             getRelationshipStore().updateRecord( relRec );
         }
@@ -167,7 +136,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void removeNodeProperty( long node, String propertyName )
     {
-        NodeRecord nodeRec = getNodeRecord( node );
+        NodeRecord nodeRec = getNodeRecord(node);
         if ( removePrimitiveProperty( nodeRec, propertyName ) )
         {
             getNodeStore().updateRecord( nodeRec );
@@ -191,7 +160,7 @@ public class BatchInserterImpl implements BatchInserter
         PropertyRecord current = null;
         PropertyBlock target = null;
         long nextProp = primitive.getNextProp();
-        int propIndex = indexHolder.getKeyId( property );
+        int propIndex = indexHolder.getKeyId(property);
         if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() || propIndex == -1 )
         {
             // No properties or no one has that property, nothing changed
@@ -265,7 +234,7 @@ public class BatchInserterImpl implements BatchInserter
          *  however to check for consistency when assertPropertyChain().
          */
         propRecord.setPrevProp( Record.NO_PREVIOUS_PROPERTY.intValue() );
-        propRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+        propRecord.setNextProp(Record.NO_NEXT_PROPERTY.intValue());
         getPropertyStore().updateRecord( propRecord );
         return primitiveChanged;
     }
@@ -401,7 +370,7 @@ public class BatchInserterImpl implements BatchInserter
     private long internalCreateNode( long nodeId, Map<String, Object> properties )
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
-        nodeRecord.setInUse( true );
+        nodeRecord.setInUse(true);
         nodeRecord.setCreated();
         nodeRecord.setNextProp( createPropertyChain( properties ) );
         getNodeStore().updateRecord( nodeRecord );
@@ -429,7 +398,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             nodeStore.setHighId( nodeId + 1 );
         }
-        internalCreateNode( nodeId, properties );
+        internalCreateNode(nodeId, properties);
     }
 
     public long createRelationship( long node1, long node2, RelationshipType
@@ -463,8 +432,8 @@ public class BatchInserterImpl implements BatchInserter
         rel.setSecondNextRel( secondNode.getNextRel() );
         connect( firstNode, rel );
         connect( secondNode, rel );
-        firstNode.setNextRel( rel.getId() );
-        secondNode.setNextRel( rel.getId() );
+        firstNode.setNextRel(rel.getId());
+        secondNode.setNextRel(rel.getId());
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel )
@@ -516,7 +485,7 @@ public class BatchInserterImpl implements BatchInserter
     public void setRelationshipProperties( long rel,
         Map<String,Object> properties )
     {
-        RelationshipRecord record = getRelationshipRecord( rel );
+        RelationshipRecord record = getRelationshipRecord(rel);
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             deletePropertyChain( record.getNextProp() );
@@ -548,7 +517,7 @@ public class BatchInserterImpl implements BatchInserter
 
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
-        NodeRecord nodeRecord = getNodeRecord( nodeId );
+        NodeRecord nodeRecord = getNodeRecord(nodeId);
         long nextRel = nodeRecord.getNextRel();
         List<Long> ids = new ArrayList<Long>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -577,7 +546,7 @@ public class BatchInserterImpl implements BatchInserter
 
     public Iterable<SimpleRelationship> getRelationships( long nodeId )
     {
-        NodeRecord nodeRecord = getNodeRecord( nodeId );
+        NodeRecord nodeRecord = getNodeRecord(nodeId);
         long nextRel = nodeRecord.getNextRel();
         List<SimpleRelationship> rels = new ArrayList<SimpleRelationship>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -634,9 +603,9 @@ public class BatchInserterImpl implements BatchInserter
         msgLog.close();
     }
 
-    private Map<Object,Object> getDefaultParams()
+    private Map<String,String> getDefaultParams()
     {
-        Map<Object,Object> params = new HashMap<Object,Object>();
+        Map<String,String> params = new HashMap<String,String>();
         params.put( "neostore.nodestore.db.mapped_memory", "20M" );
         params.put( "neostore.propertystore.db.mapped_memory", "90M" );
         params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -810,7 +779,7 @@ public class BatchInserterImpl implements BatchInserter
             record.addNameRecord( typeRecord );
         }
         typeStore.updateRecord( record );
-        typeHolder.addRelationshipType( name, id );
+        typeHolder.addRelationshipType(name, id);
         return id;
     }
 
@@ -845,7 +814,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return getNodeStore().getRecord( id );
+        return getNodeStore().getRecord(id);
     }
 
     private RelationshipRecord getRelationshipRecord( long id )
@@ -857,7 +826,7 @@ public class BatchInserterImpl implements BatchInserter
         return getRelationshipStore().getRecord( id );
     }
 
-    private String fixPath( String dir, Map<?,?> config )
+    private String fixPath( String dir, StoreFactory sf )
     {
         File directories = new File( dir );
         if ( !directories.exists() )
@@ -874,7 +843,7 @@ public class BatchInserterImpl implements BatchInserter
         String store = dir + fileSeparator + NeoStore.DEFAULT_NAME;
         if ( !new File( store ).exists() )
         {
-            NeoStore.createStore( store, config );
+            sf.createNeoStore(store).close();
         }
         return store;
     }
@@ -912,4 +881,17 @@ public class BatchInserterImpl implements BatchInserter
     {
         return idGeneratorFactory;
     }
+
+    private void dumpConfiguration( Map<String, String> config )
+    {
+        for ( Object key : config.keySet() )
+        {
+            Object value = config.get( key );
+            if ( value instanceof String )
+            {
+                System.out.println( key + "=" + value );
+            }
+        }
+    }
+
 }

@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.StringLogger;
+package org.neo4j.kernel;
 
-@Service.Implementation( TransactionManagerProvider.class )
-public final class DefaultTransactionManagerProvider extends TransactionManagerProvider
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Add this annotation to configuration interfaces to specify what prefix to use
+ * For example, HA configuration interfaces would have @ConfigurationPrefix("ha.") as annotation
+ */
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.TYPE)
+public @interface ConfigurationPrefix
 {
-    public DefaultTransactionManagerProvider()
-    {
-        super( "native" );
-    }
-
-    @Override
-    protected AbstractTransactionManager loadTransactionManager( String txLogDir,
-            KernelPanicEventGenerator kpe, TxHook rollbackHook, StringLogger msgLog, FileSystemAbstraction fileSystem )
-    {
-        return new TxManager( txLogDir, kpe, rollbackHook, msgLog, fileSystem );
-    }
+    String value();
 }

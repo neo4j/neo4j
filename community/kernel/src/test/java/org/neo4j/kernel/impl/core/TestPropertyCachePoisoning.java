@@ -27,10 +27,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BeforeDebuggedTest;
+import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -146,7 +145,7 @@ public class TestPropertyCachePoisoning
 
     private void clearCache()
     {
-        graphdb.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        graphdb.getNodeManager().clearCache();
     }
 
     private abstract class TxThread
@@ -200,7 +199,7 @@ public class TestPropertyCachePoisoning
         }
     }
 
-    private AbstractGraphDatabase graphdb;
+    private ImpermanentGraphDatabase graphdb;
 
     @Before
     public void startGraphdb()

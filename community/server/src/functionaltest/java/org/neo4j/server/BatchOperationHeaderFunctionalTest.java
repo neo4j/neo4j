@@ -19,6 +19,15 @@
  */
 package org.neo4j.server;
 
+import static org.dummy.web.service.DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.helpers.ServerBuilder.server;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,15 +35,6 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import static org.dummy.web.service.DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.ServerBuilder.server;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 
 public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase {
     private NeoServer server;

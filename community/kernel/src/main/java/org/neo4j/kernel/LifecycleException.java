@@ -17,32 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.wrap;
 
-public class TransactionNotAllowedException extends Exception
+package org.neo4j.kernel;
+
+/**
+ * This exception is thrown by LifeSupport if a lifecycle transition fails. If many exceptions occur
+ * they will be chained through the cause exception mechanism.
+ */
+public class LifecycleException
+    extends Exception
 {
-    public TransactionNotAllowedException( RuntimeException ex )
+    LifeSupport.Status from;
+    LifeSupport.Status to;
+    
+    public LifecycleException( Object instance, LifeSupport.Status from, LifeSupport.Status to, Throwable cause )
     {
-        super( ex );
-    }
-
-    public TransactionNotAllowedException()
-    {
-        super();
-    }
-
-    void throwCause()
-    {
-        Throwable cause = getCause();
-        if ( cause instanceof RuntimeException )
-        {
-            throw (RuntimeException) cause;
-        }
-    }
-
-    @Override
-    public synchronized Throwable fillInStackTrace()
-    {
-        return this; // no stack trace
+        super("Failed to transition "+instance.toString()+" from "+from.name()+" to "+to.name(), cause);
+        this.from = from;
+        this.to = to;
     }
 }

@@ -22,14 +22,15 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreMigrationTool
 {
@@ -45,9 +46,7 @@ public class StoreMigrationTool
     {
         LegacyStore legacyStore = new LegacyStore( new File( new File( legacyStoreDirectory ), NeoStore.DEFAULT_NAME ).getPath() );
 
-        HashMap config = new HashMap();
-        config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
-        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+        Map<String,String> config = new HashMap<String,String>();
 
         File targetStoreDirectoryFile = new File( targetStoreDirectory );
         if ( targetStoreDirectoryFile.exists() )
@@ -62,8 +61,7 @@ public class StoreMigrationTool
 
         File targetStoreFile = new File( targetStoreDirectory, NeoStore.DEFAULT_NAME );
         config.put( "neo_store", targetStoreFile.getPath() );
-        NeoStore.createStore( targetStoreFile.getPath(), config );
-        NeoStore neoStore = new NeoStore( config );
+        NeoStore neoStore = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.SYSTEM, null).createNeoStore(targetStoreFile.getPath());
 
         long startTime = System.currentTimeMillis();
 

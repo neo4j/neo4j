@@ -29,12 +29,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -49,7 +49,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -59,15 +59,14 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase
 public class TestXa extends AbstractNeo4jTestCase
 {
-    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-        CommonFactories.defaultIdGeneratorFactory();
-
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
     private Logger log;
@@ -122,11 +121,13 @@ public class TestXa extends AbstractNeo4jTestCase
         log.setLevel( Level.OFF );
         deleteFileOrDirectory( new File( path() ) );
         propertyIndexes = new HashMap<String, PropertyIndex>();
-        NeoStore.createStore( file( "neo" ), MapUtil.map(
-                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() ) );
-        lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
-        lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
+
+        Map<String,String> config = new HashMap<String, String>();
+        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null);
+        sf.createNeoStore(file( "neo" )).close();
+
+        lockManager = getEmbeddedGraphDb().getLockManager();
+        lockReleaser = getEmbeddedGraphDb().getLockReleaser();
         ds = newNeoStore();
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
     }
@@ -411,21 +412,21 @@ public class TestXa extends AbstractNeo4jTestCase
     private NeoStoreXaDataSource newNeoStore() throws InstantiationException,
             IOException
     {
-        Map<Object, Object> config = new HashMap<Object, Object>();
+        Map<String, String> config = new HashMap<String, String>();
         config.putAll( Config.getDefaultParams() );
-        MapUtil.genericMap( config,
-            LockManager.class, lockManager,
-            LockReleaser.class, lockReleaser,
-            IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-            FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
-            LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
-            TxIdGenerator.class, TxIdGenerator.DEFAULT,
-            StringLogger.class, StringLogger.DEV_NULL,
-            TransactionManager.class, new PlaceboTm(),
+        MapUtil.stringMap( config,
             "store_dir", path(),
             "neo_store", file( "neo" ),
             "logical_log", file( "nioneo_logical.log" ) );
-        return new NeoStoreXaDataSource( config );
+
+        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null);
+
+        PlaceboTm txManager = new PlaceboTm();
+        LogBufferFactory logBufferFactory = CommonFactories.defaultLogBufferFactory();
+        return new NeoStoreXaDataSource( ConfigProxy.config(config, NeoStoreXaDataSource.Configuration.class), sf, lockManager, lockReleaser, StringLogger.DEV_NULL,
+                new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
+                        logBufferFactory, CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL),
+        Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null);
     }
 
     @Test

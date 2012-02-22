@@ -17,34 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
-interface KernelExtensionLoader
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
+
+/**
+* Default implementation of LastCommittedTxIdSetter that does nothing
+*/
+class DefaultLastCommittedTxIdSetter implements LastCommittedTxIdSetter
 {
-    void configureKernelExtensions();
-
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public void setLastCommittedTxId( long txId )
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
+        // Do nothing
+    }
 
-        @Override
-        public void initializeIndexProviders()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+    @Override
+    public void close()
+    {
+    }
 }

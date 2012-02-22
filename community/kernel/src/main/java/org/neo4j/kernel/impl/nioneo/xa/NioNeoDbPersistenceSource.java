@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import javax.transaction.xa.XAResource;
-
-import org.neo4j.kernel.Config;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -34,51 +33,47 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
  * persistence source for Neo4j kernel operations that are performed on the node space
  * will be forwarded to this class {@link NeoStoreTransaction} implementation.
  */
-public class NioNeoDbPersistenceSource implements PersistenceSource
+public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGenerator, Lifecycle
 {
-    private static final String MODULE_NAME = "NioNeoDbPersistenceSource";
-
     private NeoStoreXaDataSource xaDs = null;
     private String dataSourceName = null;
-    private NeoStoreTransaction readOnlyResourceConnection; 
+    private NeoStoreTransaction readOnlyResourceConnection;
+    private XaDataSourceManager xaDataSourceManager;
 
-    public synchronized void init()
+    public NioNeoDbPersistenceSource(XaDataSourceManager xaDataSourceManager)
+    {
+        assert(xaDataSourceManager != null);
+        this.xaDataSourceManager = xaDataSourceManager;
+    }
+
+    public void init()
     {
         // Do nothing
     }
 
-    public synchronized void start( XaDataSourceManager xaDsManager )
+    public void start()
     {
-        xaDs = (NeoStoreXaDataSource) xaDsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        xaDs = xaDataSourceManager.getNeoStoreDataSource();
         if ( xaDs == null )
         {
-            throw new IllegalStateException( 
+            throw new IllegalStateException(
                 "Unable to get nioneodb datasource" );
         }
         readOnlyResourceConnection = new ReadTransaction( xaDs.getNeoStore() );
     }
 
-    public synchronized void reload()
-    {
-        // Do nothing
-    }
-
-    public synchronized void stop()
+    public void stop()
     {
         if ( xaDs != null )
         {
-            xaDs.close();
+            // This close is owned by the XaDS xaDs.close();
         }
     }
 
-    public synchronized void destroy()
+    @Override
+    public void shutdown()
+        throws Throwable
     {
-        // Do nothing
-    }
-
-    public String getModuleName()
-    {
-        return MODULE_NAME;
     }
 
     public NeoStoreTransaction createTransaction( XaConnection connection )
@@ -109,22 +104,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
     public long nextId( Class<?> clazz )
     {
         return xaDs.nextId( clazz );
-    }
-
-    // for recovery, returns a xa
-    public XAResource getXaResource()
-    {
-        return this.xaDs.getXaConnection().getXaResource();
-    }
-
-    public void setDataSourceName( String dataSourceName )
-    {
-        this.dataSourceName = dataSourceName;
-    }
-
-    public String getDataSourceName()
-    {
-        return this.dataSourceName;
     }
 
     public long getHighestPossibleIdInUse( Class<?> clazz )

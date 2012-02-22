@@ -21,7 +21,6 @@ package recovery;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.DEFAULT_DATA_SOURCE_NAME;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 
 import java.io.IOException;
@@ -32,7 +31,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -90,7 +89,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class DoSimpleTransaction implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -113,12 +112,11 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class RotateLogs implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
-                        DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
+                graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
             }
             catch ( IOException e )
             {
@@ -139,12 +137,11 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                XaDataSource dataSource = graphdb.getConfig().getTxModule()
-                        .getXaDataSourceManager().getXaDataSource( DEFAULT_DATA_SOURCE_NAME );
+                XaDataSource dataSource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
                 for ( long logVersion = 0; logVersion < highestLogVersion; logVersion++ )
                 {
                     dataSource.getLogicalLog( logVersion );
@@ -173,7 +170,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class Shutdown implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             graphdb.shutdown();
         }

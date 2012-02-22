@@ -30,17 +30,26 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
-class NodeProxy implements Node
+public class NodeProxy implements Node
 {
-    private final NodeManager nm;
+    public interface NodeLookup
+    {
+        NodeImpl lookup(long nodeId);
+        GraphDatabaseService getGraphDatabase();
+        NodeManager getNodeManager();
+        NodeImpl lookup( long nodeId, LockType lock );
+    }
+    
+    private final NodeLookup nodeLookup;
 
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeManager nodeManager )
+    NodeProxy( long nodeId, NodeLookup nodeLookup )
     {
         this.nodeId = nodeId;
-        this.nm = nodeManager;
+        this.nodeLookup = nodeLookup;
     }
 
     public long getId()
@@ -50,105 +59,105 @@ class NodeProxy implements Node
 
     public GraphDatabaseService getGraphDatabase()
     {
-        return nm.getGraphDbService();
+        return nodeLookup.getGraphDatabase();
     }
 
     public void delete()
     {
-        nm.getNodeForProxy( this, LockType.WRITE ).delete( nm, this );
+        nodeLookup.lookup(nodeId, LockType.WRITE).delete( nodeLookup.getNodeManager(), this );
     }
 
     public Iterable<Relationship> getRelationships()
     {
-        return nm.getNodeForProxy( this, null ).getRelationships( nm );
+        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager() );
     }
 
     public boolean hasRelationship()
     {
-        return nm.getNodeForProxy( this, null ).hasRelationship( nm );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager() );
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        return nm.getNodeForProxy( this, null ).getRelationships( nm, dir );
+        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), dir );
     }
 
     public boolean hasRelationship( Direction dir )
     {
-        return nm.getNodeForProxy( this, null ).hasRelationship( nm, dir );
+        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), dir );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return nm.getNodeForProxy( this, null ).getRelationships( nm, types );
+        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
-        return nm.getNodeForProxy( this, null ).getRelationships( nm, direction, types );
+        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), direction, types );
     }
 
     public boolean hasRelationship( RelationshipType... types )
     {
-        return nm.getNodeForProxy( this, null ).hasRelationship( nm, types );
+        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), types );
     }
 
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        return nm.getNodeForProxy( this, null ).hasRelationship( nm, direction, types );
+        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), direction, types );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {
-        return nm.getNodeForProxy( this, null ).getRelationships( nm, type, dir );
+        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), type, dir );
     }
 
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return nm.getNodeForProxy( this, null ).hasRelationship( nm, type, dir );
+        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
     public Relationship getSingleRelationship( RelationshipType type,
         Direction dir )
     {
-        return nm.getNodeForProxy( this, null ).getSingleRelationship( nm, type, dir );
+        return nodeLookup.lookup(nodeId).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
     public void setProperty( String key, Object value )
     {
-        nm.getNodeForProxy( this, LockType.WRITE ).setProperty( nm, this, key, value );
+        nodeLookup.lookup(nodeId, LockType.WRITE).setProperty( nodeLookup.getNodeManager(), this, key, value );
     }
 
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nm.getNodeForProxy( this, LockType.WRITE ).removeProperty( nm, this, key );
+        return nodeLookup.lookup(nodeId, LockType.WRITE).removeProperty( nodeLookup.getNodeManager(), this, key );
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return nm.getNodeForProxy( this, null ).getProperty( nm, key, defaultValue );
+        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
     }
 
     public Iterable<Object> getPropertyValues()
     {
-        return nm.getNodeForProxy( this, null ).getPropertyValues( nm );
+        return nodeLookup.lookup(nodeId).getPropertyValues( nodeLookup.getNodeManager() );
     }
 
     public Iterable<String> getPropertyKeys()
     {
-        return nm.getNodeForProxy( this, null ).getPropertyKeys( nm );
+        return nodeLookup.lookup(nodeId).getPropertyKeys( nodeLookup.getNodeManager() );
     }
 
     public Object getProperty( String key ) throws NotFoundException
     {
-        return nm.getNodeForProxy( this, null ).getProperty( nm, key );
+        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key );
     }
 
     public boolean hasProperty( String key )
     {
-        return nm.getNodeForProxy( this, null ).hasProperty( nm, key );
+        return nodeLookup.lookup(nodeId).hasProperty( nodeLookup.getNodeManager(), key );
     }
 
     public int compareTo( Object node )
@@ -195,34 +204,34 @@ class NodeProxy implements Node
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
     {
-        return nm.getNodeForProxy( this, LockType.WRITE ).createRelationshipTo( nm, this, otherNode, type );
+        return nodeLookup.lookup(nodeId, LockType.WRITE).createRelationshipTo( nodeLookup.getNodeManager(), this, otherNode, type );
     }
 
     /* Tentative expansion API
     public Expansion<Relationship> expandAll()
     {
-        return nm.getNodeForProxy( nodeId ).expandAll();
+        return nodeLookup.lookup(nodeId).expandAll();
     }
 
     public Expansion<Relationship> expand( RelationshipType type )
     {
-        return nm.getNodeForProxy( nodeId ).expand( type );
+        return nodeLookup.lookup(nodeId).expand( type );
     }
 
     public Expansion<Relationship> expand( RelationshipType type,
             Direction direction )
     {
-        return nm.getNodeForProxy( nodeId ).expand( type, direction );
+        return nodeLookup.lookup(nodeId).expand( type, direction );
     }
 
     public Expansion<Relationship> expand( Direction direction )
     {
-        return nm.getNodeForProxy( nodeId ).expand( direction );
+        return nodeLookup.lookup(nodeId).expand( direction );
     }
 
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
-        return nm.getNodeForProxy( nodeId ).expand( expander );
+        return nodeLookup.lookup(nodeId).expand( expander );
     }
     */
 
@@ -230,8 +239,9 @@ class NodeProxy implements Node
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        return nm.getNodeForProxy( this, null ).traverse( nm, traversalOrder,
-            stopEvaluator, returnableEvaluator, relationshipType, direction );
+        return OldTraverserWrapper.traverse( this,
+                                             traversalOrder, stopEvaluator,
+                                             returnableEvaluator, relationshipType, direction );
     }
 
     public Traverser traverse( Order traversalOrder,
@@ -239,16 +249,18 @@ class NodeProxy implements Node
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        return nm.getNodeForProxy( this, null ).traverse( nm, traversalOrder,
-            stopEvaluator, returnableEvaluator, firstRelationshipType,
-            firstDirection, secondRelationshipType, secondDirection );
+        return OldTraverserWrapper.traverse( this,
+                                             traversalOrder, stopEvaluator,
+                                             returnableEvaluator, firstRelationshipType, firstDirection,
+                                             secondRelationshipType, secondDirection );
     }
 
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        return nm.getNodeForProxy( this, null ).traverse( nm, traversalOrder,
-            stopEvaluator, returnableEvaluator, relationshipTypesAndDirections );
+        return OldTraverserWrapper.traverse( this,
+                                             traversalOrder, stopEvaluator,
+                                             returnableEvaluator, relationshipTypesAndDirections );
     }
 }

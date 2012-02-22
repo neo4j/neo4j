@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Properties;
 
 import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
@@ -71,7 +69,7 @@ public class PreStartupStoreUpgrader
         try
         {
             Configurator configurator = getConfigurator();
-            HashMap<Object, Object> config = new HashMap<Object, Object>( configurator.getDatabaseTuningProperties() );
+            HashMap<String, String> config = new HashMap<String, String>( configurator.getDatabaseTuningProperties() );
 
             String dbLocation = new File( configurator.configuration()
                     .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
@@ -85,8 +83,6 @@ public class PreStartupStoreUpgrader
             String store = dbLocation + separator + NeoStore.DEFAULT_NAME;
             config.put( "store_dir", dbLocation );
             config.put( "neo_store", store );
-            config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
-            config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 
             if ( !new UpgradableDatabase().storeFilesUpgradeable( new File( store ) ) )
             {
@@ -97,7 +93,7 @@ public class PreStartupStoreUpgrader
 
             StoreUpgrader storeUpgrader = new StoreUpgrader( config, new ConfigMapUpgradeConfiguration( config ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
-                    new DatabaseFiles() );
+                    new DatabaseFiles(), CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction() );
 
             try
             {

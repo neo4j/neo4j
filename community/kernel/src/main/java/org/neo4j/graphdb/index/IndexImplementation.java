@@ -32,13 +32,13 @@ import org.neo4j.graphdb.Relationship;
  * @author Mattias Persson
  *
  */
-public abstract class IndexImplementation
+public interface IndexImplementation
 {
     /**
      * Returns the name of the XA data source coupled with this index provider.
      * @return the name of the XA data source coupled with this index provider.
      */
-    public abstract String getDataSourceName();
+    String getDataSourceName();
 
     /**
      * Returns an {@link Index} for {@link Node}s for the name
@@ -55,7 +55,7 @@ public abstract class IndexImplementation
      * @return the {@link Index} corresponding to the {@code indexName} and
      * {@code config}.
      */
-    public abstract Index<Node> nodeIndex( String indexName, Map<String, String> config );
+    Index<Node> nodeIndex( String indexName, Map<String, String> config );
 
     /**
      * Returns an {@link Index} for {@link Relationship}s for the name
@@ -74,7 +74,7 @@ public abstract class IndexImplementation
      * additional query methods for efficiently filtering hits with respect to
      * start/end node of the relationships.
      */
-    public abstract RelationshipIndex relationshipIndex( String indexName,
+    RelationshipIndex relationshipIndex( String indexName,
             Map<String, String> config );
 
     /**
@@ -84,7 +84,7 @@ public abstract class IndexImplementation
      * @return a {@link Map} filled with decent defaults for an index from
      * this index provider.
      */
-    public abstract Map<String, String> fillInDefaults( Map<String, String> config );
+    Map<String, String> fillInDefaults( Map<String, String> config );
 
-    public abstract boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
+    boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
 }

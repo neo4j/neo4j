@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxModule;
+package org.neo4j.graphdb;
 
-public interface LockManagerFactory
+/**
+ * Find a dependency given a type. This can be the exact type or a supertype of the actual dependency.
+ */
+public interface DependencyResolver
 {
-    LockManager create( TxModule txModule );
+    <T> T resolveDependency(Class<T> type)
+        throws IllegalArgumentException;
 }
