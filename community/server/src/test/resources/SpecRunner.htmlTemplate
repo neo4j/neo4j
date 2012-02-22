@@ -5,7 +5,7 @@
     <title>Jasmine Spec Runner</title>
     $cssDependencies$
     $javascriptDependencies$
-    <script type="text/javascript" src="/target/classes/webadmin-html/js/require.js"></script>
+    <script type="text/javascript" src="../../target/classes/webadmin-html/js/require.js"></script>
 </head>
 <body>
     <script type="text/javascript">
@@ -16,7 +16,7 @@
         var specs = $specs$;
         
         require.config({
-            baseUrl: '/',
+            baseUrl: '../../',
             paths: {
                 "neo4j": "target/classes/webadmin-html/js/neo4j",
                 "ribcage": "target/classes/webadmin-html/js/ribcage",
