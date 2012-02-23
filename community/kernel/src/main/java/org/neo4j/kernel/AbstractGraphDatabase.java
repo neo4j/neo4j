@@ -292,6 +292,7 @@ public abstract class AbstractGraphDatabase
         // END SMELL
 
         config = new Config( this.storeDir,  params );
+        diagnosticsManager.prependProvider( config );
         
         // Config can auto-configure memory mapping settings and what not, so reassign params
         // after we've instantiated Config.
