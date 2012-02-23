@@ -25,6 +25,12 @@ import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
+import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -65,12 +71,32 @@ public class StoreFactory
 
     public NeoStore newNeoStore(String fileName)
     {
+        try
+        {
+            return attemptNewNeoStore( fileName );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            tryToUpgradeStores( fileName );
+            return attemptNewNeoStore( fileName );
+        }
+    }
+    
+    private NeoStore attemptNewNeoStore( String fileName )
+    {
         return new NeoStore( fileName, ConfigProxy.config(config, NeoStore.Configuration.class),
                 lastCommittedTxIdSetter, idGeneratorFactory, fileSystemAbstraction, stringLogger, txHook,
                 newRelationshipTypeStore(fileName + ".relationshiptypestore.db"),
                 newPropertyStore(fileName + ".propertystore.db"),
                 newRelationshipStore(fileName + ".relationshipstore.db"),
                 newNodeStore(fileName + ".nodestore.db"));
+    }
+
+    private void tryToUpgradeStores( String fileName )
+    {
+        new StoreUpgrader(config, new ConfigMapUpgradeConfiguration(config),
+                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
+                new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
     private DynamicStringStore newDynamicStringStore(String s, IdType nameIdType)
