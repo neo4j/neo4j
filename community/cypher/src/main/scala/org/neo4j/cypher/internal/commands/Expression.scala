@@ -139,7 +139,14 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
   def operand: String
 
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
-    throw new CypherTypeException("Don't know how to subtract `" + bVal.toString + "` from `" + aVal.toString + "`")
+    
+    
+    throw new CypherTypeException("Don't know how to " + verb + " `" + name(bVal) + "` with `" + name(aVal) + "`")
+  }
+  
+  private def name(x:Any)=x match {
+    case null => "null"
+    case _ => x.toString
   }
 
   def apply(m: Map[String, Any]) = {
