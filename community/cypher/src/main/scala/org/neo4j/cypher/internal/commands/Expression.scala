@@ -256,6 +256,23 @@ case class Entity(entityName: String) extends CastableExpression {
     Seq()
 }
 
+case class Collection(expressions:Expression*) extends CastableExpression {
+  def apply(m: Map[String, Any]): Any = expressions.map(e=>e(m))
+
+  def identifier: Identifier = Identifier(name, AnyIterableType())
+  
+  private def name = expressions.map(_.identifier.name).mkString("[", ", ", "]")
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.declareDependencies(AnyType()))
+
+  def rewrite(f: (Expression) => Expression): Expression = f(Collection(expressions.map(f):_*))
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = if(f(this))
+    Seq(this) ++ expressions.flatMap(_.filter(f))
+  else
+    expressions.flatMap(_.filter(f))
+}
+
 case class Parameter(parameterName: String) extends CastableExpression {
   def apply(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-" + parameterName + "-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
     case ParameterValue(x) => x

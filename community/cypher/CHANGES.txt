@@ -1,5 +1,6 @@
 <NOT YET RELEASED>
 ------------------
+o Added literal collections and the IN predicate
 o Added HEAD, TAIL, LAST and FILTER
 o Added comments
 o Added HAVING - Cypher can now filter on aggregated data

@@ -146,4 +146,13 @@ do not have a relationship between them.
       returns = "Nodes that Tobias is not connected to",
       assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
   }
+
+  @Test def in_operator() {
+    testQuery(
+      title = "IN operator",
+      text = "To check if an element exists in a collection, you can use the IN operator.",
+      queryText = """start a=node(%Andres%, %Tobias%, %Peter%) where a.name IN ["Peter", "Tobias"] return a""",
+      returns = "This query shows how to check if a property exists in a literal collection.",
+      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
+  }
 }

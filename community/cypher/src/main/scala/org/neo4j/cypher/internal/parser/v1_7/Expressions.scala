@@ -63,15 +63,29 @@ trait Expressions extends Base {
       | filterFunc
       | nullableProperty
       | property
-      | string ^^ (x => Literal(x))
-      | number ^^ (x => Literal(x.toDouble))
+      | stringLit
+      | numberLiteral
+      | collectionLiteral
       | parameter
       | entity
       | parens(expression)
       | failure("illegal start of value") )
 
 
+  def stringLit:Parser[Expression] = string ^^ (x=>Literal(x))
+
+  def numberLiteral:Parser[Expression] = number ^^ (x => {
+    val value: Double = if(x.contains("."))
+      x.toDouble
+    else
+      x.toLong
+
+    Literal(value)
+  } )
+
   def entity: Parser[Entity] = identity ^^ (x => Entity(x))
+
+  def collectionLiteral:Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq:_*))
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => createProperty(v, p)
@@ -164,13 +178,16 @@ trait Expressions extends Base {
       }
     )
 
-  def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq
+  def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
     (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)  }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
-
+  def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
+    case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-")))
+  }
+  
   def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
 
   def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInIterable(x._1, x._2, x._3))

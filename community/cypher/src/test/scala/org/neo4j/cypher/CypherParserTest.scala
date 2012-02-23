@@ -1121,7 +1121,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 0)).
         aggregation(Distinct(Count(Entity("a")), Entity("a"))).
         columns("count(distinct a)")
-        returns(ReturnItem(Distinct(Count(Entity("a")), Entity("a")), "count(distinct a)")))
+        returns (ReturnItem(Distinct(Count(Entity("a")), Entity("a")), "count(distinct a)")))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -1198,7 +1198,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         aggregation().
         returns(ReturnItem(Entity("s"), "s")))
   }
-  
+
   @Test def shouldParseMathFunctions() {
     testFrom_1_7("start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
       Query.
@@ -1233,8 +1233,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testFrom_1_7("start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
       Query.
         start(NodeById("s", 1)).
-        where(Equals(Property("s","apa"), Literal("//NOT A COMMENT")))
-        returns(ReturnItem(Entity("s"), "s")))
+        where(Equals(Property("s", "apa"), Literal("//NOT A COMMENT")))
+        returns (ReturnItem(Entity("s"), "s")))
   }
 
   @Test def shouldHandleCommentsFollowedByWhiteSpace() {
@@ -1264,8 +1264,49 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("x", 1)).
         namedPaths(NamedPath("p", RelatedTo("x", "z", "  UNNAMED1", None, Direction.OUTGOING, false, True()))).
         returns(
-        ReturnItem(FilterFunction(Entity("p"), "x", Equals(Property("x", "prop"), Literal(123))) , "filter(x in p : x.prop = 123)")
+        ReturnItem(FilterFunction(Entity("p"), "x", Equals(Property("x", "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
       ))
+  }
+
+  @Test def collection_literal() {
+    testFrom_1_7("start x = NODE(1) return ['a','b','c']",
+      Query.
+        start(NodeById("x", 1)).
+        returns(ReturnItem(Collection(Literal("a"), Literal("b"), Literal("c")), "['a','b','c']")
+      ))
+  }
+
+  @Test def collection_literal2() {
+    testFrom_1_7("start x = NODE(1) return []",
+      Query.
+        start(NodeById("x", 1)).
+        returns(ReturnItem(Collection(), "[]")
+      ))
+  }
+
+  @Test def collection_literal3() {
+    testFrom_1_7("start x = NODE(1) return [1,2,3]",
+      Query.
+        start(NodeById("x", 1)).
+        returns(ReturnItem(Collection(Literal(1), Literal(2), Literal(3)), "[1,2,3]")
+      ))
+  }
+
+  @Test def collection_literal4() {
+    testFrom_1_7("start x = NODE(1) return ['a',2]",
+      Query.
+        start(NodeById("x", 1)).
+        returns(ReturnItem(Collection(Literal("a"), Literal(2)), "['a',2]")
+      ))
+  }
+
+  @Test def in_with_collection_literal() {
+    testFrom_1_7("start x = NODE(1) where x.prop in ['a','b'] return x",
+      Query.
+        start(NodeById("x", 1)).
+        where(AnyInIterable(Collection(Literal("a"), Literal("b")), "-_-INNER-_-", Equals(Property("x", "prop"), Entity("-_-INNER-_-")))).
+        returns(ReturnItem(Entity("x"), "x"))
+    )
   }
 
   def test_1_5(query: String, expectedQuery: Query) {
@@ -1319,7 +1360,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     try {
       assertThat(message, ast, equalTo(expectedQuery))
     } catch {
-      case x:AssertionError => throw new AssertionError(x.getMessage.replace("WrappedArray", "List"))
+      case x: AssertionError => throw new AssertionError(x.getMessage.replace("WrappedArray", "List"))
     }
   }
 }
