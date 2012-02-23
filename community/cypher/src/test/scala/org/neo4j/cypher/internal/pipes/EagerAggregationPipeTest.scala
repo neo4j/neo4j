@@ -32,7 +32,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
-    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val returnItems = List(Entity("name"))
     val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
@@ -44,7 +44,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
   @Test(expected = classOf[SyntaxException]) def shouldThrowSemanticException() {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
-    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val returnItems = List(Entity("name"))
     val grouping = List(Count(Entity("none-existing-identifier")))
     new EagerAggregationPipe(source, returnItems, grouping)
   }
@@ -56,7 +56,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "age" -> 36),
       Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
-    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val returnItems = List(Entity("name"))
     val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 

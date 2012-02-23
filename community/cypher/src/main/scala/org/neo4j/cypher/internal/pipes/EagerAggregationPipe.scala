@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.pipes
 import aggregation.AggregationFunction
 import collection.Seq
 import java.lang.String
-import org.neo4j.cypher.internal.commands.{AggregationExpression, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, SymbolTable}
+import org.neo4j.cypher.internal.commands.{Expression, AggregationExpression}
 
-// Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
+// Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it has to - this pipe makes stops the lazyness
-class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[AggregationExpression]) extends PipeWithSource(source) {
+class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], aggregations: Seq[AggregationExpression]) extends PipeWithSource(source) {
   val symbols: SymbolTable = createSymbols()
 
-  def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies(AnyType()))
+  def dependencies: Seq[Identifier] = keyExpressions.flatMap(_.dependencies(AnyType())) ++ aggregations.flatMap(_.dependencies(AnyType()))
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(returnItems.map(_.expressionName): _*)
+    val keySymbols = source.symbols.filter(keyExpressions.map(_.identifier.name): _*)
     val aggregatedColumns = aggregations.map(_.identifier)
 
     keySymbols.add(aggregatedColumns: _*)
@@ -43,7 +43,7 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     // This is the temporary storage used while the aggregation is going on
     val result = collection.mutable.Map[NiceHasher, Seq[AggregationFunction]]()
-    val keyNames = returnItems.filterNot(_.expression.containsAggregate).map(_.expressionName)
+    val keyNames = keyExpressions.map(_.identifier.name)
     val aggregationNames = aggregations.map(_.identifier.name)
 
     source.createResults(params).foreach(m => {
@@ -52,13 +52,15 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
       functions.foreach(func => func(m))
     })
 
-    result.map {
+    val r = result.map {
       case (key, value: Seq[AggregationFunction]) => {
         val elems = keyNames.zip(key.original) ++ aggregationNames.zip(value.map(_.result))
         elems.toMap
       }
     }
+
+     r
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + returnItems.map(_.columnName).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + keyExpressions.map(_.identifier.name).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
 }
