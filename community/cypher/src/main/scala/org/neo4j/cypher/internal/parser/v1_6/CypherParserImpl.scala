@@ -51,7 +51,7 @@ with ActualParser {
         case None => (None, None)
       }
 
-      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, None, queryText)
+      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
     }
   }
 

@@ -32,7 +32,6 @@ case class Query(returns: Return,
                  sort: Option[Sort],
                  slice: Option[Slice],
                  namedPaths: Option[NamedPaths],
-                 having: Option[Predicate],
                  queryString: String = "") {
   override def equals(p1: Any): Boolean =
     if (p1 == null)
@@ -48,8 +47,7 @@ case class Query(returns: Return,
         aggregation == other.aggregation &&
         sort == other.sort &&
         slice == other.slice &&
-        namedPaths == other.namedPaths &&
-        having == other.having
+        namedPaths == other.namedPaths
     }
 }
 

@@ -1199,16 +1199,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Entity("s"), "s")))
   }
   
-  @Test def shouldHandleHaving() {
-    testFrom_1_7("start s = NODE(1) return s, count(*) having count(*) = 1",
-      Query.
-        start(NodeById("s", 1)).
-        aggregation(CountStar()).
-        having(Equals(CountStar(), Literal(1.0))).
-        columns("s", "count(*)").
-        returns(ReturnItem(Entity("s"), "s"), ReturnItem(CountStar(), "count(*)")))
-  }
-
   @Test def shouldParseMathFunctions() {
     testFrom_1_7("start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
       Query.
