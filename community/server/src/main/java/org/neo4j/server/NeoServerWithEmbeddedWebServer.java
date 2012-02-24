@@ -43,8 +43,8 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.security.SecurityRule;
-import org.neo4j.server.rest.web.security.SslBootstrapper;
-import org.neo4j.server.rest.web.security.SslConfiguration;
+import org.neo4j.server.security.HttpsBootstrapper;
+import org.neo4j.server.security.HttpsConfiguration;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
@@ -209,17 +209,19 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         int maxThreads = getMaxThreads();
         
+        int sslPort = getSslPort();
         boolean sslEnabled = getSslEnabled();
 
         log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
-        
-        if(sslEnabled || true) {
-            int sslPort = getSslPort();
-            SslConfiguration sslConfig = initSecureSockets();
+
+        webServer.setEnableSsl(sslEnabled);
+        webServer.setSslPort(sslPort);
+        if(sslEnabled) {
             log.info( "Enabling HTTPS on port [%s]", sslPort );
+            webServer.setSslConfiguration(initSecureSockets());
         }
         
         webServer.init();
@@ -305,9 +307,9 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
-    protected SslConfiguration initSecureSockets()
+    protected HttpsConfiguration initSecureSockets()
     {
-        SslBootstrapper sslBoot = new SslBootstrapper(configurator, getWebServerAddress());
+        HttpsBootstrapper sslBoot = new HttpsBootstrapper(configurator, getWebServerAddress());
         return sslBoot.bootstrap();
     }
 

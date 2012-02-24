@@ -58,6 +58,8 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
+import org.neo4j.server.security.HttpsConfiguration;
+import org.neo4j.server.security.SslSocketConnectorFactory;
 
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
@@ -91,7 +93,7 @@ public class Jetty6WebServer implements WebServer
             jetty = new Server();
             Connector connector = new SelectChannelConnector();
 
-            connector.setPort( jettyPort );
+            connector.setPort( jettyHttpPort );
             connector.setHost( jettyAddr );
             
             jetty.addConnector( connector );
@@ -125,7 +127,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void setPort( int portNo )
     {
-        jettyPort = portNo;
+        jettyHttpPort = portNo;
     }
 
     @Override
@@ -203,17 +205,17 @@ public class Jetty6WebServer implements WebServer
     
     @Override
     public void setEnableSsl( boolean enable ) {
-        sslEnabled = enable;
+        httpsEnabled = enable;
     }
     
     @Override
     public void setSslPort( int portNo )  {
-        jettySslPort = portNo;
+        jettyHttpsPort = portNo;
     }
     
     @Override
-    public void setSslConfiguration( SslConfiguration config ) {
-        sslConfig = config;
+    public void setSslConfiguration( HttpsConfiguration config ) {
+        httpsConfig = config;
     }
     
 
@@ -335,7 +337,7 @@ public class Jetty6WebServer implements WebServer
             {
                 log.error(
                         "No static content available for Neo Server at port [%d], management console may not be available.",
-                        jettyPort );
+                        jettyHttpPort );
             }
         }
         catch ( Exception e )

@@ -30,6 +30,7 @@ import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.guard.Guard;
 import org.neo4j.server.rest.security.SecurityRule;
+import org.neo4j.server.security.HttpsConfiguration;
 
 public interface WebServer
 {
@@ -45,7 +46,7 @@ public interface WebServer
     
     void setSslPort( int portNo );
     
-    void setSslConfiguration( SslConfiguration config );
+    void setSslConfiguration( HttpsConfiguration config );
 
     void start();
 
