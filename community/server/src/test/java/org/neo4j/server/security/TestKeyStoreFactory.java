@@ -19,21 +19,32 @@
  */
 package org.neo4j.server.security;
 
-import org.mortbay.jetty.security.SslSocketConnector;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
-public class SslSocketConnectorFactory {
+import java.io.File;
 
-    public SslSocketConnector createConnector(KeyStoreInformation config, String host, int port) {
-        SslSocketConnector connector = new SslSocketConnector();
+import org.junit.Test;
+
+public class TestKeyStoreFactory {
+
+    @Test
+    public void shouldCreateKeyStoreForGivenKeyPair() throws Exception {
+
+        File cPath = File.createTempFile("cert", "test");
+        File pkPath = File.createTempFile("privatekey", "test");
+        File keyStorePath = File.createTempFile("keyStore", "test");
         
-        connector.setPort( port );
-        connector.setHost( host );
+        SslCertificateFactory ssl = new SslCertificateFactory();
+        ssl.createSelfSignedCertificate(cPath, pkPath, "asd");
         
-        connector.setKeyPassword(String.valueOf(config.getKeyPassword()));
-        connector.setPassword(String.valueOf(config.getKeyStorePassword()));
-        connector.setKeystore(config.getKeyStorePath());
+        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
         
-        return connector; 
+        KeyStoreInformation ks = keyStoreFactory.createKeyStore(keyStorePath, pkPath, cPath);
+        
+        File keyStoreFile = new File(ks.getKeyStorePath());
+        assertThat(keyStoreFile.exists(), is(true));
+        
     }
     
 }

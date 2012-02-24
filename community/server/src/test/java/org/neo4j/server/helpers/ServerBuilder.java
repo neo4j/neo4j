@@ -189,9 +189,9 @@ public class ServerBuilder
         
         if(httpsEnabled != null) {
             if(httpsEnabled) {
-                properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "true" );
+                properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true" );
             } else {
-                properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "false" );
+                properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "false" );
             }
         }
         
@@ -405,7 +405,7 @@ public class ServerBuilder
         return this;
     }
     
-    public ServerBuilder withSslEnabled()
+    public ServerBuilder withHttpsEnabled()
     {
         httpsEnabled  = true;
         return this;

@@ -63,11 +63,11 @@ public interface Configurator
 
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
     
-    String WEBSERVER_SSL_ENABLED_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.enabled";
-    Boolean DEFAULT_WEBSERVER_SSL_ENABLED = false;
+    String WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.enabled";
+    Boolean DEFAULT_WEBSERVER_HTTPS_ENABLED = false;
     
-    String WEBSERVER_SSL_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.port";
-    int DEFAULT_WEBSERVER_SSL_PORT = 7473;
+    String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.port";
+    int DEFAULT_WEBSERVER_HTTPS_PORT = 7473;
     
     String WEBSERVER_SSL_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.keystore.path";
     String DEFAULT_WEBSERVER_SSL_KEYSTORE_PATH = "keystore";

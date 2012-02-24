@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.security;
 
-public class HttpsConfiguration {
+public class KeyStoreInformation {
 
     private final String keyStorePath;
     private final char[] keyStorePassword;
     private final char[] keyPassword;
     
-    public HttpsConfiguration(String keyStorePath, char[] keyStorePassword, char[] keyPassword) {
+    public KeyStoreInformation(String keyStorePath, char[] keyStorePassword, char[] keyPassword) {
         this.keyStorePassword = keyStorePassword;
         this.keyStorePath = keyStorePath;
         this.keyPassword = keyPassword;

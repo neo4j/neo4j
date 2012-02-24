@@ -58,7 +58,7 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
-import org.neo4j.server.security.HttpsConfiguration;
+import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
 
 import com.sun.jersey.api.core.ResourceConfig;
@@ -83,7 +83,8 @@ public class Jetty6WebServer implements WebServer
     private int jettyMaxThreads = tenThreadsPerProcessor();
     private boolean httpEnabled = true;
     private boolean httpsEnabled = false;
-    private HttpsConfiguration httpsConfig = null;
+    private KeyStoreInformation httpsCertificateInformation = null;
+    private SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
 
     @Override
     public void init()
@@ -99,8 +100,8 @@ public class Jetty6WebServer implements WebServer
             jetty.addConnector( connector );
             
             if(httpsEnabled) {
-               if(httpsConfig != null) {
-                   jetty.addConnector( SslSocketConnectorFactory.createConnector(httpsConfig, jettyAddr, jettyHttpsPort) );
+               if(httpsCertificateInformation != null) {
+                   jetty.addConnector( sslSocketFactory.createConnector(httpsCertificateInformation, jettyAddr, jettyHttpsPort) );
                } else {
                    throw new RuntimeException("HTTPS set to enabled, but no HTTPS configuration provided.");
                }
@@ -204,18 +205,18 @@ public class Jetty6WebServer implements WebServer
     }
     
     @Override
-    public void setEnableSsl( boolean enable ) {
+    public void setEnableHttps( boolean enable ) {
         httpsEnabled = enable;
     }
     
     @Override
-    public void setSslPort( int portNo )  {
+    public void setHttpsPort( int portNo )  {
         jettyHttpsPort = portNo;
     }
     
     @Override
-    public void setSslConfiguration( HttpsConfiguration config ) {
-        httpsConfig = config;
+    public void setHttpsCertificateInformation( KeyStoreInformation config ) {
+        httpsCertificateInformation = config;
     }
     
 

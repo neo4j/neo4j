@@ -23,7 +23,6 @@ import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUT
 
 import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,10 +42,12 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.security.SecurityRule;
-import org.neo4j.server.security.HttpsBootstrapper;
-import org.neo4j.server.security.HttpsConfiguration;
+import org.neo4j.server.security.KeyStoreFactory;
+import org.neo4j.server.security.KeyStoreInformation;
+import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer
@@ -62,6 +63,8 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
     private Guard guard;
+
+    private SimpleUriBuilder uriBuilder = new SimpleUriBuilder();;
 
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
@@ -209,19 +212,19 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         int maxThreads = getMaxThreads();
         
-        int sslPort = getSslPort();
-        boolean sslEnabled = getSslEnabled();
+        int sslPort = getHttpsPort();
+        boolean sslEnabled = getHttpsEnabled();
 
         log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
 
-        webServer.setEnableSsl(sslEnabled);
-        webServer.setSslPort(sslPort);
+        webServer.setEnableHttps(sslEnabled);
+        webServer.setHttpsPort(sslPort);
         if(sslEnabled) {
             log.info( "Enabling HTTPS on port [%s]", sslPort );
-            webServer.setSslConfiguration(initSecureSockets());
+            webServer.setHttpsCertificateInformation(initHttpsKeyStore());
         }
         
         webServer.init();
@@ -289,16 +292,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
     }
     
-    protected boolean getSslEnabled()
+    protected boolean getHttpsEnabled()
     {
         return configurator.configuration()
-                .getBoolean( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_SSL_ENABLED );
+                .getBoolean( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_ENABLED );
     }
 
-    protected int getSslPort()
+    protected int getHttpsPort()
     {
         return configurator.configuration()
-                .getInt( Configurator.WEBSERVER_SSL_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_SSL_PORT );
+                .getInt( Configurator.WEBSERVER_HTTPS_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_PORT );
     }
 
     protected String getWebServerAddress()
@@ -307,10 +310,35 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
-    protected HttpsConfiguration initSecureSockets()
+    /**
+     * Jetty wants certificates stored in a key store, which is nice, but
+     * to make it easier for non-java savvy users, we let them put
+     * their certificates directly on the file system (advicing apropriate
+     * permissions etc), like you do with Apache Web Server. On each startup
+     * we set up a key store for them with their certificate in it.
+     */
+    protected KeyStoreInformation initHttpsKeyStore()
     {
-        HttpsBootstrapper sslBoot = new HttpsBootstrapper(configurator, getWebServerAddress());
-        return sslBoot.bootstrap();
+        File keystorePath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH));
+        
+        File privateKeyPath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH));
+        
+        File certificatePath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH));
+        
+        if(!certificatePath.exists()) {
+            log.info("No SSL certificate found, generating a self-signed certificate..");
+            SslCertificateFactory certFactory = new SslCertificateFactory();
+            certFactory.createSelfSignedCertificate(certificatePath, privateKeyPath, getWebServerAddress());
+        }
+        
+        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
+        return keyStoreFactory.createKeyStore(keystorePath, privateKeyPath, certificatePath);
     }
 
     @Override
@@ -381,33 +409,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     @Override
     public URI baseUri()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "http" );
-        int webServerPort = getWebServerPort();
-        if ( webServerPort == 443 )
-        {
-            sb.append( "s" );
+        return uriBuilder.buildURI(getWebServerAddress(), getWebServerPort(), false);
+    }
 
-        }
-        sb.append( "://" );
-
-        sb.append( getWebServerAddress() );
-
-        if ( webServerPort != 80 && webServerPort != 443)
-        {
-            sb.append( ":" );
-            sb.append( webServerPort );
-        }
-        sb.append( "/" );
-
-        try
-        {
-            return new URI( sb.toString() );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
+    public URI httpsUri()
+    {
+        return uriBuilder.buildURI(getWebServerAddress(), getHttpsPort(), true);
     }
 
     public WebServer getWebServer()

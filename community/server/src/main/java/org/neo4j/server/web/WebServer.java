@@ -30,7 +30,7 @@ import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.guard.Guard;
 import org.neo4j.server.rest.security.SecurityRule;
-import org.neo4j.server.security.HttpsConfiguration;
+import org.neo4j.server.security.KeyStoreInformation;
 
 public interface WebServer
 {
@@ -42,11 +42,11 @@ public interface WebServer
 
     void setAddress( String addr );
     
-    void setEnableSsl( boolean enable );
+    void setEnableHttps( boolean enable );
     
-    void setSslPort( int portNo );
+    void setHttpsPort( int portNo );
     
-    void setSslConfiguration( HttpsConfiguration config );
+    void setHttpsCertificateInformation( KeyStoreInformation config );
 
     void start();
 
