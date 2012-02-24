@@ -10,7 +10,7 @@ o BREAKING CHANGE: To check whether a property exists on a node, use the HAS(...
 o Arithmetic & string concatenation
 o An identifier can now be assigned all the nodes/rels in the graph - START a=node(*)
 o Predicates can be specified inside of a pattern relationship description
-o Fixed issues #196, #164, #193, #217, #214, #201, #198, #240
+o Fixed issues #196, #164, #193, #217, #214, #201, #198, #240, #254
 
 1.6 (2012-01-19)
 ----------------
