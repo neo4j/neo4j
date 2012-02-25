@@ -216,19 +216,6 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.8.5</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>1.9</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.rrd4j</groupId>
@@ -244,6 +231,20 @@
         </dependency>
 
         <!-- Test dependencies -->
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.8.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

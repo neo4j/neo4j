@@ -19,14 +19,7 @@
  */
 package org.neo4j.server.helpers;
 
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_NODE_INDEX;
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.sun.jersey.api.client.Client;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -35,10 +28,14 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_NODE_INDEX;
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX;
 
 public final class FunctionalTestHelper
 {
@@ -98,11 +95,6 @@ public final class FunctionalTestHelper
     public GraphDbHelper getGraphDbHelper()
     {
         return helper;
-    }
-
-    void assertLegalJson( String entity ) throws IOException, JsonParseException
-    {
-        JsonHelper.jsonToMap( entity );
     }
     
     public String dataUri()
@@ -290,5 +282,10 @@ public final class FunctionalTestHelper
                 result.put( entry.getKey(), entry.getValue() );
         }
         return result;
+    }
+
+    public URI baseUri()
+    {
+        return server.baseUri();
     }
 }

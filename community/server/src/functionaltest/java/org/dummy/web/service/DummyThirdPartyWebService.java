@@ -19,8 +19,8 @@
  */
 package org.dummy.web.service;
 
-import java.util.Iterator;
-import java.util.List;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -29,9 +29,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import java.util.Iterator;
+import java.util.List;
 
 @Path( "/" )
 public class DummyThirdPartyWebService
@@ -46,6 +45,14 @@ public class DummyThirdPartyWebService
         return Response.ok()
                 .entity( "hello" )
                 .build();
+    }
+
+
+    @GET
+    @Path("/{something}/{somethingElse}")
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response forSecurityTesting() {
+        return Response.ok().entity("you've reached a dummy service").build();
     }
 
     @GET
