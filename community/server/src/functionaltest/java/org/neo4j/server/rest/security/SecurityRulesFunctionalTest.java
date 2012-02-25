@@ -129,7 +129,7 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
     }
 
     @Test
-    public void aWildcardUriPathShould401OnAccessToProtectedSubPath()
+    public void aSimpleWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {
         String mountPoint = "/protected/tree/starts/here" + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
@@ -138,6 +138,27 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                                                           mountPoint)
                               .withSecurityRules(
                                       PermanentlyFailingSecurityRuleWithWildcardPath.class.getCanonicalName())
+                              .build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+
+        ClientResponse clientResponse = Client.create().resource(
+                trimTrailingSlash(functionalTestHelper.baseUri()) + mountPoint + "/more/stuff").accept(
+                MediaType.TEXT_PLAIN).get(ClientResponse.class);
+
+        assertEquals(401, clientResponse.getStatus());
+    }
+
+    @Test
+    public void aComplexWildcardUriPathShould401OnAccessToProtectedSubPath()
+            throws Exception
+    {
+        String mountPoint = "/protected/wildcard_replacement/x/y/z/something/else/more_wildcard_replacement/a/b/c/final/bit";
+        server = ServerBuilder.server().withDefaultDatabaseTuning()
+                              .withThirdPartyJaxRsPackage("org.dummy.web.service",
+                                                          mountPoint)
+                              .withSecurityRules(
+                                      PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName())
                               .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
