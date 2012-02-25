@@ -31,9 +31,8 @@ These clauses are HAVING and ORDER BY right now.
 object ReattachAliasedExpressions {
   def apply(q: Query): Query = {
       val newSort = q.sort.map( oldSort => Sort(oldSort.sortItems.map(rewrite(q.returns.returnItems)):_*) )
-      val newHaving = q.having.map(_.rewrite(expressionRewriter(q.returns.returnItems)))
 
-      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, newHaving, q.queryString)
+      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, q.queryString)
     }
 
   private def rewrite(returnItems: Seq[ReturnItem])(in: SortItem): SortItem = {

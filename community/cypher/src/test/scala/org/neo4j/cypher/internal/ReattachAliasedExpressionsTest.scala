@@ -43,36 +43,19 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
   @Test
   def rewriteHavingAfterAliasedColumn() {
-    // start a=node(1) return count(*) as foo having foo = 'foo'
+    // start a=node(1) return count(*) as foo order by foo
 
     val q = Query.
       start(NodeById("a", 1)).
-      having(Equals(Entity("foo"), Literal("foo"))).
-      returns(ReturnItem(Literal("bar"), "foo"))
+      orderBy(SortItem(Entity("foo"), true)).
+      returns(ReturnItem(CountStar(), "foo"))
 
     val expected = Query.
       start(NodeById("a", 1)).
-      having(Equals(Literal("bar"), Literal("foo"))).
-      returns(ReturnItem(Literal("bar"), "foo"))
-
+      orderBy(SortItem(CountStar(), true)).
+      returns(ReturnItem(CountStar(), "foo"))
     val result = ReattachAliasedExpressions(q)
+
     assert(result === expected)
-  }
-
-  @Test
-  def rewriteDeeplyInExpressions() {
-    // start a=node(1) return count(*) as foo having abs(foo) = 1
-
-    val q = Query.
-      start(NodeById("a", 1)).
-      having(Equals(AbsFunction(Entity("foo")), Literal(1))).
-      returns(ReturnItem(CountStar(), "foo"))
-
-    val expected = Query.
-      start(NodeById("a", 1)).
-      having(Equals(AbsFunction(CountStar()), Literal(1))).
-      returns(ReturnItem(CountStar(), "foo"))
-
-    assert(ReattachAliasedExpressions(q) === expected)
   }
 }

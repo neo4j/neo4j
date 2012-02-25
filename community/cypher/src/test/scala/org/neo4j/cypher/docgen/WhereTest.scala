@@ -146,16 +146,4 @@ do not have a relationship between them.
       returns = "Nodes that Tobias is not connected to",
       assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
   }
-
-
-  @Test def filter_on_aggregates() {
-    testQuery(
-      title = "Filter on aggregates",
-      text = "You can't use aggregate functions in the WHERE clause. If you need to filter on aggregate functions, " +
-        "use the HAVING clause intead. HAVING filters matching subgraphs the same way WHERE does, but is invoked after " +
-        "aggregation has been done.",
-      queryText = """start a=node(%Andres%, %Tobias%, %Peter%) match a--() return a, count(*) having count(*)>1""",
-      returns = "Only nodes with more than one relationship are returned",
-      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("a").toList))
-  }
 }

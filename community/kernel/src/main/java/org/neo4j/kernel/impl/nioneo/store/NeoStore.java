@@ -28,16 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
-import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -159,12 +152,6 @@ public class NeoStore extends AbstractStore
                 }
             }
         }
-        catch ( NotCurrentStoreVersionException e )
-        {
-            releaseFileLockAndCloseFileChannel();
-            tryToUpgradeStores();
-            checkStorage();
-        }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to check version "
@@ -186,13 +173,6 @@ public class NeoStore extends AbstractStore
             insertRecord( 5, -1 );
             registerIdFromUpdateRecord( 5 );
         }
-    }
-
-    private void tryToUpgradeStores()
-    {
-        new StoreUpgrader(ConfigProxy.map(conf), new ConfigMapUpgradeConfiguration(ConfigProxy.map(conf)),
-                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
-                new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( getStorageFileName() );
     }
 
     private void insertRecord( int recordPosition, long value ) throws IOException

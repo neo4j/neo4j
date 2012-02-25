@@ -1,5 +1,3 @@
-package org.neo4j.cypher.internal.parser.v1_7
-
 /**
  * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,21 +17,31 @@ package org.neo4j.cypher.internal.parser.v1_7
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel;
 
-import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.kernel.impl.transaction.TxHook;
 
+class DefaultTxHook implements TxHook
+{
+    @Override
+    public void initializeTransaction( int eventIdentifier )
+    {
+        // Do nothing from the ordinary here
+    }
 
-trait HavingClause extends Base with Expressions {
-  def having: Parser[Predicate] = ignoreCase("having") ~> predicate
+    public boolean hasAnyLocks( javax.transaction.Transaction tx )
+    {
+        return false;
+    }
+
+    public void finishTransaction( int eventIdentifier, boolean success )
+    {
+        // Do nothing from the ordinary here
+    }
+
+    @Override
+    public boolean freeIdsDuringRollback()
+    {
+        return true;
+    }
 }
-
-
-
-
-
-
-
-
-
-
-

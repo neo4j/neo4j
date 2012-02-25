@@ -1674,21 +1674,6 @@ RETURN x0.name?
     parseAndExecute("start a=node(*) return a, count(*) order by COUNT(*)").toList
   }
 
-  @Test def shouldExcludeWithHaving() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-
-    relate(b, a)
-    relate(c, a)
-
-    relate(a, b)
-
-    val result = parseAndExecute("start a=node(*) match a<--() return a, count(*) having count(*) > 1")
-
-    assert(List(a) === result.columnAs[Node]("a").toList)
-  }
-
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1719,12 +1704,27 @@ RETURN x0.name?
     intercept[SyntaxException](parseAndExecute("start a=node(1) return count(count(*))").toList)
   }
 
-  @Ignore("Exposes #254")
   @Test def aggregates_inside_normal_functions_should_work() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) return length(collect(a))").toList
     assert(List(Map("length(collect(a))"->1)) === result)
+  }
+
+  @Test def aggregates_should_be_possible_to_use_with_arithmetics() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) return count(*) * 10").toList
+    assert(List(Map("count(*) * 10"->10)) === result)
+  }
+
+  @Test def aggregates_should_be_possible_to_order_by_arithmetics() {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("start a=node(1),b=node(2,3) return count(a) * 10 + count(b) * 5 as X order by X").toList
+    assert(List(Map("X"->30)) === result)
   }
 
   @Test def tests_that_filterfunction_works_as_expected() {
