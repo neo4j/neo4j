@@ -37,6 +37,7 @@ registered with the server. This makes scenarios like user and role based securi
 authentication against external lookup services possible.
 
 include::enforcing-server-authorization-rules.txt[]
+include::using-wildcards-to-target-security-rules.txt[]
 
 == Hosted Scripting ==
 
