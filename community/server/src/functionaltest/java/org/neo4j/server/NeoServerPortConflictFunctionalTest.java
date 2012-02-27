@@ -29,6 +29,7 @@ import java.net.ServerSocket;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class NeoServerPortConflictFunctionalTest extends ExclusiveServerTestBase
@@ -38,11 +39,11 @@ public class NeoServerPortConflictFunctionalTest extends ExclusiveServerTestBase
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getLocalHost() );
+        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty6WebServer.DEFAULT_ADDRESS) );
         InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
         NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
                 .onPort( contestedPort )
-                .onHost( InetAddress.getLocalHost().toString() )
+                .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .build();
         server.start();
 
@@ -50,7 +51,7 @@ public class NeoServerPortConflictFunctionalTest extends ExclusiveServerTestBase
         // OS-regional-settings-specific
         assertThat(
                 appender.toString(),
-                containsString( String.format( ": Failed to start Neo Server on port [%s]", server.getWebServerPort() ) ) );
+                containsString( String.format( ": Failed to start Neo Server" ) ) );
         socket.close();
         server.stop();
     }
