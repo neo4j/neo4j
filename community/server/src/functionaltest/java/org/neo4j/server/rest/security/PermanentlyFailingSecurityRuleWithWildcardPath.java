@@ -22,6 +22,7 @@ package org.neo4j.server.rest.security;
 import javax.servlet.http.HttpServletRequest;
 
 
+//START SNIPPET: failingRuleWithWildcardPath
 public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityRule
 {
 
@@ -45,3 +46,5 @@ public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityR
         return SecurityFilter.basicAuthenticationResponse(REALM);
     }
 }
+
+// END SNIPPET: failingRuleWithWildcardPath

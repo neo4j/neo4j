@@ -180,6 +180,13 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                                       PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName())
                               .build();
         server.start();
+        gen.get().addSnippet(
+                "config",
+                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithWildcardPath\n----\n");
+        gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithWildcardPath.class,
+                                        "failingRuleWithWildcardPath");
+
+
         functionalTestHelper = new FunctionalTestHelper(server);
 
         ClientResponse clientResponse = Client.create().resource(
