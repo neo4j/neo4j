@@ -191,7 +191,8 @@ public class RolesTest extends AbstractJavaDocTestbase
                        + admins.getId()
                        + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
         gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
-        String result = engine.execute( parser.parse( query ) ).toString();
+        String result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("Engin") );
         gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
         
@@ -210,7 +211,8 @@ public class RolesTest extends AbstractJavaDocTestbase
                 + jale.getId()
                 + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
         gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
-        result = engine.execute( parser.parse( query ) ).toString();
+        result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("Users") );
         gen.get()
                 .addSnippet( "o-query-get-user-memberships",
@@ -231,7 +233,8 @@ public class RolesTest extends AbstractJavaDocTestbase
                 + referenceNode.getId()
                 + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
         gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
-        result = engine.execute( parser.parse( query ) ).toString();
+        result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("Users") );
         gen.get()
                 .addSnippet( "o-query-get-groups",
@@ -266,7 +269,8 @@ public class RolesTest extends AbstractJavaDocTestbase
         		"return user.name, min(length(p)) " +
         		"order by min(length(p)), user.name";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
-        result = engine.execute( parser.parse( query ) ).toString();
+        result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("Engin") );
         gen.get()
                 .addSnippet( "o-query-get-members",
