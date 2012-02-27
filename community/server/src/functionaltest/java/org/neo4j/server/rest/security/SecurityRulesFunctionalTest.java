@@ -180,12 +180,10 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                                       PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName())
                               .build();
         server.start();
+        gen.get().setSection("ops");
         functionalTestHelper = new FunctionalTestHelper(server);
-
-        ClientResponse clientResponse = Client.create().resource(
-                trimTrailingSlash(functionalTestHelper.baseUri()) + mountPoint + "/more/stuff").accept(
-                MediaType.TEXT_PLAIN).get(ClientResponse.class);
-
+        JaxRsResponse clientResponse = gen.get().expectedStatus(401).expectedType( MediaType.TEXT_PLAIN_TYPE ).expectedHeader(
+                "WWW-Authenticate").get(trimTrailingSlash(functionalTestHelper.baseUri()) + mountPoint + "/more/stuff").response();
         assertEquals(401, clientResponse.getStatus());
     }
 
