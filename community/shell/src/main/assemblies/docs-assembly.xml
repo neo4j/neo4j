@@ -34,5 +34,9 @@
       <directory>src/docs</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>src/test/resources</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
   </fileSets>
 </assembly>

@@ -1,0 +1,49 @@
+[[tutorials-java-unit-testing]]
+Basic unit testing
+==================
+
+The basic pattern of unit testing with Neo4j is illustrated by the following example.
+
+Before each test, create a fresh database:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=beforeTest
+----
+
+After the test has executed, the database should be shut down:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=afterTest
+----
+
+During a test, create nodes and check to see that they are there, while enclosing write operations in a transaction.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=unitTest
+----
+
+If you want to set configuration parameters at database creation, it's done like this:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=startDbWithConfig
+----
+
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
+
