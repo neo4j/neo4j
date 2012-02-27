@@ -17,27 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.executionplan
 
-import java.lang.String
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.Pipe
 
-/**
- * Pipe is a central part of Cypher. Most pipes are decorators - they
- * wrap another pipe. StartPipes are the only exception to this.
- * Pipes are combined to form an execution plan, and when iterated over,
- * the execute the query.
- */
-trait Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]]
-  def symbols: SymbolTable
-  def executionPlan(): String
+/*
+PlanBuilders take a unsolved query, and solves another piece of it.
+*/
+trait PlanBuilder extends PartialFunction[(Pipe, PartiallySolvedQuery),(Pipe, PartiallySolvedQuery)] {
+  // Lower priority wins
+  def priority:Int
 }
 
-class NullPipe extends Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = Seq(Map())
-
-  def symbols: SymbolTable = new SymbolTable()
-
-  def executionPlan(): String = ""
+// The priorities are all here, to make it easy to change and compare
+// Lower priority wins
+object PlanBuilder extends Enumeration {
+  val Filter = -10
+  val NamedPath = -9
+  val NodeById = -1
+  val RelationshipById = -1
+  val IndexQuery = 0
+  val Extraction = 0
+  val Slice = 0
+  val ColumnFilter = 0
+  val GlobalStart = 1
+  val Match = 10
+  val ShortestPath = 20
+  val SortedAggregation = 30
+  val Aggregation = 31
+  val Sort = 40
 }
