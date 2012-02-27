@@ -98,6 +98,16 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         
         self.assertEquals(0, node.id)
         
+    def test_aggregate_queries(self):
+        db = self.graphdb
+        
+        result = db.query("START n=node(0) RETURN COLLECT(n) as collected")
+        
+        collected = result.single['collected']
+        for c in collected:
+            self.assertEquals(c.id, 0)
+        
+        
         
 if __name__ == '__main__':
     unit_tests.unittest.main()
