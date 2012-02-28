@@ -155,16 +155,22 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 
 
     /**
-     * In this example, a (dummy) failing security rule is registered
-     * using a wildcard URI path (where the * character is used to signify any
-     * part of the path) to deny access to all URIs below that
-     * path in the server.
+     *
+     *  In this example, a (dummy) failing security rule is registered to deny
+     * access to all URIs to the server by listing the rule(s) class(es) in
+     * +neo4j-server.properties+
+     * In this case, the rule is registered
+     * using a wildcard URI path (where * characters can be used to signify
+     * any part of the path). For example +/users*+ means the rule
+     * will be bound to any resources under the +/users+ root path. Similarly
+     * +/users*type*+ will bind the rule to resources matching
+     * the URIs like +/users/fred/type/premium+
      *
      * @@config with the rule source code of:
      * @@failingWildcardRule With this rule registered, any access to the server will be
      * denied. Using wildcards allows flexible targeting of security rules to
-     * arbitrary parts of the server's API (including any unmanaged extensions or managed
-     * plugins) that have been registered.
+     * arbitrary parts of the server's API, including any unmanaged extensions or managed
+     * plugins that have been registered.
      */
     @Test
     @Documented

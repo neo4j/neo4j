@@ -22,29 +22,29 @@ package org.neo4j.server.rest.security;
 import javax.servlet.http.HttpServletRequest;
 
 
-//START SNIPPET: failingRuleWithWildcardPath
+
 public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityRule
 {
 
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
 
-    @Override
+
     public boolean isAuthorized( HttpServletRequest request )
     {
         return false;
     }
 
-    @Override
+    //START SNIPPET: failingRuleWithWildcardPath
     public String forUriPath()
     {
         return "/protected/*";
     }
+    // END SNIPPET: failingRuleWithWildcardPath
 
-    @Override
+
     public String wwwAuthenticateHeader()
     {
         return SecurityFilter.basicAuthenticationResponse(REALM);
     }
 }
 
-// END SNIPPET: failingRuleWithWildcardPath
