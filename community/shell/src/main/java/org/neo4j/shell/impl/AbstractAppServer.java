@@ -95,7 +95,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	}
 
 	@Override
-	public void shutdown()
+	public void shutdown() throws RemoteException
 	{
 	    for ( App app : this.apps.values() )
 	    {
