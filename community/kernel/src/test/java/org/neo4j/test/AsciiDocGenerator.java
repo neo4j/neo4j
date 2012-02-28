@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,8 +51,6 @@ public abstract class AsciiDocGenerator
     protected GraphDatabaseService graph;
     protected static final String SNIPPET_MARKER = "@@";
     protected Map<String, String> snippets = new HashMap<String, String>();
-
-    public File out;
 
     public AsciiDocGenerator( final String title, final String section )
     {
@@ -118,7 +117,7 @@ public abstract class AsciiDocGenerator
         fw.append( "\n" );
     }
 
-    public Writer getFW(String dir, String title)
+    public static Writer getFW( String dir, String title )
     {
         try 
         {
@@ -127,9 +126,8 @@ public abstract class AsciiDocGenerator
             {
                 dirs.mkdirs();
             }
-            String name = title.replace( " ", "-" )
-                    .toLowerCase();
-            out = new File( dirs, name + ".txt" );
+            String name = title.replace( " ", "-" ).toLowerCase();
+            File out = new File( dirs, name + ".txt" );
             if ( out.exists() )
             {
                 out.delete();
@@ -138,14 +136,19 @@ public abstract class AsciiDocGenerator
             {
                 throw new RuntimeException( "File exists: " + out.getAbsolutePath() );
             }
-
             return new OutputStreamWriter( new FileOutputStream( out, false ),
                     "UTF-8" );
-        } catch (Exception e)
+        }
+        catch ( Exception e )
         {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public static PrintWriter getPrintWriter( String dir, String title )
+    {
+        return new PrintWriter( getFW( dir, title ) );
     }
     
     public static String getPath( Class<?> source )
@@ -154,6 +157,7 @@ public abstract class AsciiDocGenerator
                 .getName()
                 .replace( ".", "/" ) + "/" + source.getSimpleName() + ".java";
     }
+
     protected String replaceSnippets( String description )
     {
         for (String key : snippets.keySet()) {

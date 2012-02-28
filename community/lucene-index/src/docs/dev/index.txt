@@ -101,8 +101,7 @@ tag=createRelationships
 
 Assuming we set the same key-value pairs as properties as well, our example graph looks like this:
 
-image::indexing-imdb-example.png[scaledwidth="50%", alt="Indexing example node space"]
-
+include::movie-and-actor-graph.txt[]
 
 [[indexing-remove]]
 == Remove ==
