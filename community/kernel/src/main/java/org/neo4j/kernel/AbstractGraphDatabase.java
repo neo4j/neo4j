@@ -48,6 +48,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.IndexIterable;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
@@ -129,6 +130,7 @@ public abstract class AbstractGraphDatabase
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
     protected NodeManager nodeManager;
+    private IndexIterable indexIterable;
     protected IndexManagerImpl indexManager;
     protected Config config;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
@@ -312,6 +314,8 @@ public abstract class AbstractGraphDatabase
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
 
+        if (indexIterable == null)
+        	indexIterable = new LegacyIndexIterable();
         indexManager = new IndexManagerImpl(config, indexStore, xaDataSourceManager, txManager, this);
         nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( ConfigProxy.config( params, NodeAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
         relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( ConfigProxy.config( params, RelationshipAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
@@ -866,7 +870,20 @@ public abstract class AbstractGraphDatabase
         return storeDir.hashCode();
     }
 
-    protected class DefaultKernelData extends KernelData implements Lifecycle
+    public IndexIterable getIndexIterable() {
+		return indexIterable;
+	}
+
+    /**
+     * Provides a different IndexIterable implementation.
+     * The default implementation is Blueprint-wired {@link ListIndexIterable} for OSGi
+     * environments and {@link LegacyIndexIterable} for others.
+     */
+	public void setIndexIterable(IndexIterable indexIterable) {
+		this.indexIterable = (IndexIterable) indexIterable;
+	}
+
+	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final Config config;
         private GraphDatabaseSPI graphDb;
@@ -968,7 +985,7 @@ public abstract class AbstractGraphDatabase
 
         void loadIndexImplementations( IndexManagerImpl indexes, StringLogger msgLog )
         {
-            for ( IndexProvider index : Service.load( IndexProvider.class ) )
+            for ( IndexProvider index : indexIterable )
             {
                 try
                 {
@@ -1006,6 +1023,10 @@ public abstract class AbstractGraphDatabase
         }
     }
 
+    /**
+     * FIXME: This is supposed to be handled by a Dependency Injection framework...
+     * @author ceefour
+     */
     class DependencyResolverImpl
             implements DependencyResolver
     {

@@ -17,25 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.kernel;
 
-import org.neo4j.graphdb.DependencyResolver;
+import java.util.Iterator;
+
+import org.neo4j.graphdb.index.IndexIterable;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
 
 /**
- * Contract for IndexProvider implementations. It is an interface to
- * allow proper proxying.
+ * Provides {@link IndexProvider} objects based on {@link Service#load()} static method. 
  * @author ceefour
- *
  */
-public interface IndexProvider
-{
-    /**
-     * Load the implementation.
-     * @param dependencyResolver
-     * @return
-     * @throws Exception
-     */
-    IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
+public class LegacyIndexIterable implements IndexIterable {
 
-    public String identifier();
+	@Override
+	public Iterator<IndexProvider> iterator() {
+		return Service.load(IndexProvider.class).iterator();
+	}
+	
 }

@@ -23,6 +23,10 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProvider;
@@ -39,10 +43,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 
-import javax.transaction.TransactionManager;
-import java.util.Map;
-
-public class LuceneIndexProvider extends IndexProvider
+public class LuceneIndexProvider implements IndexProvider
 {
     private static List<WeakReference<LuceneIndexImplementation>> previousProviders = new ArrayList<WeakReference<LuceneIndexImplementation>>();
     
@@ -51,11 +52,11 @@ public class LuceneIndexProvider extends IndexProvider
         boolean read_only(boolean def);
     }
     
-    public LuceneIndexProvider()
-    {
-        super( LuceneIndexImplementation.SERVICE_NAME );
-    }
-
+	@Override
+	public String identifier() {
+		return LuceneIndexImplementation.SERVICE_NAME;
+	}
+	
     @Override
     public IndexImplementation load( DependencyResolver dependencyResolver)
     {
@@ -90,4 +91,5 @@ public class LuceneIndexProvider extends IndexProvider
         previousProviders.add( new WeakReference<LuceneIndexImplementation>( indexImplementation ) );
         return indexImplementation;
     }
+
 }
