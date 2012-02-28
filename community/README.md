@@ -12,7 +12,8 @@ Neo4j is built using Maven - http://maven.apache.org/
 Requirements
 ============
 
-At least as of Neo4j 1.7, OpenJDK 7 is unable to build Neo4j with
+At least as of Neo4j 1.7 and OpenJDK 1.7.0_147-icedtea,
+[OpenJDK 7 is unable to build Neo4j](https://groups.google.com/group/neo4j/msg/e208be9ee1c101d7) with
 following error: `java.lang.AssertionError: Missing type variable in where clause T`.
 Please use JDK 6 (OpenJDK is fine) to build Neo4j.
 
