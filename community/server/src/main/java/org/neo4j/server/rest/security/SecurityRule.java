@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.neo4j.server.configuration.Configurator;
-
 import javax.servlet.http.HttpServletRequest;
+
+import org.neo4j.server.configuration.Configurator;
 
 public interface SecurityRule
 {

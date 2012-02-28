@@ -19,8 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import java.net.URI;
+
+import javax.ws.rs.core.MediaType;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
@@ -35,12 +41,8 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import javax.ws.rs.core.MediaType;
-import java.net.URI;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
