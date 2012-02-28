@@ -19,14 +19,8 @@
  */
 package org.neo4j.server.rest.security;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
@@ -38,11 +32,15 @@ import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.net.URI;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.test.TestData.Title;
 
 public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
@@ -193,7 +191,7 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                 "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithWildcardPath\n----\n");
         gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithWildcardPath.class,
                                         "failingRuleWithWildcardPath");
-
+        gen.get().setSection("ops");
 
         functionalTestHelper = new FunctionalTestHelper(server);
 
