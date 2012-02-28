@@ -175,12 +175,20 @@ public class BatchOperationService
     {
         for ( Map.Entry<String, List<String>> header : httpHeaders.getRequestHeaders().entrySet() )
         {
+            final String key = header.getKey();
             final List<String> value = header.getValue();
             if ( value == null ) continue;
             if ( value.size() != 1 )
                 throw new IllegalArgumentException(
                         "expecting one value per header" );
-            res.addHeader( header.getKey(), header.getValue().get( 0 ) );
+            if ( key.equals( "Accept" ) || key.equals( "Content-Type" ) )
+            {
+                res.addHeader( key, "application/json" );
+            }
+            else
+            {
+                res.addHeader( key, value.get( 0 ) );
+            }
         }
     }
 
