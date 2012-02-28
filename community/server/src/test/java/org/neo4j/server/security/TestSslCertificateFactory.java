@@ -17,22 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.security;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
+
+import java.io.File;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 
 import org.junit.Test;
 
-public class JsonHelperTest {
-    
+public class TestSslCertificateFactory {
+
     @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+    public void shouldCreateASelfSignedCertificate() throws Exception {
+        File cPath = File.createTempFile("cert", "test");
+        File pkPath = File.createTempFile("privatekey", "test");
+        
+        SslCertificateFactory sslFactory = new SslCertificateFactory();
+        sslFactory.createSelfSignedCertificate(cPath, pkPath, "myhost");
+        
+        // Attempt to load certificate
+        Certificate c = sslFactory.loadCertificate(cPath);
+        assertThat(c, notNullValue());
+        
+        // Attempt to load private key
+        PrivateKey pk = sslFactory.loadPrivateKey(pkPath);
+        assertThat(pk, notNullValue());
     }
-
-
+    
 }

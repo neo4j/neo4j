@@ -27,16 +27,6 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.rest.repr.DatabaseRepresentation;
-import org.neo4j.server.rest.repr.GremlinTableRepresentation;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.MapRepresentation;
-import org.neo4j.server.rest.repr.MappingRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.RelationshipRepresentation;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.RepresentationType;
-import org.neo4j.server.rest.repr.ValueRepresentation;
 
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;

@@ -107,7 +107,6 @@ public class Documenter
     {
         this.title = title;
         this.client = client;
-
     }
 
     public void add( final String query, final String assertion, final String comment )
@@ -117,24 +116,7 @@ public class Documenter
 
     public void run()
     {
-        File dir = new File( "target/docs/dev/shell" );
-        if ( !dir.exists() )
-        {
-            dir.mkdirs();
-        }
-        File file = new File( dir, this.title.toLowerCase().replace( " ", "-" )
-                + ".txt" );
-        PrintWriter out = null;
-        try
-        {
-            out = new PrintWriter( new OutputStreamWriter(
-                    new FileOutputStream( file ), "UTF-8" ) );
-        }
-        catch ( IOException e1 )
-        {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
+        PrintWriter out = getWriter( this.title );
         out.println();
         out.println( "[source, bash]" );
         out.println( "-----" );
@@ -163,7 +145,29 @@ public class Documenter
         out.println( "-----" );
         out.flush();
         out.close();
+    }
 
+    PrintWriter getWriter( String title )
+    {
+        File dir = new File( "target/docs/dev/shell" );
+        if ( !dir.exists() )
+        {
+            dir.mkdirs();
+        }
+        File file = new File( dir, title.toLowerCase()
+                .replace( " ", "-" ) + ".txt" );
+        PrintWriter out = null;
+        try
+        {
+            out = new PrintWriter( new OutputStreamWriter(
+                    new FileOutputStream( file ), "UTF-8" ) );
+        }
+        catch ( IOException e1 )
+        {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        return out;
     }
 
     private void doc( final Job job, final PrintWriter out, final String result, String prompt )

@@ -17,22 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.web;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-import org.junit.Test;
+public class SimpleUriBuilder {
 
-public class JsonHelperTest {
-    
-    @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+    public URI buildURI(String address, int port, boolean isSsl)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append( "http" );
+        
+        if ( isSsl )
+        {
+            sb.append( "s" );
+
+        }
+        sb.append( "://" );
+
+        sb.append( address );
+
+        if ( port != 80 && port != 443)
+        {
+            sb.append( ":" );
+            sb.append( port );
+        }
+        sb.append( "/" );
+
+        try
+        {
+            return new URI( sb.toString() );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
-
 
 }

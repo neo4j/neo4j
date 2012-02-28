@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.security;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.mortbay.jetty.security.SslSocketConnector;
 
-import org.junit.Test;
+public class SslSocketConnectorFactory {
 
-public class JsonHelperTest {
-    
-    @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+    public SslSocketConnector createConnector(KeyStoreInformation config, String host, int port) {
+        SslSocketConnector connector = new SslSocketConnector();
+        
+        connector.setPort( port );
+        connector.setHost( host );
+        
+        connector.setKeyPassword(String.valueOf(config.getKeyPassword()));
+        connector.setPassword(String.valueOf(config.getKeyStorePassword()));
+        connector.setKeystore(config.getKeyStorePath());
+        
+        return connector; 
     }
-
-
+    
 }

@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.shell;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-import org.junit.Test;
-
-public class JsonHelperTest {
-    
-    @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+public class DontShutdownClient
+{
+    public static void main( String[] args ) throws Exception
+    {
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
+        ShellClient client = new SameJvmClient( server );
+        server.shutdown();
+        // Intentionally don't shutdown the client
     }
-
-
 }

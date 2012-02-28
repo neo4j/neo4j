@@ -17,22 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.security;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
+
 import org.junit.Test;
 
-public class JsonHelperTest {
-    
+public class TestKeyStoreFactory {
+
     @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+    public void shouldCreateKeyStoreForGivenKeyPair() throws Exception {
+
+        File cPath = File.createTempFile("cert", "test");
+        File pkPath = File.createTempFile("privatekey", "test");
+        File keyStorePath = File.createTempFile("keyStore", "test");
+        
+        SslCertificateFactory ssl = new SslCertificateFactory();
+        ssl.createSelfSignedCertificate(cPath, pkPath, "asd");
+        
+        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
+        
+        KeyStoreInformation ks = keyStoreFactory.createKeyStore(keyStorePath, pkPath, cPath);
+        
+        File keyStoreFile = new File(ks.getKeyStorePath());
+        assertThat(keyStoreFile.exists(), is(true));
+        
     }
-
-
+    
 }

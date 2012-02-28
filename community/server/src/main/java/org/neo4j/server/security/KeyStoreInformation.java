@@ -17,22 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.security;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+public class KeyStoreInformation {
 
-import org.junit.Test;
-
-public class JsonHelperTest {
+    private final String keyStorePath;
+    private final char[] keyStorePassword;
+    private final char[] keyPassword;
     
-    @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+    public KeyStoreInformation(String keyStorePath, char[] keyStorePassword, char[] keyPassword) {
+        this.keyStorePassword = keyStorePassword;
+        this.keyStorePath = keyStorePath;
+        this.keyPassword = keyPassword;
+    }
+    
+    public String getKeyStorePath() {
+        return keyStorePath;
+    }
+    
+    public char[] getKeyStorePassword() {
+        return keyStorePassword;
     }
 
-
+    public char[] getKeyPassword() {
+        return keyPassword;
+    }
+    
 }
