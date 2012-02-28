@@ -183,13 +183,17 @@ public class BatchOperationService
                         "expecting one value per header" );
             if ( key.equals( "Accept" ) || key.equals( "Content-Type" ) )
             {
-                res.addHeader( key, "application/json" );
+                continue; // We add them explicitly
             }
             else
             {
                 res.addHeader( key, value.get( 0 ) );
             }
         }
+        // Make sure they are there and always json
+        // Taking advantage of Map semantics here
+        res.addHeader( "Accept", "application/json" );
+        res.addHeader( "Content-Type", "application/json" );
     }
 
     private URI calculateTargetUri( UriInfo serverUriInfo, String requestedPath )
