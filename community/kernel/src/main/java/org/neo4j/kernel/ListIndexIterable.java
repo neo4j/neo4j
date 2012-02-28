@@ -40,7 +40,6 @@ public class ListIndexIterable implements IndexIterable {
 	
 	@Override
 	public Iterator<IndexProvider> iterator() {
-		System.out.println("WE got " + indexProviders.size());
 		if (indexProviders != null)
 			return indexProviders.iterator();
 		else
