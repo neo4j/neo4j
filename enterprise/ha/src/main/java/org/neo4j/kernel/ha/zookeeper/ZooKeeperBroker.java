@@ -133,7 +133,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public StoreId getClusterStoreId()
     {
-        return zooClient.getClusterStoreId();
+        return getZooClient().getClusterStoreId();
     }
 
     @Override
@@ -143,7 +143,7 @@ public class ZooKeeperBroker extends AbstractBroker
         JMXServiceURL url = Neo4jManager.getConnectionURL(kernel);
         if ( instanceId != null && url != null )
         {
-            zooClient.setJmxConnectionData( url, instanceId );
+            getZooClient().setJmxConnectionData( url, instanceId );
         }
     }
 
@@ -160,8 +160,9 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public ConnectionInformation[] getConnectionInformation()
     {
-        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( false );
-        Machine master = zooClient.getMasterBasedOn( machines.values() );
+        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines(
+                false );
+        Machine master = getZooClient().getMasterBasedOn( machines.values() );
         ConnectionInformation[] result = new ConnectionInformation[machines.size()];
         int i = 0;
         for ( Machine machine : machines.values() )
@@ -173,26 +174,27 @@ public class ZooKeeperBroker extends AbstractBroker
 
     private ConnectionInformation addJmxInfo( ConnectionInformation connect )
     {
-        zooClient.getJmxConnectionData( connect );
+        getZooClient().getJmxConnectionData( connect );
         return connect;
     }
 
     public Pair<Master, Machine> getMaster()
     {
-        return zooClient.getCachedMaster();
+        return getZooClient().getCachedMaster();
     }
 
     public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
-        return zooClient.getMasterFromZooKeeper( true, allowChange );
+        return getZooClient().getMasterFromZooKeeper( true, allowChange );
     }
 
     @Override
     public Machine getMasterExceptMyself()
     {
-        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( true );
+        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines(
+                true );
         machines.remove( getMyMachineId() );
-        return zooClient.getMasterBasedOn( machines.values() );
+        return getZooClient().getMasterBasedOn( machines.values() );
     }
 
     public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
@@ -203,12 +205,12 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public void setLastCommittedTxId( long txId )
     {
-        zooClient.setCommittedTx( txId );
+        getZooClient().setCommittedTx( txId );
     }
 
     public boolean iAmMaster()
     {
-        return zooClient.getCachedMaster().other().getMachineId() == getMyMachineId();
+        return getZooClient().getCachedMaster().other().getMachineId() == getMyMachineId();
     }
 
     @Override
@@ -243,17 +245,24 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public void rebindMaster()
     {
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, getMyMachineId() );
+        getZooClient().setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD,
+                getMyMachineId() );
     }
 
     @Override
     public void notifyMasterChange( Machine newMaster )
     {
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD, newMaster.getMachineId() );
+        getZooClient().setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD,
+                newMaster.getMachineId() );
     }
 
     protected ZooClient getZooClient()
     {
+        if ( zooClient == null )
+        {
+            throw new IllegalStateException(
+                    "This ZooKeeperBroker has been shutdown - no operations are possible until started up again. Maybe the database is restarting?" );
+        }
         return zooClient;
     }
 }
