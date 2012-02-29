@@ -22,6 +22,7 @@ package org.neo4j.shell.impl;
 import java.rmi.RemoteException;
 
 import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -33,8 +34,9 @@ import org.neo4j.shell.ShellServer;
 public class RemoteClient extends AbstractClient
 {
 	private ShellServer server;
-	private RmiLocation serverLocation;
-	private Output out;
+	private final RmiLocation serverLocation;
+	private final Output out;
+	private final SessionImpl session;
 
     public RemoteClient( RmiLocation serverLocation ) throws ShellException
     {
@@ -50,6 +52,7 @@ public class RemoteClient extends AbstractClient
 		this.serverLocation = serverLocation;
 		this.server = findRemoteServer();
 		this.out = out;
+		this.session = new RemoteSession();
 	}
 
 	private ShellServer findRemoteServer() throws ShellException
@@ -119,10 +122,17 @@ public class RemoteClient extends AbstractClient
 		}
 		return this.server;
 	}
+	
+	@Override
+	public Session session()
+	{
+	    return session;
+	}
 
 	public void shutdown()
 	{
 	    super.shutdown();
-		this.tryUnexport( this.out );
+        if ( session.writer != null ) tryUnexport( session.writer );
+		tryUnexport( this.out );
 	}
 }

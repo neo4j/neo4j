@@ -21,8 +21,10 @@ package org.neo4j.test;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -182,7 +184,7 @@ public class AbstractSubProcessTestBase
                 Map<String, String> dbConfiguration ) throws IOException
         {
             this.dbConfiguration = addVitalConfig( dbConfiguration );
-            this.storeDir = test.target.directory( "graphdb." + instance, true ).getCanonicalPath();
+            this.storeDir = getStoreDir( test, instance ).getCanonicalPath();
         }
 
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
@@ -200,6 +202,12 @@ public class AbstractSubProcessTestBase
         {
             graphdb.shutdown();
         }
+    }
+    
+    protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
+            throws IOException
+    {
+        return test.target.directory( "graphdb." + instance, true );
     }
     
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
@@ -346,5 +354,13 @@ public class AbstractSubProcessTestBase
         {
             super( failure );
         }
+    }
+
+    protected static Field inaccessibleField( Object source, String fieldName )
+            throws NoSuchFieldException
+    {
+        Field field = source.getClass().getDeclaredField( fieldName );
+        field.setAccessible( true );
+        return field;
     }
 }

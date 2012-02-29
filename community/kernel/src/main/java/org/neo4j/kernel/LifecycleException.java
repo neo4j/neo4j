@@ -25,7 +25,7 @@ package org.neo4j.kernel;
  * they will be chained through the cause exception mechanism.
  */
 public class LifecycleException
-    extends Exception
+    extends RuntimeException
 {
     LifeSupport.Status from;
     LifeSupport.Status to;

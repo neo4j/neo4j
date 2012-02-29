@@ -24,7 +24,6 @@ import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 
 import javax.transaction.xa.Xid;
@@ -279,14 +278,6 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
         }
     }
 
-    private static Field inaccessibleField( Object source, String fieldName )
-            throws NoSuchFieldException
-    {
-        Field field = source.getClass().getDeclaredField( fieldName );
-        field.setAccessible( true );
-        return field;
-    }
-    
     static void failingCommitDone()
     {   // Activates break point with the same name
     }

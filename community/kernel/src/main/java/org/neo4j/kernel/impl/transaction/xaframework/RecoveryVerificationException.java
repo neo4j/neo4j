@@ -17,34 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.security;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.servlet.http.HttpServletRequest;
-
-
-
-public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityRule
+public class RecoveryVerificationException extends RuntimeException
 {
-
-    public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
-
-
-    public boolean isAuthorized( HttpServletRequest request )
+    public RecoveryVerificationException( int identifier, long txId )
     {
-        return false;
-    }
-
-    //START SNIPPET: failingRuleWithWildcardPath
-    public String forUriPath()
-    {
-        return "/protected/*";
-    }
-    // END SNIPPET: failingRuleWithWildcardPath
-
-
-    public String wwwAuthenticateHeader()
-    {
-        return SecurityFilter.basicAuthenticationResponse(REALM);
+        super( "Recovered transaction with identifier:" + identifier + ", txId:" + txId +
+                " was recovered, but didn't verify correctly" );
     }
 }
-

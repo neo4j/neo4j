@@ -157,7 +157,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         ds = new NeoStoreXaDataSource(ConfigProxy.config(config, NeoStoreXaDataSource.Configuration.class), sf, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(Collections.<String,String>emptyMap(), TxIdGenerator.DEFAULT, new PlaceboTm(),
-                        CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
+                        CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier() ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
 
         xaCon = ds.getXaConnection();
         pStore = xaCon.getPropertyStore();

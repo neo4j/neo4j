@@ -17,34 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.security;
+package org.neo4j.shell;
 
-import javax.servlet.http.HttpServletRequest;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-
-
-public class PermanentlyFailingSecurityRuleWithWildcardPath implements SecurityRule
+public class DontShutdownClient
 {
-
-    public static final String REALM = "WallyWorld"; // as per RFC2617 :-)
-
-
-    public boolean isAuthorized( HttpServletRequest request )
+    public static void main( String[] args ) throws Exception
     {
-        return false;
-    }
-
-    //START SNIPPET: failingRuleWithWildcardPath
-    public String forUriPath()
-    {
-        return "/protected/*";
-    }
-    // END SNIPPET: failingRuleWithWildcardPath
-
-
-    public String wwwAuthenticateHeader()
-    {
-        return SecurityFilter.basicAuthenticationResponse(REALM);
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
+        ShellClient client = new SameJvmClient( server );
+        server.shutdown();
+        // Intentionally don't shutdown the client
     }
 }
-
