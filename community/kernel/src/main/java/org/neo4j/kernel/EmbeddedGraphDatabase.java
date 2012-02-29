@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.index.IndexIterable;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -65,8 +66,14 @@ public class EmbeddedGraphDatabase extends AbstractGraphDatabase
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
+        this( storeDir, params, null);
+    }
+    
+    public EmbeddedGraphDatabase( String storeDir, Map<String,String> params, IndexIterable indexIterable)
+    {
         super( storeDir, params );
-
+        setIndexIterable(indexIterable);
         run();
     }
+    
 }

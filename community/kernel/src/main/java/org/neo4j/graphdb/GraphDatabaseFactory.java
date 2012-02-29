@@ -17,25 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.graphdb;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 
 /**
- * Contract for IndexProvider implementations. It is an interface to
- * allow proper proxying.
  * @author ceefour
- *
+ * Creates a {@link GraphDatabaseService}.
  */
-public interface IndexProvider
-{
-    /**
-     * Load the implementation.
-     * @param dependencyResolver
-     * @return
-     * @throws Exception
-     */
-    IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
+public interface GraphDatabaseFactory {
 
-    public String identifier();
+	/**
+	 * Creates an {@link EmbeddedGraphDatabase}.
+	 * @param storeDir
+	 * @return
+	 */
+	EmbeddedGraphDatabase createEmbedded(String storeDir);
+	/**
+	 * Creates an {@link EmbeddedReadOnlyGraphDatabase}.
+	 * @param storeDir
+	 * @return
+	 */
+	EmbeddedReadOnlyGraphDatabase createEmbeddedReadOnly(String storeDir);
+
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.IndexIterable;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -48,8 +49,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir )
     {
         this( storeDir, readOnlyParams );
-        
-        run();
     }
 
     /**
@@ -67,7 +66,15 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
+        this( storeDir, params, null );
+    }
+
+    public EmbeddedReadOnlyGraphDatabase( String storeDir,
+            Map<String, String> params, IndexIterable indexIterable )
+    {
         super( storeDir, addReadOnly(params) );
+        setIndexIterable(indexIterable);
+        run();
     }
 
     private static Map<String, String> addReadOnly( Map<String, String> params )

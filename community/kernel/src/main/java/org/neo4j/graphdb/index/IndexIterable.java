@@ -19,23 +19,14 @@
  */
 package org.neo4j.graphdb.index;
 
-import org.neo4j.graphdb.DependencyResolver;
 
 /**
- * Contract for IndexProvider implementations. It is an interface to
- * allow proper proxying.
+ * Workaround for https://issues.apache.org/jira/browse/ARIES-834
+ * 
+ * Should be removed when the bug is fixed or Neo4j kernel code has been refactored to use dependency injection.
  * @author ceefour
  *
  */
-public interface IndexProvider
+public interface IndexIterable extends Iterable<IndexProvider>
 {
-    /**
-     * Load the implementation.
-     * @param dependencyResolver
-     * @return
-     * @throws Exception
-     */
-    IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
-
-    public String identifier();
 }
