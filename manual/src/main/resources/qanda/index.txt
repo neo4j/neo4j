@@ -58,9 +58,6 @@ What is the best strategy for get-or-create semantics?::
         2. If not exists, pessimistically lock on a common node (or set of common nodes).
         3. If not exists, optimistically create, and then double check afterwards. (explanation will be extended)
 
-//What are suitable use cases for Neo4j?::
-//        TBD
-
 How does locking work?::
         Pessimistic locking.
         Locks are never required for reading. Writers will not block readers. It's impossible to make a read operation block without using explicit locking facilities.
@@ -106,12 +103,6 @@ How is a load balancer used with HA?::
         Typically a small server extension can be written to return 200 or 404 depending on whether the machine is master or slave.
         This extension can then be polled by the load balancer to determine the master and slave machine sets.
         Writing only to slaves ensures that committed transactions exist in at least two places.
-
-//Is there a client-side JAR for remote access?::
-//        TBD.
-
-//What is the largest known Neo4j deployment?::
-//        TBD.
 
 What kind of monitoring support does Neo4j provide?::
         Neo4j does not currently have built-in tracing or explain plans.
