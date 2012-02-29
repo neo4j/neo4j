@@ -38,6 +38,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -49,7 +50,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
-    private final Set<TransactionInfo> recoveredDoneRecords = new HashSet<TransactionInfo>();
+    private final Set<TransactionInfo> recoveredTransactions = new HashSet<TransactionInfo>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -58,15 +59,17 @@ public class XaResourceManager
     private final XaDataSource dataSource;
     private StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
+    private final RecoveryVerifier recoveryVerifier;
 
     public XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
             TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
-            String name )
+            RecoveryVerifier recoveryVerifier, String name )
     {
         this.dataSource = dataSource;
         this.tf = tf;
         this.txIdGenerator = txIdGenerator;
         this.transactionManager = transactionManager;
+        this.recoveryVerifier = recoveryVerifier;
         this.name = name;
     }
 
@@ -479,8 +482,9 @@ public class XaResourceManager
         else if ( !log.scanIsComplete() || recoveredTxCount > 0 )
         {
             int identifier = xaTransaction.getIdentifier();
-            recoveredDoneRecords.add( new TransactionInfo( identifier, onePhase,
-                    xaTransaction.getCommitTxId() ) );
+            Start startEntry = log.getStartEntry( identifier );
+            recoveredTransactions.add( new TransactionInfo( identifier, onePhase,
+                    xaTransaction.getCommitTxId(), startEntry.getMasterId(), startEntry.getChecksum() ) );
         }
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
@@ -577,7 +581,7 @@ public class XaResourceManager
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
-            recoveredDoneRecords.remove( xaTransaction.getIdentifier() );
+            recoveredTransactions.remove( xaTransaction.getIdentifier() );
             recoveredTxCount--;
             checkIfRecoveryComplete();
         }
@@ -669,7 +673,7 @@ public class XaResourceManager
         }
         checkIfRecoveryComplete();
     }
-
+    
     private void checkIfRecoveryComplete()
     {
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
@@ -679,15 +683,20 @@ public class XaResourceManager
             tf.recoveryComplete();
             try
             {
-                for ( TransactionInfo recoveredTx : recoveredDoneRecords )
+                for ( TransactionInfo recoveredTx : sortByTxId( recoveredTransactions ) )
                 {
+                    if ( recoveryVerifier != null && !recoveryVerifier.isValid( recoveredTx ) )
+                    {
+                        throw new RecoveryVerificationException( recoveredTx.getIdentifier(), recoveredTx.getTxId() );
+                    }
+                    
                     if ( !recoveredTx.isOnePhase() )
                     {
                         log.commitTwoPhase( recoveredTx.getIdentifier(), recoveredTx.getTxId(), ForceMode.forced );
                     }
                     log.doneInternal( recoveredTx.getIdentifier() );
                 }
-                recoveredDoneRecords.clear();
+                recoveredTransactions.clear();
             }
             catch ( IOException e )
             {
@@ -701,6 +710,13 @@ public class XaResourceManager
             }
             msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
         }
+    }
+
+    private Iterable<TransactionInfo> sortByTxId( Set<TransactionInfo> set )
+    {
+        List<TransactionInfo> list = new ArrayList<TransactionInfo>( set );
+        Collections.sort( list );
+        return list;
     }
 
     // for testing, do not use!

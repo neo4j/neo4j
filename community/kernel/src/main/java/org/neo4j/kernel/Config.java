@@ -228,7 +228,6 @@ public class Config implements DiagnosticsProvider
 
         // Configuration may not be changed at runtime
         this.params = Collections.unmodifiableMap(this.params);
-
     }
 
     public static Map<String, String> getDefaultParams()

@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 
 public class CommonFactories
 {
@@ -78,5 +79,10 @@ public class CommonFactories
     public static TxHook defaultTxHook()
     {
         return new DefaultTxHook();
+    }
+    
+    public static RecoveryVerifier defaultRecoveryVerifier()
+    {
+        return RecoveryVerifier.ALWAYS_VALID;
     }
 }

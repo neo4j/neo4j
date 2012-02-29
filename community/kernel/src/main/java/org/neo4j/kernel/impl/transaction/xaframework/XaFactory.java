@@ -38,8 +38,11 @@ public class XaFactory
     private LogBufferFactory logBufferFactory;
     private FileSystemAbstraction fileSystemAbstraction;
     private StringLogger stringLogger;
+    private final RecoveryVerifier recoveryVerifier;
 
-    public XaFactory(Map<String, String> config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public XaFactory(Map<String, String> config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
+            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger, RecoveryVerifier recoveryVerifier )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -47,6 +50,7 @@ public class XaFactory
         this.logBufferFactory = logBufferFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
+        this.recoveryVerifier = recoveryVerifier;
     }
 
     public XaContainer newXaContainer(XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
@@ -60,7 +64,7 @@ public class XaFactory
         }
 
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
-        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, logicalLog );
+        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog );
 
         XaLogicalLog log;
         if ( "true".equalsIgnoreCase( (String) config.get(Config.INTERCEPT_DESERIALIZED_TRANSACTIONS) )

@@ -66,7 +66,6 @@ public class EmbeddedGraphDatabase extends AbstractGraphDatabase
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
         super( storeDir, params );
-
         run();
     }
 }
