@@ -425,7 +425,7 @@ public class TestXa extends AbstractNeo4jTestCase
         LogBufferFactory logBufferFactory = CommonFactories.defaultLogBufferFactory();
         return new NeoStoreXaDataSource( ConfigProxy.config(config, NeoStoreXaDataSource.Configuration.class), sf, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
-                        logBufferFactory, CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL),
+                        logBufferFactory, CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()),
         Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null);
     }
 

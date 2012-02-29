@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-public class TransactionInfo
+public class TransactionInfo implements Comparable<TransactionInfo>
 {
     private final int identifier;
     private final boolean trueForOnePhase;
     private final long txId;
+    private final int master;
+    private final long checksum;
     
-    public TransactionInfo( int identifier, boolean trueForOnePhase, long txId )
+    public TransactionInfo( int identifier, boolean trueForOnePhase, long txId, int master, long checksum )
     {
         super();
         this.identifier = identifier;
         this.trueForOnePhase = trueForOnePhase;
         this.txId = txId;
+        this.master = master;
+        this.checksum = checksum;
     }
     
     public int getIdentifier()
@@ -46,5 +50,33 @@ public class TransactionInfo
     public long getTxId()
     {
         return txId;
+    }
+    
+    public int getMaster()
+    {
+        return master;
+    }
+    
+    public long getChecksum()
+    {
+        return checksum;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return identifier;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return obj instanceof TransactionInfo && ((TransactionInfo)obj).identifier == identifier;
+    }
+
+    @Override
+    public int compareTo( TransactionInfo o )
+    {
+        return Long.valueOf( txId ).compareTo( Long.valueOf( o.txId ) );
     }
 }

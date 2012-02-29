@@ -338,7 +338,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         Map<String,String> config = new HashMap<String,String>();
         config.put( "store_dir", "target/var" );
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL)) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -399,7 +399,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL)) );
+            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

@@ -127,7 +127,7 @@ public class TestRecovery
         FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());
-        LuceneDataSource ds = new LuceneDataSource(ConfigProxy.config(params, LuceneDataSource.Configuration.class), new IndexStore( getDbPath(), fileSystem ), fileSystem, new XaFactory(params, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL));
+        LuceneDataSource ds = new LuceneDataSource(ConfigProxy.config(params, LuceneDataSource.Configuration.class), new IndexStore( getDbPath(), fileSystem ), fileSystem, new XaFactory(params, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()));
         ds.close();
     }
 }

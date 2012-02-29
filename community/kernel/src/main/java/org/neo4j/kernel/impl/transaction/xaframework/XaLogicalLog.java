@@ -311,6 +311,16 @@ public class XaLogicalLog implements LogLoader
                                     + e ), e );
         }
     }
+    
+    synchronized Start getStartEntry( int identifier )
+    {
+        Start start = xidIdentMap.get( identifier );
+        if ( start == null )
+        {
+            throw new IllegalArgumentException( "Start entry for " + identifier + " not found" );
+        }
+        return start;
+    }
 
     // [TX_PREPARE][identifier]
     public synchronized void prepare( int identifier ) throws XAException
