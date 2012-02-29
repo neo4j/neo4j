@@ -51,7 +51,6 @@ public class IntroExamplesTest implements GraphHolder
             "Sara friend Maria", "Joe friend Steve" }, autoIndexNodes = true )
     public void intro_examples() throws Exception
     {
-        gen.get();
         Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like\n\n" );
