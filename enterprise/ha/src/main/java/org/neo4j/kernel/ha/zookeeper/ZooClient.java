@@ -736,6 +736,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public StoreId getClusterStoreId()
     {
+        waitForSyncConnected();
         makeSureRootPathIsFound();
         return storeId;
     }
