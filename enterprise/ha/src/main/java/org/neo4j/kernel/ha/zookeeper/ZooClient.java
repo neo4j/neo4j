@@ -798,6 +798,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public StoreId getClusterStoreId()
     {
+        waitForSyncConnected();
         return storeId;
     }
 
