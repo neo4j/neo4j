@@ -30,18 +30,6 @@ public class UriPathWildcardMatcher
 
     public boolean matches(String uri)
     {
-        System.out.println("UriPathWildcardMatcher.matches: {" +
-                                   "uriPath='" + uriPath + '\'' +
-                                   " uri = '" + uri + "' }'" +
-                                   " outcome = " + uri.matches(uriPath));
         return uri.matches(uriPath);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "UriPathWildcardMatcher{" +
-                "uriPath='" + uriPath + '\'' +
-                '}';
     }
 }
