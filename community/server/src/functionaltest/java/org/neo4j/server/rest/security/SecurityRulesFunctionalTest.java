@@ -19,8 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import java.net.URI;
+
+import javax.ws.rs.core.MediaType;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
@@ -32,15 +38,11 @@ import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import javax.ws.rs.core.MediaType;
-import java.net.URI;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.test.TestData.Title;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
@@ -64,10 +66,15 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
     /**
      * In this example, a (dummy) failing security rule is registered to deny
      * access to all URIs to the server by listing the rules class in
-     * +neo4j-server.properties+:
+     * 'neo4j-server.properties':
      *
-     * @@config with the rule source code of:
-     * @@failingRule With this rule registered, any access to the server will be
+     * @@config
+     * 
+     * with the rule source code of:
+     * 
+     * @@failingRule
+     * 
+     * With this rule registered, any access to the server will be
      * denied. In a production-quality implementation the rule
      * will likely lookup credentials/claims in a 3rd party
      * directory service (e.g. LDAP) or in a local database of
@@ -142,7 +149,7 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
         server.start();
 
         gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithWildcardPath.class,
-                                        "failingWildcardRule");
+                        "failingRuleWithWildcardPath" );
 
         functionalTestHelper = new FunctionalTestHelper(server);
 
@@ -155,8 +162,7 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 
 
     /**
-     *
-     *  In this example, a (dummy) failing security rule is registered to deny
+     * In this example, a (dummy) failing security rule is registered to deny
      * access to all URIs to the server by listing the rule(s) class(es) in
      * +neo4j-server.properties+
      * In this case, the rule is registered
@@ -166,8 +172,13 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
      * +/users*type*+ will bind the rule to resources matching
      * the URIs like +/users/fred/type/premium+
      *
-     * @@config with the rule source code of:
-     * @@failingWildcardRule With this rule registered, any access to the server will be
+     * @@config
+     * 
+     * with the rule source code of:
+     * 
+     * @@failingRuleWithWildcardPath
+     * 
+     * With this rule registered, any access to the server will be
      * denied. Using wildcards allows flexible targeting of security rules to
      * arbitrary parts of the server's API, including any unmanaged extensions or managed
      * plugins that have been registered.
