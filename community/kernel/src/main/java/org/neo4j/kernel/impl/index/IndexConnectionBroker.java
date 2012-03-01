@@ -54,7 +54,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
             try
             {
                 con = (T) newConnection();
-                if ( !tx.enlistResource( con.getXaResource() ) )
+                if ( !con.enlistResource( tx ) )
                 {
                     throw new RuntimeException( "Unable to enlist '"
                                                 + con.getXaResource() + "' in "
@@ -107,7 +107,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
         {
             try
             {
-                tx.delistResource( con.getXaResource(), XAResource.TMSUCCESS );
+                con.delistResource(tx, XAResource.TMSUCCESS);
             }
             catch ( IllegalStateException e )
             {

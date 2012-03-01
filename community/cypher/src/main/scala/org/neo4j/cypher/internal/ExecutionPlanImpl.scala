@@ -39,7 +39,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
   private def prepareExecutionPlan(): ((Map[String, Any]) => PipeExecutionResult, String) = {
     query match {
-      case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, having, queryText) => {
+      case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryText) => {
         var sorted = false
         var aggregated = false
         val predicates = where match {
@@ -67,26 +67,24 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
           context.pipe = new FilterPipe(context.pipe, context.predicates.reduceLeft(_ ++ _))
         }
 
-        val allReturnItems = extractReturnItems(returns, aggregation)
-
-        context.pipe = new ExtractPipe(context.pipe, allReturnItems)
 
         (aggregation, sort) match {
           case (Some(agg), Some(sorting)) => {
-            val sortColumns = sorting.sortItems.map(_.returnItem.columnName)
-            val keyColumns = returns.returnItems.map(_.columnName)
+            val sortExpressions = sorting.sortItems.map(_.expression)
+            val keyExpressions = returns.returnItems.map(_.expression).filterNot(_.containsAggregate)
 
-            if (canUseOrderedAggregation(sortColumns, keyColumns)) {
+            if (canUseOrderedAggregation(sortExpressions, keyExpressions)) {
 
               val keyColumnsNotAlreadySorted = returns.
                 returnItems.
-                filterNot(ri => sortColumns.contains(ri.columnName))
-                .map(x => SortItem(x, true))
+                filterNot(ri => sortExpressions.contains(ri.columnName))
+                .map(x => SortItem(x.expression, true))
 
               val newSort = Some(Sort(sorting.sortItems ++ keyColumnsNotAlreadySorted: _*))
 
-              createSortPipe(newSort, allReturnItems, context)
-              context.pipe = new OrderedAggregationPipe(context.pipe, returns.returnItems, agg.aggregationItems)
+              context.pipe = new ExtractPipe(context.pipe, keyExpressions)
+              createSortPipe(newSort, keyExpressions, context)
+              context.pipe = new OrderedAggregationPipe(context.pipe, keyExpressions, agg.aggregationItems)
               sorted = true
               aggregated = true
             }
@@ -95,18 +93,35 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
         }
 
         if (!aggregated) {
-          aggregation match {
-            case None =>
-            case Some(aggr) => {
-              context.pipe = new EagerAggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
+          if (aggregation.nonEmpty) {
+            val aggr = aggregation.get
+            val keyExpressions = returns.returnItems.map(_.expression).filterNot(_.containsAggregate)
+
+            context.pipe = new ExtractPipe(context.pipe, keyExpressions)
+            context.pipe = new EagerAggregationPipe(context.pipe, keyExpressions, aggr.aggregationItems)
+
+
+            val notKeyAndNotAggregate = returns.returnItems.map(_.expression).filterNot(keyExpressions.contains)
+
+            if (notKeyAndNotAggregate.nonEmpty) {
+              val rewritten = notKeyAndNotAggregate.map(e => {
+                e.rewrite {
+                  case x: AggregationExpression => Entity(x.identifier.name)
+                  case x => x
+                }
+              })
+
+              context.pipe = new ExtractPipe(context.pipe, rewritten)
             }
+
+          }
+          else {
+            context.pipe = new ExtractPipe(context.pipe, returns.returnItems.map(_.expression))
           }
         }
-        
-        context = addHavingFilter(context, having)
 
         if (!sorted) {
-          createSortPipe(sort, allReturnItems, context)
+          createSortPipe(sort, returns.returnItems.map(_.expression), context)
         }
 
         slice match {
@@ -114,9 +129,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
           case Some(x) => context.pipe = new SlicePipe(context.pipe, x.from, x.limit)
         }
 
-        val returnItems = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
-
-        val result = new ColumnFilterPipe(context.pipe, returnItems)
+        val result = new ColumnFilterPipe(context.pipe, returns.returnItems)
 
         val func = (params: Map[String, Any]) => {
           val start = System.currentTimeMillis()
@@ -131,35 +144,18 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       }
     }
   }
-  
-  private def addHavingFilter(current:CurrentContext, having:Option[Predicate]):CurrentContext = having match {
-    case None => current
-    case Some(pred) => {
-      val p = new FilterPipe(current.pipe, pred)
-      new CurrentContext(p, current.predicates)
-    }
-  }
-
-  private def createSortPipe(sort: Option[Sort], allReturnItems: Seq[ReturnItem], context: CurrentContext) {
+  private def createSortPipe(sort: Option[Sort], allReturnItems: Seq[Expression], context: CurrentContext) {
     sort match {
       case None =>
       case Some(s) => {
 
-        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems contains)
+        val sortItems = s.sortItems.map(_.expression).filterNot(allReturnItems contains)
         if (sortItems.nonEmpty) {
           context.pipe = new ExtractPipe(context.pipe, sortItems)
         }
         context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
       }
     }
-  }
-
-  private def extractReturnItems(returns: Return, aggregation: Option[Aggregation]): Seq[ReturnItem] = {
-    val aggregation1 = aggregation.getOrElse(new Aggregation())
-
-    val aggregationItems = aggregation1.aggregationItems.map(_.concreteReturnItem)
-
-    returns.returnItems ++ aggregationItems
   }
 
   private def addFilters(context: CurrentContext): CurrentContext = {
@@ -267,12 +263,12 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       })
 
     case NodeById(varName, valueGenerator) => new NodeStartPipe(lastPipe, varName, m => makeNodes[Node](valueGenerator(m), varName, graph.getNodeById))
-    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllNodes.asScala )
-    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala )
+    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllNodes.asScala)
+    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala)
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 
-  private def canUseOrderedAggregation(sortColumns: Seq[String], keyColumns: Seq[String]): Boolean = keyColumns.take(sortColumns.size) == sortColumns
+  private def canUseOrderedAggregation(sortColumns: Seq[Expression], keyColumns: Seq[Expression]): Boolean = keyColumns.take(sortColumns.size) == sortColumns
 
   private def makeNodes[T](data: Any, name: String, getElement: Long => T): Seq[T] = {
     def castElement(x: Any): T = x match {

@@ -76,8 +76,7 @@ trait StartClause extends Base {
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
 
-  def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
-
+  private def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
 
   def andQuery: Parser[String] = idxQuery ~ ignoreCase("and") ~ idxQueries ^^ {
     case q ~ and ~ qs => q + " AND " + qs

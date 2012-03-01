@@ -21,9 +21,10 @@ package org.neo4j.test;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collections;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -85,7 +86,7 @@ public class AbstractSubProcessTestBase
 
     protected interface Task extends Serializable
     {
-        void run( AbstractGraphDatabase graphdb );
+        void run( EmbeddedGraphDatabase graphdb );
     }
 
     @Before
@@ -176,14 +177,14 @@ public class AbstractSubProcessTestBase
         public Bootstrapper( AbstractSubProcessTestBase test, int instance )
                                                                                throws IOException
         {
-            this( test, instance, Collections.<String, String>emptyMap() );
+            this( test, instance, new HashMap<String, String>() );
         }
 
         public Bootstrapper( AbstractSubProcessTestBase test, int instance,
                 Map<String, String> dbConfiguration ) throws IOException
         {
             this.dbConfiguration = addVitalConfig( dbConfiguration );
-            this.storeDir = test.target.directory( "graphdb." + instance, true ).getCanonicalPath();
+            this.storeDir = getStoreDir( test, instance ).getCanonicalPath();
         }
 
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
@@ -192,7 +193,7 @@ public class AbstractSubProcessTestBase
                     Config.KEEP_LOGICAL_LOGS, "true" );
         }
 
-        protected AbstractGraphDatabase startup()
+        protected EmbeddedGraphDatabase startup()
         {
             return new EmbeddedGraphDatabase( storeDir, dbConfiguration );
         }
@@ -201,6 +202,12 @@ public class AbstractSubProcessTestBase
         {
             graphdb.shutdown();
         }
+    }
+    
+    protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
+            throws IOException
+    {
+        return test.target.directory( "graphdb." + instance, true );
     }
     
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
@@ -248,7 +255,7 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( final AbstractGraphDatabase graphdb )
+        public void run( final EmbeddedGraphDatabase graphdb )
         {
             new Thread( new Runnable()
             {
@@ -264,9 +271,9 @@ public class AbstractSubProcessTestBase
     @SuppressWarnings( { "hiding", "serial" } )
     private static class SubInstance extends SubProcess<Instance, Bootstrapper> implements Instance
     {
-        private volatile AbstractGraphDatabase graphdb;
-        private static final AtomicReferenceFieldUpdater<SubInstance, AbstractGraphDatabase> GRAPHDB = AtomicReferenceFieldUpdater
-                .newUpdater( SubInstance.class, AbstractGraphDatabase.class, "graphdb" );
+        private volatile EmbeddedGraphDatabase graphdb;
+        private static final AtomicReferenceFieldUpdater<SubInstance, EmbeddedGraphDatabase> GRAPHDB = AtomicReferenceFieldUpdater
+                .newUpdater( SubInstance.class, EmbeddedGraphDatabase.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
         private volatile Throwable failure;
 
@@ -347,5 +354,13 @@ public class AbstractSubProcessTestBase
         {
             super( failure );
         }
+    }
+
+    protected static Field inaccessibleField( Object source, String fieldName )
+            throws NoSuchFieldException
+    {
+        Field field = source.getClass().getDeclaredField( fieldName );
+        field.setAccessible( true );
+        return field;
     }
 }

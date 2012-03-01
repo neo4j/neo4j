@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.modules;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,20 +39,10 @@ import org.junit.Test;
 import org.neo4j.jmx.JmxUtils;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.impl.core.GraphDbModule;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
 
 public class WebAdminModuleTest
 {
@@ -67,13 +64,6 @@ public class WebAdminModuleTest
 
         when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
-
-        Config config = mock( Config.class );
-        when( db.graph.getConfig() ).thenReturn( config );
-        NodeManager nodeManager = mock( NodeManager.class );
-        GraphDbModule graphDbModule = mock( GraphDbModule.class );
-        when( config.getGraphDbModule() ).thenReturn( graphDbModule );
-        when( graphDbModule.getNodeManager() ).thenReturn( nodeManager );
 
         CompositeDataSupport result = mock( CompositeDataSupport.class );
         when( result.get( "used" ) ).thenReturn( 50L );

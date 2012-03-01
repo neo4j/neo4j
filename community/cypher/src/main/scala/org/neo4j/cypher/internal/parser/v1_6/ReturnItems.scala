@@ -30,8 +30,7 @@ trait ReturnItems extends Base with Expressions {
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
   def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
-
-  def aggregationFunction: Parser[ReturnItem] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
+  def aggregationFunction: Parser[(Expression,String)] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
     case name ~ (distinct ~ inner) => {
       val (aggregate,columnName) = name match {
         case "count" => (Count(inner), "count(" + inner.identifier.name + ")")
@@ -43,22 +42,22 @@ trait ReturnItems extends Base with Expressions {
       }
 
       if (distinct.isEmpty) {
-        ReturnItem(aggregate, columnName)
+        (aggregate, columnName)
       }
       else {
         val innerName = aggregate.identifier.name
         val name = innerName.substring(0, innerName.indexOf("(")) + "(distinct " + inner.identifier.name + ")"
 
-        ReturnItem(Distinct(aggregate, inner), name)
+        (Distinct(aggregate, inner), name)
       }
     }
   }
 
-  def countStar: Parser[ReturnItem] = ignoreCase("count") ~> parens("*") ^^ {
-    case "*" => ReturnItem(CountStar(), "count(*)")
-  }
+  def countStar: Parser[(Expression,String)] = ignoreCase("count") ~> parens("*") ^^^ (CountStar(), "count(*)")
 
-  def aggregate: Parser[ReturnItem] = countStar | aggregationFunction
+  def aggregateExpression:Parser[Expression] = (countStar|aggregationFunction) ^^ { case (expression,name) => expression }
+
+  def aggregateReturnItem: Parser[ReturnItem] = (countStar|aggregationFunction) ^^ { case (expression,name) => ReturnItem(expression, name) }
 }
 
 

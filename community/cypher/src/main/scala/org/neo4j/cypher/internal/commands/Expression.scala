@@ -44,6 +44,8 @@ abstract class Expression extends (Map[String, Any] => Any) {
   def filter(f: Expression => Boolean): Seq[Expression]
 
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
+
+  override def toString() = identifier.name
 }
 
 case class Add(a: Expression, b: Expression) extends Expression {
@@ -81,8 +83,6 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def numberWithNumber(a: Number, b: Number) = a.doubleValue() - b.doubleValue()
 
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
-  
-  
 }
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -139,7 +139,14 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
   def operand: String
 
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
-    throw new CypherTypeException("Don't know how to subtract `" + bVal.toString + "` from `" + aVal.toString + "`")
+    
+    
+    throw new CypherTypeException("Don't know how to " + verb + " `" + name(bVal) + "` with `" + name(aVal) + "`")
+  }
+  
+  private def name(x:Any)=x match {
+    case null => "null"
+    case _ => x.toString
   }
 
   def apply(m: Map[String, Any]) = {
@@ -172,8 +179,6 @@ case class Literal(v: Any) extends Expression {
   def apply(m: Map[String, Any]) = v
 
   def identifier = Identifier(v.toString, AnyType.fromJava(v))
-
-  override def toString() = if (v.isInstanceOf[String]) "\"" + v + "\"" else v.toString
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 
@@ -208,9 +213,6 @@ case class Nullable(expression: Expression) extends Expression {
     Seq(this) ++ expression.filter(f)
   else
     expression.filter(f)
-
-
-  override def toString() = expression.toString() + "?"
 }
 
 case class Property(entity: String, property: String) extends CastableExpression {
@@ -226,8 +228,6 @@ case class Property(entity: String, property: String) extends CastableExpression
   }
 
   def identifier: Identifier = Identifier(entity + "." + property, ScalarType())
-
-  override def toString(): String = entity + "." + property
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
 
@@ -254,6 +254,23 @@ case class Entity(entityName: String) extends CastableExpression {
     Seq(this)
   else
     Seq()
+}
+
+case class Collection(expressions:Expression*) extends CastableExpression {
+  def apply(m: Map[String, Any]): Any = expressions.map(e=>e(m))
+
+  def identifier: Identifier = Identifier(name, AnyIterableType())
+  
+  private def name = expressions.map(_.identifier.name).mkString("[", ", ", "]")
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.declareDependencies(AnyType()))
+
+  def rewrite(f: (Expression) => Expression): Expression = f(Collection(expressions.map(f):_*))
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = if(f(this))
+    Seq(this) ++ expressions.flatMap(_.filter(f))
+  else
+    expressions.flatMap(_.filter(f))
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {

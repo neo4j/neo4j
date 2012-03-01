@@ -59,13 +59,10 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
     (start, end)
   }
 
-  private def createExpander[U](): Expander = {
-    val expander = relType match {
+  private def createExpander[U](): Expander = relType match {
       case None => Traversal.expanderForAllTypes(dir)
       case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
     }
-    expander
-  }
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 

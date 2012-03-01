@@ -441,8 +441,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", refNode.getId)).
       matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false, True())).
-      aggregation(ReturnItem(CountStar(), "count(*)")).
-      returns(ReturnItem(Entity("a"), "a"))
+      aggregation(CountStar()).
+      returns(ReturnItem(Entity("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -495,7 +495,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(ReturnItem(Property("start", "name"), "start.name"), true)).
+      orderBy(SortItem(Property("start", "name"), true)).
       skip(2).
       returns(ReturnItem(Entity("start"), "start"))
 
@@ -509,7 +509,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(ReturnItem(Property("start", "name"), "start.name"), true)).
+      orderBy(SortItem(Property("start", "name"), true)).
       skip("skippa").
       returns(ReturnItem(Entity("start"), "start"))
 
@@ -523,7 +523,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(ReturnItem(Property("start", "name"), "start.name"), true)).
+      orderBy(SortItem(Property("start", "name"), true)).
       limit(2).
       skip(2).
       returns(ReturnItem(Entity("start"), "start"))
@@ -538,7 +538,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
-      orderBy(SortItem(ReturnItem(Property("start", "name"), "start.name"), true)).
+      orderBy(SortItem(Property("start", "name"), true)).
       limit("l").
       skip("s").
       returns(ReturnItem(Entity("start"), "start"))
@@ -549,18 +549,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def shouldSortOnAggregatedFunction() {
-    val n1 = createNode(Map("name" -> "andres", "divison" -> "Sweden", "age" -> 33))
-    val n2 = createNode(Map("name" -> "michael", "divison" -> "Germany", "age" -> 22))
-    val n3 = createNode(Map("name" -> "jim", "divison" -> "England", "age" -> 55))
-    val n4 = createNode(Map("name" -> "anders", "divison" -> "Sweden", "age" -> 35))
+    createNode(Map("name" -> "andres", "division" -> "Sweden", "age" -> 33))
+    createNode(Map("name" -> "michael", "division" -> "Germany", "age" -> 22))
+    createNode(Map("name" -> "jim", "division" -> "England", "age" -> 55))
+    createNode(Map("name" -> "anders", "division" -> "Sweden", "age" -> 35))
 
-    val query = Query.
-      start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)).
-      aggregation(ReturnItem(Max(Property("n", "age")), "x")).
-      orderBy(SortItem(ReturnItem(Max(Property("n", "age")), "x"), true)).
-      returns(ReturnItem(Property("n", "divison"), "n.division"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start n=node(1,2,3,4) return n.division, max(n.age) order by max(n.age) ")
 
     assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.division").toList)
   }
@@ -573,11 +567,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)).
-      aggregation(ReturnItem(CountStar(), "count(*)")).
+      aggregation(CountStar()).
       orderBy(
-      SortItem(ReturnItem(CountStar(), "count(*)"), false),
-      SortItem(ReturnItem(Property("n", "division"), "n.division"), true)).
-      returns(ReturnItem(Property("n", "division"), "n.division"))
+      SortItem(CountStar(), false),
+      SortItem(Property("n", "division"), true)).
+      returns(ReturnItem(Property("n", "division"), "n.division"),ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -625,8 +619,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ReturnItem(CountStar(), "count(*)")).
-      returns(ReturnItem(Property("node", "x"), "node.x"))
+      aggregation(CountStar()).
+      returns(ReturnItem(Property("node", "x"), "node.x"),ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -634,37 +628,27 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def shouldCountNonNullValues() {
-    val n1 = createNode(Map("y" -> "a", "x" -> 33))
-    val n2 = createNode(Map("y" -> "a"))
-    val n3 = createNode(Map("y" -> "b", "x" -> 42))
+    createNode(Map("y" -> "a", "x" -> 33))
+    createNode(Map("y" -> "a"))
+    createNode(Map("y" -> "b", "x" -> 42))
 
-    val query = Query.
-      start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ReturnItem(Count(Nullable(Property("node", "x"))), "count(node.x)")).
-      returns(ReturnItem(Property("node", "y"), "node.y"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start n=node(1,2,3) return n.y, count(n.x?)")
 
     assertThat(result.toList.asJava,
       hasItems[Map[String, Any]](
-        Map("node.y" -> "a", "count(node.x)" -> 1),
-        Map("node.y" -> "b", "count(node.x)" -> 1)))
+        Map("n.y" -> "a", "count(n.x?)" -> 1),
+        Map("n.y" -> "b", "count(n.x?)" -> 1)))
   }
 
   @Test def shouldSumNonNullValues() {
-    val n1 = createNode(Map("y" -> "a", "x" -> 33))
-    val n2 = createNode(Map("y" -> "a"))
-    val n3 = createNode(Map("y" -> "a", "x" -> 42))
+    createNode(Map("y" -> "a", "x" -> 33))
+    createNode(Map("y" -> "a"))
+    createNode(Map("y" -> "a", "x" -> 42))
 
-    val query = Query.
-      start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ReturnItem(Sum(Nullable(Property("node", "x"))), "sum(node.x)")).
-      returns(ReturnItem(Property("node", "y"), "node.y"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start n = node(1,3) return n.y, sum(n.x)")
 
     assertThat(result.toList.asJava,
-      hasItems[Map[String, Any]](Map("node.y" -> "a", "sum(node.x)" -> 75)))
+      hasItems[Map[String, Any]](Map("n.y" -> "a", "sum(n.x)" -> 75)))
   }
 
   @Test def shouldWalkAlternativeRelationships() {
@@ -1690,21 +1674,6 @@ RETURN x0.name?
     parseAndExecute("start a=node(*) return a, count(*) order by COUNT(*)").toList
   }
 
-  @Test def shouldExcludeWithHaving() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-
-    relate(b, a)
-    relate(c, a)
-
-    relate(a, b)
-
-    val result = parseAndExecute("start a=node(*) match a<--() return a, count(*) having count(*) > 1")
-
-    assert(List(a) === result.columnAs[Node]("a").toList)
-  }
-
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1735,12 +1704,27 @@ RETURN x0.name?
     intercept[SyntaxException](parseAndExecute("start a=node(1) return count(count(*))").toList)
   }
 
-  @Ignore("Exposes #254")
   @Test def aggregates_inside_normal_functions_should_work() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) return length(collect(a))").toList
     assert(List(Map("length(collect(a))"->1)) === result)
+  }
+
+  @Test def aggregates_should_be_possible_to_use_with_arithmetics() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) return count(*) * 10").toList
+    assert(List(Map("count(*) * 10"->10)) === result)
+  }
+
+  @Test def aggregates_should_be_possible_to_order_by_arithmetics() {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("start a=node(1),b=node(2,3) return count(a) * 10 + count(b) * 5 as X order by X").toList
+    assert(List(Map("X"->30)) === result)
   }
 
   @Test def tests_that_filterfunction_works_as_expected() {
@@ -1754,6 +1738,11 @@ RETURN x0.name?
 
     assert(List(r) == resultingCollection)
   }
+  
+  @Test def expose_problem_with_aliasing() {
+    createNode("nisse")
+    parseAndExecute("start n=node(1) return n.name, count(*) as foo order by n.name")
+  } 
 
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)

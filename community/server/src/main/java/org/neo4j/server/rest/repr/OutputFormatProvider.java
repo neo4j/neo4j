@@ -23,8 +23,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.neo4j.server.database.AbstractInjectableProvider;
+
+import com.sun.jersey.api.core.HttpContext;
 
 public final class OutputFormatProvider extends AbstractInjectableProvider<OutputFormat>
 {

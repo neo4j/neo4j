@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.test.AbstractSubProcessTestBase;
@@ -53,7 +52,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class CreateData implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -91,7 +90,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class ReadData implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
             assertNotNull( "did not get the node from the index", node );
@@ -148,7 +147,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
      */
     public static void main( String... args ) throws Exception
     {
-        final AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase(
+        final EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase(
                 "target/test-data/" + TestPropertyReadOnNewEntityBeforeLockRelease.class.getName() + "/graphdb" );
         final CountDownLatch completion = new CountDownLatch( 2 );
         class TaskRunner implements Runnable

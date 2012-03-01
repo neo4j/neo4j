@@ -19,21 +19,75 @@
  */
 package org.neo4j.index.lucene;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.index.impl.lucene.ConnectionBroker;
+import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.index.impl.lucene.LuceneXaConnection;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.impl.index.IndexConnectionBroker;
+import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+
+import javax.transaction.TransactionManager;
+import java.util.Map;
 
 public class LuceneIndexProvider extends IndexProvider
 {
+    private static List<WeakReference<LuceneIndexImplementation>> previousProviders = new ArrayList<WeakReference<LuceneIndexImplementation>>();
+    
+    public interface Configuration
+    {
+        boolean read_only(boolean def);
+    }
+    
     public LuceneIndexProvider()
     {
         super( LuceneIndexImplementation.SERVICE_NAME );
     }
 
     @Override
-    public IndexImplementation load( KernelData kernel )
+    public IndexImplementation load( DependencyResolver dependencyResolver)
     {
-        return new LuceneIndexImplementation( kernel.graphDatabase(), kernel.getConfig() );
+        Map<String, String> params = (Map<String, String>) dependencyResolver.resolveDependency(Map.class);
+        AbstractGraphDatabase gdb = dependencyResolver.resolveDependency(AbstractGraphDatabase.class);
+        TransactionManager txManager = dependencyResolver.resolveDependency(TransactionManager.class);
+        IndexStore indexStore = dependencyResolver.resolveDependency(IndexStore.class);
+        XaFactory xaFactory = dependencyResolver.resolveDependency(XaFactory.class);
+        FileSystemAbstraction fileSystemAbstraction = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
+        XaDataSourceManager xaDataSourceManager = dependencyResolver.resolveDependency(XaDataSourceManager.class);
+        Configuration conf = ConfigProxy.config(params, Configuration.class);
+
+        LuceneDataSource luceneDataSource = new LuceneDataSource(ConfigProxy.config(params, LuceneDataSource.Configuration.class), indexStore, fileSystemAbstraction, xaFactory);
+
+        xaDataSourceManager.registerDataSource(luceneDataSource);
+
+        IndexConnectionBroker<LuceneXaConnection> broker = conf.read_only(false) ? new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txManager )
+                : new ConnectionBroker( txManager, luceneDataSource );
+
+        // TODO This is a hack to support reload of HA instances. Remove if HA supports start/stop of single instance instead
+        for( Iterator<WeakReference<LuceneIndexImplementation>> iterator = previousProviders.iterator(); iterator.hasNext(); )
+        {
+            WeakReference<LuceneIndexImplementation> previousProvider = iterator.next();
+            LuceneIndexImplementation indexImplementation = previousProvider.get();
+            if (indexImplementation == null)
+                iterator.remove();
+            else if ( indexImplementation.matches( gdb ) )
+                indexImplementation.reset( luceneDataSource, broker );
+        }
+        
+        LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( gdb, luceneDataSource, broker );
+        previousProviders.add( new WeakReference<LuceneIndexImplementation>( indexImplementation ) );
+        return indexImplementation;
     }
 }

@@ -41,7 +41,7 @@ class TransactionDataImpl implements TransactionData
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties =
             newCollection();
     
-    private static <T> Collection<T> newCollection()
+    private <T> Collection<T> newCollection()
     {
         // TODO Tweak later, better collection impl or something?
         return new ArrayList<T>();

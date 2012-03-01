@@ -31,7 +31,9 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.GraphDatabaseTestAccess;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -41,10 +43,12 @@ import org.neo4j.tooling.GlobalGraphOperations;
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
  */
-public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
+public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 {
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
+    private EphemeralFileSystemAbstraction fileSystemAbstraction;
+
     static
     {
         try
@@ -59,10 +63,21 @@ public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), withoutMemmap( params ), new EphemeralIdGenerator.Factory(),
-                new EphemeralFileSystemAbstraction() );
+        super( path(), withoutMemmap( params ));
     }
-    
+
+    @Override
+    protected FileSystemAbstraction createFileSystemAbstraction()
+    {
+        return fileSystemAbstraction = new EphemeralFileSystemAbstraction();
+    }
+
+    @Override
+    protected IdGeneratorFactory createIdGeneratorFactory()
+    {
+        return new EphemeralIdGenerator.Factory();
+    }
+
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
@@ -121,10 +136,11 @@ public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
         }
     }
 
-    protected void close()
+    @Override
+    public void shutdown()
     {
-        super.close();
-        ((EphemeralFileSystemAbstraction) fileSystem).dispose();
+        super.shutdown();
+
         clearDirectory( new File( getStoreDir() ) );
     }
 

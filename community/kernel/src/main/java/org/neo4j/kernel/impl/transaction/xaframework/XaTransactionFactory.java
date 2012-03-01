@@ -40,7 +40,7 @@ public abstract class XaTransactionFactory
 
     public abstract void flushAll();
     
-    void setLogicalLog( XaLogicalLog log )
+    public void setLogicalLog( XaLogicalLog log )
     {
         this.log = log;
     }

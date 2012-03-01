@@ -38,22 +38,14 @@ import org.neo4j.graphdb.index.ReadableIndex;
  * @param <T> The database primitive type auto indexed
  */
 abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
-        PropertyTracker<T>, AutoIndexer<T>
+        PropertyTracker<T>, AutoIndexer<T>, Lifecycle
 {
-    private final Set<String> propertyKeysToInclude = new HashSet<String>();
-
-    private final EmbeddedGraphDbImpl gdb;
+    protected final Set<String> propertyKeysToInclude = new HashSet<String>();
 
     private volatile boolean enabled;
 
-    public AbstractAutoIndexerImpl( EmbeddedGraphDbImpl gdb )
+    public AbstractAutoIndexerImpl( )
     {
-        this.gdb = gdb;
-    }
-
-    void start()
-    {
-        resolveConfig();
     }
 
     public void propertyAdded( T primitive, String propertyName,
@@ -104,7 +96,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     @Override
     public void startAutoIndexingProperty( String propName )
     {
-        propertyKeysToInclude.add( propName );
+        propertyKeysToInclude.add(propName);
     }
 
     @Override
@@ -119,11 +111,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         return Collections.unmodifiableSet( propertyKeysToInclude );
     }
 
-    protected EmbeddedGraphDbImpl getGraphDbImpl()
-    {
-        return gdb;
-    }
-
     /**
      * Returns the actual index used by the auto indexer. This is not supposed
      * to
@@ -133,39 +120,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
      */
     protected abstract Index<T> getIndexInternal();
 
-    /**
-     * @return The configuration parameter name that contains the comma
-     *         separated list of properties to auto index.
-     */
-    protected abstract String getAutoIndexConfigListName();
-
-    /**
-     * @return The configuration parameter name that sets this auto indexer to
-     *         enabled/disabled.
-     */
-    protected abstract String getEnableConfigName();
-
-    /**
-     * @return The String that is the name of the Index used by this auto
-     *         indexer for Indexing.
-     */
-    protected abstract String getAutoIndexName();
-
-    /**
-     * Reads in the configuration from the GraphDbImpl, gets the actual
-     * configuration parameter names from the derived implementations and parses
-     * the input.
-     */
-    private void resolveConfig()
-    {
-        Config config = gdb.getConfig();
-        boolean enable = Boolean.parseBoolean( (String) ( config.getParams().get( getEnableConfigName() ) ) );
-        setEnabled( enable );
-
-        propertyKeysToInclude.addAll( parseConfigList( (String) ( config.getParams().get( getAutoIndexConfigListName() ) ) ) );
-    }
-
-    private Set<String> parseConfigList( String list )
+    protected Set<String> parseConfigList(String list)
     {
         if ( list == null )
         {

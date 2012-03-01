@@ -24,11 +24,13 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -148,15 +150,8 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, MapUtil.genericMap(
-                    IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                    StringLogger.class, StringLogger.DEV_NULL,
-                    FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
-                    "store_dir", "target/var/teststore" ), IdType.NODE );
-        }
-
-        protected void initStorage()
-        {
+            super( fileName, ConfigProxy.config(MapUtil.stringMap(
+                    "store_dir", "target/var/teststore" ), AbstractStore.Configuration.class), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
         }
 
         public int getRecordSize()
@@ -169,10 +164,9 @@ public class TestStore
             return TYPE_DESCRIPTOR;
         }
 
-        public static Store createStore( String fileName ) throws IOException
+        public static Store createStore( String fileName) throws IOException
         {
-            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY,
-                    FILE_SYSTEM );
+            new StoreFactory(Collections.<String,String>emptyMap(), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
             return new Store( fileName );
         }
 

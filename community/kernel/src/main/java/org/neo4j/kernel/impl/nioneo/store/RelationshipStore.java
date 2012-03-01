@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -33,6 +31,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class RelationshipStore extends AbstractStore implements Store, RecordStore<RelationshipRecord>
 {
+    public interface Configuration
+        extends AbstractStore.Configuration
+    {
+        
+    }
+    
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
@@ -41,12 +45,9 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     // second_next_rel_id+next_prop_id(int)
     public static final int RECORD_SIZE = 33;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
-    public RelationshipStore( String fileName, Map<?,?> config )
+    public RelationshipStore(String fileName, Configuration configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super( fileName, config, IdType.RELATIONSHIP );
+        super(fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
 
     @Override
@@ -77,22 +78,6 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     public void close()
     {
         super.close();
-    }
-
-    /**
-     * Creates a new relationship store contained in <CODE>fileName</CODE> If
-     * filename is <CODE>null</CODE> or the file already exists an <CODE>IOException</CODE>
-     * is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship store
-     * @throws IOException
-     *             If unable to create relationship store or name null
-     */
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory,
-            FileSystemAbstraction fileSystem )
-    {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory, fileSystem  );
     }
 
     public RelationshipRecord getRecord( long id )
@@ -372,9 +357,4 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         return list;
     }
 
-    @Override
-    public void logIdUsage( StringLogger.LineLogger logger )
-    {
-        NeoStore.logIdUsage( logger, this );
-    }
 }

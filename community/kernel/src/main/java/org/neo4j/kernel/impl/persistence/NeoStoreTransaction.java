@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.persistence;
 
 import java.util.Map;
 
-import javax.transaction.xa.XAResource;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -43,13 +44,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 public interface NeoStoreTransaction
 {
     public void setXaConnection( XaConnection connection );
-
-    /**
-     * Returns the {@link javax.transaction.xa.XAResource} that represents this
-     * connection.
-     * @return the <CODE>XAResource</CODE> for this connection
-     */
-    public XAResource getXAResource();
 
     /**
      * Destroy this transaction. Makes it not known to anyone.
@@ -340,4 +334,7 @@ public interface NeoStoreTransaction
      *         in the record.
      */
     public int getKeyIdForProperty( PropertyData property );
+
+    boolean delistResource( Transaction tx, int tmsuccess )
+        throws SystemException;
 }

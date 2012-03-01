@@ -20,20 +20,42 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.kernel.Lifecycle;
+
 public class AdaptiveCacheManager
+    implements Lifecycle
 {
+    public interface Configuration
+    {
+        int adaptive_cache_worker_sleep_time(int def);
+
+        float adaptive_cache_manager_decrease_ratio(float def, float min, float max);
+
+        float adaptive_cache_manager_increase_ratio(float def, float min, float max);
+    }
+
+    private Configuration config;
+    private ScheduledExecutorService executor;
+
+    public AdaptiveCacheManager(Configuration config)
+    {
+        this.config = config;
+    }
+
     private static final Logger log = Logger
         .getLogger( AdaptiveCacheManager.class.getName() );
 
-    private float decreaseRatio = 1.15f;
-    private float increaseRatio = 1.1f;
+    private float decreaseRatio;
+    private float increaseRatio;
 
     private final List<AdaptiveCacheElement> caches = 
         new LinkedList<AdaptiveCacheElement>();
@@ -41,8 +63,6 @@ public class AdaptiveCacheManager
     private final List<ReferenceCache<?,?>> referenceCaches = 
         new ArrayList<ReferenceCache<?,?>>();
     
-    private AdaptiveCacheWorker workerThread;
-
     public synchronized void registerCache( Cache<?,?> cache, float ratio,
         int minSize )
     {
@@ -113,122 +133,39 @@ public class AdaptiveCacheManager
         return null;
     }
 
-    private void parseParams( Map<Object,Object> params )
+    @Override
+    public void init()
     {
-        if ( params == null )
-        {
-            return;
-        }
-        if ( params.containsKey( "adaptive_cache_worker_sleep_time" ) )
-        {
-            Object value = params.get( "adaptive_cache_worker_sleep_time" );
-            int sleepTime = 3000;
-            try
-            {
-                sleepTime = Integer.parseInt( (String) value );
-            }
-            catch ( NumberFormatException e )
-            {
-                log.warning( 
-                    "Unable to parse apdaptive_cache_worker_sleep_time " + 
-                    value );
-            }
-            workerThread.setSleepTime( sleepTime );
-        }
-        if ( params.containsKey( "adaptive_cache_manager_decrease_ratio" ) )
-        {
-            Object value = params.get( 
-                "adaptive_cache_manager_decrease_ratio" );
-            try
-            {
-                decreaseRatio = Float.parseFloat( (String) value );
-            }
-            catch ( NumberFormatException e )
-            {
-                log.warning( 
-                    "Unable to parse adaptive_cache_manager_decrease_ratio " + 
-                    value );
-            }
-            if ( decreaseRatio < 1 )
-            {
-                decreaseRatio = 1.0f;
-            }
-        }
-        if ( params.containsKey( "adaptive_cache_manager_increase_ratio" ) )
-        {
-            Object value = params.get( 
-                "adaptive_cache_manager_increase_ratio" );
-            try
-            {
-                increaseRatio = Float.parseFloat( (String) value );
-            }
-            catch ( NumberFormatException e )
-            {
-                log.warning( 
-                    "Unable to parse adaptive_cache_manager_increase_ratio " + 
-                    value );
-            }
-            if ( increaseRatio < 1 )
-            {
-                increaseRatio = 1.0f;
-            }
-        }
     }
 
-    public void start( Map<Object,Object> params )
+    @Override
+    public void start()
     {
-        workerThread = new AdaptiveCacheWorker();
-        parseParams( params );
-        workerThread.start();
+        decreaseRatio = config.adaptive_cache_manager_decrease_ratio(1.15f, 1.0f, Float.MAX_VALUE);
+        increaseRatio = config.adaptive_cache_manager_increase_ratio(1.1f, 1.0f, Float.MAX_VALUE);
+
+        executor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("Adaptive cache manager"));
+        executor.schedule( new AdaptiveCacheJob(), config.adaptive_cache_worker_sleep_time(3000), TimeUnit.MILLISECONDS );
     }
 
+    @Override
     public void stop()
     {
-        workerThread.markDone();
-        workerThread = null;
+        executor.shutdownNow();
     }
 
-    Collection<AdaptiveCacheElement> getCaches()
+    @Override
+    public void shutdown()
     {
-        return caches;
     }
 
-    private class AdaptiveCacheWorker extends Thread
+    private class AdaptiveCacheJob
+        implements Runnable
     {
-        private boolean done = false;
-        private int sleepTime = 3000;
-
-        AdaptiveCacheWorker()
+        public void run()
         {
-            super( "AdaptiveCacheWorker" );
-
-        }
-
-        void setSleepTime( int sleepTime )
-        {
-            this.sleepTime = sleepTime;
-        }
-
-        public synchronized void run()
-        {
-            while ( !done )
-            {
-                try
-                {
-                    adaptReferenceCaches();
-                    adaptCaches();
-                    this.wait( sleepTime );
-                }
-                catch ( InterruptedException e )
-                { 
-                    Thread.interrupted();
-                }
-            }
-        }
-
-        void markDone()
-        {
-            done = true;
+            adaptReferenceCaches();
+            adaptCaches();
         }
     }
     
@@ -284,7 +221,6 @@ public class AdaptiveCacheManager
             // then allocationRatio
             ratio = 0;
         }
-
 
         if ( ratio > element.getRatio() )
         {

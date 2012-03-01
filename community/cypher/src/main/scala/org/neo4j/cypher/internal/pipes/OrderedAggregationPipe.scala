@@ -21,42 +21,42 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.internal.commands.ReturnItem
 import java.lang.String
-import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, SymbolTable}
+import org.neo4j.cypher.internal.commands.{Expression, AggregationExpression}
 
 // This class can be used to aggregate if the values sub graphs come in the order that they are keyed on
-class OrderedAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[ReturnItem]) extends PipeWithSource(source) {
+class OrderedAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], aggregations: Seq[AggregationExpression]) extends PipeWithSource(source) {
 
-  if (returnItems.isEmpty)
+  if (keyExpressions.isEmpty)
     throw new ThisShouldNotHappenError("Andres Taylor", "The ordered aggregation pipe should never be used without aggregation keys")
 
   val symbols: SymbolTable = createSymbols()
 
-  def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies)
+  def dependencies: Seq[Identifier] = keyExpressions.flatMap(_.dependencies(AnyType())) ++ aggregations.flatMap(_.dependencies(AnyType()))
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(returnItems.map(_.columnName): _*)
-    val aggregatedColumns = aggregations.map(_.concreteReturnItem.identifier)
+    val keySymbols = source.symbols.filter(keyExpressions.map(_.identifier.name): _*)
+    val aggregateIdentifiers = aggregations.map(_.identifier)
 
-    keySymbols.add(aggregatedColumns: _*)
+    keySymbols.add(aggregateIdentifiers: _*)
   }
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = new OrderedAggregator(source.createResults(params), returnItems, aggregations)
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = new OrderedAggregator(source.createResults(params), keyExpressions, aggregations)
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + returnItems.map(_.columnName).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + keyExpressions.map(_.identifier.name).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
 }
 
 private class OrderedAggregator(source: Traversable[Map[String, Any]],
-                                returnItems: Seq[ReturnItem],
-                                aggregations: Seq[ReturnItem]) extends Traversable[Map[String, Any]] {
+                                returnItems: Seq[Expression],
+                                aggregations: Seq[AggregationExpression]) extends Traversable[Map[String, Any]] {
   var currentKey: Option[Seq[Any]] = None
   var aggregationSpool: Seq[AggregationFunction] = null
-  val keyColumns = returnItems.map(_.columnName)
-  val aggregateColumns = aggregations.map(_.columnName)
+  val keyColumns = returnItems.map(_.identifier.name)
+  val aggregateColumns = aggregations.map(_.identifier.name)
 
-  def getIntermediateResults[U]() = (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).toMap
+  def getIntermediateResults[U] = (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).toMap
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
@@ -65,7 +65,7 @@ private class OrderedAggregator(source: Traversable[Map[String, Any]],
         aggregationSpool = aggregations.map(_.createAggregationFunction)
         currentKey = key
       } else if (key != currentKey) {
-        f(getIntermediateResults())
+        f(getIntermediateResults)
 
         aggregationSpool = aggregations.map(_.createAggregationFunction)
         currentKey = key
@@ -75,7 +75,7 @@ private class OrderedAggregator(source: Traversable[Map[String, Any]],
     })
 
     if (currentKey.nonEmpty) {
-      f(getIntermediateResults())
+      f(getIntermediateResults)
     }
   }
 }

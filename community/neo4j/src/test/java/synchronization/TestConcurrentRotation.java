@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -106,7 +107,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class Verifier implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
         }
@@ -115,7 +116,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class CreateInitialStateTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -142,7 +143,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
             if ( resume ) resumeFlushThread();
@@ -154,11 +155,11 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         private volatile boolean success;
         
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
+                graphdb.getXaDataSourceManager().getXaDataSource( LuceneDataSource.DEFAULT_NAME ).rotateLogicalLog();
                 setSuccess( graphdb, true );
             }
             catch ( Exception e )

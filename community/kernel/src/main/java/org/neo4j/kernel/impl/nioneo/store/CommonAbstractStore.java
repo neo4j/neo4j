@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.util.StringLogger;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -34,21 +27,46 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
  */
 public abstract class CommonAbstractStore
 {
+    public interface Configuration
+    {
+        String neo_store();
+        boolean grab_file_lock(boolean def);
+
+        boolean read_only(boolean def);
+
+        boolean backup_slave(boolean def);
+
+        boolean use_memory_mapped_buffers(boolean def);
+
+        String store_dir();
+    }
+    
     public static final String ALL_STORES_VERSION = "v0.A.0";
     public static final String UNKNOWN_VERSION = "Uknown";
 
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
+    protected Configuration configuration;
+    protected IdGeneratorFactory idGeneratorFactory;
+    protected FileSystemAbstraction fileSystemAbstraction;
+
     protected final String storageFileName;
     private final IdType idType;
-    private IdGeneratorFactory idGeneratorFactory = null;
+    protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
@@ -56,8 +74,6 @@ public abstract class CommonAbstractStore
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
     private boolean grabFileLock = true;
-
-    private Map<?,?> config = null;
 
     private boolean readOnly = false;
     private boolean backupSlave = false;
@@ -76,33 +92,23 @@ public abstract class CommonAbstractStore
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
      *
-     * @param fileName
-     *            The name of the store
-     * @param config
-     *            The configuration for store (may be null)
      * @param idType
      *            The Id used to index into this store
      */
-    public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
+    public CommonAbstractStore( String fileName, Configuration configuration, IdType idType,
+                                IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         this.storageFileName = fileName;
-        this.config = config;
+        this.configuration = configuration;
+        this.idGeneratorFactory = idGeneratorFactory;
+        this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
-        if ( config != null )
-        {
-            String fileLock = (String) config.get( "grab_file_lock" );
-            if ( fileLock != null && fileLock.toLowerCase().equals( "false" ) )
-            {
-                grabFileLock = false;
-            }
-            this.idGeneratorFactory = (IdGeneratorFactory)
-                    config.get( IdGeneratorFactory.class );
-        }
+        this.stringLogger = stringLogger;
+        grabFileLock = configuration.grab_file_lock(true);
 
         checkStorage();
         checkVersion(); // Overriden in NeoStore
         loadStorage();
-        initStorage();
     }
 
     public String getTypeAndVersionDescriptor()
@@ -115,12 +121,7 @@ public abstract class CommonAbstractStore
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
-    public void logVersions( StringLogger.LineLogger logger )
-    {
-        logger.logLine( getTypeAndVersionDescriptor() );
-    }
-
-    protected static long longFromIntAndMod( long base, long modifier )
+    protected long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
@@ -134,30 +135,16 @@ public abstract class CommonAbstractStore
 
     protected void checkStorage()
     {
-        if ( config != null )
-        {
-            Boolean isReadOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
-            if ( isReadOnly != null )
-            {
-                readOnly = isReadOnly;
-            }
-        }
-        if ( config != null )
-        {
-            String str = (String) config.get( "backup_slave" );
-            if ( "true".equals( str ) )
-            {
-                backupSlave = true;
-            }
-        }
-        if ( !getFileSystem().fileExists( storageFileName ) )
+        readOnly = configuration.read_only(false);
+        backupSlave = configuration.backup_slave(false);
+        if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
                 + "]" );
         }
         try
         {
-            this.fileChannel = getFileSystem().open( storageFileName, readOnly ? "r" : "rw" );
+            this.fileChannel = fileSystemAbstraction.open( storageFileName, readOnly ? "r" : "rw" );
         }
         catch ( IOException e )
         {
@@ -168,7 +155,7 @@ public abstract class CommonAbstractStore
         {
             if ( (!readOnly || backupSlave) && grabFileLock )
             {
-                this.fileLock = getFileSystem().tryLock( storageFileName, fileChannel );
+                this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
                 if ( fileLock == null )
                 {
                     throw new IllegalStateException( "Unable to lock store ["
@@ -222,7 +209,7 @@ public abstract class CommonAbstractStore
         loadIdGenerator();
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
+            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(ConfigProxy.map(configuration), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
@@ -253,10 +240,9 @@ public abstract class CommonAbstractStore
         {
             if ( !getStoreOk() )
             {
-                if ( getConfig() != null )
+                if ( stringLogger != null )
                 {
-                    StringLogger msgLog = (StringLogger)getConfig().get( StringLogger.class );
-                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
+                    stringLogger.logMessage( getStorageFileName() + " non clean shutdown detected", true );
                 }
             }
         }
@@ -300,22 +286,9 @@ public abstract class CommonAbstractStore
     protected abstract void rebuildIdGenerator();
 
     /**
-     * Called from the constructor after the end header has been checked. The
-     * store implementation can setup it's
-     * {@link PersistenceWindow persistence windows} and other resources that
-     * are needed by overriding this implementation.
-     * <p>
-     * This default implementation does nothing.
-     */
-    protected void initStorage()
-    {
-    }
-
-    /**
      * This method should close/release all resources that the implementation of
      * this store has allocated and is called just before the <CODE>close()</CODE>
-     * method returns. Override this method to clean up stuff created in
-     * {@link #initStorage()} method.
+     * method returns. Override this method to clean up stuff the constructor.
      * <p>
      * This default implementation does nothing.
      */
@@ -331,11 +304,6 @@ public abstract class CommonAbstractStore
     boolean isBackupSlave()
     {
         return backupSlave;
-    }
-
-    protected FileSystemAbstraction getFileSystem()
-    {
-        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
     }
 
     /**
@@ -434,9 +402,7 @@ public abstract class CommonAbstractStore
 
     protected boolean getIfMemoryMapped()
     {
-        String configValue = getConfig() != null ?
-                (String) getConfig().get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
-        return configValue == null || Boolean.parseBoolean( configValue );
+        return configuration.use_memory_mapped_buffers(true);
     }
 
     /**
@@ -449,44 +415,42 @@ public abstract class CommonAbstractStore
      * @param config Map of configuration parameters
      * @param storageFileName Name of the file on disk
      */
-    public static long calculateMappedMemory( Map<?, ?> config, String storageFileName )
+    private long calculateMappedMemory( Map<?, ?> config, String storageFileName )
     {
-        if ( config != null )
+        String convertSlash = storageFileName.replace( '\\', '/' );
+        String realName = convertSlash.substring( convertSlash
+            .lastIndexOf( '/' ) + 1 );
+        String mem = (String) config.get( realName + ".mapped_memory" );
+        if ( mem != null )
         {
-            String convertSlash = storageFileName.replace( '\\', '/' );
-            String realName = convertSlash.substring( convertSlash
-                .lastIndexOf( '/' ) + 1 );
-            String mem = (String) config.get( realName + ".mapped_memory" );
-            if ( mem != null )
+            long multiplier = 1;
+            mem = mem.trim().toLowerCase();
+            if ( mem.endsWith( "m" ) )
             {
-                mem = mem.trim().toLowerCase();
-                long multiplier = 1;
-                if ( mem.endsWith( "m" ) )
-                {
-                    multiplier = 1024 * 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "k" ) )
-                {
-                    multiplier = 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "g" ) )
-                {
-                    multiplier = 1024*1024*1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                try
-                {
-                    return Integer.parseInt( mem ) * multiplier;
-                }
-                catch ( NumberFormatException e )
-                {
-                    logger.info( "Unable to parse mapped memory[" + mem
-                        + "] string for " + storageFileName );
-                }
+                multiplier = 1024 * 1024;
+                mem = mem.substring( 0, mem.length() - 1 );
+            }
+            else if ( mem.endsWith( "k" ) )
+            {
+                multiplier = 1024;
+                mem = mem.substring( 0, mem.length() - 1 );
+            }
+            else if ( mem.endsWith( "g" ) )
+            {
+                multiplier = 1024*1024*1024;
+                mem = mem.substring( 0, mem.length() - 1 );
+            }
+            try
+            {
+                return Integer.parseInt( mem ) * multiplier;
+            }
+            catch ( NumberFormatException e )
+            {
+                logger.info( "Unable to parse mapped memory[" + mem
+                    + "] string for " + storageFileName );
             }
         }
+
         return 0;
     }
 
@@ -519,22 +483,11 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Returns the configuration map if set in constructor.
-     *
-     * @return A map containing configuration or <CODE>null<CODE> if no
-     *         configuration map set.
-     */
-    public Map<?,?> getConfig()
-    {
-        return config;
-    }
-
-    /**
      * @return the store directory from config.
      */
     protected String getStoreDir()
     {
-        return (String) config.get( "store_dir" );
+        return configuration.store_dir();
     }
 
     /**
@@ -817,6 +770,17 @@ public abstract class CommonAbstractStore
         {
             setHighId( highId );
         }
+    }
+
+    public void logVersions( StringLogger.LineLogger logger)
+    {
+        logger.logLine( "  " + getTypeAndVersionDescriptor() );
+    }
+
+    public void logIdUsage(StringLogger.LineLogger lineLogger )
+    {
+        lineLogger.logLine( String.format( "  %s: used=%s high=%s", getTypeDescriptor(),
+                getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
     @Override

@@ -293,7 +293,9 @@ include::shell/sample-session.txt[]
 
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
+include::shell/shell-matrix-example-graph.txt[]
 
+////
 ["dot", "shell-matrix.svg"]
 ----
 root[label="root"]
@@ -310,18 +312,14 @@ morpheus->cypher[label="KNOWS"]
 agent -> cypher [dir="back" label="KNOWS"]
 agent -> architect[label="CODED_BY"]
 ----
+////
 
-Neo4j is configured for autoindexing in this case with
+Neo4j is configured for autoindexing, in this case with the following in the Neo4j configuration file:
+
 [source]
 ----
-  node_auto_indexing=true
-  node_keys_indexable=name,age
-  
-  relationship_auto_indexing=true
-  relationship_keys_indexable=ROOT,KNOWS,CODED_BY
+include::../autoindex.properties[]
 ----
-
-in the neo4j configuration file.
 
 The following is a sample shell session creating the Matrix graph and querying it.
 

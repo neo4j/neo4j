@@ -48,6 +48,14 @@ public class DummyThirdPartyWebService
                 .build();
     }
 
+
+    @GET
+    @Path("/{something}/{somethingElse}")
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response forSecurityTesting() {
+        return Response.ok().entity("you've reached a dummy service").build();
+    }
+
     @GET
     @Path( "inject-test" )
     @Produces( MediaType.TEXT_PLAIN )

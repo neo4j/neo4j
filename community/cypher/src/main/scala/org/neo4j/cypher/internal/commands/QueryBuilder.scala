@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.commands
 class QueryBuilder(startItems: Seq[StartItem]) {
   var matching: Option[Match] = None
   var where: Option[Predicate] = None
-  var having: Option[Predicate] = None
   var aggregation: Option[Aggregation] = None
   var orderBy: Option[Sort] = None
   var skip: Option[Expression] = None
@@ -34,9 +33,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
 
   def where(predicate: Predicate): QueryBuilder = store(() => where = Some(predicate))
 
-  def having(predicate: Predicate): QueryBuilder = store(() => having = Some(predicate))
-
-  def aggregation(aggregationItems: ReturnItem*): QueryBuilder =
+  def aggregation(aggregationItems: AggregationExpression*): QueryBuilder =
     store(() => aggregation = Some(Aggregation(aggregationItems: _*)))
 
   def orderBy(sortItems: SortItem*): QueryBuilder = store(() => orderBy = Some(Sort(sortItems: _*)))
@@ -64,6 +61,5 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def returns(returnItems: ReturnItem*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), matching, where, aggregation,
-      orderBy, slice, namedPaths, having)
+    Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), matching, where, aggregation, orderBy, slice, namedPaths)
 }

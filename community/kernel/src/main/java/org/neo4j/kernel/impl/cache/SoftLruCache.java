@@ -115,7 +115,7 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
         return name;
     }
 
-    private final HitCounter counter = HitCounter.create();
+    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()

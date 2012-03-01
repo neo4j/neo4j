@@ -71,7 +71,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, false)
   }
 
-  def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {
+  private def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {
     debug(rel, gNode, nextPNode, currentRel, history, remaining)
     val current = MatchingPair(currentRel, rel)
 
@@ -183,7 +183,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   val isDebugging = false
 
-  def debug[U](history: History, remaining: Set[MatchingPair]) {
+  private def debug[U](history: History, remaining: Set[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseNextNodeOrYield
       history=%s
@@ -191,7 +191,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
       """, history, remaining.toList))
   }
 
-  def debug[U](current: MatchingPair, history: History, remaining: Set[MatchingPair]) {
+  private def debug[U](current: MatchingPair, history: History, remaining: Set[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseNode
     current=%s
@@ -200,7 +200,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     """, current, history, remaining.toList))
   }
 
-  def debug[U](current: MatchingPair, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {
+  private def debug[U](current: MatchingPair, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseRelationship
     current=%s
@@ -210,7 +210,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     """, current, pRel, history, remaining.toList))
   }
 
-  def debug[U](history: History, resultMap: Map[String, Any]) {
+  private def debug[U](history: History, resultMap: Map[String, Any]) {
     if (isDebugging)
       println(String.format("""yield(history=%s) => %s
     """, history, resultMap))

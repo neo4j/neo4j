@@ -255,7 +255,7 @@ public class TestDeadlockDetection
         Object r3 = new ResourceObject( "R3" );
         Object r4 = new ResourceObject( "R4" );
         
-        LockManager lm = new LockManager( new PlaceboTm() );
+        LockManager lm = new LockManager( new RagManager(new PlaceboTm()) );
 
         HelperThread t1 = new HelperThread( "T1", lm );
         HelperThread t2 = new HelperThread( "T2", lm );
@@ -508,7 +508,7 @@ public class TestDeadlockDetection
         }
         Thread stressThreads[] = new Thread[50];
         StressThread.go = false;
-        LockManager lm = new LockManager( new PlaceboTm() );
+        LockManager lm = new LockManager( new RagManager(new PlaceboTm()) );
         for ( int i = 0; i < stressThreads.length; i++ )
         {
             stressThreads[i] = new StressThread( "T" + i, 100, 10, 0.80f, lm );

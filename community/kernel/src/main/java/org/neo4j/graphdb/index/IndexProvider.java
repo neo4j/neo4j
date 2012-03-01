@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb.index;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
 
 public abstract class IndexProvider extends Service
 {
@@ -32,7 +32,7 @@ public abstract class IndexProvider extends Service
         this.identifier = identifier;
     }
 
-    public abstract IndexImplementation load( KernelData kernel ) throws Exception;
+    public abstract IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
 
     public final String identifier()
     {

@@ -21,33 +21,19 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-public abstract class Counter
+public class Counter
 {
-    public abstract void inc();
+    private volatile long count;
+    private static final AtomicLongFieldUpdater<Counter> COUNT = AtomicLongFieldUpdater.newUpdater(
+        Counter.class, "count" );
 
-    public abstract long count();
-
-    public static Counter atomic()
+    public void inc()
     {
-        return new AtomicCounter();
+        COUNT.incrementAndGet( this );
     }
 
-    private static class AtomicCounter extends Counter
+    public long count()
     {
-        private volatile long count;
-        private static final AtomicLongFieldUpdater<AtomicCounter> COUNT = AtomicLongFieldUpdater.newUpdater(
-                AtomicCounter.class, "count" );
-
-        @Override
-        public void inc()
-        {
-            COUNT.incrementAndGet( this );
-        }
-
-        @Override
-        public long count()
-        {
-            return count;
-        }
+        return count;
     }
 }

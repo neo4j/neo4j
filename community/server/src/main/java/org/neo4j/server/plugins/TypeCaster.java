@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 abstract class TypeCaster
 {
-    abstract Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+    abstract Object get( GraphDatabaseSPI graphDb, ParameterList parameters, String name )
             throws BadInputException;
 
     Object convert( Object[] result ) throws BadInputException
@@ -32,6 +32,6 @@ abstract class TypeCaster
         throw new BadInputException( "Cannot convert to primitive array: " + result );
     }
 
-    abstract Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+    abstract Object[] getList( GraphDatabaseSPI graphDb, ParameterList parameters, String name )
             throws BadInputException;
 }

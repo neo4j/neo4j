@@ -23,19 +23,19 @@ import java.util.Random;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 public class RandomNode
 {
     private static final Random random = new Random();
-    private final AbstractGraphDatabase graphdb;
+    private final EmbeddedGraphDatabase graphdb;
     private final NodeManager nm;
 
-    public RandomNode( AbstractGraphDatabase graphdb )
+    public RandomNode( EmbeddedGraphDatabase graphdb )
     {
         this.graphdb = graphdb;
-        this.nm = graphdb.getConfig().getGraphDbModule().getNodeManager();
+        this.nm = graphdb.getNodeManager();
     }
 
     public Node get()

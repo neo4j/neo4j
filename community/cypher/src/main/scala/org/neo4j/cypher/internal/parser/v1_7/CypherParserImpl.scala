@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.OrderByRewriter
+import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 class CypherParserImpl extends Base
 with StartClause
@@ -31,12 +31,11 @@ with WhereClause
 with ReturnClause
 with SkipLimitClause
 with OrderByClause
-with HavingClause
 with ActualParser {
 
-  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(having) ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
+  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
 
-    case start ~ matching ~ where ~ returns ~ having ~ order ~ skip ~ limit => {
+    case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => {
       val slice = (skip, limit) match {
         case (None, None) => None
         case (s, l) => Some(Slice(s, l))
@@ -53,7 +52,7 @@ with ActualParser {
         case Some(w) => if(w.exists(_.isInstanceOf[AggregationExpression])) throw new SyntaxException("Can't use aggregate functions in the WHERE clause. Move it to the HAVING clause.")
         case _ =>
       }
-      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, having, queryText)
+      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
     }
   }
 
@@ -61,7 +60,7 @@ with ActualParser {
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = parseAll(query, queryText) match {
-    case Success(r, q) => OrderByRewriter(r(queryText))
+    case Success(r, q) => ReattachAliasedExpressions(r(queryText))
     case NoSuccess(message, input) => {
       if (message.startsWith("INNER"))
         throw new SyntaxException(message.substring(5), queryText, input.offset)

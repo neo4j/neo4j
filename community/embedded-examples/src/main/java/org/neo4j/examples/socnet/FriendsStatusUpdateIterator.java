@@ -21,9 +21,13 @@
 
 package org.neo4j.examples.socnet;
 
-import org.neo4j.helpers.collection.PositionedIterator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-import java.util.*;
+import org.neo4j.helpers.collection.PositionedIterator;
 
 class FriendsStatusUpdateIterator implements Iterator<StatusUpdate> {
     private ArrayList<PositionedIterator<StatusUpdate>> statuses = new ArrayList<PositionedIterator<StatusUpdate>>();

@@ -4,10 +4,21 @@ Comments
 
 To add comments to your queries, use double slash. Examples:
 
-+START n=node(1) RETURN b //This is a end of line comment +
+[source,cypher]
+----
+START n=node(1) RETURN b //This is an end of line comment
+----
 
-+START n=node(1)
+[source,cypher]
+----
+START n=node(1)
 //This is a whole line comment
-RETURN b+
+RETURN b
+----
 
-+START n=node(1) WHERE n.property = "//This is NOT a comment" RETURN b+
+[source,cypher]
+----
+START n=node(1) WHERE n.property = "//This is NOT a comment" RETURN b
+----
+
+

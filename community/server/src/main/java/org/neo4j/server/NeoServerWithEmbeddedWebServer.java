@@ -19,9 +19,10 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
+
 import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.guard.Guard;
-import org.neo4j.server.guard.GuardedDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
@@ -42,15 +42,17 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.security.SecurityRule;
+import org.neo4j.server.security.KeyStoreFactory;
+import org.neo4j.server.security.KeyStoreInformation;
+import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
-
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer
 {
-    public static final Logger log = Logger.getLogger( NeoServerWithEmbeddedWebServer.class );
+    public static final Logger log = Logger.getLogger(NeoServerWithEmbeddedWebServer.class);
 
     private Database database;
     private final Configurator configurator;
@@ -62,6 +64,8 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private final Bootstrapper bootstrapper;
     private Guard guard;
 
+    private SimpleUriBuilder uriBuilder = new SimpleUriBuilder();;
+
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
             Iterable<Class<? extends ServerModule>> moduleClasses )
@@ -72,10 +76,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         this.configurator = configurator;
         this.webServer = webServer;
 
-        webServer.setNeoServer( this );
-        for ( Class<? extends ServerModule> moduleClass : moduleClasses )
+        webServer.setNeoServer(this);
+        for (Class<? extends ServerModule> moduleClass : moduleClasses)
         {
-            registerModule( moduleClass );
+            registerModule(moduleClass);
         }
     }
 
@@ -93,17 +97,17 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         DiagnosticsManager dm = startDatabase();
 
         StringLogger logger = dm.getTargetLog();
-        logger.logMessage( "--- SERVER STARTUP START ---" );
+        logger.logMessage("--- SERVER STARTUP START ---");
 
-        dm.register( Configurator.DIAGNOSTICS, configurator );
+        dm.register(Configurator.DIAGNOSTICS, configurator);
 
         startExtensionInitialization();
 
-        startModules( logger );
+        startModules(logger);
 
-        startWebServer( logger );
+        startWebServer(logger);
 
-        logger.logMessage( "--- SERVER STARTUP END ---", true );
+        logger.logMessage("--- SERVER STARTUP END ---", true);
     }
 
     /**
@@ -112,7 +116,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
      */
     protected void startExtensionInitialization()
     {
-        pluginInitializer = new PluginInitializer( this );
+        pluginInitializer = new PluginInitializer(this);
     }
 
     /**
@@ -120,77 +124,78 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
      *
      * @param clazz
      */
-    protected final void registerModule( Class<? extends ServerModule> clazz )
+    protected final void registerModule(Class<? extends ServerModule> clazz)
     {
         try
         {
-            serverModules.add( clazz.newInstance() );
-        }
-        catch ( Exception e )
+            serverModules.add(clazz.newInstance());
+        } catch (Exception e)
         {
-            log.warn( "Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage() );
+            log.warn("Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage());
         }
     }
 
-    private void startModules( StringLogger logger )
+    private void startModules(StringLogger logger)
     {
-        for ( ServerModule module : serverModules )
+        for (ServerModule module : serverModules)
         {
-            module.start( this, logger );
+            module.start(this, logger);
         }
     }
 
     private void stopModules()
     {
-        for ( ServerModule module : serverModules )
+        for (ServerModule module : serverModules)
         {
 
             try
             {
                 module.stop();
-            }
-            catch ( Exception e )
+            } catch (Exception e)
             {
-                log.error( e );
+                log.error(e);
             }
         }
     }
 
     private void startupHealthCheck()
     {
-        if ( !startupHealthCheck.run() )
+        if (!startupHealthCheck.run())
         {
-            throw new StartupHealthCheckFailedException( startupHealthCheck.failedRule() );
+            throw new StartupHealthCheckFailedException(startupHealthCheck.failedRule());
         }
     }
 
     private DiagnosticsManager startDatabase()
     {
-        String dbLocation = new File( configurator.configuration()
-                .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
-        GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory( configurator.configuration() );
+        String dbLocation = new File(configurator.configuration()
+                                                 .getString(
+                                                         Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
+        GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory(configurator.configuration());
 
+/*
         if ( guard != null )
         {
             dbFactory = new GuardedDatabaseFactory( dbFactory, guard );
         }
+*/
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        if ( databaseTuningProperties != null )
+        if (databaseTuningProperties != null)
         {
-            this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
+            this.database = new Database(dbFactory, dbLocation, databaseTuningProperties);
         }
         else
         {
-            this.database = new Database( dbFactory, dbLocation );
+            this.database = new Database(dbFactory, dbLocation);
         }
-        return database.graph.getConfig().getDiagnosticsManager();
+        return database.graph.getDiagnosticsManager();
     }
 
     private void initGuard()
     {
-        Integer limit = getConfiguration().getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null);
-        guard = limit != null ? new Guard( limit ) : null;
+        Integer limit = getConfiguration().getInteger(WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null);
+        guard = limit != null ? new Guard(limit) : null;
     }
 
     @Override
@@ -205,81 +210,136 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         String webServerAddr = getWebServerAddress();
 
         int maxThreads = getMaxThreads();
+        
+        int sslPort = getHttpsPort();
+        boolean sslEnabled = getHttpsEnabled();
 
         log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
-
         webServer.setMaxThreads( maxThreads );
+
+        webServer.setEnableHttps(sslEnabled);
+        webServer.setHttpsPort(sslPort);
+        if(sslEnabled) {
+            log.info( "Enabling HTTPS on port [%s]", sslPort );
+            webServer.setHttpsCertificateInformation(initHttpsKeyStore());
+        }
+        
         webServer.init();
     }
 
-    private SecurityRule[] createSecurityRulesFrom( Configuration configuration )
+    private SecurityRule[] createSecurityRulesFrom(Configuration configuration)
     {
         ArrayList<SecurityRule> rules = new ArrayList<SecurityRule>();
 
-        for ( String classname : configuration.getStringArray( Configurator.SECURITY_RULES_KEY ) )
+        for (String classname : configuration.getStringArray(Configurator.SECURITY_RULES_KEY))
         {
             try
             {
-                rules.add( (SecurityRule) Class.forName( classname ).newInstance() );
-            }
-            catch ( Exception e) {
-                log.error( "Could not load server security rule [%s], exception details: ", classname, e.getMessage() );
+                rules.add((SecurityRule) Class.forName(classname).newInstance());
+            } catch (Exception e)
+            {
+                log.error("Could not load server security rule [%s], exception details: ", classname, e.getMessage());
                 e.printStackTrace();
             }
         }
 
-        return rules.toArray( new SecurityRule[0] );
+        return rules.toArray(new SecurityRule[0]);
     }
 
     private int getMaxThreads()
     {
         return configurator.configuration()
-                .containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ? configurator.configuration()
-                .getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
+                           .containsKey(Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY) ? configurator.configuration()
+                                                                                                       .getInt(Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY) : defaultMaxWebServerThreads();
     }
 
     private int defaultMaxWebServerThreads()
     {
         return 10 * Runtime.getRuntime()
-                .availableProcessors();
+                           .availableProcessors();
     }
 
-    private void startWebServer( StringLogger logger )
+    private void startWebServer(StringLogger logger)
     {
         try
         {
-            SecurityRule[] securityRules = createSecurityRulesFrom( configurator.configuration() );
-            if ( logger != null ) for ( SecurityRule rule : securityRules )
-            {
-                logger.logMessage( "Active Security Rule: " + rule.getClass() );
-            }
-            webServer.addSecurityRules( securityRules );
+            SecurityRule[] securityRules = createSecurityRulesFrom(configurator.configuration());
+            webServer.addSecurityRules(securityRules);
 
-            if (guard != null) webServer.addExecutionLimitFilter( guard );
+            if (guard != null)
+            {
+                webServer.addExecutionLimitFilter(guard);
+            }
 
             webServer.start();
-            if ( logger != null ) logger.logMessage( "Server started on: " + baseUri() );
-            log.info( "Server started on [%s]", baseUri() );
-        }
-        catch ( Exception e )
+            if (logger != null)
+            {
+                logger.logMessage("Server started on: " + baseUri());
+            }
+            log.info("Server started on [%s]", baseUri());
+        } catch (Exception e)
         {
             e.printStackTrace();
-            log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
+            log.error("Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage());
         }
     }
 
     protected int getWebServerPort()
     {
         return configurator.configuration()
-                .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
+                           .getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT);
+    }
+    
+    protected boolean getHttpsEnabled()
+    {
+        return configurator.configuration()
+                .getBoolean( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_ENABLED );
+    }
+
+    protected int getHttpsPort()
+    {
+        return configurator.configuration()
+                .getInt( Configurator.WEBSERVER_HTTPS_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_PORT );
     }
 
     protected String getWebServerAddress()
     {
         return configurator.configuration()
-                .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
+                           .getString(Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
+                                      Configurator.DEFAULT_WEBSERVER_ADDRESS);
+    }
+
+    /**
+     * Jetty wants certificates stored in a key store, which is nice, but
+     * to make it easier for non-java savvy users, we let them put
+     * their certificates directly on the file system (advicing apropriate
+     * permissions etc), like you do with Apache Web Server. On each startup
+     * we set up a key store for them with their certificate in it.
+     */
+    protected KeyStoreInformation initHttpsKeyStore()
+    {
+        File keystorePath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH));
+        
+        File privateKeyPath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH));
+        
+        File certificatePath = new File(configurator.configuration().getString(
+                Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH));
+        
+        if(!certificatePath.exists()) {
+            log.info("No SSL certificate found, generating a self-signed certificate..");
+            SslCertificateFactory certFactory = new SslCertificateFactory();
+            certFactory.createSelfSignedCertificate(certificatePath, privateKeyPath, getWebServerAddress());
+        }
+        
+        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
+        return keyStoreFactory.createKeyStore(keystorePath, privateKeyPath, certificatePath);
     }
 
     @Override
@@ -289,12 +349,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         {
             stopServer();
             stopDatabase();
-            log.info( "Successfully shutdown database [%s]", getDatabase().getLocation() );
-        }
-        catch ( Exception e )
+            log.info("Successfully shutdown database [%s]", getDatabase().getLocation());
+        } catch (Exception e)
         {
-            log.warn( "Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
-                    e.getMessage() );
+            log.warn("Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
+                     e.getMessage());
         }
     }
 
@@ -308,12 +367,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             stopWebServer();
             stopModules();
             stopExtensionInitializers();
-            log.info( "Successfully shutdown Neo Server on port [%d]", getWebServerPort(), getDatabase().getLocation() );
-        }
-        catch ( Exception e )
+            log.info("Successfully shutdown Neo Server on port [%d]", getWebServerPort(), getDatabase().getLocation());
+        } catch (Exception e)
         {
-            log.warn( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
-                    getWebServerPort(), getDatabase().getLocation(), e.getMessage() );
+            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
+                     getWebServerPort(), getDatabase().getLocation(), e.getMessage());
         }
     }
 
@@ -327,7 +385,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     private void stopWebServer()
     {
-        if ( webServer != null )
+        if (webServer != null)
         {
             webServer.stop();
         }
@@ -335,7 +393,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     private void stopDatabase()
     {
-        if ( database != null )
+        if (database != null)
         {
             database.shutdown();
         }
@@ -350,33 +408,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     @Override
     public URI baseUri()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "http" );
-        int webServerPort = getWebServerPort();
-        if ( webServerPort == 443 )
-        {
-            sb.append( "s" );
+        return uriBuilder.buildURI(getWebServerAddress(), getWebServerPort(), false);
+    }
 
-        }
-        sb.append( "://" );
-
-        sb.append( getWebServerAddress() );
-
-        if ( webServerPort != 80 && webServerPort != 443)
-        {
-            sb.append( ":" );
-            sb.append( webServerPort );
-        }
-        sb.append( "/" );
-
-        try
-        {
-            return new URI( sb.toString() );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
+    public URI httpsUri()
+    {
+        return uriBuilder.buildURI(getWebServerAddress(), getHttpsPort(), true);
     }
 
     public WebServer getWebServer()
@@ -393,9 +430,9 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     @Override
     public PluginManager getExtensionManager()
     {
-        if ( hasModule( RESTApiModule.class ) )
+        if (hasModule(RESTApiModule.class))
         {
-            return getModule( RESTApiModule.class ).getPlugins();
+            return getModule(RESTApiModule.class).getPlugins();
         }
         else
         {
@@ -404,16 +441,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     }
 
     @Override
-    public Collection<Injectable<?>> getInjectables( List<String> packageNames )
+    public Collection<Injectable<?>> getInjectables(List<String> packageNames)
     {
-        return pluginInitializer.initializePackages( packageNames );
+        return pluginInitializer.initializePackages(packageNames);
     }
 
-    private boolean hasModule( Class<? extends ServerModule> clazz )
+    private boolean hasModule(Class<? extends ServerModule> clazz)
     {
-        for ( ServerModule sm : serverModules )
+        for (ServerModule sm : serverModules)
         {
-            if ( sm.getClass() == clazz )
+            if (sm.getClass() == clazz)
             {
                 return true;
             }
@@ -421,12 +458,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         return false;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private <T extends ServerModule> T getModule( Class<T> clazz )
+    @SuppressWarnings("unchecked")
+    private <T extends ServerModule> T getModule(Class<T> clazz)
     {
-        for ( ServerModule sm : serverModules )
+        for (ServerModule sm : serverModules)
         {
-            if ( sm.getClass() == clazz )
+            if (sm.getClass() == clazz)
             {
                 return (T) sm;
             }

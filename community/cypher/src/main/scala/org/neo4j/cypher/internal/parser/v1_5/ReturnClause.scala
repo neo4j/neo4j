@@ -25,26 +25,28 @@ import org.neo4j.cypher.internal.commands._
 
 trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
 
-
   def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ rep1sep((aggregate | returnItem), ",") ^^ {
-    case distinct ~ items => {
-      val (aggregationItems, returnItems) = items.partition(_.expression.exists(_.isInstanceOf[AggregationExpression]))
+    case distinct ~ returnItems => {
+      val columnName = returnItems.map(_.columnName).toList
 
-      /*
-      An DISTINCT is created by using a normal aggregation with no aggregate functions.
-      The key columns is a set, and so a DISTINCT is produced.
-       */
-      val aggregation = (aggregationItems, distinct) match {
-        case (List(), Some(_)) => Some(Aggregation())
-        case (List(), None) => None
-        case _ => Some(Aggregation(aggregationItems: _*))
+      val none: Option[Aggregation] = distinct match {
+        case Some(x) => Some(Aggregation())
+        case None => None
       }
 
-      (Return(items.map(_.columnName).toList, returnItems: _*), aggregation)
+      val aggregationExpressions = returnItems.
+        flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
+        map(_.asInstanceOf[AggregationExpression])
+
+      val aggregation = aggregationExpressions match {
+        case List() => none
+        case _ => Some(Aggregation(aggregationExpressions: _*))
+      }
+
+
+      (Return(columnName, returnItems: _*), aggregation)
     }
   }
-
-
 }
 
 

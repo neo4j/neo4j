@@ -29,14 +29,14 @@ import java.lang.String
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
     val source = new FakePipe(List())
-    val sortPipe = new SortPipe(source, List(SortItem(ReturnItem(Entity("x"), "x"), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("x"), true)))
 
     assertEquals(List(), sortPipe.createResults(Map()).toList)
   }
 
   @Test def simpleSortingIsSupported() {
     val source = new FakePipe(List(Map("x" -> "B"), Map("x" -> "A")))
-    val sortPipe = new SortPipe(source, List(SortItem(ReturnItem(Entity("x"), "x"), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("x"), true)))
 
     assertEquals(List(Map("x" -> "A"), Map("x" -> "B")), sortPipe.createResults(Map()).toList)
   }
@@ -48,8 +48,8 @@ class SortPipeTest extends JUnitSuite{
       Map("x" -> "B", "y" -> 10)))
 
     val sortPipe = new SortPipe(source, List(
-      SortItem(ReturnItem(Entity("x"), "x"), true),
-      SortItem(ReturnItem(Entity("y"), "y"), true)))
+      SortItem(Entity("x"), true),
+      SortItem(Entity("y"), true)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
@@ -64,8 +64,8 @@ class SortPipeTest extends JUnitSuite{
       Map("x" -> "B", "y" -> 10)))
 
     val sortPipe = new SortPipe(source, List(
-      SortItem(ReturnItem(Entity("x"), "x"), true),
-      SortItem(ReturnItem(Entity("y"), "y"), false)))
+      SortItem(Entity("x"), true),
+      SortItem(Entity("y"), false)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
@@ -79,7 +79,7 @@ class SortPipeTest extends JUnitSuite{
       Map("y" -> null),
       Map("y" -> 2)))
 
-    val sortPipe = new SortPipe(source, List(SortItem(ReturnItem(Entity("y"), "y"), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("y"), true)))
 
     assertEquals(List(
       Map("y" -> 1),

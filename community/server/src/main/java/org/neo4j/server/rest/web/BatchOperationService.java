@@ -42,7 +42,7 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.BatchOperationFailedException;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -77,7 +77,7 @@ public class BatchOperationService
     public Response performBatchOperations( @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders, 
                                             InputStream body ) throws BadInputException
     {
-        AbstractGraphDatabase db = database.graph;
+        GraphDatabaseSPI db = database.graph;
 
         Transaction tx = db.beginTx();
         try

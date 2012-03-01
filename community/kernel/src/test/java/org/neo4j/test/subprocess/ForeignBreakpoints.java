@@ -19,12 +19,12 @@
  */
 package org.neo4j.test.subprocess;
 
+import static org.neo4j.test.subprocess.BreakPoint.Event.ENTRY;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import static org.neo4j.test.subprocess.BreakPoint.Event.ENTRY;
 
 @Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )

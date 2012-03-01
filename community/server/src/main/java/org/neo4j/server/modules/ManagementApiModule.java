@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.modules;
 
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -27,8 +29,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
-
-import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class ManagementApiModule implements ServerModule
 {

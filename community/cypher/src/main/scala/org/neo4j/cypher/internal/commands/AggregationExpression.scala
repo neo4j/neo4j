@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.commands
 import collection.Seq
 import org.neo4j.cypher.internal.pipes.aggregation._
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.SyntaxException
 
 abstract class AggregationExpression extends Expression {
-  def apply(m: Map[String, Any]) = if(m.contains(name)) m(name) else null
+  def apply(m: Map[String, Any]) = m.get(name) match  {
+    case None => null
+    case Some(x) => x
+  }
 
   override def identifier = Identifier(name, typ)
 
@@ -86,7 +88,7 @@ case class Distinct(innerAggregator: AggregationExpression, expression: Expressi
 
   def rewrite(f: (Expression) => Expression) = innerAggregator.rewrite(f) match {
     case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))
-    case _ => throw new ThisShouldNotHappenError("Andrés", "An aggregate expression cannot be rewritten to a non-aggregate expression")
+    case _ => f(Distinct(innerAggregator, expression.rewrite(f)))
   }
 }
 

@@ -43,13 +43,12 @@ public class TestLockReleaser extends AbstractNeo4jTestCase
         n.removeProperty( "dummy" );
         // Retrieve the primitive, necessary for getting its cow property map
         // below
-        NodeImpl primitive = getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().getNodeForProxy(
-                (NodeProxy)n, null );
+        NodeImpl primitive = getEmbeddedGraphDb().getNodeManager().getNodeForProxy( n.getId(), null );
         /*
          *  The cow property remove map should be null (i.e. not created in the first place )
          *  since the property did not exist
          */
-        assertNull( getEmbeddedGraphDb().getConfig().getLockReleaser().getCowPropertyRemoveMap(
+        assertNull( getEmbeddedGraphDb().getLockReleaser().getCowPropertyRemoveMap(
                 primitive ) );
         getTransaction().finish();
     }

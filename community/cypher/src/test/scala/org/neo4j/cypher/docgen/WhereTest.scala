@@ -147,15 +147,12 @@ do not have a relationship between them.
       assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
   }
 
-
-  @Test def filter_on_aggregates() {
+  @Test def in_operator() {
     testQuery(
-      title = "Filter on aggregates",
-      text = "You can't use aggregate functions in the WHERE clause. If you need to filter on aggregate functions, " +
-        "use the HAVING clause intead. HAVING filters matching subgraphs the same way WHERE does, but is invoked after " +
-        "aggregation has been done.",
-      queryText = """start a=node(%Andres%, %Tobias%, %Peter%) match a--() return a, count(*) having count(*)>1""",
-      returns = "Only nodes with more than one relationship are returned",
-      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("a").toList))
+      title = "IN operator",
+      text = "To check if an element exists in a collection, you can use the IN operator.",
+      queryText = """start a=node(%Andres%, %Tobias%, %Peter%) where a.name IN ["Peter", "Tobias"] return a""",
+      returns = "This query shows how to check if a property exists in a literal collection.",
+      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 }

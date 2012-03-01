@@ -19,8 +19,23 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import static java.lang.String.format;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -28,7 +43,11 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.*;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.HashSessionManager;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
@@ -38,28 +57,24 @@ import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
+import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
+import org.neo4j.server.security.KeyStoreInformation;
+import org.neo4j.server.security.SslSocketConnectorFactory;
 
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.*;
-
-import static java.lang.String.format;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
+    private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
     public static final String DEFAULT_ADDRESS = "0.0.0.0";
 
     private Server jetty;
-    private int jettyPort = DEFAULT_PORT;
+    private int jettyHttpPort = DEFAULT_PORT;
+    private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
     private String jettyAddr = DEFAULT_ADDRESS;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
@@ -67,11 +82,85 @@ public class Jetty6WebServer implements WebServer
 
     private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
+    private boolean httpEnabled = true;
+    private boolean httpsEnabled = false;
+    private KeyStoreInformation httpsCertificateInformation = null;
+    private SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
 
-    private int tenThreadsPerProcessor()
+    @Override
+    public void init()
     {
-        return 10 * Runtime.getRuntime()
-                .availableProcessors();
+        if ( jetty == null )
+        {
+            jetty = new Server();
+            Connector connector = new SelectChannelConnector();
+
+            connector.setPort( jettyHttpPort );
+            connector.setHost( jettyAddr );
+            
+            jetty.addConnector( connector );
+            
+            if(httpsEnabled) {
+               if(httpsCertificateInformation != null) {
+                   jetty.addConnector( sslSocketFactory.createConnector(httpsCertificateInformation, jettyAddr, jettyHttpsPort) );
+               } else {
+                   throw new RuntimeException("HTTPS set to enabled, but no HTTPS configuration provided.");
+               }
+            }
+            
+            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        try
+        {
+            jetty.stop();
+            jetty.join();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public void setPort( int portNo )
+    {
+        jettyHttpPort = portNo;
+    }
+
+    @Override
+    public void setAddress( String addr )
+    {
+        jettyAddr = addr;
+    }
+
+    @Override
+    public void setMaxThreads( int maxThreads )
+    {
+        jettyMaxThreads = maxThreads;
+    }
+
+    @Override
+    public void addJAXRSPackages( List<String> packageNames, String mountPoint )
+    {
+        // We don't want absolute URIs at this point
+        mountPoint = ensureRelativeUri( mountPoint );
+
+        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
+
+        ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
+        ServletHolder servletHolder = new ServletHolder( container );
+        servletHolder.setInitParameter(ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf(true));
+        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
+                AllowAjaxFilter.class.getName() );
+        log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
+
+        jaxRSPackages.put( mountPoint, servletHolder );
     }
 
     @Override
@@ -94,6 +183,60 @@ public class Jetty6WebServer implements WebServer
         loadAllMounts();
 
         startJetty();
+    }
+
+    @Override
+    public void addStaticContent( String contentLocation, String serverMountPoint )
+    {
+        staticContent.put( serverMountPoint, contentLocation );
+    }
+
+    @Override
+    public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
+            throws IOException, ServletException
+    {
+        jetty.handle( targetPath, request, response, Handler.REQUEST );
+    }
+
+
+    @Override
+    public Server getJetty()
+    {
+        return jetty;
+    }
+    
+    @Override
+    public void setEnableHttps( boolean enable ) {
+        httpsEnabled = enable;
+    }
+    
+    @Override
+    public void setHttpsPort( int portNo )  {
+        jettyHttpsPort = portNo;
+    }
+    
+    @Override
+    public void setHttpsCertificateInformation( KeyStoreInformation config ) {
+        httpsCertificateInformation = config;
+    }
+    
+
+    protected void startJetty()
+    {
+        try
+        {
+            jetty.start();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    private int tenThreadsPerProcessor()
+    {
+        return 10 * Runtime.getRuntime()
+                .availableProcessors();
     }
 
     private void loadAllMounts()
@@ -136,85 +279,6 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
-    @Override
-    public void init()
-    {
-        if ( jetty == null )
-        {
-            jetty = new Server();
-            Connector connector = new SelectChannelConnector();
-
-            connector.setPort( jettyPort );
-            connector.setHost( jettyAddr );
-            jetty.addConnector( connector );
-
-            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
-        }
-    }
-
-    protected void startJetty()
-    {
-        try
-        {
-            jetty.start();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    public void stop()
-    {
-        try
-        {
-            jetty.stop();
-            jetty.join();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    public void setPort( int portNo )
-    {
-        jettyPort = portNo;
-    }
-
-    @Override
-    public void setAddress( String addr )
-    {
-        jettyAddr = addr;
-    }
-
-    @Override
-    public void setMaxThreads( int maxThreads )
-    {
-        jettyMaxThreads = maxThreads;
-    }
-
-    @Override
-    public void addJAXRSPackages( List<String> packageNames, String mountPoint )
-    {
-        // We don't want absolute URIs at this point
-        mountPoint = ensureRelativeUri( mountPoint );
-
-        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
-
-        ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
-        ServletHolder servletHolder = new ServletHolder( container );
-        servletHolder.setInitParameter(ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf(true));
-        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
-                AllowAjaxFilter.class.getName() );
-        log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
-
-        jaxRSPackages.put( mountPoint, servletHolder );
-    }
-
     private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
         if ( mountPoint.equals( "/" ) )
@@ -250,19 +314,6 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
-    @Override
-    public void addStaticContent( String contentLocation, String serverMountPoint )
-    {
-        staticContent.put( serverMountPoint, contentLocation );
-    }
-
-    @Override
-    public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException
-    {
-        jetty.handle( targetPath, request, response, Handler.REQUEST );
-    }
-
     private void loadStaticContent( SessionManager sm, String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
@@ -288,7 +339,7 @@ public class Jetty6WebServer implements WebServer
             {
                 log.error(
                         "No static content available for Neo Server at port [%d], management console may not be available.",
-                        jettyPort );
+                        jettyHttpPort );
             }
         }
         catch ( Exception e )
@@ -324,15 +375,9 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public Server getJetty()
-    {
-        return jetty;
-    }
-
-    @Override
     public void addSecurityRules( final SecurityRule... rules )
     {
-        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
+        jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
         {
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
@@ -344,12 +389,12 @@ public class Jetty6WebServer implements WebServer
                         final Context context = (Context) handler;
                         for ( SecurityRule rule : rules )
                         {
-                            if ( context.getContextPath()
-                                    .equals( rule.forUriPath() ) )
+                            if(new UriPathWildcardMatcher(rule.forUriPath()).matches(context.getContextPath()))
                             {
                                 final Filter jettyFilter = new SecurityFilter( rule );
                                 context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );
                                 log.info( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() );
+                                System.out.println( String.format("Security rule [%s] installed on server", rule.getClass().getCanonicalName() )) ;
                             }
                         }
                     }
@@ -361,7 +406,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addExecutionLimitFilter( final Guard guard )
     {
-        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
+        jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
         {
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
@@ -379,5 +424,4 @@ public class Jetty6WebServer implements WebServer
             }
         } );
     }
-
 }

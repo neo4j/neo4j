@@ -53,7 +53,7 @@ import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -88,7 +88,7 @@ import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 public class DatabaseActions
 {
     private final Database database;
-    private final AbstractGraphDatabase graphDb;
+    private final GraphDatabaseSPI graphDb;
     private final LeaseManager leases;
     private final ForceMode defaultForceMode;
 
