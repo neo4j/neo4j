@@ -48,10 +48,9 @@ public class JsonHelper
     
     public static Object readJson( String json ) throws JsonParseException
     {
-        ObjectMapper mapper = new ObjectMapper();
         try
         {
-            return mapper.readValue( json, Object.class );
+            return OBJECT_MAPPER.readValue( json, Object.class );
         }
         catch ( IOException e )
         {
