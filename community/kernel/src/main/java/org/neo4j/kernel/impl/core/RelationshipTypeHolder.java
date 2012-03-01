@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 public class RelationshipTypeHolder
 {
     private ArrayMap<String,Integer> relTypes = 
-        new ArrayMap<String,Integer>( 5, true, true );
+        new ArrayMap<String,Integer>( (byte)5, true, true );
     private Map<Integer, RelationshipTypeImpl> relTranslation = new ConcurrentHashMap<Integer, RelationshipTypeImpl>();
 
     private final TransactionManager transactionManager;

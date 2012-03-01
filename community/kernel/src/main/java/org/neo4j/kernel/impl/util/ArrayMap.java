@@ -43,7 +43,7 @@ public class ArrayMap<K,V>
         data = new ArrayEntry[toMapThreshold];
     }
 
-    public ArrayMap( int mapThreshold, boolean threadSafe, boolean shrinkToArray )
+    public ArrayMap( byte mapThreshold, boolean threadSafe, boolean shrinkToArray )
     {
         this.toMapThreshold = (byte)mapThreshold;
         this.useThreadSafeMap = threadSafe;

@@ -248,4 +248,17 @@ public class TestProperties extends AbstractNeo4jTestCase
         node.setProperty( "key", value );
         assertEquals( value, node.getProperty( "key" ) );
     }
+    
+    @Test
+    public void loadManyProperties() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        for ( int i = 0; i < 1000; i++ )
+        {
+            node.setProperty( "property " + i, "value" );
+        }
+        newTransaction();
+        clearCache();
+        assertEquals( "value", node.getProperty( "property 0" ) );
+    }
 }

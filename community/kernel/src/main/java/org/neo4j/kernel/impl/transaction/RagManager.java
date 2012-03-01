@@ -77,7 +77,7 @@ class RagManager
         new HashMap<Object,List<Transaction>>();
 
     private final ArrayMap<Transaction,Object> waitingTxMap =
-        new ArrayMap<Transaction,Object>( 5, false, true );
+        new ArrayMap<Transaction,Object>( (byte)5, false, true );
 
     private final TransactionManager tm;
 

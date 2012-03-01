@@ -67,7 +67,7 @@ class RWLock
         new LinkedList<WaitElement>();
 
     private final ArrayMap<Transaction,TxLockElement> txLockElementMap = 
-        new ArrayMap<Transaction,TxLockElement>( 5, false, true );
+        new ArrayMap<Transaction,TxLockElement>( (byte)5, false, true );
 
     private final RagManager ragManager;
 
