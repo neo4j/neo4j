@@ -92,6 +92,9 @@ public class UpgradableDatabase
                     return false;
                 }
                 fileChannel = new RandomAccessFile( storeFile, "r" ).getChannel();
+                if ( fileChannel.size() < expectedVersionBytes.length ) {
+                    return false;
+                }
                 fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
                 byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
