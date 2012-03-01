@@ -25,10 +25,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.management.TransactionManager;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -47,40 +45,39 @@ public final class TransactionManagerBean extends ManagementBeanProvider
 
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
-        private final TxModule txModule;
+        private final TxManager txManager;
         private final NeoStore neoStore;
 
         TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.txModule = management.getKernelData().getConfig().getTxModule();
-            this.neoStore = ( (NeoStoreXaDataSource) txModule.getXaDataSourceManager().getXaDataSource(
-                    Config.DEFAULT_DATA_SOURCE_NAME ) ).getNeoStore();
+            this.txManager = (TxManager) management.getKernelData().graphDatabase().getTxManager();
+            this.neoStore = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
         }
 
         public int getNumberOfOpenTransactions()
         {
-            return txModule.getActiveTxCount();
+            return txManager.getActiveTxCount();
         }
 
         public int getPeakNumberOfConcurrentTransactions()
         {
-            return txModule.getPeakConcurrentTxCount();
+            return txManager.getPeakConcurrentTxCount();
         }
 
         public int getNumberOfOpenedTransactions()
         {
-            return txModule.getStartedTxCount();
+            return txManager.getStartedTxCount();
         }
 
         public long getNumberOfCommittedTransactions()
         {
-            return txModule.getCommittedTxCount();
+            return txManager.getCommittedTxCount();
         }
 
         public long getNumberOfRolledBackTransactions()
         {
-            return txModule.getRolledbackTxCount();
+            return txManager.getRolledbackTxCount();
         }
 
         public long getLastCommittedTxId()

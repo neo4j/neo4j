@@ -55,8 +55,8 @@ public class DiagnosticsBean extends ManagementBeanProvider
         DiagnosticsImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.diagnostics = management.getKernelData().getConfig().getDiagnosticsManager();
-            this.log = (StringLogger) management.getKernelData().getConfig().getParams().get( StringLogger.class );
+            this.diagnostics = management.getKernelData().graphDatabase().getDiagnosticsManager();
+            this.log = management.getKernelData().graphDatabase().getMessageLog();
         }
 
         @Override

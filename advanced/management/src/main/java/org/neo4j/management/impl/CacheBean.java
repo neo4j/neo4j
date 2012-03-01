@@ -43,7 +43,7 @@ public class CacheBean extends ManagementBeanProvider
     protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
             throws NotCompliantMBeanException
     {
-        NodeManager nm = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
+        NodeManager nm = management.getKernelData().graphDatabase().getNodeManager();
         Collection<CacheManager> cacheBeans = new LinkedList<CacheBean.CacheManager>();
         for ( Cache<?, ?> cache : nm.caches() )
         {
