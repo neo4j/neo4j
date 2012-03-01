@@ -486,7 +486,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         Writer fw = null;
         try
         {
-            fw = getFW("target" + File.separator + "docs"+ File.separator + section , data.title);
+            fw = AsciiDocGenerator.getFW("target" + File.separator + "docs"+ File.separator + section , data.title);
             String name = title.replace( " ", "-" )
                     .toLowerCase();
             String longSection = section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" );
