@@ -19,23 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import static java.lang.String.format;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.component.LifeCycle.Listener;
 import org.mortbay.jetty.Connector;
@@ -44,11 +29,7 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.HashSessionManager;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.jetty.servlet.SessionHandler;
+import org.mortbay.jetty.servlet.*;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
@@ -56,10 +37,20 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
+import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+
+import static java.lang.String.format;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -368,8 +359,7 @@ public class Jetty6WebServer implements WebServer
                         final Context context = (Context) handler;
                         for ( SecurityRule rule : rules )
                         {
-                            if ( context.getContextPath()
-                                    .equals( rule.forUriPath() ) )
+                            if(new UriPathWildcardMatcher(rule.forUriPath()).matches(context.getContextPath()))
                             {
                                 final Filter jettyFilter = new SecurityFilter( rule );
                                 context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );

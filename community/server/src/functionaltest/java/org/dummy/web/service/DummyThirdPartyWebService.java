@@ -59,6 +59,13 @@ public class DummyThirdPartyWebService
     }
 
     @GET
+    @Path("/{something}/{somethingElse}")
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response forSecurityTesting() {
+        return Response.ok().entity("you've reached a dummy service").build();
+    }
+
+    @GET
     @Path( "needs-auth-header" )
     @Produces( MediaType.APPLICATION_JSON )
     public Response authHeader( @Context HttpHeaders headers )
