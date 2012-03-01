@@ -2,42 +2,13 @@
 Aggregation
 ===========
 
-To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
+include::introduction.txt[]
 
-Aggregate functions take multiple input values and calculate an an aggregated value from them. Examples are AVG that
-calculate the average of multiple numeric values, or MIN that finds the smallest numeric value in a set of values.
 
-Aggregation can be done over all the matching sub graphs, or it can be further divided by introducing key values.
-These are non-aggregate expressions, that are used to group the values going into the aggregate functions.
 
-So, if the return statement looks something like this:
 
-[source,cypher]
-----
-RETURN n, count(*)
-----
 
-We have two return expressions - n, and count(*). The first, n, is no aggregate function, and so it will be the
-grouping key. The latter, count(*) is an aggregate expression. So the matching sub graphs will be divided into
-different buckets, depending on the grouping key. The aggregate function will then run on these buckets, calculating
-the aggregate values.
-
-The last piece of the puzzle is the DISTINCT keyword. It is used to make all values unique before running them through
-an aggregate function.
-
-An example is helpful:
-
-[source,cypher]
-----
-START me=node(0)
-MATCH me-->friend--->friend_of_friend
-RETURN count(distinct friend_of_friend), count(friend_of_friend)
-----
-
-In this example we are trying to find all our friends of friends, and count them. The first aggregate function,
-+count(distinct friend_of_friend)+, will only see a friend_of_friend once - DISTINCT removes the duplicates. The latter
-aggregate function, +count(friend_of_friend)+, might very well see the same friend_of_friend multiple times.
-
+The following examples are assuming the example graph structure below.
 
 include::cypher-aggregation-graph.txt[]
 
