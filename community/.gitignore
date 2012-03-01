@@ -24,4 +24,4 @@ artifacts
 */bin
 */pom-with-build-number.xml
 */chromedriver.log
-*/rrd
+rrd
