@@ -1,9 +1,14 @@
-Debian installer project
--------------------------
+Linux installers project
+------------------------
 
-Builds .deb installers for all neo4j server editions. 
+Builds linux installers for all neo4j server editions. 
 
-To build this, you need a debian (or ubuntu) computer, and need debuild installed:
+Current installers:
+-------------------
+
+  * Debian
+
+To build this, you need debuild installed:
 
   sudo apt-get install devscripts
 
