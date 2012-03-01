@@ -33,7 +33,7 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
     val newPipe = createStartPipe(pipe, item.token)
 
-    (newPipe, q.copy(start = q.start.filterNot(_ == item) ++ Seq(item.solve)))
+    (newPipe, q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
   private def filter(q: QueryToken[_]): Boolean = q match {

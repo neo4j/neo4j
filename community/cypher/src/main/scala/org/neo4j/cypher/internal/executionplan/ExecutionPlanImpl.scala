@@ -41,6 +41,10 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       val builder = matchingBuilders.sortBy(_.priority).head
       val (p, q) = builder((pipe, query))
 
+      if(p==pipe && q == query) {
+        throw new InternalException("Something went wrong trying to build your query. The offending builder was: " + builder.getClass.getSimpleName)
+      }
+      
       pipe = p
       query = q
     }

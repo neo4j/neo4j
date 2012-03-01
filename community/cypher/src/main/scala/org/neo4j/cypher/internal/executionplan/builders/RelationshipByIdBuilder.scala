@@ -36,7 +36,7 @@ class RelationshipByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
       val pipe = new RelationshipStartPipe(inPipe, key, m => getElements[Relationship](expression(m), key, graph.getRelationshipById))
 
-      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) ++ Seq[QueryToken[StartItem]](Solved(RelationshipById(key,expression)))
+      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 
       (pipe, inQ.copy(start = remainingQ))
     }

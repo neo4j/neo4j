@@ -35,5 +35,5 @@ class ExtractBuilder extends PlanBuilder {
     case (p, q) => !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
   }
 
-  def priority: Int = 0
+  def priority: Int = PlanBuilder.Extraction
 }

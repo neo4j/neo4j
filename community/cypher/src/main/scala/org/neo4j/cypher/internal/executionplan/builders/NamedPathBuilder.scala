@@ -31,7 +31,7 @@ class NamedPathBuilder extends PlanBuilder {
 
       val pipe = new NamedPathPipe(p, namedPaths)
 
-      (pipe, q.copy(namedPaths = q.namedPaths.filterNot(_ == item) ++ Seq(item.solve)))
+      (pipe, q.copy(namedPaths = q.namedPaths.filterNot(_ == item) :+ item.solve))
     }
   }
 

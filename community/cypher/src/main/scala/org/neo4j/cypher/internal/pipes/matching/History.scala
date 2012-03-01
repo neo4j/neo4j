@@ -35,7 +35,7 @@ class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
     case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
   }).toSeq
 
-  def add(pair: MatchingPair): History = new History(source, seen ++ Seq(pair))
+  def add(pair: MatchingPair): History = new History(source, seen ++ Set(pair))
 
   def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
       case MatchingPair(pe: PatternNode, entity: Node) => Seq(pe.key -> entity)

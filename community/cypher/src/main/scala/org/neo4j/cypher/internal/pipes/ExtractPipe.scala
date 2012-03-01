@@ -36,7 +36,6 @@ class ExtractPipe(source: Pipe, val expressions: Seq[Expression]) extends PipeWi
 
   val symbols: SymbolTable = source.symbols.add(expressions.map(_.identifier):_*)
 
-
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     source.createResults(params).map(row => {
       val projection: Map[String, Any] = expressions.map( exp =>exp.identifier.name -> exp(row) ).toMap

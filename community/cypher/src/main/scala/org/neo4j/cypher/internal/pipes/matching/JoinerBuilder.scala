@@ -52,10 +52,10 @@ class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) exte
       patternRelationshipsNotAlreadyDone.foreach(rel => {
         val (start, end, dir) =
           if (done.contains(rel.startNode)) {
-            done = done ++ Seq(rel.endNode)
+            done = done :+ rel.endNode
             (rel.startNode.key, rel.endNode.key, figureOutDirection(rel.dir, true))
           } else {
-            done = done ++ Seq(rel.startNode)
+            done = done :+ rel.startNode
             (rel.endNode.key, rel.startNode.key, figureOutDirection(rel.dir, false))
           }
 
