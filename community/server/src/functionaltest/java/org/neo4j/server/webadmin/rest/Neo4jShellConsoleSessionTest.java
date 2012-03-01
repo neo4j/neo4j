@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -35,6 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.Config;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ScriptSession;
@@ -42,6 +45,8 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class Neo4jShellConsoleSessionTest implements SessionFactory
 {
+    
+    private static final String LN = System.getProperty("line.separator");
     private ConsoleService consoleService;
     private Database database;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
@@ -68,27 +73,33 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     }
 
     @Test
-    public void doesntMangleNewlines() throws UnsupportedEncodingException
+    public void doesntMangleNewlines() throws Exception
     {
         Response response = consoleService.exec( new JsonFormat(),
                 "{ \"command\" : \"start n=node(0) return n\", \"engine\":\"shell\" }" );
 
      
         assertEquals( 200, response.getStatus() );
-        String result = decode( response );
+        String result = decode( response ).get(0);
 
         // Awful hack: Result contains a timestamp for how
         // long the query took, remove that timestamp to get 
         // a deterministic test.
         result = result.replaceAll("\\d+ ms", "");
         
-        String expected = "[ \"+-----------+\\n| n         |\\n+-----------+\\n| Node[0]{} |\\n+-----------+\\n1 rows, \\n\\n\", \"neo4j-sh (0)$ \" ]";
-
+        String expected = "+-----------+"+LN
+                         +"| n         |"+LN
+                         +"+-----------+"+LN
+                         +"| Node[0]{} |"+LN
+                         +"+-----------+"+LN
+                         +"1 rows, "+LN
+                         +""+LN;
+        
         assertThat( result, is(expected) );
     }
     
-    private String decode( final Response response ) throws UnsupportedEncodingException
+    private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
     {
-        return new String( (byte[]) response.getEntity(), "UTF-8" );
+        return (List<String>)JsonHelper.readJson(new String( (byte[]) response.getEntity(), "UTF-8" ));
     }
 }
