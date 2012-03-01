@@ -22,24 +22,28 @@ package org.neo4j.cypher.internal.executionplan
 import collection.Seq
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.junit.Test
+import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{Entity, ReturnItem, NodeById, Query}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.Assertions
 import org.neo4j.cypher.InternalException
-import actors.threadpool.{TimeUnit, Executors}
+import actors.threadpool.{ExecutionException, TimeUnit, Executors}
 
 class ExecutionPlanImplTest extends Assertions with Timed {
   @Test def should_not_go_into_never_ending_loop() {
-    val q = Query.start(NodeById("x",0)).returns(ReturnItem(Entity("x"), "x"))
+    val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Entity("x"), "x"))
 
-    timeoutAfter(1) {
+    val exception = intercept[ExecutionException](timeoutAfter(1) {
       val epi = new FakeEPI(q, null)
-      intercept[InternalException](epi.execute(Map()))
-    }
+      epi.execute(Map())
+    })
+    
+    assertTrue(exception.getCause.isInstanceOf[InternalException])
   }
+
 }
 
-class FakeEPI(q:Query, gds:GraphDatabaseService) extends ExecutionPlanImpl(q,gds) {
+class FakeEPI(q: Query, gds: GraphDatabaseService) extends ExecutionPlanImpl(q, gds) {
   override lazy val builders: Seq[PlanBuilder] = Seq(new BadBuilder)
 }
 
