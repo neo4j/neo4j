@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 public class PropertyIndexHolder
 {
     private final ArrayMap<String,Integer> propertyIndexes = 
-        new ArrayMap<String,Integer>( 5, false, false);
+        new ArrayMap<String,Integer>( (byte)5, false, false);
     private final ArrayMap<Integer,String> idToIndex = 
-        new ArrayMap<Integer,String>( 5, false, false);
+        new ArrayMap<Integer,String>( (byte)5, false, false);
     
     PropertyIndexHolder( NameData[] indexes )
     {

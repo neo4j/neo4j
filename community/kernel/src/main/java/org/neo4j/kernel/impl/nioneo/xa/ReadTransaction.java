@@ -197,7 +197,7 @@ class ReadTransaction implements NeoStoreTransaction
             return null;
         }
         ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<Integer, PropertyData>(
-                chain.size(), false, true );
+                (byte)9, false, true );
         for ( PropertyRecord propRecord : chain )
         {
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )

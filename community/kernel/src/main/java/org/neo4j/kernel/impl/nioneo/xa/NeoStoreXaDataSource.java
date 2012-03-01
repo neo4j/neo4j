@@ -225,7 +225,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 logger.fine( "Waiting for TM to take care of recovered " +
                     "transactions." );
             }
-            idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
+            idGenerators = new ArrayMap<Class<?>,Store>( (byte)5, false, false );
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
             this.idGenerators.put( Relationship.class,
                 neoStore.getRelationshipStore() );

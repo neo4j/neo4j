@@ -56,9 +56,9 @@ public class LockReleaser
     private static Logger log = Logger.getLogger( LockReleaser.class.getName() );
 
     private final ArrayMap<Transaction,List<LockElement>> lockMap =
-        new ArrayMap<Transaction,List<LockElement>>( 5, true, true );
+        new ArrayMap<Transaction,List<LockElement>>( (byte)5, true, true );
     private final ArrayMap<Transaction,PrimitiveElement> cowMap =
-        new ArrayMap<Transaction,PrimitiveElement>( 5, true, true );
+        new ArrayMap<Transaction,PrimitiveElement>( (byte)5, true, true );
 
     private NodeManager nodeManager;
     private final LockManager lockManager;
