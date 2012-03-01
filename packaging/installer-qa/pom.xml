@@ -74,7 +74,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.2</version>
         <executions>
           <execution>
             <id>unpack</id>
@@ -206,6 +205,53 @@
 
     </plugins>
   </build>
+  
+  
+  
+  <profiles>
+    <profile>
+      <!-- This project expects standalone neo4j
+      artifacts to be available under /target. You can
+      either place them there manually, or activate this
+      profile to pull them in from ../standalone/target -->
+      <id>pull-standalone-artifacts</id>
+      <activation>
+        <property>
+          <name>!pullArtifacts</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pull-artifacts</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-community-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-advanced-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-enterprise-${neo4j.version}-unix.tar.gz" />
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <repositories>
     <repository>

@@ -9,12 +9,12 @@
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>installer-debian</artifactId>
+  <artifactId>installer-linux</artifactId>
   <version>1.7-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Neo4j Debian Installer</name>
-  <description>Debian installers for the Neo4j Server</description>
+  <name>Neo4j Linux Installers</name>
+  <description>Linux installers for the Neo4j Server</description>
 
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -25,7 +25,7 @@
   </scm>
 
   <properties>
-    <short-name>installer-debian</short-name>
+    <short-name>installer-linux</short-name>
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
 
