@@ -86,7 +86,7 @@ public class XaLogicalLog implements LogLoader
     private long previousLogLastCommittedTx = -1;
     private long logVersion = 0;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap =
-        new ArrayMap<Integer,LogEntry.Start>( 4, false, true );
+        new ArrayMap<Integer,LogEntry.Start>( (byte)4, false, true );
     private final Map<Integer,XaTransaction> recoveredTxMap =
         new HashMap<Integer,XaTransaction>();
     private int nextIdentifier = 1;
@@ -891,7 +891,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     private final ArrayMap<Thread,Integer> txIdentMap =
-        new ArrayMap<Thread,Integer>( 5, true, true );
+        new ArrayMap<Thread,Integer>( (byte)5, true, true );
 
     void registerTxIdentifier( int identifier )
     {

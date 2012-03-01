@@ -58,7 +58,7 @@ public class PersistenceManager
     private final LockReleaser lockReleaser;
 
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
-        new ArrayMap<Transaction,NeoStoreTransaction>( 5, true, true );
+        new ArrayMap<Transaction,NeoStoreTransaction>( (byte)5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 

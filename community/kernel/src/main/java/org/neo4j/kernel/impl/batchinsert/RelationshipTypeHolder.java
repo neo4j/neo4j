@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 public class RelationshipTypeHolder
 {
     private final ArrayMap<String,Integer> relTypes = 
-        new ArrayMap<String,Integer>( 5, false, false);
+        new ArrayMap<String,Integer>( (byte)5, false, false);
     private final ArrayMap<Integer,String> idToName = 
-        new ArrayMap<Integer,String>( 5, false, false);
+        new ArrayMap<Integer,String>( (byte)5, false, false);
     
     RelationshipTypeHolder( NameData[] types )
     {

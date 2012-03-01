@@ -65,7 +65,7 @@ class ReadOnlyTxManager extends AbstractTransactionManager
     public void init( XaDataSourceManager xaDsManagerToUse )
     {
         this.xaDsManager = xaDsManagerToUse;
-        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( 5, true, true );
+        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( (byte)5, true, true );
     }
 
     public void begin() throws NotSupportedException

@@ -723,7 +723,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             PrimitiveRecord primitive )
     {
         ArrayMap<Integer, PropertyData> result = new ArrayMap<Integer, PropertyData>(
-                9, false, true );
+                (byte)9, false, true );
         long nextProp = primitive.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {

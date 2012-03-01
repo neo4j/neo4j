@@ -94,14 +94,14 @@ public class TestArrayMap
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, false,
                 false ), false );
     }
 
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, false,
                 true ), true );
     }
 
@@ -109,7 +109,7 @@ public class TestArrayMap
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
             throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, true,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, true,
                 false ), false );
     }
 
@@ -118,7 +118,7 @@ public class TestArrayMap
             throws Exception
     {
         assertDataRepresentationSwitchesWhenAboveThreshold(
-                new ArrayMap<String, Integer>( 3, true, true ), true );
+                new ArrayMap<String, Integer>( (byte)3, true, true ), true );
     }
 
     @SuppressWarnings( "rawtypes" )
@@ -162,7 +162,7 @@ public class TestArrayMap
     @Test
     public void canOverwriteThenRemoveElementAcrossDeflation() throws Exception
     {
-        ArrayMap<String, Integer> map = new ArrayMap<String, Integer>( 3, false, true );
+        ArrayMap<String, Integer> map = new ArrayMap<String, Integer>( (byte)3, false, true );
 
         map.put( "key1", 1 );
         map.put( "key2", 2 );
@@ -186,7 +186,7 @@ public class TestArrayMap
     @Test
     public void testThreadSafeSize() throws InterruptedException
     {
-        ArrayMap<Integer,Object> map = new ArrayMap<Integer,Object>(5, true, true );
+        ArrayMap<Integer,Object> map = new ArrayMap<Integer,Object>((byte)5, true, true );
         map.put( 1, new Object() );
         map.put( 2, new Object() );
         map.put( 3, new Object() );
