@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 class GraphDbInstance
 {
@@ -84,10 +83,13 @@ class GraphDbInstance
         boolean dumpToConsole = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        StringLogger logger = graphDb.getMessageLog();
         AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
-        autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        // params.putAll( config.getInputParams() );
+        Map<Object, Object> autoConf = new HashMap<Object, Object>();
+        autoConfigurator.configure( autoConf );
+        for ( Map.Entry<Object, Object> entry : autoConf.entrySet() )
+        {
+            if ( !config.getInputParams().containsKey( entry.getKey() ) ) params.put( entry.getKey(), entry.getValue() );
+        }
 
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + NeoStore.DEFAULT_NAME;

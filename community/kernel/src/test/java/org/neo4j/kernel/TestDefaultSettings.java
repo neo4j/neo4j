@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -54,6 +55,7 @@ public class TestDefaultSettings
         FileUtils.deleteRecursively( DB_PATH );
     }
 
+    @Ignore( "This test assumes that auto-conf isn't used" )
     @Test
     public void testDefaults()
     {
