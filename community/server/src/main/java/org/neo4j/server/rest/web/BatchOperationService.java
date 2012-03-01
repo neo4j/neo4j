@@ -58,10 +58,9 @@ public class BatchOperationService
     private static final String METHOD_KEY = "method";
     private static final String BODY_KEY = "body";
     private static final String TO_KEY = "to";
-    private static final String[] HEADERS_TO_PASSOVER = { "Authorization" };
 
     private static final JsonFactory jsonFactory = new JsonFactory();
-    
+
     private final OutputFormat output;
     private final WebServer webServer;
     private final Database database;
@@ -74,7 +73,7 @@ public class BatchOperationService
     }
 
     @POST
-    public Response performBatchOperations( @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders, 
+    public Response performBatchOperations( @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders,
                                             InputStream body ) throws BadInputException
     {
         AbstractGraphDatabase db = database.graph;
@@ -84,15 +83,15 @@ public class BatchOperationService
         {
             JsonParser jp = jsonFactory.createJsonParser(body);
             ObjectMapper mapper = new ObjectMapper();
-            
+
             BatchOperationResults results = new BatchOperationResults();
-            
+
             JsonToken token;
             String field;
             String jobMethod, jobPath, jobBody;
             Integer jobId;
 
-            // TODO: Perhaps introduce a simple DSL for 
+            // TODO: Perhaps introduce a simple DSL for
             // deserializing streamed JSON?
             while( (token = jp.nextToken()) != null) {
                  if(token == JsonToken.START_OBJECT) {
@@ -143,7 +142,7 @@ public class BatchOperationService
         }
     }
 
-    private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body, 
+    private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body,
                              Integer id, HttpHeaders httpHeaders )
             throws IOException, ServletException
     {
@@ -171,16 +170,30 @@ public class BatchOperationService
                     .toString() );
         }
     }
-    
+
     private void addHeaders(final InternalJettyServletRequest res, final HttpHeaders httpHeaders)
     {
-        for ( String header : HEADERS_TO_PASSOVER)
+        for ( Map.Entry<String, List<String>> header : httpHeaders.getRequestHeaders().entrySet() )
         {
-            final List<String> value = httpHeaders.getRequestHeader(header);
-            if (value == null) continue;
-            if (value.size() != 1) throw new IllegalArgumentException("expecting one value per header");
-            res.addHeader(header, value.get(0));
+            final String key = header.getKey();
+            final List<String> value = header.getValue();
+            if ( value == null ) continue;
+            if ( value.size() != 1 )
+                throw new IllegalArgumentException(
+                        "expecting one value per header" );
+            if ( key.equals( "Accept" ) || key.equals( "Content-Type" ) )
+            {
+                continue; // We add them explicitly
+            }
+            else
+            {
+                res.addHeader( key, value.get( 0 ) );
+            }
         }
+        // Make sure they are there and always json
+        // Taking advantage of Map semantics here
+        res.addHeader( "Accept", "application/json" );
+        res.addHeader( "Content-Type", "application/json" );
     }
 
     private URI calculateTargetUri( UriInfo serverUriInfo, String requestedPath )
