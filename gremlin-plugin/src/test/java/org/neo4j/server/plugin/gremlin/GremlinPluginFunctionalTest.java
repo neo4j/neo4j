@@ -136,8 +136,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Title( "Load a sample graph" )
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
-        String script = "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');"
-                        + "g.V;";
+        String script = "" +
+        		"g.clear();" +
+        		"g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
+        		"g.V;";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
