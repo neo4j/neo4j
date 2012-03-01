@@ -78,7 +78,7 @@ public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase 
          *   Accept=[application/json],
          *   Content-Type=[application/json],
          *   Authorization=[Basic dXNlcjpwYXNz],
-         *   User-Agent=[Java/1.6.0_27],
+         *   User-Agent=[Java/1.6.0_27] <-- ignore that, it changes often
          *   Host=[localhost:7474],
          *   Connection=[keep-alive],
          *   Content-Length=[86]
@@ -87,7 +87,6 @@ public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase 
         assertEquals( "Basic dXNlcjpwYXNz", res.get( "Authorization" ) );
         assertEquals( "application/json", res.get( "Accept" ) );
         assertEquals( "application/json", res.get( "Content-Type" ) );
-        assertEquals( "Java/1.6.0_27", res.get( "User-Agent" ) );
         assertEquals( "localhost:7474", res.get( "Host" ) );
         assertEquals( "keep-alive", res.get( "Connection" ) );
     }
