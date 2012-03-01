@@ -34,8 +34,8 @@
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-        <blueprints.version>1.1</blueprints.version>
-        <gremlin.version>1.4</gremlin.version>
+        <blueprints.version>1.2</blueprints.version>
+        <gremlin.version>1.5</gremlin.version>
 
         <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
         <testWithExternalServer>false</testWithExternalServer>
@@ -879,7 +879,7 @@
             <id>java.net</id>
             <url>http://download.java.net/maven/2/</url>
         </repository>
-        <repository>
+        <!-- repository>
             <id>tinkerpop-repository</id>
             <name>TinkerPop Maven2 Repository</name>
             <url>http://tinkerpop.com/maven2</url>
@@ -887,7 +887,7 @@
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
             </snapshots>
-        </repository>
+        </repository-->
         <repository>
             <id>selenium-repository</id>
             <url>http://selenium.googlecode.com/svn/repository</url>
