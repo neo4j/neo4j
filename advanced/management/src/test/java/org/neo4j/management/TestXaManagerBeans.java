@@ -26,8 +26,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.impl.XaManagerBean;
-
-import java.io.File;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -38,12 +37,12 @@ public class TestXaManagerBeans
 {
     private AbstractGraphDatabase graphDb;
     private XaManager xaManager;
+    private TargetDirectory dir = TargetDirectory.forTest( getClass() );
 
     @Before
     public synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
-            + ManagementBeansTest.class.getSimpleName() );
+        graphDb = new EmbeddedGraphDatabase( dir.directory( "test" ).getAbsolutePath() );
         xaManager = graphDb.getSingleManagementBean( XaManager.class );
     }
 
@@ -64,7 +63,7 @@ public class TestXaManagerBeans
     @Test
     public void hasAllXaManagerBeans()
     {
-        for ( XaDataSource xaDataSource : graphDb.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        for ( XaDataSource xaDataSource : graphDb.getXaDataSourceManager().getAllRegisteredDataSources() )
         {
             XaResourceInfo info = getByName( xaDataSource.getName() );
             assertEquals( "wrong branchid for XA data source " + xaDataSource.getName(),
