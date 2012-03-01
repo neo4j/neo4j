@@ -49,7 +49,6 @@ public class Neo4jBasicTest
     {
         graphDb = new ImpermanentGraphDatabase();
     }
-
     // END SNIPPET: beforeTest
 
     /**
