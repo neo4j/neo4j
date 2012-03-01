@@ -6,6 +6,10 @@ This page demonstrates one way to handle domain entities when using Neo4j.
 The principle at use is to wrap the entities around a node (the same approach can be used with relationships
 as well).
 
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet/Person.java[Person.java]
+
 First off, store the node and make it accessible inside the package:
 
 [snippet,java]
@@ -36,6 +40,4 @@ classifier=sources
 tag=override
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet/Person.java[Person.java]
 

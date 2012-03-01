@@ -1,6 +1,10 @@
 [[tutorials-cypher-java]]
-Cypher Queries
-==============
+Execute Cypher Queries from Java
+================================
+
+[TIP]
+The full source code of the example:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
 
 In Java, you can use the <<cypher-query-lang,Cypher query language>> like this:
 
@@ -45,9 +49,6 @@ classifier=test-sources
 In this case there's only one node in the result:
 
 include::java-cypher-queries-node.txt[]
-
-Full source code of the example:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
 
 For more information on the Java interface to Cypher, see the 
 http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].

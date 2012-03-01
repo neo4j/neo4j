@@ -9,6 +9,10 @@ image::users.png[title="Node space view of users", scaledwidth="100%"]
 
 That is, the reference node is connected to a users-reference node to which all users are connected.
 
+[TIP]
+The source code used in this example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java[EmbeddedNeo4jWithIndexing.java]
+
 To begin with, we define the relationship types we want to use:
 
 [snippet,java]
@@ -59,6 +63,4 @@ classifier=sources
 tag=findUser
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java[EmbeddedNeo4jWithIndexing.java]
 

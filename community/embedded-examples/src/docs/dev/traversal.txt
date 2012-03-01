@@ -12,6 +12,10 @@ This is the first node space we want to traverse into:
     
 image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
+
 .Friends and friends of friends
 [snippet,java]
 ----
@@ -58,8 +62,6 @@ Now we know who coded the Matrix:
 
 include::matrix-traversal-java-hackers.txt[]
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
 
 == New traversal framework ==
 
@@ -71,6 +73,10 @@ However, expect the new API to evolve and thus undergo changes.
 === The Matrix ===
 
 The traversals from the Matrix example above, this time using the new traversal API:
+
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
 
 .Friends and friends of friends
 [snippet,java]
@@ -106,13 +112,14 @@ source=org/neo4j/examples/MatrixNewTravTest.java
 tag=find--hackers-usage
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
-
 
 === Walking an ordered path ===
 
 This example shows how to use a path context holding a representation of a path.
+
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java[OrderedPathTest.java]
 
 .Create a toy graph
 [snippet,java]
@@ -143,6 +150,4 @@ source=org/neo4j/examples/orderedpath/OrderedPathTest.java
 tag=walkOrderedPath
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java[OrderedPathTest.java]
 

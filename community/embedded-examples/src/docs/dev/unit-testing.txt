@@ -31,6 +31,8 @@ Using Maven as a dependency manager you would typically add this dependency as:
 _Where +$\{neo4j-version}+ is the desired version of Neo4j._
 
 With that in place, we're ready to code our tests.
+
+[TIP]
 For the full source code of this example see:
 https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
 
