@@ -167,6 +167,23 @@
                   <arg line="-uc" />
                   <arg line="-B" />
                 </exec>
+                
+                <!-- Copy installers into target/, changing the version in the filename
+                     from the debian compliant one to a maven compliant one. This makes
+                     it easier to use these artifacts in other projects (since otherwise
+                     other projects would have to figure out the debian compliant version). -->
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-advanced_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb" />
               </target>
             </configuration>
           </execution>
