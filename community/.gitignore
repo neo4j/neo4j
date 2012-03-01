@@ -16,7 +16,6 @@ target
 cypher/project
 cypher/lib_managed
 server/neo4j-home/data/
-server/neo4j-home/rrd
 server/rrd
 server/src/main/resources/webadmin-html/js/neo4j/
 server/src/main/resources/webadmin-html/js/ribcage/
@@ -25,3 +24,4 @@ artifacts
 */bin
 */pom-with-build-number.xml
 */chromedriver.log
+*/rrd
