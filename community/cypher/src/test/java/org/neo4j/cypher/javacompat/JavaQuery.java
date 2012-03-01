@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.Iterator;
@@ -44,9 +45,22 @@ public class JavaQuery
     void run()
     {
         // START SNIPPET: execute
-        AbstractGraphDatabase db = new EmbeddedGraphDatabase( DB_PATH );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( DB_PATH );
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node refNode = db.getReferenceNode();
+            refNode.setProperty( "name", "reference node" );
+            refNode.setProperty( "description", "a starting point in the graph" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node(0) where 1=1 return n" );
+        ExecutionResult result = engine.execute( "start n=node(0) return n.name, n.description" );
         System.out.println( result );
         // END SNIPPET: execute
         // START SNIPPET: columns
