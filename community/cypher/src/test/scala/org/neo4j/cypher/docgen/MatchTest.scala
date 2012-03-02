@@ -256,13 +256,162 @@ Cypher will try to match the relationship where the connected nodes switch sides
   }
 
   @Test def match_mimicking_or() {
+      testQuery(
+              title = "Matching on a bound relationship",
+              text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction, 
+                Cypher will try to match the relationship where the connected nodes switch sides.""",
+              queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
+              returns = "This returns the two connected nodes, once as the start node, and once as the end node",
+              assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
+              )
+  }
+  def intro_q1 = """START me=node(1)
+MATCH me-->friend-[?:parent_of]->children
+RETURN friend, children"""
+    
+  def intro_q2 = """START a=node(1)
+MATCH p = a-[?]->b 
+RETURN b"""
+    
+  def intro_q3 = """START a=node(1) 
+MATCH p = a-[?*]->b 
+RETURN b"""
+    
+  def intro_q4 = """START a=node(1)
+MATCH p = a-[?]->x-->b 
+RETURN b"""
+
+  def intro_q5 = """START a=node(1), x=node(2) 
+MATCH p = shortestPath( a-[?*]->x ) 
+RETURN p"""
+
+  
+  @Test def intro() {
     testQuery(
-      title = "Matching on a bound relationship",
-      text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction,
-Cypher will try to match the relationship where the connected nodes switch sides.""",
-      queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
-      returns = "This returns the two connected nodes, once as the start node, and once as the end node",
-      assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
+      title = "introduction",
+      text = """Pattern matching is one of the pillars of Cypher. The pattern is used to describe the shape of the data that we are
+looking for. Cypher will then try to find patterns in the graph - these are called matching sub graphs.
+
+The description of the pattern is made up of one or more paths, separated by commas. A path is a sequence of nodes and
+relationships that always start and end in nodes. An example path would be:
++`(a)-->(b)`+
+
+Paths can be of arbitrary length, and the same node may appear in multiple places in the path. Node identifiers can be
+used with or without surrounding parenthesis. These two match clauses are semantically identical - the difference is
+purely aesthetic.
+
++`MATCH (a)-->(b)`+
+
+and 
+
++`MATCH a-->b`+
+
+
+Patterns have bound points, or start points. They are the parts of the pattern that are already "bound" to a set of
+graph nodes or relationships. All parts of the pattern must be directly or indirectly bound to a start point - a pattern
+where parts of the pattern are not reachable from any start point will be rejected.
+
+The optional relationship is a way to describe parts of the pattern that can evaluate to null if it can not be
+matched to the graph. It's the equivalent of SQL outer join - if Cypher finds one or more matches, they will be
+returned. If no matches are found, Cypher will return a null. Only relationships can be marked as optional, and it's
+done with a question mark.
+
+Optional relationships of the pattern are used to answer queries like this:
+
+[source,cypher]
+----
+""" 
+        + intro_q1 +
+"""
+----
+
+The query above says "give me all my friends, and their children, if they have any."
+
+Optionality travels - if a part of the pattern can only be reached from a bound point through an optional relationship,
+that part is also optional. In the pattern above, the only bound point in the pattern is `me`. Since the relationship
+between friend and children is optional, children is an optional part of the graph.
+
+Also, named paths that contain optional parts are also optional - if any part of the path is
+null, the whole path is null.
+
+In these example, b and p are all optional and can contain null:
+
+[source,cypher]
+----
+"""
+        + intro_q2 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q3 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q4 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q5 +
+
+"""
+----
+
+As a simple example, let's take the following query, executed on the graph pictured below.
+""",
+      queryText = intro_q1,
+      returns = "This returns the a +friend+ node, and no +children+, since there are no such relatoinships in the graph.",
+      assertions = p => assertTrue(true)
     )
   }
+  
+  @Test def introQ2() {
+      testQuery(
+              title = "q2",
+              text = "",
+              queryText = intro_q2,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  
+  @Test def introQ3() {
+      testQuery(
+              title = "q3",
+              text = "",
+              queryText = intro_q3,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  @Test def introQ4() {
+      testQuery(
+              title = "q4",
+              text = "",
+              queryText = intro_q4,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  @Test def introQ5() {
+      testQuery(
+              title = "q5",
+              text = "",
+              queryText = intro_q5,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+
 }

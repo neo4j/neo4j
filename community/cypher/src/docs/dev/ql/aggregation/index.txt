@@ -2,9 +2,13 @@
 Aggregation
 ===========
 
-To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
-If any aggregation functions are found in the +RETURN+ statement, all the columns without aggregating functions are used as the grouping key.
+include::introduction.txt[]
 
+
+
+
+
+The following examples are assuming the example graph structure below.
 
 include::cypher-aggregation-graph.txt[]
 
