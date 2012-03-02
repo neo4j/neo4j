@@ -133,8 +133,8 @@ So, to count the number of unique eye colours from nodes related to a, this quer
       title = "Introduction",
       text = """To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
 
-Aggregate functions take multiple input values and calculate an an aggregated value from them. Examples are AVG that
-calculate the average of multiple numeric values, or MIN that finds the smallest numeric value in a set of values.
+Aggregate functions take multiple input values and calculate an aggregated value from them. Examples are +AVG+ that
+calculate the average of multiple numeric values, or +MIN+ that finds the smallest numeric value in a set of values.
 
 Aggregation can be done over all the matching sub graphs, or it can be further divided by introducing key values.
 These are non-aggregate expressions, that are used to group the values going into the aggregate functions.
@@ -146,12 +146,12 @@ So, if the return statement looks something like this:
 RETURN n, count(*)
 ----
 
-We have two return expressions - n, and count(*). The first, n, is no aggregate function, and so it will be the
-grouping key. The latter, count(*) is an aggregate expression. So the matching sub graphs will be divided into
+We have two return expressions -- n, and count(*). The first, n, is no aggregate function, and so it will be the
+grouping key. The latter, count(*) is an aggregate expression. So the matching subgraphs will be divided into
 different buckets, depending on the grouping key. The aggregate function will then run on these buckets, calculating
 the aggregate values.
 
-The last piece of the puzzle is the DISTINCT keyword. It is used to make all values unique before running them through
+The last piece of the puzzle is the +DISTINCT+ keyword. It is used to make all values unique before running them through
 an aggregate function.
 
 An example is helpful:""",
@@ -160,7 +160,7 @@ An example is helpful:""",
       		"MATCH me-->friend-->friend_of_friend " +
       		"RETURN count(distinct friend_of_friend), count(friend_of_friend)",
       returns = "In this example we are trying to find all our friends of friends, and count them. The first aggregate function, " +
-      		"+count(distinct friend_of_friend)+, will only see a friend_of_friend once - DISTINCT removes the duplicates. The latter" +
+      		"+count(distinct friend_of_friend)+, will only see a friend_of_friend once -- +DISTINCT+ removes the duplicates. The latter" +
       		"aggregate function, +count(friend_of_friend)+, might very well see the same friend_of_friend multiple times. Since there is " +
       		"no real data in this case, an empty result is returned. See the sections below for real data.",
       assertions = p => assertTrue(true))
