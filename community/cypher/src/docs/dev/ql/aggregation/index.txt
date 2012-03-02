@@ -5,17 +5,14 @@ Aggregation
 include::introduction.txt[]
 
 
-
-
-
 The following examples are assuming the example graph structure below.
 
 include::cypher-aggregation-graph.txt[]
 
 == COUNT ==
-+COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms - +COUNT(*)+
++COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms -- `COUNT(*)`
 which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts
-the number of non-null values in +<identifier>+.
+the number of non-`null` values in +<identifier>+.
 
 include::count-nodes.txt[]
 include::group-count-relationship-types.txt[]
