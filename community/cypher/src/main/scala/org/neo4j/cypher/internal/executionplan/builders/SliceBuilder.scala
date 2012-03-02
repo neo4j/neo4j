@@ -17,27 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.executionplan.builders
 
-import java.lang.String
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{SlicePipe, Pipe}
 
-/**
- * Pipe is a central part of Cypher. Most pipes are decorators - they
- * wrap another pipe. StartPipes are the only exception to this.
- * Pipes are combined to form an execution plan, and when iterated over,
- * the execute the query.
- */
-trait Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]]
-  def symbols: SymbolTable
-  def executionPlan(): String
-}
+class SliceBuilder extends PlanBuilder {
+  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
+    case (p, q) => {
+      val slice = q.slice.map(_.token).head
+      val pipe = new SlicePipe(p, slice.from, slice.limit)
+      (pipe, q.copy(slice = q.slice.map(_.solve)))
+    }
+  }
 
-class NullPipe extends Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = Seq(Map())
+  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
+    case (p, q) => q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
+  }
 
-  def symbols: SymbolTable = new SymbolTable()
-
-  def executionPlan(): String = ""
+  def priority: Int = PlanBuilder.Slice
 }
