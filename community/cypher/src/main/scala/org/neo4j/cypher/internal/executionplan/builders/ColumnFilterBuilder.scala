@@ -17,19 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.security;
+package org.neo4j.cypher.internal.executionplan.builders
 
-public class UriPathWildcardMatcher
-{
-    private final String uriPath;
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{ColumnFilterPipe, Pipe}
 
-    public UriPathWildcardMatcher(String uriPath)
-    {
-        this.uriPath = uriPath.replace("*", ".*");
+class ColumnFilterBuilder extends PlanBuilder {
+  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
+    case (p, q) => {
+
+      val resultPipe = new ColumnFilterPipe(p, q.returns.map(_.token))
+      val resultQ = q.copy(returns = q.returns.map(_.solve))
+
+      (resultPipe, resultQ)
     }
+  }
 
-    public boolean matches(String uri)
-    {
-        return uri.matches(uriPath);
-    }
+  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
+    case (p, q) => q.extracted &&
+      !q.sort.exists(_.unsolved) &&
+      !q.slice.exists(_.unsolved) &&
+      q.returns.exists(_.unsolved)
+  }
+
+  def priority: Int = PlanBuilder.ColumnFilter
 }

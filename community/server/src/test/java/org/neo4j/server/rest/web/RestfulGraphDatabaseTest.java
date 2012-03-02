@@ -1283,8 +1283,8 @@ public class RestfulGraphDatabaseTest
                 .next();
         // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":"
-                                                                                     + indexedKeyValue.getValue()
-                                                                                             .substring( 0, 1 ) + "*" );
+                        + indexedKeyValue.getValue().substring( 0, 1 ) + "*",
+                "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1319,8 +1319,7 @@ public class RestfulGraphDatabaseTest
                 .next();
         // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(),
-                indexedKeyValue.getValue()
-                        .substring( 0, 1 ) + "*" );
+                indexedKeyValue.getValue().substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1402,8 +1401,8 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key + ":" + value.substring( 0, 1 )
-                                                                               + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName,
+                key + ":" + value.substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1442,7 +1441,8 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key, value.substring( 0, 1 ) + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName,
+                key, value.substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;

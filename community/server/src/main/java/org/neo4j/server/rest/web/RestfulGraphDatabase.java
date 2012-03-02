@@ -657,11 +657,13 @@ public class RestfulGraphDatabase
     @GET
     @Path( PATH_NAMED_NODE_INDEX )
     public Response getIndexedNodesByQuery( @PathParam( "indexName" ) String indexName,
-            @QueryParam( "query" ) String query )
+            @QueryParam( "query" ) String query,
+            @QueryParam( "order" ) String order )
     {
         try
         {
-            return output.ok( actions.getIndexedNodesByQuery( indexName, query ) );
+            return output.ok( actions.getIndexedNodesByQuery( indexName, query,
+                    order ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -901,12 +903,16 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_NODE_INDEX_QUERY_WITH_KEY )
-    public Response getIndexedNodesByQuery( @PathParam( "indexName" ) String indexName,
-            @PathParam( "key" ) String key, @QueryParam( "query" ) String query )
+    public Response getIndexedNodesByQuery(
+            @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key,
+            @QueryParam( "query" ) String query,
+            @PathParam( "order" ) String order )
     {
         try
         {
-            return output.ok( actions.getIndexedNodesByQuery( indexName, key, query ) );
+            return output.ok( actions.getIndexedNodesByQuery( indexName, key,
+                    query, order ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -976,11 +982,13 @@ public class RestfulGraphDatabase
     @GET
     @Path( PATH_NAMED_RELATIONSHIP_INDEX )
     public Response getIndexedRelationshipsByQuery( @PathParam( "indexName" ) String indexName,
-            @QueryParam( "query" ) String query )
+            @QueryParam( "query" ) String query,
+            @QueryParam( "order" ) String order )
     {
         try
         {
-            return output.ok( actions.getIndexedRelationshipsByQuery( indexName, query ) );
+            return output.ok( actions.getIndexedRelationshipsByQuery(
+                    indexName, query, order ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -995,11 +1003,14 @@ public class RestfulGraphDatabase
     @GET
     @Path( PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY )
     public Response getIndexedRelationshipsByQuery( @PathParam( "indexName" ) String indexName,
-            @PathParam( "key" ) String key, @QueryParam( "query" ) String query )
+            @PathParam( "key" ) String key,
+            @QueryParam( "query" ) String query,
+            @QueryParam( "order" ) String order )
     {
         try
         {
-            return output.ok( actions.getIndexedRelationshipsByQuery( indexName, key, query ) );
+            return output.ok( actions.getIndexedRelationshipsByQuery(
+                    indexName, key, query, order ) );
         }
         catch ( NotFoundException nfe )
         {

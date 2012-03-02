@@ -20,7 +20,8 @@
 package org.neo4j.cypher
 
 import internal.commands._
-import internal.{LRUCache, ExecutionPlanImpl}
+import internal.executionplan.ExecutionPlanImpl
+import internal.LRUCache
 import scala.collection.JavaConverters._
 import java.lang.Error
 import java.util.{Map => JavaMap}

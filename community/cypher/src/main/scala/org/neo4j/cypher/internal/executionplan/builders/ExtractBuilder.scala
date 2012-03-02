@@ -17,27 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.executionplan.builders
 
-import java.lang.String
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
 
-/**
- * Pipe is a central part of Cypher. Most pipes are decorators - they
- * wrap another pipe. StartPipes are the only exception to this.
- * Pipes are combined to form an execution plan, and when iterated over,
- * the execute the query.
- */
-trait Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]]
-  def symbols: SymbolTable
-  def executionPlan(): String
-}
+class ExtractBuilder extends PlanBuilder {
+  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
+    case (p, q) => {
+      val resultPipe = new ExtractPipe(p, q.returns.map(_.token.expression))
 
-class NullPipe extends Pipe {
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = Seq(Map())
+      (resultPipe, q.copy(extracted = true))
+    }
+  }
 
-  def symbols: SymbolTable = new SymbolTable()
+  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
+    case (p, q) => !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+  }
 
-  def executionPlan(): String = ""
+  def priority: Int = 0
 }

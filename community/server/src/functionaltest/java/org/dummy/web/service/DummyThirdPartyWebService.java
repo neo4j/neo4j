@@ -21,6 +21,7 @@ package org.dummy.web.service;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -71,14 +72,25 @@ public class DummyThirdPartyWebService
     @Produces( MediaType.APPLICATION_JSON )
     public Response authHeader( @Context HttpHeaders headers )
     {
-        final List<String> authentication = headers.getRequestHeader("Authorization");
-
-        if (authentication == null || authentication.size() != 1)
-            throw new IllegalArgumentException("missing header");
-
-        return Response.ok()
-                .entity("{\"Authorization\":\"" + authentication.get(0) + "\"}")
-                .build();
+        StringBuffer theEntity = new StringBuffer( "{" );
+        Iterator<Map.Entry<String, List<String>>> headerIt = headers.getRequestHeaders().entrySet().iterator();
+        while ( headerIt.hasNext() )
+        {
+            Map.Entry<String, List<String>> header = headerIt.next();
+            if (header.getValue().size() != 1)
+            {
+                throw new IllegalArgumentException( "Mutlivalued header: "
+                                                    + header.getKey() );
+            }
+            theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" ).append(
+                    header.getValue().get( 0 ) + "\"" );
+            if ( headerIt.hasNext() )
+            {
+                theEntity.append( ", " );
+            }
+        }
+        theEntity.append( "}" );
+        return Response.ok().entity( theEntity.toString() ).build();
     }
 
     private int countNodesIn( GraphDatabaseService db )
