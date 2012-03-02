@@ -9,11 +9,15 @@
 </head>
 <body>
     <script type="text/javascript">
-        if(window.location.href.indexOf("ManualSpecRunner.html") !== -1) {
+    
+        if(window.location.href.indexOf("ManualSpecRunner.html") !== -1) 
+        {
             document.body.appendChild(document.createTextNode("Warning: opening this HTML file directly from the file system is deprecated. You should instead try running `mvn jasmine:bdd` from the command line, and then visit `http://localhost:8234` in your browser. "))
         }
 
         var specs = $specs$;
+        
+        window.reporter = new jasmine.$reporter$();
         
         require.config({
             baseUrl: '../../',
@@ -22,9 +26,15 @@
                 "ribcage": "target/classes/webadmin-html/js/ribcage",
             },
         });
+        
+        // Debugging
+        if(typeof(reporter) == "undefined") {
+            throw new Error("'reporter' is undefined, tried to set it to a new jasmine.$reporter$. Value of that is '" + jasmine.$reporter$ + "'.");
+        }
 
-        require(specs, function() {
-            window.reporter = new jasmine.$reporter$(); jasmine.getEnv().addReporter(reporter);
+        require(specs, function() 
+        {    
+            jasmine.getEnv().addReporter(reporter);
             jasmine.getEnv().execute();
         });
     </script>
