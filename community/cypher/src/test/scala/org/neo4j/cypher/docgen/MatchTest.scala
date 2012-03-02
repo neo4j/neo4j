@@ -307,7 +307,7 @@ and
 +`MATCH a-->b`+
 
 
-Patterns have bound points, or start points. They are the parts of the pattern that are already "bound" to a set of
+Patterns have bound points, or start points. They are the parts of the pattern that are already ``bound'' to a set of
 graph nodes or relationships. All parts of the pattern must be directly or indirectly bound to a start point - a pattern
 where parts of the pattern are not reachable from any start point will be rejected.
 
@@ -325,16 +325,16 @@ Optional relationships of the pattern are used to answer queries like this:
 """
 ----
 
-The query above says "give me all my friends, and their children, if they have any."
+The query above says ``give me all my friends, and their children, if they have any.''
 
-Optionality travels - if a part of the pattern can only be reached from a bound point through an optional relationship,
+Optionality is transitive - if a part of the pattern can only be reached from a bound point through an optional relationship,
 that part is also optional. In the pattern above, the only bound point in the pattern is `me`. Since the relationship
 between friend and children is optional, children is an optional part of the graph.
 
 Also, named paths that contain optional parts are also optional - if any part of the path is
 null, the whole path is null.
 
-In these example, b and p are all optional and can contain null:
+In these examples, b and p are all optional and can contain null:
 
 [source,cypher]
 ----
