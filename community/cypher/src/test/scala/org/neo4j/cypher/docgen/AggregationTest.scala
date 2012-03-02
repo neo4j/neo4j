@@ -38,7 +38,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def countNodes() {
     testQuery(
       title = "Count nodes",
-      text = "To count the number of nodes, for example the number of nodes connected to one node, you can use +count(*)+.",
+      text = "To count the number of nodes, for example the number of nodes connected to one node, you can use `count(*)`.",
       queryText = "start n=node(%A%) match (n)-->(x) return n, count(*)",
       returns = "The start node and the count of related nodes.",
       assertions = p => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
@@ -47,7 +47,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def countRelationshipsByType() {
     testQuery(
       title = "Group Count Relationship Types",
-      text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
+      text = "To count the groups of relationship types, return the types and count them with `count(*)`.",
       queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count.",
       assertions = p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
@@ -56,7 +56,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def countEntities() {
     testQuery(
       title = "Count entities",
-      text = "Instead of counting the number of results with +count(*)+, it might be more expressive to include " +
+      text = "Instead of counting the number of results with `count(*)`, it might be more expressive to include " +
         "the name of the identifier you care about.",
       queryText = "start n=node(%A%) match (n)-->(x) return count(x)",
       returns = "The number of connected nodes from the start node.",
@@ -65,8 +65,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def countNonNullValues() {
     testQuery(
-      title = "Count non null values",
-      text = "You can count the non-null values by using +count(<identifier>)+.",
+      title = "Count non-null values",
+      text = "You can count the non-`null` values by using +count(<identifier>)+.",
       queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The count of related nodes.",
       assertions = p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
@@ -76,7 +76,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "SUM",
       text = "The +SUM+ aggregation function simply sums all the numeric values it encounters. " +
-        "Null values are silently dropped. This is an example of how you can use +SUM+.",
+        "Nulls are silently dropped. This is an example of how you can use +SUM+.",
       queryText = "start n=node(%A%,%B%,%C%) return sum(n.property)",
       returns = "The sum of all the values in the property 'property'.",
       assertions = p => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
@@ -121,10 +121,10 @@ class AggregationTest extends DocumentingTestBase {
   @Test def count_distinct() {
     testQuery(
       title = "DISTINCT",
-      text = """All aggregation functions also take +DISTINCT+ modifier, which removes duplicates from the values.
-So, to count the number of unique eye colours from nodes related to a, this query can be used: """,
+      text = """All aggregation functions also take the +DISTINCT+ modifier, which removes duplicates from the values.
+So, to count the number of unique eye colors from nodes related to `a`, this query can be used: """,
       queryText = "start a=node(%A%) match a-->b return count(distinct b.eyes)",
-      returns = "Returns the number of eye colours.",
+      returns = "Returns the number of eye colors.",
       assertions = p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
   }
   
@@ -146,22 +146,22 @@ So, if the return statement looks something like this:
 RETURN n, count(*)
 ----
 
-We have two return expressions -- n, and count(*). The first, n, is no aggregate function, and so it will be the
-grouping key. The latter, count(*) is an aggregate expression. So the matching subgraphs will be divided into
+We have two return expressions -- `n`, and `count(*)`. The first, `n`, is no aggregate function, and so it will be the
+grouping key. The latter, `count(*)` is an aggregate expression. So the matching subgraphs will be divided into
 different buckets, depending on the grouping key. The aggregate function will then run on these buckets, calculating
 the aggregate values.
 
 The last piece of the puzzle is the +DISTINCT+ keyword. It is used to make all values unique before running them through
 an aggregate function.
 
-An example is helpful:""",
+An example might be helpful:""",
       queryText = "" +
       		"START me=node(1) " +
       		"MATCH me-->friend-->friend_of_friend " +
       		"RETURN count(distinct friend_of_friend), count(friend_of_friend)",
       returns = "In this example we are trying to find all our friends of friends, and count them. The first aggregate function, " +
-      		"+count(distinct friend_of_friend)+, will only see a friend_of_friend once -- +DISTINCT+ removes the duplicates. The latter" +
-      		"aggregate function, +count(friend_of_friend)+, might very well see the same friend_of_friend multiple times. Since there is " +
+      		"+count(distinct friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates. The latter " +
+      		"aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times. Since there is " +
       		"no real data in this case, an empty result is returned. See the sections below for real data.",
       assertions = p => assertTrue(true))
   }

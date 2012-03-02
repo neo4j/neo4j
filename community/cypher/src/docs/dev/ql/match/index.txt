@@ -4,9 +4,7 @@ Match
 
 include::introduction.txt[]
 
-
-
-For the Examples given in the sections below, the follwoing graph is the base of the examples:
+For the examples given in the sections below, the follwoing graph is the base:
 
 include::cypher-match-graph.txt[]
 
@@ -28,3 +26,4 @@ include::shortest-path.txt[]
 include::all-shortest-paths.txt[]
 include::named-path.txt[]
 include::matching-on-a-bound-relationship.txt[]
+
