@@ -308,7 +308,7 @@ and
 
 
 Patterns have bound points, or start points. They are the parts of the pattern that are already ``bound'' to a set of
-graph nodes or relationships. All parts of the pattern must be directly or indirectly bound to a start point -- a pattern
+graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a start point -- a pattern
 where parts of the pattern are not reachable from any start point will be rejected.
 
 The optional relationship is a way to describe parts of the pattern that can evaluate to `null` if it can not be
