@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.commands.Expression
 
 class ExtractBuilder extends PlanBuilder {
   def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
     case (p, q) => {
-      val resultPipe = new ExtractPipe(p, q.returns.map(_.token.expression))
-
-      (resultPipe, q.copy(extracted = true))
+      (ExtractBuilder.extractIfNecessary(p, q.returns.map(_.token.expression)), q.copy(extracted = true))
     }
   }
 
@@ -36,4 +35,16 @@ class ExtractBuilder extends PlanBuilder {
   }
 
   def priority: Int = PlanBuilder.Extraction
+}
+
+object ExtractBuilder {
+  def extractIfNecessary(p: Pipe, expressions: Seq[Expression]): Pipe = {
+    val missing = p.symbols.missingExpressions(expressions)
+
+    if (missing.nonEmpty) {
+      new ExtractPipe(p, expressions)
+    } else {
+      p
+    }
+  }
 }

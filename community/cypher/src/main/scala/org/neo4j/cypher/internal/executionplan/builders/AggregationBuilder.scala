@@ -29,7 +29,8 @@ class AggregationBuilder extends PlanBuilder {
       val aggregationExpressions = q.aggregation.map(_.token)
       val keyExpressions = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
 
-      val extractor = new ExtractPipe(p, keyExpressions)
+      val extractor = ExtractBuilder.extractIfNecessary(p, keyExpressions)
+
       val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
 
       val notKeyAndNotAggregate = q.returns.map(_.token.expression).filterNot(keyExpressions.contains)
