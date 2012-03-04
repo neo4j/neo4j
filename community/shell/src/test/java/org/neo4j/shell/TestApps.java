@@ -358,4 +358,20 @@ public class TestApps extends AbstractShellTest
         executeCommand( "cd" );
         executeCommand( "ls -p", "name", "test" );
     }
+    
+    @Test
+    public void evalOneLinerExecutesImmediately() throws Exception
+    {
+        executeCommand( "eval db.createNode()", "Node\\[" );
+    }
+    
+    @Test
+    public void evalMultiLineExecutesAfterAllLines() throws Exception
+    {
+        executeCommand(
+                "eval\n" +
+                "node = db.createNode()\n" +
+                "node.setProperty( \"name\", \"Mattias\" )\n" +
+                "node.getProperty( \"name\" )\n", "Mattias" );
+    }
 }
