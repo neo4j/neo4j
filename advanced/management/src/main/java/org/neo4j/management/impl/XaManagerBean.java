@@ -19,11 +19,6 @@
  */
 package org.neo4j.management.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.management.NotCompliantMBeanException;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
@@ -32,6 +27,10 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.XaManager;
 import org.neo4j.management.XaResourceInfo;
+
+import javax.management.NotCompliantMBeanException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class XaManagerBean extends ManagementBeanProvider
@@ -86,22 +85,24 @@ public final class XaManagerBean extends ManagementBeanProvider
 
         private static XaResourceInfo createXaResourceInfo( XaDataSource datasource )
         {
-            return new XaResourceInfo( datasource.getName(), toHexString( datasource.getBranchId() ) );
+            return new XaResourceInfo( datasource.getName(), toHexString( datasource.getBranchId() ),
+                datasource.getLastCommittedTxId(), datasource.getCurrentLogVersion() );
         }
 
-        private static String toHexString( byte[] branchId )
+    }
+
+    public static String toHexString( byte[] branchId )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( byte part : branchId )
         {
-            StringBuilder result = new StringBuilder();
-            for ( byte part : branchId )
-            {
-                String chunk = Integer.toHexString( part );
-                if ( chunk.length() < 2 ) result.append( "0" );
-                if ( chunk.length() > 2 )
-                    result.append( chunk.substring( chunk.length() - 2 ) );
-                else
-                    result.append( chunk );
-            }
-            return result.toString();
+            String chunk = Integer.toHexString( part );
+            if ( chunk.length() < 2 ) result.append( "0" );
+            if ( chunk.length() > 2 )
+                result.append( chunk.substring( chunk.length() - 2 ) );
+            else
+                result.append( chunk );
         }
+        return result.toString();
     }
 }

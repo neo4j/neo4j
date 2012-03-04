@@ -27,12 +27,16 @@ public final class XaResourceInfo implements Serializable
 {
     private final String name;
     private final String branchId;
+    private final long lastTxId;
+    private final long logVersion;
 
-    @ConstructorProperties( { "name", "branchId" } )
-    public XaResourceInfo( String name, String branchId )
+    @ConstructorProperties( { "name", "branchId", "lastTxId", "logVersion" } )
+    public XaResourceInfo( String name, String branchId, long lastTxId, long logVersion )
     {
         this.name = name;
         this.branchId = branchId;
+        this.lastTxId = lastTxId;
+        this.logVersion = logVersion;
     }
 
     public String getName()
@@ -43,5 +47,15 @@ public final class XaResourceInfo implements Serializable
     public String getBranchId()
     {
         return branchId;
+    }
+
+    public long getLastTxId()
+    {
+        return lastTxId;
+    }
+
+    public long getLogVersion()
+    {
+        return logVersion;
     }
 }
