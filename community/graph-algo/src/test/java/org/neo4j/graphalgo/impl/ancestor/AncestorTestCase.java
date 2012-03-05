@@ -49,16 +49,83 @@ public class AncestorTestCase implements GraphHolder
 
     @Test
     @Graph( { "root contains child1", "child1 contains child11",
-            "child1 contains child12", "root contains child2" } )
+            "child1 contains child12", "root contains child2", 
+            "child12 contains child121", "child1 contains child13" } )    
     public void test()
     {
         List<Node> nodeSet = new ArrayList<Node>();
         Map<String, Node> graph = data.get();
-        nodeSet.add( graph.get( "child12" ) );
-        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child1" ) );
+        nodeSet.add( graph.get( "root" ) );
         Node ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
                 Direction.INCOMING );
+        assertEquals(graph.get( "root" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "child11" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
         assertEquals(graph.get( "child1" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child121" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "child12" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child13" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "child1" ), ancestor);
+                
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child2" ) );
+        nodeSet.add( graph.get( "child121" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "root" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "child13" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "child1" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "child13" ) );
+        nodeSet.add( graph.get( "child121" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "child1" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "child13" ) );
+        nodeSet.add( graph.get( "child121" ) );
+        nodeSet.add( graph.get( "child2" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "root" ), ancestor);
+        
+        nodeSet.clear();
+        nodeSet.add( graph.get( "child11" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "child13" ) );
+        nodeSet.add( graph.get( "child121" ) );
+        nodeSet.add( graph.get( "child12" ) );
+        nodeSet.add( graph.get( "root" ) );
+        ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, Rels.contains,
+                Direction.INCOMING );
+        assertEquals(graph.get( "root" ), ancestor);
     }
 
     @Override
