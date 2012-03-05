@@ -47,6 +47,9 @@ Copyright (c) 2007, 2008, 2009, 2010 Wayne Meissner, Timothy Wall, Thomas Boerke
 Parts of the Yet Another Java Service Wrapper (YAJSW) are included and licensed under
 the GNU LESSER GENERAL PUBLIC LICENSE v2.1
 
+The Bouncy Castle encryption library is licensed under a modified version
+of the MIT X11 licence.
+
 Other bundled libraries are licenced according to the following listing.
 
 The Apache Software License, Version 2.0:
