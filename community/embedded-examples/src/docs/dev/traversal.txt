@@ -76,13 +76,14 @@ The traversals from the Matrix example above, this time using the new traversal 
 
 [TIP]
 The source code of the examples is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/NewMatrix.java[NewMatrix.java]
 
 .Friends and friends of friends
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=get-friends
 ----
 
@@ -91,15 +92,21 @@ Let's perform the actual traversal and print the results:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=friends-usage
 ----
+
+Which will give us the following output:
+
+include::matrix-traversal-java-new-friends.txt[]
 
 .Who coded the Matrix?
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=find-hackers
 ----
 
@@ -108,9 +115,14 @@ Print out the result:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=find--hackers-usage
 ----
+
+Now we know who coded the Matrix:
+
+include::matrix-traversal-java-new-hackers.txt[]
 
 
 === Walking an ordered path ===

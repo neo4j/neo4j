@@ -18,13 +18,8 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,7 +33,7 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
 
-public class MatrixNewTravTest
+public class NewMatrix
 {
     public enum RelTypes implements RelationshipType
     {
@@ -47,11 +42,19 @@ public class MatrixNewTravTest
         CODED_BY
     }
 
-    private static final String MATRIX_DB = "target/matrix-db";
-    private static GraphDatabaseService graphDb;
+    private static final String MATRIX_DB = "target/matrix-new-db";
+    private GraphDatabaseService graphDb;
 
-    @BeforeClass
-    public static void setUp()
+    public static void main( String[] args )
+    {
+        NewMatrix matrix = new NewMatrix();
+        matrix.setUp();
+        System.out.println( matrix.printNeoFriends() );
+        System.out.println( matrix.printMatrixHackers() );
+        matrix.shutdown();
+    }
+
+    public void setUp()
     {
         deleteFileOrDirectory( new File( MATRIX_DB ) );
         graphDb = new EmbeddedGraphDatabase( MATRIX_DB );
@@ -59,13 +62,12 @@ public class MatrixNewTravTest
         createNodespace();
     }
 
-    @AfterClass
-    public static void tearDown()
+    public void shutdown()
     {
         graphDb.shutdown();
     }
 
-    private static void createNodespace()
+    public void createNodespace()
     {
         Transaction tx = graphDb.beginTx();
         try
@@ -117,38 +119,38 @@ public class MatrixNewTravTest
 
     /**
      * Get the Neo node. (a.k.a. Thomas Anderson node)
-     *
+     * 
      * @return the Neo node
      */
-    private static Node getNeoNode()
+    private Node getNeoNode()
     {
-        return graphDb.getReferenceNode().getSingleRelationship(
-                RelTypes.NEO_NODE, Direction.OUTGOING ).getEndNode();
+        return graphDb.getReferenceNode()
+                .getSingleRelationship( RelTypes.NEO_NODE, Direction.OUTGOING )
+                .getEndNode();
     }
 
-    @Test
-    public void printNeoFriends() throws Exception
+    public String printNeoFriends()
     {
         Node neoNode = getNeoNode();
-        System.out.println( neoNode.getProperty( "name" ) + "'s friends:" );
-        int numberOfFriends = 0;
         // START SNIPPET: friends-usage
+        int numberOfFriends = 0;
+        String output = neoNode.getProperty( "name" ) + "'s friends:\n";
         Traverser friendsTraverser = getFriends( neoNode );
         for ( Path friendPath : friendsTraverser )
         {
-            System.out.println( "At depth " + friendPath.length() + " => "
-                                + friendPath.endNode()
-                                        .getProperty( "name" ) );
-            // END SNIPPET: friends-usage
+            output += "At depth " + friendPath.length() + " => "
+                      + friendPath.endNode()
+                              .getProperty( "name" ) + "\n";
             numberOfFriends++;
-            // START SNIPPET: friends-usage
         }
+        output += "Number of friends found: " + numberOfFriends + "\n";
         // END SNIPPET: friends-usage
-        assertEquals( 4, numberOfFriends );
+        return output;
     }
 
     // START SNIPPET: get-friends
-    private static Traverser getFriends( final Node person )
+    private static Traverser getFriends(
+            final Node person )
     {
         TraversalDescription td = Traversal.description()
                 .breadthFirst()
@@ -158,24 +160,22 @@ public class MatrixNewTravTest
     }
     // END SNIPPET: get-friends
 
-    @Test
-    public void printMatrixHackers() throws Exception
+    public String printMatrixHackers()
     {
-        System.out.println( "Hackers:" );
-        int numberOfHackers = 0;
         // START SNIPPET: find--hackers-usage
+        String output = "Hackers:\n";
+        int numberOfHackers = 0;
         Traverser traverser = findHackers( getNeoNode() );
         for ( Path hackerPath : traverser )
         {
-            System.out.println( "At depth " + hackerPath.length() + " => "
-                                + hackerPath.endNode()
-                                        .getProperty( "name" ) );
-            // END SNIPPET: find--hackers-usage
+            output += "At depth " + hackerPath.length() + " => "
+                      + hackerPath.endNode()
+                              .getProperty( "name" ) + "\n";
             numberOfHackers++;
-            // START SNIPPET: find--hackers-usage
         }
+        output += "Number of hackers found: " + numberOfHackers + "\n";
         // END SNIPPET: find--hackers-usage
-        assertEquals( 1, numberOfHackers );
+        return output;
     }
 
     // START SNIPPET: find-hackers
@@ -191,19 +191,20 @@ public class MatrixNewTravTest
     }
     // END SNIPPET: find-hackers
 
-    private static void registerShutdownHook()
+    private void registerShutdownHook()
     {
         // Registers a shutdown hook for the Neo4j instance so that it
         // shuts down nicely when the VM exits (even if you "Ctrl-C" the
         // running example before it's completed)
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
-            {
-                graphDb.shutdown();
-            }
-        } );
+        Runtime.getRuntime()
+                .addShutdownHook( new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        graphDb.shutdown();
+                    }
+                } );
     }
 
     private static void deleteFileOrDirectory( final File file )
@@ -219,7 +220,8 @@ public class MatrixNewTravTest
             {
                 deleteFileOrDirectory( child );
             }
-        } else
+        }
+        else
         {
             file.delete();
         }
