@@ -20,8 +20,11 @@
 
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -54,7 +57,7 @@ public class XaFactory
     }
 
     public XaContainer newXaContainer(XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
-                                      TransactionInterceptor interceptors)
+                                      List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -68,9 +71,9 @@ public class XaFactory
 
         XaLogicalLog log;
         if ( "true".equalsIgnoreCase( (String) config.get(Config.INTERCEPT_DESERIALIZED_TRANSACTIONS) )
-                && interceptors != null )
+                && providers != null )
         {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, interceptors, logBufferFactory, fileSystemAbstraction, stringLogger );
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, dependencyResolver, logBufferFactory, fileSystemAbstraction, stringLogger );
         }
         else
         {

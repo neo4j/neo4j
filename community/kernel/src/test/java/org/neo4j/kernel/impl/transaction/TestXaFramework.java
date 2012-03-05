@@ -228,7 +228,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 map.put( "store_dir", path() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), null);
+                        new DummyTransactionFactory(), null, null);
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
