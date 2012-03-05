@@ -223,13 +223,6 @@
             <version>2.0.7</version>
         </dependency>
     
-        <dependency>
-            <groupId>bouncycastle</groupId>
-            <artifactId>bcprov-jdk15</artifactId>
-            <version>140</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
 
         <!-- File uploads -->
         <dependency>
@@ -310,6 +303,11 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>bouncycastle</groupId>
+          <artifactId>bcprov-jdk16</artifactId>
+          <version>140</version>
         </dependency>
     </dependencies>
 
