@@ -30,14 +30,12 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -48,7 +46,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.subprocess.SubProcess;
 
-@Ignore("Needs fixing after refactoring")
 public class TestBackup
 {
     private final String serverPath = "target/var/serverdb";
@@ -288,7 +285,6 @@ public class TestBackup
     }
 
     @Test
-    // @Ignore
     public void backupIndexWithNoCommits() throws Exception
     {
         GraphDatabaseService db = null;
@@ -383,7 +379,7 @@ public class TestBackup
             new EmbeddedGraphDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
-        catch ( TransactionFailureException ex )
+        catch ( IllegalStateException ex )
         {
             // expected
         }
@@ -428,7 +424,7 @@ public class TestBackup
             {
                 db = new EmbeddedGraphDatabase( path );
             }
-            catch ( TransactionFailureException ex )
+            catch ( IllegalStateException ex )
             {
                 state = ex;
                 return;

@@ -20,6 +20,12 @@
 package org.neo4j.backup;
 
 import static org.neo4j.com.SlaveContext.lastAppliedTx;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
+import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
+import static org.neo4j.kernel.CommonFactories.defaultLastCommittedTxIdSetter;
+import static org.neo4j.kernel.CommonFactories.defaultTxHook;
+import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -50,6 +56,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -107,15 +114,17 @@ public class OnlineBackup
             bumpLogFile( targetDirectory, timestamp );
             if ( verification )
             {
-                EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( targetDirectory );
-                StoreAccess newStore = new StoreAccess( graphdb );
+                StoreFactory factory = new StoreFactory( stringMap(), defaultIdGeneratorFactory(),
+                        defaultFileSystemAbstraction(), defaultLastCommittedTxIdSetter(), SYSTEM, defaultTxHook() );
+                NeoStore neoStore = factory.newNeoStore( new File( targetDirectory, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
                 try
                 {
-                    ConsistencyCheck.run( newStore, false );
+                    StoreAccess store = new StoreAccess( neoStore );
+                    ConsistencyCheck.run( store, false );
                 }
                 finally
                 {
-                    graphdb.shutdown();
+                    neoStore.close();
                 }
             }
         }
