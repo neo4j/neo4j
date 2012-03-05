@@ -21,17 +21,17 @@ package recovery;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.DEFAULT_DATA_SOURCE_NAME;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
+import org.neo4j.test.subprocess.BreakPoint.Event;
 
 /**
  * Tries to trigger log file version errors that could happen if the db was killed
@@ -64,9 +65,12 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
             XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+    private final BreakPoint EXIT_RENAME_LOG_FILE = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
+            XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+    
     private final BreakPoint[] breakpoints = new BreakPoint[] {
             SET_VERSION, RELEASE_CURRENT_LOG_FILE, RENAME_LOG_FILE,
-            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2 };
+            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2, EXIT_RENAME_LOG_FILE };
     
     @Override
     protected BreakPoint[] breakpoints( int id )
@@ -85,7 +89,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class DoSimpleTransaction implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -108,12 +112,11 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class RotateLogs implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
-                        DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
+                graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
             }
             catch ( IOException e )
             {
@@ -134,12 +137,11 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                XaDataSource dataSource = graphdb.getConfig().getTxModule()
-                        .getXaDataSourceManager().getXaDataSource( DEFAULT_DATA_SOURCE_NAME );
+                XaDataSource dataSource = graphdb.getXaDataSourceManager().getNeoStoreDataSource();
                 for ( long logVersion = 0; logVersion < highestLogVersion; logVersion++ )
                 {
                     dataSource.getLogicalLog( logVersion );
@@ -168,7 +170,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class Shutdown implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             graphdb.shutdown();
         }
@@ -245,6 +247,18 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
+        run( new Shutdown() );
+    }
+
+    @Ignore( "Investigate why this fails" )
+    @Test
+    public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersion() throws Exception
+    {
+        breakpoints[6].enable();
+        runInThread( new Shutdown() );
+        breakpointNotification.await();
+        startSubprocesses();
+        run( new RotateLogs() );
         run( new Shutdown() );
     }
 }

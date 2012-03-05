@@ -22,48 +22,54 @@ package org.neo4j.cypher.internal.commands
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{Identifier, AnyIterableType}
 
-abstract class InIterable(iterable: Expression, symbolName: String, inner: Predicate) extends Predicate {
+abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val seq = iterable(m) match {
+    val seq = expression(m) match {
       case x:Seq[_] => x
       case x:Array[_] => x.toSeq
     }
 
     seqMethod(seq)(item => {
-      val innerMap = m ++ Map(symbolName -> item)
-      inner.isMatch(innerMap)
+      val innerMap = m ++ Map(symbol -> item)
+      closure.isMatch(innerMap)
     })
   }
 
-  def dependencies: Seq[Identifier] = iterable.dependencies(AnyIterableType()) ++ inner.dependencies.filterNot(_.name == symbolName)
+  def dependencies: Seq[Identifier] = expression.dependencies(AnyIterableType()) ++ closure.dependencies.filterNot(_.name == symbol)
 
   def atoms: Seq[Predicate] = Seq(this)
 
-  def containsIsNull: Boolean = false
+  def exists(f: (Expression) => Boolean) = expression.exists(f)||closure.exists(f)
+
   def name:String
                    //all(x in a.array where x = 0)
-  override def toString = name + "(" + symbolName + " in " + iterable + " where " + inner + ")"
+  override def toString = name + "(" + symbol + " in " + expression + " where " + closure + ")"
+
+  def containsIsNull = closure.containsIsNull
 }
 
 case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
-
   def name = "all"
+  def rewrite(f: (Expression) => Expression) = AllInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class AnyInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
   def name = "any"
+  def rewrite(f: (Expression) => Expression) = AnyInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class NoneInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
   def name = "none"
+  def rewrite(f: (Expression) => Expression) = NoneInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class SingleInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
   def name = "single"
+  def rewrite(f: (Expression) => Expression) = SingleInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }

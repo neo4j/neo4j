@@ -32,20 +32,22 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class PropertyIndexManager
+    implements Lifecycle
 {
     private ArrayMap<String,List<PropertyIndex>> indexMap = 
-        new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
+        new ArrayMap<String,List<PropertyIndex>>( (byte)5, true, false );
     private ArrayMap<Integer,PropertyIndex> idToIndexMap = 
-        new ArrayMap<Integer,PropertyIndex>( 9, true, false );
+        new ArrayMap<Integer,PropertyIndex>( (byte)9, true, false );
 
     private ArrayMap<Transaction,TxCommitHook> txCommitHooks = 
-        new ArrayMap<Transaction,TxCommitHook>( 5, true, false );
+        new ArrayMap<Transaction,TxCommitHook>( (byte)5, true, false );
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
@@ -53,7 +55,7 @@ public class PropertyIndexManager
 
     private boolean hasAll = false;
 
-    PropertyIndexManager( TransactionManager transactionManager,
+    public PropertyIndexManager( TransactionManager transactionManager,
         PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
     {
         this.transactionManager = transactionManager;
@@ -61,11 +63,27 @@ public class PropertyIndexManager
         this.idGenerator = idGenerator;
     }
 
-    void clear()
+    @Override
+    public void init()
     {
-        indexMap = new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
-        idToIndexMap = new ArrayMap<Integer,PropertyIndex>( 9, true, false );
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+        indexMap = new ArrayMap<String,List<PropertyIndex>>( (byte)5, true, false );
+        idToIndexMap = new ArrayMap<Integer,PropertyIndex>( (byte)9, true, false );
         txCommitHooks.clear();
+    }
+
+    @Override
+    public void shutdown()
+    {
     }
 
     public Iterable<PropertyIndex> index( String key )

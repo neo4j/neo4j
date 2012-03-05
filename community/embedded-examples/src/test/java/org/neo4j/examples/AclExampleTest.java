@@ -185,7 +185,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         //TODO: can we do open ended?
         String query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->(parentDir)-[:leaf]->file return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
-        String result = engine.execute( parser.parse( query ) ).toString();
+        String result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("File1") );
         gen.get()
                 .addSnippet( "result1", createQueryResultSnippet( result ) );
@@ -193,7 +194,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         //Ownership
         query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->()-[:leaf]->file<-[:owns]-user return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
-        result = engine.execute( parser.parse( query ) ).toString();
+        result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("User1") );
         assertTrue( result.contains("User2") );
@@ -209,7 +211,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         		"file<-[:leaf]-()<-[:contains*0..]-dir<-[?:canRead]-role-[:member]->readUser " +
         		"RETURN file.name, dir.name, role.name, readUser.name";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
-        result = engine.execute( parser.parse( query ) ).toString();
+        result = engine.execute( query )
+                .toString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("File2") );
         assertTrue( result.contains("Admin1") );

@@ -1,0 +1,78 @@
+[[tutorials-java-unit-testing]]
+Basic unit testing
+==================
+
+The basic pattern of unit testing with Neo4j is illustrated by the following example.
+
+To access the Neo4j testing facilities you should have the +neo4j-kernel+ 'tests.jar' on the classpath during tests.
+You can download it from Maven Central: http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel].
+
+Using Maven as a dependency manager you would typically add this dependency as:
+
+.Maven dependency
+[source,xml]
+--------------------------------------------
+<project>
+...
+ <dependencies>
+  <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j-kernel</artifactId>
+   <version>${neo4j-version}</version>
+   <type>test-jar</type>
+   <scope>test</scope>
+  </dependency>
+  ...
+ </dependencies>
+...
+</project>
+--------------------------------------------
+
+_Where +$\{neo4j-version}+ is the desired version of Neo4j._
+
+With that in place, we're ready to code our tests.
+For the full source code of this example see:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
+
+
+Before each test, create a fresh database:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=beforeTest
+----
+
+After the test has executed, the database should be shut down:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=afterTest
+----
+
+During a test, create nodes and check to see that they are there, while enclosing write operations in a transaction.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=unitTest
+----
+
+If you want to set configuration parameters at database creation, it's done like this:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=startDbWithConfig
+----
+
+

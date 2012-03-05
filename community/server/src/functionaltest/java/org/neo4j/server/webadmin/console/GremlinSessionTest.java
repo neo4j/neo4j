@@ -56,7 +56,7 @@ public class GremlinSessionTest
     public void testGremlinVersion()
     {
         String result = session.evaluate( "Gremlin.version()" ).first();
-        assertEquals( "1.4" + NEWLINE, result );
+        assertEquals( "1.5" + NEWLINE, result );
     }
 
     @Test

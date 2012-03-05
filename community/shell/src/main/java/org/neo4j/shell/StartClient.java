@@ -293,7 +293,8 @@ public class StartClient
             }
         } );
 
-        System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
+        if ( !isCommandLine( args ) )
+            System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
         grabPromptOrJustExecuteCommand( client, args );
@@ -340,8 +341,8 @@ public class StartClient
             int port = args.getNumber( ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue();
             String name = args.get( ARG_NAME, AbstractServer.DEFAULT_NAME );
             ShellClient client = ShellLobby.newClient( host, port, name );
-            System.out.println( "NOTE: Remote Neo4j graph database service '" + name +
-                    "' at port " + port );
+            if ( !isCommandLine( args ) )
+                System.out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
             setSessionVariablesFromArgs( client, args );
             grabPromptOrJustExecuteCommand( client, args );
         }
@@ -349,6 +350,11 @@ public class StartClient
         {
             handleException( e, args );
         }
+    }
+
+    private static boolean isCommandLine( Args args )
+    {
+        return args.get( ARG_COMMAND, null ) != null;
     }
 
     private static void grabPromptOrJustExecuteCommand( ShellClient client, Args args ) throws Exception

@@ -19,26 +19,22 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.GraphDescription;
+import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TestData;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class IntroExamplesTest implements GraphHolder
 {
@@ -49,14 +45,13 @@ public class IntroExamplesTest implements GraphHolder
             this, true ) );
     private static ImpermanentGraphDatabase graphdb;
     private static ExecutionEngine engine;
-    private static CypherParser parser;
 
     @Test
     @Graph( value = { "John friend Sara", "John friend Joe",
             "Sara friend Maria", "Joe friend Steve" }, autoIndexNodes = true )
     public void intro_examples() throws Exception
     {
-        Writer fw = gen.get().getFW( "target/docs/dev/", gen.get().getTitle() );
+        Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like\n\n" );
         fw.append( AsciidocHelper.createGraphViz( "Example Graph", graphdb(),
@@ -68,8 +63,7 @@ public class IntroExamplesTest implements GraphHolder
                        + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
         fw.append( createCypherSnippet( query ) );
         fw.append( "\nResulting in \n" );
-        fw.append( createQueryResultSnippet( engine.execute(
-                parser.parse( query ) ).toString() ) );
+        fw.append( createQueryResultSnippet( engine.execute( query  ).toString() ) );
 
         fw.append( "Next up we will add filtering to set all four parts "
                    + "in motion:\n\nIn this next example, we take a list of users "
@@ -90,8 +84,7 @@ public class IntroExamplesTest implements GraphHolder
         fw.append( "\n" );
         fw.append( createCypherSnippet( query ) );
         fw.append( "\nResulting in\n" );
-        fw.append( createQueryResultSnippet( engine.execute(
-                parser.parse( query ) ).toString() ) );
+        fw.append( createQueryResultSnippet( engine.execute( query ).toString() ) );
         fw.close();
     }
 
@@ -101,7 +94,6 @@ public class IntroExamplesTest implements GraphHolder
         graphdb = new ImpermanentGraphDatabase();
         graphdb.cleanContent( false );
 
-        parser = new CypherParser();
         engine = new ExecutionEngine( graphdb );
     }
     

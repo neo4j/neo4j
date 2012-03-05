@@ -23,12 +23,12 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.impl.index.IndexConnectionBroker;
 
-class ConnectionBroker extends IndexConnectionBroker<LuceneXaConnection>
+public class ConnectionBroker extends IndexConnectionBroker<LuceneXaConnection>
 {
     private final LuceneDataSource xaDs;
 
-    ConnectionBroker( TransactionManager transactionManager,
-            LuceneDataSource dataSource )
+    public ConnectionBroker(TransactionManager transactionManager,
+                            LuceneDataSource dataSource)
     {
         super( transactionManager );
         this.xaDs = dataSource;

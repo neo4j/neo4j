@@ -19,15 +19,19 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
-import org.neo4j.shell.*;
-
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.shell.App;
+import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellException;
 
 /**
  * Mimics the POSIX application with the same name, i.e. renames a property. It

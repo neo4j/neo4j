@@ -88,10 +88,16 @@ public class PlaceboTm extends AbstractTransactionManager
     }
 
     @Override
-    public void init( XaDataSourceManager xaDsManager )
+    public void init()
     {
         // TODO Auto-generated method stub
         
+    }
+
+    @Override
+    public void start()
+        throws Throwable
+    {
     }
 
     @Override
@@ -99,5 +105,11 @@ public class PlaceboTm extends AbstractTransactionManager
     {
         // TODO Auto-generated method stub
         
+    }
+
+    @Override
+    public void shutdown()
+        throws Throwable
+    {
     }
 }

@@ -42,7 +42,6 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
   def pathName = ast.pathName
   def returnItems: Seq[ReturnItem] = Seq()
 
-
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
     val (start, end) = getStartAndEnd(m)
     val expander: Expander = createExpander()
@@ -59,13 +58,10 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
     (start, end)
   }
 
-  private def createExpander[U](): Expander = {
-    val expander = relType match {
+  private def createExpander[U](): Expander = relType match {
       case None => Traversal.expanderForAllTypes(dir)
       case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
     }
-    expander
-  }
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 

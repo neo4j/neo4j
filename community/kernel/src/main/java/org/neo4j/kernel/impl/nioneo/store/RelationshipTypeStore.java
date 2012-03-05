@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
@@ -34,41 +34,25 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRecord>
 {
+    public interface Configuration
+        extends AbstractNameStore.Configuration
+    {
+
+    }
+
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeStore( String fileName, Map<?,?> config )
+    public RelationshipTypeStore(String fileName, Configuration config, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                 DynamicStringStore nameStore)
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE );
+        super(fileName, config, IdType.RELATIONSHIP_TYPE, idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore);
     }
 
     @Override
     public void accept( RecordStore.Processor processor, RelationshipTypeRecord record )
     {
-        processor.processRelationshipType( this, record );
-    }
-
-    /**
-     * Creates a new relationship type store contained in <CODE>fileName</CODE>
-     * If filename is <CODE>null</CODE> or the file already exists an
-     * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship type store
-     * @throws IOException
-     *             If unable to create store or name null
-     */
-    public static void createStore( String fileName, Map<?, ?> config )
-    {
-        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
-                IdGeneratorFactory.class );
-        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
-                fileSystem );
-        DynamicStringStore.createStore( fileName + ".names",
-            NAME_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.RELATIONSHIP_TYPE_BLOCK );
-        RelationshipTypeStore store = new RelationshipTypeStore( fileName, config );
-        store.close();
+        processor.processRelationshipType(this, record);
     }
 
     void markAsReserved( int id )
@@ -152,18 +136,6 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     protected RelationshipTypeRecord newRecord( int id )
     {
         return new RelationshipTypeRecord( id );
-    }
-
-    @Override
-    protected IdType getNameIdType()
-    {
-        return IdType.RELATIONSHIP_TYPE_BLOCK;
-    }
-
-    @Override
-    protected String getNameStorePostfix()
-    {
-        return ".names";
     }
 
     @Override

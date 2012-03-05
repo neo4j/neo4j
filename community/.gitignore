@@ -5,6 +5,7 @@ target
 .project
 .classpath
 .settings
+.externalToolBuilders/
 .scala_dependencies
 .factorypath
 *.iws
@@ -19,6 +20,7 @@ cypher/.cache
 server/neo4j-home/data/
 server/neo4j-home/rrd
 server/rrd
+server/neo4j-home/ssl
 server/src/main/resources/webadmin-html/js/neo4j/
 server/src/main/resources/webadmin-html/js/ribcage/
 server/src/main/resources/webadmin-html/js/webadmin.js
@@ -27,3 +29,4 @@ artifacts
 */pom-with-build-number.xml
 chromedriver.log
 webdriver-binaries
+rrd

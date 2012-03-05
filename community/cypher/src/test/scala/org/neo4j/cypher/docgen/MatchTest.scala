@@ -43,9 +43,9 @@ class MatchTest extends DocumentingTestBase {
   @Test def allRelationships() {
     testQuery(
       title = "Related nodes",
-      text = "The symbol `--` means related to, without regard to type or direction.",
+      text = "The symbol `--` means _related to,_ without regard to type or direction.",
       queryText = """start n=node(%A%) match (n)--(x) return x""",
-      returns = """All nodes related to A are returned""",
+      returns = """All nodes related to A (Anders) are returned.""",
       assertions = (p) => assertEquals(List(node("B"), node("D"), node("C")), p.columnAs[Node]("x").toList)
     )
   }
@@ -121,9 +121,9 @@ class MatchTest extends DocumentingTestBase {
   @Test def variableLengthPath() {
     testQuery(
       title = "Variable length relationships",
-      text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE*minHops..maxHops]->`. ",
+      text = "Nodes that are a variable number of relationship->node hops away can be found using `-[:TYPE*minHops..maxHops]->`. ",
       queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
-      returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
+      returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away.",
       assertions = (p) => assertEquals(List(
         Map("a" -> node("A"), "x" -> node("E")),
         Map("a" -> node("A"), "x" -> node("B"))), p.toList)
@@ -135,7 +135,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Relationship identifier in variable length relationships",
       text = """When the connection between two nodes is of variable length, a relationship identifier becomes an iterable of relationships.""",
       queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[r:KNOWS*1..3]->x return r""",
-      returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
+      returns = "Returns the relationships, if there is a path between 1 and 3 relationships away.",
       assertions = (p) => assertEquals(2, p.toList.size)
     )
   }
@@ -169,12 +169,12 @@ class MatchTest extends DocumentingTestBase {
   @Test def optionalRelationship() {
     testQuery(
       title = "Optional relationship",
-      text = "If a relationship is optional, it can be marked with a question mark. This similar to how a SQL outer join " +
-        "works, if the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
-        "anything hanging of an optional relation, is in turn optional, unless it is connected with a bound node some other " +
+      text = "If a relationship is optional, it can be marked with a question mark. This is similar to how a SQL outer join " +
+        "works. If the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
+        "anything hanging off an optional relationship, is in turn optional, unless it is connected with a bound node some other " +
         "path.",
       queryText = """start a=node(%E%) match a-[?]->x return a,x""",
-      returns = """A node, and +null+, since the node has no relationships.""",
+      returns = """A node, and +null+, since the node has no outgoing relationships.""",
       assertions = (p) => assertEquals(List(Map("a" -> node("E"), "x" -> null)), p.toList)
     )
   }
@@ -184,7 +184,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Properties on optional elements",
       text = "Returning a property from an optional element that is +null+ will also return +null+.",
       queryText = """start a=node(%E%) match a-[?]->x return x, x.name""",
-      returns = """The element x (null in this query), and null as it's name.""",
+      returns = """The element x (`null` in this query), and `null` as it's name.""",
       assertions = (p) => assertEquals(List(Map("x" -> null, "x.name" -> null)), p.toList)
     )
   }
@@ -195,7 +195,7 @@ class MatchTest extends DocumentingTestBase {
       text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
         "you need.",
       queryText = """start a=node(%A%) match a-[r?:LOVES]->() return a,r""",
-      returns = """A node, and +null+, since the node has no relationships.""",
+      returns = """A node, and +null+, since the node has no outgoing `LOVES` relationships.""",
       assertions = (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
     )
   }
@@ -203,10 +203,10 @@ class MatchTest extends DocumentingTestBase {
   @Test def shortestPathBetweenTwoNodes() {
     testQuery(
       title = "Shortest path",
-      text = "Finding a single shortest path between two nodes is as easy as using the shortestPath-function, like this.",
+      text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath`-function, like this:",
       queryText = """start d=node(%D%), e=node(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
- you write a single link of a path - the starting node, the connecting relationship and the end node. Characteristics describing the relationship
+ you write a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
  like relationship type, max hops and direction are all used when finding the shortest path. You can also mark the path as optional.""",
       assertions = (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length())
     )
@@ -229,7 +229,7 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=node(%A%)
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",
-      returns = """The four nodes in the path.""",
+      returns = """The four nodes in the paths.""",
       assertions = p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
     )
   }
@@ -247,7 +247,7 @@ return a,b,c,d""",
   @Test def match_on_bound_relationship() {
     testQuery(
       title = "Matching on a bound relationship",
-      text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction,
+      text = """When your pattern contains a bound relationship, and that relationship pattern doesn't specify direction,
 Cypher will try to match the relationship where the connected nodes switch sides.""",
       queryText = """start r=rel(0) match a-[r]-b return a,b""",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node",
@@ -256,13 +256,162 @@ Cypher will try to match the relationship where the connected nodes switch sides
   }
 
   @Test def match_mimicking_or() {
+      testQuery(
+              title = "Matching on a bound relationship",
+              text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction, 
+                Cypher will try to match the relationship where the connected nodes switch sides.""",
+              queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
+              returns = "This returns the two connected nodes, once as the start node, and once as the end node",
+              assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
+              )
+  }
+  def intro_q1 = """START me=node(1)
+MATCH me-->friend-[?:parent_of]->children
+RETURN friend, children"""
+    
+  def intro_q2 = """START a=node(1)
+MATCH p = a-[?]->b 
+RETURN b"""
+    
+  def intro_q3 = """START a=node(1) 
+MATCH p = a-[?*]->b 
+RETURN b"""
+    
+  def intro_q4 = """START a=node(1)
+MATCH p = a-[?]->x-->b 
+RETURN b"""
+
+  def intro_q5 = """START a=node(1), x=node(2) 
+MATCH p = shortestPath( a-[?*]->x ) 
+RETURN p"""
+
+  
+  @Test def intro() {
     testQuery(
-      title = "Matching on a bound relationship",
-      text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction,
-Cypher will try to match the relationship where the connected nodes switch sides.""",
-      queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
-      returns = "This returns the two connected nodes, once as the start node, and once as the end node",
-      assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
+      title = "introduction",
+      text = """Pattern matching is one of the pillars of Cypher. The pattern is used to describe the shape of the data that we are
+looking for. Cypher will then try to find patterns in the graph -- these are called matching sub graphs.
+
+The description of the pattern is made up of one or more paths, separated by commas. A path is a sequence of nodes and
+relationships that always start and end in nodes. An example path would be:
++`(a)-->(b)`+
+
+Paths can be of arbitrary length, and the same node may appear in multiple places in the path. Node identifiers can be
+used with or without surrounding parenthesis. The following two match clauses are semantically identical -- the difference is
+purely aesthetic.
+
++`MATCH (a)-->(b)`+
+
+and 
+
++`MATCH a-->b`+
+
+
+Patterns have bound points, or start points. They are the parts of the pattern that are already ``bound'' to a set of
+graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a start point -- a pattern
+where parts of the pattern are not reachable from any start point will be rejected.
+
+The optional relationship is a way to describe parts of the pattern that can evaluate to `null` if it can not be
+matched to the graph. It's the equivalent of SQL outer join -- if Cypher finds one or more matches, they will be
+returned. If no matches are found, Cypher will return a `null`. Only relationships can be marked as optional, and it's
+done with a question mark.
+
+Optional relationships of the pattern are used to answer queries like this:
+
+[source,cypher]
+----
+""" 
+        + intro_q1 +
+"""
+----
+
+The query above says ``give me all my friends, and their children, if they have any.''
+
+Optionality is transitive -- if a part of the pattern can only be reached from a bound point through an optional relationship,
+that part is also optional. In the pattern above, the only bound point in the pattern is `me`. Since the relationship
+between `friend` and `children` is optional, `children` is an optional part of the graph.
+
+Also, named paths that contain optional parts are also optional -- if any part of the path is
+`null`, the whole path is `null`.
+
+In these examples, `b` and `p` are all optional and can contain `null`:
+
+[source,cypher]
+----
+"""
+        + intro_q2 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q3 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q4 +
+
+"""
+----
+
+[source,cypher]
+----
+"""
+        + intro_q5 +
+
+"""
+----
+
+As a simple example, let's take the following query, executed on the graph pictured below.
+""",
+      queryText = intro_q1,
+      returns = "This returns the a +friend+ node, and no +children+, since there are no such relatoinships in the graph.",
+      assertions = p => assertTrue(true)
     )
   }
+  
+  @Test def introQ2() {
+      testQuery(
+              title = "q2",
+              text = "",
+              queryText = intro_q2,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  
+  @Test def introQ3() {
+      testQuery(
+              title = "q3",
+              text = "",
+              queryText = intro_q3,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  @Test def introQ4() {
+      testQuery(
+              title = "q4",
+              text = "",
+              queryText = intro_q4,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+  @Test def introQ5() {
+      testQuery(
+              title = "q5",
+              text = "",
+              queryText = intro_q5,
+              returns = "",
+              assertions = p => assertTrue(true)
+              )
+  }
+
 }

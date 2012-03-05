@@ -40,6 +40,9 @@ The Mime  streaming plugin library  is licensed under the  GNU General
 Public  License  Version 2  with  classpath exception.   Alternatively
 under the Common Development and Distribution License, version 1.0.
 
+The Bouncy Castle encryption library is licensed under a modified version
+of the MIT X11 licence.
+
 Other bundled libraries are licenced according to the following listing.
 
 The Apache Software License, Version 2.0:

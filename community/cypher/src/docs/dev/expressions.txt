@@ -1,0 +1,15 @@
+[[cypher-expressions]]
+Expressions
+========
+An expression in Cypher can be:
+ * A numeric literal (integer or double) - 13,40000, 3.14
+ * A string literal - "Hello", 'World'
+ * A boolean literal -  true, false, TRUE, FALSE
+ * An identifier - n, x, rel, myFancyIdentifier, `A name with weird stuff in it[]!`
+ * A property - n.prop, x.prop, rel.thisProperty, myFancyIdentifier.`(weird property name)`
+ * A nullable property - it's a property, with a question mark or exclamation mark - n.prop?, rel.thisProperty!
+ * A parameter - {param}, {0}
+ * A collection of expressions - ["a", "b"], [1,2,3], ["a", 2, n.property, {param}], [ ]
+ * A function call - length(p), nodes(p)
+ * An aggregate function - avg(x.prop), count(*)
+

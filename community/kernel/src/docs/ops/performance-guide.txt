@@ -31,9 +31,11 @@ For Linux specific tweaks, see <<linux-performance-guide>>.
 Neo4j manages its primitives (nodes, relationships and properties) 
 different depending on how you use Neo4j. For example if you never get a 
 property from a certain node or relationship that node or relationship will 
-not have its properties loaded into memory. Another example is a node that 
-you never request any relationships from, that node will then not load any 
-of its relationships into memory.
+not have its properties loaded into memory. The first time, after loading a node or relationship,
+any property is accessed all the properties are loaded for that entity. If any of those properties
+contain an array larger than a few elements or a long string such values are loaded
+on demand when requesting them individually. Similarly, relationships of a node will
+only be loaded the first time they are requested for that node.
 
 Nodes and relationships are cached using LRU caches. If you (for some strange reason) 
 only work with nodes the relationship cache will become smaller and smaller while the 

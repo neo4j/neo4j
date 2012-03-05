@@ -19,11 +19,19 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -38,7 +46,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -48,12 +56,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -76,7 +78,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
     long createNode()
     {
-        AbstractGraphDatabase graphdb = server().getDatabase().graph;
+        GraphDatabaseSPI graphdb = server().getDatabase().graph;
         Transaction tx = graphdb.beginTx();
         Node node;
         try {
@@ -201,8 +203,9 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                                 functionalTestHelper.nodeUri( nodeId ) ) ) )
                 .post( functionalTestHelper.indexNodeUri( indexName ) );
         // look if we get one entry back
-        JaxRsResponse response = RestRequest.req()
-                .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
+        JaxRsResponse response = RestRequest.req().get(
+                functionalTestHelper.indexNodeUri( indexName, key,
+                        URIHelper.encode( value ) ) );
         String entity = response.getEntity( String.class );
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
@@ -273,6 +276,53 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
+    }
+
+    @Test
+    public void shouldAddToIndexAndRetrieveItByQuerySorted()
+            throws PropertyValueException
+    {
+        String indexName = "bobTheIndex";
+        String key = "Name";
+        long node1 = helper.createNode();
+        long node2 = helper.createNode();
+        helper.addNodeToIndex( indexName, key, "Builder2", node1 );
+        helper.addNodeToIndex( indexName, "Gender", "Male", node1 );
+        helper.addNodeToIndex( indexName, key, "Builder", node2 );
+        helper.addNodeToIndex( indexName, "Gender", "Male", node2 );
+
+        String entity = gen.get().expectedStatus( 200 ).get(
+                functionalTestHelper.indexNodeUri( indexName )
+                        + "?query=Name:Build~0.1%20AND%20Gender:Male&order=relevance" ).entity();
+
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        assertEquals( 2, hits.size() );
+        Iterator it = hits.iterator();
+
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+
+        entity = gen.get().expectedStatus( 200 ).get(
+                functionalTestHelper.indexNodeUri( indexName )
+                        + "?query=Name:Build~0.1%20AND%20Gender:Male&order=index" ).entity();
+
+        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        assertEquals( 2, hits.size() );
+        it = hits.iterator();
+
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+
+        entity = gen.get().expectedStatus( 200 ).get(
+                functionalTestHelper.indexNodeUri( indexName )
+                        + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
+
+        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        assertEquals( 2, hits.size() );
+        it = hits.iterator();
+
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
     }
 
     /**

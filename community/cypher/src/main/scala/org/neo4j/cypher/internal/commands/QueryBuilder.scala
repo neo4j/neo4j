@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.commands
 
-class QueryBuilder(startItems: Seq[ StartItem ]) {
-  var matching: Option[ Match ] = None
-  var where: Option[ Predicate ] = None
-  var aggregation: Option[ Aggregation ] = None
-  var orderBy: Option[ Sort ] = None
-  var skip: Option[ Expression ] = None
-  var limit: Option[ Expression ] = None
-  var namedPaths: Option[ NamedPaths ] = None
-  var columns: Seq[ ReturnItem ] => List[ String ] = (returnItems) => returnItems.map(_.identifier.name).toList
+class QueryBuilder(startItems: Seq[StartItem]) {
+  var matching: Option[Match] = None
+  var where: Option[Predicate] = None
+  var aggregation: Option[Aggregation] = None
+  var orderBy: Option[Sort] = None
+  var skip: Option[Expression] = None
+  var limit: Option[Expression] = None
+  var namedPaths: Option[NamedPaths] = None
+  var columns: Seq[ReturnItem] => List[String] = (returnItems) => returnItems.map(_.identifier.name).toList
 
   def matches(patterns: Pattern*): QueryBuilder = store(() => matching = Some(Match(patterns: _*)))
 
   def where(predicate: Predicate): QueryBuilder = store(() => where = Some(predicate))
 
-  def aggregation(aggregationItems: AggregationItem*): QueryBuilder =
+  def aggregation(aggregationItems: AggregationExpression*): QueryBuilder =
     store(() => aggregation = Some(Aggregation(aggregationItems: _*)))
 
   def orderBy(sortItems: SortItem*): QueryBuilder = store(() => orderBy = Some(Sort(sortItems: _*)))
@@ -48,11 +48,11 @@ class QueryBuilder(startItems: Seq[ StartItem ]) {
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store(() => namedPaths = Some(NamedPaths(paths: _*)))
 
-  def columns(columnList: String*): QueryBuilder = store(() => columns = (x) => columnList.toList  )
+  def columns(columnList: String*): QueryBuilder = store(() => columns = (x) => columnList.toList)
 
-  def slice: Option[ Slice ] = (skip, limit) match {
+  def slice: Option[Slice] = (skip, limit) match {
     case (None, None) => None
-    case (s, l)       => Some(Slice(skip, limit))
+    case (s, l) => Some(Slice(skip, limit))
   }
 
   private def store(f: () => Unit): QueryBuilder = {
@@ -61,6 +61,5 @@ class QueryBuilder(startItems: Seq[ StartItem ]) {
   }
 
   def returns(returnItems: ReturnItem*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), matching, where, aggregation,
-          orderBy, slice, namedPaths)
+    Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), matching, where, aggregation, orderBy, slice, namedPaths)
 }

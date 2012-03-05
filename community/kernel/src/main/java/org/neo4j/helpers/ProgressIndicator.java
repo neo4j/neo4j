@@ -204,4 +204,63 @@ public interface ProgressIndicator
             super.done();
         }
     }
+    
+    /**
+     * Progress indicator where the end is unknown. Specify a step size which
+     * means that a means of progress will be printed every step.
+     * 
+     * @author Mattias Persson
+     */
+    public class UnknownEndProgress implements ProgressIndicator
+    {
+        private final long stepSize;
+        private long lastAbsolutePosition = -1;
+        private long position;
+        private long lastStep;
+        private final String doneMessage;
+
+        public UnknownEndProgress( long stepSize, String doneMessage )
+        {
+            this.stepSize = stepSize;
+            this.doneMessage = doneMessage;
+        }
+        
+        @Override
+        public void update( boolean incremental, long value )
+        {
+            position += incremental ? updateIncremental( value ) : updateAbsolute( value );
+            long step = position/stepSize;
+            if ( lastStep != step )
+            {
+                if ( lastStep > 0 && lastStep % 30 == 0 ) System.out.println();
+                System.out.print( "." );
+            }
+            lastStep = step;
+        }
+
+        private long updateIncremental( long value )
+        {
+            return value;
+        }
+
+        private long updateAbsolute( long value )
+        {
+            if ( lastAbsolutePosition == -1 ) lastAbsolutePosition = value;
+            try
+            {
+                return value - lastAbsolutePosition;
+            }
+            finally
+            {
+                lastAbsolutePosition = value;
+            }
+        }
+
+        @Override
+        public void done( long totalProgress )
+        {
+            if ( lastStep > 0 ) System.out.println();
+            System.out.println( "[" + totalProgress + " " + doneMessage + "]" );
+        }
+    }
 }

@@ -22,21 +22,21 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Test
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.{Entity, ExpressionReturnItem, SortItem}
+import org.neo4j.cypher.internal.commands.{Entity, ReturnItem, SortItem}
 import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 import java.lang.String
 
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
     val source = new FakePipe(List())
-    val sortPipe = new SortPipe(source, List(SortItem(ExpressionReturnItem(Entity("x")), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("x"), true)))
 
     assertEquals(List(), sortPipe.createResults(Map()).toList)
   }
 
   @Test def simpleSortingIsSupported() {
     val source = new FakePipe(List(Map("x" -> "B"), Map("x" -> "A")))
-    val sortPipe = new SortPipe(source, List(SortItem(ExpressionReturnItem(Entity("x")), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("x"), true)))
 
     assertEquals(List(Map("x" -> "A"), Map("x" -> "B")), sortPipe.createResults(Map()).toList)
   }
@@ -48,8 +48,8 @@ class SortPipeTest extends JUnitSuite{
       Map("x" -> "B", "y" -> 10)))
 
     val sortPipe = new SortPipe(source, List(
-      SortItem(ExpressionReturnItem(Entity("x")), true),
-      SortItem(ExpressionReturnItem(Entity("y")), true)))
+      SortItem(Entity("x"), true),
+      SortItem(Entity("y"), true)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
@@ -64,8 +64,8 @@ class SortPipeTest extends JUnitSuite{
       Map("x" -> "B", "y" -> 10)))
 
     val sortPipe = new SortPipe(source, List(
-      SortItem(ExpressionReturnItem(Entity("x")), true),
-      SortItem(ExpressionReturnItem(Entity("y")), false)))
+      SortItem(Entity("x"), true),
+      SortItem(Entity("y"), false)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
@@ -79,7 +79,7 @@ class SortPipeTest extends JUnitSuite{
       Map("y" -> null),
       Map("y" -> 2)))
 
-    val sortPipe = new SortPipe(source, List(SortItem(ExpressionReturnItem(Entity("y")), true)))
+    val sortPipe = new SortPipe(source, List(SortItem(Entity("y"), true)))
 
     assertEquals(List(
       Map("y" -> 1),

@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
-class RagManager
+public class RagManager
 {
     // if a runtime exception is thrown from any method it means that the
     // RWLock class hasn't kept the contract to the RagManager
@@ -76,13 +76,13 @@ class RagManager
         new HashMap<Object,List<Transaction>>();
 
     private final ArrayMap<Transaction,Object> waitingTxMap =
-        new ArrayMap<Transaction,Object>( 5, false, true );
+        new ArrayMap<Transaction,Object>( (byte)5, false, true );
 
     private final TransactionManager tm;
 
     private final AtomicInteger deadlockCount = new AtomicInteger();
 
-    RagManager( TransactionManager tm )
+    public RagManager( TransactionManager tm )
     {
         this.tm = tm;
     }

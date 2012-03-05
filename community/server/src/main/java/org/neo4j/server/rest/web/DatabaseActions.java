@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -53,7 +54,8 @@ import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -87,8 +89,11 @@ import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 
 public class DatabaseActions
 {
+    public static final String SCORE_ORDER = "score";
+    public static final String RELEVANCE_ORDER = "relevance";
+    public static final String INDEX_ORDER = "index";
     private final Database database;
-    private final AbstractGraphDatabase graphDb;
+    private final GraphDatabaseSPI graphDb;
     private final LeaseManager leases;
     private final ForceMode defaultForceMode;
 
@@ -900,25 +905,28 @@ public class DatabaseActions
     }
 
     public ListRepresentation getIndexedNodesByQuery( String indexName,
-            String query )
+            String query, String sort )
     {
-        return getIndexedNodesByQuery( indexName, null, query );
+        return getIndexedNodesByQuery( indexName, null, query, sort );
     }
 
     public ListRepresentation getIndexedNodesByQuery( String indexName,
-            String key, String query )
+            String key, String query, String sort )
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
             throw new NotFoundException();
         Index<Node> index = graphDb.index().forNodes( indexName );
         List<Representation> representations = new ArrayList<Representation>();
 
+        QueryContext queryCtx = new QueryContext( query );
+        queryCtx = setOrdering( queryCtx, sort );
         Transaction tx = beginTx();
         try
         {
             if ( query != null )
             {
-                for ( Node node : index.query( key, query ) )
+                IndexHits<Node> result = index.query( key, queryCtx );
+                for ( Node node : result)
                 {
                     representations.add( new NodeRepresentation( node ) );
                 }
@@ -1140,23 +1148,37 @@ public class DatabaseActions
     }
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName,
-            String query )
+            String query, String sort )
     {
-        return getIndexedRelationshipsByQuery( indexName, null, query );
+        return getIndexedRelationshipsByQuery( indexName, null, query, sort );
     }
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName,
-            String key, String query )
+            String key, String query, String sort )
     {
         if ( !graphDb.index().existsForRelationships( indexName ) )
             throw new NotFoundException();
         List<Representation> representations = new ArrayList<Representation>();
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
 
+        QueryContext queryCtx = new QueryContext( query );
+        if ( "indexOrder".equalsIgnoreCase( sort ) )
+        {
+            queryCtx = queryCtx.sort( Sort.INDEXORDER );
+        }
+        else if ( "relevance".equalsIgnoreCase( sort ) )
+        {
+            queryCtx = queryCtx.sort( Sort.RELEVANCE );
+        }
+        else if ( "score".equalsIgnoreCase( sort ) )
+        {
+            queryCtx = queryCtx.sortByScore();
+        }
+
         Transaction tx = beginTx();
         try
         {
-            for ( Relationship rel : index.query( key, query ) )
+            for ( Relationship rel : index.query( key, queryCtx ) )
             {
                 representations.add( new RelationshipRepresentation( rel ) );
             }
@@ -1432,6 +1454,23 @@ public class DatabaseActions
 
             throw new RuntimeException( "Failed to find matching algorithm" );
         }
+    }
+
+    private final QueryContext setOrdering( QueryContext queryCtx, String order )
+    {
+        if ( INDEX_ORDER.equalsIgnoreCase( order ) )
+        {
+            return queryCtx.sort( Sort.INDEXORDER );
+        }
+        else if ( RELEVANCE_ORDER.equalsIgnoreCase( order ) )
+        {
+            return queryCtx.sort( Sort.RELEVANCE );
+        }
+        else if ( SCORE_ORDER.equalsIgnoreCase( order ) )
+        {
+            return queryCtx.sortByScore();
+        }
+        return queryCtx;
     }
 
     private interface PathRepresentationCreator<T extends Path>

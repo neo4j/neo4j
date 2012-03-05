@@ -24,41 +24,40 @@ import org.neo4j.cypher.internal.commands._
 
 trait ReturnItems extends Base with Expressions {
   def returnItem: Parser[ReturnItem] = returnExpressions ^^ {
-    case expression => ExpressionReturnItem(expression)
+    case expression => ReturnItem(expression, expression.identifier.name)
   }
 
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
   def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
-
-  def aggregationFunction: Parser[AggregationItem] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
+  def aggregationFunction: Parser[(Expression,String)] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
     case name ~ (distinct ~ inner) => {
-      val aggregate = name match {
-        case "count" => Count(inner, "count(" + inner.identifier.name + ")")
-        case "sum" => Sum(inner, "sum(" + inner.identifier.name + ")")
-        case "min" => Min(inner, "min(" + inner.identifier.name + ")")
-        case "max" => Max(inner, "max(" + inner.identifier.name + ")")
-        case "avg" => Avg(inner, "avg(" + inner.identifier.name + ")")
-        case "collect" => Collect(inner, "collect(" + inner.identifier.name + ")")
+      val (aggregate,columnName) = name match {
+        case "count" => (Count(inner), "count(" + inner.identifier.name + ")")
+        case "sum" => (Sum(inner), "sum(" + inner.identifier.name + ")")
+        case "min" => (Min(inner), "min(" + inner.identifier.name + ")")
+        case "max" => (Max(inner), "max(" + inner.identifier.name + ")")
+        case "avg" => (Avg(inner), "avg(" + inner.identifier.name + ")")
+        case "collect" => (Collect(inner), "collect(" + inner.identifier.name + ")")
       }
 
       if (distinct.isEmpty) {
-        ValueAggregationItem(aggregate)
+        (aggregate, columnName)
       }
       else {
         val innerName = aggregate.identifier.name
         val name = innerName.substring(0, innerName.indexOf("(")) + "(distinct " + inner.identifier.name + ")"
 
-        ValueAggregationItem(Distinct(aggregate, inner, name))
+        (Distinct(aggregate, inner), name)
       }
     }
   }
 
-  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ {
-    case "*" => CountStar()
-  }
+  def countStar: Parser[(Expression,String)] = ignoreCase("count") ~> parens("*") ^^^ (CountStar(), "count(*)")
 
-  def aggregate: Parser[AggregationItem] = countStar | aggregationFunction
+  def aggregateExpression:Parser[Expression] = (countStar|aggregationFunction) ^^ { case (expression,name) => expression }
+
+  def aggregateReturnItem: Parser[ReturnItem] = (countStar|aggregationFunction) ^^ { case (expression,name) => ReturnItem(expression, name) }
 }
 
 

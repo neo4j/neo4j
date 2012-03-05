@@ -19,6 +19,15 @@
  */
 package org.neo4j.server;
 
+import static org.dummy.web.service.DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.helpers.ServerBuilder.server;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,15 +35,6 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import static org.dummy.web.service.DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.ServerBuilder.server;
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 
 public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase {
     private NeoServer server;
@@ -64,7 +64,6 @@ public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase 
             .endArray()
             .toString();
 
-
         JaxRsResponse response =  new RestRequest(null,"user","pass")
                 .post("http://localhost:7474/db/data/batch", jsonData);
 
@@ -74,6 +73,21 @@ public class BatchOperationHeaderFunctionalTest extends ExclusiveServerTestBase 
 
         Map<String, Object> res = (Map<String, Object>) responseData.get(0).get("body");
 
-        assertEquals("Basic dXNlcjpwYXNz", res.get("Authorization"));
+        /*
+         * {
+         *   Accept=[application/json],
+         *   Content-Type=[application/json],
+         *   Authorization=[Basic dXNlcjpwYXNz],
+         *   User-Agent=[Java/1.6.0_27] <-- ignore that, it changes often
+         *   Host=[localhost:7474],
+         *   Connection=[keep-alive],
+         *   Content-Length=[86]
+         * }
+         */
+        assertEquals( "Basic dXNlcjpwYXNz", res.get( "Authorization" ) );
+        assertEquals( "application/json", res.get( "Accept" ) );
+        assertEquals( "application/json", res.get( "Content-Type" ) );
+        assertEquals( "localhost:7474", res.get( "Host" ) );
+        assertEquals( "keep-alive", res.get( "Connection" ) );
     }
 }

@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 public abstract class IndexConnectionBroker<T extends XaConnection>
 {
     private final ArrayMap<Transaction, T> txConnectionMap =
-            new ArrayMap<Transaction, T>( 5, true, true );
+            new ArrayMap<Transaction, T>( (byte)5, true, true );
     private final TransactionManager transactionManager;
 
     protected IndexConnectionBroker( TransactionManager transactionManager )
@@ -54,7 +54,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
             try
             {
                 con = (T) newConnection();
-                if ( !tx.enlistResource( con.getXaResource() ) )
+                if ( !con.enlistResource( tx ) )
                 {
                     throw new RuntimeException( "Unable to enlist '"
                                                 + con.getXaResource() + "' in "
@@ -107,7 +107,7 @@ public abstract class IndexConnectionBroker<T extends XaConnection>
         {
             try
             {
-                tx.delistResource( con.getXaResource(), XAResource.TMSUCCESS );
+                con.delistResource(tx, XAResource.TMSUCCESS);
             }
             catch ( IllegalStateException e )
             {

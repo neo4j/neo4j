@@ -6,11 +6,15 @@ include::introduction.txt[]
 
 :leveloffset: 2
 
-include::ql/operators/index.txt[]
+include::operators.txt[]
+
+include::expressions.txt
 
 include::parameters.txt[]
 
 include::identifiers.txt[]
+
+include::comments.txt[]
 
 :leveloffset: 2
 

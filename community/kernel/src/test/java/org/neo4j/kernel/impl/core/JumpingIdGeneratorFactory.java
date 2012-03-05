@@ -28,7 +28,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
@@ -68,11 +67,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     public void create( String fileName )
     {
     }
-    
-    public void updateIdGenerators( NeoStore neoStore )
-    {
-    }
-    
+
     private class JumpingIdGenerator implements IdGenerator
     {
         private AtomicLong nextId = new AtomicLong();

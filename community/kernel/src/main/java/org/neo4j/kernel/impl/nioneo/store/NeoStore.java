@@ -25,20 +25,12 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
-import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -51,6 +43,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class NeoStore extends AbstractStore
 {
+    public interface Configuration
+        extends AbstractStore.Configuration
+    {
+        int relationship_grab_size(int defaultRelGrabSize);
+    }
+    
     public static final String TYPE_DESCRIPTOR = "NeoStore";
 
     /*
@@ -65,31 +63,55 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
-    private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
-    private final IdGeneratorFactory idGeneratorFactory;
     private final TxHook txHook;
     private boolean isStarted;
     private long lastCommittedTx = -1;
 
     private final int REL_GRAB_SIZE;
+    private String fileName;
+    private Configuration conf;
+    private LastCommittedTxIdSetter lastCommittedTxIdSetter;
 
-    public NeoStore( Map<?,?> config )
+    public NeoStore(String fileName, Configuration conf,
+                    LastCommittedTxIdSetter lastCommittedTxIdSetter,
+                    IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction,
+                    StringLogger stringLogger, TxHook txHook,
+                    RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore, NodeStore nodeStore)
     {
-        super( (String) config.get( "neo_store" ), config, IdType.NEOSTORE_BLOCK );
-        int relGrabSize = DEFAULT_REL_GRAB_SIZE;
-        if ( getConfig() != null )
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        this.fileName = fileName;
+        this.conf = conf;
+        this.lastCommittedTxIdSetter = lastCommittedTxIdSetter;
+        this.relTypeStore = relTypeStore;
+        this.propStore = propStore;
+        this.relStore = relStore;
+        this.nodeStore = nodeStore;
+        REL_GRAB_SIZE = conf.relationship_grab_size(DEFAULT_REL_GRAB_SIZE);
+        this.txHook = txHook;
+
+        /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
+         * corresponding store version record was not added. That record was added in the release
+         * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
+         * unclean shutdown on such a db with 1.5.M02 < neo4j version <= 1.6.M02 would make that
+         * db unable to start for that version with a "Mismatching store version found" exception.
+         * 
+         * This will make a cleanly shut down 1.5.M02, then started and cleanly shut down with 1.6.M03 (or higher)
+         * successfully add the missing record.
+         */
+        setRecovered();
+        try
         {
-            String grabSize = (String) getConfig().get( "relationship_grab_size" );
-            if ( grabSize != null )
+            if ( getCreationTime() != 0 /*Store that wasn't just now created*/ &&
+                    getStoreVersion() == 0 /*Store is missing the store version record*/ )
             {
-                relGrabSize = Integer.parseInt( grabSize );
+                setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+                updateHighId();
             }
         }
-        REL_GRAB_SIZE = relGrabSize;
-        lastCommittedTxIdSetter = (LastCommittedTxIdSetter)
-                config.get( LastCommittedTxIdSetter.class );
-        idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
-        txHook = (TxHook) config.get( TxHook.class );
+        finally
+        {
+            unsetRecovered();
+        }
     }
 
     @Override
@@ -118,8 +140,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion( (String) getConfig().get(
-                        "neo_store" ) ) );
+                String foundVersion = versionLongToString( getStoreVersion(configuration.neo_store()) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -130,12 +151,6 @@ public class NeoStore extends AbstractStore
                                     CommonAbstractStore.ALL_STORES_VERSION ) );
                 }
             }
-        }
-        catch ( NotCurrentStoreVersionException e )
-        {
-            releaseFileLockAndCloseFileChannel();
-            tryToUpgradeStores();
-            checkStorage();
         }
         catch ( IOException e )
         {
@@ -158,54 +173,6 @@ public class NeoStore extends AbstractStore
             insertRecord( 5, -1 );
             registerIdFromUpdateRecord( 5 );
         }
-    }
-
-    @Override
-    protected void initStorage()
-    {
-        instantiateChildStores();
-        
-        /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
-         * corresponding store version record was not added. That record was added in the release
-         * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
-         * unclean shutdown on such a db with 1.5.M02 < neo4j version <= 1.6.M02 would make that
-         * db unable to start for that version with a "Mismatching store version found" exception.
-         * 
-         * This will make a cleanly shut down 1.5.M02, then started and cleanly shut down with 1.6.M03 (or higher)
-         * successfully add the missing record.
-         */
-        setRecovered();
-        try
-        {
-            if ( getCreationTime() != 0 /*Store that wasn't just now created*/ &&
-                    getStoreVersion() == 0 /*Store is missing the store version record*/ )
-            {
-                setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
-                updateHighId();
-            }
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-    
-    /**
-     * Initializes the node,relationship,property and relationship type stores.
-     */
-    private void instantiateChildStores()
-    {
-        relTypeStore = new RelationshipTypeStore( getStorageFileName() + ".relationshiptypestore.db", getConfig() );
-        propStore = new PropertyStore( getStorageFileName() + ".propertystore.db", getConfig() );
-        relStore = new RelationshipStore( getStorageFileName() + ".relationshipstore.db", getConfig() );
-        nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db", getConfig() );
-    }
-
-    private void tryToUpgradeStores()
-    {
-        new StoreUpgrader( getConfig(), new ConfigMapUpgradeConfiguration(getConfig()),
-                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
-                new DatabaseFiles() ).attemptUpgrade( getStorageFileName() );
     }
 
     private void insertRecord( int recordPosition, long value ) throws IOException
@@ -290,63 +257,15 @@ public class NeoStore extends AbstractStore
         return TYPE_DESCRIPTOR;
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
-    }
-
     @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
     }
 
-    public TxHook getTxHook()
+    public boolean freeIdsDuringRollback()
     {
-        return txHook;
-    }
-
-    /**
-     * Creates the neo,node,relationship,property and relationship type stores.
-     *
-     * @param fileName
-     *            The name of store
-     * @param config
-     *            Map of configuration parameters
-     */
-    public static void createStore( String fileName, Map<?,?> config )
-    {
-        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
-                IdGeneratorFactory.class );
-        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
-        StoreId storeId = (StoreId) config.get( StoreId.class );
-        if ( storeId == null ) storeId = new StoreId();
-
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory, fileSystem );
-        NodeStore.createStore( fileName + ".nodestore.db", config );
-        RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory, fileSystem );
-        PropertyStore.createStore( fileName + ".propertystore.db", config );
-        RelationshipTypeStore.createStore( fileName
-            + ".relationshiptypestore.db", config );
-        if ( !config.containsKey( "neo_store" ) )
-        {
-            // TODO Ugly
-            Map<Object, Object> newConfig = new HashMap<Object, Object>( config );
-            newConfig.put( "neo_store", fileName );
-            config = newConfig;
-        }
-        NeoStore neoStore = new NeoStore( config );
-        /*
-         *  created time | random long | backup version | tx id | store version | next prop
-         */
-        for ( int i = 0; i < 6; i++ ) neoStore.nextId();
-        neoStore.setCreationTime( storeId.getCreationTime() );
-        neoStore.setRandomNumber( storeId.getRandomId() );
-        neoStore.setVersion( 0 );
-        neoStore.setLastCommittedTx( 1 );
-        neoStore.setStoreVersion( storeId.getStoreVersion() );
-        neoStore.setGraphNextProp( -1 );
-        neoStore.close();
+        return txHook.freeIdsDuringRollback();
     }
 
     /**
@@ -506,7 +425,7 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                lastCommittedTxIdSetter.setLastCommittedTxId( txId );
+                lastCommittedTxIdSetter.setLastCommittedTxId(txId);
             }
             catch ( RuntimeException e )
             {
@@ -675,21 +594,27 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
-    public void logVersions( StringLogger.LineLogger logger )
+    public void logVersions( StringLogger.LineLogger msgLog)
     {
-        super.logVersions( logger );
-        nodeStore.logVersions( logger );
-        relStore.logVersions( logger );
-        relTypeStore.logVersions( logger );
-        propStore.logVersions( logger );
+        msgLog.logLine( "Store versions:" );
+
+        super.logVersions( msgLog );
+        nodeStore.logVersions( msgLog );
+        relStore.logVersions( msgLog );
+        relTypeStore.logVersions( msgLog );
+        propStore.logVersions(msgLog  );
+
+        stringLogger.flush();
     }
 
     public void logIdUsage( StringLogger.LineLogger msgLog )
     {
-        nodeStore.logIdUsage( msgLog );
-        relStore.logIdUsage( msgLog );
-        relTypeStore.logIdUsage( msgLog );
+        msgLog.logLine( "Id usage:" );
+        nodeStore.logIdUsage(msgLog );
+        relStore.logIdUsage(msgLog );
+        relTypeStore.logIdUsage( msgLog);
         propStore.logIdUsage( msgLog );
+        stringLogger.flush();
     }
     
     public NeoStoreRecord asRecord()
@@ -697,12 +622,6 @@ public class NeoStore extends AbstractStore
         NeoStoreRecord result = new NeoStoreRecord();
         result.setNextProp( getRecord( 5 ) );
         return result;
-    }
-
-    public static void logIdUsage( StringLogger.LineLogger logger, Store store )
-    {
-        logger.logLine( String.format( "%s: used=%s high=%s", store.getTypeDescriptor(),
-                store.getNumberOfIdsInUse(), store.getHighestPossibleIdInUse() ) );
     }
 
     /*
@@ -722,7 +641,7 @@ public class NeoStore extends AbstractStore
         {
             return -1;
         }
-        Bits bits = Bits.bits( 8 );
+        Bits bits = Bits.bits(8);
         int length = storeVersion.length();
         if ( length == 0 || length > 7 )
         {
@@ -751,7 +670,7 @@ public class NeoStore extends AbstractStore
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs( new long[] { storeVersion } );
+        Bits bits = Bits.bitsFromLongs(new long[]{storeVersion});
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {
@@ -765,13 +684,5 @@ public class NeoStore extends AbstractStore
             result[i] = (char) bits.getShort( 8 );
         }
         return new String( result );
-    }
-
-    public static void main( String[] args )
-    {
-        long result = versionStringToLong( "f123oo" );
-        String back = versionLongToString( result );
-        System.out.println( result );
-        System.out.println( back );
     }
 }

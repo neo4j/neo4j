@@ -19,27 +19,37 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{CypherTypeException, SyntaxException}
+
 
 class SymbolTable(val identifiers: Identifier*) {
   assertNoDuplicatesExist()
+
+  def satisfies(needs: Seq[Identifier]): Boolean = try {
+    needs.foreach(assertHas(_))
+    true
+  } catch {
+    case _ => false
+  }
+  
+  def missingDependencies(needs:Seq[Identifier]):Seq[Identifier] = needs.filter( id=> !satisfies(Seq(id))  )
 
   def assertHas(name: String, typ: AnyType) {
     assertHas(Identifier(name, typ))
   }
 
-  def contains(identifier:Identifier) = identifiers.contains(identifier)
+  def contains(identifier: Identifier) = identifiers.contains(identifier)
 
   def assertHas(expected: Identifier) {
     identifiers.find(_.name == expected.name) match {
       case None => throwMissingKey(expected.name)
       case Some(existing) => if (!expected.typ.isAssignableFrom(existing.typ)) {
-        throw new SyntaxException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
+        throw new CypherTypeException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
       }
     }
   }
 
-  def assertThat(id:Identifier):AnyType = actualIdentifier(id).typ
+  def assertThat(id: Identifier): AnyType = actualIdentifier(id).typ
 
   def keys = identifiers.map(_.name)
 
@@ -70,7 +80,7 @@ class SymbolTable(val identifiers: Identifier*) {
     new SymbolTable(b.toSeq: _*)
   }
 
-  def actualIdentifier(newIdentifier:Identifier):Identifier = get(newIdentifier.name) match {
+  def actualIdentifier(newIdentifier: Identifier): Identifier = get(newIdentifier.name) match {
     case None => newIdentifier
     case Some(existing) => handleMatched(newIdentifier, existing)
   }

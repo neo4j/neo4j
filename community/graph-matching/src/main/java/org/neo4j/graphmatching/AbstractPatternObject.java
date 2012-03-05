@@ -19,11 +19,15 @@
  */
 package org.neo4j.graphmatching;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-
-import java.util.*;
 
 /**
  * The base class for {@link PatternNode} and {@link PatternRelationship}.

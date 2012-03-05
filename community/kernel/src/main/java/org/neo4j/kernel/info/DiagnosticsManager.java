@@ -27,10 +27,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
 
-public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
+public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
     @SuppressWarnings( "unchecked" )
     public static final <T> Visitor<? super T> castToGenericVisitor( Class<T> type, Object visitor )
@@ -104,6 +105,39 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         SystemDiagnostics.registerWith( this );
     }
 
+    @Override
+    public void init()
+        throws Throwable
+    {
+    }
+
+    public void start()
+    {
+        synchronized ( providers )
+        {
+            @SuppressWarnings( "hiding" ) State state = this.state;
+            if ( !state.startup( this ) ) return;
+        }
+        dumpAll( DiagnosticsPhase.STARTUP );
+    }
+
+    @Override
+    public void stop()
+        throws Throwable
+    {
+    }
+
+    public void shutdown()
+    {
+        synchronized ( providers )
+        {
+            @SuppressWarnings( "hiding" ) State state = this.state;
+            if ( !state.shutdown( this ) ) return;
+        }
+        dumpAll( DiagnosticsPhase.SHUTDOWN );
+        providers.clear();
+    }
+
     private enum State
     {
         INITIAL
@@ -140,27 +174,6 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
     public StringLogger getTargetLog()
     {
         return logger;
-    }
-
-    public void startup()
-    {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" ) State state = this.state;
-            if ( !state.startup( this ) ) return;
-        }
-        dumpAll( DiagnosticsPhase.STARTUP );
-    }
-
-    public void shutdown()
-    {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" ) State state = this.state;
-            if ( !state.shutdown( this ) ) return;
-        }
-        dumpAll( DiagnosticsPhase.SHUTDOWN );
-        providers.clear();
     }
 
     public void dumpAll()

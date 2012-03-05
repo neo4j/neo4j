@@ -27,9 +27,10 @@ import java.lang.String
 import internal.symbols.SymbolTable
 
 
-class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String], val timeTaken:Long)
+class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
   extends ExecutionResult
   with StringExtras {
+  
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
@@ -98,7 +99,8 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:Sym
   private def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
     case x: Relationship => ":" + x.getType.toString + "[" + x.getId + "] " + props(x)
-    case x: Array[_] => x.map( text ).mkString("[", ",", "]")
+    case x: Traversable[_] => x.map(text).mkString("[", ",", "]")
+    case x: Array[_] => x.map(text).mkString("[", ",", "]")
     case x: String => "\"" + x + "\""
     case Some(x) => x.toString
     case null => "<null>"

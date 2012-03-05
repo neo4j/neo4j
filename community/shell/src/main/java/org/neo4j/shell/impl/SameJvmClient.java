@@ -20,6 +20,7 @@
 package org.neo4j.shell.impl;
 
 import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellServer;
 
@@ -31,6 +32,7 @@ public class SameJvmClient extends AbstractClient
 {
 	private Output out;
 	private ShellServer server;
+	private Session session = new SessionImpl();
 	
 	public SameJvmClient( ShellServer server )
 	{
@@ -56,5 +58,11 @@ public class SameJvmClient extends AbstractClient
 	public ShellServer getServer()
 	{
 		return this.server;
+	}
+	
+	@Override
+	public Session session()
+	{
+	    return session;
 	}
 }

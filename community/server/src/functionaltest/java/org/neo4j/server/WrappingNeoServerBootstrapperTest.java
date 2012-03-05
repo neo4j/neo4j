@@ -31,8 +31,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -85,13 +88,17 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAllowModifyingProperties()
+    public void shouldAllownModifyingProperties()
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
-        AbstractGraphDatabase graphdb = getGraphDb();
+        // let the database accept remote neo4j-shell connections
+        AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase(
+                "target/configDb", MapUtil.stringMap(
+                        Config.ENABLE_REMOTE_SHELL, "true" ) );
         EmbeddedServerConfigurator config;
         config = new EmbeddedServerConfigurator( graphdb );
+        // let the server endpoint be on a custom port
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
 
@@ -101,10 +108,27 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
 
         assertEquals( srv.getServer().baseUri().getPort(), 7575 );
-
+        String response = gen.get().payload(
+                "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
+                Status.OK.getStatusCode() ).post(
+                "http://127.0.0.1:7575/db/manage/server/console/" ).entity();
+        assertTrue( response.contains( "neo4j-sh (0)$" ) );
         srv.stop();
     }
 
+    @Test
+    public void shouldAllowShellConsoleWithoutCustomConfig()
+    {
+        WrappingNeoServerBootstrapper srv;
+        srv = new WrappingNeoServerBootstrapper( getGraphDb() );
+        srv.start();
+        String response = gen.get().payload(
+                "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
+                Status.OK.getStatusCode() ).post(
+                "http://127.0.0.1:7474/db/manage/server/console/" ).entity();
+        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        srv.stop();
+    }
     @Test
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
@@ -113,8 +137,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
                 myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(
-                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
-                hostAddress );
+                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress );
 
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
                 myDb, config );
@@ -128,11 +151,11 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         }
         catch ( ClientHandlerException cee )
         {
-            //ok
+            // ok
         }
 
         gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
-                "http://"+hostAddress+":7474/db/data/" );
+                "http://" + hostAddress + ":7474/db/data/" );
 
         srv.stop();
     }
@@ -140,7 +163,8 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     @Test
     public void shouldResponseAndBeAbleToModifyDb()
     {
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb );
         srv.start();
 
         long originalNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
@@ -158,7 +182,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         assertEquals( originalNodeNumber + 1, newNodeNumber );
 
         srv.stop();
-        
+
         // Should be able to still talk to the db
         assertTrue( myDb.getReferenceNode() != null );
     }

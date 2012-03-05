@@ -34,7 +34,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with 
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false
     case head :: tail => {
-      val key = head.returnItem.identifier.name
+      val key = head.expression.identifier.name
       val aVal = a(key)
       val bVal = b(key)
       signum(compare(aVal, bVal)) match {
@@ -45,10 +45,9 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with 
     }
   }
 
-
   override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
 
   private def assertDependenciesAreMet() {
-    sortDescription.map(_.returnItem.identifier).foreach( source.symbols.assertHas )
+    sortDescription.map(_.expression.identifier).foreach( source.symbols.assertHas )
   }
 }

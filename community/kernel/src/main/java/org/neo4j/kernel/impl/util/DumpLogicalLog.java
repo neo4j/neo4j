@@ -28,10 +28,14 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.TimeZone;
 import java.util.TreeSet;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Format;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -41,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog
 {
-    public int dump( String filenameOrDirectory ) throws IOException
+    public int dump( String filenameOrDirectory, TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
@@ -70,7 +74,7 @@ public class DumpLogicalLog
                 prevLastCommittedTx + "]" );
             long logEntriesFound = 0;
             XaCommandFactory cf = instantiateCommandFactory();
-            while ( readAndPrintEntry( fileChannel, buffer, cf ) )
+            while ( readAndPrintEntry( fileChannel, buffer, cf, timeZone ) )
             {
                 logEntriesFound++;
             }
@@ -85,13 +89,13 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf )
+    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf, TimeZone timeZone )
             throws IOException
     {
         LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );
         if ( entry != null )
         {
-            System.out.println( entry.toString() );
+            System.out.println( entry.toString( timeZone ) );
             return true;
         }
         return false;
@@ -109,10 +113,17 @@ public class DumpLogicalLog
 
     public static void main( String args[] ) throws IOException
     {
-        for ( String arg : args )
-        {
-            new DumpLogicalLog().dump( arg );
-        }
+        Pair<Iterable<String>, TimeZone> config = parseConfig( args );
+        for ( String file : config.first() ) new DumpLogicalLog().dump( file, config.other() );
+    }
+
+    public static Pair<Iterable<String>, TimeZone> parseConfig( String[] args )
+    {
+        Args arguments = new Args( args );
+        TimeZone timeZone = Format.DEFAULT_TIME_ZONE;
+        String timeZoneString = arguments.get( "timezone", null );
+        if ( timeZoneString != null ) timeZone = TimeZone.getTimeZone( timeZoneString );
+        return Pair.<Iterable<String>,TimeZone>of( arguments.orphans(), timeZone );
     }
 
     protected static String[] filenamesOf( String filenameOrDirectory, final String prefix )
@@ -161,7 +172,7 @@ public class DumpLogicalLog
         };
     }
 
-    private static class CommandFactory extends XaCommandFactory
+    public static class CommandFactory extends XaCommandFactory
     {
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,

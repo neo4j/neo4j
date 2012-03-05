@@ -25,7 +25,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 
@@ -122,40 +121,9 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
         return state != null;
     }
 
-    private static Field graphDbImpl, extensions;
-    static
-    {
-        try
-        {
-            graphDbImpl = EmbeddedGraphDatabase.class.getDeclaredField( "graphDbImpl" );
-            extensions = EmbeddedGraphDbImpl.class.getDeclaredField( "extensions" );
-        }
-        catch ( RuntimeException e )
-        {
-            throw e;
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Classes have changed", e );
-        }
-        graphDbImpl.setAccessible( true );
-        extensions.setAccessible( true );
-    }
-
     static KernelData getExtensions( EmbeddedGraphDatabase graphdb )
     {
-        try
-        {
-            return (KernelData) extensions.get( graphDbImpl.get( graphdb ) );
-        }
-        catch ( RuntimeException e )
-        {
-            throw e;
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Failed to get KernelData", e );
-        }
+        return graphdb.getKernelData();
     }
 
     @Test

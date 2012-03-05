@@ -21,12 +21,17 @@ package org.neo4j.shell.kernel.apps;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
+import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map;
 
+import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.management.openmbean.CompositeData;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
@@ -37,6 +42,9 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.util.json.JSONArray;
+import org.neo4j.shell.util.json.JSONException;
+import org.neo4j.shell.util.json.JSONObject;
 
 public class Dbinfo extends ReadOnlyGraphDatabaseApp
 {
@@ -180,12 +188,50 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
                     attributes[i] = allAttributes[i].getName();
                 }
             }
+            JSONObject json = new JSONObject();
             for ( Object value : mbeans.getAttributes( mbean, attributes ) )
             {
-                out.println( value.toString() );
+                printAttribute( json, value );
             }
+            out.println( json.toString( 2 ) );
         }
         return null;
+    }
+
+    private void printAttribute( JSONObject json, Object value ) throws RemoteException, ShellException
+    {
+        try
+        {
+            Attribute attribute = (Attribute) value;
+            if ( attribute.getValue().getClass().isArray() )
+            {
+                Object[] arrayValue = (Object[]) attribute.getValue();
+                JSONArray array = new JSONArray();
+                for ( Object item : (Object[]) arrayValue )
+                {
+                    if ( item instanceof CompositeData ) array.put( compositeDataAsMap( (CompositeData)item ) );
+                    else array.put( item.toString() );
+                }
+                json.put( attribute.getName(), array );
+            }
+            else
+            {
+                json.put( attribute.getName(), attribute.getValue() );
+            }
+        }
+        catch ( JSONException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+    }
+
+    private Map<?,?> compositeDataAsMap( CompositeData item )
+    {
+        Map<String, Object> result = new HashMap<String, Object>();
+        CompositeData compositeData = (CompositeData) item;
+        for ( String key : compositeData.getCompositeType().keySet() )
+            result.put( key, compositeData.get( key ) );
+        return result;
     }
 
     private void availableBeans( MBeanServer mbeans, Kernel kernel, StringBuilder result )

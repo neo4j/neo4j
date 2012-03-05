@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Assert
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.{Entity, ExpressionReturnItem}
+import org.neo4j.cypher.internal.commands.{Entity, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
 
 class ColumnFilterPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val col = "extractReturnItems"
-    val returnItems = List(ExpressionReturnItem(Entity(col)))
+    val returnItems = List(ReturnItem(Entity(col), col))
     val colIdentifier = Identifier(col, NodeType())
     val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), new SymbolTable(colIdentifier))
 

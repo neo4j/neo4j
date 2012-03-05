@@ -253,7 +253,7 @@ public class LruCache<K,E> implements Cache<K,E>
         cache.putAll( map );
     }
 
-    private final HitCounter counter = HitCounter.create();
+    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()

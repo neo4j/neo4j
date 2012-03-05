@@ -1,0 +1,33 @@
+[[query-operators]]
+Operators
+=========
+
+Operators in Cypher are of three different varieties - mathematical, equality and relationships.
+
+The mathematical operators are +, -, *, / and %. Of these, only the plus-sign works on strings.
+
+The equality operators are =, <>, <, >, `<=`, >=.
+
+Since Neo4j is a schema less graph database, Cypher has two special operators - ? and !.
+
+They are used on properties, and are used to deal with missing values. A comparison on a property
+that does not exist will cause an error. Instead of having to always check if the property exists
+before comparing it's value with something else, the question mark make the comparison always return
+true if the property is missing, and the exclamation mark makes the comparator return false.
+
+This predicate will evaluate to true if n.prop is missing.
+
++WHERE n.prop? = "foo"+
+
+
+This predicate will evaluate to false if n.prop is missing.
+
++WHERE n.prop! = "foo"+
+
+Warning: Mixing the two in the same comparison will lead to unpredictable results.
+
+This is really syntatic sugar that expands to this:
+
++WHERE n.prop? = "foo"+  => +WHERE (not(has(n.prop)) OR n.prop = "foo")+
+
++WHERE n.prop! = "foo"+  => +WHERE (has(n.prop) AND n.prop = "foo")+

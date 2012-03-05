@@ -42,7 +42,13 @@ public class GremlinWebConsole
         {
             groovy.execute( "import " + imps );
         }
+        
+        for ( String imps : Neo4jGroovyImports.getImports() )
+        {
+            groovy.execute( "import " + imps );
+        }
         groovy.execute( "import com.tinkerpop.gremlin.groovy.*" );
+//        groovy.execute( "import .*" );
         groovy.setResultHook( new GremlinResultHook( groovy, io ) );
         Gremlin.load();
     }

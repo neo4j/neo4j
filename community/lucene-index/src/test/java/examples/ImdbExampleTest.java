@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -60,12 +61,14 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class ImdbExampleTest
 {
-    private static GraphDatabaseService graphDb;
+    private static EmbeddedGraphDatabase graphDb;
     private Transaction tx;
 
     @BeforeClass
@@ -136,6 +139,13 @@ public class ImdbExampleTest
         {
             transaction.finish();
         }
+        String title = "Movie and Actor Graph";
+        PrintWriter pw = AsciiDocGenerator.getPrintWriter( "target/docs/dev",
+                title );
+        pw.println( AsciidocHelper.createGraphVizDeletingReferenceNode( title,
+                graphDb, "initial" ) );
+        pw.flush();
+        pw.close();
     }
 
     @AfterClass

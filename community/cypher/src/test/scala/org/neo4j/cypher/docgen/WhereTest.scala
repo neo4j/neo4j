@@ -101,7 +101,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def compare_if_property_exists_default_false() {
     testQuery(
       title = "Default false if property is missing",
-      text = "When you need missing property to evaluate to false, use the exclamation mark." ,
+      text = "When you need missing property to evaluate to false, use the exclamation mark.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.belt! = 'white' return n""",
       returns = "No nodes without the belt property are returned.",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
@@ -145,5 +145,14 @@ do not have a relationship between them.
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) where a<--b return b""",
       returns = "Nodes that Tobias is not connected to",
       assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
+  }
+
+  @Test def in_operator() {
+    testQuery(
+      title = "IN operator",
+      text = "To check if an element exists in a collection, you can use the IN operator.",
+      queryText = """start a=node(%Andres%, %Tobias%, %Peter%) where a.name IN ["Peter", "Tobias"] return a""",
+      returns = "This query shows how to check if a property exists in a literal collection.",
+      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 }

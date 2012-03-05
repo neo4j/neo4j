@@ -56,14 +56,19 @@ public class LockReleaser
     private static Logger log = Logger.getLogger( LockReleaser.class.getName() );
 
     private final ArrayMap<Transaction,List<LockElement>> lockMap =
-        new ArrayMap<Transaction,List<LockElement>>( 5, true, true );
+        new ArrayMap<Transaction,List<LockElement>>( (byte)5, true, true );
     private final ArrayMap<Transaction,PrimitiveElement> cowMap =
-        new ArrayMap<Transaction,PrimitiveElement>( 5, true, true );
+        new ArrayMap<Transaction,PrimitiveElement>( (byte)5, true, true );
 
     private NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private PropertyIndexManager propertyIndexManager;
+
+    public void setNodeManager(NodeManager nodeManager)
+    {
+        this.nodeManager = nodeManager;
+    }
 
     public static class PrimitiveElement
     {
@@ -222,19 +227,13 @@ public class LockReleaser
     }
 
     public LockReleaser( LockManager lockManager,
-        TransactionManager transactionManager )
+        TransactionManager transactionManager,
+        NodeManager nodeManager,
+        PropertyIndexManager propertyIndexManager)
     {
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-    }
-
-    void setNodeManager( NodeManager nodeManager )
-    {
         this.nodeManager = nodeManager;
-    }
-
-    void setPropertyIndexManager( PropertyIndexManager propertyIndexManager )
-    {
         this.propertyIndexManager = propertyIndexManager;
     }
 
@@ -663,8 +662,8 @@ public class LockReleaser
         for ( long relId : element.relationships.keySet() )
         {
             CowRelElement relElement = element.relationships.get( relId );
-            RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
-            RelationshipImpl relImpl = nodeManager.getRelForProxy( rel, null );
+            RelationshipProxy rel = nodeManager.newRelationshipProxyById( relId );
+            RelationshipImpl relImpl = nodeManager.getRelationshipForProxy( relId, null );
             if ( relElement.deleted )
             {
                 if ( nodeManager.relCreated( relId ) )
@@ -706,8 +705,8 @@ public class LockReleaser
         for ( long nodeId : element.nodes.keySet() )
         {
             CowNodeElement nodeElement = element.nodes.get( nodeId );
-            NodeProxy node = new NodeProxy( nodeId, nodeManager );
-            NodeImpl nodeImpl = nodeManager.getNodeForProxy( node, null );
+            NodeProxy node = nodeManager.newNodeProxyById( nodeId );
+            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, null );
             if ( nodeElement.deleted )
             {
                 if ( nodeManager.nodeCreated( nodeId ) )
@@ -735,10 +734,10 @@ public class LockReleaser
                         {
                             continue;
                         }
-                        RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+                        RelationshipProxy rel = nodeManager.newRelationshipProxyById( relId );
                         if ( rel.getStartNode().getId() == nodeId )
                         {
-                            result.deleted( new RelationshipProxy( relId, nodeManager ) );
+                            result.deleted( nodeManager.newRelationshipProxyById( relId ));
                         }
                     }
                 }
@@ -780,10 +779,10 @@ public class LockReleaser
             {
                 continue;
             }
-            RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+            RelationshipProxy rel = nodeManager.newRelationshipProxyById( relId );
             if ( rel.getStartNode().getId() == nodeId )
             {
-                result.created( new RelationshipProxy( relId, nodeManager ) );
+                result.created( nodeManager.newRelationshipProxyById( relId ));
             }
         }
     }
@@ -803,7 +802,7 @@ public class LockReleaser
                     continue;
                 }
             }
-            result.created( new NodeProxy( nodeId, nodeManager ) );
+            result.created( nodeManager.newNodeProxyById( nodeId ) );
         }
     }
 

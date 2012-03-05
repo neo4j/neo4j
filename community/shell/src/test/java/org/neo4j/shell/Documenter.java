@@ -22,16 +22,14 @@ package org.neo4j.shell;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Stack;
 
 import org.neo4j.shell.impl.RemoteOutput;
+import org.neo4j.test.AsciiDocGenerator;
 
 public class Documenter
 {
@@ -107,7 +105,6 @@ public class Documenter
     {
         this.title = title;
         this.client = client;
-
     }
 
     public void add( final String query, final String assertion, final String comment )
@@ -117,24 +114,7 @@ public class Documenter
 
     public void run()
     {
-        File dir = new File( "target/docs/dev/shell" );
-        if ( !dir.exists() )
-        {
-            dir.mkdirs();
-        }
-        File file = new File( dir, this.title.toLowerCase().replace( " ", "-" )
-                + ".txt" );
-        PrintWriter out = null;
-        try
-        {
-            out = new PrintWriter( new OutputStreamWriter(
-                    new FileOutputStream( file ), "UTF-8" ) );
-        }
-        catch ( IOException e1 )
-        {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
+        PrintWriter out = getWriter( this.title );
         out.println();
         out.println( "[source, bash]" );
         out.println( "-----" );
@@ -163,7 +143,11 @@ public class Documenter
         out.println( "-----" );
         out.flush();
         out.close();
+    }
 
+    PrintWriter getWriter( String title )
+    {
+        return AsciiDocGenerator.getPrintWriter( "target/docs/dev/shell", title );
     }
 
     private void doc( final Job job, final PrintWriter out, final String result, String prompt )

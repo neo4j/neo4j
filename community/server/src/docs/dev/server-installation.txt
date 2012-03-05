@@ -63,7 +63,7 @@ Finally, note that if you chose to create a new user account, on uninstall you w
 
 === via Homebrew ===
 
-Using http://mxcl.github.com/homebrew/[Homebrew], to install the latest stabel version of Neo4j Server, do
+Using http://mxcl.github.com/homebrew/[Homebrew], to install the latest stable version of Neo4j Server, do
 
 [source,shell]
 ----

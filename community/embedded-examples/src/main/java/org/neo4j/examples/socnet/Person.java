@@ -18,21 +18,31 @@
  */
 package org.neo4j.examples.socnet;
 
+import static org.neo4j.examples.socnet.RelTypes.FRIEND;
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.traversal.*;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
-
-import java.util.*;
-
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-import static org.neo4j.examples.socnet.RelTypes.FRIEND;
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
 
 public class Person
 {

@@ -26,7 +26,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.xa.XAResource;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -196,7 +197,7 @@ class ReadTransaction implements NeoStoreTransaction
             return null;
         }
         ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<Integer, PropertyData>(
-                chain.size(), false, true );
+                (byte)9, false, true );
         for ( PropertyRecord propRecord : chain )
         {
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
@@ -298,7 +299,8 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public XAResource getXAResource()
+    public boolean delistResource( Transaction tx, int tmsuccess )
+        throws SystemException
     {
         throw readOnlyException();
     }

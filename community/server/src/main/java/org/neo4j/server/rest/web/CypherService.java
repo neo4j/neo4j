@@ -70,5 +70,4 @@ public class CypherService {
             return output.badRequest(e);
         }
     }
-    
 }

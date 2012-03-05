@@ -20,11 +20,11 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public RelationshipCountSampleable( AbstractGraphDatabase db )
+    public RelationshipCountSampleable( GraphDatabaseSPI db )
     {
         super( db );
     }

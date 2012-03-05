@@ -26,7 +26,6 @@ import javax.transaction.TransactionManager;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestTxSuspendResume
@@ -34,8 +33,8 @@ public class TestTxSuspendResume
     @Test
     public void testMultipleTxSameThread() throws Exception
     {
-        AbstractGraphDatabase graphdb = new ImpermanentGraphDatabase();
-        TransactionManager tm = graphdb.getConfig().getTxModule().getTxManager();
+        ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        TransactionManager tm = graphdb.getTxManager();
         tm.begin();
         Node refNode = graphdb.getReferenceNode();
         Transaction tx1 = tm.suspend();

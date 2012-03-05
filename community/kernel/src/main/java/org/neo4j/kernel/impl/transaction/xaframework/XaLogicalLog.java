@@ -86,7 +86,7 @@ public class XaLogicalLog implements LogLoader
     private long previousLogLastCommittedTx = -1;
     private long logVersion = 0;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap =
-        new ArrayMap<Integer,LogEntry.Start>( 4, false, true );
+        new ArrayMap<Integer,LogEntry.Start>( (byte)4, false, true );
     private final Map<Integer,XaTransaction> recoveredTxMap =
         new HashMap<Integer,XaTransaction>();
     private int nextIdentifier = 1;
@@ -112,20 +112,20 @@ public class XaLogicalLog implements LogLoader
     private final LogPositionCache positionCache = new LogPositionCache();
     private final FileSystemAbstraction fileSystem;
 
-    XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
-            XaTransactionFactory xaTf, Map<Object, Object> config )
+    public XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
+            XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
-        this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
-        this.fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
+        this.logBufferFactory = logBufferFactory;
+        this.fileSystem = fileSystem;
 
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
-        msgLog = (StringLogger) config.get( StringLogger.class );
+        msgLog = stringLogger;
 
         // We should turn keep-logs on if there are previous logs around,
         // this so that e.g. temporary shell sessions or operations don't create
@@ -310,6 +310,16 @@ public class XaLogicalLog implements LogLoader
                             "Logical log couldn't write transaction start entry: "
                                     + e ), e );
         }
+    }
+    
+    synchronized Start getStartEntry( int identifier )
+    {
+        Start start = xidIdentMap.get( identifier );
+        if ( start == null )
+        {
+            throw new IllegalArgumentException( "Start entry for " + identifier + " not found" );
+        }
+        return start;
     }
 
     // [TX_PREPARE][identifier]
@@ -891,7 +901,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     private final ArrayMap<Thread,Integer> txIdentMap =
-        new ArrayMap<Thread,Integer>( 5, true, true );
+        new ArrayMap<Thread,Integer>( (byte)5, true, true );
 
     void registerTxIdentifier( int identifier )
     {
@@ -1461,7 +1471,8 @@ public class XaLogicalLog implements LogLoader
         positionCache.putHeader( logVersion, lastTx );
         instantiateCorrectWriteBuffer();
         msgLog.logMessage( "Log rotated, newLog @ pos=" +
-                writeBuffer.getFileChannelPosition() + " and version " + logVersion, true );
+                writeBuffer.getFileChannelPosition() + ", version " + logVersion +
+                " and last tx " + previousLogLastCommittedTx, true );
         return lastTx;
     }
 

@@ -140,8 +140,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         {
             // fall back to default
         }
-        NeoStoreXaDataSource ds = (NeoStoreXaDataSource) kernel.getConfig().getTxModule()
-                .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        NeoStoreXaDataSource ds = kernel.graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
         boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
         String storeId = Long.toHexString( ds.getRandomIdentifier() );
         String version = kernel.version().getRevision();
@@ -170,7 +169,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
 
         private String getString( String key, String defaultValue )
         {
-            String result = (String)config.getParams().get( key );
+            String result = config.getParams().get( key );
             if ( result == null )
             {
                 result = props.getProperty( key, defaultValue );

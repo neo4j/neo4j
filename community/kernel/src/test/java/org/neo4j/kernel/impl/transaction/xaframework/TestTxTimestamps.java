@@ -36,7 +36,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -75,7 +74,7 @@ public class TestTxTimestamps
             tx.finish();
             expectedCommitTimestamps[i] = System.currentTimeMillis();
         }
-        db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
+        db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
         
         ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
         RandomAccessFile file = new RandomAccessFile( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );

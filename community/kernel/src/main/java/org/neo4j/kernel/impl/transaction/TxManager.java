@@ -24,15 +24,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,31 +39,28 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
-import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
- * Public for testing purpose only. Use {@link TransactionFactory} to get a
- * <CODE>UserTransaction</CODE>, don't use this class.
- * <p>
+ * Default transaction manager implementation
  */
 public class TxManager extends AbstractTransactionManager
+    implements Lifecycle
 {
     private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
-    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
+    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
 
     private final String txLogDir;
     private static String separator = File.separator;
@@ -81,7 +71,6 @@ public class TxManager extends AbstractTransactionManager
     private int eventIdentifierCounter = 0;
 
     private TxLog txLog = null;
-    private XaDataSourceManager xaDsManager = null;
     private boolean tmOk = false;
     private boolean blocked = false;
 
@@ -95,11 +84,19 @@ public class TxManager extends AbstractTransactionManager
     private final StringLogger msgLog;
 
     final TxHook finishHook;
+    private XaDataSourceManager xaDataSourceManager;
     private final FileSystemAbstraction fileSystem;
 
-    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxHook finishHook, StringLogger msgLog, FileSystemAbstraction fileSystem )
+    public TxManager( String txLogDir,
+                      XaDataSourceManager xaDataSourceManager,
+                      KernelPanicEventGenerator kpe,
+                      TxHook finishHook,
+                      StringLogger msgLog,
+                      FileSystemAbstraction fileSystem
+    )
     {
         this.txLogDir = txLogDir;
+        this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
         this.msgLog = msgLog;
         this.kpe = kpe;
@@ -124,27 +121,9 @@ public class TxManager extends AbstractTransactionManager
     }
 
     @Override
-    public void stop()
+    public void init()
     {
-        if ( txLog != null )
-        {
-            try
-            {
-                txLog.close();
-            }
-            catch ( IOException e )
-            {
-                log.log( Level.WARNING, "Unable to close tx log[" + txLog.getName() + "]", e );
-            }
-        }
-        msgLog.logMessage( "TM shutting down", true );
-    }
-
-    @Override
-    public void init( XaDataSourceManager xaDsManagerToUse )
-    {
-        this.xaDsManager = xaDsManagerToUse;
-        txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
+        txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
         logSwitcherFileName = txLogDir + separator + "active_tx_log";
         txLog1FileName = "tm_tx_log.1";
         txLog2FileName = "tm_tx_log.2";
@@ -191,23 +170,6 @@ public class TxManager extends AbstractTransactionManager
                 fc.force( true );
                 fc.close();
             }
-            Iterator<List<TxLog.Record>> danglingRecordList =
-                txLog.getDanglingRecords();
-            boolean danglingRecordFound = danglingRecordList.hasNext();
-            if ( danglingRecordFound )
-            {
-                log.info( "Unresolved transactions found, " +
-                    "recovery started ..." );
-            }
-            recover( danglingRecordList );
-            if ( danglingRecordFound )
-            {
-                log.info( "Recovery completed, all transactions have been " +
-                    "resolved to a consistent state." );
-                msgLog.logMessage( "Recovery completed, all transactions have been " +
-                    "resolved to a consistent state." );
-            }
-            getTxLog().truncate();
             tmOk = true;
         }
         catch ( IOException e )
@@ -216,6 +178,55 @@ public class TxManager extends AbstractTransactionManager
             throw logAndReturn("TM startup failure",
                     new TransactionFailureException("Unable to start TM", e));
         }
+    }
+
+    @Override
+    public void start()
+        throws Throwable
+    {
+        // Do recovery on start - all Resources should be registered by now
+        Iterator<List<TxLog.Record>> danglingRecordList =
+            txLog.getDanglingRecords();
+        boolean danglingRecordFound = danglingRecordList.hasNext();
+        if ( danglingRecordFound )
+        {
+            log.info( "Unresolved transactions found, " +
+                "recovery started ..." );
+
+            msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+
+            // Recover DataSources
+            xaDataSourceManager.recover(danglingRecordList);
+
+            log.info( "Recovery completed, all transactions have been " +
+                "resolved to a consistent state." );
+            msgLog.logMessage( "Recovery completed, all transactions have been " +
+                "resolved to a consistent state." );
+        }
+        getTxLog().truncate();
+    }
+
+    @Override
+    public void stop()
+    {
+    }
+
+    @Override
+    public void shutdown()
+        throws Throwable
+    {
+        if ( txLog != null )
+        {
+            try
+            {
+                txLog.close();
+            }
+            catch ( IOException e )
+            {
+                log.log( Level.WARNING, "Unable to close tx log[" + txLog.getName() + "]", e );
+            }
+        }
+        msgLog.logMessage( "TM shutting down", true );
     }
 
     synchronized TxLog getTxLog() throws IOException
@@ -297,322 +308,6 @@ public class TxManager extends AbstractTransactionManager
 
         long endTime = System.currentTimeMillis()+maxWaitTimeMillis;
         while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime ) Thread.yield();
-    }
-
-    private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
-    {
-        if ( danglingRecordList.hasNext() )
-        {
-            msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
-        }
-        try
-        {
-            // contains NonCompletedTransaction that needs to be committed
-            List<NonCompletedTransaction> commitList =
-                new ArrayList<NonCompletedTransaction>();
-
-            // contains Xids that should be rolledback
-            List<Xid> rollbackList = new LinkedList<Xid>();
-
-            // key = Resource(branchId) value = XAResource
-            Map<Resource,XAResource> resourceMap =
-                new HashMap<Resource,XAResource>();
-            buildRecoveryInfo( commitList, rollbackList, resourceMap,
-                danglingRecordList );
-            // invoke recover on all xa resources found
-            Iterator<Resource> resourceItr = resourceMap.keySet().iterator();
-            List<Xid> recoveredXidsList = new LinkedList<Xid>();
-
-            // check recovered transactions on all registered resources
-            for ( XAResource xaRes : xaDsManager.getAllRegisteredXAResources() )
-            {
-                Xid xids[] = xaRes.recover( XAResource.TMNOFLAGS );
-                for ( int i = 0; i < xids.length; i++ )
-                {
-                    if ( XidImpl.isThisTm( xids[i].getGlobalTransactionId() ) )
-                    {
-                        // linear search
-                        if ( rollbackList.contains( xids[i] ) )
-                        {
-                            log.fine( "Found pre commit " + xids[i]
-                                + " rolling back ... " );
-                            msgLog.logMessage( "TM: Found pre commit " + xids[i] + " rolling back ... ", true );
-                            rollbackList.remove( xids[i] );
-                            xaRes.rollback( xids[i] );
-                        }
-                        else
-                        {
-                            Resource resource = new Resource( xids[i].getBranchQualifier() );
-                            if ( !resourceMap.containsKey( resource ) )
-                            {
-                                resourceMap.put( resource, xaRes );
-                            }
-                            recoveredXidsList.add( xids[i] );
-                        }
-                    }
-                    else
-                    {
-                        log.warning( "Unknown xid: " + xids[i] );
-                    }
-                }
-            }
-            // sort the commit list after sequence number
-            Collections.sort( commitList,
-                new Comparator<NonCompletedTransaction>()
-                {
-                    public int compare( NonCompletedTransaction r1,
-                        NonCompletedTransaction r2 )
-                    {
-                        return r1.getSequenceNumber() - r2.getSequenceNumber();
-                    }
-                } );
-            // go through and commit
-            Iterator<NonCompletedTransaction> commitItr = commitList.iterator();
-            while ( commitItr.hasNext() )
-            {
-                NonCompletedTransaction nct = commitItr.next();
-                int seq = nct.getSequenceNumber();
-                Xid xids[] = nct.getXids();
-                log.fine( "Marked as commit tx-seq[" + seq +
-                    "] branch length: " + xids.length );
-                for ( Xid xid : xids )
-                {
-                    if ( !recoveredXidsList.contains( xid ) )
-                    {
-                        log.fine( "Tx-seq[" + seq + "][" + xid +
-                            "] not found in recovered xid list, "
-                            + "assuming already committed" );
-                        continue;
-                    }
-                    recoveredXidsList.remove( xid );
-                    Resource resource = new Resource( xid.getBranchQualifier() );
-                    if ( !resourceMap.containsKey( resource ) ) {
-                        final TransactionFailureException ex = new TransactionFailureException(
-                                "Couldn't find XAResource for " + xid);
-                        throw logAndReturn("TM: recovery error", ex);
-                    }
-                    log.fine( "Commiting tx seq[" + seq + "][" + xid + "] ... " );
-                    msgLog.logMessage( "TM: Committing tx " + xid, true );
-                    resourceMap.get( resource ).commit( xid, false );
-                }
-            }
-            // rollback the rest
-            Iterator<Xid> rollbackItr = recoveredXidsList.iterator();
-            while ( rollbackItr.hasNext() )
-            {
-                Xid xid = rollbackItr.next();
-                Resource resource = new Resource( xid.getBranchQualifier() );
-                if ( !resourceMap.containsKey( resource ) ) {
-                    final TransactionFailureException ex = new TransactionFailureException(
-                            "Couldn't find XAResource for " + xid);
-                    throw logAndReturn("TM: recovery error", ex);
-                }
-                log.fine( "Rollback " + xid + " ... " );
-                msgLog.logMessage( "TM: no match found for " + xid + " removing", true );
-                resourceMap.get( resource ).rollback( xid );
-            }
-            if ( rollbackList.size() > 0 )
-            {
-                log.fine( "TxLog contained unresolved "
-                    + "xids that needed rollback. They couldn't be matched to "
-                    + "any of the XAResources recover list. " + "Assuming "
-                    + rollbackList.size()
-                    + " transactions already rolled back." );
-                msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
-                        " transaction that should have been rolled back", true );
-            }
-
-            // Rotate the logs of the participated data sources, making sure that
-            // done-records are written so that even if the tm log gets truncated,
-            // which it will be after this recovery, that transaction information
-            // doesn't get lost.
-            for ( XAResource participant : MapUtil.reverse( resourceMap ).keySet() )
-            {
-                xaResourceToDataSource( participant ).rotateLogicalLog();
-            }
-        }
-        catch ( IOException e )
-        {
-            throw logAndReturn("TM: recovery failed",new TransactionFailureException("Recovery failed.", e));
-        }
-        catch ( XAException e )
-        {
-            throw logAndReturn("TM: recovery failed", new TransactionFailureException( "Recovery failed.", e ));
-        }
-    }
-
-    private XaDataSource xaResourceToDataSource( XAResource participant )
-    {
-        byte[] participantBranchId = xaDsManager.getBranchId( participant );
-        for ( XaDataSource dataSource : xaDsManager.getAllRegisteredDataSources() )
-        {
-            if ( Arrays.equals( participantBranchId, dataSource.getBranchId() ) )
-            {
-                return dataSource;
-            }
-        }
-        throw logAndReturn("TM recovery data source not found",
-                new TransactionFailureException("Data source for recovery participant " + participant +
-                        ", " + Arrays.toString(participantBranchId) + " couldn't be found"));
-    }
-
-    private void buildRecoveryInfo( List<NonCompletedTransaction> commitList,
-        List<Xid> rollbackList, Map<Resource,XAResource> resourceMap,
-        Iterator<List<TxLog.Record>> danglingRecordList )
-    {
-        while ( danglingRecordList.hasNext() )
-        {
-            Iterator<TxLog.Record> dListItr =
-                danglingRecordList.next().iterator();
-            TxLog.Record startRecord = dListItr.next();
-            if ( startRecord.getType() != TxLog.TX_START )
-            {
-                throw logAndReturn("TM error building recovery info",
-                        new TransactionFailureException(
-                    "First record not a start record, type="
-                        + startRecord.getType() ));
-            }
-            // get branches & commit status
-            HashSet<Resource> branchSet = new HashSet<Resource>();
-            int markedCommit = -1;
-            while ( dListItr.hasNext() )
-            {
-                TxLog.Record record = dListItr.next();
-                if ( record.getType() == TxLog.BRANCH_ADD )
-                {
-                    if ( markedCommit != -1 )
-                    {
-
-                        throw logAndReturn("TM error building recovery info", new TransactionFailureException(
-                            "Already marked commit " + startRecord ));
-                    }
-                    branchSet.add( new Resource( record.getBranchId() ) );
-                }
-                else if ( record.getType() == TxLog.MARK_COMMIT )
-                {
-                    if ( markedCommit != -1 )
-                    {
-                        throw logAndReturn("TM error building recovery info",new TransactionFailureException(
-                            "Already marked commit " + startRecord ));
-                    }
-                    markedCommit = record.getSequenceNumber();
-                }
-                else
-                {
-                    throw logAndReturn("TM error building recovery info",new TransactionFailureException(
-                        "Illegal record type[" + record.getType() + "]" ));
-                }
-            }
-            Iterator<Resource> resourceItr = branchSet.iterator();
-            List<Xid> xids = new LinkedList<Xid>();
-            while ( resourceItr.hasNext() )
-            {
-                Resource resource = resourceItr.next();
-                if ( !resourceMap.containsKey( resource ) )
-                {
-                    resourceMap.put( resource, getXaResource(
-                        resource.getResourceId() ) );
-                }
-                xids.add( new XidImpl( startRecord.getGlobalId(),
-                    resource.getResourceId() ) );
-            }
-            if ( markedCommit != -1 ) // this xid needs to be committed
-            {
-                commitList.add(
-                    new NonCompletedTransaction( markedCommit, xids ) );
-            }
-            else
-            {
-                rollbackList.addAll( xids );
-            }
-        }
-    }
-
-    private static class NonCompletedTransaction
-    {
-        private int seqNr = -1;
-        private List<Xid> xidList = null;
-
-        NonCompletedTransaction( int seqNr, List<Xid> xidList )
-        {
-            this.seqNr = seqNr;
-            this.xidList = xidList;
-        }
-
-        int getSequenceNumber()
-        {
-            return seqNr;
-        }
-
-        Xid[] getXids()
-        {
-            return xidList.toArray( new XidImpl[xidList.size()] );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "NonCompletedTx[" + seqNr + "," + xidList + "]";
-        }
-    }
-
-    private static class Resource
-    {
-        private byte resourceId[] = null;
-
-        Resource( byte resourceId[] )
-        {
-            if ( resourceId == null || resourceId.length == 0 )
-            {
-                throw new IllegalArgumentException( "Illegal resourceId" );
-            }
-            this.resourceId = resourceId;
-        }
-
-        byte[] getResourceId()
-        {
-            return resourceId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( !(o instanceof Resource) )
-            {
-                return false;
-            }
-            byte otherResourceId[] = ((Resource) o).getResourceId();
-
-            if ( resourceId.length != otherResourceId.length )
-            {
-                return false;
-            }
-            for ( int i = 0; i < resourceId.length; i++ )
-            {
-                if ( resourceId[i] != otherResourceId[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private volatile int hashCode = 0;
-
-        @Override
-        public int hashCode()
-        {
-            if ( hashCode == 0 )
-            {
-                int calcHash = 0;
-                for ( int i = 0; i < resourceId.length; i++ )
-                {
-                    calcHash += resourceId[i] << i * 8;
-                }
-                hashCode = 3217 * calcHash;
-            }
-            return hashCode;
-        }
     }
 
     public void begin() throws NotSupportedException, SystemException
@@ -1032,12 +727,7 @@ public class TxManager extends AbstractTransactionManager
                 return branchId;
             }
         }
-        return xaDsManager.getBranchId( xaRes );
-    }
-
-    XAResource getXaResource( byte branchId[] )
-    {
-        return xaDsManager.getXaResource( branchId );
+        return xaDataSourceManager.getBranchId( xaRes );
     }
 
     String getTxStatusAsString( int status )

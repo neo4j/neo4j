@@ -34,8 +34,8 @@
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-        <blueprints.version>1.1</blueprints.version>
-        <gremlin.version>1.4</gremlin.version>
+        <blueprints.version>1.2</blueprints.version>
+        <gremlin.version>1.5</gremlin.version>
 
         <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
         <testWithExternalServer>false</testWithExternalServer>
@@ -216,6 +216,23 @@
             </exclusions>
         </dependency>
 
+
+        <dependency>
+            <groupId>org.rrd4j</groupId>
+            <artifactId>rrd4j</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+    
+
+        <!-- File uploads -->
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-multipart</artifactId>
+            <version>1.9</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
@@ -231,31 +248,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.rrd4j</groupId>
-            <artifactId>rrd4j</artifactId>
-            <version>2.0.7</version>
-        </dependency>
-
-        <!-- File uploads -->
-        <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-multipart</artifactId>
-            <version>1.9</version>
-        </dependency>
-
-        <!-- Test dependencies -->
-
-        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.1.2</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
-            <version>4.1.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -303,6 +303,11 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>bouncycastle</groupId>
+          <artifactId>bcprov-jdk16</artifactId>
+          <version>140</version>
         </dependency>
     </dependencies>
 
@@ -569,6 +574,24 @@
                     <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
                 </configuration>
             </plugin>
+            
+          <plugin>
+            <groupId>com.github.searls</groupId>
+            <artifactId>jasmine-maven-plugin</artifactId>
+            <version>1.1.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
+              <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
+              <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
+            </configuration>
+          </plugin>
 
           <plugin>
             <artifactId>maven-site-plugin</artifactId>
@@ -853,15 +876,6 @@
         <repository>
             <id>java.net</id>
             <url>http://download.java.net/maven/2/</url>
-        </repository>
-        <repository>
-            <id>tinkerpop-repository</id>
-            <name>TinkerPop Maven2 Repository</name>
-            <url>http://tinkerpop.com/maven2</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
         </repository>
         <repository>
             <id>selenium-repository</id>

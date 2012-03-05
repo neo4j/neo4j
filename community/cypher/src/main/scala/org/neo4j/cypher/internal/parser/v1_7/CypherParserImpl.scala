@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 class CypherParserImpl extends Base
 with StartClause
@@ -32,11 +33,7 @@ with SkipLimitClause
 with OrderByClause
 with ActualParser {
 
-  def query: Parser[String => Query] =
-    (correctQuery
-      | start ~> opt(matching) ~> opt(where) ~> returns ~> failure("ABD"))
-
-  def correctQuery: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
+  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
 
     case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => {
       val slice = (skip, limit) match {
@@ -50,7 +47,11 @@ with ActualParser {
         case Some((p, nP)) => (Some(p), Some(nP))
         case None => (None, None)
       }
-
+      
+      where match {
+        case Some(w) => if(w.exists(_.isInstanceOf[AggregationExpression])) throw new SyntaxException("Can't use aggregate functions in the WHERE clause. Move it to the HAVING clause.")
+        case _ =>
+      }
       (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
     }
   }
@@ -59,9 +60,9 @@ with ActualParser {
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = parseAll(query, queryText) match {
-    case Success(r, q) => r(queryText)
+    case Success(r, q) => ReattachAliasedExpressions(r(queryText))
     case NoSuccess(message, input) => {
-      if(message.startsWith("INNER"))
+      if (message.startsWith("INNER"))
         throw new SyntaxException(message.substring(5), queryText, input.offset)
       else
         throw new SyntaxException(message + """
@@ -70,6 +71,33 @@ By sending the query that produced this error to cypher@neo4j.org, you'll save t
 puppies and get better error messages in our next release.
 
 Thank you, the Neo4j Team.""")
+    }
+  }
+
+  override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
+    if (offset >= source.length())
+      return offset
+
+    val a = source.charAt(offset)
+
+    if ((a == ' ') || (a == '\r') || (a == '\t') || (a == '\n'))
+      handleWhiteSpace(source, offset + 1)
+    else if ((offset+1) >= source.length())
+      offset
+    else {
+      val b = source.charAt(offset + 1)
+
+      if ((a == '/') && (b == '/')) {
+
+        var loop = 0
+        while ((offset + loop) < source.length() && !(source.charAt(offset + loop) == '\n')) {
+          loop = loop + 1
+        }
+
+        handleWhiteSpace(source, loop + offset)
+      } else {
+        offset
+      }
     }
   }
 }

@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,13 +40,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import javax.ws.rs.core.Response.Status;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {

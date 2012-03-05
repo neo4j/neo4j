@@ -19,6 +19,19 @@
  */
 package org.neo4j.server.rest.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -55,19 +68,6 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
 import org.neo4j.test.server.EntityOutputFormat;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RestfulGraphDatabaseTest
 {
@@ -1283,8 +1283,8 @@ public class RestfulGraphDatabaseTest
                 .next();
         // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":"
-                                                                                     + indexedKeyValue.getValue()
-                                                                                             .substring( 0, 1 ) + "*" );
+                        + indexedKeyValue.getValue().substring( 0, 1 ) + "*",
+                "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1319,8 +1319,7 @@ public class RestfulGraphDatabaseTest
                 .next();
         // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(),
-                indexedKeyValue.getValue()
-                        .substring( 0, 1 ) + "*" );
+                indexedKeyValue.getValue().substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1402,8 +1401,8 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key + ":" + value.substring( 0, 1 )
-                                                                               + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName,
+                key + ":" + value.substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1442,7 +1441,8 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key, value.substring( 0, 1 ) + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName,
+                key, value.substring( 0, 1 ) + "*", "" /*default ordering*/);
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;

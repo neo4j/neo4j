@@ -309,11 +309,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         MyTxEventHandler handler = new MyTxEventHandler(); 
         getGraphDb().registerTransactionEventHandler( handler );
         newTransaction();
-        getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().clearCache();
+        getEmbeddedGraphDb().getNodeManager().clearCache();
         rel.delete();
         node1.delete();
         node2.delete();
-        getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().clearCache();
+        getEmbeddedGraphDb().getNodeManager().clearCache();
         commit();
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
         assertEquals( "stringvalue", handler.relProps.get( "test1" ) );

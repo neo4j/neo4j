@@ -19,6 +19,24 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.lucene.QueryContext.numericRange;
+import static org.neo4j.index.lucene.ValueContext.numeric;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,24 +72,6 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.lucene.QueryContext.numericRange;
-import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
@@ -1385,12 +1385,18 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void exactIndexWithCaseInsensitive() throws Exception
     {
-        Index<Node> index = nodeIndex( "exlc", stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        // START SNIPPET: exact-case-insensitive
+        Index<Node> index = graphDb.index().forNodes( "my-case-insensitive-index",
+                stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        
         Node node = graphDb.createNode();
-        index.add( node, "name", "Mattias Persson" );
-        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
+        index.add( node, "name", "Thomas Anderson" );
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
+        // END SNIPPET: exact-case-insensitive
         restartTx();
-        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
     }
 
     @Test

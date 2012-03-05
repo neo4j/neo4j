@@ -24,61 +24,56 @@ import org.neo4j.cypher.internal.Comparer
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{AnyType, ScalarType, Identifier}
 
-abstract sealed class ComparablePredicate(a: Expression, b: Expression) extends Predicate with Comparer {
+abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val left: Any = a.apply(m)
-    val right: Any = b.apply(m)
+    val l: Any = left(m)
+    val r: Any = right(m)
 
-    val comparisonResult: Int = compare(left, right)
+    val comparisonResult: Int = compare(l, r)
 
     compare(comparisonResult)
   }
 
-  def dependencies: Seq[Identifier] = a.dependencies(ScalarType()) ++ b.dependencies(ScalarType())
-
+  def dependencies: Seq[Identifier] = left.dependencies(ScalarType()) ++ right.dependencies(ScalarType())
   def sign: String
-
   def atoms: Seq[Predicate] = Seq(this)
-
-  override def toString = a.toString() + " " + sign + " " + b.toString()
-
-  def containsIsNull: Boolean = false
+  override def toString = left.toString() + " " + sign + " " + right.toString()
+  def exists(f: (Expression) => Boolean) = left.exists(f) || right.exists(f)
+  def containsIsNull = false
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
   def isMatch(m: Map[String, Any]): Boolean = a(m) == b(m)
-
   def atoms = Seq(this)
-
-  def containsIsNull = false
-
+  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
   def dependencies = a.dependencies(AnyType()) ++ b.dependencies(AnyType())
-
   override def toString = a.toString() + " == " + b.toString()
+  def containsIsNull = false
+  def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult < 0
-
   def sign: String = "<"
+  def rewrite(f: (Expression) => Expression) = LessThan(a.rewrite(f), b.rewrite(f))
 }
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult > 0
-
   def sign: String = ">"
+  def rewrite(f: (Expression) => Expression) = GreaterThan(a.rewrite(f), b.rewrite(f))
 }
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult <= 0
-
   def sign: String = "<="
+  def rewrite(f: (Expression) => Expression) = LessThanOrEqual(a.rewrite(f), b.rewrite(f))
 }
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult >= 0
-
   def sign: String = ">="
+  def rewrite(f: (Expression) => Expression) = GreaterThanOrEqual(a.rewrite(f), b.rewrite(f))
 }

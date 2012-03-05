@@ -26,7 +26,6 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -53,92 +52,22 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>
 {
-    /**
-     * Creates a new empty store. A factory method returning an implementation
-     * should make use of this method to initialize an empty store. Block size
-     * must be greater than zero. Not that the first block will be marked as
-     * reserved (contains info about the block size). There will be an overhead
-     * for each block of <CODE>AbstractDynamicStore.BLOCK_HEADER_SIZE</CODE>
-     * bytes.
-     * <p>
-     * This method will create a empty store with descriptor returned by the
-     * {@link #getTypeDescriptor()}. The internal id generator used by
-     * this store will also be created.
-     *
-     * @param fileName
-     *            The file name of the store that will be created
-     * @param blockSize
-     *            The number of bytes for each block
-     * @param typeAndVersionDescriptor
-     *            The type and version descriptor that identifies this store
-     *
-     * @throws IOException
-     *             If fileName is null or if file exists or illegal block size
-     */
-    protected static void createEmptyStore( String fileName, int baseBlockSize,
-        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory,
-        FileSystemAbstraction fileSystem, IdType idType )
+    interface Configuration
+        extends CommonAbstractStore.Configuration
     {
-        int blockSize = baseBlockSize;
-        // sanity checks
-        if ( fileName == null )
-        {
-            throw new IllegalArgumentException( "Null filename" );
-        }
-        File file = new File( fileName );
-        if ( file.exists() )
-        {
-            throw new IllegalStateException( "Can't create store[" + fileName
-                + "], file already exists" );
-        }
-        if ( blockSize < 1 )
-        {
-            throw new IllegalArgumentException( "Illegal block size["
-                + blockSize + "]" );
-        }
-        if ( blockSize > 0xFFFF )
-        {
-            throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
-        }
-        blockSize += BLOCK_HEADER_SIZE;
 
-        // write the header
-        try
-        {
-            FileChannel channel = fileSystem.create( fileName );
-            int endHeaderSize = blockSize
-                + UTF8.encode( typeAndVersionDescriptor ).length;
-            ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
-            buffer.putInt( blockSize );
-            buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
-            buffer.put( UTF8.encode( typeAndVersionDescriptor ) ).flip();
-            channel.write( buffer );
-            channel.force( false );
-            channel.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to create store "
-                + fileName, e );
-        }
-        idGeneratorFactory.create( fileName + ".id" );
-        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType, 0, false );
-        idGenerator.nextId(); // reserv first for blockSize
-        idGenerator.close( false );
+        boolean rebuild_idgenerators_fast(boolean def);
     }
 
+    private Configuration conf;
     private int blockSize;
 
-    public AbstractDynamicStore( String fileName, Map<?,?> config, IdType idType )
+    public AbstractDynamicStore( String fileName, Configuration conf, IdType idType,
+                                 IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super( fileName, config, idType );
+        super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        this.conf = conf;
     }
-
-//    public AbstractDynamicStore( String fileName )
-//    {
-//        super( fileName );
-//    }
 
     @Override
     protected int getEffectiveRecordSize()
@@ -235,7 +164,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
-    protected static final int BLOCK_HEADER_SIZE = 1 + 3 + 4; // = 8
+    public static final int BLOCK_HEADER_SIZE = 1 + 3 + 4; // = 8
 
     public void updateRecord( DynamicRecord record )
     {
@@ -558,16 +487,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             long fileSize = fileChannel.size();
             boolean fullRebuild = true;
-            if ( getConfig() != null )
+
+            if ( conf.rebuild_idgenerators_fast(false))
             {
-                String mode = (String)
-                    getConfig().get( "rebuild_idgenerators_fast" );
-                if ( mode != null && mode.toLowerCase().equals( "true" ) )
-                {
-                    fullRebuild = false;
-                    highId = findHighIdBackwards();
-                }
+                fullRebuild = false;
+                highId = findHighIdBackwards();
             }
+
             ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
             LinkedList<Long> freeIdList = new LinkedList<Long>();
             if ( fullRebuild )
@@ -604,10 +530,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         setHighId( highId + 1 );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
-        if ( getConfig() != null )
+        if ( stringLogger != null )
         {
-            StringLogger msgLog = (StringLogger) getConfig().get( StringLogger.class );
-            msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+            stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                     " defragged count=" + defraggedCount, true );
         }
         closeIdGenerator();
@@ -643,12 +568,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    public void logIdUsage( StringLogger.LineLogger logger )
-    {
-        NeoStore.logIdUsage( logger, this );
     }
 
     @Override

@@ -40,7 +40,7 @@ class CollabFilteringTest extends DocumentingTestBase {
         "return friend_of_friend.name, COUNT(*) " +
         "order by COUNT(*) DESC, friend_of_friend.name",
       returns = "The list of Friends-of-friends  order by the number of connections to them, secondly by their name.",
-      (p) => assertEquals(List(
+      assertions = (p) => assertEquals(List(
         Map("friend_of_friend.name" -> "Ian", "COUNT(*)" -> 2),
         Map("friend_of_friend.name" -> "Derrick", "COUNT(*)" -> 1),
         Map("friend_of_friend.name" -> "Jill", "COUNT(*)" -> 1)), p.toList))

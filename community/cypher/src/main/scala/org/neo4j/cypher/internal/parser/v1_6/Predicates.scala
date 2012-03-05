@@ -69,7 +69,14 @@ trait Predicates extends Base with Expressions with ReturnItems {
 
   def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
 
-  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => Equals(l, r)  }
+  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ {
+    case l ~ "=" ~ r => (l, r) match {
+      case (a:Nullable, b:Nullable) => NullablePredicate(Equals(a,b), Seq((a,true), (b,true)))
+      case (a:Nullable, b) =>  NullablePredicate(Equals(a,b), Seq((a,true)))
+      case (a,b:Nullable)=>  NullablePredicate(Equals(a,b), Seq((b,true)))
+      case (a,b)=> Equals(l, r)
+    }
+  }
 
   def notEquals: Parser[Predicate] = expression ~ ("!=" | "<>") ~ expression ^^ { case l ~ wut ~ r => Not(Equals(l, r)) }
 

@@ -33,33 +33,37 @@ trait ReturnClause extends Base with ReturnItems {
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-  def aggregationColumn = aggregate ~ alias ^^ {
-    case agg ~ Some(newName) => AliasAggregationItem(agg, newName)
+  def aggregationColumn = aggregateReturnItem ~ alias ^^ {
+    case agg ~ Some(newName) => agg.rename(newName)
     case agg ~ None => agg
   }
 
   def expressionColumn = returnItem ~ alias ^^ {
-    case col ~ Some(newName) => AliasReturnItem(col, newName)
+    case col ~ Some(newName) => col.rename(newName)
     case col ~ None => col
   }
 
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ comaList(column) ^^ {
-    case distinct ~ items => {
-      val aggregationItems = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
+
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
+    case distinct ~ returnItems => {
+      val columnName = returnItems.map(_.columnName).toList
 
       val none: Option[Aggregation] = distinct match {
         case Some(x) => Some(Aggregation())
         case None => None
       }
 
-      val aggregation = aggregationItems match {
+      val aggregationExpressions = returnItems.
+        flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
+        map(_.asInstanceOf[AggregationExpression])
+
+      val aggregation = aggregationExpressions match {
         case List() => none
-        case _ => Some(Aggregation(aggregationItems: _*))
+        case _ => Some(Aggregation(aggregationExpressions: _*))
       }
 
-      val returnItems = Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*)
 
-      (returnItems, aggregation)
+      (Return(columnName, returnItems: _*), aggregation)
     }
   }
 }

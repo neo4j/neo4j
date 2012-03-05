@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 
 import org.neo4j.cypher._
-import internal.commands.{Sort, Entity, ExpressionReturnItem, SortItem}
+import internal.commands.{Sort, Entity, ReturnItem, SortItem}
 import scala.util.parsing.combinator._
 trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
   def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
@@ -36,8 +36,8 @@ trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
   def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ {
     case returnItem ~ reverse => {
       returnItem match {
-        case ExpressionReturnItem(Entity(_), _) => throw new SyntaxException("Cannot ORDER BY on nodes or relationships")
-        case _ => SortItem(returnItem, reverse)
+        case ReturnItem(Entity(_), _) => throw new SyntaxException("Cannot ORDER BY on nodes or relationships")
+        case _ => SortItem(returnItem.expression, reverse)
       }
     }
   }

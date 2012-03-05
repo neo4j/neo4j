@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
  * An XA connection used with {@link LuceneDataSource}.
  * This class is public because the XA framework requires it.
  */
-class LuceneXaConnection extends IndexXaConnection
+public class LuceneXaConnection extends IndexXaConnection
 {
     private final LuceneXaResource xaResource;
 

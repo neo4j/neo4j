@@ -2,43 +2,9 @@
 Match
 =====
 
-In the match part of a query, the pattern is described. The description of the
-pattern is made up of one or more paths, separated by commas.
+include::introduction.txt[]
 
-Node identifiers can be used with or without surrounding parenthesis. These two match clauses are semantically identical:
-
-+`MATCH (a)-->(b)`+
-
-and 
-
-+`MATCH a-->b`+
-
-All parts of the pattern must be directly or indirectly bound to a start point.
-
-
-The optional relationship is a way to describe parts of the pattern that can evaluate to null if it can not be
-matched to the real graph. It's the equivalent of SQL outer join - if Cypher finds one or more matches, they will be
-returned. If no matches are found, Cypher will return a null.
-
-Optionality travels - if a part of the pattern can only be reached from a bound point through an optional relationship,
-that part is also optional. Also, named paths that contain optional parts are also optional - if any part of the path is
-null, the whole path is null.
-
-In these example, b and p are all optional and can contain null:
-
-+`START a=node(1)`+
-+`MATCH p = a-[?]->b`+
-
-+`START a=node(1)`+
-+`MATCH p = a-[*?]->b`+
-
-+`START a=node(1)`+
-+`MATCH p = a-[?]->x-->b`+
-
-+`START a=node(1), x=node(100)`+
-+`MATCH p = shortestPath( a-[*?]->x )`+
-
-
+For the examples given in the sections below, the follwoing graph is the base:
 
 include::cypher-match-graph.txt[]
 
@@ -60,3 +26,4 @@ include::shortest-path.txt[]
 include::all-shortest-paths.txt[]
 include::named-path.txt[]
 include::matching-on-a-bound-relationship.txt[]
+

@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
@@ -30,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.LockReleaser.LockElement;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
@@ -58,12 +58,12 @@ public class TopLevelTransaction implements Transaction
         
     }
     
-    private final TransactionManager transactionManager;
+    private final AbstractTransactionManager transactionManager;
     private final TransactionOutcome transactionOutcome = new TransactionOutcome();
     private final LockManager lockManager;
     private final LockReleaser lockReleaser;
 
-    public TopLevelTransaction( TransactionManager transactionManager, LockManager lockManager, LockReleaser lockReleaser )
+    public TopLevelTransaction( AbstractTransactionManager transactionManager, LockManager lockManager, LockReleaser lockReleaser )
     {
         this.transactionManager = transactionManager;
         this.lockManager = lockManager;
@@ -102,27 +102,21 @@ public class TopLevelTransaction implements Transaction
         }
     }
 
-    protected TransactionManager getTransactionManager()
-    {
-        return this.transactionManager;
-    }
-    
     public void finish()
     {
         try
         {
-            if ( transactionOutcome.canCommit()  )
+            javax.transaction.Transaction transaction = transactionManager.getTransaction();
+            if ( transaction != null )
             {
-                if ( transactionManager.getTransaction() != null )
+                if ( transactionOutcome.canCommit()  )
                 {
-                    transactionManager.getTransaction().commit();
+                    // TODO Why call transaction commit, since it just delegates back to TxManager.commit()?
+                    transaction.commit();
                 }
-            }
-            else
-            {
-                if ( transactionManager.getTransaction() != null )
+                else
                 {
-                    transactionManager.getTransaction().rollback();
+                    transaction.rollback();
                 }
             }
         }

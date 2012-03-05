@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
@@ -93,6 +96,19 @@ public abstract class XaConnectionHelpImpl implements XaConnection
      * @return The XAResource for this connection
      */
     public abstract XAResource getXaResource();
+
+    public boolean enlistResource( Transaction javaxTx )
+        throws SystemException, RollbackException
+    {
+        return javaxTx.enlistResource( getXaResource() );
+    }
+
+    @Override
+    public boolean delistResource( Transaction tx, int tmsuccess )
+        throws java.lang.IllegalStateException, javax.transaction.SystemException
+    {
+        return tx.delistResource( getXaResource(), tmsuccess );
+    }
 
     public void destroy()
     {
