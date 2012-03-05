@@ -30,7 +30,6 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -66,7 +65,6 @@ public class TestBackup
     // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
 
     @Test
-    @Ignore
     public void makeSureFullFailsWhenDbExists() throws Exception
     {
         createInitialDataSet( serverPath );
@@ -86,7 +84,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void makeSureIncrementalFailsWhenNoDb() throws Exception
     {
         createInitialDataSet( serverPath );
@@ -105,28 +102,39 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
-    public void fullBackupLeavesLastTxInLog() throws Exception
+    public void backupLeavesLastTxInLog() throws Exception
     {
         GraphDatabaseSPI db = null;
+        ServerInterface server = null;
         try
         {
-            File serverDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog-server", true );
-            File backupDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog-backup", true );
-            createInitialDataSet( serverDir.getAbsolutePath() );
-            ServerInterface server = startServer( serverDir.getAbsolutePath() );
+            String serverDir = TargetDirectory.forTest( getClass() ).directory(
+                    "txinlog-server", true ).getAbsolutePath();
+            String backupDir = TargetDirectory.forTest( getClass() ).directory(
+                    "txinlog-backup", true ).getAbsolutePath();
+            createInitialDataSet( serverDir );
+            server = startServer( serverDir );
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupDir.getAbsolutePath() );
-
+            backup.full( backupDir );
             shutdownServer( server );
-            db = new EmbeddedGraphDatabase( backupDir.getAbsolutePath() );
+            server = null;
+
+            db = new EmbeddedGraphDatabase( backupDir );
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
-                long tx = ds.getLastCommittedTxId();
-                System.out.println( "Last committed tx for " + ds.getName()
-                                    + " is " + tx );
+                ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
+            }
+            db.shutdown();
+
+            addMoreData( serverDir );
+            server = startServer( serverDir );
+            backup.incremental( backupDir );
+            shutdownServer( server );
+            server = null;
+
+            db = new EmbeddedGraphDatabase( backupDir );
+            for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
+            {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
             }
         }
@@ -135,6 +143,10 @@ public class TestBackup
             if ( db != null )
             {
                 db.shutdown();
+            }
+            if ( server != null )
+            {
+                shutdownServer( server );
             }
         }
     }
@@ -162,7 +174,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void makeSureNoLogFileRemains() throws Exception
     {
         createInitialDataSet( serverPath );
@@ -185,7 +196,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void makeSureStoreIdIsEnforced() throws Exception
     {
         // Create data set X on server A
@@ -287,7 +297,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void multipleIncrementals() throws Exception
     {
         GraphDatabaseService db = null;
@@ -328,7 +337,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void backupIndexWithNoCommits() throws Exception
     {
         GraphDatabaseService db = null;
@@ -366,7 +374,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void backupEmptyIndex() throws Exception
     {
         String key = "name";
@@ -395,7 +402,6 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
         String sourcePath = "target/var/serverdb-lock";
