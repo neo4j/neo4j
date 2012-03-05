@@ -30,17 +30,27 @@ public class JavaQueryTest
     @Test
     public void test()
     {
-        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries", "dev/java" );
-        
+        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries",
+                "dev/java" );
+
         JavaQuery jq = new JavaQuery();
         jq.run();
-        assertTrue(jq.columnsString.contains( "n" ));
-        assertTrue(jq.resultString.contains( "Node[0]{}" ));
-        assertTrue(jq.resultString.contains( "1 rows" ));
-        assertTrue(jq.resultNode.getId() == 0L);
+        assertTrue( jq.columnsString.contains( "n," ) );
+        assertTrue( jq.columnsString.contains( "n.name" ) );
+        assertTrue( jq.resultString.contains( "Node[" ) );
+        assertTrue( jq.resultString.contains( "name" ) );
+        assertTrue( jq.resultString.contains( "reference" ) );
+        assertTrue( jq.resultString.contains( "1 row" ) );
+        assertTrue( jq.nodeResult.contains( "Node[" ) );
+        assertTrue( jq.nodeResult.contains( "reference" ) );
 
-        gen.saveToFile( "result", AsciidocHelper.createOutputSnippet( jq.resultString ) );
-        gen.saveToFile( "columns", AsciidocHelper.createOutputSnippet( jq.columnsString ) );
-        gen.saveToFile( "node", AsciidocHelper.createOutputSnippet( jq.resultNode.toString() ) );
+        gen.saveToFile( "result",
+                AsciidocHelper.createOutputSnippet( jq.resultString ) );
+        gen.saveToFile( "columns",
+                AsciidocHelper.createOutputSnippet( jq.columnsString ) );
+        gen.saveToFile( "node",
+                AsciidocHelper.createOutputSnippet( jq.nodeResult ) );
+        gen.saveToFile( "rows",
+                AsciidocHelper.createOutputSnippet( jq.rows ) );
     }
 }

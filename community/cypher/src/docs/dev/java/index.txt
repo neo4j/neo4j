@@ -16,13 +16,13 @@ tag=execute
 classifier=test-sources
 ----
 
-NOTE: The classes used here are from the +org.neo4j.cypher.javacompat+ package, see link to the Java API below.
-
 Which will output:
 
 include::java-cypher-queries-result.txt[]
 
-You can get a list of columns in the result:
+NOTE: The classes used here are from the +org.neo4j.cypher.javacompat+ package, see link to the Java API below.
+
+You can get a list of the columns in the result:
 
 [snippet,java]
 ----
@@ -49,6 +49,19 @@ classifier=test-sources
 In this case there's only one node in the result:
 
 include::java-cypher-queries-node.txt[]
+
+To get all columns, do like this instead:
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=rows
+classifier=test-sources
+----
+
+This outputs:
+
+include::java-cypher-queries-rows.txt[]
 
 For more information on the Java interface to Cypher, see the 
 http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].
