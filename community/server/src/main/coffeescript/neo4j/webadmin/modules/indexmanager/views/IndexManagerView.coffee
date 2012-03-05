@@ -23,8 +23,8 @@ define(
    './index',
    './IndexView'
    'ribcage/View',
-   'lib/backbone'], 
-  (template, indexTemplate, IndexView, View) ->
+   'lib/amd/jQuery'], 
+  (template, indexTemplate, IndexView, View, $) ->
 
     class IndexManagerView extends View
       

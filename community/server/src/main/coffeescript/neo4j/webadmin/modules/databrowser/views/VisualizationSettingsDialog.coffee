@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   './visualizationSettings',
-   'ribcage/View',
-   'lib/backbone'], 
-  (ItemUrlResolver, template, View) ->
+   './visualizationSettings'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, template, View, $) ->
   
     class VisualizationSettingsDialog extends View
 

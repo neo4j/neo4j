@@ -26,8 +26,7 @@ define(
    './models/ServerStatistics'
    './models/DashboardState'
    './models/KernelBean'
-   'ribcage/Router'
-   'lib/backbone'],
+   'ribcage/Router'],
   (DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState, KernelBean, Router) ->
   
     class DashboardRouter extends Router

@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
+define ['ribcage/Model'], (Model) ->
 
-  class Queue extends Backbone.Model
+  class Queue extends Model
 
     constructor : () ->
       @queue = []

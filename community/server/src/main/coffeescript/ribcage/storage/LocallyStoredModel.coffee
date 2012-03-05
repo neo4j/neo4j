@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone', 'lib/has'], 
-  () ->
+  ['ribcage/Model', 'lib/has'], 
+  (Model) ->
 
     class LocalStorageStoringStrategy
       
@@ -42,7 +42,7 @@ define(
       fetch : (key, defaults={}) ->
         if @storage[key]? then @storage[key] else @defaults
     
-    class LocallyStoredModel extends Backbone.Model
+    class LocallyStoredModel extends Model
 
       initialize : () ->
         if has("native-localstorage")

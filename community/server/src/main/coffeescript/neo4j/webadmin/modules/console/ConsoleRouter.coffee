@@ -24,8 +24,7 @@ define(
    './views/ShellConsoleView'
    './views/GremlinConsoleView'
    './views/HttpConsoleView'
-   'ribcage/Router'
-   'lib/backbone'], 
+   'ribcage/Router'], 
   (Console, HttpConsole, ShellConsoleView, GremlinConsoleView, HttpConsoleView, Router) ->
   
     class ConsoleRouter extends Router

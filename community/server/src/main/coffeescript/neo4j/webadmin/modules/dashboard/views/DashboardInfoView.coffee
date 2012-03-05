@@ -19,11 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define( 
-  ['./info',
-   'ribcage/View',
-   'ribcage/ui/NumberFormatter',
-   'lib/backbone'], 
-  (template,View, NumberFormatter) ->
+  ['./info'
+   'ribcage/View'
+   'ribcage/ui/NumberFormatter'
+   'lib/amd/jQuery'], 
+  (template, View, NumberFormatter, $ ) ->
   
     class DashboardInfoView extends View
       

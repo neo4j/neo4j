@@ -17,30 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
-
-define(
-  ['neo4j/webadmin/utils/ItemUrlResolver'
-   './visualizationSettings',
-   './ProfileListItemView',
-   'ribcage/View',
-   'lib/amd/jQuery'],
-  (ItemUrlResolver, template, ProfileListItemView, View, $) ->
+define ['lib/amd/Backbone'], (Backbone) ->
   
-    class VisualizationSettingsView extends View
-    
-      initialize : (opts) =>
-        
-        @settings = opts.dataBrowserSettings
-      
-      render : () =>
-        
-        $(@el).html(template())
-        profileUl = $('.visualization-profile-list', @el)
-        
-        @settings.getVisualizationProfiles().forEach (profile) =>
-          view = new ProfileListItemView( profile : profile, dataBrowserSettings : @settings )
-          profileUl.append(view.render().el)
-        
-        this
+  class Model extends Backbone.Model
 
-)
+    

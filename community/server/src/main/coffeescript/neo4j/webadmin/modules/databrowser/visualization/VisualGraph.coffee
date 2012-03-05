@@ -23,11 +23,8 @@ define(
    './RelationshipStyler'
    './VisualDataModel'
    './views/NodeFilterDialog'
-   'order!lib/jquery'
-   'order!lib/arbor'
-   'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'],
-  (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog) ->
+   'lib/amd/arbor'],
+  (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog, arbor) ->
 
     class VisualGraph
 

@@ -22,8 +22,8 @@ define(
   ['./base',
    './bean',
    'ribcage/View',
-   'lib/backbone'], 
-  (baseTemplate, beanTemplate, View) ->
+   'lib/amd/jQuery'], 
+  (baseTemplate, beanTemplate, View, $) ->
   
     class ServerInfoView extends View
       

@@ -19,8 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./PropertyContainer'
-   'lib/backbone'], 
+  ['./PropertyContainer'], 
   (PropertyContainer) ->
   
     class RelationshipProxy extends PropertyContainer

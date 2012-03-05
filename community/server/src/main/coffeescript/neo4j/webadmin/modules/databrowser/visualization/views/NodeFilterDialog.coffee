@@ -23,8 +23,8 @@ define(
    'ribcage/ui/Dialog'
    'ribcage/ui/FilterList'
    './nodeFilterDialogTemplate'
-   'lib/backbone'], 
-  (ItemUrlResolver, Dialog, FilterList, template) ->
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, Dialog, FilterList, template, $) ->
   
     class NodeFilterDialog extends Dialog
       

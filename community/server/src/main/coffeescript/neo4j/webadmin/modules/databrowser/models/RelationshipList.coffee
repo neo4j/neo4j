@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
    './RelationshipProxy'
-   'lib/backbone'], 
-  (ItemUrlResolver, RelationshipProxy) ->
+   'ribcage/Model'], 
+  (ItemUrlResolver, RelationshipProxy, Model) ->
   
-    class RelationshipList extends Backbone.Model
+    class RelationshipList extends Model
       
       initialize : (relationships) =>
         @setRawRelationships(relationships || [])

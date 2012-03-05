@@ -19,28 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/utils/ItemUrlResolver'
-   './visualizationSettings',
-   './ProfileListItemView',
-   'ribcage/View',
-   'lib/amd/jQuery'],
-  (ItemUrlResolver, template, ProfileListItemView, View, $) ->
-  
-    class VisualizationSettingsView extends View
-    
-      initialize : (opts) =>
-        
-        @settings = opts.dataBrowserSettings
-      
-      render : () =>
-        
-        $(@el).html(template())
-        profileUl = $('.visualization-profile-list', @el)
-        
-        @settings.getVisualizationProfiles().forEach (profile) =>
-          view = new ProfileListItemView( profile : profile, dataBrowserSettings : @settings )
-          profileUl.append(view.render().el)
-        
-        this
-
+  ['order!lib/amd/jQuery'
+   'order!lib/arbor'
+   'order!lib/arbor-graphics'
+   'order!lib/arbor-tween'], 
+  () ->
+    arbor
 )

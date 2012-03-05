@@ -21,10 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
    './NodeProxy'
-   'lib/backbone'], 
-  (ItemUrlResolver, NodeProxy) ->
+   'ribcage/Model'], 
+  (ItemUrlResolver, NodeProxy, Model) ->
   
-    class NodeList extends Backbone.Model
+    class NodeList extends Model
       
       initialize : (nodes) =>
         @setRawNodes(nodes || [])
