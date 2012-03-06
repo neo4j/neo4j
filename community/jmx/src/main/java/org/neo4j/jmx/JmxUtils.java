@@ -31,13 +31,13 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public class JmxUtils {
 
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    public static ObjectName getObjectName(AbstractGraphDatabase database, String name) {
+    public static ObjectName getObjectName(GraphDatabaseSPI database, String name) {
         ObjectName neoQuery = database.getSingleManagementBean(Kernel.class).getMBeanQuery();
         String instance = neoQuery.getKeyProperty("instance");
         String domain = neoQuery.getDomain();

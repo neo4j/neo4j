@@ -35,7 +35,7 @@ import javax.management.openmbean.CompositeData;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -92,11 +92,11 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
     {
         GraphDatabaseService graphDb = getServer().getDb();
         Kernel kernel = null;
-        if ( graphDb instanceof AbstractGraphDatabase )
+        if ( graphDb instanceof GraphDatabaseSPI )
         {
             try
             {
-                kernel = ( (AbstractGraphDatabase) graphDb ).getManagementBean( Kernel.class );
+                kernel = ( (GraphDatabaseSPI) graphDb ).getSingleManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {
