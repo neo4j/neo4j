@@ -36,7 +36,7 @@ case "$1" in
         # we don't do "chmod 750" so that the user can choose the pemission for g and o on their own
         chmod u+rwx /var/lib/neo4j-coordinator
       
-        chmod u+x /var/lib/neo4j-coordinator/bin/neo4j-coordinator
+        chmod 0755 /var/lib/neo4j-coordinator/bin/neo4j-coordinator
 
         # Tell neo4j to install itself as a service using headless (-h) mode
         # with user (-u) neo4j as running user.
