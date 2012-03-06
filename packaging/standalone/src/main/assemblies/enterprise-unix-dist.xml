@@ -67,6 +67,7 @@
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>bin/neo4j</exclude>
+        <exclude>bin/neo4j-*</exclude>
         <exclude>**/*.bat</exclude>
       </excludes>
       <filtered>true</filtered>
@@ -79,6 +80,7 @@
       <fileMode>0755</fileMode>
       <includes>
         <include>**/neo4j</include>
+        <include>**/neo4j-*</include>
       </includes>
       <filtered>false</filtered>
     </fileSet>
