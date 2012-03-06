@@ -21,7 +21,7 @@ function run_command {
 function fetch_artifact {
     artifact=$1
     filename=$2
-    echo run_command "cp ${WORKSPACE}/standalone/target/$filename"
+    run_command "cp ${WORKSPACE}/standalone/target/$filename"
 }
 
 function upload_file {
