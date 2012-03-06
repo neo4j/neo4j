@@ -33,7 +33,6 @@
       <directory>target/</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>pdf/*.pdf</include>
         <include>text/**</include>
       </includes>
     </fileSet>
