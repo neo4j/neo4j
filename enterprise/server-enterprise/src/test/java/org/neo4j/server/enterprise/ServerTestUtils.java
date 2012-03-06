@@ -30,8 +30,23 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.server.database.GraphDatabaseFactory;
+
 public class ServerTestUtils
 {
+    public static final GraphDatabaseFactory HA_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
+    {
+        @Override
+        public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+                Map<String, String> databaseProperties )
+        {
+            // Assume ZK cluster started outside
+            return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
+        }
+    };
+    
     public static File createTempDir() throws IOException
     {
         File d = File.createTempFile( "neo4j-test", "dir" );
