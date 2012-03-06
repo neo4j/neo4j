@@ -332,12 +332,38 @@ public class OnlineBackup
         try
         {
             unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
+            trimLogicalLogCount( (AbstractGraphDatabase) targetDb );
         }
         finally
         {
             client.shutdown();
         }
         return this;
+    }
+
+    private void trimLogicalLogCount( AbstractGraphDatabase targetDb )
+    {
+        for ( XaDataSource ds : targetDb.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        {
+            long currentVersion = ds.getCurrentLogVersion();
+
+            while ( ds.getLogicalLogLength( currentVersion ) <= 16
+                    && currentVersion > 0 )
+            {
+                currentVersion--;
+            }
+            /*
+             * Ok, we skipped all logs that have no transactions in them. Current is the
+             * one with the tx in it.
+             * Now we delete the rest.
+             */
+            currentVersion--;
+            while ( ds.getLogicalLogLength( currentVersion ) > 0 )
+            {
+                ds.deleteLogicalLog( currentVersion );
+                currentVersion--;
+            }
+        }
     }
 
     public OnlineBackup incremental( GraphDatabaseService targetDb )

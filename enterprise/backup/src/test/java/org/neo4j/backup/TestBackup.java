@@ -26,6 +26,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
@@ -134,6 +135,73 @@ public class TestBackup
             server = null;
 
             db = new EmbeddedGraphDatabase( backupDir );
+            for ( XaDataSource ds : db.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+            {
+                ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
+            }
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+            if ( server != null )
+            {
+                shutdownServer( server );
+            }
+        }
+    }
+
+    @Test
+    public void incrementalBackupLeavesOnlyLastTxInLog() throws Exception
+    {
+        AbstractGraphDatabase db = null;
+        ServerInterface server = null;
+        try
+        {
+            String serverDir = TargetDirectory.forTest( getClass() ).directory(
+                    "txinlog2-server", true ).getAbsolutePath();
+            String backupDir = TargetDirectory.forTest( getClass() ).directory(
+                    "txinlog2-backup", true ).getAbsolutePath();
+            createInitialDataSet( serverDir );
+            server = startServer( serverDir );
+            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            backup.full( backupDir );
+            shutdownServer( server );
+            server = null;
+
+            addMoreData( serverDir );
+            server = startServer( serverDir );
+            backup.incremental( backupDir );
+            shutdownServer( server );
+            server = null;
+
+            // do 2 rotations, add two empty logs
+            new EmbeddedGraphDatabase( backupDir ).shutdown();
+            new EmbeddedGraphDatabase( backupDir ).shutdown();
+
+            addMoreData( serverDir );
+            server = startServer( serverDir );
+            backup.incremental( backupDir );
+            shutdownServer( server );
+            server = null;
+
+            int logsFound = new File( backupDir ).listFiles( new FilenameFilter()
+            {
+
+                @Override
+                public boolean accept( File dir, String name )
+                {
+                    return name.startsWith( "nioneo_logical.log" )
+                           && !name.endsWith( "active" );
+                }
+            } ).length;
+
+            assertEquals( 4, logsFound );
+
+            db = new EmbeddedGraphDatabase( backupDir );
+
             for ( XaDataSource ds : db.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
