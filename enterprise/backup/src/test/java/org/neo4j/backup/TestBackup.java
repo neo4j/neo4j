@@ -188,7 +188,6 @@ public class TestBackup
 
             int logsFound = new File( backupDir ).listFiles( new FilenameFilter()
             {
-
                 @Override
                 public boolean accept( File dir, String name )
                 {
@@ -197,7 +196,8 @@ public class TestBackup
                 }
             } ).length;
 
-            assertEquals( 4, logsFound );
+            // 2 one the real and the other from the rotation of shutdown
+            assertEquals( 2, logsFound );
 
             db = new EmbeddedGraphDatabase( backupDir );
 

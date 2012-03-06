@@ -56,6 +56,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
@@ -300,7 +301,19 @@ public class OnlineBackup
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
+
+        // In case someone deleted the logical log from a full backup
+        ConfigParam keepLogs = new ConfigParam()
+        {
+            @Override
+            public void configure( Map<String, String> config )
+            {
+                config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+            }
+        };
+
+        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory,
+                VerificationLevel.valueOf( verification ), keepLogs );
 
         long backupStartTime = System.currentTimeMillis();
         OnlineBackup result = null;
@@ -380,8 +393,23 @@ public class OnlineBackup
     {
         for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
         {
-            long currentVersion = ds.getCurrentLogVersion();
+            try
+            {
+                ds.rotateLogicalLog();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
 
+            long currentVersion = ds.getCurrentLogVersion() - 1;
+
+            // TODO
+            /*
+             * Checking the file size to determine if transactions exist in
+             * a log feels hack-ish. Maybe fix this to read the header
+             * and check latest txid?
+             */
             while ( ds.getLogicalLogLength( currentVersion ) <= 16
                     && currentVersion > 0 )
             {
@@ -389,10 +417,12 @@ public class OnlineBackup
             }
             /*
              * Ok, we skipped all logs that have no transactions in them. Current is the
-             * one with the tx in it.
-             * Now we delete the rest.
+             * one with the tx in it. Skip it.
              */
             currentVersion--;
+            /*
+             * Now delete the rest.
+             */
             while ( ds.getLogicalLogLength( currentVersion ) > 0 )
             {
                 ds.deleteLogicalLog( currentVersion );
