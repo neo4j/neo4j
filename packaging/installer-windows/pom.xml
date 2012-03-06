@@ -31,7 +31,7 @@
 
     <buildnumber>0</buildnumber>
 
-    <windows-wrapper.version>2-SNAPSHOT</windows-wrapper.version>
+    <windows-wrapper.version>4</windows-wrapper.version>
     <windows-wrapper.path>${project.build.outputDirectory}\windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.path>
 
     <ai.executable>C:\Program Files\Caphyon\Advanced Installer
