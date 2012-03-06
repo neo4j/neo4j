@@ -32,6 +32,7 @@ import org.apache.commons.configuration.MapConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.HaConfig;
@@ -60,6 +61,7 @@ public class TestHaDatabaseWithRrd
     }
     
     @Test
+    @Ignore
     public void startHaGraphDatabaseWithRrd() throws Exception
     {
         String dir = TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath();
