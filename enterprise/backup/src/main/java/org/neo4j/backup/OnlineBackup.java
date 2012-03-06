@@ -30,13 +30,17 @@ import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.neo4j.backup.check.ConsistencyCheck;
@@ -48,9 +52,11 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
@@ -58,6 +64,8 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -105,7 +113,97 @@ public class OnlineBackup
                     VerificationLevel.NONE /* run full check instead */ );
             try
             {
+                // First, receive all txs pending
                 unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
+                // Then go over all datasources, try to extract the latest tx
+                Set<String> noTxPresent = new HashSet<String>();
+                for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
+                {
+                    long lastTx = ds.getLastCommittedTxId();
+                    try
+                    {
+                        // This fails if the tx is not present with NSLVE
+                        ds.getMasterForCommittedTx( lastTx );
+                    }
+                    catch ( NoSuchLogVersionException e )
+                    {
+                        // Note the name of the datasource
+                        noTxPresent.add( ds.getName() );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+                if ( !noTxPresent.isEmpty() )
+                {
+                    /*
+                     * Create a fake slave context, asking for the transactions that
+                     * span the next-to-last up to the latest for each datasource
+                     */
+                    BackupClient recoveryClient = new BackupClient(
+                            hostNameOrIp, port, targetDb.getMessageLog(),
+                            Client.storeIdGetterForDb( targetDb ) );
+                    Response<Void> recoveryResponse = null;
+                    Map<String, Long> recoveryDiff = new HashMap<String, Long>();
+                    for ( String ds : noTxPresent )
+                    {
+                        recoveryDiff.put( ds, -1L );
+                    }
+                    SlaveContext recoveryCtx = addDiffToSlaveContext(
+                            slaveContextOf( targetDb ), recoveryDiff );
+                    try
+                    {
+                        recoveryResponse = recoveryClient.incrementalBackup( recoveryCtx );
+                        // Ok, the response is here, apply it.
+                        TransactionStream txs = recoveryResponse.transactions();
+                        ByteBuffer scratch = ByteBuffer.allocate( 64 );
+                        while ( txs.hasNext() )
+                        {
+                            /*
+                             * For each tx stream in the response, create the latest archived
+                             * logical log file and write out in there the transaction.
+                             *
+                             */
+                            Triplet<String, Long, TxExtractor> tx = txs.next();
+                            scratch.clear();
+                            XaDataSource ds = targetDb.getXaDataSourceManager().getXaDataSource(
+                                    tx.first() );
+                            long logVersion = ds.getCurrentLogVersion() - 1;
+                            FileChannel newLog = new RandomAccessFile(
+                                    ds.getFileName( logVersion ),
+                                    "rw" ).getChannel();
+                            newLog.truncate( 0 );
+                            LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
+                            // scratch buffer is flipped by writeLogHeader
+                            newLog.write( scratch );
+                            ReadableByteChannel received = tx.third().extract();
+                            scratch.flip();
+                            while ( received.read( scratch ) > 0 )
+                            {
+                                scratch.flip();
+                                newLog.write( scratch );
+                                scratch.flip();
+                            }
+                            newLog.force( false );
+                            newLog.close();
+                            received.close();
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                    finally
+                    {
+                        recoveryClient.shutdown();
+                        if ( recoveryResponse != null )
+                        {
+                            recoveryResponse.close();
+                        }
+                        targetDb.shutdown();
+                    }
+                }
             }
             finally
             {
@@ -141,7 +239,7 @@ public class OnlineBackup
         {
             private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1, "Files copied" );
             private int totalFiles;
-            
+
             @Override
             public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                     boolean hasData ) throws IOException
@@ -150,7 +248,7 @@ public class OnlineBackup
                 progress.update( true, 1 );
                 totalFiles++;
             }
-            
+
             @Override
             public void done()
             {
@@ -203,7 +301,19 @@ public class OnlineBackup
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
+
+        // In case someone deleted the logical log from a full backup
+        ConfigParam keepLogs = new ConfigParam()
+        {
+            @Override
+            public void configure( Map<String, String> config )
+            {
+                config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+            }
+        };
+
+        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory,
+                VerificationLevel.valueOf( verification ), keepLogs );
 
         long backupStartTime = System.currentTimeMillis();
         OnlineBackup result = null;
@@ -228,20 +338,102 @@ public class OnlineBackup
         return result;
     }
 
-    public OnlineBackup incremental( GraphDatabaseSPI targetDb )
+    private SlaveContext addDiffToSlaveContext( SlaveContext original,
+            Map<String, Long> diffPerDataSource )
+    {
+        Tx[] oldTxs = original.lastAppliedTransactions();
+        Tx[] newTxs = new Tx[oldTxs.length];
+        for ( int i = 0; i < oldTxs.length; i++ )
+        {
+            Tx oldTx = oldTxs[i];
+            String dsName = oldTx.getDataSourceName();
+            long originalTxId = oldTx.getTxId();
+            Long diff = diffPerDataSource.get( dsName );
+            if ( diff == null )
+            {
+                diff = Long.valueOf( 0L );
+            }
+            long newTxId = originalTxId + diff;
+            newTxs[i] = SlaveContext.lastAppliedTx( dsName, newTxId );
+        }
+        return SlaveContext.anonymous( newTxs );
+    }
+
+    /**
+     * Performs an incremental backup based off the given context. This means
+     * receiving and applying selectively (i.e. irrespective of the actual state
+     * of the target db) a set of transactions starting at the desired txId and
+     * spanning up to the latest of the master, for every data source
+     * registered.
+     *
+     * @param targetDb The database that contains a previous full copy
+     * @param context The context, i.e. a mapping of data source name to txid
+     *            which will be the first in the returned stream
+     * @return A backup context, ready to perform
+     */
+    private OnlineBackup incrementalWithContext( GraphDatabaseSPI targetDb,
+            SlaveContext context )
     {
         BackupClient client = new BackupClient( hostNameOrIp, port, targetDb.getMessageLog(),
                 Client.storeIdGetterForDb( targetDb ) );
         try
         {
-            unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb,
+            unpackResponse( client.incrementalBackup( context ), targetDb,
                     new ProgressTxHandler() );
+            trimLogicalLogCount( targetDb );
         }
         finally
         {
             client.shutdown();
         }
         return this;
+    }
+
+    private void trimLogicalLogCount( GraphDatabaseSPI targetDb )
+    {
+        for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
+        {
+            try
+            {
+                ds.rotateLogicalLog();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            long currentVersion = ds.getCurrentLogVersion() - 1;
+
+            // TODO
+            /*
+             * Checking the file size to determine if transactions exist in
+             * a log feels hack-ish. Maybe fix this to read the header
+             * and check latest txid?
+             */
+            while ( ds.getLogicalLogLength( currentVersion ) <= 16
+                    && currentVersion > 0 )
+            {
+                currentVersion--;
+            }
+            /*
+             * Ok, we skipped all logs that have no transactions in them. Current is the
+             * one with the tx in it. Skip it.
+             */
+            currentVersion--;
+            /*
+             * Now delete the rest.
+             */
+            while ( ds.getLogicalLogLength( currentVersion ) > 0 )
+            {
+                ds.deleteLogicalLog( currentVersion );
+                currentVersion--;
+            }
+        }
+    }
+
+    public OnlineBackup incremental( GraphDatabaseSPI targetDb )
+    {
+        return incrementalWithContext( targetDb, slaveContextOf( targetDb ) );
     }
 
     private void unpackResponse( Response<Void> response, GraphDatabaseSPI graphDb, TxHandler txHandler )
@@ -306,19 +498,19 @@ public class OnlineBackup
                                                       + "." + toTimestamp );
         return previous.renameTo( to );
     }
-    
+
     private static class ProgressTxHandler implements TxHandler
     {
         private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1000, "Transactions applied" );
         private long count;
-        
+
         @Override
         public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
         {
             progress.update( true, 1 );
             count++;
         }
-        
+
         @Override
         public void done()
         {
