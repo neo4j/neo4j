@@ -307,11 +307,11 @@ checkandrepairenv() {
 
 # Checks system limits, warns if not proper
 checklimits() {
-	OPEN_FILES=`ulimit -n`
-	if [[ $DIST_OS -ne "macosx" ]] ; then
+    OPEN_FILES=`ulimit -n`
+    if [[ $DIST_OS != "macosx" ]] ; then
       if [ $OPEN_FILES -lt 40000 ]; then
-	    echo "WARNING: Detected a limit of $OPEN_FILES for maximum open files, while a minimum value of 40000 is recommended."
-	    echo "WARNING: Problems with the operation of the server may occur. Please refer to the Neo4j manual regarding lifting this limitation."
-	  fi
-	fi
+        echo "WARNING: Detected a limit of $OPEN_FILES for maximum open files, while a minimum value of 40000 is recommended."
+        echo "WARNING: Problems with the operation of the server may occur. Please refer to the Neo4j manual regarding lifting this limitation."
+      fi
+    fi
 }
