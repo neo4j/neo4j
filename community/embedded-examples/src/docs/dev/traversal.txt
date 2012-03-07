@@ -130,14 +130,15 @@ include::matrix-traversal-java-new-hackers.txt[]
 This example shows how to use a path context holding a representation of a path.
 
 [TIP]
-The source code of the examples is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java[OrderedPathTest.java]
+The source code of this example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/orderedpath/OrderedPath.java[OrderedPath.java]
 
 .Create a toy graph
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
 tag=createGraph
 ----
 
@@ -149,17 +150,32 @@ B -> C [label="REL2" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 C -> D [label="REL3" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 ----
 
-// generate graphviz dot from code ?
+// include when we have reltype colors
+// include::ordered-path-java-graph.txt[]
+// then, also include the property setting in the code.
 
 Now, the order of relationships (+REL1+ -> +REL2+ -> +REL3+) is stored in an +ArrayList+.
 Upon traversal, the +Evaluator+ can check against it to ensure that only paths are included and returned that have the predefined order of relationships:
 
-.Walk the path
+.Define how to walk the path
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
 tag=walkOrderedPath
 ----
 
+.Perform the traversal and print the result
+[snippet,java]
+----
+component=neo4j-examples
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
+tag=printPath
+----
+
+Which will output:
+
+include::ordered-path-java-output.txt[]
 

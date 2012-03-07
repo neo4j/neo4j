@@ -52,7 +52,6 @@ public class JmxTest
     private static Date getStartTimeFromManagementBean(
             GraphDatabaseService graphDbService )
     {
-        // use EmbeddedGraphDatabase to access management beans
         GraphDatabaseSPI graphDb = (GraphDatabaseSPI) graphDbService;
         Kernel kernel = graphDb.getSingleManagementBean( Kernel.class );
         Date startTime = kernel.getKernelStartTime();
