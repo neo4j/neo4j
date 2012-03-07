@@ -488,7 +488,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             long fileSize = fileChannel.size();
             boolean fullRebuild = true;
 
-            if ( conf.rebuild_idgenerators_fast(false))
+            if ( conf.rebuild_idgenerators_fast(true))
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();
