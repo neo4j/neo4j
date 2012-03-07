@@ -26,12 +26,12 @@
 
   <properties>
     <short-name>installer-windows</short-name>
-    <neo4j.version>1.7.M01</neo4j.version>
+    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>
 
-    <windows-wrapper.version>4</windows-wrapper.version>
+    <windows-wrapper.version>5-SNAPSHOT</windows-wrapper.version>
     <windows-wrapper.path>${project.build.outputDirectory}\windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.path>
 
     <ai.executable>C:\Program Files\Caphyon\Advanced Installer
