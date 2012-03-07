@@ -54,7 +54,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
      * (returns a non-2xx HTTP status code), the transaction will be rolled back
      * and all changes will be undone.
      * 
-     * Each job description should contain a +path+ attribute, with a value
+     * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
      * 
