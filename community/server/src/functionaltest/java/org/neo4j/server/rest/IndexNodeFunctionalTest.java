@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
@@ -257,6 +258,15 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      * multiple keys.
      *
      * See: http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html
+     *
+     * Getting the results with a predefined ordering requires adding the
+     * parameter
+     *
+     * order=ordering
+     *
+     * where ordering is one of index, relevance or score. In this case an
+     * additional field will be added to each result, named score, that holds
+     * the float value that is the score reported by the query result.
      */
     @Documented
     @Test
@@ -276,6 +286,43 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
+        LinkedHashMap<String, String> nodeMap = (LinkedHashMap) hits.iterator().next();
+        assertNull( "score should not be present when not explicitly ordering",
+                nodeMap.get( "score" ) );
+    }
+
+    @Test
+    public void orderedResultsAreSupersetOfUnordered() throws Exception
+    {
+        String indexName = "bobTheIndex";
+        String key = "Name";
+        String value = "Builder";
+        long node = helper.createNode( MapUtil.map( key, value ) );
+        helper.addNodeToIndex( indexName, key, value, node );
+        helper.addNodeToIndex( indexName, "Gender", "Male", node );
+
+        String entity = gen.get().expectedStatus( 200 ).get(
+                functionalTestHelper.indexNodeUri( indexName )
+                        + "?query=Name:Build~0.1%20AND%20Gender:Male" ).entity();
+
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        LinkedHashMap<String, String> nodeMapUnordered = (LinkedHashMap) hits.iterator().next();
+
+        entity = gen.get().expectedStatus( 200 ).get(
+                functionalTestHelper.indexNodeUri( indexName )
+                        + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
+
+        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        LinkedHashMap<String, String> nodeMapOrdered = (LinkedHashMap) hits.iterator().next();
+
+        for ( Map.Entry<String, String> unorderedEntry : nodeMapUnordered.entrySet() )
+        {
+            assertEquals( "wrong entry for key: " + unorderedEntry.getKey(),
+                    unorderedEntry.getValue(),
+                    nodeMapOrdered.get( unorderedEntry.getKey() ) );
+        }
+        assertTrue( "There should be only one extra value for the ordered map",
+                nodeMapOrdered.size() == nodeMapUnordered.size() + 1 );
     }
 
     @Test
@@ -297,10 +344,23 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 2, hits.size() );
-        Iterator it = hits.iterator();
+        Iterator<LinkedHashMap<String, Object>> it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        LinkedHashMap<String, Object> node2Map = it.next();
+        LinkedHashMap<String, Object> node1Map = it.next();
+        float score2 = ( (Double) node2Map.get( "score" ) ).floatValue();
+        float score1 = ( (Double) node1Map.get( "score" ) ).floatValue();
+        assertTrue(
+                "results returned in wrong order for relevance ordering",
+                ( (String) node2Map.get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        assertTrue(
+                "results returned in wrong order for relevance ordering",
+                ( (String) node1Map.get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        /*
+         * scores are always the same, just the ordering changes. So all subsequent tests will
+         * check the same condition.
+         */
+        assertTrue( "scores are reversed", score2 > score1 );
 
         entity = gen.get().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
@@ -308,10 +368,22 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 2, hits.size() );
-        it = hits.iterator();
+        it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        /*
+         * index order, so as they were added
+         */
+        node1Map = it.next();
+        node2Map = it.next();
+        score1 = ( (Double) node1Map.get( "score" ) ).floatValue();
+        score2 = ( (Double) node2Map.get( "score" ) ).floatValue();
+        assertTrue(
+                "results returned in wrong order for index ordering",
+                ( (String) node1Map.get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        assertTrue(
+                "results returned in wrong order for index ordering",
+                ( (String) node2Map.get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        assertTrue( "scores are reversed", score2 > score1 );
 
         entity = gen.get().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
@@ -319,10 +391,19 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 2, hits.size() );
-        it = hits.iterator();
+        it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node2 ) ) );
-        assertTrue( ( (String) ( (LinkedHashMap) it.next() ).get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        node2Map = it.next();
+        node1Map = it.next();
+        score2 = ( (Double) node2Map.get( "score" ) ).floatValue();
+        score1 = ( (Double) node1Map.get( "score" ) ).floatValue();
+        assertTrue(
+                "results returned in wrong order for score ordering",
+                ( (String) node2Map.get( "self" ) ).endsWith( Long.toString( node2 ) ) );
+        assertTrue(
+                "results returned in wrong order for score ordering",
+                ( (String) node1Map.get( "self" ) ).endsWith( Long.toString( node1 ) ) );
+        assertTrue( "scores are reversed", score2 > score1 );
     }
 
     /**
