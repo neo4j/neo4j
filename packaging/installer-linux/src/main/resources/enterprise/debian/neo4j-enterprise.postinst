@@ -42,8 +42,6 @@ case "$1" in
         # with user (-u) neo4j as running user.
         /var/lib/neo4j/bin/neo4j -h -u neo4j install
         
-        # Start neo4j
-        /etc/init.d/neo4j-service restart
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
