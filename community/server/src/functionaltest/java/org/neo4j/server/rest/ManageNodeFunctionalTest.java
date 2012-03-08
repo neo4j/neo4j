@@ -91,6 +91,19 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
                 .toString()
                 .matches( NODE_URI_PATTERN ) );
     }
+    
+    @Test
+    public void create_Node_with_array_properties() throws Exception
+    {
+        String response = gen.get()
+                .payload( "{\"foo\" : [1,2,3]}" )
+                .expectedStatus( 201 )
+                .expectedHeader( "Location" )
+                .expectedHeader( "Content-Length" )
+                .post( functionalTestHelper.nodeUri() )
+                .response().getEntity();
+        assertTrue( response.contains( "[ 1, 2, 3 ]" ) );
+    }
 
     /**
      * Property values can not be null.
