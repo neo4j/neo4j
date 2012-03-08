@@ -19,19 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
-
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -41,6 +33,16 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
+
+import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -149,12 +151,35 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     public void nested_results() throws Exception {
         data.get();
         String script = "start n = node(%I%,%you%) return collect(n.name), collect(n)";
-        String response = cypherRestCall( script, Status.OK);
+        String response = cypherRestCall(script, Status.OK);
 
 
         Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
-        assertEquals( 2, resultMap.size() );
-        assertTrue( response.contains( "[ [ [ \"I\"" ) );
+        assertEquals(2, resultMap.size());
+        assertTrue(response.contains("[ [ [ \"I\""));
+    }
+
+    @Test
+    @Graph( value = { "I know you" }, autoIndexNodes = false )
+    public void array_property() throws Exception {
+        setProperty("I", "array1", new int[] { 1, 2, 3 } );
+        setProperty("I", "array2", new String[] { "a", "b", "c" } );
+
+        String script = "start n = node(%I%) return n.array1, n.array2";
+        String response = cypherRestCall( script, Status.OK );
+
+        assertTrue( "Expected the array to be [1,2,3], but the response was: " + response, response.contains( "[ 1, 2, 3 ]" ) );
+        assertTrue( "Expected the array to be [\"a\", \"b\", \"c\"], but the response was: " + response, response.contains( "[ \"a\", \"b\", \"c\" ]" ) );
+    }
+
+    private void setProperty(String nodeName, String propertyName, Object propertyValue) {
+        Node i = this.getNode(nodeName);
+        GraphDatabaseService db = i.getGraphDatabase();
+
+        Transaction tx = db.beginTx();
+        i.setProperty(propertyName, propertyValue);
+        tx.success();
+        tx.finish();
     }
 
     @Test
