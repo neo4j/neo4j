@@ -187,7 +187,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                 fullRebuild = false;
                 highId = findHighIdBackwards();
             }
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
+            ByteBuffer byteBuffer = ByteBuffer.allocate( recordSize );
             // Duplicated code block
             LinkedList<Long> freeIdList = new LinkedList<Long>();
             if ( fullRebuild )
@@ -196,18 +196,17 @@ public abstract class AbstractStore extends CommonAbstractStore
                     i++ )
                 {
                     fileChannel.position( i * recordSize );
+                    byteBuffer.clear();
                     fileChannel.read( byteBuffer );
                     byteBuffer.flip();
-                    byte inUse = byteBuffer.get();
-                    byteBuffer.flip();
-                    nextId();
-                    if ( (inUse & 0x1) == Record.NOT_IN_USE.byteValue() )
+                    if ( !isRecordInUse( byteBuffer ) )
                     {
                         freeIdList.add( i );
                     }
                     else
                     {
                         highId = i;
+                        setHighId( highId+1 );
                         while ( !freeIdList.isEmpty() )
                         {
                             freeId( freeIdList.removeFirst() );
