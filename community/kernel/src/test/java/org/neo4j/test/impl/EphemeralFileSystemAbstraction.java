@@ -19,9 +19,6 @@
  */
 package org.neo4j.test.impl;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -37,6 +34,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
@@ -92,6 +92,20 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     @Override
     public FileLock tryLock(String fileName, FileChannel channel) throws IOException
     {
+        if ( channel instanceof EphemeralFileChannel )
+        {
+            EphemeralFileChannel efc = (EphemeralFileChannel) channel;
+            final java.nio.channels.FileLock lock = efc.tryLock();
+            return new FileLock()
+            {
+                @Override
+                public void release() throws IOException
+                {
+                    lock.release();
+                }
+            };
+        }
+        System.err.println("WARNING: locking non-ephemeral FileChannel[" + channel + "] through EphemeralFileSystem, for: " + fileName);
         return FileLock.getOsSpecificFileLock(fileName, channel);
     }
 
@@ -146,6 +160,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         {
             int wanted = dst.limit();
             int available = min(wanted, (int) (size - position()));
+            if ( available == 0 ) return -1;
             int pending = available;
             // Read up until our internal size
             while (pending > 0)
@@ -155,9 +170,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 dst.put(scratchPad, 0, howMuchToReadThisTime);
                 pending -= howMuchToReadThisTime;
             }
-            // Fill the rest with zeros
-            fillWithZeros( dst, available - wanted );
-            return wanted;
+            // Don't Fill the rest with zeros - it is WRONG!
+            // fillWithZeros( dst, wanted - available );
+            return available;
         }
 
         private void fillWithZeros( ByteBuffer target, int bytes )
@@ -194,7 +209,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 fileAsBuffer.put(scratchPad, 0, howMuchToWriteThisTime);
                 pending -= howMuchToWriteThisTime;
             }
-            
+
             // If we just made a jump in the file fill the rest of the gab with zeros
             int newSize = max(size, (int) position());
             int intermediaryBytes = newSize-wanted-size;
@@ -211,7 +226,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                     fileAsBuffer.position( oldPos );
                 }
             }
-            
+
             size = newSize;
             return wanted;
         }
@@ -316,6 +331,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         @Override
         protected void implCloseChannel() throws IOException
         {
+            locked = 0;
         }
     }
 
@@ -340,7 +356,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         @Override
         public void release() throws IOException
         {
-            if (released) return;
+            if (released || channel.locked == 0) return;
             channel.locked--;
             released = true;
         }
@@ -354,7 +370,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     {
         private static final int[] SIZES;
         private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOL;
-        
+
         static void dispose()
         {
             for (int i = POOL.length(); i < POOL.length(); i++)
@@ -378,10 +394,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
 
             init();
         }
-        
+
         private static void destroyDirectByteBuffer(ByteBuffer toBeDestroyed)
             throws IllegalArgumentException, IllegalAccessException,
-                   InvocationTargetException, SecurityException, NoSuchMethodException 
+                   InvocationTargetException, SecurityException, NoSuchMethodException
         {
             Method cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner");
             cleanerMethod.setAccessible(true);
@@ -390,7 +406,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             cleanMethod.setAccessible(true);
             cleanMethod.invoke(cleaner);
         }
-        
+
         private static void init()
         {
             AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL = new AtomicReferenceArray<Queue<Reference<ByteBuffer>>>( SIZES.length );
@@ -602,7 +618,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             {
                 return;
             }
-            
+
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
             int sizeIndex = newSize / SIZES[SIZES.length - 1];

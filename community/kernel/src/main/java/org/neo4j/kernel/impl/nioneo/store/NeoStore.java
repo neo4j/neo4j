@@ -140,7 +140,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(configuration.neo_store()) );
+                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.neo_store()) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -309,23 +309,22 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public static long getStoreVersion( String storeDir )
+    public static long getStoreVersion( FileSystemAbstraction fs, String storeDir )
     {
-        return getRecord( storeDir, 4 );
+        return getRecord( fs, storeDir, 4 );
     }
 
-    public static long getTxId( String storeDir )
+    public static long getTxId( FileSystemAbstraction fs, String storeDir )
     {
-        return getRecord( storeDir, 3 );
+        return getRecord( fs, storeDir, 3 );
     }
 
-    private static long getRecord( String storeDir, long recordPosition )
+    private static long getRecord( FileSystemAbstraction fs, String storeDir, long recordPosition )
     {
         RandomAccessFile file = null;
         try
         {
-            file = new RandomAccessFile( new File( storeDir ), "rw" );
-            FileChannel channel = file.getChannel();
+            FileChannel channel = fs.open( storeDir, "rw" );
             /*
              * We have to check size, because the store version
              * field was introduced with 1.5, so if there is a non-clean

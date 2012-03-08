@@ -53,7 +53,7 @@ public abstract class CommonAbstractStore
 
         String store_dir();
     }
-    
+
     public static final String ALL_STORES_VERSION = "v0.A.0";
     public static final String UNKNOWN_VERSION = "Uknown";
 
@@ -167,7 +167,7 @@ public abstract class CommonAbstractStore
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to lock store["
-                + storageFileName + "]" );
+                + storageFileName + "]", e );
         }
         catch ( OverlappingFileLockException e )
         {
@@ -562,7 +562,7 @@ public abstract class CommonAbstractStore
     protected void openIdGenerator( boolean firstTime )
     {
         idGenerator = openIdGenerator( storageFileName + ".id", idType.getGrabSize(), firstTime );
-        
+
         /* MP: 2011-11-23
          * There may have been some migration done in the startup process, so if there have been some
          * high id registered during, then update id generators. updateHighId does nothing if
@@ -573,7 +573,7 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( String fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileName, grabSize, getIdType(),
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(),
                 figureOutHighestIdInUse(), firstTime );
     }
 
@@ -581,7 +581,7 @@ public abstract class CommonAbstractStore
 
     protected void createIdGenerator( String fileName )
     {
-        idGeneratorFactory.create( fileName );
+        idGeneratorFactory.create( fileSystemAbstraction, fileName );
     }
 
     protected void openReadOnlyIdGenerator( int recordSize )
