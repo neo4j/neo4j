@@ -39,46 +39,44 @@ public class AsciidocHelper
     public static String createGraphViz( String title,
             GraphDatabaseService graph, String identifier )
     {
-        return createGraphOutput( title, graph, identifier, false, false );
+        return createGraphViz( title, graph, identifier,
+                AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
     }
 
     public static String createGraphVizWithNodeId( String title,
             GraphDatabaseService graph, String identifier )
     {
-        return createGraphOutput( title, graph, identifier, false, true );
+        return createGraphViz( title, graph, identifier,
+                AsciiDocStyle.withAutomaticRelationshipTypeColors() );
     }
 
     public static String createGraphVizDeletingReferenceNode( String title,
             GraphDatabaseService graph, String identifier )
     {
-        return createGraphOutput( title, graph, identifier, true, false );
+        removeReferenceNode( graph );
+        return createGraphViz( title, graph, identifier,
+                AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
     }
 
     public static String createGraphVizWithNodeIdDeletingReferenceNode(
             String title, GraphDatabaseService graph, String identifier )
     {
-        return createGraphOutput( title, graph, identifier, true, true );
+        removeReferenceNode( graph );
+        return createGraphViz( title, graph, identifier,
+                AsciiDocStyle.withAutomaticRelationshipTypeColors() );
     }
 
-    private static String createGraphOutput( String title,
-            GraphDatabaseService graph, String identifier,
-            boolean removeReferenceNode, boolean showNodeTitle )
+    /**
+     * Create graphviz output using a {@link GraphStyle) which is implemented by
+     * {@link AsciiDocSimpleStyle} and {@link AsciiDocStyle}.
+     * {@link AsciiDocSimpleStyle} provides different customization options for
+     * coloring.
+     */
+    public static String createGraphViz( String title,
+            GraphDatabaseService graph, String identifier, GraphStyle graphStyle )
     {
-        if ( removeReferenceNode )
-        {
-            removeReferenceNode( graph );
-        }
-        OutputStream out = new ByteArrayOutputStream();
-        GraphStyle graphStyle;
-        if ( showNodeTitle )
-        {
-            graphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors();
-        }
-        else
-        {
-            graphStyle = AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors();
-        }
         GraphvizWriter writer = new GraphvizWriter( graphStyle );
+        OutputStream out = new ByteArrayOutputStream();
         try
         {
             writer.emit( out, Walker.fullGraph( graph ) );
