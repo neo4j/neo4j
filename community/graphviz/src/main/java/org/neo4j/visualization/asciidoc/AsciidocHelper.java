@@ -25,7 +25,9 @@ import java.io.OutputStream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.AsciiDocStyle;
+import org.neo4j.visualization.graphviz.GraphStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
 
@@ -34,10 +36,49 @@ public class AsciidocHelper
 
     private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]";
 
-    public static String createGraphViz( String title, GraphDatabaseService graph, String identifier )
+    public static String createGraphViz( String title,
+            GraphDatabaseService graph, String identifier )
     {
+        return createGraphOutput( title, graph, identifier, false, false );
+    }
+
+    public static String createGraphVizWithNodeId( String title,
+            GraphDatabaseService graph, String identifier )
+    {
+        return createGraphOutput( title, graph, identifier, false, true );
+    }
+
+    public static String createGraphVizDeletingReferenceNode( String title,
+            GraphDatabaseService graph, String identifier )
+    {
+        return createGraphOutput( title, graph, identifier, true, false );
+    }
+
+    public static String createGraphVizWithNodeIdDeletingReferenceNode(
+            String title, GraphDatabaseService graph, String identifier )
+    {
+        return createGraphOutput( title, graph, identifier, true, true );
+    }
+
+    private static String createGraphOutput( String title,
+            GraphDatabaseService graph, String identifier,
+            boolean removeReferenceNode, boolean showNodeTitle )
+    {
+        if ( removeReferenceNode )
+        {
+            removeReferenceNode( graph );
+        }
         OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
+        GraphStyle graphStyle;
+        if ( showNodeTitle )
+        {
+            graphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors();
+        }
+        else
+        {
+            graphStyle = AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors();
+        }
+        GraphvizWriter writer = new GraphvizWriter( graphStyle );
         try
         {
             writer.emit( out, Walker.fullGraph( graph ) );
@@ -47,7 +88,7 @@ public class AsciidocHelper
             e.printStackTrace();
         }
 
-        String safeTitle = title.replaceAll(ILLEGAL_STRINGS, "");
+        String safeTitle = title.replaceAll( ILLEGAL_STRINGS, "" );
 
         return "." + title + "\n[\"dot\", \""
                + ( safeTitle + "-" + identifier ).replace( " ", "-" )
@@ -57,8 +98,7 @@ public class AsciidocHelper
                 "----\n";
     }
 
-    public static String createGraphVizDeletingReferenceNode( String title,
-            GraphDatabaseService graph, String identifier )
+    private static void removeReferenceNode( GraphDatabaseService graph )
     {
         Transaction tx = graph.beginTx();
         try
@@ -70,12 +110,11 @@ public class AsciidocHelper
         {
             tx.finish();
         }
-        return AsciidocHelper.createGraphViz( title, graph, identifier );
     }
 
     public static String createOutputSnippet( final String output )
     {
-        return "[source]\n----\n"+output+"\n----\n";
+        return "[source]\n----\n" + output + "\n----\n";
     }
 
     public static String createQueryResultSnippet( final String output )
@@ -90,7 +129,7 @@ public class AsciidocHelper
 
         String result = "[source,cypher]\n----\n" + query + "\n----\n";
 
-        for(String keyword : keywordsToBreakOn)
+        for ( String keyword : keywordsToBreakOn )
         {
             String upperKeyword = keyword.toUpperCase();
             result = result.
@@ -99,12 +138,14 @@ public class AsciidocHelper
                     replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
         }
 
-        //cut to max 123 chars for PDF compliance
+        // cut to max 123 chars for PDF compliance
         String[] lines = result.split( "\n" );
         String finalRes = "";
-        for(String line : lines) {
+        for ( String line : lines )
+        {
             line = line.trim();
-            if (line.length() > 123 ) {
+            if ( line.length() > 123 )
+            {
                 line = line.replaceAll( ", ", ",\n      " );
             }
             finalRes += line + "\n";

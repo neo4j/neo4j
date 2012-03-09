@@ -19,7 +19,7 @@
 package org.neo4j.examples;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import org.junit.Test;
@@ -86,7 +86,7 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
     public void pathUniquenessExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", createGraphViz("Descendants Example Graph", graphdb(), gen.get().getTitle()) );
+        gen.get().addSnippet( "graph", createGraphVizWithNodeId("Descendants Example Graph", graphdb(), gen.get().getTitle()) );
         gen.get();
         gen.get()
                 .addTestSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );

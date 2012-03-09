@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.*;
+import org.neo4j.test.AsciiDocGenerator;
+import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.test.TestData;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
-
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class IntroExamplesTest implements GraphHolder
 {
@@ -54,7 +59,8 @@ public class IntroExamplesTest implements GraphHolder
         Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like\n\n" );
-        fw.append( AsciidocHelper.createGraphViz( "Example Graph", graphdb(),
+        fw.append( AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
+                graphdb(),
                 "cypher-intro" ) );
 
         fw.append( "For example, here is a query which finds a user called John in an index and then traverses the graph looking for friends of Johns friends (though not his direct friends) before returning both John and any friends-of-friends that are found." );

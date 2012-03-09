@@ -25,7 +25,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -197,7 +197,8 @@ public class ShellTest
         doc.run();
         server.shutdown();
         PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
-        writer.println( createGraphViz( "Shell Matrix Example", db, "graph" ) );
+        writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db,
+                "graph" ) );
         writer.flush();
         writer.close();
         db.shutdown();

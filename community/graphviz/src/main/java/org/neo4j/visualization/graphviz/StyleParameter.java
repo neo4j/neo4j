@@ -604,14 +604,16 @@ public interface StyleParameter
 		PROPERTY_AS_KEY_EQUALS_VALUE
 		{
 			@Override
-			public final void configure( StyleConfiguration configuration )
+            public final void configure( final StyleConfiguration configuration )
 			{
 				PropertyFormatter format = new PropertyFormatter()
 				{
 					public String format( String key, PropertyType type,
 					    Object value )
 					{
-						return key + " = " + PropertyType.format( value );
+                        return configuration.escapeLabel( key )
+                               + " = "
+                               + configuration.escapeLabel( PropertyType.format( value ) );
 					}
 				};
 				configuration.setNodePropertyFomatter( format );
@@ -622,14 +624,15 @@ public interface StyleParameter
 		PROPERTY_AS_KEY_COLON_TYPE
 		{
 			@Override
-			public final void configure( StyleConfiguration configuration )
+            public final void configure( final StyleConfiguration configuration )
 			{
 				PropertyFormatter format = new PropertyFormatter()
 				{
 					public String format( String key, PropertyType type,
 					    Object value )
 					{
-						return key + " : " + type.typeName;
+                        return configuration.escapeLabel( key ) + " : "
+                               + type.typeName;
 					}
 				};
 				configuration.setNodePropertyFomatter( format );

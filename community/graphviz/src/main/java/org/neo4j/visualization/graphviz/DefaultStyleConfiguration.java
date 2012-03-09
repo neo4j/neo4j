@@ -33,7 +33,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 {
 	boolean displayRelationshipLabel = true;
 
-	DefaultStyleConfiguration( StyleParameter[] parameters )
+    DefaultStyleConfiguration( StyleParameter... parameters )
 	{
 		this.nodeHeader = new HashMap<String, String>(
 		    GraphStyle.header().nodeHeader );
@@ -51,7 +51,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
     {
         label = label.replace( "\\", "\\\\" );
         label = label.replace( "\"", "\\\"" );
-        label = label.replace( "'", "\\\\'" );
+        label = label.replace( "'", "\\'" );
         label = label.replace( "\n", "\\n" );
         label = label.replace( "<", "\\<" );
         label = label.replace( ">", "\\>" );

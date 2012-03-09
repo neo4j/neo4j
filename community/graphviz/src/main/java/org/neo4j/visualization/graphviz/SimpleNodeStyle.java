@@ -22,37 +22,26 @@ package org.neo4j.visualization.graphviz;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.visualization.PropertyType;
 
-class DefaultNodeStyle implements NodeStyle
+public class SimpleNodeStyle extends DefaultNodeStyle
 {
-    protected final DefaultStyleConfiguration config;
+    SimpleNodeStyle( DefaultStyleConfiguration configuration )
+    {
+        super( configuration );
+    }
 
-	DefaultNodeStyle( DefaultStyleConfiguration configuration )
-	{
-		this.config = configuration;
-	}
+    @Override
+    public void emitNodeStart( Appendable stream, Node node )
+            throws IOException
+    {
+        stream.append( "  N" + node.getId() + " [\n" );
+        config.emit( node, stream );
+        stream.append( "    label = \"" );
+    }
 
-	public void emitNodeStart( Appendable stream, Node node )
-	    throws IOException
-	{
-		stream.append( "  N" + node.getId() + " [\n" );
-		config.emit( node, stream );
-		stream.append( "    label = \"{" + config.escapeLabel( config.getTitle( node )) + "|" );
-	}
-
-	public void emitEnd( Appendable stream ) throws IOException
-	{
-		stream.append( "}\"\n  ]\n" );
-	}
-
-	public void emitProperty( Appendable stream, String key, Object value )
-	    throws IOException
-	{
-		if ( config.acceptNodeProperty( key ) )
-		{
-			PropertyType type = PropertyType.getTypeOf( value );
-			config.emitNodeProperty( stream, key, type, value );
-		}
-	}
+    @Override
+    public void emitEnd( Appendable stream ) throws IOException
+    {
+        stream.append( "\"\n  ]\n" );
+    }
 }

@@ -505,7 +505,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                fw.append( AsciidocHelper.createGraphViz( "Final Graph", graph, title));
+                fw.append( AsciidocHelper.createGraphVizWithNodeId(
+                        "Final Graph", graph, title ) );
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
