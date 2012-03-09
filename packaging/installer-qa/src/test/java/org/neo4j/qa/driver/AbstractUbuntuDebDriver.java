@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
+import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
 public abstract class AbstractUbuntuDebDriver extends AbstractPosixDriver {
@@ -57,12 +58,18 @@ public abstract class AbstractUbuntuDebDriver extends AbstractPosixDriver {
     
     @Override
     public void startService() {
-        sh.run("sudo /etc/init.d/neo4j-service start");
+        Result r = sh.run("sudo /etc/init.d/neo4j-service start");
+        if(r.getOutput().contains("BAD.")) {
+            throw new RuntimeException("Starting neo4j service failed on ["+vm.definition().ip()+"]");
+        }
     }
     
     @Override
     public void stopService() {
-        sh.run("sudo /etc/init.d/neo4j-service stop");
+        Result r = sh.run("sudo /etc/init.d/neo4j-service stop");
+        if(r.getOutput().endsWith("done")) {
+            throw new RuntimeException("Stopping neo4j service failed on ["+vm.definition().ip()+"]");
+        }
     }    
     
     @Override

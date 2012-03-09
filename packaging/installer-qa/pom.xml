@@ -88,37 +88,37 @@
               <target>
                 <!-- Windows installers -->
                 <move
-                  file="${project.build.outputDirectory}/neo4j-community-setup-${neo4j.version}.msi"
+                  file="${project.build.directory}/neo4j-community-setup-${neo4j.version}.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-community.msi"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-advanced-setup-${neo4j.version}.msi"
+                  file="${project.build.directory}/neo4j-advanced-setup-${neo4j.version}.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-advanced.msi"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-enterprise-setup-${neo4j.version}.msi"
+                  file="${project.build.directory}/neo4j-enterprise-setup-${neo4j.version}.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-coordinator-setup-${neo4j.version}.msi"
+                  file="${project.build.directory}/neo4j-coordinator-setup-${neo4j.version}.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi"
                   failonerror="false" />
 
                 <!-- Debian installers -->
                 <move
-                  file="${project.build.outputDirectory}/neo4j_${neo4j.version}_all.deb"
+                  file="${project.build.directory}/neo4j_${neo4j.version}_all.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-community.deb"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version}_all.deb"
+                  file="${project.build.directory}/neo4j-advanced_${neo4j.version}_all.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-advanced.deb"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version}_all.deb"
+                  file="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb"
                   failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version}_all.deb"
+                  file="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb"
                   failonerror="false" />
               </target>
@@ -169,14 +169,16 @@
                 </goals>
                 <configuration>
                   <target>
-                    <copy toDir="${project.build.directory}">
-                      <fileset dir="${project.baseDir}/../../installer-linux">
-                        <include name="target/*.deb"/>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../installer-linux/target">
+                        <include name="*.deb"/>
                       </fileset>
                     </copy>
-                    <copy toDir="${project.build.directory}">
-                      <fileset dir="${project.baseDir}/../../installer-windows">
-                        <include name="target/*.msi"/>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../installer-windows/target">
+                        <include name="*.msi"/>
                       </fileset>
                     </copy>
                   </target>

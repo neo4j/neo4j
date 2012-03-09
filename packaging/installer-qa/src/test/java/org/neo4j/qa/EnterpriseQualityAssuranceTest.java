@@ -122,7 +122,6 @@ public class EnterpriseQualityAssuranceTest {
         for(EnterpriseDriver d : drivers) {
             try {
                 d.downloadLogsTo(logDir);
-                d.vm().rollback();
             } catch(Exception e) {
                 e.printStackTrace();
             }
