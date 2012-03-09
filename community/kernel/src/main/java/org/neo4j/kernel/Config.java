@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -275,6 +276,36 @@ public class Config implements DiagnosticsProvider
     public Map<String, String> getParams()
     {
         return this.params;
+    }
+    
+    public String get(GraphDatabaseSetting setting)
+    {
+        return params.get( setting.name() );
+    }
+    
+    public boolean getBoolean(GraphDatabaseSetting setting)
+    {
+        return Boolean.parseBoolean( get( setting ) );
+    }
+    
+    public int getInteger(GraphDatabaseSetting setting)
+    {
+        return Integer.parseInt(get( setting ));
+    }
+
+    public long getLong(GraphDatabaseSetting setting)
+    {
+        return Long.parseLong(get( setting ));
+    }
+
+    public double getDouble(GraphDatabaseSetting setting)
+    {
+        return Double.parseDouble(get( setting ));
+    }
+
+    public float getFloat(GraphDatabaseSetting setting)
+    {
+        return Float.parseFloat( get( setting ));
     }
 
     public static boolean configValueContainsMultipleParameters( String configValue )

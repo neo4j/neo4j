@@ -1,13 +1,15 @@
 package org.neo4j.graphdb.factory;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.
  */
 public abstract class GraphDatabaseSetting
 {
-    public static final BooleanSetting read_only = new BooleanSetting(BooleanSetting.FALSE);
+    @Default(BooleanSetting.FALSE)
+    public static final BooleanSetting read_only = new BooleanSetting("read_only");
 
     // Implementations of GraphDatabaseSetting
     public static class BooleanSetting
@@ -16,9 +18,9 @@ public abstract class GraphDatabaseSetting
         public static final String TRUE = "true";
         public static final String FALSE = "false";
 
-        public BooleanSetting( String defaultValue )
+        public BooleanSetting( String name)
         {
-            super( defaultValue );
+            super( name );
         }
 
         public String[] options()
@@ -30,13 +32,13 @@ public abstract class GraphDatabaseSetting
     public static abstract class OptionsSetting
         extends GraphDatabaseSetting
     {
-        protected OptionsSetting( String defaultValue )
+        protected OptionsSetting( String name)
         {
-            super( defaultValue );
+            super( name );
         }
 
         @Override
-        public void validate( String value )
+        public void validate( String value, Locale locale )
             throws IllegalArgumentException
         {
             for( String option : options() )
@@ -51,23 +53,35 @@ public abstract class GraphDatabaseSetting
         public abstract String[] options();
     }
 
-    private String defaultValue;
+    private String name;
 
-    protected GraphDatabaseSetting( String defaultValue )
+    protected GraphDatabaseSetting( String name )
     {
-        this.defaultValue = defaultValue;
+        this.name = name;
     }
 
     public String name()
     {
-        return getClass().getSimpleName();
+        return name;
     }
     
     public String defaultValue()
     {
-        return defaultValue;
+        try
+        {
+            return GraphDatabaseSetting.class.getField( name ).getAnnotation( Default.class ).value();
+        }
+        catch( NoSuchFieldException e )
+        {
+            throw new NoSuchFieldError( "Setting field "+name+" not found in GraphDatabaseSetting class" );
+        }
     }
-
-    public abstract void validate(String value)
-        throws IllegalArgumentException;
+    
+    public void validate(String value)
+        throws IllegalArgumentException
+    {
+        validate( value, Locale.getDefault() );
+    }
+    
+    public abstract void validate(String value, Locale locale);
 }
