@@ -185,18 +185,31 @@ public class VirtualMachine {
 
     private Result scp(String privateKeyPath, String from, String to, int port)
     {
-        from = escapeSshPathIfNecessary(from);
-        to = escapeSshPathIfNecessary(to);
-        
-        Result r = sh.run("scp -i " + privateKeyPath
-                + " -o StrictHostKeyChecking=no" + " -P " + port + " " + from
-                + " " + to);
-        if (r.getExitCode() != 0)
-        {
-            throw new ShellException(r);
+        File tmpHostsFile = null;
+        try {
+            from = escapeSshPathIfNecessary(from);
+            to = escapeSshPathIfNecessary(to);
+            
+            tmpHostsFile = File.createTempFile("known-hosts", "throwaway");
+            
+            Result r = sh.run("scp -i " + privateKeyPath
+                    + " -o StrictHostKeyChecking=no"
+                    + " -o UserKnownHostsFile=" + tmpHostsFile.getAbsolutePath()
+                    + " -P " + port
+                    + " " + from
+                    + " " + to);
+            if (r.getExitCode() != 0)
+            {
+                throw new ShellException(r);
+            }
+    
+            return r;
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(tmpHostsFile != null) 
+                tmpHostsFile.delete();
         }
-
-        return r;
     }
 
     private String escapeSshPathIfNecessary(String path)
