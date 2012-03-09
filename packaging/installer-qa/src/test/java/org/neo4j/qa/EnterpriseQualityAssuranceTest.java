@@ -151,38 +151,62 @@ public class EnterpriseQualityAssuranceTest {
         
     }
 
-    private void assertHABackupWorks()
+    private void setupZookeeperCluster()
     {
-        EnterpriseDriver driver = drivers[0];
+        List<String> coordinators = new ArrayList<String>();
+        EnterpriseDriver driver;
         
-        long nodeId = driver.api().createNode();
-        
-        driver.performFullHABackup("neobackup", coordinatorAddresses);
-        driver.performIncrementalHABackup("neobackup", coordinatorAddresses);
-        
-        // Shut down the cluster
-        for(EnterpriseDriver d : drivers) {
-            d.stopService();
-            d.destroyDatabase();
+        for( int i=0; i<drivers.length; i++) 
+        {
+            driver = drivers[i];
+            setupZookeeper(driver, i + 1);
+            coordinators.add(driver.vm().definition().ip() + ":" + (zooClientPortBase + i + 1));
         }
         
-        driver.replaceGraphDataDirWithBackup("neobackup");
+        coordinatorAddresses = StringUtils.join(coordinators,",");
+    }
+    
+    private void setupZookeeper(EnterpriseDriver d, int serverId) {
+        String zookeeperConf = d.zookeeperInstallDir() + "/conf/coord.cfg";
         
-        // Start the cluster back up
-        for(EnterpriseDriver d : drivers) d.startService();
-        
-        // Wait for all databases to be up to date
-        for(EnterpriseDriver d : drivers) {
-            try {
-                d.api().waitUntilNodeExists(nodeId);
-            } catch(Exception e){
-                throw new RuntimeException("Restoring backup failed on server " + d.vm().definition().ip(), e);
-            }
+        d.runZookeeperInstall();
+        d.stopZookeeperService();
+        for( int o=0; o<drivers.length; o++) {
+            d.setConfig(zookeeperConf, "server." + (o+1), drivers[o].vm().definition().ip() + ":2888:3888");
         }
-        
-        assertClusterWorks();
+        d.setConfig(zookeeperConf, "clientPort", (zooClientPortBase + serverId) + "");
+        d.writeFile("" + serverId, d.zookeeperInstallDir() + "/data/coordinator/myid");
+        d.startZookeeperService();
     }
 
+    private void setupHighAvailabilityCluster()
+    {
+        EnterpriseDriver driver;
+        
+        for( int i=0; i<drivers.length; i++) 
+        {
+            driver = drivers[i];
+            
+            String neo4jConf = driver.installDir() + "/conf/neo4j.properties";
+            String serverConf = driver.installDir() + "/conf/neo4j-server.properties";
+            
+            driver.runInstall();
+            driver.stopService();
+            
+            driver.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
+            driver.setConfig(neo4jConf, "ha.server", driver.vm().definition().ip() + ":6001");
+            driver.setConfig(neo4jConf, "ha.coordinators", coordinatorAddresses);
+            
+            driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
+            driver.setConfig(serverConf, "org.neo4j.server.webserver.address", "0.0.0.0");
+            
+            // The database folder has to be empty on first boot
+            driver.destroyDatabase();
+            
+            driver.startService();
+        }
+    }
+    
     /*
      * Rotate over available cluster machines a number of times.
      * Take turns creating, fetching, and deleting nodes via 
@@ -216,59 +240,35 @@ public class EnterpriseQualityAssuranceTest {
         }
     }
 
-    private void setupZookeeperCluster()
+    private void assertHABackupWorks()
     {
-        List<String> coordinators = new ArrayList<String>();
-        EnterpriseDriver driver;
+        EnterpriseDriver driver = drivers[0];
         
-        for( int i=0; i<drivers.length; i++) 
-        {
-            driver = drivers[i];
-            setupZookeeper(driver, i + 1);
-            coordinators.add(driver.vm().definition().ip() + ":" + (zooClientPortBase + i + 1));
+        long nodeId = driver.api().createNode();
+        
+        driver.performFullHABackup("neobackup", coordinatorAddresses);
+        driver.performIncrementalHABackup("neobackup", coordinatorAddresses);
+        
+        // Shut down the cluster
+        for(EnterpriseDriver d : drivers) {
+            d.stopService();
+            d.destroyDatabase();
         }
         
-        coordinatorAddresses = StringUtils.join(coordinators,",");
-    }
-    
-    private void setupHighAvailabilityCluster()
-    {
-        EnterpriseDriver driver;
+        driver.replaceGraphDataDirWithBackup("neobackup");
         
-        for( int i=0; i<drivers.length; i++) 
-        {
-            driver = drivers[i];
-            
-            String neo4jConf = driver.installDir() + "/conf/neo4j.properties";
-            String serverConf = driver.installDir() + "/conf/neo4j-server.properties";
-            
-            driver.runInstall();
-            driver.stopService();
-            
-            driver.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
-            driver.setConfig(neo4jConf, "ha.server", driver.vm().definition().ip() + ":6001");
-            driver.setConfig(neo4jConf, "ha.coordinators", coordinatorAddresses);
-            
-            driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
-            driver.setConfig(serverConf, "org.neo4j.server.webserver.address", "0.0.0.0");
-            
-            // The database folder has to be empty on first boot
-            driver.destroyDatabase();
-            
-            driver.startService();
-        }
-    }
-    
-    private void setupZookeeper(EnterpriseDriver d, int serverId) {
-        String zookeeperConf = d.zookeeperInstallDir() + "/conf/coord.cfg";
+        // Start the cluster back up
+        for(EnterpriseDriver d : drivers) d.startService();
         
-        d.runZookeeperInstall();
-        d.stopZookeeperService();
-        for( int o=0; o<drivers.length; o++) {
-            d.setConfig(zookeeperConf, "server." + (o+1), drivers[o].vm().definition().ip() + ":2888:3888");
+        // Wait for all databases to be up to date
+        for(EnterpriseDriver d : drivers) {
+            try {
+                d.api().waitUntilNodeExists(nodeId);
+            } catch(Exception e){
+                throw new RuntimeException("Restoring backup failed on server " + d.vm().definition().ip(), e);
+            }
         }
-        d.setConfig(zookeeperConf, "clientPort", (zooClientPortBase + serverId) + "");
-        d.writeFile("" + serverId, d.zookeeperInstallDir() + "/data/coordinator/myid");
-        d.startZookeeperService();
+        
+        assertClusterWorks();
     }
 }

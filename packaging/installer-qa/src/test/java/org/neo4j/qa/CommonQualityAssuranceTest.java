@@ -51,6 +51,13 @@ import org.neo4j.vagrant.VirtualMachine;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 
+
+/**
+ * TODO: Using JUnit to run theses may not have been a great idea,
+ * consider refactoring this into a "real" java program rather
+ * than a unit test. Same goes for {@link EnterpriseQualityAssuranceTest}
+ *
+ */
 @RunWith(value = Parameterized.class)
 public class CommonQualityAssuranceTest {
 
