@@ -31,6 +31,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
@@ -53,10 +54,10 @@ public class SlaveIdGenerator implements IdGenerator
             this.receiver = receiver;
         }
 
-        public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
+        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
         {
             if ( startup ) new File( fileName ).delete();
-            IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
+            IdGenerator localIdGenerator = localFactory.open( fs, fileName, grabSize,
                     idType, highestIdInUse, startup );
             SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
                     receiver, localIdGenerator );
@@ -64,9 +65,9 @@ public class SlaveIdGenerator implements IdGenerator
             return generator;
         }
 
-        public void create( String fileName )
+        public void create( FileSystemAbstraction fs, String fileName )
         {
-            localFactory.create( fileName );
+            localFactory.create( fs, fileName );
         }
 
         public IdGenerator get( IdType idType )
