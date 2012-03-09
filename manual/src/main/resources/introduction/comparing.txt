@@ -147,7 +147,7 @@ When in Neo4j, those relationships are easily navigable.
 ["dot", "graphdb-compare-docdb.svg", "meta", scaledwidth="75%"]
 ----
 subgraph cluster_0 {
-  color=BOXCOLOR
+  color="BOXCOLOR"
   label="D1"
   style="filled"
   fillcolor="NODEHIGHLIGHT"
@@ -159,7 +159,7 @@ subgraph cluster_0 {
   }
 }
 subgraph cluster_2 {
-  color=BOXCOLOR
+  color="BOXCOLOR"
   label="D2"
   style="filled"
   fillcolor="NODEHIGHLIGHT"
