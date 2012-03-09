@@ -27,23 +27,42 @@ import org.neo4j.test.JavaDocsGenerator;
 
 public class MatrixTest
 {
-    private static Matrix matrix;
     private static JavaDocsGenerator gen;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
-        matrix = new Matrix();
         gen = new JavaDocsGenerator( "matrix-traversal-java", "dev" );
     }
 
     @Test
     public void matrix() throws Exception
     {
+        Matrix matrix = new Matrix();
         matrix.setUp();
         String friends = matrix.printNeoFriends();
         String hackers = matrix.printMatrixHackers();
         matrix.shutdown();
+        check( friends, hackers );
+        gen.saveToFile( "friends", createOutputSnippet( friends ) );
+        gen.saveToFile( "hackers", createOutputSnippet( hackers ) );
+    }
+
+    @Test
+    public void newMatrix() throws Exception
+    {
+        NewMatrix newMatrix = new NewMatrix();
+        newMatrix.setUp();
+        String friends = newMatrix.printNeoFriends();
+        String hackers = newMatrix.printMatrixHackers();
+        newMatrix.shutdown();
+        check( friends, hackers );
+        gen.saveToFile( "new-friends", createOutputSnippet( friends ) );
+        gen.saveToFile( "new-hackers", createOutputSnippet( hackers ) );
+    }
+
+    private void check( String friends, String hackers )
+    {
         assertTrue( friends.contains( "friends found: 4" ) );
         assertTrue( friends.contains( "Trinity" ) );
         assertTrue( friends.contains( "Morpheus" ) );
@@ -51,7 +70,5 @@ public class MatrixTest
         assertTrue( friends.contains( "Agent Smith" ) );
         assertTrue( hackers.contains( "hackers found: 1" ) );
         assertTrue( hackers.contains( "The Architect" ) );
-        gen.saveToFile( "friends", createOutputSnippet( friends ) );
-        gen.saveToFile( "hackers", createOutputSnippet( hackers ) );
     }
 }

@@ -885,7 +885,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false, true, None))).
+      matches(ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), false, true, None)).
       returns(ReturnItem(Entity("p"), "p"))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
@@ -899,11 +899,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
   @Test def shouldReturnShortestPathUnboundLength() {
     createNodes("A", "B")
-    val r1 = relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "KNOWS" -> "B")
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false, true, None))).
+      matches(ShortestPath("p", "a", "b", None, Direction.BOTH, None, false, true, None)).
       returns(ReturnItem(Entity("p"), "p"))
 
     //Checking that we don't get an exception
@@ -1742,6 +1742,15 @@ RETURN x0.name?
   @Test def expose_problem_with_aliasing() {
     createNode("nisse")
     parseAndExecute("start n=node(1) return n.name, count(*) as foo order by n.name")
+  }   
+  
+  @Test def start_with_node_and_relationship() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a,b)
+    val result = parseAndExecute("start a=node(1), r=relationship(0) return a,r").toList
+    
+    assert(List(Map("a"->a, "r"->r)) === result)
   } 
 
   @Test def createEngineWithSpecifiedParserVersion() {

@@ -62,7 +62,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     @Override
     public void init( )
     {
-        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( 5, true, true );
+        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( (byte)5, true, true );
     }
 
     @Override

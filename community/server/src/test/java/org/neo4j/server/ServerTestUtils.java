@@ -30,8 +30,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -40,7 +40,7 @@ public class ServerTestUtils
     public static final GraphDatabaseFactory EMBEDDED_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
             return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
@@ -50,7 +50,7 @@ public class ServerTestUtils
     public static final GraphDatabaseFactory EPHEMERAL_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
             return new ImpermanentGraphDatabase( databaseProperties );

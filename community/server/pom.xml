@@ -34,8 +34,8 @@
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-        <blueprints.version>1.1</blueprints.version>
-        <gremlin.version>1.4</gremlin.version>
+        <blueprints.version>1.2</blueprints.version>
+        <gremlin.version>1.5</gremlin.version>
 
         <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
         <testWithExternalServer>false</testWithExternalServer>
@@ -223,13 +223,6 @@
             <version>2.0.7</version>
         </dependency>
     
-        <dependency>
-            <groupId>bouncycastle</groupId>
-            <artifactId>bcprov-jdk15</artifactId>
-            <version>140</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
 
         <!-- File uploads -->
         <dependency>
@@ -310,6 +303,11 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>bouncycastle</groupId>
+          <artifactId>bcprov-jdk16</artifactId>
+          <version>140</version>
         </dependency>
     </dependencies>
 
@@ -878,15 +876,6 @@
         <repository>
             <id>java.net</id>
             <url>http://download.java.net/maven/2/</url>
-        </repository>
-        <repository>
-            <id>tinkerpop-repository</id>
-            <name>TinkerPop Maven2 Repository</name>
-            <url>http://tinkerpop.com/maven2</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
         </repository>
         <repository>
             <id>selenium-repository</id>

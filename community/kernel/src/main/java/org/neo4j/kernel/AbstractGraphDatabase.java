@@ -90,6 +90,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
@@ -156,6 +157,7 @@ public abstract class AbstractGraphDatabase
     protected XaFactory xaFactory;
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
+    protected RecoveryVerifier recoveryVerifier;
 
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
@@ -183,7 +185,8 @@ public abstract class AbstractGraphDatabase
 
             shutdown();
 
-            throw new IllegalStateException( "Startup failed", throwable );
+//            throw new IllegalStateException( "Startup failed", throwable );
+            throw throwable;
         }
     }
 
@@ -323,10 +326,12 @@ public abstract class AbstractGraphDatabase
         // TODO This cyclic dependency should be resolved
         indexManager.setNodeAutoIndexer( nodeAutoIndexer );
         indexManager.setRelAutoIndexer( relAutoIndexer );
+        
+        recoveryVerifier = createRecoveryVerifier();
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(params, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog );
+        xaFactory = new XaFactory(params, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog, recoveryVerifier );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
@@ -377,6 +382,11 @@ public abstract class AbstractGraphDatabase
         return new StoreFactory(params, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook);
     }
 
+    protected RecoveryVerifier createRecoveryVerifier()
+    {
+        return CommonFactories.defaultRecoveryVerifier();
+    }
+    
     protected KernelData createKernelData()
     {
         return new DefaultKernelData(config, this);

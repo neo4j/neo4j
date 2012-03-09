@@ -22,8 +22,8 @@ package org.neo4j.server.rest.repr;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.tinkerpop.pipes.util.Table;
-import com.tinkerpop.pipes.util.Table.Row;
+import com.tinkerpop.pipes.util.structures.Table;
+import com.tinkerpop.pipes.util.structures.Row;
 
 public class GremlinTableRepresentation extends ObjectRepresentation
 {

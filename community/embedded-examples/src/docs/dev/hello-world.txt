@@ -18,6 +18,11 @@ If a relationship of the type +KNOWS+ connects two nodes, that probably represen
 A lot of the semantics (that is the meaning) of a graph is encoded in the relationship types of the application.
 And although relationships are directed they are equally well traversed regardless of which direction they are traversed. 
 
+[TIP]
+The source code of this example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java[EmbeddedNeo4j.java]
+
+
 == Prepare the database ==
 
 Relationship types can be created by using an +enum+.
@@ -142,6 +147,4 @@ classifier=sources
 tag=shutdownServer
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java[EmbeddedNeo4j.java]
 

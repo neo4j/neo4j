@@ -22,7 +22,7 @@ package org.neo4j.server.guard;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 
 public class GuardedDatabaseFactory implements GraphDatabaseFactory {
@@ -36,7 +36,7 @@ public class GuardedDatabaseFactory implements GraphDatabaseFactory {
     }
 
     @Override
-    public AbstractGraphDatabase createDatabase(String databaseStoreDirectory, Map<String, String> databaseProperties) {
+    public GraphDatabaseSPI createDatabase(String databaseStoreDirectory, Map<String, String> databaseProperties) {
         final GraphDatabaseService db = dbFactory.createDatabase(databaseStoreDirectory, databaseProperties);
 
 //        return new WrappedGraphDatabase(db) {

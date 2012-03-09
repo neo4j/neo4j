@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.domain;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import org.junit.Test;
-
-public class JsonHelperTest {
-    
-    @Test
-    public void shouldConvertNewlinesToWhitespace() {
-        final String MULTILINE_STRING = "Multilines\nunite";
-        final String EXPECTED_STRING = "\"Multilines unite\"";
-        String actualJSon = JsonHelper.createJsonFrom(MULTILINE_STRING);
-        assertThat(actualJSon, is(EXPECTED_STRING));
+public class RecoveryVerificationException extends RuntimeException
+{
+    public RecoveryVerificationException( int identifier, long txId )
+    {
+        super( "Recovered transaction with identifier:" + identifier + ", txId:" + txId +
+                " was recovered, but didn't verify correctly" );
     }
-
-
 }

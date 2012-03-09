@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
@@ -33,7 +36,8 @@ public class JavaQuery
     private static final String DB_PATH = "target/java-query-db";
     String resultString;
     String columnsString;
-    Node resultNode;
+    String nodeResult;
+    String rows = "";
 
     public static void main( String[] args )
     {
@@ -44,9 +48,23 @@ public class JavaQuery
     void run()
     {
         // START SNIPPET: execute
-        AbstractGraphDatabase db = new EmbeddedGraphDatabase( DB_PATH );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( DB_PATH );
+        // add some data first
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node refNode = db.getReferenceNode();
+            refNode.setProperty( "name", "reference node" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // let's execute a query now
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node(0) where 1=1 return n" );
+        ExecutionResult result = engine.execute( "start n=node(0) return n, n.name" );
         System.out.println( result );
         // END SNIPPET: execute
         // START SNIPPET: columns
@@ -57,12 +75,25 @@ public class JavaQuery
         Iterator<Node> n_column = result.columnAs( "n" );
         for ( Node node : asIterable( n_column ) )
         {
-            System.out.println( node );
-            // END SNIPPET: items
-            resultNode = node;
-            // START SNIPPET: items
+            // note: we're grabbing the name property from the node,
+            // not from the n.name in this case.
+            nodeResult = node + ": " + node.getProperty( "name" );
+            System.out.println( nodeResult );
         }
         // END SNIPPET: items
+        // the result is now empty, get a new one
+        result = engine.execute( "start n=node(0) return n, n.name" );
+        // START SNIPPET: rows
+        for ( Map<String, Object> row : result )
+        {
+            for ( Entry<String, Object> column : row.entrySet() )
+            {
+                rows += column.getKey() + ": " + column.getValue() + "; ";
+            }
+            rows += "\n";
+        }
+        System.out.println( rows );
+        // END SNIPPET: rows
         resultString = result.toString();
         columnsString = columns.toString();
         db.shutdown();

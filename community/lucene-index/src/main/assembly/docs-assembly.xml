@@ -29,7 +29,7 @@
     <fileSet>
       <filtered>true</filtered>
       <directory>target/docs</directory>
-      <outputDirectory>/dev</outputDirectory>
+      <outputDirectory>/</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>src/docs</directory>

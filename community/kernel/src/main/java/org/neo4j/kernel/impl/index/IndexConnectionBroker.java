@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 public abstract class IndexConnectionBroker<T extends XaConnection>
 {
     private final ArrayMap<Transaction, T> txConnectionMap =
-            new ArrayMap<Transaction, T>( 5, true, true );
+            new ArrayMap<Transaction, T>( (byte)5, true, true );
     private final TransactionManager transactionManager;
 
     protected IndexConnectionBroker( TransactionManager transactionManager )

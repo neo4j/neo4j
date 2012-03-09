@@ -478,8 +478,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator( false );
-//        nextBlockId(); // reserved first block containing blockSize
-        setHighId( 1 );
+        setHighId( 1 ); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();
         long highId = 0;
         long defraggedCount = 0;
@@ -488,7 +487,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             long fileSize = fileChannel.size();
             boolean fullRebuild = true;
 
-            if ( conf.rebuild_idgenerators_fast(false))
+            if ( conf.rebuild_idgenerators_fast(true))
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();
@@ -501,18 +500,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 for ( long i = 1; i * getBlockSize() < fileSize; i++ )
                 {
                     fileChannel.position( i * getBlockSize() );
+                    byteBuffer.clear();
                     fileChannel.read( byteBuffer );
                     byteBuffer.flip();
-                    byte inUse = byteBuffer.get();
-                    byteBuffer.flip();
-                    nextBlockId();
-                    if ( inUse == Record.NOT_IN_USE.byteValue() )
+                    if ( !isRecordInUse( byteBuffer ) )
                     {
                         freeIdList.add( i );
                     }
                     else
                     {
                         highId = i;
+                        setHighId( highId + 1 );
                         while ( !freeIdList.isEmpty() )
                         {
                             freeBlockId( freeIdList.removeFirst() );

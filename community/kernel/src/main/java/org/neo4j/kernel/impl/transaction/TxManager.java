@@ -60,7 +60,7 @@ public class TxManager extends AbstractTransactionManager
 {
     private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
-    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
+    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
 
     private final String txLogDir;
     private static String separator = File.separator;
@@ -123,7 +123,7 @@ public class TxManager extends AbstractTransactionManager
     @Override
     public void init()
     {
-        txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
+        txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
         logSwitcherFileName = txLogDir + separator + "active_tx_log";
         txLog1FileName = "tm_tx_log.1";
         txLog2FileName = "tm_tx_log.2";

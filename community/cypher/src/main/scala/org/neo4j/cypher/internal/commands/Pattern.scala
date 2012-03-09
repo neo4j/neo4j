@@ -21,17 +21,19 @@ package org.neo4j.cypher.internal.commands
 
 import org.neo4j.graphdb.Direction
 import java.lang.String
+import collection.Seq
+import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, Identifier}
 
 abstract class Pattern {
   val optional: Boolean
-
   val predicate: Predicate
+  val possibleStartPoints: Seq[Identifier]
 
-  def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
+  protected def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
 
-  def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
+  protected def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
 
-  def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
+  protected def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 }
 
 object RelatedTo {
@@ -48,6 +50,8 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
     if (relType.nonEmpty) info = info + ":" + relType.get
     if (info == "") "" else "[" + info + "]"
   }
+
+  val possibleStartPoints: Seq[Identifier] = Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(relName, RelationshipType()))
 }
 
 abstract class PathPattern extends Pattern {
@@ -97,6 +101,8 @@ case class VarLengthRelatedTo(pathName: String,
 
     if (info == "") "" else "[" + info + "]"
   }
+
+  lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()), Identifier(pathName, PathType()) )
 }
 
 case class ShortestPath(pathName: String,
@@ -113,6 +119,8 @@ case class ShortestPath(pathName: String,
   override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
 
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
+  
+  def dependencies: Seq[Identifier] = Seq(Identifier(start, NodeType()),Identifier(end, NodeType())) ++ predicate.dependencies
 
   def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relType, dir, maxDepth, optional, single, None)
 
@@ -124,4 +132,6 @@ case class ShortestPath(pathName: String,
     if (maxDepth.nonEmpty) info = info + ".." + maxDepth.get
     info + "]"
   }
+
+  lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()))
 }

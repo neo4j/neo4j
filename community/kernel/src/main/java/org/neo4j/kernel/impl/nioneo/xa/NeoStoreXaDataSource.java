@@ -184,23 +184,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
 
         final TransactionFactory tf;
-        if (conf.intercept_committing_transactions(false) && !providers.isEmpty() )
+        boolean shouldIntercept = conf.intercept_committing_transactions(false);
+        if ( shouldIntercept && !providers.isEmpty() )
         {
-            tf = new InterceptingTransactionFactory(dependencyResolver);
+            tf = new InterceptingTransactionFactory( dependencyResolver );
         }
         else
         {
             tf = new TransactionFactory();
         }
         neoStore = sf.newNeoStore(store);
-
-        TransactionInterceptor interceptors = null;
-        if (!providers.isEmpty())
-        {
-            interceptors = TransactionInterceptorProvider.resolveChain( providers, this, dependencyResolver );
-        }
-
-        xaContainer = xaFactory.newXaContainer(this, conf.logical_log(), new CommandFactory( neoStore ), tf, interceptors);
+        
+        xaContainer = xaFactory.newXaContainer(this, conf.logical_log(), new CommandFactory( neoStore ), tf,
+                shouldIntercept && !providers.isEmpty() ? providers : null, dependencyResolver );
 
         try
         {
@@ -225,7 +221,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 logger.fine( "Waiting for TM to take care of recovered " +
                     "transactions." );
             }
-            idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
+            idGenerators = new ArrayMap<Class<?>,Store>( (byte)5, false, false );
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
             this.idGenerators.put( Relationship.class,
                 neoStore.getRelationshipStore() );

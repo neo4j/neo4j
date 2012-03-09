@@ -33,3 +33,11 @@ trait Pipe {
   def symbols: SymbolTable
   def executionPlan(): String
 }
+
+class NullPipe extends Pipe {
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = Seq(Map())
+
+  def symbols: SymbolTable = new SymbolTable()
+
+  def executionPlan(): String = ""
+}

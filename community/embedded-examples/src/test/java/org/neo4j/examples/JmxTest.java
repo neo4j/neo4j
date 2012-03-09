@@ -26,8 +26,8 @@ import java.util.Date;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public class JmxTest
 {
@@ -52,8 +52,7 @@ public class JmxTest
     private static Date getStartTimeFromManagementBean(
             GraphDatabaseService graphDbService )
     {
-        // use EmbeddedGraphDatabase to access management beans
-        AbstractGraphDatabase graphDb = (AbstractGraphDatabase) graphDbService;
+        GraphDatabaseSPI graphDb = (GraphDatabaseSPI) graphDbService;
         Kernel kernel = graphDb.getSingleManagementBean( Kernel.class );
         Date startTime = kernel.getKernelStartTime();
         return startTime;

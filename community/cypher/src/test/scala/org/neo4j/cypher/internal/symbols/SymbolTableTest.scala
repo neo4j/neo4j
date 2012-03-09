@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.symbols
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{CypherTypeException, SyntaxException}
 
 class SymbolTableTest extends JUnitSuite {
   @Test def givenSymbolTableWithIdentifierWhenAskForExistingThenReturnIdentifier() {
@@ -34,7 +34,7 @@ class SymbolTableTest extends JUnitSuite {
     symbols.assertHas(Identifier("x", AnyType()))
   }
 
-  @Test(expected = classOf[SyntaxException]) def givenSymbolTableWithStringIdentifierWhenAskForIterableThenThrows() {
+  @Test(expected = classOf[CypherTypeException]) def givenSymbolTableWithStringIdentifierWhenAskForIterableThenThrows() {
     val symbols = new SymbolTable(Identifier("x", StringType()))
     symbols.assertHas(Identifier("x", NumberType()))
   }

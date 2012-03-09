@@ -172,7 +172,7 @@ public class DumpLogicalLog
         };
     }
 
-    private static class CommandFactory extends XaCommandFactory
+    public static class CommandFactory extends XaCommandFactory
     {
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,
