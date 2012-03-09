@@ -20,6 +20,9 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
 import java.util.ArrayList;
@@ -63,10 +66,29 @@ public class CypherResultRepresentation extends ObjectRepresentation
 
     Representation getRepresentation( Object r )
     {
-        if( r == null ) {
+        if( r == null )
+        {
             return ValueRepresentation.string( null );
-        } else if(r instanceof Iterable) {
+        }
+
+        if ( r instanceof Path )
+        {
+            return new PathRepresentation<Path>((Path) r );
+        }
+
+        if(r instanceof Iterable)
+        {
             return handleIterable( (Iterable) r );
+        }
+
+        if ( r instanceof Node)
+        {
+            return new NodeRepresentation( (Node) r );
+        }
+
+        if ( r instanceof Relationship)
+        {
+            return new RelationshipRepresentation( (Relationship) r );
         }
 
         JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();

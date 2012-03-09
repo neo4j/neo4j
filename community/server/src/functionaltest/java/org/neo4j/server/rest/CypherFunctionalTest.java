@@ -126,6 +126,24 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     }
     
     @Test
+    @Graph( nodes = {
+            @NODE( name = "I", properties = {
+                @PROP( key = "prop", value = "Hello", type = GraphDescription.PropType.STRING ) } ),
+            @NODE( name = "you" ) },
+            relationships = {
+                @REL( start = "I", end = "him", type = "know", properties = {
+                    @PROP( key = "prop", value = "World", type = GraphDescription.PropType.STRING ) } ) } )
+    public void nodes_are_represented_as_nodes() throws Exception {
+        data.get();
+        String script = "start n = node(%I%) match n-[r]->() return n, r";
+
+        String response = cypherRestCall( script, Status.OK );
+
+        assertThat( response, containsString( "Hello" ) );
+        assertThat( response, containsString( "World" ) );
+    }
+    
+    @Test
     @Documented
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_syntax_errors() throws Exception {
@@ -203,10 +221,5 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     private String cypherUri()
     {
         return getDataUri() + "cypher";
-    }
-    
-    private String cypherAltUri()
-    {
-        return getDataUri() + "cypher_alt";
     }
 }
