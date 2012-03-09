@@ -27,6 +27,10 @@
     <short-name>installer-qa</short-name>
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
+    
+    <box-path-ubuntu-11.04-amd64>https://github.com/downloads/divio/vagrant-boxes/vagrant-ubuntu-11.04-server-amd64-v1.box</box-path-ubuntu-11.04-amd64>
+    <box-path-win2008-amd64>${project.baseDir}/boxes/win2008-amd64.box</box-path-win2008-amd64>
+    
   </properties>
 
   <dependencies>
@@ -129,6 +133,10 @@
           <systemPropertyVariables>
             <neo4j.version>${neo4j.version}</neo4j.version>
             <java.util.logging.config.file>test-logging.properties</java.util.logging.config.file>
+            
+            <box-path-ubuntu-11.04-amd64>${box-path-ubuntu-11.04-amd64}</box-path-ubuntu-11.04-amd64>
+            <box-path-win2008-amd64>${box-path-win2008-amd64}</box-path-win2008-amd64>
+            
           </systemPropertyVariables>
         </configuration>
       </plugin>
