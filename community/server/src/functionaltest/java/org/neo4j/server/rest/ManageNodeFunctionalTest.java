@@ -102,7 +102,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
                 .expectedHeader( "Content-Length" )
                 .post( functionalTestHelper.nodeUri() )
                 .response().getEntity();
-        assertTrue( response.contains( "[ 1, 2, 3 ]" ) );
+        assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
     }
 
     /**
