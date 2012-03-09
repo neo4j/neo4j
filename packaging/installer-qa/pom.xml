@@ -84,31 +84,39 @@
               <target>
                 <!-- Windows installers -->
                 <move
-                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi"
-                  toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
+                  file="${project.build.outputDirectory}/neo4j-community-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-community.msi"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-advanced.msi"
-                  toFile="${project.build.outputDirectory}/installer-windows-advanced.msi" />
+                  file="${project.build.outputDirectory}/neo4j-advanced-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-advanced.msi"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi"
-                  toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
+                  file="${project.build.outputDirectory}/neo4j-enterprise-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-coordinator.msi"
-                  toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi" />
+                  file="${project.build.outputDirectory}/neo4j-coordinator-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi"
+                  failonerror="false" />
 
                 <!-- Debian installers -->
                 <move
-                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-community.deb"
-                  toFile="${project.build.outputDirectory}/installer-debian-community.deb" />
+                  file="${project.build.outputDirectory}/neo4j_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-community.deb"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-advanced.deb"
-                  toFile="${project.build.outputDirectory}/installer-debian-advanced.deb" />
+                  file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-advanced.deb"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-enterprise.deb"
-                  toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb" />
+                  file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb"
+                  failonerror="false" />
                 <move
-                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-coordinator.deb"
-                  toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb" />
+                  file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb"
+                  failonerror="false" />
               </target>
             </configuration>
           </execution>
@@ -133,7 +141,7 @@
       <!-- This project expects installers to be available under /target/classes. You can
       either place them there manually, or activate this
       profile to pull them in directly from the file system -->
-      <id>pull-standalone-artifacts</id>
+      <id>pull-artifacts</id>
       <activation>
         <property>
           <name>!pullArtifacts</name>
@@ -153,18 +161,16 @@
                 </goals>
                 <configuration>
                   <target>
-                    <copy
-                      toFile="${project.build.outputDirectory}/installer-debian-community.deb"
-                      file="${project.baseDir}/../../installer-linux/target/neo4j_${neo4j.version}_all.deb" />
-                    <copy
-                      toFile="${project.build.outputDirectory}/installer-debian-advanced.deb"
-                      file="${project.baseDir}/../../installer-linux/target/neo4j-advanced_${neo4j.version}_all.deb" />
-                    <copy
-                      toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb"
-                      file="${project.baseDir}/../../installer-linux/target/neo4j-enterprise_${neo4j.version}_all.deb" />
-                    <copy
-                      toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb"
-                      file="${project.baseDir}/../../installer-linux/target/neo4j-coordinator_${neo4j.version}_all.deb" />
+                    <copy toDir="${project.build.directory}">
+                      <fileset dir="${project.baseDir}/../../installer-linux">
+                        <include name="target/*.deb"/>
+                      </fileset>
+                    </copy>
+                    <copy toDir="${project.build.directory}">
+                      <fileset dir="${project.baseDir}/../../installer-windows">
+                        <include name="target/*.msi"/>
+                      </fileset>
+                    </copy>
                   </target>
                 </configuration>
               </execution>
