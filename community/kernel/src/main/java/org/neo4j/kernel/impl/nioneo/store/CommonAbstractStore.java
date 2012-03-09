@@ -629,7 +629,7 @@ public abstract class CommonAbstractStore
             windowPool.close();
             windowPool = null;
         }
-        if ( isReadOnly() && !isBackupSlave() )
+        if ( (isReadOnly() && !isBackupSlave()) || idGenerator == null || !storeOk )
         {
             try
             {
