@@ -55,9 +55,9 @@ public class GraphDatabaseFactory
             public GraphDatabaseService newDatabase(Map<String, String> config)
             {
                 if ( read_only.TRUE.equalsIgnoreCase(config.get( read_only.name() )))
-                    return new EmbeddedGraphDatabase(path, config, indexProviders);
-                else
                     return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders);
+                else
+                    return new EmbeddedGraphDatabase(path, config, indexProviders);
             }
         });
     }

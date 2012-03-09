@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
  * Test the implementation of the {@link KernelExtension} framework. Treats the
@@ -50,7 +51,7 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     @Test
     public void canDisableLoadingKernelExtensions() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
         try
         {
             assertFalse( "Extensions were loaded despite configured not to",
@@ -69,7 +70,7 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     @Test
     public void shouldRetrieveSameLoadedStateObjectWhenRequested() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
             DummyExtension.State state = new DummyExtension().getState( getExtensions( graphdb ) );
@@ -85,7 +86,7 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     @Test
     public void differentExtensionsCanHaveDifferentState() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
             KernelData kernel = getExtensions( graphdb );
