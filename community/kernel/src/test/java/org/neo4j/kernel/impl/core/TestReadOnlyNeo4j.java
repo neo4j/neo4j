@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -34,9 +28,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.test.DbRepresentation;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
 
 public class TestReadOnlyNeo4j
 {
@@ -71,7 +70,7 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         DynamicRelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
         Transaction tx = db.beginTx();
         Node prevNode = db.getReferenceNode();
         for ( int i = 0; i < 100; i++ )
@@ -91,7 +90,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
@@ -138,12 +137,12 @@ public class TestReadOnlyNeo4j
         }
         
         // clear caches and try reads
-        db.getNodeManager().clearCache();
+        ((GraphDatabaseSPI)db).getNodeManager().clearCache();
         
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        db.getNodeManager().clearCache();
+        ((GraphDatabaseSPI)db).getNodeManager().clearCache();
         
         assertEquals( "value1", node1.getProperty( "key1" ) );
         Relationship loadedRel = node1.getSingleRelationship( 

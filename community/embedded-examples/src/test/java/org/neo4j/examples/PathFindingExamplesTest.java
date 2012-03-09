@@ -18,11 +18,8 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.util.Iterator;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,8 +38,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.Traversal;
+
+import static org.junit.Assert.*;
 
 public class PathFindingExamplesTest
 {
@@ -59,7 +58,7 @@ public class PathFindingExamplesTest
     {
         String storeDir = "target/var/examples";
         deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
     @Before

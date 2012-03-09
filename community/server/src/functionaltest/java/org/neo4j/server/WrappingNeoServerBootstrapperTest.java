@@ -19,23 +19,20 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -46,8 +43,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse.Status;
+import static org.junit.Assert.*;
 
 public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 {
@@ -93,9 +89,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
-        AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase(
-                "target/configDb", MapUtil.stringMap(
-                        Config.ENABLE_REMOTE_SHELL, "true" ) );
+        GraphDatabaseSPI graphdb = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
         EmbeddedServerConfigurator config;
         config = new EmbeddedServerConfigurator( graphdb );
         // let the server endpoint be on a custom port

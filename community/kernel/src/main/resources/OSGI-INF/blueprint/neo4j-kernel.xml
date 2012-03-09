@@ -30,9 +30,8 @@
     	<property name="indexProviders" ref="indexProviders"/>
     </bean>
     
-    <bean id="graphDatabaseFactory" class="org.neo4j.kernel.DefaultGraphDatabaseFactory">
+    <bean id="graphDatabaseFactory" class="org.neo4j.graphdb.factory.GraphDatabaseFactory">
     	<property name="indexIterable" ref="listIndexIterable"/>
     </bean>
-    <service ref="graphDatabaseFactory" interface="org.neo4j.graphdb.GraphDatabaseFactory"/>
-	
+    <service ref="graphDatabaseFactory" interface="org.neo4j.graphdb.factory.GraphDatabaseFactory"/>
 </blueprint>

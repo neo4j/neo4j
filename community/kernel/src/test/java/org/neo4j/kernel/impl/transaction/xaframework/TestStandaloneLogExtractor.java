@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 public class TestStandaloneLogExtractor
 {
@@ -49,7 +50,7 @@ public class TestStandaloneLogExtractor
                 sourceDir, "" + cleanShutdown
         } ).waitFor();
 
-        EmbeddedGraphDatabase newDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
+        GraphDatabaseSPI newDb = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() ).newGraphDatabase();
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( sourceDir );
         long expectedTxId = 2;

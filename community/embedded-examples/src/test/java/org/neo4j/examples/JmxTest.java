@@ -19,22 +19,21 @@
 
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Date;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
+
+import static org.junit.Assert.*;
 
 public class JmxTest
 {
     @Test
     public void readJmxProperties()
     {
-        GraphDatabaseService graphDbService = new EmbeddedGraphDatabase( "target/jmx-db" );
+        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/jmx-db" ).newGraphDatabase();
         try
         {
             Date startTime = getStartTimeFromManagementBean( graphDbService );

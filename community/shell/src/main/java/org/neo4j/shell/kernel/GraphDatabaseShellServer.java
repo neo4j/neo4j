@@ -21,12 +21,9 @@ package org.neo4j.shell.kernel;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -35,6 +32,8 @@ import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
@@ -47,8 +46,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     private boolean graphDbCreatedHere;
 
     /**
-     * @param graphDb the {@link GraphDatabaseService} instance to use with the
-     * shell server.
      * @throws RemoteException if an RMI error occurs.
      */
     public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )
@@ -81,19 +78,12 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly,
             String configFileOrNull )
     {
-        Map<String, String> config = loadConfigFile( path, configFileOrNull );
-        return readOnly ? new EmbeddedReadOnlyGraphDatabase( path, config ) :
-                new EmbeddedGraphDatabase( path, config );
-    }
-
-    private static Map<String, String> loadConfigFile( String path, String configFileOrNull )
-    {
-        Map<String, String> result = null;
-        if ( configFileOrNull != null )
-        {
-            result = EmbeddedGraphDatabase.loadConfigurations( configFileOrNull );
-        }
-        return result != null ? result : new HashMap<String, String>();
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( path ).
+            setConfig( read_only, Boolean.toString( readOnly ) );
+        if (configFileOrNull != null)
+            builder.loadPropertiesFromFile( configFileOrNull );
+        return builder.newGraphDatabase();
     }
 
     protected String getShellPrompt()

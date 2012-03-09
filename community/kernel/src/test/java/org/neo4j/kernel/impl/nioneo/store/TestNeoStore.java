@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,11 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -45,12 +39,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.ConfigProxy;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -66,6 +60,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
@@ -1042,7 +1038,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         String storeDir = "target/test-data/set-version";
         FileUtils.deleteRecursively( new File( storeDir ) );
-        new EmbeddedGraphDatabase( storeDir ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase().shutdown();
         assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
 

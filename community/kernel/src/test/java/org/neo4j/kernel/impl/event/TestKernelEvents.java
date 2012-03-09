@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
 
 public class TestKernelEvents
 {
@@ -47,7 +45,7 @@ public class TestKernelEvents
     @Test
     public void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
@@ -105,7 +103,7 @@ public class TestKernelEvents
     @Test
     public void testShutdownEvents()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/var/neodb" );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/neodb" ).newGraphDatabase();
         DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             public ExecutionOrder orderComparedTo( KernelEventHandler other )

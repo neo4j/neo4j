@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +27,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,11 +35,13 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.*;
 
 public abstract class AbstractTestBase
 {
@@ -55,7 +53,7 @@ public abstract class AbstractTestBase
     public static final void beforeSuite()
     {
         deleteFileOrDirectory( new File( TARGET_NEODB ) );
-        graphdb = new EmbeddedGraphDatabase( TARGET_NEODB );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TARGET_NEODB ).newGraphDatabase();
     }
 
     @AfterClass

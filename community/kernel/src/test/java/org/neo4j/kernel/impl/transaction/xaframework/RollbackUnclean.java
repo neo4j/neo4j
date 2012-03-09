@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 public class RollbackUnclean
 {
@@ -32,7 +33,7 @@ public class RollbackUnclean
     public static void main( String[] args )
     {
         String storeDir = args[0];
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();

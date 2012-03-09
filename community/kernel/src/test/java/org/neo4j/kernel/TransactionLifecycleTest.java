@@ -19,26 +19,28 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertNull;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 
 public class TransactionLifecycleTest
 {
     public TargetDirectory target = TargetDirectory.forTest( getClass() );
-    private EmbeddedGraphDatabase graphdb;
+    private GraphDatabaseService graphdb;
     
     @Before
     public void startGraphdb()
     {
-        this.graphdb = new EmbeddedGraphDatabase( target.graphDbDir( true ).getPath() );
+        this.graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getPath() ).newGraphDatabase();
     }
 
     @After

@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.kernel.AbstractGraphDatabase
-import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.{After, Before}
-import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Relationship, Node}
 import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
-
+import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.graphdb._
 
 class GraphDatabaseTestBase extends JUnitSuite {
-  var graph: AbstractGraphDatabase = null
+  var graph: GraphDatabaseService = null
   var refNode: Node = null
   var nodes: List[Node] = null
 
   @Before
   def baseInit() {
-    graph = new ImpermanentGraphDatabase()
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
     refNode = graph.getReferenceNode
   }
 

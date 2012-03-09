@@ -19,38 +19,36 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
 
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.Config.*;
+
 public class TestTxTimestamps
 {
-    private EmbeddedGraphDatabase db;
+    private GraphDatabaseSPI db;
     
     @Before
     public void doBefore() throws Exception
     {
         File storeDir = new File( "target/test-data/timestamp" );
         FileUtils.deleteRecursively( storeDir );
-        db = new EmbeddedGraphDatabase( storeDir.getAbsolutePath(), stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath()).setConfig( KEEP_LOGICAL_LOGS, "true" ).newGraphDatabase();
     }
     
     @After

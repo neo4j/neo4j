@@ -21,14 +21,13 @@ package org.neo4j.examples;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class EmbeddedNeo4j
@@ -61,7 +60,7 @@ public class EmbeddedNeo4j
     {
         clearDb();
         // START SNIPPET: startDb
-        graphDb = new EmbeddedGraphDatabase( DB_PATH );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
         registerShutdownHook( graphDb );
         // END SNIPPET: startDb
 

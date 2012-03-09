@@ -29,11 +29,9 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class ServerTestUtils
 {
@@ -43,7 +41,7 @@ public class ServerTestUtils
         public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+            return (GraphDatabaseSPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseStoreDirectory ).setConfig( databaseProperties ).newGraphDatabase();
         }
     };
 
@@ -53,7 +51,7 @@ public class ServerTestUtils
         public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return new ImpermanentGraphDatabase( databaseProperties );
+            return (GraphDatabaseSPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( databaseProperties ).newGraphDatabase();
         }
     };
     

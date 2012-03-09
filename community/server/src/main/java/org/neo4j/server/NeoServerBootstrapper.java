@@ -21,9 +21,7 @@ package org.neo4j.server;
 
 import java.util.Arrays;
 import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.modules.DiscoveryModule;
@@ -62,7 +60,10 @@ public class NeoServerBootstrapper extends Bootstrapper
             public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
-                return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+                return (GraphDatabaseSPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().
+                    newEmbeddedDatabaseBuilder( databaseStoreDirectory ).
+                    setConfig( databaseProperties ).
+                    newGraphDatabase();
             }
         };
     }

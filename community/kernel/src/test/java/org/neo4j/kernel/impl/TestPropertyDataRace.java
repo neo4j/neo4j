@@ -20,14 +20,15 @@
 package org.neo4j.kernel.impl;
 
 import java.util.concurrent.CountDownLatch;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -147,7 +148,7 @@ public class TestPropertyDataRace
     @BreakpointTrigger( "enable breakpoints" )
     private void clearCaches()
     {
-        graphdb.getNodeManager().clearCache();
+        ((GraphDatabaseSPI)graphdb).getNodeManager().clearCache();
     }
 
     @BreakpointTrigger( "done" )
@@ -206,13 +207,13 @@ public class TestPropertyDataRace
         thread = null;
     }
 
-    private static EmbeddedGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
 
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new EmbeddedGraphDatabase( TargetDirectory.forTest( TestPropertyDataRace.class ).graphDbDir( true )
-                                                            .getAbsolutePath() );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest( TestPropertyDataRace.class ).graphDbDir( true )
+                                                            .getAbsolutePath() ).newGraphDatabase();
     }
 
     @AfterClass

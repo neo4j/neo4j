@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised and also a problem
@@ -47,7 +47,7 @@ public class TestCrashWithRebuildSlow
                 ProduceNonCleanDefraggedStringStore.class.getName(), dir } ).waitFor() );
         
         // Recover with rebuild_idgenerators_fast=false
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( dir, stringMap( Config.REBUILD_IDGENERATORS_FAST, "false" ) );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( Config.REBUILD_IDGENERATORS_FAST, "false" ).newGraphDatabase();
         try
         {
             int nameCount = 0;

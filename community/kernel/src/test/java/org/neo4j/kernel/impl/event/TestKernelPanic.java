@@ -19,25 +19,24 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 public class TestKernelPanic
 {
@@ -46,9 +45,9 @@ public class TestKernelPanic
     {
         String path = "target/var/testdb";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         XaDataSourceManager xaDs =
-            graphDb.getXaDataSourceManager();
+            ((GraphDatabaseSPI)graphDb).getXaDataSourceManager();
         
         IllBehavingXaDataSource noob = new IllBehavingXaDataSource(UTF8.encode( "554342" ), "noob");
         xaDs.registerDataSource( noob );
@@ -57,7 +56,7 @@ public class TestKernelPanic
         graphDb.registerKernelEventHandler( panic );
      
         org.neo4j.graphdb.Transaction gdbTx = graphDb.beginTx();
-        TransactionManager txMgr = graphDb.getTxManager();
+        TransactionManager txMgr = ((GraphDatabaseSPI)graphDb).getTxManager();
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();

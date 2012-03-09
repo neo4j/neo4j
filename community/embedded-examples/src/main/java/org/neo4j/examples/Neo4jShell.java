@@ -26,15 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -70,12 +69,12 @@ public class Neo4jShell
 
     private static void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( DB_PATH );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
     }
 
     private static void startGraphDb( Map<String, String> settings )
     {
-        graphDb = new EmbeddedGraphDatabase( DB_PATH, settings );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).setConfig( settings ).newGraphDatabase();
     }
 
     private static void startLocalShell() throws Exception

@@ -19,11 +19,6 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -31,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.TermQuery;
@@ -46,6 +40,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
@@ -65,6 +60,8 @@ import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.*;
 
 public class ImdbExampleTest
 {
@@ -185,7 +182,7 @@ public class ImdbExampleTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -616,8 +613,7 @@ public class ImdbExampleTest
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase(
-                "target/neo4jdb-batchinsert" );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/neo4jdb-batchinsert" ).newGraphDatabase();
         Index<Node> index = db.index()
                 .forNodes( "actors" );
         Node reeves = index.get( "name", "Keanu Reeves" )

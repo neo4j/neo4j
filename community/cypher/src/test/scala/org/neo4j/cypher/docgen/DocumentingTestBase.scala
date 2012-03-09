@@ -21,8 +21,6 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.graphdb.index.Index
 import org.junit.{Before, After}
-import org.neo4j.test.ImpermanentGraphDatabase
-import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{PrintWriter, File, FileWriter}
 import org.neo4j.graphdb._
@@ -34,11 +32,11 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
-
+import org.neo4j.test.{TestGraphDatabaseFactory, GraphDescription}
 
 abstract class DocumentingTestBase extends JUnitSuite {
 
-  var db: ImpermanentGraphDatabase = null
+  var db: GraphDatabaseService = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
   var nodes: Map[String, Node] = null
@@ -140,7 +138,7 @@ _Graph_
 
   @Before
   def init() {
-    db = new ImpermanentGraphDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
     engine = new ExecutionEngine(db)
 
     db.cleanContent(false)

@@ -19,15 +19,9 @@
  */
 package matching;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,11 +36,14 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
 
 public class TestMatchingOfCircularPattern
 {
@@ -265,7 +262,7 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        graphdb = new EmbeddedGraphDatabase( "target/var/db" );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/db" ).newGraphDatabase();
         Transaction tx = graphdb.beginTx();
         try
         {

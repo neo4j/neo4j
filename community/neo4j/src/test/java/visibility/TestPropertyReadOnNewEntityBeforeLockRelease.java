@@ -19,21 +19,20 @@
  */
 package visibility;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.concurrent.CountDownLatch;
-
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.*;
 
 @SuppressWarnings( "serial" )
 public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubProcessTestBase
@@ -52,7 +51,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class CreateData implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseService graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -90,7 +89,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class ReadData implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseService graphdb )
         {
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
             assertNotNull( "did not get the node from the index", node );
@@ -147,8 +146,10 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
      */
     public static void main( String... args ) throws Exception
     {
-        final EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase(
-                "target/test-data/" + TestPropertyReadOnNewEntityBeforeLockRelease.class.getName() + "/graphdb" );
+        final GraphDatabaseService graphdb = new GraphDatabaseFactory().
+                                                  newEmbeddedDatabaseBuilder( "target/test-data/" + TestPropertyReadOnNewEntityBeforeLockRelease.class
+                                                      .getName() + "/graphdb" ).
+                                                  newGraphDatabase();
         final CountDownLatch completion = new CountDownLatch( 2 );
         class TaskRunner implements Runnable
         {

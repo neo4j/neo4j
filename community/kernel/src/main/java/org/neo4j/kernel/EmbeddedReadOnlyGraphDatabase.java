@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexIterable;
+import org.neo4j.graphdb.index.IndexProvider;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -66,14 +66,13 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
-        this( storeDir, params, null );
+        this( storeDir, params, Collections.<IndexProvider>emptyList());
     }
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
-            Map<String, String> params, IndexIterable indexIterable )
+            Map<String, String> params, Iterable<IndexProvider> indexProviders1 )
     {
-        super( storeDir, addReadOnly(params) );
-        setIndexIterable(indexIterable);
+        super( storeDir, addReadOnly(params), indexProviders1 );
         run();
     }
 

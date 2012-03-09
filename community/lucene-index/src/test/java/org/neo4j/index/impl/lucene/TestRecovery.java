@@ -19,29 +19,28 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.util.Map;
-
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.ConfigProxy;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -57,7 +56,7 @@ public class TestRecovery
     {
         String path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        return new EmbeddedGraphDatabase( path );
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
     
     @Test
@@ -79,7 +78,7 @@ public class TestRecovery
         graphDb.shutdown();
         
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
+        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase();
         newGraphDb.shutdown();
     }
     
@@ -94,7 +93,7 @@ public class TestRecovery
         db.shutdown();
         
         // This doesn't seem to trigger recovery... it really should
-        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase().shutdown();
     }
     
     @Test
@@ -107,7 +106,7 @@ public class TestRecovery
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 AddDeleteQuit.class.getName(), getDbPath() } ).waitFor() );
         
-        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase().shutdown();
         db.shutdown();
     }
 

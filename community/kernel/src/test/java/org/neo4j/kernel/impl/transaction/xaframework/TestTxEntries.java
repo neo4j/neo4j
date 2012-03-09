@@ -19,19 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.Random;
-
 import javax.transaction.xa.Xid;
-
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 public class TestTxEntries
 {
@@ -62,7 +59,7 @@ public class TestTxEntries
         streams.done();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
-        new EmbeddedGraphDatabase( storeDir ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase().shutdown();
     }
     
     @Test

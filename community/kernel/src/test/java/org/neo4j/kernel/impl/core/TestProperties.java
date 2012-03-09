@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
@@ -83,7 +81,7 @@ public class TestProperties extends AbstractNeo4jTestCase
          */
         String path = TargetDirectory.forTest( TestProperties.class ).directory(
                 "empty-string" ).getCanonicalPath();
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         long nodeId = node.getId();
@@ -92,7 +90,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         tx.finish();
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
         db.shutdown();
-        db = new EmbeddedGraphDatabase( path );
+        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
     }
 

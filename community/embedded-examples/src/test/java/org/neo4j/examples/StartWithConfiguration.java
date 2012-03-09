@@ -18,13 +18,11 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertNotNull;
-
-import java.util.Map;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class StartWithConfiguration
 {
@@ -33,10 +31,12 @@ public class StartWithConfiguration
     {
         String pathToConfig = "src/test/resources/";
         // START SNIPPET: startDbWithConfig
-        Map<String, String> config = EmbeddedGraphDatabase.loadConfigurations( pathToConfig
-                                                                               + "neo4j.properties" );
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
-                "target/database/location", config );
+
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( "target/database/location" ).
+            loadPropertiesFromFile( pathToConfig + "neo4j.properties" ).
+            newGraphDatabase();
+
         // END SNIPPET: startDbWithConfig
         assertNotNull( graphDb );
         graphDb.shutdown();

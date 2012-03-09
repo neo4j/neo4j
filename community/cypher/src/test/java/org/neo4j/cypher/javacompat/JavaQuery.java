@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 public class JavaQuery
 {
@@ -48,7 +47,7 @@ public class JavaQuery
     void run()
     {
         // START SNIPPET: execute
-        GraphDatabaseService db = new EmbeddedGraphDatabase( DB_PATH );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
         // add some data first
         Transaction tx = db.beginTx();
         try

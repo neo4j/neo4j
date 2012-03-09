@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,7 +44,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexIterable;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
@@ -99,6 +94,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.neo4j.helpers.Exceptions.*;
+
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -131,7 +128,7 @@ public abstract class AbstractGraphDatabase
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
     protected NodeManager nodeManager;
-    private IndexIterable indexIterable;
+    protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
     protected Config config;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
@@ -165,10 +162,14 @@ public abstract class AbstractGraphDatabase
 
     private LifeSupport life = new LifeSupport();
 
-    protected AbstractGraphDatabase(String storeDir, Map<String, String> params)
+    protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
+                                    Iterable<IndexProvider> indexProviders)
     {
         this.params = params;
         this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
+
+        // SPI - provided services
+        this.indexProviders = indexProviders;
     }
 
     protected void run()
@@ -317,8 +318,8 @@ public abstract class AbstractGraphDatabase
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
 
-        if (indexIterable == null)
-        	indexIterable = new LegacyIndexIterable();
+        if (indexProviders == null)
+        	indexProviders = new LegacyIndexIterable();
         indexManager = new IndexManagerImpl(config, indexStore, xaDataSourceManager, txManager, this);
         nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( ConfigProxy.config( params, NodeAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
         relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( ConfigProxy.config( params, RelationshipAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
@@ -880,19 +881,6 @@ public abstract class AbstractGraphDatabase
         return storeDir.hashCode();
     }
 
-    public IndexIterable getIndexIterable() {
-		return indexIterable;
-	}
-
-    /**
-     * Provides a different IndexIterable implementation.
-     * The default implementation is Blueprint-wired {@link ListIndexIterable} for OSGi
-     * environments and {@link LegacyIndexIterable} for others.
-     */
-	public void setIndexIterable(IndexIterable indexIterable) {
-		this.indexIterable = (IndexIterable) indexIterable;
-	}
-
 	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final Config config;
@@ -995,7 +983,7 @@ public abstract class AbstractGraphDatabase
 
         void loadIndexImplementations( IndexManagerImpl indexes, StringLogger msgLog )
         {
-            for ( IndexProvider index : indexIterable )
+            for ( IndexProvider index : indexProviders)
             {
                 try
                 {
@@ -1009,7 +997,6 @@ public abstract class AbstractGraphDatabase
                 }
             }
         }
-
 
         private boolean isAnUpgradeProblem( Throwable cause )
         {

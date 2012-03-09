@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
+import static org.neo4j.kernel.Config.*;
 
 /**
  * Standalone EmbeddedGraphDatabase with Shell enabled.
@@ -58,7 +57,7 @@ public class StandaloneWithShell
     private void initialize( Map<String, String> arguments )
     {
         String path = arguments.get( "path" );
-        this.embeddedDb = new EmbeddedGraphDatabase( path, stringMap( ENABLE_REMOTE_SHELL, "true" ) );
+        this.embeddedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).setConfig( ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
         log.info( "Neo4j started at '" + path + "'" );
     }
 

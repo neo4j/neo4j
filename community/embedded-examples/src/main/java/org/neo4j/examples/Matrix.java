@@ -19,7 +19,6 @@
 package org.neo4j.examples;
 
 import java.io.File;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 public class Matrix
 {
@@ -57,7 +56,7 @@ public class Matrix
     public void setUp()
     {
         deleteFileOrDirectory( new File( MATRIX_DB ) );
-        graphDb = new EmbeddedGraphDatabase( MATRIX_DB );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( MATRIX_DB ).newGraphDatabase();
         registerShutdownHook();
         createNodespace();
     }

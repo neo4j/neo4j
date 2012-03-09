@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseSPI;
 
 public class ProduceUncleanStore
 {
@@ -29,11 +31,11 @@ public class ProduceUncleanStore
     {
         String storeDir = args[0];
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
-        if ( setGraphProperty ) db.getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
+        if ( setGraphProperty ) ((GraphDatabaseSPI)db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
         tx.success();
         tx.finish();
         System.exit( 0 );

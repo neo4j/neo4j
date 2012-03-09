@@ -19,17 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -40,19 +29,27 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TargetDirectory;
+
+import static java.util.Arrays.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
+import static org.neo4j.kernel.CommonFactories.*;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 public class TestGraphProperties
 {
@@ -170,7 +167,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( forTest( getClass() ).directory( "zero", true ).getAbsolutePath() );
+        GraphDatabaseSPI db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( getClass() ).directory( "zero", true ).getAbsolutePath() ).newGraphDatabase();
         String storeDir = db.getStoreDir();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -179,7 +176,7 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
         
-        db = new EmbeddedGraphDatabase( forTest( getClass() ).directory( "zero", false ).getAbsolutePath() );
+        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( getClass() ).directory( "zero", false ).getAbsolutePath() ).newGraphDatabase();
         tx = db.beginTx();
         db.getNodeManager().getGraphProperties().setProperty( "test", "something" );
         tx.success();
@@ -242,8 +239,8 @@ public class TestGraphProperties
     @Test
     public void upgradeDoesntAccidentallyAssignPropertyChainZero() throws Exception
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( TargetDirectory.forTest(
-                TestGraphProperties.class ).directory( "upgrade", true ).getAbsolutePath() );
+        GraphDatabaseSPI db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest(
+                        TestGraphProperties.class ).directory( "upgrade", true ).getAbsolutePath() ).newGraphDatabase();
         String storeDir = db.getStoreDir();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -254,7 +251,7 @@ public class TestGraphProperties
         
         removeLastNeoStoreRecord( storeDir );
         
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() );
         tx = db.beginTx();
@@ -265,7 +262,7 @@ public class TestGraphProperties
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
         
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         properties = db.getNodeManager().getGraphProperties();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
@@ -299,7 +296,7 @@ public class TestGraphProperties
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 ProduceUncleanStore.class.getName(), storeDir } ).waitFor() );
         removeLastNeoStoreRecord( storeDir );
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseSPI db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() ); 
         Transaction tx = db.beginTx();
@@ -321,7 +318,7 @@ public class TestGraphProperties
                 ProduceUncleanStore.class.getName(), storeDir, "true" } ).waitFor() );
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 ProduceUncleanStore.class.getName(), storeDir, "true" } ).waitFor() );
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseSPI db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         assertEquals( "Some value", db.getNodeManager().getGraphProperties().getProperty( "prop" ) );
         db.shutdown();
     }

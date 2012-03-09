@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.regex.Pattern.quote;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
+
+import static java.util.regex.Pattern.*;
 
 /**
  * A non-standard configuration object.

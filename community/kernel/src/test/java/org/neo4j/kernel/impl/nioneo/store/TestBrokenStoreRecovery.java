@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 public class TestBrokenStoreRecovery
 {
@@ -65,6 +64,6 @@ public class TestBrokenStoreRecovery
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
         File log = new File( storeDir, "nioneo_logical.log.1" );
         trimFileToSize( log, 78 );
-        new EmbeddedGraphDatabase( storeDir.getAbsolutePath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).newGraphDatabase().shutdown();
     }
 }

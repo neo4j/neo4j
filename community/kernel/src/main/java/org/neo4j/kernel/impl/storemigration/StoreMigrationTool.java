@@ -23,11 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -72,7 +72,7 @@ public class StoreMigrationTool
 
         neoStore.close();
 
-        EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( targetStoreDirectoryFile.getPath() );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetStoreDirectoryFile.getPath() ).newGraphDatabase();
         database.shutdown();
     }
 }

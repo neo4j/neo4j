@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -64,6 +64,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
         super( path(), withoutMemmap( params ));
+    }
+
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders)
+    {
+        super( path(), params, indexProviders );
     }
 
     @Override

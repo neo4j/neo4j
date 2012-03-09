@@ -19,37 +19,36 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.lang.reflect.Field;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
+
 public class TestShortStringProperties extends TestShortString
 {
     private static final TargetDirectory target = TargetDirectory.forTest( TestShortStringProperties.class );
-    private static EmbeddedGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
 
     @BeforeClass
     public static void startup()
     {
-        graphdb = new EmbeddedGraphDatabase( target.graphDbDir( true ).getAbsolutePath() );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getAbsolutePath() ).newGraphDatabase();
     }
 
     @AfterClass
@@ -89,7 +88,7 @@ public class TestShortStringProperties extends TestShortString
 
     private void clearCache()
     {
-        graphdb.getNodeManager().clearCache();
+        ((GraphDatabaseSPI)graphdb).getNodeManager().clearCache();
     }
 
     private static final String LONG_STRING = "this is a really long string, believe me!";
@@ -270,7 +269,7 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphdb.getXaDataSourceManager();
+        XaDataSourceManager dsMgr = ((GraphDatabaseSPI)graphdb).getXaDataSourceManager();
         return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
     }
 }

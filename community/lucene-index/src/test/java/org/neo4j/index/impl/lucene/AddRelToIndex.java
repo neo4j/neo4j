@@ -24,8 +24,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class AddRelToIndex
 {
@@ -33,7 +33,7 @@ public class AddRelToIndex
     {
         String path = args[0];
         String indexName = "myIndex";
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Index<Relationship> index = db.index().forRelationships( indexName );
         Transaction tx = db.beginTx();
         Node node = db.createNode();

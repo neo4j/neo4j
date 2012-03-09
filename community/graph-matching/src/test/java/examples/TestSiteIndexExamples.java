@@ -19,17 +19,12 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
@@ -46,7 +42,8 @@ import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.graphmatching.ValueMatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import static org.junit.Assert.*;
 
 /**
  * Example code for the index page of the component site.
@@ -288,7 +285,7 @@ public class TestSiteIndexExamples
     @BeforeClass
     public static void startGraphDatabase()
     {
-        graphDb = new EmbeddedGraphDatabase( "target/var/db" );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/db" ).newGraphDatabase();
     }
 
     @AfterClass

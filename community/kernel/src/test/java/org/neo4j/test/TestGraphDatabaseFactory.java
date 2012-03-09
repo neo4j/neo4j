@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+package org.neo4j.test;
+
+import java.util.Map;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 /**
- * @author ceefour
- * Creates a {@link GraphDatabaseService}.
+ * Test factory for graph databases
  */
-public interface GraphDatabaseFactory {
-
-	/**
-	 * Creates an {@link EmbeddedGraphDatabase}.
-	 * @param storeDir
-	 * @return
-	 */
-	EmbeddedGraphDatabase createEmbedded(String storeDir);
-	/**
-	 * Creates an {@link EmbeddedReadOnlyGraphDatabase}.
-	 * @param storeDir
-	 * @return
-	 */
-	EmbeddedReadOnlyGraphDatabase createEmbeddedReadOnly(String storeDir);
-
+public class TestGraphDatabaseFactory
+    extends GraphDatabaseFactory
+{
+    public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
+    {
+        return new GraphDatabaseBuilder(new GraphDatabaseBuilder.DatabaseCreator()
+        {
+            public GraphDatabaseService newDatabase(Map<String, String> config)
+            {
+                return new ImpermanentGraphDatabase(config, indexProviders);
+            }
+        });
+    }
 }

@@ -19,15 +19,10 @@
  */
 package matching;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -39,12 +34,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import static org.junit.Assert.*;
 
 public class TestPatternMatching
 {
@@ -68,7 +65,7 @@ public class TestPatternMatching
 	@BeforeClass
 	public static void setUpDb()
 	{
-		graphDb = new EmbeddedGraphDatabase( "target/var/db" );
+		graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  "target/var/db" ).newGraphDatabase();
 	}
 	
 	@Before

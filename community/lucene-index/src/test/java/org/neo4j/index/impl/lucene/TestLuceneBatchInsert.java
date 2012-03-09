@@ -19,32 +19,17 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
-import static org.neo4j.index.lucene.ValueContext.numeric;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
@@ -52,9 +37,18 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+
+import static org.apache.lucene.search.NumericRangeQuery.*;
+import static org.hamcrest.core.Is.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.index.Neo4jTestCase.*;
+import static org.neo4j.index.impl.lucene.Contains.*;
+import static org.neo4j.index.impl.lucene.IsEmpty.*;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.*;
+import static org.neo4j.index.lucene.ValueContext.*;
 
 public class TestLuceneBatchInsert
 {
@@ -98,7 +92,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );
@@ -154,7 +148,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
@@ -224,7 +218,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
         
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Node n1 = db.getNodeById( node1 );
         Node n2 = db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
@@ -264,7 +258,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Node node1 = db.getNodeById( nodeId1 );
         Node node2 = db.getNodeById( nodeId2 );
         Index<Node> index = db.index().forNodes( "mine" );

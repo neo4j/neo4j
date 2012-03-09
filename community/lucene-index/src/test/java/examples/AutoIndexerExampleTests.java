@@ -19,15 +19,10 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -37,10 +32,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -48,11 +43,13 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 
+import static org.junit.Assert.*;
+
 public class AutoIndexerExampleTests implements GraphHolder
 {
     private static final TargetDirectory target = TargetDirectory.forTest( AutoIndexerExampleTests.class );
 
-    private static EmbeddedGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
@@ -81,8 +78,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         config.put( Config.NODE_AUTO_INDEXING, "true" );
         config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
 
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase(
-                getStoreDir( "testConfig" ), config );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testConfig" ) ).setConfig( config ).newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null;
@@ -145,8 +141,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         // START SNIPPET: APIAutoIndexer
 
         // Start without any configuration
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase(
-                getStoreDir( "testAPI" ) );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testAPI" ) ).newGraphDatabase();
 
         // Get the Node AutoIndexer, set nodeProp1 and nodeProp2 as auto
         // indexed.
@@ -226,8 +221,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
         config.put( Config.NODE_AUTO_INDEXING, "true" );
 
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase(
-                getStoreDir( "mutations" ), config );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "mutations" ) ).setConfig( config ).newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null, node3 = null, node4 = null;
@@ -326,7 +320,7 @@ public class AutoIndexerExampleTests implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new EmbeddedGraphDatabase( target.graphDbDir( true ).getAbsolutePath() );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getAbsolutePath() ).newGraphDatabase();
     }
 
     @AfterClass
