@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./relationshipList',
-   'ribcage/View',
-   'lib/backbone'], 
-  (template, View) ->
+  ['./relationshipList'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (template, View, $) ->
   
     class RelationshipListView extends View
 

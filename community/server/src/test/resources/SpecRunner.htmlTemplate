@@ -22,8 +22,13 @@
         require.config({
             baseUrl: '../../',
             paths: {
-                "neo4j": "target/classes/webadmin-html/js/neo4j",
-                "ribcage": "target/classes/webadmin-html/js/ribcage",
+                // Root namespaces
+                "neo4j"   : "target/classes/webadmin-html/js/neo4j",
+                "ribcage" : "target/classes/webadmin-html/js/ribcage",
+                "lib"     : "target/classes/webadmin-html/js/lib",
+                
+                // Files without namespaces
+                "order"   : "target/classes/webadmin-html/js/order",
             },
         });
         

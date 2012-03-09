@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./node',
-   './PropertyContainerView','lib/backbone'], 
+  ['./node'
+   './PropertyContainerView'], 
   (template, PropertyContainerView) ->
   
     class NodeView extends PropertyContainerView

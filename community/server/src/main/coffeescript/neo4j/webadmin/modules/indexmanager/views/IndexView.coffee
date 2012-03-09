@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define( 
-  ['./index',
-   'ribcage/View',
-   'lib/backbone'], 
-  (template, View) ->
+  ['./index'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (template, View, $) ->
 
     class IndexView extends View
       

@@ -20,8 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   'ribcage/View',
-   'lib/backbone'], 
+   'ribcage/View'], 
   (ItemUrlResolver, View) ->
   
     class AbstractFilterView extends View

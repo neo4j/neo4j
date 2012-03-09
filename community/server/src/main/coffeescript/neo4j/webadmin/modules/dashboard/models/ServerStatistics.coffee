@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
+define ['lib/DateFormat', 'ribcage/Model'], (DateFormat, Model) ->
 
-  class ServerStatistics extends Backbone.Model
+  class ServerStatistics extends Model
 
     initialize : (options) =>
   
