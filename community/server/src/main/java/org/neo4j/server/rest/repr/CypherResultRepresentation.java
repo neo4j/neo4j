@@ -19,18 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-
 public class CypherResultRepresentation extends ObjectRepresentation
 {
-
     private final ExecutionResult queryResult;
 
     public CypherResultRepresentation( ExecutionResult result )
@@ -42,7 +39,6 @@ public class CypherResultRepresentation extends ObjectRepresentation
     @Mapping( "columns" )
     public Representation columns()
     {
-
         return ListRepresentation.string( queryResult.columns() );
     }
 
@@ -59,71 +55,34 @@ public class CypherResultRepresentation extends ObjectRepresentation
             {
                 Representation rowRep = getRepresentation( row.get( column ) );
                 fields.add( rowRep );
-
             }
             rows.add( new ListRepresentation( "row", fields ) );
         }
         return new ListRepresentation( "data", rows );
     }
 
-    private Representation getRepresentation( Object r )
+    Representation getRepresentation( Object r )
     {
-        if(r == null ) {
+        if( r == null ) {
             return ValueRepresentation.string( null );
+        } else if(r instanceof Iterable) {
+            return handleIterable( (Iterable) r );
         }
-        if ( r instanceof Node )
-        {
-            return new NodeRepresentation( (Node) r );
-        }
-        if ( r instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) r );
-        }
-        else if ( r instanceof Double || r instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) r ).doubleValue() );
-        }
-        else if ( r instanceof Long || r instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Number) r ).longValue() );
-        }
-        else if ( r instanceof Path )
-        {
-            return new PathRepresentation<Path>((Path) r );
-        }
-        else if ( r instanceof Iterable )
-        {
-            return getListRepresentation( (Iterable) r );
-        }
-        else
-        {
-            return ValueRepresentation.string( r.toString() );
-        }
+
+        JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
+        return representationDispatcher.dispatch( r, "" );
     }
 
-    Representation getListRepresentation( Iterable data )
-    {
-        final List<Representation> results = convertValuesToRepresentations( data );
-        return new ListRepresentation( getType( results ), results );
-    }
-
-    List<Representation> convertValuesToRepresentations( Iterable data )
-    {
+    Representation handleIterable( Iterable data ) {
         final List<Representation> results = new ArrayList<Representation>();
         for ( final Object value : data )
         {
-            if ( value instanceof Iterable )
-            {
-                List<Representation> nested = new ArrayList<Representation>();
-                nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
-                results.add( new ListRepresentation( getType( nested ), nested ) );
-            }
-            else
-            {
-                results.add( getSingleRepresentation( value ) );
-            }
+            Representation rep = getRepresentation(value);
+            results.add(rep);
         }
-        return results;
+
+        RepresentationType representationType = getType(results);
+        return new ListRepresentation( representationType, results );
     }
 
     RepresentationType getType( List<Representation> representations )
@@ -131,35 +90,5 @@ public class CypherResultRepresentation extends ObjectRepresentation
         if ( representations == null || representations.isEmpty() )
             return RepresentationType.STRING;
         return representations.get( 0 ).getRepresentationType();
-    }
-
-    Representation getSingleRepresentation( Object result )
-    {
-        if ( result == null )
-            return ValueRepresentation.string( "null" );
-        else if ( result instanceof Node )
-        {
-            return new NodeRepresentation( (Node) result );
-        }
-        else if ( result instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) result );
-        }
-        else if ( result instanceof Double || result instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
-        }
-        else if ( result instanceof Long )
-        {
-            return ValueRepresentation.number( ( (Long) result ).longValue() );
-        }
-        else if ( result instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Integer) result ).intValue() );
-        }
-        else
-        {
-            return ValueRepresentation.string( result.toString() );
-        }
     }
 }
