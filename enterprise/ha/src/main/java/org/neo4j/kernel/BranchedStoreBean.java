@@ -122,7 +122,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             String timestampFromFilename = branchedStoreDirName.substring( BranchedDataPolicy.BRANCH_PREFIX.length() );
             long timestamp = Long.parseLong( timestampFromFilename );
 
-            long txId = NeoStore.getTxId( theNeostoreFile.getAbsolutePath() );
+            long txId = NeoStore.getTxId( CommonFactories.defaultFileSystemAbstraction(), theNeostoreFile.getAbsolutePath() );
             return new BranchedStoreInfo( branchedStoreDirName, txId, timestamp );
         }
 
