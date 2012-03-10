@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
@@ -36,9 +37,9 @@ public class EphemeralIdGenerator implements IdGenerator
     public static class Factory implements IdGeneratorFactory
     {
         private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
-        
+
         @Override
-        public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
+        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
@@ -50,7 +51,7 @@ public class EphemeralIdGenerator implements IdGenerator
         }
 
         @Override
-        public void create( String fileName )
+        public void create( FileSystemAbstraction fs, String fileName )
         {
         }
 
@@ -60,7 +61,7 @@ public class EphemeralIdGenerator implements IdGenerator
             return generators.get( idType );
         }
     }
-    
+
     private final AtomicLong nextId = new AtomicLong();
     private final IdType idType;
     private final Queue<Long> freeList;
@@ -71,7 +72,7 @@ public class EphemeralIdGenerator implements IdGenerator
         this.idType = idType;
         this.freeList = idType != null && idType.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
     }
-    
+
     @Override
     public String toString()
     {
@@ -131,7 +132,7 @@ public class EphemeralIdGenerator implements IdGenerator
     {
         return 0;
     }
-    
+
     @Override
     public void delete()
     {

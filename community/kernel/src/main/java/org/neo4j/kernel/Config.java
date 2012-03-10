@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.regex.Pattern.quote;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static java.util.regex.Pattern.quote;
+
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -211,17 +212,17 @@ public class Config implements DiagnosticsProvider
 
     private final AutoConfigurator autoConfigurator;
 
-    Config(String storeDir, Map<String, String> inputParams)
+    Config( FileSystemAbstraction fileSystem, String storeDir, Map<String, String> inputParams)
     {
         // Get the default params and override with the user supplied values
         this.params = getDefaultParams();
 
         // Try auto-configuring some of the numbers
-        boolean useMemoryMapped = Boolean.parseBoolean( (String) inputParams.get(
+        boolean useMemoryMapped = Boolean.parseBoolean( inputParams.get(
                 Config.USE_MEMORY_MAPPED_BUFFERS) );
-        boolean dumpToConsole = Boolean.parseBoolean( (String) inputParams.get(
+        boolean dumpToConsole = Boolean.parseBoolean( inputParams.get(
                 Config.DUMP_CONFIGURATION) );
-        autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
+        autoConfigurator = new AutoConfigurator( fileSystem, storeDir, useMemoryMapped, dumpToConsole );
         autoConfigurator.configure(params);
 
         this.params.putAll(inputParams);
@@ -250,7 +251,7 @@ public class Config implements DiagnosticsProvider
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
-        
+
         params.put( NODE_AUTO_INDEXING, "false" );
         params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
         return params;
@@ -311,13 +312,13 @@ public class Config implements DiagnosticsProvider
     {
         return getClass().getName();
     }
-    
+
     @Override
     public void acceptDiagnosticsVisitor( Object visitor )
     {
         // nothing visits configuration
     }
-    
+
     @Override
     public void dump( DiagnosticsPhase phase, StringLogger log )
     {

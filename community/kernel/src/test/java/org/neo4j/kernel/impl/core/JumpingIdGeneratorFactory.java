@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -33,21 +34,21 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
-    private IdGenerator forTheRest = new EphemeralIdGenerator( null );
+    private final IdGenerator forTheRest = new EphemeralIdGenerator( null );
 
     private final int sizePerJump;
-    
+
     public JumpingIdGeneratorFactory( int sizePerJump )
     {
         this.sizePerJump = sizePerJump;
     }
-    
-    public IdGenerator open( String fileName, int grabSize, IdType idType,
+
+    public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType,
             long highestIdInUse, boolean startup )
     {
         return get( idType );
     }
-    
+
     public IdGenerator get( IdType idType )
     {
         if ( idType == IdType.NODE || idType == IdType.RELATIONSHIP || idType == IdType.PROPERTY ||
@@ -63,17 +64,17 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
         return forTheRest;
     }
-    
-    public void create( String fileName )
+
+    public void create( FileSystemAbstraction fs, String fileName )
     {
     }
 
     private class JumpingIdGenerator implements IdGenerator
     {
-        private AtomicLong nextId = new AtomicLong();
+        private final AtomicLong nextId = new AtomicLong();
         private int leftToNextJump = sizePerJump/2;
         private long highBits = 0;
-        
+
         @Override
         public long nextId()
         {
@@ -136,7 +137,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         {
             return 0;
         }
-        
+
         @Override
         public void delete()
         {

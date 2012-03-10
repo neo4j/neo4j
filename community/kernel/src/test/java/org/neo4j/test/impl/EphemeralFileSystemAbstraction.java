@@ -19,9 +19,6 @@
  */
 package org.neo4j.test.impl;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -38,13 +35,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
 {
-    private final Map<String, EphemeralFileChannel> files = new HashMap<String, EphemeralFileChannel>();
+    private final Map<String, EphemeralFileData> files = new HashMap<String, EphemeralFileData>();
 
     @Override
     public void init()
@@ -64,7 +64,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     @Override
     public void shutdown()
     {
-        for (EphemeralFileChannel file : files.values()) free(file);
+        for (EphemeralFileData file : files.values()) free(file);
         files.clear();
 
         DynamicByteBuffer.dispose();
@@ -77,36 +77,50 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         super.finalize();
     }
 
-    private void free(EphemeralFileChannel fileChannel)
+    private void free(EphemeralFileData file)
     {
-        if (fileChannel != null) fileChannel.fileAsBuffer.free();
+        if (file != null) file.fileAsBuffer.free();
     }
 
     @Override
     public synchronized FileChannel open(String fileName, String mode) throws IOException
     {
-        EphemeralFileChannel file = files.get(fileName);
-        return file != null ? file.reset() : create(fileName);
+        EphemeralFileData data = files.get(fileName);
+        return data != null ? new EphemeralFileChannel( data ) : create( fileName );
     }
 
     @Override
     public FileLock tryLock(String fileName, FileChannel channel) throws IOException
     {
+        if ( channel instanceof EphemeralFileChannel )
+        {
+            EphemeralFileChannel efc = (EphemeralFileChannel) channel;
+            final java.nio.channels.FileLock lock = efc.tryLock();
+            return new FileLock()
+            {
+                @Override
+                public void release() throws IOException
+                {
+                    lock.release();
+                }
+            };
+        }
+        System.err.println("WARNING: locking non-ephemeral FileChannel[" + channel + "] through EphemeralFileSystem, for: " + fileName);
         return FileLock.getOsSpecificFileLock(fileName, channel);
     }
 
     @Override
     public synchronized FileChannel create(String fileName) throws IOException
     {
-        EphemeralFileChannel file = new EphemeralFileChannel();
-        free(files.put(fileName, file));
-        return file;
+        EphemeralFileData data = new EphemeralFileData();
+        free(files.put(fileName, data));
+        return new EphemeralFileChannel( data );
     }
 
     @Override
     public long getFileSize(String fileName)
     {
-        EphemeralFileChannel file = files.get(fileName);
+        EphemeralFileData file = files.get(fileName);
         return file == null ? 0 : file.size();
     }
 
@@ -126,54 +140,26 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     @Override
     public boolean renameFile(String from, String to) throws IOException
     {
-        EphemeralFileChannel file = files.remove(from);
-        if (file == null) throw new IOException("'" + from + "' doesn't exist");
+        if (!files.containsKey( from )) throw new IOException("'" + from + "' doesn't exist");
         if (files.containsKey(to)) throw new IOException("'" + to + "' already exists");
-        files.put(to, file);
+        files.put(to, files.remove(from));
         return true;
     }
 
     private static class EphemeralFileChannel extends FileChannel
     {
-        private final DynamicByteBuffer fileAsBuffer = new DynamicByteBuffer();
-        private final byte[] scratchPad = new byte[1024];
-        private static final byte[] zeroBuffer = new byte[1024];
-        private int size;
-        private int locked;
+        private final EphemeralFileData data;
+        long position = 0;
+
+        EphemeralFileChannel( EphemeralFileData data )
+        {
+            this.data = data;
+        }
 
         @Override
-        public int read(ByteBuffer dst)
+        public int read( ByteBuffer dst )
         {
-            int wanted = dst.limit();
-            int available = min(wanted, (int) (size - position()));
-            int pending = available;
-            // Read up until our internal size
-            while (pending > 0)
-            {
-                int howMuchToReadThisTime = min(pending, scratchPad.length);
-                fileAsBuffer.get(scratchPad, 0, howMuchToReadThisTime);
-                dst.put(scratchPad, 0, howMuchToReadThisTime);
-                pending -= howMuchToReadThisTime;
-            }
-            // Fill the rest with zeros
-            fillWithZeros( dst, available - wanted );
-            return wanted;
-        }
-
-        private void fillWithZeros( ByteBuffer target, int bytes )
-        {
-            while ( bytes > 0 )
-            {
-                int howMuchToReadThisTime = min( bytes, zeroBuffer.length );
-                target.put( zeroBuffer, 0, howMuchToReadThisTime );
-                bytes -= howMuchToReadThisTime;
-            }
-        }
-
-        public EphemeralFileChannel reset()
-        {
-            fileAsBuffer.position(0);
-            return this;
+            return data.read( this, dst );
         }
 
         @Override
@@ -183,37 +169,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         }
 
         @Override
-        public int write(ByteBuffer src)
+        public int write( ByteBuffer src ) throws IOException
         {
-            int wanted = src.limit();
-            int pending = wanted;
-            while (pending > 0)
-            {
-                int howMuchToWriteThisTime = min(pending, scratchPad.length);
-                src.get(scratchPad, 0, howMuchToWriteThisTime);
-                fileAsBuffer.put(scratchPad, 0, howMuchToWriteThisTime);
-                pending -= howMuchToWriteThisTime;
-            }
-            
-            // If we just made a jump in the file fill the rest of the gab with zeros
-            int newSize = max(size, (int) position());
-            int intermediaryBytes = newSize-wanted-size;
-            if ( intermediaryBytes > 0 )
-            {
-                int oldPos = fileAsBuffer.position();
-                try
-                {
-                    fileAsBuffer.position( size );
-                    fillWithZeros( fileAsBuffer.buf, intermediaryBytes );
-                }
-                finally
-                {
-                    fileAsBuffer.position( oldPos );
-                }
-            }
-            
-            size = newSize;
-            return wanted;
+            return data.write( this, src );
         }
 
         @Override
@@ -223,34 +181,35 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         }
 
         @Override
-        public long position()
+        public long position() throws IOException
         {
-            return fileAsBuffer.position();
+            return position;
         }
 
         @Override
-        public FileChannel position(long newPosition)
+        public FileChannel position( long newPosition ) throws IOException
         {
-            fileAsBuffer.position((int) newPosition);
+            this.position = newPosition;
             return this;
         }
 
         @Override
-        public long size()
+        public long size() throws IOException
         {
-            return size;
+            return data.size();
         }
 
         @Override
-        public FileChannel truncate(long size)
+        public FileChannel truncate( long size ) throws IOException
         {
-            this.size = (int) size;
+            data.truncate( size );
             return this;
         }
 
         @Override
         public void force(boolean metaData)
         {
+            // NO-OP
         }
 
         @Override
@@ -266,30 +225,32 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         }
 
         @Override
-        public int read(ByteBuffer dst, long position)
+        public int read( ByteBuffer dst, long position ) throws IOException
         {
-            long previous = position();
-            position(position);
+            long prev = this.position;
+            this.position = position;
             try
             {
-                return read(dst);
-            } finally
+                return data.read( this, dst );
+            }
+            finally
             {
-                position(previous);
+                this.position = prev;
             }
         }
 
         @Override
-        public int write(ByteBuffer src, long position)
+        public int write( ByteBuffer src, long position ) throws IOException
         {
-            long previous = position();
-            position(position);
+            long prev = this.position;
+            this.position = position;
             try
             {
-                return write(src);
-            } finally
+                return data.write( this, src );
+            }
+            finally
             {
-                position(previous);
+                this.position = prev;
             }
         }
 
@@ -300,35 +261,109 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         }
 
         @Override
-        public java.nio.channels.FileLock lock(long position, long size, boolean shared) throws IOException
+        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
         {
-            if (locked > 0) return null;
-            return new EphemeralFileLock(this);
+            if ( !data.lock() ) return null;
+            return new EphemeralFileLock( this, data );
         }
 
         @Override
-        public java.nio.channels.FileLock tryLock(long position, long size, boolean shared) throws IOException
+        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
         {
-            if (locked > 0) throw new IOException("Locked");
-            return new EphemeralFileLock(this);
+            if ( !data.lock() ) throw new IOException( "Locked" );
+            return new EphemeralFileLock( this, data );
         }
 
         @Override
         protected void implCloseChannel() throws IOException
         {
+            data.close();
+        }
+    }
+
+    private static class EphemeralFileData
+    {
+        private final DynamicByteBuffer fileAsBuffer = new DynamicByteBuffer();
+        private final byte[] scratchPad = new byte[1024];
+        private int size;
+        private int locked;
+
+        int read( EphemeralFileChannel fc, ByteBuffer dst )
+        {
+            int wanted = dst.limit();
+            int available = min(wanted, (int) (size - fc.position));
+            if ( available == 0 ) return -1; // EOF
+            int pending = available;
+            // Read up until our internal size
+            while (pending > 0)
+            {
+                int howMuchToReadThisTime = min(pending, scratchPad.length);
+                fileAsBuffer.get((int)fc.position, scratchPad, 0, howMuchToReadThisTime);
+                fc.position += howMuchToReadThisTime;
+                dst.put(scratchPad, 0, howMuchToReadThisTime);
+                pending -= howMuchToReadThisTime;
+            }
+            return available; // return how much data was read
+        }
+
+        int write(EphemeralFileChannel fc, ByteBuffer src)
+        {
+            int wanted = src.limit();
+            int pending = wanted;
+            while (pending > 0)
+            {
+                int howMuchToWriteThisTime = min(pending, scratchPad.length);
+                src.get(scratchPad, 0, howMuchToWriteThisTime);
+                fileAsBuffer.put((int)fc.position, scratchPad, 0, howMuchToWriteThisTime);
+                fc.position += howMuchToWriteThisTime;
+                pending -= howMuchToWriteThisTime;
+            }
+
+            // If we just made a jump in the file fill the rest of the gap with zeros
+            int newSize = max(size, (int) fc.position);
+            int intermediaryBytes = newSize-wanted-size;
+            if ( intermediaryBytes > 0 )
+            {
+                fileAsBuffer.fillWithZeros(size, intermediaryBytes);
+                fileAsBuffer.buf.position( size );
+                //fillWithZeros( fileAsBuffer.buf, intermediaryBytes );
+            }
+
+            size = newSize;
+            return wanted;
+        }
+
+        long size()
+        {
+            return size;
+        }
+
+        void truncate(long newSize)
+        {
+            this.size = (int) newSize;
+        }
+
+        boolean lock()
+        {
+            return locked == 0;
+        }
+
+        void close()
+        {
+            locked = 0;
         }
     }
 
     private static class EphemeralFileLock extends java.nio.channels.FileLock
     {
-        private final EphemeralFileChannel channel;
+        private final EphemeralFileData data;
         private boolean released;
 
-        EphemeralFileLock(EphemeralFileChannel channel)
+        EphemeralFileLock(EphemeralFileChannel channel, EphemeralFileData data)
         {
             super(channel, 0, Long.MAX_VALUE, false);
-            this.channel = channel;
-            channel.locked++;
+            this.data = data;
+            data.locked++;
         }
 
         @Override
@@ -340,8 +375,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         @Override
         public void release() throws IOException
         {
-            if (released) return;
-            channel.locked--;
+            if (released || data.locked == 0) return;
+            data.locked--;
             released = true;
         }
     }
@@ -354,7 +389,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     {
         private static final int[] SIZES;
         private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOL;
-        
+        private static final byte[] zeroBuffer = new byte[1024];
+
         static void dispose()
         {
             for (int i = POOL.length(); i < POOL.length(); i++)
@@ -378,10 +414,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
 
             init();
         }
-        
+
         private static void destroyDirectByteBuffer(ByteBuffer toBeDestroyed)
             throws IllegalArgumentException, IllegalAccessException,
-                   InvocationTargetException, SecurityException, NoSuchMethodException 
+                   InvocationTargetException, SecurityException, NoSuchMethodException
         {
             Method cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner");
             cleanerMethod.setAccessible(true);
@@ -390,7 +426,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             cleanMethod.setAccessible(true);
             cleanMethod.invoke(cleaner);
         }
-        
+
         private static void init()
         {
             AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL = new AtomicReferenceArray<Queue<Reference<ByteBuffer>>>( SIZES.length );
@@ -481,116 +517,28 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             return pool.get( sizeIndex );
         }
 
-        /**
-         * Puts a single byte into the buffer.
-         *
-         * @param b
-         */
-        public void put(int b)
+        void put(int pos, byte[] bytes, int offset, int length)
         {
-            verifySize(1);
-            buf.put((byte) b);
-        }
-
-        /**
-         * Puts an array of bytes into the buffer.
-         *
-         * @param bytes
-         */
-        public void put(byte[] bytes)
-        {
-            verifySize(bytes.length);
-            buf.put(bytes);
-        }
-
-        /**
-         * Puts an array of bytes from the specified offset into the buffer.
-         *
-         * @param bytes
-         * @param offset
-         * @param length
-         */
-        public void put(byte[] bytes, int offset, int length)
-        {
+            buf.position( pos );
             verifySize(length);
             buf.put(bytes, offset, length);
         }
 
-        /**
-         * Puts the data from another {@link java.nio.ByteBuffer} into this buffer.
-         *
-         * @param from
-         */
-        public void put(ByteBuffer from)
+        void get(int pos, byte[] scratchPad, int i, int howMuchToReadThisTime)
         {
-            verifySize(from.capacity() - from.remaining());
-            buf.put(from);
+            buf.position( pos );
+            buf.get(scratchPad, i, howMuchToReadThisTime);
         }
 
-        /**
-         * Puts a character into the the buffer.
-         *
-         * @param c
-         */
-        public void putCharacter(char c)
+        void fillWithZeros( int pos, int bytes )
         {
-            verifySize(2);
-            buf.putChar(c);
-        }
-
-        /**
-         * Puts a short into the buffer.
-         *
-         * @param s
-         */
-        public void putShort(short s)
-        {
-            verifySize(2);
-            buf.putShort(s);
-        }
-
-        /**
-         * Puts an integer into the buffer.
-         *
-         * @param i
-         */
-        public void putInteger(int i)
-        {
-            verifySize(4);
-            buf.putInt(i);
-        }
-
-        /**
-         * Puts a float into the buffer.
-         *
-         * @param f
-         */
-        public void putFloat(float f)
-        {
-            verifySize(4);
-            buf.putFloat(f);
-        }
-
-        /**
-         * Puts a double into the buffer.
-         *
-         * @param d
-         */
-        public void putDouble(double d)
-        {
-            verifySize(8);
-            buf.putDouble(d);
-        }
-
-        /**
-         * Puts a long into the buffer.
-         *
-         * @param l
-         */
-        public void putLong(long l)
-        {
-            verifySize(8);
-            buf.putLong(l);
+            buf.position( pos );
+            while ( bytes > 0 )
+            {
+                int howMuchToReadThisTime = min( bytes, zeroBuffer.length );
+                buf.put( zeroBuffer, 0, howMuchToReadThisTime );
+                bytes -= howMuchToReadThisTime;
+            }
         }
 
         /**
@@ -602,7 +550,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             {
                 return;
             }
-            
+
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
             int sizeIndex = newSize / SIZES[SIZES.length - 1];
@@ -625,24 +573,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             this.buf.position(oldPosition);
         }
 
-        public void get(byte[] scratchPad, int i, int howMuchToReadThisTime)
-        {
-            buf.get(scratchPad, i, howMuchToReadThisTime);
-        }
-
         public void clear()
         {
             this.buf.clear();
-        }
-
-        public void position(int i)
-        {
-            this.buf.position(i);
-        }
-
-        public int position()
-        {
-            return this.buf.position();
         }
     }
 }

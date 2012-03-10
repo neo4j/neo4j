@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.internal.matchers.StringContains.containsString;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -38,6 +32,12 @@ import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.internal.matchers.StringContains.containsString;
 
 public class StoreVersionTest
 {
@@ -110,7 +110,7 @@ public class StoreVersionTest
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
-                NeoStore.versionLongToString( NeoStore.getStoreVersion( storeFileName ) ) );
+                NeoStore.versionLongToString( NeoStore.getStoreVersion( CommonFactories.defaultFileSystemAbstraction(), storeFileName ) ) );
     }
 
     @Test

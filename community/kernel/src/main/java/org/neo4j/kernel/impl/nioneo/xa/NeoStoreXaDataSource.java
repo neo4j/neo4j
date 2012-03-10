@@ -44,10 +44,26 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.Store;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -163,8 +179,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * @throws IOException
      *             If unable to create data source
      */
-    public NeoStoreXaDataSource( Configuration conf, StoreFactory sf, LockManager lockManager, LockReleaser lockReleaser, StringLogger stringLogger, XaFactory xaFactory,
-                                 List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver) throws IOException
+    public NeoStoreXaDataSource( Configuration conf, FileSystemAbstraction fileSystem, StoreFactory sf,
+                                 LockManager lockManager, LockReleaser lockReleaser, StringLogger stringLogger,
+                                 XaFactory xaFactory, List<Pair<TransactionInterceptorProvider, Object>> providers,
+                                 DependencyResolver dependencyResolver) throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.providers = providers;
@@ -175,8 +193,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         msgLog = stringLogger;
         storeDir = conf.store_dir();
         String store = conf.neo_store();
-        File file = new File( store );
-        if ( !readOnly && !file.exists())
+        if ( !readOnly && !fileSystem.fileExists( store ))
         {
             msgLog.logMessage( "Creating new db @ " + store, true );
             autoCreatePath( store );
@@ -194,7 +211,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             tf = new TransactionFactory();
         }
         neoStore = sf.newNeoStore(store);
-        
+
         xaContainer = xaFactory.newXaContainer(this, conf.logical_log(), new CommandFactory( neoStore ), tf,
                 shouldIntercept && !providers.isEmpty() ? providers : null, dependencyResolver );
 
@@ -324,7 +341,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private class InterceptingTransactionFactory extends TransactionFactory
     {
-        private DependencyResolver dependencyResolver;
+        private final DependencyResolver dependencyResolver;
 
         public InterceptingTransactionFactory( DependencyResolver dependencyResolver )
         {

@@ -25,15 +25,19 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
 public class AutoConfigurator
 {
     private final int totalPhysicalMemMb;
     private final int maxVmUsageMb;
     private final String dbPath;
     private final boolean useMemoryMapped;
+    private final FileSystemAbstraction fs;
 
-    public AutoConfigurator( String dbPath, boolean useMemoryMapped, boolean dump )
+    public AutoConfigurator( FileSystemAbstraction fs, String dbPath, boolean useMemoryMapped, boolean dump )
     {
+        this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
         OperatingSystemMXBean osBean =
@@ -160,7 +164,7 @@ public class AutoConfigurator
 
     private int getFileSizeMb( String file )
     {
-        long length = new File( dbPath + File.separator + "neostore." + file ).length();
+        long length = fs.getFileSize( dbPath + File.separator + "neostore." + file );
         int mb = (int) ( length / 1024 / 1024 );
         if ( mb > 0 )
         {

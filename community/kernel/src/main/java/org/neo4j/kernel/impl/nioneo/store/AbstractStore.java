@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -50,7 +49,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         boolean rebuild_idgenerators_fast(boolean def);
     }
 
-    private Configuration conf;
+    private final Configuration conf;
 
     /**
      * Returns the fixed size of each record in this store.
@@ -166,10 +165,9 @@ public abstract class AbstractStore extends CommonAbstractStore
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();
-        File file = new File( getStorageFileName() + ".id" );
-        if ( file.exists() )
+        if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
         {
-            boolean success = file.delete();
+            boolean success = fileSystemAbstraction.deleteFile( getStorageFileName() + ".id" );
             assert success;
         }
         createIdGenerator( getStorageFileName() + ".id" );
