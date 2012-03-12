@@ -27,16 +27,35 @@ import org.neo4j.vagrant.Shell.Result;
 
 public class VirtualMachine {
 
+    private static final String DEFAULT_SCP_PATH = "scp";
+    private static final String DEFAULT_VAGRANT_PATH = "vagrant";
+
+    private static final String SCP_PATH_KEY = "scp.path";
+    private static final String VAGRANT_PATH_KEY = "vagrant.path";
+    
     private Shell sh;
     private SSHConfig sshConfig;
     private boolean transactional = false;
     private VMDefinition definition;
+    private String vagrantPath;
 
+    private String scpPath;
+    
     public VirtualMachine(File projectFolder, VMDefinition config)
+    {
+        this(projectFolder, 
+             config, 
+             System.getProperty(VAGRANT_PATH_KEY, DEFAULT_VAGRANT_PATH), 
+             System.getProperty(SCP_PATH_KEY, DEFAULT_SCP_PATH));
+    }
+    
+    public VirtualMachine(File projectFolder, VMDefinition config, String vagrantPath, String scpPath)
     {
         this.sh = new Shell("host/" + config.vmName(), projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
         this.definition = config;
+        this.vagrantPath = vagrantPath;
+        this.scpPath = scpPath;
     }
 
     public void ensureBoxExists(Box box)
@@ -174,7 +193,7 @@ public class VirtualMachine {
     protected Result vagrant(String... cmds)
     {
 
-        Result r = sh.run("vagrant" + " " + StringUtils.join(cmds, " "));
+        Result r = sh.run(vagrantPath + " " + StringUtils.join(cmds, " "));
 
         if (r.getExitCode() != 0)
         {
