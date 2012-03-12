@@ -217,7 +217,7 @@ terms of the relevant Commercial Agreement.
                   <classifier>manpages</classifier>
                   <type>jar</type>
                   <outputDirectory>${project.build.directory}/manpages</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
+                  <includes>*.txt,**/*.txt</includes>
                   <excludes>META-INF/**</excludes>
                  </artifactItem>
                </artifactItems>
@@ -236,7 +236,7 @@ terms of the relevant Commercial Agreement.
                   <classifier>manpagesenterprise</classifier>
                   <type>jar</type>
                   <outputDirectory>${project.build.directory}/manpages-enterprise</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
+                  <includes>*.txt,**/*.txt</includes>
                   <excludes>META-INF/**</excludes>
                  </artifactItem>
                </artifactItems>

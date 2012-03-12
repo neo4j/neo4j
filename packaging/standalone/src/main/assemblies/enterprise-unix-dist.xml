@@ -198,26 +198,6 @@
         <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
       </excludes>
     </dependencySet>
-    <!-- die manpages -->
-    <dependencySet>
-      <outputDirectory>doc/</outputDirectory>
-      <unpack>true</unpack>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</include>
-      </includes>
-    </dependencySet>
-    <!-- upgrade text -->
-    <dependencySet>
-      <outputDirectory>/</outputDirectory>
-      <unpack>true</unpack>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.doc:neo4j-manual:*:upgrade</include>
-      </includes>
-    </dependencySet>
 
  </dependencySets>
 
