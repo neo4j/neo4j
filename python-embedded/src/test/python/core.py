@@ -206,6 +206,10 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             self.assertEqual(n['a_bool'], True) 
             self.assertEqual(type(n['a_bool']), bool)
 
+            n['a_bool'] = False
+            self.assertEqual(n['a_bool'], False) 
+            self.assertEqual(type(n['a_bool']), bool)
+
             # Strings
             n['a_string'] = 'my fancy string I made'
             self.assertEqual(n['a_string'], 'my fancy string I made') 

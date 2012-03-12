@@ -245,6 +245,41 @@ the relevant Commercial Agreement.
 
 		</profile>
 
+    <profile>
+			<id>performance-test</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>python-performance-test</id>
+								<phase>test</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>pdb</executable>
+									<!--executable>${python}</executable-->
+									<workingDirectory>src/perftest/python</workingDirectory>
+									<arguments>
+										<argument>performance_tests.py</argument>
+										<argument>--classpath</argument>
+										<classpath />
+									</arguments>
+									<environmentVariables>
+										<PYTHONPATH>${pythonpath}</PYTHONPATH>
+										<JYTHONPATH>${jythonpath}</JYTHONPATH>
+									</environmentVariables>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<!-- Deploy the finished python library to pypi -->
 		<!-- NOTICE: This only works on windows machines, due to dependencies on 
 			win32api for building windows installers. -->
