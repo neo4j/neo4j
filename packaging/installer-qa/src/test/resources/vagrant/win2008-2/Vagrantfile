@@ -5,7 +5,7 @@ require 'share/neo4j/cygwin'
 
 Vagrant::Config.run do |config|
   config.vm.box = "windows-2008R2-amd64"
-  config.vm.system = Neo4j::Cygwin
+  config.vm.guest = Neo4j::Cygwin
   
   config.vm.network :hostonly, "33.33.33.11"
   

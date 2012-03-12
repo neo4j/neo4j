@@ -27,39 +27,39 @@ public class VMFactory {
 
     private static String workingDir = System.getProperty("jagrant.workingdir", System.getProperty("user.home") + "/jagrant/");
     private static String templateDir = System.getProperty("jagrant.templatedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/");
-    private static String templateShareDir = System.getProperty("jagrant.templatesharedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/all/");
+    private static String shareDir = System.getProperty("jagrant.templatesharedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/all/");
 
     public static VirtualMachine vm(VMDefinition config)
     {
         VirtualMachine v;
         File projectFolder = new File(workingDir + config.vmName());
         File templateFolder = new File(templateDir + config.vmName());
-        File templateSharedFolder = new File(templateShareDir);
+        File sharedFolder = new File(shareDir);
         
         if (!projectFolder.exists())
         {
             projectFolder.mkdirs();
-            v = vm(projectFolder, config);
+            v = vm(projectFolder, templateFolder, sharedFolder, config);
             if(!templateFolder.exists()) {
-                System.out.println("No vagrant project for " + config.vmName() + " ("+templateFolder.getAbsolutePath()+"), using vagrant init.");
                 v.init(config.box());
             }
         } else
         {
-            v = vm(projectFolder, config);
+            v = vm(projectFolder, templateFolder, sharedFolder, config);
         }
-        
-        if(templateFolder.exists()) {
-            copyFolder(templateFolder, projectFolder);
-        }
-        copyFolder(templateSharedFolder, projectFolder);
         
         return v;
     }
 
-    private static VirtualMachine vm(File projectFolder, VMDefinition config)
+    private static VirtualMachine vm(File projectFolder, File templateFolder, File sharedFolder, VMDefinition config)
     {
         VirtualMachine v = new VirtualMachine(projectFolder, config);
+        
+        if(templateFolder.exists()) {
+            copyFolder(templateFolder, projectFolder);
+        }
+        copyFolder(sharedFolder, projectFolder);
+        
         v.ensureBoxExists(config.box());
         v.setTransactional(true);
         return v;
