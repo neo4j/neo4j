@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
@@ -38,8 +39,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.transaction.TransactionManager;
 
@@ -122,16 +121,15 @@ public class HighlyAvailableGraphDatabase
         BranchedDataPolicy branched_data_policy( BranchedDataPolicy def );
     }
     
-
-    protected final int localGraphWait;
-    protected StoreId storeId;
+    private final int localGraphWait;
+    protected volatile StoreId storeId;
     protected final StoreIdGetter storeIdGetter;
 
     protected Configuration configuration;
     private String storeDir;
     private final StringLogger messageLog;
     private Map<String, String> config;
-    private AbstractGraphDatabase internalGraphDatabase;
+    private volatile AbstractGraphDatabase internalGraphDatabase;
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
 
@@ -145,13 +143,12 @@ public class HighlyAvailableGraphDatabase
     private volatile Throwable causeOfShutdown;
     private long startupTime;
     private BranchedDataPolicy branchedDataPolicy;
-    private SlaveUpdateMode slaveUpdateMode;
-    private int readTimeout;
+    private final SlaveUpdateMode slaveUpdateMode;
 
     // This lock is used to safeguard access to internal database
     // Users will acquire readlock, and upon master/slave switch
     // a write lock will be acquired
-    private ReadWriteLock databaseLock;
+//    private ReadWriteLock databaseLock;
 
     /*
      *  True iff it is ok to pull updates. Used to control the
@@ -178,7 +175,7 @@ public class HighlyAvailableGraphDatabase
 
         responseReceiver = new HAResponseReceiver();
         
-        databaseLock = new ReentrantReadWriteLock(  );
+//        databaseLock = new ReentrantReadWriteLock(  );
         
         this.nodeLookup = new HANodeLookup();
         
@@ -191,11 +188,10 @@ public class HighlyAvailableGraphDatabase
         this.startupTime = System.currentTimeMillis();
         kernelEventHandlers.add( new TxManagerCheckKernelEventHandler() );
 
-        this.readTimeout = configuration.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
         this.slaveUpdateMode = configuration.slave_coordinator_update_mode( SlaveUpdateMode.async );
         this.machineId = configuration.server_id();
         this.branchedDataPolicy = configuration.branched_data_policy( HighlyAvailableGraphDatabase.BranchedDataPolicy.keep_all );
-        this.localGraphWait = Math.max( configuration.read_timeout( 15 ), 5 );
+        this.localGraphWait = Math.max( configuration.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ), 5 );
 
         storeIdGetter = new StoreIdGetter()
         {
@@ -710,65 +706,66 @@ public class HighlyAvailableGraphDatabase
      */
     private AbstractGraphDatabase localGraph()
     {
-        try
-        {
-            if (databaseLock.readLock().tryLock( localGraphWait, TimeUnit.SECONDS ))
-            {
-                try
-                {
-                    if (internalGraphDatabase == null)
-                        if ( causeOfShutdown != null )
-                        {
-                            throw new RuntimeException( "Graph database not started", causeOfShutdown );
-                        }
-                        else
-                        {
-                            throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
-                                    "maybe not started yet or in the middle of master/slave swap?" );
-                        }
+//        try
+//        {
+//            if (databaseLock.readLock().tryLock( localGraphWait, TimeUnit.SECONDS ))
+//            {
+//                try
+//                {
+//                    if (internalGraphDatabase == null)
+//                        if ( causeOfShutdown != null )
+//                        {
+//                            throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//                        }
+//                        else
+//                        {
+//                            throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                                    "maybe not started yet or in the middle of master/slave swap?" );
+//                        }
+//
+//                    return internalGraphDatabase;
+//                } finally
+//                {
+//                    databaseLock.readLock().unlock();
+//                }
+//            } else
+//            {
+//                if ( causeOfShutdown != null )
+//                {
+//                    throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//                }
+//                else
+//                {
+//                    throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                            "maybe not started yet or in the middle of master/slave swap?" );
+//                }
+//            }
+//        }
+//        catch( InterruptedException e )
+//        {
+//            if ( causeOfShutdown != null )
+//            {
+//                throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//            }
+//            else
+//            {
+//                throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                        "maybe not started yet or in the middle of master/slave swap?" );
+//            }
+//        }
 
-                    return internalGraphDatabase;
-                } finally
-                {
-                    databaseLock.readLock().unlock();
-                }
-            } else
-            {
-                if ( causeOfShutdown != null )
-                {
-                    throw new RuntimeException( "Graph database not started", causeOfShutdown );
-                }
-                else
-                {
-                    throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
-                            "maybe not started yet or in the middle of master/slave swap?" );
-                }
-            }
-        }
-        catch( InterruptedException e )
-        {
-            if ( causeOfShutdown != null )
-            {
-                throw new RuntimeException( "Graph database not started", causeOfShutdown );
-            }
-            else
-            {
-                throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
-                        "maybe not started yet or in the middle of master/slave swap?" );
-            }
-        }
+        AbstractGraphDatabase result = internalGraphDatabase;
+        if ( result != null )
+            return result;
 
-/* This code was not thread-safe. At all.
-
-        if ( graphDbImpl != null ) return graphDbImpl;
-        int secondsWait = Math.max( configuration.read_timeout( 15 ), 5);
-
-        long endTime = System.currentTimeMillis()+secondsWait*1000;
-        while ( graphDbImpl == null && System.currentTimeMillis() < endTime )
+        long endTime = System.currentTimeMillis()+SECONDS.toMillis( localGraphWait );
+        while ( result == null && System.currentTimeMillis() < endTime )
         {
             sleepWithoutInterruption( 1, "Failed waiting for local graph to be available" );
-            if ( graphDbImpl != null ) return graphDbImpl;
+            result = internalGraphDatabase;
         }
+        if ( result != null )
+            return result;
 
         if ( causeOfShutdown != null )
         {
@@ -778,7 +775,7 @@ public class HighlyAvailableGraphDatabase
         {
             throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
                     "maybe not started yet or in the middle of master/slave swap?" );
-        }*/
+        }
     }
 
     public Broker getBroker()
@@ -801,12 +798,12 @@ public class HighlyAvailableGraphDatabase
                      */
                     messageLog.logMessage(
                             "ZooKeeper broker returned null master" );
-                    newMaster( null, new NullPointerException(
+                    newMaster( storeId, new NullPointerException(
                             "master returned from broker" ) );
                 }
                 else if ( broker.getMaster().first() == null )
                 {
-                    newMaster( null, new NullPointerException(
+                    newMaster( storeId, new NullPointerException(
                             "master returned from broker" ) );
                 }
                 responseReceiver.receive( broker.getMaster().first().pullUpdates(
@@ -815,12 +812,12 @@ public class HighlyAvailableGraphDatabase
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( null, e );
+            newMaster( storeId, e );
             throw e;
         }
         catch ( NoMasterException e )
         {
-            newMaster( null, e );
+            newMaster( storeId, e );
             throw e;
         }
         catch ( ComException e )
@@ -864,6 +861,11 @@ public class HighlyAvailableGraphDatabase
         return getClass().getSimpleName() + "[" + storeDir + ", " + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
     }
 
+    /* Commented out right before the "assembly" branch merged into master where the trickiness
+     * was in that master had changes to HAGraphDb, whereas the assembly branch which had gotten
+     * rid of the wrapping HighlyAvailableGraphDatabase and renamed HAGraphDb to
+     * HighylAvailableGraphDatabase. TODO remove this old method
+     */
 //    protected synchronized void reevaluateMyself( StoreId storeId )
 //    {
 //        Pair<Master, Machine> master = broker.getMasterReally( true );
@@ -1564,7 +1566,7 @@ public class HighlyAvailableGraphDatabase
         @Override
         public void newMaster( Exception e )
         {
-            HighlyAvailableGraphDatabase.this.newMaster( null, e );
+            HighlyAvailableGraphDatabase.this.newMaster( storeId, e );
         }
 
         /**
@@ -1613,7 +1615,7 @@ public class HighlyAvailableGraphDatabase
             {
                 messageLog.logMessage( "TxManager not ok, doing internal restart" );
                 internalShutdown( true );
-                newMaster( null, new Exception( "Tx manager not ok" ) );
+                newMaster( storeId, new Exception( "Tx manager not ok" ) );
             }
         }
 
