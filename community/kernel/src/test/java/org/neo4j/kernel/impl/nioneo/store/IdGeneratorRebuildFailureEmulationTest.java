@@ -56,7 +56,7 @@ import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 
 @RunWith( Suite.class )
 @SuiteClasses( { IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
-                IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class } )
+                 IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class } )
 public class IdGeneratorRebuildFailureEmulationTest
 {
     @RunWith( JUnit4.class )
@@ -152,7 +152,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     }
 
     @After
-    public void verifyAndDispose()
+    public void verifyAndDispose() throws Exception
     {
         try
         {
@@ -162,7 +162,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
         finally
         {
-            if ( fs != null ) fs.dispose();
+            if ( fs != null ) fs.disposeAndAssertNoOpenFiles();
             fs = null;
         }
     }
@@ -230,8 +230,11 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private static class FileSystem extends EphemeralFileSystemAbstraction
     {
-        void dispose()
+        void disposeAndAssertNoOpenFiles() throws Exception
         {
+            //Collection<String> open = openFiles();
+            //assertTrue( "Open files: " + open, open.isEmpty() );
+            assertNoOpenFiles();
             super.shutdown();
         }
 

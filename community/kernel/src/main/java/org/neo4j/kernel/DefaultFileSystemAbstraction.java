@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -37,6 +38,7 @@ public class DefaultFileSystemAbstraction
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
+        // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         return new RandomAccessFile( fileName, mode ).getChannel();
     }
 
