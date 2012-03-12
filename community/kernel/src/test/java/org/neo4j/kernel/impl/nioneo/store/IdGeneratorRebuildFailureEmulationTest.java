@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -106,13 +107,13 @@ public class IdGeneratorRebuildFailureEmulationTest
     @BreakpointTrigger
     private void performTest() throws Exception
     {
-        String file = prefix + "/" + Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' );
+        String file = prefix + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( file + ".id" );
         NeoStore neostore = null;
         try
         {
-            neostore = factory.newNeoStore( prefix + "/neostore" );
+            neostore = factory.newNeoStore( prefix + File.separator + "neostore" );
             // emulate a failure during rebuild:
             emulateFailureOnRebuildOf( neostore );
         }
@@ -153,7 +154,6 @@ public class IdGeneratorRebuildFailureEmulationTest
     @After
     public void verifyAndDispose()
     {
-        //System.out.println(fs.releaseAllLocks());
         try
         {
             AbstractGraphDatabase graphdb = new Database();
