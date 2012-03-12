@@ -174,9 +174,6 @@ public class CommonQualityAssuranceTest {
 
         List<String> files = driver.listDir(driver.installDir() + "/doc/manual/text");
         assertThat(files, hasItem("neo4j-manual.txt"));
-
-        files = driver.listDir(driver.installDir() + "/doc/manual/pdf");
-        assertThat(files, hasItem("neo4j-manual.pdf"));
     }
 
     private void assertRESTDoesNotWork() throws Exception
