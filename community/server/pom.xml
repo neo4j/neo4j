@@ -30,7 +30,10 @@
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
-        <neo4j.codename />
+        <neo4j.codename>Bastu Bänk</neo4j.codename>
+
+        <!-- Relative to /webadmin/ -->
+        <neo4j.codename.icon>img/icons/branding/1.7.png</neo4j.codename.icon>
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
