@@ -7,7 +7,7 @@ Vagrant::Config.run do |config|
   config.vm.box = "windows-2008R2-amd64"
   config.vm.system = Neo4j::Cygwin
   
-  config.vm.network("33.33.33.10")
+  config.vm.network :hostonly, "33.33.33.10"
   
   config.vm.provision :shell, :path => "share/win2008-disable-firewall.sh"
   

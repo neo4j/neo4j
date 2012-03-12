@@ -4,7 +4,7 @@
 Vagrant::Config.run do |config|
   config.vm.box = "ubuntu-11.04-amd64"
   
-  config.vm.network("33.33.33.14")
+  config.vm.network :hostonly, "33.33.33.14"
 
   config.vm.provision :shell, :path => "share/ubuntu-provision.sh"
 end
