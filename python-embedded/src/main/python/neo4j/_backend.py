@@ -104,7 +104,6 @@ except: # this isn't jython (and doesn't have the java module)
         jvmargs = jvmargs + ['-Djava.class.path=' + classpath]
         
         if os.getenv('DEBUG',None) is "true":
-            print "JVMDEBUG"
             jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
         
         return jvmargs
