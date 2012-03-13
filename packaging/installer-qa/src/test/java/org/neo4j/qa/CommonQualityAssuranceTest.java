@@ -26,6 +26,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.vagrant.VMFactory.vm;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ public class CommonQualityAssuranceTest {
 
     private VirtualMachine vm;
     private Neo4jDriver driver;
+    private String testName;
 
     @Parameters
     public static Collection<Object[]> testParameters()
@@ -90,16 +92,18 @@ public class CommonQualityAssuranceTest {
         
         for(String platform : Platforms.getPlaformsToUse()) {
             for(Neo4jDriver d : platforms.get(platform)) {
-                testParameters.add(new Object[]{d});
+                String name = CommonQualityAssuranceTest.class.getName() + "_" + d.getClass().getName();
+                testParameters.add(new Object[]{name, d});
             }
         }
         
         return testParameters;
     }
 
-    public CommonQualityAssuranceTest(Neo4jDriver driver)
+    public CommonQualityAssuranceTest(String testName, Neo4jDriver driver)
     {
         this.driver = driver;
+        this.testName = testName;
         this.vm = driver.vm();
     }
 
@@ -111,13 +115,16 @@ public class CommonQualityAssuranceTest {
     }
 
     @After
-    public void rollbackChanges()
+    public void cleanUp()
     {
+        String logDir = SharedConstants.TEST_LOGS_DIR + testName;
+        new File(logDir).mkdirs();
+        try {
+            driver.downloadLogsTo(logDir);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
         driver.close();
-        // We don't roll back after a test, it's done before.
-        // This is bad practice (we leave the VM dirty), but
-        // it makes debugging significantly easier because
-        // the VM can be inspected.
     }
 
     /*

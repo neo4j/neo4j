@@ -44,7 +44,6 @@ import org.neo4j.vagrant.VirtualMachine;
 public class EnterpriseQualityAssuranceTest {
     
     @Parameters
-    @SuppressWarnings("unchecked")
     public static Collection<Object[]> testParameters()
     {
 
@@ -61,7 +60,7 @@ public class EnterpriseQualityAssuranceTest {
         
         // Windows
         platforms.put(Platforms.WINDOWS, new Object[] { 
-                Platforms.WINDOWS,
+                EnterpriseQualityAssuranceTest.class.getName() + "_" + WindowsEnterpriseDriver.class.getName(),
                 new EnterpriseDriver []{
                     new WindowsEnterpriseDriver( win1, 
                             SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
@@ -76,7 +75,7 @@ public class EnterpriseQualityAssuranceTest {
         
         // Ubuntu, with debian installer
         platforms.put(Platforms.UBUNTU_DEB, new Object[] { 
-                Platforms.UBUNTU_DEB,
+                EnterpriseQualityAssuranceTest.class.getName() + "_" + UbuntuDebEnterpriseDriver.class.getName(),
                 new EnterpriseDriver []{
                     new UbuntuDebEnterpriseDriver( ubuntu1, 
                             SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 

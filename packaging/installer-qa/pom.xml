@@ -83,6 +83,7 @@
         <executions>
           <execution>
             <phase>process-resources</phase>
+            <id>rename-and-move-installers-into-classpath</id>
             <goals>
               <goal>run</goal>
             </goals>
@@ -126,6 +127,23 @@
               </target>
             </configuration>
           </execution>
+          
+          <!-- Tar the log files from all tests -->
+          <execution>
+            <phase>package</phase>
+            <id>tar-log-files</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <tar destfile="${project.build.directory}/logs.tar.gz" 
+                     basedir="${project.build.directory}/test-logs"
+                     compression="gzip" />
+              </target>
+            </configuration>
+          </execution>
+          
         </executions>
       </plugin>
 
