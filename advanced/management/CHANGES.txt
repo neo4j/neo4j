@@ -1,3 +1,8 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups.
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added the ability to monitor the locks (optionally filter on contended-only and how long they've lived) in the LockManager through JMX.
