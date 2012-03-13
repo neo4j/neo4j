@@ -20,6 +20,7 @@ package org.neo4j.examples.orderedpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
@@ -32,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
@@ -48,7 +50,7 @@ public class OrderedPathTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        orderedPath = new OrderedPath();
+        orderedPath = new OrderedPath( new ImpermanentGraphDatabase() );
         gen = new JavaDocsGenerator( "ordered-path-java", "dev" );
     }
 
@@ -66,6 +68,7 @@ public class OrderedPathTest
         assertEquals( 1, count( traversalDescription.traverse( A ) ) );
         String output = orderedPath.printPaths( traversalDescription, A );
         System.out.println( output );
+        assertTrue( output.contains( "(A)--[REL1]-->(B)--[REL2]-->(C)--[REL3]-->(D)" ) );
         String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(
                 "Ordered Path Graph", orderedPath.db, "java" );
         assertFalse( graph.isEmpty() );
