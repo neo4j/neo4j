@@ -268,8 +268,12 @@ public class TxLog
 
         private int sizeOf( byte[] id )
         {
-            if ( id == null ) return 0;
-            return 1/*the length of the array*/+id.length;
+            // If id is null it means this record type doesn't have it. TX_START/MARK_COMMIT/TX_DONE
+            // only has the global id, whereas BRANCH_ADD has got both the global and branch ids.
+            if ( id == null )
+                return 0;
+            // The length of the array (1 byte) + the actual array
+            return 1+id.length;
         }
 
         String typeName()
