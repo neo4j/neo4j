@@ -269,7 +269,7 @@ public class TxLog
         private int sizeOf( byte[] id )
         {
             if ( id == null ) return 0;
-            return 1+id.length;
+            return 1/*the length of the array*/+id.length;
         }
 
         String typeName()
