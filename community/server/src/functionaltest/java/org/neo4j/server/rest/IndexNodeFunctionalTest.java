@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -36,22 +42,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-<<<<<<< HEAD
-=======
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-<<<<<<< HEAD
 import org.neo4j.server.helpers.ServerHelper;
-=======
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -59,17 +56,7 @@ import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
-<<<<<<< HEAD
 public class IndexNodeFunctionalTest
-=======
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
-public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -93,7 +80,6 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                 .setGraph( server.getDatabase().graph );
     }
 
-<<<<<<< HEAD
     @AfterClass
     public static void stopServer()
     {
@@ -111,21 +97,6 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         gen.get()
                 .expectedStatus( 204 )
                 .get( functionalTestHelper.nodeIndexUri() );
-=======
-    long createNode()
-    {
-        AbstractGraphDatabase graphdb = server().getDatabase().graph;
-        Transaction tx = graphdb.beginTx();
-        Node node;
-        try {
-            node = graphdb.createNode();
-
-            tx.success();
-        } finally {
-            tx.finish();
-        }
-        return node.getId();
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
     }
 
     /**
@@ -637,21 +608,8 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     {
         final String index = "people", key = "name", value = "Peter";
 
-        GraphDatabaseService graphdb = graphdb();
-        Transaction tx = graphdb.beginTx();
-        try
-        {
-            Node peter = graphdb.createNode();
-            peter.setProperty( key, value );
-            peter.setProperty( "sequence", 1 );
-            graphdb.index().forNodes( index ).add( peter, key, value );
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        long peter = helper.createNode( MapUtil.map( key, value, "sequence", 1 ) );
+        helper.addNodeToIndex( index, key, value, peter );
 
         helper.createNodeIndex( index );
         ResponseEntity response = gen.get()

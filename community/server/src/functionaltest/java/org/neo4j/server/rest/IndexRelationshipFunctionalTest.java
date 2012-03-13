@@ -19,13 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-<<<<<<< HEAD
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
-=======
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -37,22 +34,14 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-<<<<<<< HEAD
 import org.junit.AfterClass;
-=======
-import static java.util.Arrays.asList;
-
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-<<<<<<< HEAD
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-=======
 import org.neo4j.kernel.impl.annotations.Documented;
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
@@ -63,16 +52,7 @@ import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
-<<<<<<< HEAD
 public class IndexRelationshipFunctionalTest
-=======
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
-public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestBase
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -139,8 +119,6 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
                 .get( 0 ) );
         assertEquals( expectedIndexes, helper.getRelationshipIndexes().length );
         assertNotNull( helper.getRelationshipIndex( indexName ) );
-<<<<<<< HEAD
-=======
 
         // Add a relationship to the index
         String key = "key";
@@ -161,7 +139,6 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
 
         Map<String, Object> map = JsonHelper.jsonToMap( discovredEntity );
         assertNotNull( map.get( "self" ) );
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
     }
 
     private JaxRsResponse httpPostIndexRelationshipRoot( String jsonIndexSpecification )
@@ -371,61 +348,6 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         helper.addRelationshipToIndex( indexName, key1, value2, relationship );
         helper.addRelationshipToIndex( indexName, key2, value1, relationship );
         helper.addRelationshipToIndex( indexName, key2, value2, relationship );
-<<<<<<< HEAD
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete(
-                        functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/"
-                                + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete( functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-    }
-
-    @Test
-    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
-    {
-
-        String indexName = "blah";
-        helper.createRelationshipIndex( indexName );
-
-        // Remove the index
-        JaxRsResponse response = RestRequest.req()
-                .delete( functionalTestHelper.indexRelationshipUri( indexName ) );
-
-=======
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
@@ -454,7 +376,6 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
 
         // Delete the index
         response = RestRequest.req().delete( functionalTestHelper.indexRelationshipUri( indexName ) );
->>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
         assertEquals( 204, response.getStatus() );
     }
 
