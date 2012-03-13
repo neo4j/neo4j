@@ -34,25 +34,8 @@
     <windows-wrapper.version>5-SNAPSHOT</windows-wrapper.version>
     <windows-wrapper.path>${project.build.outputDirectory}\windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.path>
 
-    <ai.executable>C:\Program Files\Caphyon\Advanced Installer
-      8.6\bin\x86\AdvancedInstaller.com</ai.executable>
+    <ai.executable>C:\Program Files\Caphyon\Advanced Installer 8.6\bin\x86\AdvancedInstaller.com</ai.executable>
   </properties>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j.assembly</groupId>
-      <artifactId>neo4j-standalone</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>windows-community</classifier>
-      <type>zip</type>
-      <exclusions>
-        <exclusion>
-          <groupId>org.codehaus.groovy</groupId>
-          <artifactId>groovy</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-  </dependencies>
 
   <build>
     <resources>
@@ -82,49 +65,6 @@
             <goals>
               <goal>resources</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.2</version>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.neo4j.assembly</groupId>
-                  <artifactId>neo4j-standalone</artifactId>
-                  <classifier>windows-community</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.neo4j.assembly</groupId>
-                  <artifactId>neo4j-standalone</artifactId>
-                  <classifier>windows-advanced</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.neo4j.assembly</groupId>
-                  <artifactId>neo4j-standalone</artifactId>
-                  <classifier>windows-enterprise</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
           </execution>
         </executions>
       </plugin>
