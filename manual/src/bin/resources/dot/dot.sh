@@ -57,10 +57,10 @@ edgefont=$graphfont
 
 
 prepend="digraph g{ $graphsettings\
-  node [shape=\"$nodeshape\" fillcolor=\"$nodefillcolor\" color=\"$boxcolor\" \
+  node [shape=\"$nodeshape\" penwidth=1.5 fillcolor=\"$nodefillcolor\" color=\"$boxcolor\" \
    fontcolor=\"$nodefontcolor\" style=\"$nodestyle\" fontsize=$nodefontsize \
    fontname=\"$nodefont\"]
-  edge [color=\"$boxcolor\" arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" \
+  edge [color=\"$boxcolor\" penwidth=2 arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" \
    arrowsize=$arrowsize fontcolor=\"$edgefontcolor\"\
    fontsize=$edgefontsize fontname=\"$edgefont\"] \
   nodesep=$nodesep \
@@ -68,6 +68,7 @@ prepend="digraph g{ $graphsettings\
 
 echo "${prepend} ${indata} }" | dot -Tpng -o"$pngfile"
 echo "${prepend} ${indata} }" | dot -Tsvg -o"$svgfile"
+#echo "${prepend} ${indata} }" > "${svgfile}.dot"
 
 echo ""
 
