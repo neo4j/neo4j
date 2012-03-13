@@ -145,7 +145,7 @@ public class TxManager extends AbstractTransactionManager
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found."));
                 }
-                txLog = new TxLog( currentTxLog, fileSystem );
+                txLog = new TxLog( currentTxLog, fileSystem, msgLog );
                 msgLog.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
@@ -165,7 +165,7 @@ public class TxManager extends AbstractTransactionManager
                     .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem );
+                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem, msgLog );
                 msgLog.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
@@ -266,6 +266,7 @@ public class TxManager extends AbstractTransactionManager
         fc.write( buf );
         fc.force( true );
         fc.close();
+        msgLog.logMessage( "Active txlog set to " + newFileName, true );
     }
 
     void setTmNotOk( Throwable cause )
