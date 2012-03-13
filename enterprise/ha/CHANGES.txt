@@ -1,3 +1,20 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Optimization where if a transaction is attempted to be killed, but isn't successful due to it being active (for example awaiting a lock)
+  such a transaction is killed as soon as it's possible instead of awaiting the scheduled "tx finisher".
+o Added config option for ha.max_concurrent_transactions_on_master. There was already
+  an equivalent for clients, so those two go hand in hand.
+o Failure to rotate logical log is treated as a kernel panic event (just as expected in this case).
+o While copying a store from the master the broker is shut down to cancel out any noisy events from it during copy.
+o Makes use of the start record checksum on transactions to detect branching of data. Yields more accurate checks.
+o Refactored newMaster() slightly and added a retry loop to avoid getting stuck at shutdown state.
+o Added Broker#restart and implemented in ZooKeeperBroker to handle ZK session expirations.
+o Made ZK session timeout configurable.
+o Removed a retry/wait which held a monitor on HighlyAvailableGraphDatabase which could delay a master switch by 'read timeout' seconds.
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups. This also removes the need for wrapping
+  an entire HA graphdb in a wrapper to have the entities survive an internal restart.
+
 1.6 (2012-01-20)
 ---------------
 o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.

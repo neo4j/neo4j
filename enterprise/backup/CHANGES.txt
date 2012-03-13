@@ -1,3 +1,9 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Added the ability to log diffs of all transactions seen by a VerifyingTransactionInterceptor.
+o Now full and incremental backup fetches and writes to disk the latest transaction if not present,
+  allowing for an HA cluster to bootstrap itself.
+
 1.6 (2012-01-20)
 ---------------
 o Backup rotates messages.log with the timestamp of the backup operation
