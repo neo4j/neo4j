@@ -83,6 +83,8 @@ include::property-values-can-not-be-nested.txt[]
 
 include::delete-all-properties-from-node.txt[]
 
+include::delete-a-named-property-from-a-node.txt[]
+
 [[rest-api-relationship-properties]]
 == Relationship properties ==
 
