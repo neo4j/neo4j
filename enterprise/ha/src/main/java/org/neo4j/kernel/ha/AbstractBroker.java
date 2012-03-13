@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -125,5 +126,11 @@ public abstract class AbstractBroker implements Broker
     public void logStatus( StringLogger msgLog )
     {
         // defult: log nothing
+    }
+
+    @Override
+    public Pair<Master, Machine> bootstrap()
+    {
+        return getMasterReally( true );
     }
 }

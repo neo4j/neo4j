@@ -231,7 +231,7 @@ public class ZooClient extends AbstractZooKeeperManager
     }
 
     @Override
-    public void waitForSyncConnected()
+    public void waitForSyncConnected( WaitMode mode )
     {
         if ( keeperState == KeeperState.SyncConnected )
         {
@@ -241,6 +241,7 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             throw new ZooKeeperException( "ZooKeeper client has been shutdwon" );
         }
+        WaitStrategy strategy = mode.getStrategy( this );
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
         synchronized ( keeperStateMonitor )
@@ -265,12 +266,12 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 currentTime = System.currentTimeMillis();
             }
-            while ( ( currentTime - startTime ) < getSessionTimeout() );
+            while ( strategy.waitMore( ( currentTime - startTime ) ) );
 
             if ( keeperState != KeeperState.SyncConnected )
             {
-                throw new ZooKeeperTimedOutException(
-                        "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
+                throw new ZooKeeperTimedOutException( "Connection to ZooKeeper server timed out, keeper state="
+                                                      + keeperState );
             }
         }
     }

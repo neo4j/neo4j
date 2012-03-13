@@ -162,10 +162,20 @@ public abstract class AbstractZooKeeperManager implements Watcher
      * @param allowChange If to connect to the new master
      * @return The master machine pair, possibly a NO_MASTER_MACHINE_PAIR
      */
-    protected Pair<Master, Machine> getMasterFromZooKeeper(
-            boolean wait, boolean allowChange )
+    protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
     {
-        ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait ).values() );
+        return getMasterFromZooKeeper( wait, WaitMode.SESSION, allowChange );
+    }
+
+    protected Pair<Master, Machine> bootstrap()
+    {
+        return getMasterFromZooKeeper( true, WaitMode.STARTUP, true );
+    }
+
+    private Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, WaitMode mode, boolean allowChange )
+    {
+        ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait, mode ).values() );
+
         Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
@@ -256,9 +266,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
 
     protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait )
     {
+        return getAllMachines( wait, WaitMode.SESSION );
+    }
+
+    protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait, WaitMode mode )
+    {
         if ( wait )
         {
-            waitForSyncConnected();
+            waitForSyncConnected( mode );
         }
         try
         {
@@ -335,8 +350,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             char[] chars = new char[length];
             buffer.asCharBuffer().get( chars );
             String result = String.valueOf( chars );
-            log( "Read HA server:" + result + " (for machineID " + machineId +
-                    ") from zoo keeper" );
+            log( "Read HA server:" + result + " (for machineID " + machineId + ") from zoo keeper" );
             return Pair.of( result, backupPort );
         }
         catch ( KeeperException e )
@@ -367,12 +381,85 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         catch ( InterruptedException e )
         {
-            throw new ZooKeeperException(
-                "Error closing zookeeper connection", e );
+            throw new ZooKeeperException( "Error closing zookeeper connection", e );
         }
     }
 
-    public abstract void waitForSyncConnected();
+    public final void waitForSyncConnected()
+    {
+        waitForSyncConnected( WaitMode.SESSION );
+    }
+
+    abstract void waitForSyncConnected( WaitMode mode );
+
+    enum WaitMode
+    {
+        STARTUP
+        {
+            @Override
+            public WaitStrategy getStrategy( AbstractZooKeeperManager zooClient )
+            {
+                return new StartupWaitStrategy( zooClient.msgLog );
+            }
+        },
+        SESSION
+        {
+            @Override
+            public WaitStrategy getStrategy( AbstractZooKeeperManager zooClient )
+            {
+                return new SessionWaitStrategy( zooClient.getSessionTimeout() );
+            }
+        };
+
+        public abstract WaitStrategy getStrategy( AbstractZooKeeperManager zooClient );
+    }
+
+    interface WaitStrategy
+    {
+        abstract boolean waitMore( long waitedSoFar );
+    }
+
+    private static class SessionWaitStrategy implements WaitStrategy
+    {
+        private final long sessionTimeout;
+
+        SessionWaitStrategy( long sessionTimeout )
+        {
+            this.sessionTimeout = sessionTimeout;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            return waitedSoFar < sessionTimeout;
+        }
+    }
+
+    private static class StartupWaitStrategy implements WaitStrategy
+    {
+        static final long SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS = 30;
+
+        private long lastNotification = 0;
+        private final StringLogger msgLog;
+
+        public StartupWaitStrategy( StringLogger msgLog )
+        {
+            this.msgLog = msgLog;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            long currentNotification = waitedSoFar / ( SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS * 1000 );
+            if ( currentNotification > lastNotification )
+            {
+                lastNotification = currentNotification;
+                msgLog.logMessage( "Have been waiting for " + SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS
+                                   * currentNotification + " seconds for the ZooKeeper cluster to respond." );
+            }
+            return true;
+        }
+    }
 
     public String getServers()
     {
@@ -476,13 +563,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public String toString()
         {

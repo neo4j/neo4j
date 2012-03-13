@@ -82,7 +82,7 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
     }
 
     @Override
-    public void waitForSyncConnected()
+    public void waitForSyncConnected( WaitMode waitMode )
     {
         long startTime = System.currentTimeMillis();
         while ( System.currentTimeMillis() - startTime < getSessionTimeout() )

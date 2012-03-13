@@ -340,7 +340,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             while ( System.currentTimeMillis() < endTime )
             {
                 // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMasterReally( true );
+                Pair<Master, Machine> master = broker.bootstrap();
                 if ( master != null && !master.other().equals( Machine.NO_MACHINE ) &&
                         master.other().getMachineId() != machineId )
                 {   // Join the existing cluster

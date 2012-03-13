@@ -62,4 +62,6 @@ public interface Broker
     StoreId getClusterStoreId();
 
     void logStatus( StringLogger msgLog );
+
+    Pair<Master, Machine> bootstrap();
 }
