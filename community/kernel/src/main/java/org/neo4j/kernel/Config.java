@@ -24,9 +24,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -209,68 +211,28 @@ public class Config implements DiagnosticsProvider
 
     private Map<String, String> params;
 
-    private final AutoConfigurator autoConfigurator;
-
-    Config(String storeDir, Map<String, String> inputParams)
+    public Config(StringLogger msgLog, Map<String, String> inputParams)
     {
-        // Get the default params and override with the user supplied values
-        this.params = getDefaultParams();
+        // Migrate settings
+        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( msgLog );
+        inputParams = configurationMigrator.migrateConfiguration( inputParams );
 
-        // Try auto-configuring some of the numbers
-        boolean useMemoryMapped = Boolean.parseBoolean( (String) inputParams.get(
-                Config.USE_MEMORY_MAPPED_BUFFERS) );
-        boolean dumpToConsole = Boolean.parseBoolean( (String) inputParams.get(
-                Config.DUMP_CONFIGURATION) );
-        autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
-        autoConfigurator.configure(params);
+        // Apply defaults
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( msgLog, GraphDatabaseSettings.class );
+        params = configurationDefaults.apply( inputParams );
 
-        this.params.putAll(inputParams);
+        // Apply autoconfiguration for memory settings
+        AutoConfigurator autoConfigurator = new AutoConfigurator( get(NeoStoreXaDataSource.Configuration.store_dir), getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ), getBoolean( GraphDatabaseSettings.dump_configuration ) );
+        Map<String,String> autoConfiguration = autoConfigurator.configure( );
+        for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
+        {
+            // Don't override explicit settings
+            if (!inputParams.containsKey( autoConfig.getKey() ))
+                params.put( autoConfig.getKey(), autoConfig.getValue() );
+        }
 
         // Configuration may not be changed at runtime
         this.params = Collections.unmodifiableMap(this.params);
-    }
-
-    public static Map<String, String> getDefaultParams()
-    {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
-        // if on windows, default no memory mapping
-        if ( osIsWindows() )
-        {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        }
-        else
-        {
-            // If not on win, default use memory mapping
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
-        }
-        
-        params.put( NODE_AUTO_INDEXING, "false" );
-        params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
-        return params;
-    }
-
-    public AutoConfigurator getAutoConfigurator()
-    {
-        return autoConfigurator;
-    }
-
-    public static boolean osIsWindows()
-    {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.startsWith("Windows");
-    }
-
-    public static boolean osIsMacOS()
-    {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.equalsIgnoreCase( "Mac OS X" );
     }
 
     public Map<String, String> getParams()
@@ -283,31 +245,39 @@ public class Config implements DiagnosticsProvider
         return params.get( setting.name() );
     }
     
-    public boolean getBoolean(GraphDatabaseSetting setting)
+    public boolean getBoolean(GraphDatabaseSetting.BooleanSetting setting)
     {
         return Boolean.parseBoolean( get( setting ) );
     }
     
-    public int getInteger(GraphDatabaseSetting setting)
+    public int getInteger(GraphDatabaseSetting.IntegerSetting setting)
     {
         return Integer.parseInt(get( setting ));
     }
 
-    public long getLong(GraphDatabaseSetting setting)
+    public long getLong(GraphDatabaseSetting.LongSetting setting)
     {
         return Long.parseLong(get( setting ));
     }
 
-    public double getDouble(GraphDatabaseSetting setting)
+    public double getDouble(GraphDatabaseSetting.DoubleSetting setting)
     {
         return Double.parseDouble(get( setting ));
     }
 
-    public float getFloat(GraphDatabaseSetting setting)
+    public float getFloat(GraphDatabaseSetting.FloatSetting setting)
     {
         return Float.parseFloat( get( setting ));
     }
 
+    
+    public <T extends Enum<T>> T getEnum( Class<T> enumType,
+                                          GraphDatabaseSetting.OptionsSetting graphDatabaseSetting)
+    {
+        return Enum.valueOf( enumType, get( graphDatabaseSetting ) );
+    }
+    
+    
     public static boolean configValueContainsMultipleParameters( String configValue )
     {
         return configValue != null && configValue.contains( "=" );
@@ -327,13 +297,6 @@ public class Config implements DiagnosticsProvider
             result.put( tokens[0], tokens[1] );
         }
         return new Args( result );
-    }
-
-    public static Object getFromConfig( Map<?, ?> config, Object key,
-            Object defaultValue )
-    {
-        Object result = config != null ? config.get( key ) : defaultValue;
-        return result != null ? result : defaultValue;
     }
 
     @Override

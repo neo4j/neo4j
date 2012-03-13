@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.graphdb.factory;
 
 import java.util.List;
@@ -29,7 +30,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
@@ -54,10 +56,12 @@ public class GraphDatabaseFactory
         {
             public GraphDatabaseService newDatabase(Map<String, String> config)
             {
-                if ( read_only.TRUE.equalsIgnoreCase(config.get( read_only.name() )))
-                    return new EmbeddedGraphDatabase(path, config, indexProviders);
-                else
+                config.put( "ephemeral", "false" );
+
+                if ( TRUE.equalsIgnoreCase(config.get( read_only.name() )))
                     return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders);
+                else
+                    return new EmbeddedGraphDatabase(path, config, indexProviders);
             }
         });
     }

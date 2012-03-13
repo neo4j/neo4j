@@ -19,12 +19,6 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -33,14 +27,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
-
 import javax.transaction.xa.Xid;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
@@ -53,6 +45,11 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static java.nio.ByteBuffer.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.Exceptions.*;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.*;
 
 @Ignore( "Doesn't work yet" )
 public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
@@ -106,7 +103,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
     private static class CreateIndexedNodeTask implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -135,7 +132,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
     private static class MessUpTask implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             try
             {

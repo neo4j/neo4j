@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Properties;
-
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -90,8 +91,9 @@ public class PreStartupStoreUpgrader
                         "Leaving this problem for main server process to resolve." );
                 return 0;
             }
-
-            StoreUpgrader storeUpgrader = new StoreUpgrader( config, new ConfigMapUpgradeConfiguration( config ),
+            
+            Config conf = new Config( StringLogger.SYSTEM, config );
+            StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
                     new DatabaseFiles(), CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction() );
 

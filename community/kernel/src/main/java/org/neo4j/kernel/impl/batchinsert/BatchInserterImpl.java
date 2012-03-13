@@ -19,22 +19,53 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.*;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.File;
-import java.util.*;
-import java.util.Map.Entry;
-
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static java.lang.Boolean.*;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.*;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -64,18 +95,14 @@ public class BatchInserterImpl implements BatchInserter
         rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
-        params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
-        new AutoConfigurator( storeDir, false, dump ).configure( params );
-        for ( Map.Entry<String,String> entry : stringParams.entrySet() )
-        {
-            params.put( entry.getKey(), entry.getValue() );
-        }
+        params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
+        Config config = new Config( StringLogger.DEV_NULL, params );
+        boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
         this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
         final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
 
-        StoreFactory sf = new StoreFactory(params,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory( config,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
 
         String store = fixPath( storeDir, sf );
         if ( dump )
@@ -355,7 +382,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rejectAutoUpgrade( Map<String, String> stringParams )
     {
-        if ( parseBoolean( stringParams.get( ALLOW_STORE_UPGRADE ) ) )
+        if ( parseBoolean( stringParams.get( GraphDatabaseSettings.allow_store_upgrade.name() ) ) )
         {
             throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
             		", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );

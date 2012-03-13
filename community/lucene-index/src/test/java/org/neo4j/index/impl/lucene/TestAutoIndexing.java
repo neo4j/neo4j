@@ -19,14 +19,8 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,12 +28,14 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.Config;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.*;
 
 public class TestAutoIndexing
 {
@@ -199,10 +195,10 @@ public class TestAutoIndexing
     {
         stopDb();
         config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
-        config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
-        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
+        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
+        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
+        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
+        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
         startDb();
 
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
@@ -226,10 +222,10 @@ public class TestAutoIndexing
     {
         stopDb();
         config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
-        config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
-        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
+        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
+        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
+        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
+        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
         startDb();
 
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
@@ -362,10 +358,10 @@ public class TestAutoIndexing
     {
         stopDb();
         config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
-        config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.NODE_AUTO_INDEXING, "false" );
-        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "false" );
+        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
+        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
+        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "false" );
+        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "false" );
         startDb();
 
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
@@ -390,8 +386,8 @@ public class TestAutoIndexing
     {
         stopDb();
         config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "propName" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
+        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
+        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
         startDb();
 
@@ -421,8 +417,8 @@ public class TestAutoIndexing
     {
         stopDb();
         config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "propName" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
+        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
+        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
         startDb();
 

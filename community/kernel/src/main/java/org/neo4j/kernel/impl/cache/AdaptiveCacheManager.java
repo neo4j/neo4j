@@ -27,26 +27,27 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.Lifecycle;
 
 public class AdaptiveCacheManager
     implements Lifecycle
 {
-    public interface Configuration
+    public static class Configuration
     {
-        int adaptive_cache_worker_sleep_time(int def);
+        public static final GraphDatabaseSetting.IntegerSetting adaptive_cache_worker_sleep_time = GraphDatabaseSettings.adaptive_cache_worker_sleep_time;
 
-        float adaptive_cache_manager_decrease_ratio(float def, float min, float max);
-
-        float adaptive_cache_manager_increase_ratio(float def, float min, float max);
+        public static final GraphDatabaseSetting.FloatSetting adaptive_cache_manager_decrease_ratio = GraphDatabaseSettings.adaptive_cache_manager_decrease_ratio;
+        public static final GraphDatabaseSetting.FloatSetting adaptive_cache_manager_increase_ratio = GraphDatabaseSettings.adaptive_cache_manager_increase_ratio;
     }
 
-    private Configuration config;
+    private Config config;
     private ScheduledExecutorService executor;
 
-    public AdaptiveCacheManager(Configuration config)
+    public AdaptiveCacheManager(Config config)
     {
         this.config = config;
     }
@@ -141,11 +142,11 @@ public class AdaptiveCacheManager
     @Override
     public void start()
     {
-        decreaseRatio = config.adaptive_cache_manager_decrease_ratio(1.15f, 1.0f, Float.MAX_VALUE);
-        increaseRatio = config.adaptive_cache_manager_increase_ratio(1.1f, 1.0f, Float.MAX_VALUE);
+        decreaseRatio = config.getFloat( Configuration.adaptive_cache_manager_decrease_ratio );
+        increaseRatio = config.getFloat( Configuration.adaptive_cache_manager_increase_ratio );
 
         executor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("Adaptive cache manager"));
-        executor.schedule( new AdaptiveCacheJob(), config.adaptive_cache_worker_sleep_time(3000), TimeUnit.MILLISECONDS );
+        executor.schedule( new AdaptiveCacheJob(), config.getInteger( Configuration.adaptive_cache_worker_sleep_time), TimeUnit.MILLISECONDS );
     }
 
     @Override

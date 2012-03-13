@@ -19,22 +19,20 @@
  */
 package synchronization;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.*;
 
 public class TestConcurrentRotation extends AbstractSubProcessTestBase
 {
@@ -107,7 +105,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class Verifier implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
         }
@@ -116,7 +114,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class CreateInitialStateTask implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -143,7 +141,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
             if ( resume ) resumeFlushThread();
@@ -155,7 +153,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         private volatile boolean success;
         
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             try
             {
@@ -173,7 +171,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             }
         }
         
-        private void setSuccess( AbstractGraphDatabase graphdb, boolean success )
+        private void setSuccess( GraphDatabaseSPI graphdb, boolean success )
         {
             Transaction tx = graphdb.beginTx();
             graphdb.getReferenceNode().setProperty( "success", success );

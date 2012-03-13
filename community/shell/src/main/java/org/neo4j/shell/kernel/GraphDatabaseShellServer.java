@@ -24,6 +24,7 @@ import java.rmi.RemoteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -32,8 +33,6 @@ import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
@@ -80,7 +79,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path ).
-            setConfig( read_only, Boolean.toString( readOnly ) );
+            setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
         if (configFileOrNull != null)
             builder.loadPropertiesFromFile( configFileOrNull );
         return builder.newGraphDatabase();

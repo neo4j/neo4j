@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -28,7 +29,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class DynamicStringStore extends AbstractDynamicStore
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractDynamicStore.Configuration
     {
 
@@ -38,7 +39,7 @@ public class DynamicStringStore extends AbstractDynamicStore
     public static final String VERSION = "StringPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
-    public DynamicStringStore( String fileName, Configuration configuration, IdType idType,
+    public DynamicStringStore( String fileName, Config configuration, IdType idType,
                                IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);

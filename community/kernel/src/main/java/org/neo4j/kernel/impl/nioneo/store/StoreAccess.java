@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 
 /**
@@ -164,7 +164,7 @@ public class StoreAccess
         {
             params.put( "use_memory_mapped_buffers", "false" );
         }
-        params.put( Config.REBUILD_IDGENERATORS_FAST, "true" );
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
 
         params.put( IdGeneratorFactory.class, new CommonFactories.DefaultIdGeneratorFactory() );
         return params;

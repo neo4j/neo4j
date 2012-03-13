@@ -20,19 +20,18 @@
 package org.neo4j.test;
 
 import java.util.Random;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 public class RandomNode
 {
     private static final Random random = new Random();
-    private final EmbeddedGraphDatabase graphdb;
+    private final GraphDatabaseSPI graphdb;
     private final NodeManager nm;
 
-    public RandomNode( EmbeddedGraphDatabase graphdb )
+    public RandomNode( GraphDatabaseSPI graphdb )
     {
         this.graphdb = graphdb;
         this.nm = graphdb.getNodeManager();

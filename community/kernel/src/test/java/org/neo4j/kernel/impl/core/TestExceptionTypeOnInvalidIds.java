@@ -31,6 +31,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.*;
@@ -57,7 +58,7 @@ public class TestExceptionTypeOnInvalidIds
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
         graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
         graphDbReadOnly = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
-            setConfig( read_only, read_only.TRUE ).
+            setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();
     }
 

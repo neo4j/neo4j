@@ -20,8 +20,15 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.logging.Logger;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -34,32 +41,27 @@ import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressM
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
-import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
-
 /**
-* Factore for Store implementations. Can also be used to create empty stores.
+* Factory for Store implementations. Can also be used to create empty stores.
 */
 public class StoreFactory
 {
+    public static abstract class Configuration
+    {
+        public static final GraphDatabaseSetting.IntegerSetting string_block_size = GraphDatabaseSettings.string_block_size;
+        public static final GraphDatabaseSetting.IntegerSetting array_block_size = GraphDatabaseSettings.array_block_size;
+    }
+    
     protected static final Logger logger = Logger.getLogger(StoreFactory.class.getName());
 
-    private Map<String, String> config;
+    private Config config;
     private IdGeneratorFactory idGeneratorFactory;
     private FileSystemAbstraction fileSystemAbstraction;
     private LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private StringLogger stringLogger;
     private TxHook txHook;
 
-    public StoreFactory(Map<String, String> config, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, LastCommittedTxIdSetter lastCommittedTxIdSetter, StringLogger stringLogger, TxHook txHook)
+    public StoreFactory(Config config, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, LastCommittedTxIdSetter lastCommittedTxIdSetter, StringLogger stringLogger, TxHook txHook)
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -84,7 +86,7 @@ public class StoreFactory
     
     private NeoStore attemptNewNeoStore( String fileName )
     {
-        return new NeoStore( fileName, ConfigProxy.config(config, NeoStore.Configuration.class),
+        return new NeoStore( fileName, config,
                 lastCommittedTxIdSetter, idGeneratorFactory, fileSystemAbstraction, stringLogger, txHook,
                 newRelationshipTypeStore(fileName + ".relationshiptypestore.db"),
                 newPropertyStore(fileName + ".propertystore.db"),
@@ -94,20 +96,20 @@ public class StoreFactory
 
     private void tryToUpgradeStores( String fileName )
     {
-        new StoreUpgrader(config, new ConfigMapUpgradeConfiguration(config),
+        new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
                 new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
                 new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
     private DynamicStringStore newDynamicStringStore(String s, IdType nameIdType)
     {
-        return new DynamicStringStore( s, ConfigProxy.config(config, DynamicStringStore.Configuration.class), nameIdType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        return new DynamicStringStore( s, config, nameIdType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
 
     private RelationshipTypeStore newRelationshipTypeStore(String s)
     {
         DynamicStringStore nameStore = newDynamicStringStore(s + ".names", IdType.RELATIONSHIP_TYPE_BLOCK);
-        return new RelationshipTypeStore( s, ConfigProxy.config(config, RelationshipTypeStore.Configuration.class), idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore );
+        return new RelationshipTypeStore( s, config, idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore );
     }
 
     private PropertyStore newPropertyStore(String s)
@@ -115,29 +117,29 @@ public class StoreFactory
         DynamicStringStore stringPropertyStore = newDynamicStringStore(s + ".strings", IdType.STRING_BLOCK);
         PropertyIndexStore propertyIndexStore = newPropertyIndexStore(s + ".index");
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore(s + ".arrays");
-        return new PropertyStore( s, ConfigProxy.config(config, PropertyStore.Configuration.class), idGeneratorFactory, fileSystemAbstraction, stringLogger,
+        return new PropertyStore( s, config, idGeneratorFactory, fileSystemAbstraction, stringLogger,
                 stringPropertyStore, propertyIndexStore, arrayPropertyStore);
     }
 
     private PropertyIndexStore newPropertyIndexStore(String s)
     {
         DynamicStringStore nameStore = newDynamicStringStore(s + ".keys", IdType.PROPERTY_INDEX_BLOCK);
-        return new PropertyIndexStore( s, ConfigProxy.config(config, PropertyIndexStore.Configuration.class), idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore );
+        return new PropertyIndexStore( s, config, idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore );
     }
 
     private RelationshipStore newRelationshipStore(String s)
     {
-        return new RelationshipStore( s, ConfigProxy.config(config, RelationshipStore.Configuration.class), idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        return new RelationshipStore( s, config, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
 
     private DynamicArrayStore newDynamicArrayStore(String s)
     {
-        return new DynamicArrayStore( s, ConfigProxy.config(config, DynamicArrayStore.Configuration.class), IdType.ARRAY_BLOCK, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        return new DynamicArrayStore( s, config, IdType.ARRAY_BLOCK, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
 
     private NodeStore newNodeStore(String s)
     {
-        return new NodeStore( s, ConfigProxy.config(config, NodeStore.Configuration.class), idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        return new NodeStore( s, config, idGeneratorFactory, fileSystemAbstraction, stringLogger );
     }
 
     public NeoStore createNeoStore(String fileName)
@@ -221,34 +223,8 @@ public class StoreFactory
     private void createPropertyStore( String fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
-        int stringStoreBlockSize = PropertyStore.DEFAULT_DATA_BLOCK_SIZE;
-        int arrayStoreBlockSize = PropertyStore.DEFAULT_DATA_BLOCK_SIZE;
-        try
-        {
-            String stringBlockSize = (String) config.get( STRING_BLOCK_SIZE );
-            String arrayBlockSize = (String) config.get( ARRAY_BLOCK_SIZE );
-            if ( stringBlockSize != null )
-            {
-                int value = Integer.parseInt( stringBlockSize );
-                if ( value > 0 )
-                {
-                    stringStoreBlockSize = value;
-                }
-            }
-            if ( arrayBlockSize != null )
-            {
-                int value = Integer.parseInt( arrayBlockSize );
-                if ( value > 0 )
-                {
-                    arrayStoreBlockSize = value;
-                }
-            }
-        }
-        catch ( Exception e )
-        {
-            // TODO Why is this not rethrown!?
-            logger.log( Level.WARNING, "Exception creating store", e );
-        }
+        int stringStoreBlockSize = config.getInteger( Configuration.string_block_size );
+        int arrayStoreBlockSize = config.getInteger( Configuration.array_block_size );
 
         createDynamicStringStore(fileName + ".strings", stringStoreBlockSize, IdType.STRING_BLOCK);
         createPropertyIndexStore(fileName + ".index");

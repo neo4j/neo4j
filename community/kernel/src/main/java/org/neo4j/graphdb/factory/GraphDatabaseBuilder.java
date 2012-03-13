@@ -49,10 +49,23 @@ public class GraphDatabaseBuilder
         this.creator = creator;
     }
 
+    /**
+     * Set a database setting to a particular value.
+     *
+     * @param setting
+     * @param value
+     * @return the builder
+     */
     public GraphDatabaseBuilder setConfig(GraphDatabaseSetting setting, String value)
     {
-        setting.validate( value );
-        config.put( setting.name(), value );
+        if (value == null)
+        {
+            config.remove( setting.name() );
+        } else
+        {
+            setting.validate( value );
+            config.put( setting.name(), value );
+        }
         return this;
     }
 
@@ -64,14 +77,20 @@ public class GraphDatabaseBuilder
      *
      * @param name
      * @param value
-     * @return
+     * @return the builder
      */
     public GraphDatabaseBuilder setConfig(String name, String value)
     {
-        config.put( name, value );
+        if (value == null)
+        {
+            config.remove( name );
+        } else
+        {
+            config.put( name, value );
+        }
         return this;
 
-/* TODO When all settings are in CommunityGraphDatabaseSettings, then use this instead
+/* TODO When all settings are in GraphDatabaseSettings, then use this instead
         try
         {
             GraphDatabaseSetting setting = (GraphDatabaseSetting) CommunityGraphDatabaseSetting.class.getField( name ).get( null );
@@ -89,6 +108,13 @@ public class GraphDatabaseBuilder
 */
     }
 
+    /**
+     * Set a map of config settings into the builder. Overwrites any existing values.
+     *
+     * @param config
+     * @return the builder
+     */
+
     public GraphDatabaseBuilder setConfig(Map<String, String> config)
     {
         for( Map.Entry<String, String> stringStringEntry : config.entrySet() )
@@ -97,6 +123,15 @@ public class GraphDatabaseBuilder
         }
         return this;
     }
+
+    /**
+     * Load a Properties file from a given file, and add the settings to
+     * the builder.
+     *
+     * @param fileName
+     * @return the builder
+     * @throws IllegalArgumentException if the builder was unable to load from the given filename
+     */
 
     public GraphDatabaseBuilder loadPropertiesFromFile( String fileName )
         throws IllegalArgumentException
@@ -110,8 +145,16 @@ public class GraphDatabaseBuilder
             throw new IllegalArgumentException( "Illegal filename:"+fileName );
         }
     }
-        
+
+    /**
+     * Load Properties file from a given URL, and add the settings to
+     * the builder.
+     *
+     * @param url
+     * @return the builder
+     */
     public GraphDatabaseBuilder loadPropertiesFromURL( URL url )
+        throws IllegalArgumentException
     {
         Properties props = new Properties();
         try
@@ -141,6 +184,12 @@ public class GraphDatabaseBuilder
         return this;
     }
 
+    /**
+     * Create a new database with the configuration registered
+     * through the builder.
+     *
+     * @return an instance of GraphDatabaseService
+     */
     public GraphDatabaseService newGraphDatabase()
     {
         return creator.newDatabase(config);

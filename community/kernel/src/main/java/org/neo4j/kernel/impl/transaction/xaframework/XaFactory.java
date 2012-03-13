@@ -21,9 +21,9 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.util.List;
-import java.util.Map;
-
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -35,7 +35,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 */
 public class XaFactory
 {
-    private Map<String, String> config;
+    public static abstract class Configuration
+    {
+        public static final GraphDatabaseSetting.BooleanSetting intercept_deserialized_transactions = GraphDatabaseSettings.intercept_deserialized_transactions;
+    }
+    
+    private Config config;
     private TxIdGenerator txIdGenerator;
     private AbstractTransactionManager txManager;
     private LogBufferFactory logBufferFactory;
@@ -43,7 +48,7 @@ public class XaFactory
     private StringLogger stringLogger;
     private final RecoveryVerifier recoveryVerifier;
 
-    public XaFactory(Map<String, String> config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
+    public XaFactory(Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
             LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
             StringLogger stringLogger, RecoveryVerifier recoveryVerifier )
     {
@@ -70,7 +75,7 @@ public class XaFactory
         XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog );
 
         XaLogicalLog log;
-        if ( "true".equalsIgnoreCase( (String) config.get(Config.INTERCEPT_DESERIALIZED_TRANSACTIONS) )
+        if ( config.getBoolean( Configuration.intercept_deserialized_transactions )
                 && providers != null )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, dependencyResolver, logBufferFactory, fileSystemAbstraction, stringLogger );

@@ -44,6 +44,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
@@ -65,6 +67,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -103,17 +106,16 @@ import static org.neo4j.helpers.Exceptions.*;
 public abstract class AbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseSPI
 {
-
-    interface Configuration
+    public static class Configuration
     {
-        boolean read_only(boolean def);
-
-        NodeManager.CacheType cache_type(NodeManager.CacheType def);
-
-        boolean load_kernel_extensions( boolean def );
+        public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
+        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+        public static final GraphDatabaseSetting.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
+        public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
+        public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
     }
 
-    private static final NodeManager.CacheType DEFAULT_CACHE_TYPE = NodeManager.CacheType.soft;
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
@@ -193,15 +195,24 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
-        // Instantiate all services - some are overridable by subclasses
         this.msgLog = createStringLogger();
-        params = new ConfigurationMigrator(msgLog).migrateConfiguration( params );
+
+        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
+        String separator = System.getProperty( "file.separator" );
+        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
+        params.put( CommonAbstractStore.Configuration.store_dir.name(), this.storeDir );
+        params.put( "neo_store", store );
+        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+        params.put( "logical_log", logicalLog );
+        // END SMELL
+
+        // Setup proper configuration
+        config = new Config( msgLog, params );
         
-        Configuration conf = ConfigProxy.config(params, Configuration.class);
+        // Instantiate all services - some are overridable by subclasses
+        boolean readOnly = config.getBoolean( Configuration.read_only );
 
-        boolean readOnly = conf.read_only(false);
-
-        NodeManager.CacheType cacheType = conf.cache_type(DEFAULT_CACHE_TYPE);
+        NodeManager.CacheType cacheType = config.getEnum(NodeManager.CacheType.class, Configuration.cache_type);
 
         kernelEventHandlers = new KernelEventHandlers();
 
@@ -213,7 +224,7 @@ public abstract class AbstractGraphDatabase
 
         fileSystem = life.add(createFileSystemAbstraction());
 
-        xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
+        xaDataSourceManager = life.add( new XaDataSourceManager( msgLog ) );
 
         if (readOnly)
         {
@@ -221,7 +232,7 @@ public abstract class AbstractGraphDatabase
 
         } else
         {
-            String serviceName = params.get( Config.TXMANAGER_IMPLEMENTATION );
+            String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, msgLog, fileSystem);
@@ -243,10 +254,10 @@ public abstract class AbstractGraphDatabase
 
         txIdGenerator = createTxIdGenerator();
 
-        ragManager = new RagManager(txManager);
+        ragManager = new RagManager(txManager );
         lockManager = createLockManager();
 
-        cacheManager = life.add( new AdaptiveCacheManager( ConfigProxy.config( params, AdaptiveCacheManager.Configuration.class ) ) );
+        cacheManager = life.add( new AdaptiveCacheManager( config ) );
 
         idGeneratorFactory = createIdGeneratorFactory();
 
@@ -271,12 +282,12 @@ public abstract class AbstractGraphDatabase
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
-        nodeManager = !readOnly ? new NodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this, cacheManager,
+        nodeManager = !readOnly ? new NodeManager( config, this, cacheManager,
                 lockManager, lockReleaser, txManager,
                 persistenceManager, persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager,
 
                 createNodeLookup(), createRelationshipLookups() ):
-                new ReadOnlyNodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this,
+                new ReadOnlyNodeManager( config, this,
                         cacheManager, lockManager, lockReleaser,
                         txManager, persistenceManager, persistenceSource,
                         relationshipTypeHolder, cacheType, propertyIndexManager,
@@ -287,17 +298,6 @@ public abstract class AbstractGraphDatabase
 
         indexStore = new IndexStore( this.storeDir, fileSystem);
 
-        // Default settings that need to be available
-        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
-        String separator = System.getProperty( "file.separator" );
-        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
-        params.put( "store_dir", this.storeDir );
-        params.put( "neo_store", store );
-        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-        params.put( "logical_log", logicalLog );
-        // END SMELL
-
-        config = new Config( this.storeDir,  params );
         diagnosticsManager.prependProvider( config );
         
         // Config can auto-configure memory mapping settings and what not, so reassign params
@@ -313,7 +313,7 @@ public abstract class AbstractGraphDatabase
 
         extensions = life.add(createKernelData());
 
-        if ( conf.load_kernel_extensions(true))
+        if ( config.getBoolean( Configuration.load_kernel_extensions ))
         {
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
@@ -321,8 +321,8 @@ public abstract class AbstractGraphDatabase
         if (indexProviders == null)
         	indexProviders = new LegacyIndexIterable();
         indexManager = new IndexManagerImpl(config, indexStore, xaDataSourceManager, txManager, this);
-        nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( ConfigProxy.config( params, NodeAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
-        relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( ConfigProxy.config( params, RelationshipAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
+        nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( config, indexManager, nodeManager));
+        relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( config, indexManager, nodeManager));
 
         // TODO This cyclic dependency should be resolved
         indexManager.setNodeAutoIndexer( nodeAutoIndexer );
@@ -332,7 +332,7 @@ public abstract class AbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(params, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog, recoveryVerifier );
+        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog, recoveryVerifier );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
@@ -348,7 +348,7 @@ public abstract class AbstractGraphDatabase
         try
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
-            neoDataSource = new NeoStoreXaDataSource( ConfigProxy.config( params, NeoStoreXaDataSource.Configuration.class ),
+            neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, lockReleaser, msgLog, xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
@@ -380,7 +380,7 @@ public abstract class AbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(params, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook);
+        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook);
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -907,7 +907,7 @@ public abstract class AbstractGraphDatabase
         @Override
         public Map<String, String> getConfigParams()
         {
-            return params;
+            return config.getParams();
         }
 
         @Override
@@ -1030,8 +1030,10 @@ public abstract class AbstractGraphDatabase
         @Override
         public <T> T resolveDependency(Class<T> type)
         {
-            if (type.equals(Map.class))
-                return (T) params;
+            if (type.equals( Map.class ))
+                return (T) getConfig().getParams();
+            else if (type.equals( Config.class ))
+                return (T) getConfig();
             else if (GraphDatabaseService.class.isAssignableFrom(type))
                 return (T) AbstractGraphDatabase.this;
             else if (TransactionManager.class.isAssignableFrom(type))

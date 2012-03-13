@@ -53,25 +53,26 @@ import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProvider;
 import org.neo4j.index.impl.lucene.LuceneIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.CacheTypeSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
 
 public class ImdbExampleTest
 {
-    private static EmbeddedGraphDatabase graphDb;
+    private static GraphDatabaseService graphDb;
     private Transaction tx;
 
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( cache_type, soft ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {

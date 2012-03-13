@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.util.Map;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.Config;
 
 public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
 {
-    private Map<?, ?> config;
+    private Config config;
 
-    public ConfigMapUpgradeConfiguration( Map<?, ?> config )
+    public ConfigMapUpgradeConfiguration( Config config )
     {
         this.config = config;
     }
@@ -35,8 +34,7 @@ public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
     @Override
     public void checkConfigurationAllowsAutomaticUpgrade()
     {
-        String allowUpgrade = (String) config.get( Config.ALLOW_STORE_UPGRADE );
-        if ( !Boolean.parseBoolean( allowUpgrade ) )
+        if ( !config.getBoolean( GraphDatabaseSettings.allow_store_upgrade ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }

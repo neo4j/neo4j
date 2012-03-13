@@ -24,6 +24,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -56,7 +57,7 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     GraphDatabaseService graphdb( String name, boolean loadExtensions, int instance )
     {
         Map<String, String> config = configuration( true, instance );
-        config.put( Config.LOAD_EXTENSIONS, Boolean.toString( loadExtensions ) );
+        config.put( GraphDatabaseSettings.load_kernel_extensions.name(), Boolean.toString( loadExtensions ) );
         return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.directory( name, true ).getAbsolutePath()).setConfig( config ).newGraphDatabase();
     }
 

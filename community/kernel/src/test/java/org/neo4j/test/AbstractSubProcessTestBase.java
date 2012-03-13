@@ -30,9 +30,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
@@ -87,7 +87,7 @@ public class AbstractSubProcessTestBase
 
     protected interface Task extends Serializable
     {
-        void run( GraphDatabaseService graphdb );
+        void run( GraphDatabaseSPI graphdb );
     }
 
     @Before
@@ -191,7 +191,7 @@ public class AbstractSubProcessTestBase
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
             return stringMap( new HashMap<String, String>( dbConfiguration ),
-                    Config.KEEP_LOGICAL_LOGS, "true" );
+                              GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
         }
 
         protected GraphDatabaseService startup()
@@ -256,7 +256,7 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( final GraphDatabaseService graphdb )
+        public void run( final GraphDatabaseSPI graphdb )
         {
             new Thread( new Runnable()
             {
@@ -272,9 +272,9 @@ public class AbstractSubProcessTestBase
     @SuppressWarnings( { "hiding", "serial" } )
     private static class SubInstance extends SubProcess<Instance, Bootstrapper> implements Instance
     {
-        private volatile GraphDatabaseService graphdb;
-        private static final AtomicReferenceFieldUpdater<SubInstance, EmbeddedGraphDatabase> GRAPHDB = AtomicReferenceFieldUpdater
-                .newUpdater( SubInstance.class, EmbeddedGraphDatabase.class, "graphdb" );
+        private volatile GraphDatabaseSPI graphdb;
+        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseSPI> GRAPHDB = AtomicReferenceFieldUpdater
+                .newUpdater( SubInstance.class, GraphDatabaseSPI.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
         private volatile Throwable failure;
 
@@ -284,7 +284,7 @@ public class AbstractSubProcessTestBase
             this.bootstrap = bootstrap;
             try
             {
-                graphdb = bootstrap.startup();
+                graphdb = (GraphDatabaseSPI) bootstrap.startup();
             }
             catch ( Throwable failure )
             {
@@ -334,7 +334,7 @@ public class AbstractSubProcessTestBase
                     throw new IllegalStateException( "instance has been shut down" );
             }
             graphdb.shutdown();
-            this.graphdb = bootstrap.startup();
+            this.graphdb = (GraphDatabaseSPI) bootstrap.startup();
         }
 
         public <T> T getMBean( Class<T> beanType )

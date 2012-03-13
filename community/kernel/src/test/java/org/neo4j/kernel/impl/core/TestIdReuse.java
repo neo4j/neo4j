@@ -25,7 +25,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 import static org.junit.Assert.*;
@@ -65,7 +66,7 @@ public class TestIdReuse
         File storeDir = new File( "target/var/idreuse" );
         FileUtils.deleteRecursively( storeDir );
         File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).setConfig( Config.USE_MEMORY_MAPPED_BUFFERS, "false" ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
             setSomeAndRemoveSome( db.getReferenceNode(), value );

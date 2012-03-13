@@ -21,10 +21,10 @@ package org.neo4j.server.database;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.Config;
@@ -74,7 +74,7 @@ public class Database
         }
 
         putIfAbsent( databaseProperties, Config.ENABLE_REMOTE_SHELL, "true" );
-        databaseProperties.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        databaseProperties.put( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
         databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );

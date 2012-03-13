@@ -26,8 +26,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.*;
@@ -48,7 +48,7 @@ public class TestOsSpecificLocks
     @Test
     public void sanityCheck() throws Exception
     {
-        assumeTrue( Config.osIsWindows() );
+        assumeTrue( GraphDatabaseSetting.osIsWindows() );
         FileSystemAbstraction fs = CommonFactories.defaultFileSystemAbstraction();
         // Must end in neostore to get the lock
         String fileName = path + "\\1neostore";
@@ -77,7 +77,7 @@ public class TestOsSpecificLocks
     @Test
     public void testDatabaseLocking()
     {
-        assumeTrue( Config.osIsWindows() );
+        assumeTrue( GraphDatabaseSetting.osIsWindows() );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         Transaction tx = db.beginTx();
         db.createNode();

@@ -25,6 +25,8 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 
 /**
@@ -36,7 +38,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
 
     static
     {
-        readOnlyParams.put( Config.READ_ONLY, "true" );
+        readOnlyParams.put( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE );
     }
 
     /**

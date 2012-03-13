@@ -26,9 +26,10 @@ import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -40,18 +41,15 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class CommonAbstractStore
 {
-    public interface Configuration
+    public static abstract class Configuration
     {
-        String neo_store();
-        boolean grab_file_lock(boolean def);
-
-        boolean read_only(boolean def);
-
-        boolean backup_slave(boolean def);
-
-        boolean use_memory_mapped_buffers(boolean def);
-
-        String store_dir();
+        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
+        
+        public static final GraphDatabaseSetting.BooleanSetting grab_file_lock = GraphDatabaseSettings.grab_file_lock;
+        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final GraphDatabaseSetting.BooleanSetting backup_slave = GraphDatabaseSettings.backup_slave;
+        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
     
     public static final String ALL_STORES_VERSION = "v0.A.0";
@@ -60,7 +58,7 @@ public abstract class CommonAbstractStore
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
-    protected Configuration configuration;
+    protected Config configuration;
     protected IdGeneratorFactory idGeneratorFactory;
     protected FileSystemAbstraction fileSystemAbstraction;
 
@@ -95,7 +93,7 @@ public abstract class CommonAbstractStore
      * @param idType
      *            The Id used to index into this store
      */
-    public CommonAbstractStore( String fileName, Configuration configuration, IdType idType,
+    public CommonAbstractStore( String fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         this.storageFileName = fileName;
@@ -104,7 +102,7 @@ public abstract class CommonAbstractStore
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
-        grabFileLock = configuration.grab_file_lock(true);
+        grabFileLock = configuration.getBoolean( Configuration.grab_file_lock );
 
         checkStorage();
         checkVersion(); // Overriden in NeoStore
@@ -135,8 +133,8 @@ public abstract class CommonAbstractStore
 
     protected void checkStorage()
     {
-        readOnly = configuration.read_only(false);
-        backupSlave = configuration.backup_slave(false);
+        readOnly = configuration.getBoolean( Configuration.read_only );
+        backupSlave = configuration.getBoolean( Configuration.backup_slave );
         if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
@@ -209,7 +207,7 @@ public abstract class CommonAbstractStore
         loadIdGenerator();
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(ConfigProxy.map(configuration), storageFileName ),
+            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(configuration.getParams(), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
@@ -402,7 +400,7 @@ public abstract class CommonAbstractStore
 
     protected boolean getIfMemoryMapped()
     {
-        return configuration.use_memory_mapped_buffers(true);
+        return configuration.getBoolean( Configuration.use_memory_mapped_buffers );
     }
 
     /**
@@ -487,7 +485,7 @@ public abstract class CommonAbstractStore
      */
     protected String getStoreDir()
     {
-        return configuration.store_dir();
+        return configuration.get( Configuration.store_dir );
     }
 
     /**

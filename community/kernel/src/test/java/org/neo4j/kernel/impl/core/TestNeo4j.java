@@ -30,6 +30,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.GraphDatabaseSPI;
@@ -319,7 +321,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     public void testKeepLogsConfig()
     {
         Map<String,String> config = new HashMap<String,String>();
-        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME );
         String storeDir = "target/configdb";
         deleteFileOrDirectory( storeDir );
         GraphDatabaseFactory graphDatabaseFactory = new GraphDatabaseFactory();
@@ -330,7 +332,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
         
-        config.remove( Config.KEEP_LOGICAL_LOGS );
+        config.remove( GraphDatabaseSettings.keep_logical_logs.name() );
         db = (GraphDatabaseSPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
         xaDsMgr = db.getXaDataSourceManager();
         xaDs = xaDsMgr.getNeoStoreDataSource();
@@ -339,7 +341,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
 
-        config.put( Config.KEEP_LOGICAL_LOGS, "false" );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.FALSE );
         db = (GraphDatabaseSPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
         xaDsMgr = db.getXaDataSourceManager();
         xaDs = xaDsMgr.getNeoStoreDataSource();
@@ -348,7 +350,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertFalse( xaDs.isLogicalLogKept() );
         db.shutdown();
         
-        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=false" );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME + "=false" );
         db = (GraphDatabaseSPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
         xaDsMgr = db.getXaDataSourceManager();
         xaDs = xaDsMgr.getNeoStoreDataSource();
@@ -357,14 +359,14 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         assertFalse( xaDs.isLogicalLogKept() );
         db.shutdown();
         
-        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=true" );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME + "=true" );
         db = (GraphDatabaseSPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
         xaDsMgr = db.getXaDataSourceManager();
         xaDs = xaDsMgr.getNeoStoreDataSource();
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
 
-        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
         db = (GraphDatabaseSPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
         xaDsMgr = db.getXaDataSourceManager();
         xaDs = xaDsMgr.getNeoStoreDataSource();

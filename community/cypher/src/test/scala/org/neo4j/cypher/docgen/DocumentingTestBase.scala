@@ -32,7 +32,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
-import org.neo4j.test.{TestGraphDatabaseFactory, GraphDescription}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 
 abstract class DocumentingTestBase extends JUnitSuite {
 
@@ -141,7 +141,7 @@ _Graph_
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
     engine = new ExecutionEngine(db)
 
-    db.cleanContent(false)
+    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
     db.inTx(() => {
       nodeIndex = db.index().forNodes("nodes")

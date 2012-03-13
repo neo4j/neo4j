@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.Ignore;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 
 @Ignore( "Not a test" )
@@ -34,7 +34,7 @@ public class ProduceNonCleanDefraggedStringStore
 {
     public static void main( String[] args )
     {
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( args[0] );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[ 0 ] );
         
         // Create some strings
         List<Node> nodes = new ArrayList<Node>();

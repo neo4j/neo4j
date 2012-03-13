@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class PropertyStore extends AbstractStore implements Store, RecordStore<PropertyRecord>
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractStore.Configuration
     {
         
@@ -59,7 +59,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     private PropertyIndexStore propertyIndexStore;
     private DynamicArrayStore arrayPropertyStore;
 
-    public PropertyStore(String fileName, Configuration configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+    public PropertyStore(String fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                          DynamicStringStore stringPropertyStore, PropertyIndexStore propertyIndexStore, DynamicArrayStore arrayPropertyStore)
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, fileSystemAbstraction, stringLogger );

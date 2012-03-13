@@ -25,8 +25,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -43,14 +45,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class AbstractStore extends CommonAbstractStore
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-
-        boolean rebuild_idgenerators_fast(boolean def);
+        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
-    private Configuration conf;
+    private Config conf;
 
     /**
      * Returns the fixed size of each record in this store.
@@ -72,7 +73,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    public AbstractStore( String fileName, Configuration conf, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+    public AbstractStore( String fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
         super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
         this.conf = conf;
@@ -182,7 +183,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             long fileSize = fileChannel.size();
             int recordSize = getRecordSize();
             boolean fullRebuild = true;
-            if ( conf.rebuild_idgenerators_fast(true))
+            if ( conf.getBoolean( Configuration.rebuild_idgenerators_fast) )
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();

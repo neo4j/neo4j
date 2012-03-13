@@ -19,19 +19,16 @@
  */
 package recovery;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -40,6 +37,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
 
 /**
  * Tries to trigger log file version errors that could happen if the db was killed
@@ -78,7 +78,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         return breakpoints;
     }
     
-    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+    private final Bootstrapper bootstrapper = killAwareBootstrapper( this, 0, stringMap( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE ) );
     
     @Override
     protected Bootstrapper bootstrap( int id ) throws IOException
@@ -89,7 +89,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class DoSimpleTransaction implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -112,7 +112,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class RotateLogs implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             try
             {
@@ -137,7 +137,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             try
             {
@@ -170,7 +170,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class Shutdown implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             graphdb.shutdown();
         }

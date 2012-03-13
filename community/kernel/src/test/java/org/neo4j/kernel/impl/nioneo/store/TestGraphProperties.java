@@ -36,13 +36,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.*;
 import static org.junit.Assert.*;
@@ -53,13 +54,13 @@ import static org.neo4j.test.TargetDirectory.*;
 
 public class TestGraphProperties
 {
-    private EmbeddedGraphDatabase db;
+    private GraphDatabaseSPI db;
     private Transaction tx;
 
     @Before
     public void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = (GraphDatabaseSPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     
     @After
@@ -184,7 +185,7 @@ public class TestGraphProperties
         db.shutdown();
         
 
-        NeoStore neoStore = new StoreFactory(Collections.<String,String>emptyMap(), defaultIdGeneratorFactory(), defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
+        NeoStore neoStore = new StoreFactory(new Config( StringLogger.DEV_NULL, Collections.<String,String>emptyMap()), defaultIdGeneratorFactory(), defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();
@@ -345,18 +346,18 @@ public class TestGraphProperties
     
     private static class State
     {
-        private final EmbeddedGraphDatabase db;
+        private final GraphDatabaseSPI db;
         private final PropertyContainer properties;
         private Transaction tx;
 
-        State( EmbeddedGraphDatabase db )
+        State( GraphDatabaseSPI db )
         {
             this.db = db;
             this.properties = getGraphProperties( db );
         }
     }
     
-    private static GraphProperties getGraphProperties( EmbeddedGraphDatabase db )
+    private static GraphProperties getGraphProperties( GraphDatabaseSPI db )
     {
         return db.getNodeManager().getGraphProperties();
     }

@@ -19,21 +19,19 @@
  */
 package visibility;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.concurrent.CountDownLatch;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.nioneo.xa.WriteTransaction;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.*;
 
 @SuppressWarnings( "serial" )
 public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessTestBase
@@ -53,7 +51,7 @@ public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessT
     private static class CreateData implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             Node node = graphdb.getReferenceNode();
             Transaction tx = graphdb.beginTx();
@@ -86,7 +84,7 @@ public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessT
         }
 
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseSPI graphdb )
         {
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "indexed" ).getSingle();
             if ( !acceptNull ) assertNotNull( "node not in index", node );

@@ -23,29 +23,31 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreUpgrader
 {
-    private Map<String, String> originalConfig;
+    private Config originalConfig;
     private UpgradeConfiguration upgradeConfiguration;
     private UpgradableDatabase upgradableDatabase;
     private StoreMigrator storeMigrator;
     private DatabaseFiles databaseFiles;
+    private StringLogger msgLog;
     private IdGeneratorFactory idGeneratorFactory;
     private FileSystemAbstraction fileSystemAbstraction;
 
-    public StoreUpgrader( Map<String, String> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase,
+    public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase,
                           StoreMigrator storeMigrator, DatabaseFiles databaseFiles,
                           IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction)
     {
+        this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.originalConfig = originalConfig;
@@ -99,10 +101,12 @@ public class StoreUpgrader
         upgradeDirectory.mkdir();
 
         String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();
-        Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig );
+        Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
         upgradeConfig.put( "neo_store", upgradeFileName );
-
-        NeoStore neoStore = new StoreFactory(upgradeConfig, idGeneratorFactory, fileSystemAbstraction, null, StringLogger.DEV_NULL, null).createNeoStore(upgradeFileName);
+        
+        Config upgradeConfiguration = new Config( msgLog, upgradeConfig );
+        
+        NeoStore neoStore = new StoreFactory(upgradeConfiguration, idGeneratorFactory, fileSystemAbstraction, null, StringLogger.DEV_NULL, null).createNeoStore(upgradeFileName);
         try
         {
             storeMigrator.migrate( new LegacyStore( storageFileName ), neoStore );

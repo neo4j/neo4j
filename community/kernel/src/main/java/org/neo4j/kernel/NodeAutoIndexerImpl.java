@@ -20,6 +20,8 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.core.NodeManager;
 
@@ -31,19 +33,18 @@ import org.neo4j.kernel.impl.core.NodeManager;
  */
 class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 {
-    public interface Configuration
+    public static abstract class Configuration
     {
-        boolean node_auto_indexing(boolean def);
-
-        String node_keys_indexable(String def);
+        public static final GraphDatabaseSetting.BooleanSetting node_auto_indexing = GraphDatabaseSettings.node_auto_indexing;
+        public static final GraphDatabaseSetting.StringSetting node_keys_indexable = GraphDatabaseSettings.node_keys_indexable;
     }
 
     static final String NODE_AUTO_INDEX = "node_auto_index";
-    private Configuration config;
+    private Config config;
     private IndexManagerImpl indexManager;
     private NodeManager nodeManager;
 
-    public NodeAutoIndexerImpl( Configuration config, IndexManagerImpl indexManager, NodeManager nodeManager)
+    public NodeAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager)
     {
         super( );
 
@@ -61,8 +62,8 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     @Override
     public void start()
     {
-        setEnabled(config.node_auto_indexing(false));
-        propertyKeysToInclude.addAll( parseConfigList( config.node_keys_indexable(null)) );
+        setEnabled(config.getBoolean( Configuration.node_auto_indexing ));
+        propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.node_keys_indexable )) );
     }
 
     @Override

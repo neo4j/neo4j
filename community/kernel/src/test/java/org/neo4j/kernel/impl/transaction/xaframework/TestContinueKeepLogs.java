@@ -29,13 +29,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.Config.*;
 
 public class TestContinueKeepLogs
 {
@@ -91,22 +91,22 @@ public class TestContinueKeepLogs
     
     private Map<String, String> keepLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, "true" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
     }
     
     private Map<String, String> dontKeepLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, "false" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
     }
     
     private Map<String, String> dontKeepMyLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=false" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), dataSourceName() + "=false" );
     }
     
     private Map<String, String> keepMyLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=true" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), dataSourceName() + "=true" );
     }
     
     protected String dataSourceName()

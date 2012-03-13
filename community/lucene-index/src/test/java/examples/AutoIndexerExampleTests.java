@@ -21,7 +21,6 @@ package examples;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,9 +32,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.ReadableIndex;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -72,13 +72,12 @@ public class AutoIndexerExampleTests implements GraphHolder
          * indexed. We also have to enable auto indexing for both these
          * primitives explicitly.
          */
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
-        config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
-        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
-
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testConfig" ) ).setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testConfig" ) ).
+            setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
+            setConfig( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ).
+            setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.relationship_auto_indexing, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null;
@@ -217,11 +216,10 @@ public class AutoIndexerExampleTests implements GraphHolder
         /*
          * Creating the configuration
          */
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
-        config.put( Config.NODE_AUTO_INDEXING, "true" );
-
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "mutations" ) ).setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "mutations" ) ).
+            setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
+            setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null, node3 = null, node4 = null;

@@ -24,7 +24,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -47,7 +48,7 @@ public class TestCrashWithRebuildSlow
                 ProduceNonCleanDefraggedStringStore.class.getName(), dir } ).waitFor() );
         
         // Recover with rebuild_idgenerators_fast=false
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( Config.REBUILD_IDGENERATORS_FAST, "false" ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.TRUE ).newGraphDatabase();
         try
         {
             int nameCount = 0;

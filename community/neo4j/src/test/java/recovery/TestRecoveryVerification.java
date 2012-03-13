@@ -28,6 +28,8 @@ import java.nio.channels.FileChannel;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -42,7 +44,6 @@ import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 import static java.nio.ByteBuffer.*;
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.Config.*;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.*;
 import static recovery.CreateTransactionsAndDie.*;
 
@@ -107,7 +108,7 @@ public class TestRecoveryVerification
         int count = 10;
         String dir = produceNonCleanDbWhichWillRecover2PCsOnStartup( "order", count );
         // Just make it recover
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( KEEP_LOGICAL_LOGS, "true" ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE ).newGraphDatabase().shutdown();
         verifyOrderedRecords( dir, count );
     }
 

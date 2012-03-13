@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,10 +37,13 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
@@ -70,24 +71,25 @@ import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 public class NodeManager
     implements Lifecycle
 {
-    public interface Configuration
+    public static class Configuration
     {
-        boolean use_adaptive_cache(boolean def);
-        float adaptive_cache_heap_ratio(float def, float min, float max);
-        int min_node_cache_size(int def);
+        public static final GraphDatabaseSetting.BooleanSetting use_adaptive_cache = GraphDatabaseSettings.use_adaptive_cache;
+        public static final GraphDatabaseSetting.FloatSetting adaptive_cache_heap_ratio = GraphDatabaseSettings.adaptive_cache_heap_ratio;
+        public static final GraphDatabaseSetting.IntegerSetting min_node_cache_size = GraphDatabaseSettings.min_node_cache_size;
 
-        int min_relationship_cache_size(int def);
+        public static final GraphDatabaseSetting.IntegerSetting min_relationship_cache_size = GraphDatabaseSettings.min_relationship_cache_size;
 
-        int max_node_cache_size(int def);
+        public static final GraphDatabaseSetting.IntegerSetting max_node_cache_size = GraphDatabaseSettings.max_node_cache_size;
 
-        int max_relationship_cache_size(int def);
+        public static final GraphDatabaseSetting.IntegerSetting max_relationship_cache_size = GraphDatabaseSettings.max_relationship_cache_size;
     }
     
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private long referenceNodeId = 0;
 
-    private Configuration config;
+    private Config config;
+
     private final GraphDatabaseService graphDbService;
     private final Cache<Long,NodeImpl> nodeCache;
     private final Cache<Long,RelationshipImpl> relCache;
@@ -116,7 +118,7 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    public NodeManager( Configuration config, GraphDatabaseService graphDb,
+    public NodeManager( Config config, GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
@@ -180,12 +182,12 @@ public class NodeManager
             setHasAllpropertyIndexes( true );
         }
 
-        useAdaptiveCache = config.use_adaptive_cache(false);
-        float adaptiveCacheHeapRatio = config.adaptive_cache_heap_ratio( 0.77f, 0.1f, 0.95f );
-        int minNodeCacheSize = config.min_node_cache_size( 0 );
-        int minRelCacheSize = config.min_relationship_cache_size( 0 );
-        int maxNodeCacheSize = config.max_node_cache_size( 1500 );
-        int maxRelCacheSize = config.max_relationship_cache_size( 3500 );
+        useAdaptiveCache = config.getBoolean( Configuration.use_adaptive_cache );
+        float adaptiveCacheHeapRatio = config.getFloat( Configuration.adaptive_cache_heap_ratio );
+        int minNodeCacheSize = config.getInteger( Configuration.min_node_cache_size );
+        int minRelCacheSize = config.getInteger( Configuration.min_relationship_cache_size );
+        int maxNodeCacheSize = config.getInteger( Configuration.max_node_cache_size );
+        int maxRelCacheSize = config.getInteger( Configuration.max_relationship_cache_size );
 
         nodeCache.resize( maxNodeCacheSize );
         relCache.resize( maxRelCacheSize );

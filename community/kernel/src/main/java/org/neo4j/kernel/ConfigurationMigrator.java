@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.impl.util.StringLogger;
 

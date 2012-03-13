@@ -29,8 +29,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -63,12 +64,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), withoutMemmap( params ));
+        super( path(), withoutMemmap( params ) );
     }
 
     public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders)
     {
-        super( path(), params, indexProviders );
+        super( path(), withoutMemmap( params ), indexProviders );
     }
 
     @Override
@@ -86,7 +87,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
-        result.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        result.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
         return result;
     }
 
@@ -127,7 +128,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            if ( Config.osIsWindows() )
+            if ( GraphDatabaseSetting.osIsWindows() )
             {
                 System.err.println( "Couldn't clear directory, and that's ok because this is Windows. Next " +
                         ImpermanentGraphDatabase.class.getSimpleName() + " will get a new directory" );

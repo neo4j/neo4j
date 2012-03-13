@@ -23,7 +23,7 @@ import java.io.File;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
@@ -42,7 +42,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     
     private GraphDatabaseSPI newDb( String cacheType )
     {
-        return (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( Config.CACHE_TYPE, cacheType ).newGraphDatabase();
+        return (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type, cacheType ).newGraphDatabase();
     }
     
     @Test
@@ -96,9 +96,16 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testInvalidCache()
     {
-        // invalid cache type should use default and print a warning
-        GraphDatabaseSPI db = newDb( "whatever" );
-        assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
-        db.shutdown();
+        // invalid cache type should fail
+        GraphDatabaseSPI db = null;
+        try
+        {
+            db = newDb( "whatever" );
+            fail( "Wrong cache type should not be allowed" );
+        }
+        catch( Exception e )
+        {
+            // Ok
+        }
     }
 }
