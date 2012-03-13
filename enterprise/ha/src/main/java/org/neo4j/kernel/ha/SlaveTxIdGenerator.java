@@ -42,28 +42,32 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     {
         private final Broker broker;
         private final ResponseReceiver receiver;
+        private final ClusterEventReceiver clusterReceiver;
 
-        public SlaveTxIdGeneratorFactory( Broker broker, ResponseReceiver receiver )
+        public SlaveTxIdGeneratorFactory( Broker broker, ResponseReceiver receiver, ClusterEventReceiver clusterReceiver )
         {
             this.broker = broker;
             this.receiver = receiver;
+            this.clusterReceiver = clusterReceiver;
         }
 
         public TxIdGenerator create( TransactionManager txManager )
         {
-            return new SlaveTxIdGenerator( broker, receiver, txManager );
+            return new SlaveTxIdGenerator( broker, receiver, clusterReceiver, txManager );
         }
     }
 
     private final Broker broker;
-    private final ResponseReceiver receiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
     private final TxManager txManager;
 
-    public SlaveTxIdGenerator( Broker broker, ResponseReceiver receiver,
+    public SlaveTxIdGenerator( Broker broker, ResponseReceiver receiver, ClusterEventReceiver clusterReceiver,
             TransactionManager txManager )
     {
         this.broker = broker;
-        this.receiver = receiver;
+        this.responseReceiver = receiver;
+        this.clusterReceiver = clusterReceiver;
         this.txManager = (TxManager) txManager;
     }
 
@@ -73,7 +77,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             final int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
-                    onlyForThisDataSource( receiver.getSlaveContext( eventIdentifier ), dataSource ),
+                    onlyForThisDataSource( responseReceiver.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
                     {
                         @Override
@@ -102,16 +106,16 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                             }
                         }
                     });
-            return receiver.receive( response );
+            return responseReceiver.receive( response );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }

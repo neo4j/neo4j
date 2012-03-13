@@ -29,35 +29,38 @@ import org.neo4j.kernel.impl.transaction.TxHook;
 public class SlaveTxHook implements TxHook
 {
     private final Broker broker;
-    private final ResponseReceiver receiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
     private GraphDatabaseSPI spi;
 
-    public SlaveTxHook( Broker broker, ResponseReceiver receiver, GraphDatabaseSPI spi )
+    public SlaveTxHook( Broker broker, ResponseReceiver receiver, ClusterEventReceiver zkReceiver,
+            GraphDatabaseSPI spi )
     {
         this.broker = broker;
-        this.receiver = receiver;
+        this.responseReceiver = receiver;
+        this.clusterReceiver = zkReceiver;
         this.spi = spi;
     }
-    
+
     @Override
     public void initializeTransaction( int eventIdentifier )
     {
         try
         {
-            receiver.receive( broker.getMaster().first().initializeTx( receiver.getSlaveContext( eventIdentifier ) ) );
+            responseReceiver.receive( broker.getMaster().first().initializeTx( responseReceiver.getSlaveContext( eventIdentifier ) ) );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }
-    
+
     public boolean hasAnyLocks( Transaction tx )
     {
         return spi.getLockReleaser().hasLocks( tx );
@@ -67,21 +70,21 @@ public class SlaveTxHook implements TxHook
     {
         try
         {
-            receiver.receive( broker.getMaster().first().finishTransaction(
-                    receiver.getSlaveContext( eventIdentifier ), success ) );
+            responseReceiver.receive( broker.getMaster().first().finishTransaction(
+                    responseReceiver.getSlaveContext( eventIdentifier ), success ) );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }
-    
+
     @Override
     public boolean freeIdsDuringRollback()
     {

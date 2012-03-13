@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ConfigurationPrefix;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -32,7 +33,7 @@ public abstract class AbstractBroker implements Broker
     {
         int server_id();
     }
-    
+
     private static final StoreId storeId = new StoreId();
     private Configuration config;
 
@@ -45,7 +46,7 @@ public abstract class AbstractBroker implements Broker
     {
         // Do nothing
     }
-    
+
     protected Configuration getConfig()
     {
         return config;

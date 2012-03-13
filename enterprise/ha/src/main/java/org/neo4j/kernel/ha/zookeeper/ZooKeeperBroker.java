@@ -50,7 +50,7 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         int coordinator_fetch_info_timeout( int def );
     }
-    
+
     private final ZooClientFactory zooClientFactory;
     private volatile ZooClient zooClient;
     private int fetchInfoTimeout;
@@ -160,8 +160,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public ConnectionInformation[] getConnectionInformation()
     {
-        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines(
-                false );
+        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines( false );
         Machine master = getZooClient().getMasterBasedOn( machines.values() );
         ConnectionInformation[] result = new ConnectionInformation[machines.size()];
         int i = 0;
@@ -191,8 +190,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public Machine getMasterExceptMyself()
     {
-        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines(
-                true );
+        Map<Integer, ZooKeeperMachine> machines = getZooClient().getAllMachines( true );
         machines.remove( getMyMachineId() );
         return getZooClient().getMasterBasedOn( machines.values() );
     }

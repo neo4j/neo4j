@@ -42,16 +42,16 @@ public class SlaveIdGenerator implements IdGenerator
     public static class SlaveIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Broker broker;
-        private final ResponseReceiver receiver;
+        private final ClusterEventReceiver clusterReceiver;
         private final Map<IdType, SlaveIdGenerator> generators =
                 new EnumMap<IdType, SlaveIdGenerator>( IdType.class );
         private final IdGeneratorFactory localFactory =
                 CommonFactories.defaultIdGeneratorFactory();
 
-        public SlaveIdGeneratorFactory( Broker broker, ResponseReceiver receiver )
+        public SlaveIdGeneratorFactory( Broker broker, ClusterEventReceiver zkReceiver )
         {
             this.broker = broker;
-            this.receiver = receiver;
+            this.clusterReceiver = zkReceiver;
         }
 
         public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
@@ -59,8 +59,8 @@ public class SlaveIdGenerator implements IdGenerator
             if ( startup ) new File( fileName ).delete();
             IdGenerator localIdGenerator = localFactory.open( fs, fileName, grabSize,
                     idType, highestIdInUse, startup );
-            SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
-                    receiver, localIdGenerator );
+            SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, clusterReceiver,
+                    localIdGenerator );
             generators.put( idType, generator );
             return generator;
         }
@@ -85,7 +85,7 @@ public class SlaveIdGenerator implements IdGenerator
     };
 
     private final Broker broker;
-    private final ResponseReceiver receiver;
+    private final ClusterEventReceiver clusterReceiver;
     private volatile long highestIdInUse;
     private volatile long defragCount;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
@@ -94,11 +94,11 @@ public class SlaveIdGenerator implements IdGenerator
     private final IdGenerator localIdGenerator;
 
     public SlaveIdGenerator( IdType idType, long highestIdInUse, Broker broker,
-            ResponseReceiver receiver, IdGenerator localIdGenerator )
+            ClusterEventReceiver zkReceiver, IdGenerator localIdGenerator )
     {
         this.idType = idType;
         this.broker = broker;
-        this.receiver = receiver;
+        this.clusterReceiver = zkReceiver;
         this.localIdGenerator = localIdGenerator;
     }
 
@@ -155,12 +155,12 @@ public class SlaveIdGenerator implements IdGenerator
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }

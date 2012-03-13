@@ -32,31 +32,33 @@ import org.neo4j.kernel.impl.transaction.TxManager;
 public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
 {
     private final Broker broker;
-    private final ResponseReceiver receiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
 
-    public SlaveRelationshipTypeCreator( Broker broker, ResponseReceiver receiver )
+    public SlaveRelationshipTypeCreator( Broker broker, ResponseReceiver receiver, ClusterEventReceiver zkReceiver )
     {
         this.broker = broker;
-        this.receiver = receiver;
+        this.responseReceiver = receiver;
+        this.clusterReceiver = zkReceiver;
     }
-    
+
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
         try
         {
             int eventIdentifier = ((TxManager) txManager).getEventIdentifier();
-            return receiver.receive( broker.getMaster().first().createRelationshipType(
-                    receiver.getSlaveContext( eventIdentifier ), name ) );
+            return responseReceiver.receive( broker.getMaster().first().createRelationshipType(
+                    responseReceiver.getSlaveContext( eventIdentifier ), name ) );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }

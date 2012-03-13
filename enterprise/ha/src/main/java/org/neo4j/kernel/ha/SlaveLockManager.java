@@ -41,22 +41,25 @@ public class SlaveLockManager extends LockManager
     private final Broker broker;
     private final TxManager tm;
     private final ResponseReceiver receiver;
+    private final ClusterEventReceiver clusterReceiver;
     private final TxHook txHook;
-    
-    public SlaveLockManager( RagManager ragManager, TxManager tm, TxHook txHook, Broker broker, ResponseReceiver receiver )
+
+    public SlaveLockManager( RagManager ragManager, TxManager tm, TxHook txHook, Broker broker,
+            ResponseReceiver receiver, ClusterEventReceiver zkReceiver )
     {
         super( ragManager );
         this.tm = tm;
         this.txHook = txHook;
         this.broker = broker;
         this.receiver = receiver;
+        this.clusterReceiver = zkReceiver;
     }
 
     private int getLocalTxId()
     {
         return tm.getEventIdentifier();
     }
-    
+
     @Override
     public void getReadLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
@@ -74,7 +77,7 @@ public class SlaveLockManager extends LockManager
                 super.getReadLock( resource );
                 return;
             }
-            
+
             initializeTxIfFirst();
             LockResult result = null;
             do
@@ -95,12 +98,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }
@@ -131,7 +134,7 @@ public class SlaveLockManager extends LockManager
                 super.getWriteLock( resource );
                 return;
             }
-            
+
             initializeTxIfFirst();
             LockResult result = null;
             do
@@ -152,20 +155,20 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( e );
+            clusterReceiver.newMaster( e );
             throw e;
         }
     }
-    
+
     // Release lock is as usual, since when the master committs it will release
     // the locks there and then when this slave committs it will release its
     // locks as usual here.
-    
+
     private static enum LockGrabber
     {
         NODE_READ
@@ -234,7 +237,7 @@ public class SlaveLockManager extends LockManager
                 return master.acquireIndexReadLock( context, lock.getIndex(), lock.getKey() );
             }
         };
-        
+
         abstract Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource );
     }
 }

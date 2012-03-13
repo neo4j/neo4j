@@ -155,13 +155,13 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
             throw new RuntimeException( "Cluster '" + clusterName + "' not found" );
         return asRootPath( storeId );
     }
-    
+
     @Override
     protected int getMyMachineId()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
      * Returns the disconnected slaves in this cluster so that all slaves
      * which are specified in the HA servers configuration, but not in the

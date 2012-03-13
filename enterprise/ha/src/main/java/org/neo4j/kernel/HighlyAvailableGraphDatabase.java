@@ -64,6 +64,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
+import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.EnterpriseConfigurationMigrator;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
@@ -120,7 +121,7 @@ public class HighlyAvailableGraphDatabase
 
         BranchedDataPolicy branched_data_policy( BranchedDataPolicy def );
     }
-    
+
     private final int localGraphWait;
     protected volatile StoreId storeId;
     protected final StoreIdGetter storeIdGetter;
@@ -133,7 +134,8 @@ public class HighlyAvailableGraphDatabase
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
 
-    private ResponseReceiver responseReceiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
     private volatile Broker broker;
     private ClusterClient clusterClient;
     private int machineId;
@@ -171,14 +173,19 @@ public class HighlyAvailableGraphDatabase
         messageLog = StringLogger.logger( this.storeDir );
 
         this.config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
-        
 
-        responseReceiver = new HAResponseReceiver();
-        
+        /*
+         * TODO
+         * lame, i know, but better than before.
+         */
+        HAResponseReceiver receiver = new HAResponseReceiver();
+        responseReceiver = receiver;
+        clusterReceiver = receiver;
+
 //        databaseLock = new ReentrantReadWriteLock(  );
-        
+
         this.nodeLookup = new HANodeLookup();
-        
+
         this.relationshipLookups = new HARelationshipLookups();
 
         this.config.put( Config.KEEP_LOGICAL_LOGS, "true" );
@@ -207,7 +214,7 @@ public class HighlyAvailableGraphDatabase
         this.broker = createBroker();
         this.pullUpdates = false;
         this.clusterClient = createClusterClient();
-        
+
         start();
     }
 
@@ -401,7 +408,7 @@ public class HighlyAvailableGraphDatabase
             broker.start();
         }
     }
-    
+
     private File getTempDir()
     {
         return new File( getStoreDir(), COPY_FROM_MASTER_TEMP );
@@ -444,9 +451,9 @@ public class HighlyAvailableGraphDatabase
             temp.mkdir();
         }
         return temp;
-        
+
     }
-    
+
     void makeWayForNewDb()
     {
         this.messageLog.logMessage( "Cleaning database " + storeDir + " (" + branchedDataPolicy.name() +
@@ -504,7 +511,7 @@ public class HighlyAvailableGraphDatabase
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
-    
+
     private void checkAndRecoverCorruptLogs( AbstractGraphDatabase localDb,
             boolean copiedStore )
     {
@@ -651,8 +658,8 @@ public class HighlyAvailableGraphDatabase
         newLog.force( false );
         newLog.close();
 
-    }  
-        
+    }
+
     private void sleepWithoutInterruption( long time, String errorMessage )
     {
         try
@@ -688,12 +695,12 @@ public class HighlyAvailableGraphDatabase
         }
         getMessageLog().logMessage( "Done copying store from master" );
     }
-    
+
     private SlaveContext emptyContext()
     {
         return new SlaveContext( 0, machineId, 0, new Tx[0], 0, 0 );
     }
-    
+
     private long highestLogVersion()
     {
         return XaLogicalLog.getHighestHistoryLogVersion( new File( storeDir ), LOGICAL_LOG_DEFAULT_NAME );
@@ -931,7 +938,7 @@ public class HighlyAvailableGraphDatabase
 //            throw launderedException( t );
 //        }
 //    }
-    
+
     protected synchronized void reevaluateMyself( StoreId storeId )
     {
         Pair<Master, Machine> master = broker.getMasterReally( true );
@@ -1030,9 +1037,9 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
-        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, config,
-                                                                        this, broker, messageLog, responseReceiver, slaveUpdateMode.createUpdater( broker ),
-                                                                        nodeLookup, relationshipLookups);
+        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, config, this, broker, messageLog,
+                responseReceiver, clusterReceiver, slaveUpdateMode.createUpdater( broker ), nodeLookup,
+                relationshipLookups );
 /*
 
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
@@ -1062,7 +1069,7 @@ public class HighlyAvailableGraphDatabase
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
         MasterGraphDatabase master = new MasterGraphDatabase( storeDir, config, storeId, this, broker, messageLog, nodeLookup, relationshipLookups);
-        
+
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
@@ -1145,7 +1152,7 @@ public class HighlyAvailableGraphDatabase
         getMessageLog().logMessage( "Master id for last committed tx ok with highestTxId=" +
             myLastCommittedTx + " with masterId=" + myMaster, true );
     }
-    
+
     private StoreId getStoreId( AbstractGraphDatabase db )
     {
         XaDataSource ds = db.getXaDataSourceManager().getNeoStoreDataSource();
@@ -1357,7 +1364,7 @@ public class HighlyAvailableGraphDatabase
         }
         throw Exceptions.launderedException( cause );
     }
-    
+
     public MasterServer getMasterServerIfMaster()
     {
         return masterServer;
@@ -1372,7 +1379,7 @@ public class HighlyAvailableGraphDatabase
     {
         return getMasterServerIfMaster() != null;
     }
-    
+
     protected Broker createBroker()
     {
         return new ZooKeeperBroker( ConfigProxy.config( config, ZooKeeperBroker.Configuration.class ), new ZooClientFactory()
@@ -1380,16 +1387,17 @@ public class HighlyAvailableGraphDatabase
             @Override
             public ZooClient newZooClient()
             {
-                return new ZooClient( storeDir, messageLog, storeIdGetter, ConfigProxy.config( config, ZooClient.Configuration.class ), responseReceiver );
+                        return new ZooClient( storeDir, messageLog, storeIdGetter, ConfigProxy.config( config,
+                                ZooClient.Configuration.class ), responseReceiver, clusterReceiver );
             }
         } );
     }
-    
+
     protected ClusterClient createClusterClient()
     {
         return defaultClusterClient();
     }
-    
+
     private ClusterClient defaultClusterClient()
     {
         ZooClient.Configuration clientConfig = ConfigProxy.config( config, ZooClient.Configuration.class );
@@ -1404,7 +1412,7 @@ public class HighlyAvailableGraphDatabase
     {
         return storeDir;
     }
-    
+
     @Override
     public KernelPanicEventGenerator getKernelPanicGenerator()
     {
@@ -1509,8 +1517,7 @@ public class HighlyAvailableGraphDatabase
         }
     }
 
-    class HAResponseReceiver
-        implements ResponseReceiver
+    class HAResponseReceiver implements ResponseReceiver, ClusterEventReceiver
     {
         @Override
         public SlaveContext getSlaveContext( int eventIdentifier )
@@ -1537,7 +1544,7 @@ public class HighlyAvailableGraphDatabase
                 throw new RuntimeException( e );
             }
         }
-        
+
         @Override
         public <T> T receive( Response<T> response )
         {
@@ -1586,7 +1593,7 @@ public class HighlyAvailableGraphDatabase
             }
             newMaster( e );
         }
-        
+
         @Override
         public int getMasterForTx( long tx )
         {
@@ -1641,7 +1648,7 @@ public class HighlyAvailableGraphDatabase
         {
             return localGraph().getNodeManager().getNodeForProxy( nodeId, null );
         }
-        
+
         @Override
         public NodeImpl lookup( long nodeId, LockType lock )
         {
@@ -1669,14 +1676,14 @@ public class HighlyAvailableGraphDatabase
         {
             return localGraph().getNodeManager().getNodeById( nodeId );
         }
-        
+
 
         @Override
         public RelationshipImpl lookupRelationship( long relationshipId )
         {
             return localGraph().getNodeManager().getRelationshipForProxy( relationshipId, null );
         }
-        
+
         @Override
         public RelationshipImpl lookupRelationship( long relationshipId, LockType lock )
         {

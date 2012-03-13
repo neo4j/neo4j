@@ -46,6 +46,7 @@ import org.neo4j.kernel.ConfigurationPrefix;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.SlaveUpdateMode;
+import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
@@ -78,10 +79,10 @@ public class ZooClient extends AbstractZooKeeperManager
         String cluster_name( String def );
 
         boolean allow_init_cluster( boolean def );
-        
+
         int zk_session_timeout( int def );
     }
-    
+
     static final String MASTER_NOTIFY_CHILD = "master-notify";
     static final String MASTER_REBOUND_CHILD = "master-rebound";
 
@@ -103,15 +104,16 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private final String storeDir;
     private long sessionId = -1;
-    private StoreIdGetter storeIdGetter;
     private Configuration conf;
-    private final ResponseReceiver receiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
     private final int backupPort;
     private final boolean writeLastCommittedTx;
     private final String clusterName;
     private final boolean allowCreateCluster;
 
-    public ZooClient( String storeDir, StringLogger stringLogger, StoreIdGetter storeIdGetter, Configuration conf, ResponseReceiver receiver )
+    public ZooClient( String storeDir, StringLogger stringLogger, StoreIdGetter storeIdGetter, Configuration conf,
+            ResponseReceiver responseReceiver, ClusterEventReceiver clusterReceiver )
     {
         super( conf.coordinators(),
             storeIdGetter, stringLogger,
@@ -120,9 +122,9 @@ public class ZooClient extends AbstractZooKeeperManager
             conf.max_concurrent_channels_per_slave( Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
             conf.zk_session_timeout( HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT ));
         this.storeDir = storeDir;
-        this.storeIdGetter = storeIdGetter;
         this.conf = conf;
-        this.receiver = receiver;
+        this.responseReceiver = responseReceiver;
+        this.clusterReceiver = clusterReceiver;
         machineId = conf.server_id();
         backupPort = conf.online_backup_port( Server.DEFAULT_BACKUP_PORT );
         haServer = conf.server( defaultServer() );
@@ -170,6 +172,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 clientLockReadTimeout, new BranchDetectingTxVerifier( graphDb ) );
     }
 
+    @Override
     protected int getMyMachineId()
     {
         return this.machineId;
@@ -625,7 +628,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         waitForSyncConnected();
         this.committedTx = tx;
-        int master = receiver.getMasterForTx( tx );
+        int master = responseReceiver.getMasterForTx( tx );
         this.masterForCommittedTx = master;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
@@ -761,13 +764,12 @@ public class ZooClient extends AbstractZooKeeperManager
                 if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
                 {
                     keeperState = KeeperState.Expired;
-                    receiver.reconnect( new Exception() );
+                    clusterReceiver.reconnect( new Exception() );
                 }
                 else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
                 {
                     long newSessionId = zooKeeper.getSessionId();
-                    Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper(
-                            false, false );
+                    Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false, false );
                     msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
                     boolean masterBeforeIWriteDiffers = masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId();
                     if ( newSessionId != sessionId || masterBeforeIWriteDiffers )
@@ -776,12 +778,11 @@ public class ZooClient extends AbstractZooKeeperManager
                         {
                             sequenceNr = setup();
                             msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
-                            Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper(
-                                    false, false );
+                            Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                             msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                             if ( sessionId != -1 )
                             {
-                                receiver.newMaster( new Exception( "Got SyncConnected event from ZK" ) );
+                                clusterReceiver.newMaster( new Exception( "Got SyncConnected event from ZK" ) );
                             }
                             sessionId = newSessionId;
                         }
@@ -810,7 +811,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     if ( path.contains( currentMaster.getZooKeeperPath() ) )
                     {
                         msgLog.logMessage("Acting on it, calling newMaster()");
-                        receiver.newMaster( new Exception() );
+                        clusterReceiver.newMaster( new Exception() );
                     }
                 }
                 else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
@@ -824,7 +825,7 @@ public class ZooClient extends AbstractZooKeeperManager
                         // it really is master.
                         if ( newMasterMachineId == machineId )
                         {
-                            receiver.newMaster( new Exception() );
+                            clusterReceiver.newMaster( new Exception() );
                         }
                     }
                     else if ( path.contains( MASTER_REBOUND_CHILD ) )
@@ -834,7 +835,7 @@ public class ZooClient extends AbstractZooKeeperManager
                         // become slaves if they don't already are.
                         if ( newMasterMachineId != machineId )
                         {
-                            receiver.newMaster( new Exception() );
+                            clusterReceiver.newMaster( new Exception() );
                         }
                     }
                     else

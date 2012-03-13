@@ -39,21 +39,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class SlaveGraphDatabase
     extends AbstractHAGraphDatabase
 {
-    private ResponseReceiver responseReceiver;
+    private final ResponseReceiver responseReceiver;
+    private final ClusterEventReceiver clusterReceiver;
     private LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private SlaveIdGenerator.SlaveIdGeneratorFactory slaveIdGeneratorFactory;
 
     public SlaveGraphDatabase( String storeDir, Map<String, String> params,
-                               HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
-                               Broker broker, StringLogger logger, ResponseReceiver responseReceiver, LastCommittedTxIdSetter lastCommittedTxIdSetter,
-                               NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups)
+            HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker, StringLogger logger,
+            ResponseReceiver responseReceiver, ClusterEventReceiver clusterReceiver,
+            LastCommittedTxIdSetter lastCommittedTxIdSetter, NodeProxy.NodeLookup nodeLookup,
+            RelationshipProxy.RelationshipLookups relationshipLookups )
     {
         super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups );
 
         assert broker != null && logger != null && responseReceiver != null  && lastCommittedTxIdSetter != null &&
                nodeLookup != null && relationshipLookups != null;
-        
+
         this.responseReceiver = responseReceiver;
+        this.clusterReceiver = clusterReceiver;
         this.lastCommittedTxIdSetter = lastCommittedTxIdSetter;
 
         run();
@@ -62,7 +65,7 @@ public class SlaveGraphDatabase
     @Override
     protected TxHook createTxHook()
     {
-        return new SlaveTxHook( broker, responseReceiver, this );
+        return new SlaveTxHook( broker, responseReceiver, clusterReceiver, this );
     }
 
     @Override
@@ -75,20 +78,21 @@ public class SlaveGraphDatabase
     protected TxIdGenerator createTxIdGenerator()
     {
         assert txManager != null;
-        return new SlaveTxIdGenerator( broker, responseReceiver, txManager );
+        return new SlaveTxIdGenerator( broker, responseReceiver, clusterReceiver, txManager );
     }
 
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        return slaveIdGeneratorFactory = new SlaveIdGenerator.SlaveIdGeneratorFactory( this.broker, this.responseReceiver );
+        return slaveIdGeneratorFactory = new SlaveIdGenerator.SlaveIdGeneratorFactory( broker, clusterReceiver );
     }
 
     @Override
     protected LockManager createLockManager()
     {
         assert txManager != null && txHook != null;
-        return new SlaveLockManager( ragManager, (TxManager) txManager, txHook, broker, responseReceiver );
+        return new SlaveLockManager( ragManager, (TxManager) txManager, txHook, broker, responseReceiver,
+                clusterReceiver );
     }
 
     public void forgetIdAllocationsFromMaster()
