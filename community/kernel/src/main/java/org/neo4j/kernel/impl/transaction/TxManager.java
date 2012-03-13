@@ -266,6 +266,7 @@ public class TxManager extends AbstractTransactionManager
         fc.write( buf );
         fc.force( true );
         fc.close();
+        msgLog.logMessage( "Active txlog set to " + newFileName, true );
     }
 
     void setTmNotOk( Throwable cause )
