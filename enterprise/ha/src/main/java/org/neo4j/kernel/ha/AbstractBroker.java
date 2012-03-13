@@ -114,4 +114,10 @@ public abstract class AbstractBroker implements Broker
     {
         // defult: log nothing
     }
+
+    @Override
+    public Pair<Master, Machine> bootstrap()
+    {
+        return getMasterReally( true );
+    }
 }

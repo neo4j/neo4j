@@ -89,8 +89,9 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
                 "Unable to create zoo keeper client", e );
         }
     }
-    
-    public void waitForSyncConnected()
+
+    @Override
+    void waitForSyncConnected( WaitMode waitMode )
     {
         long startTime = System.currentTimeMillis();
         while ( System.currentTimeMillis() - startTime < getSessionTimeout() )

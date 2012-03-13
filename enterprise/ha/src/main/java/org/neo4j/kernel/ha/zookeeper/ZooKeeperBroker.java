@@ -263,4 +263,10 @@ public class ZooKeeperBroker extends AbstractBroker
         }
         return zooClient;
     }
+
+    @Override
+    public Pair<Master, Machine> bootstrap()
+    {
+        return getZooClient().bootstrap();
+    }
 }

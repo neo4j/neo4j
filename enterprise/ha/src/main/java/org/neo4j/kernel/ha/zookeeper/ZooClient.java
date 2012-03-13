@@ -184,7 +184,7 @@ public class ZooClient extends AbstractZooKeeperManager
     }
 
     @Override
-    public void waitForSyncConnected()
+    void waitForSyncConnected( WaitMode mode )
     {
         if ( keeperState == KeeperState.SyncConnected )
         {
@@ -194,6 +194,7 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             throw new ZooKeeperException( "ZooKeeper client has been shutdwon" );
         }
+        WaitStrategy strategy = getStrategyFromMode( mode );
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
         synchronized ( keeperStateMonitor )
@@ -218,12 +219,12 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 currentTime = System.currentTimeMillis();
             }
-            while ( ( currentTime - startTime ) < getSessionTimeout() );
+            while ( strategy.waitMore( ( currentTime - startTime ) ) );
 
             if ( keeperState != KeeperState.SyncConnected )
             {
-                throw new ZooKeeperTimedOutException(
-                        "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
+                throw new ZooKeeperTimedOutException( "Connection to ZooKeeper server timed out, keeper state="
+                                                      + keeperState );
             }
         }
     }
@@ -856,4 +857,64 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         }
     }
+
+    private WaitStrategy getStrategyFromMode( WaitMode mode )
+    {
+        switch ( mode )
+        {
+        case SESSION:
+            return new SessionWaitStrategy( getSessionTimeout() );
+        case STARTUP:
+            return new StartupWaitStrategy( msgLog );
+        }
+        throw new IllegalArgumentException( "Cannot create strategy from " + mode );
+    }
+
+    interface WaitStrategy
+    {
+        abstract boolean waitMore( long waitedSoFar );
+    }
+
+    private static class SessionWaitStrategy implements WaitStrategy
+    {
+        private final long sessionTimeout;
+
+        SessionWaitStrategy( long sessionTimeout )
+        {
+            this.sessionTimeout = sessionTimeout;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            return waitedSoFar < sessionTimeout;
+        }
+    }
+
+    private static class StartupWaitStrategy implements WaitStrategy
+    {
+        static final long SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS = 30;
+
+        private long lastNotification = 0;
+        private final StringLogger msgLog;
+
+        public StartupWaitStrategy( StringLogger msgLog )
+        {
+            this.msgLog = msgLog;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            long currentNotification = waitedSoFar / ( SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS * 1000 );
+            if ( currentNotification > lastNotification )
+            {
+                lastNotification = currentNotification;
+                msgLog.logMessage( "Have been waiting for " + SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS
+                                   * currentNotification + " seconds for the ZooKeeper cluster to respond." );
+            }
+            return true;
+        }
+    }
+
 }

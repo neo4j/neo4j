@@ -158,10 +158,19 @@ public abstract class AbstractZooKeeperManager
      * @param allowChange If to connect to the new master
      * @return The master machine pair, possibly a NO_MASTER_MACHINE_PAIR
      */
-    protected Pair<Master, Machine> getMasterFromZooKeeper(
-            boolean wait, boolean allowChange )
+    protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
     {
-        ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait ).values() );
+        return getMasterFromZooKeeper( wait, WaitMode.SESSION, allowChange );
+    }
+
+    protected Pair<Master, Machine> bootstrap()
+    {
+        return getMasterFromZooKeeper( true, WaitMode.STARTUP, true );
+    }
+
+    private Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, WaitMode mode, boolean allowChange )
+    {
+        ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait, mode ).values() );
         Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
@@ -247,9 +256,14 @@ public abstract class AbstractZooKeeperManager
 
     protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait )
     {
+        return getAllMachines( wait, WaitMode.SESSION );
+    }
+
+    protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait, WaitMode mode )
+    {
         if ( wait )
         {
-            waitForSyncConnected();
+            waitForSyncConnected( mode );
         }
         try
         {
@@ -363,7 +377,18 @@ public abstract class AbstractZooKeeperManager
         }
     }
 
-    public abstract void waitForSyncConnected();
+    public final void waitForSyncConnected()
+    {
+        waitForSyncConnected( WaitMode.SESSION );
+    }
+
+    abstract void waitForSyncConnected( WaitMode mode );
+
+    enum WaitMode
+    {
+        STARTUP,
+        SESSION;
+    }
 
     public String getServers()
     {

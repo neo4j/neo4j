@@ -473,7 +473,9 @@ public class HighlyAvailableGraphDatabase
             while ( System.currentTimeMillis() < endTime )
             {
                 // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMasterReally( true );
+                Pair<Master, Machine> master = broker.bootstrap();// getMasterReally(
+                                                                  // true );
+
                 if ( master != null && !master.other().equals( Machine.NO_MACHINE ) &&
                         master.other().getMachineId() != machineId )
                 {   // Join the existing cluster
