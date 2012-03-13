@@ -23,8 +23,8 @@ define(
    './DashboardInfoView',
    './DashboardChartsView',
    'ribcage/View',
-   'lib/backbone'],
-  (template, DashboardInfoView, DashboardChartsView, View) ->
+   'lib/amd/jQuery'],
+  (template, DashboardInfoView, DashboardChartsView, View, $) ->
 
     class DashboardView extends View
 

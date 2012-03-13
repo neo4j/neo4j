@@ -23,8 +23,8 @@ define(
    './console',
    'ribcage/View',
    './ConsoleView',
-   'lib/backbone'], 
-  (baseTemplate, consoleTemplate, View, ConsoleView) ->
+   'lib/amd/jQuery'], 
+  (baseTemplate, consoleTemplate, View, ConsoleView, $) ->
 
     class HttpConsoleView extends ConsoleView
       

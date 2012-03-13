@@ -19,16 +19,17 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
 public class CypherResultRepresentation extends ObjectRepresentation
 {
-
     private final ExecutionResult queryResult;
 
     public CypherResultRepresentation( ExecutionResult result )
@@ -40,7 +41,6 @@ public class CypherResultRepresentation extends ObjectRepresentation
     @Mapping( "columns" )
     public Representation columns()
     {
-
         return ListRepresentation.string( queryResult.columns() );
     }
 
@@ -57,16 +57,59 @@ public class CypherResultRepresentation extends ObjectRepresentation
             {
                 Representation rowRep = getRepresentation( row.get( column ) );
                 fields.add( rowRep );
-
             }
             rows.add( new ListRepresentation( "row", fields ) );
         }
         return new ListRepresentation( "data", rows );
     }
 
-    private Representation getRepresentation( Object r )
+    Representation getRepresentation( Object r )
     {
+        if( r == null )
+        {
+            return ValueRepresentation.string( null );
+        }
+
+        if ( r instanceof Path )
+        {
+            return new PathRepresentation<Path>((Path) r );
+        }
+
+        if(r instanceof Iterable)
+        {
+            return handleIterable( (Iterable) r );
+        }
+
+        if ( r instanceof Node)
+        {
+            return new NodeRepresentation( (Node) r );
+        }
+
+        if ( r instanceof Relationship)
+        {
+            return new RelationshipRepresentation( (Relationship) r );
+        }
+
         JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
         return representationDispatcher.dispatch( r, "" );
+    }
+
+    Representation handleIterable( Iterable data ) {
+        final List<Representation> results = new ArrayList<Representation>();
+        for ( final Object value : data )
+        {
+            Representation rep = getRepresentation(value);
+            results.add(rep);
+        }
+
+        RepresentationType representationType = getType(results);
+        return new ListRepresentation( representationType, results );
+    }
+
+    RepresentationType getType( List<Representation> representations )
+    {
+        if ( representations == null || representations.isEmpty() )
+            return RepresentationType.STRING;
+        return representations.get( 0 ).getRepresentationType();
     }
 }

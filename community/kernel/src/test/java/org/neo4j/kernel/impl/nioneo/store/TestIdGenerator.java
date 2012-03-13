@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -50,6 +51,8 @@ import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 public class TestIdGenerator
 {
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
     @Before
     public void deleteIdGeneratorFile()
     {
@@ -78,7 +81,7 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( null );
+            IdGeneratorImpl.createGenerator( fs, null );
             fail( "Null filename should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -86,8 +89,16 @@ public class TestIdGenerator
         } // good
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            new IdGeneratorImpl( idGeneratorFile(), 0, 100, false ).close( true );
+            IdGeneratorImpl.createGenerator( null, idGeneratorFile() );
+            fail( "Null filesystem should throw exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        } // good
+        try
+        {
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            new IdGeneratorImpl( fs, idGeneratorFile(), 0, 100, false ).close( true );
             fail( "Zero grab size should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -95,7 +106,7 @@ public class TestIdGenerator
         } // good
         try
         {
-            new IdGeneratorImpl( "testIdGenerator.id", -1, 100, false ).close( true );
+            new IdGeneratorImpl( fs, "testIdGenerator.id", -1, 100, false ).close( true );
             fail( "Negative grab size should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -104,11 +115,11 @@ public class TestIdGenerator
 
         try
         {
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(),
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(),
                 1008, 1000, false );
             try
             {
-                IdGeneratorImpl.createGenerator( idGeneratorFile() );
+                IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
                 fail( "Creating a id generator with existing file name "
                     + "should throw exception" );
             }
@@ -153,11 +164,11 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGen = new IdGeneratorImpl( idGeneratorFile(), 3, 1000, false );
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGen = new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false );
             try
             {
-                new IdGeneratorImpl( idGeneratorFile(), 3, 1000, false );
+                new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false );
                 fail( "Opening sticky id generator should throw exception" );
             }
             catch ( StoreFailureException e )
@@ -180,8 +191,8 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 3, 1000, false );
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false );
             for ( long i = 0; i < 7; i++ )
             {
                 assertEquals( i, idGenerator.nextId() );
@@ -192,7 +203,7 @@ public class TestIdGenerator
             assertEquals( 7l, idGenerator.nextId() );
             idGenerator.freeId( 6 );
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 5, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 5, 1000, false );
             idGenerator.freeId( 2 );
             idGenerator.freeId( 4 );
             assertEquals( 1l, idGenerator.nextId() );
@@ -208,7 +219,7 @@ public class TestIdGenerator
             assertEquals( 9l, idGenerator.nextId() );
             idGenerator.freeId( 9 );
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 3, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false );
             assertEquals( 2l, idGenerator.nextId() );
             assertEquals( 4l, idGenerator.nextId() );
             assertEquals( 1l, idGenerator.nextId() );
@@ -236,8 +247,8 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 3, 1000, false );
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false );
             for ( long i = 0; i < 7; i++ )
             {
                 assertEquals( i, idGenerator.nextId() );
@@ -263,12 +274,12 @@ public class TestIdGenerator
                 idGenerator.freeId( i );
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false );
             assertEquals( 0l, idGenerator.nextId() );
             assertEquals( 1l, idGenerator.nextId() );
             assertEquals( 2l, idGenerator.nextId() );
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false );
             assertEquals( 4l, idGenerator.nextId() );
             assertEquals( 5l, idGenerator.nextId() );
             assertEquals( 6l, idGenerator.nextId() );
@@ -290,8 +301,8 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2, 1000, false );
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false );
             closeIdGenerator( idGenerator );
             try
             {
@@ -309,7 +320,7 @@ public class TestIdGenerator
             catch ( IllegalStateException e )
             { // good
             }
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false );
             assertEquals( 0l, idGenerator.nextId() );
             assertEquals( 1l, idGenerator.nextId() );
             assertEquals( 2l, idGenerator.nextId() );
@@ -347,8 +358,8 @@ public class TestIdGenerator
         int capacity = 1024 * 8 + 1;
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(),
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(),
                 128, capacity*2, false );
             for ( int i = 0; i < capacity; i++ )
             {
@@ -361,7 +372,7 @@ public class TestIdGenerator
                 freedIds.put( i, this );
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2000, capacity*2, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2000, capacity*2, false );
             long oldId = -1;
             for ( int i = 0; i < capacity - 1; i += 2 )
             {
@@ -386,8 +397,8 @@ public class TestIdGenerator
         }
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(),
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(),
                 128, capacity*2, false );
             for ( int i = 0; i < capacity; i++ )
             {
@@ -400,7 +411,7 @@ public class TestIdGenerator
                 freedIds.put( i, this );
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2000, capacity*2, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2000, capacity*2, false );
             for ( int i = 0; i < capacity; i += 2 )
             {
                 assertEquals( this, freedIds.remove( idGenerator.nextId() ) );
@@ -426,8 +437,8 @@ public class TestIdGenerator
             .currentTimeMillis() );
         int capacity = random.nextInt( 1024 ) + 1024;
         int grabSize = random.nextInt( 128 ) + 128;
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(),
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(),
             grabSize, capacity*2, false );
         List<Long> idsTaken = new ArrayList<Long>();
         float releaseIndex = 0.25f;
@@ -453,7 +464,7 @@ public class TestIdGenerator
                 {
                     closeIdGenerator( idGenerator );
                     grabSize = random.nextInt( 128 ) + 128;
-                    idGenerator = new IdGeneratorImpl( idGeneratorFile(),
+                    idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(),
                         grabSize, capacity*2, false );
                     numberOfCloses++;
                 }
@@ -476,8 +487,8 @@ public class TestIdGenerator
     {
         try
         {
-            IdGeneratorImpl.createGenerator( idGeneratorFile() );
-            IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1,
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1,
                     IdType.PROPERTY_INDEX.getMaxValue(), false );
             idGenerator.setHighId( IdType.PROPERTY_INDEX.getMaxValue()-1 );
             long id = idGenerator.nextId();
@@ -492,7 +503,7 @@ public class TestIdGenerator
             { // good, capacity exceeded
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.PROPERTY_INDEX.getMaxValue(), false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.PROPERTY_INDEX.getMaxValue(), false );
             assertEquals( IdType.PROPERTY_INDEX.getMaxValue()+1, idGenerator.getHighId() );
             id = idGenerator.nextId();
             assertEquals( IdType.PROPERTY_INDEX.getMaxValue()-1, id );
@@ -527,9 +538,9 @@ public class TestIdGenerator
     private void makeSureIdCapacityCannotBeExceeded( IdType type )
     {
         deleteIdGeneratorFile();
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
         long maxValue = type.getMaxValue();
-        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, maxValue, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, maxValue, false );
         long id = maxValue-2;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
@@ -561,12 +572,12 @@ public class TestIdGenerator
     private void makeSureMagicMinusOneIsSkipped( IdType type )
     {
         deleteIdGeneratorFile();
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, type.getMaxValue(), false );
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, type.getMaxValue(), false );
         long id = (long) Math.pow( 2, 32 )-3;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
-        assertEquals( id+1, idGenerator.nextId() );
+        assertEquals( id + 1, idGenerator.nextId() );
         // Here we make sure that id+2 (integer -1) is skipped
         assertEquals( id+3, idGenerator.nextId() );
         assertEquals( id+4, idGenerator.nextId() );
@@ -577,8 +588,8 @@ public class TestIdGenerator
     @Test
     public void makeSureMagicMinusOneCannotBeReturnedEvenIfFreed() throws Exception
     {
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false );
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false );
         long magicMinusOne = (long) Math.pow( 2, 32 )-1;
         idGenerator.setHighId( magicMinusOne );
         assertEquals( magicMinusOne+1, idGenerator.nextId() );
@@ -586,7 +597,7 @@ public class TestIdGenerator
         idGenerator.freeId( magicMinusOne );
         closeIdGenerator( idGenerator );
 
-        idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false );
+        idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false );
         assertEquals( magicMinusOne-1, idGenerator.nextId() );
         assertEquals( magicMinusOne+2, idGenerator.nextId() );
         closeIdGenerator( idGenerator );
@@ -656,20 +667,20 @@ public class TestIdGenerator
 
         db.shutdown();
     }
-    
+
     @Test
     public void delete() throws Exception
     {
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( idGeneratorFile(), 10, 1000, false );
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false );
         long id = idGenerator.nextId();
         idGenerator.nextId();
         idGenerator.freeId( id );
         idGenerator.close( true );
         idGenerator.delete();
         assertFalse( new File( idGeneratorFile() ).exists() );
-        IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        idGenerator = new IdGeneratorImpl( idGeneratorFile(), 10, 1000, false );
+        IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+        idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false );
         assertEquals( id, idGenerator.nextId() );
         idGenerator.close( true );
     }

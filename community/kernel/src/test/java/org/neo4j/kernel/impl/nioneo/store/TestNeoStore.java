@@ -94,8 +94,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         deleteFileOrDirectory( path() );
 
-        Config config = new Config( StringLogger.SYSTEM, new HashMap<String,String>(  ) );
-        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.SYSTEM, null);
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        Config config = new Config( StringLogger.SYSTEM, fileSystem, new HashMap<String,String>(  ) );
+        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         sf.createNeoStore(file( "neo" )).close();
     }
 
@@ -145,15 +146,16 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         LockManager lockManager = getEmbeddedGraphDb().getLockManager();
         LockReleaser lockReleaser = getEmbeddedGraphDb().getLockReleaser();
 
-        Config config = new Config( StringLogger.DEV_NULL, MapUtil.stringMap(
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, MapUtil.stringMap(
                         "store_dir", path(),
                         "neo_store", file("neo"),
                         "logical_log", file("nioneo_logical.log")) );
-        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 
-        ds = new NeoStoreXaDataSource(config, sf, lockManager, lockReleaser, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
-                        CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier() ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
+                        CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier() ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
 
         xaCon = ds.getXaConnection();
         pStore = xaCon.getPropertyStore();
@@ -1018,9 +1020,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         tearDownNeoStore();
 
-        Config config = new Config(StringLogger.SYSTEM, MapUtil.stringMap( "string_block_size", "62", 
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        Config config = new Config(StringLogger.SYSTEM, fileSystem, MapUtil.stringMap( "string_block_size", "62",
                                                                            "array_block_size", "302" ));
-        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
         sf.createNeoStore(file( "neo" )).close();
 
 
@@ -1031,7 +1034,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 pStore.getArrayBlockSize() );
         ds.close();
     }
-    
+
     @Test
     public void setVersion() throws Exception
     {
@@ -1041,8 +1044,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
 
-        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, new HashMap<String, String>(  ) ),
-                CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null);
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, new HashMap<String, String>(  ) ),
+                CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 
         NeoStore neoStore = sf.newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         assertEquals( 12, neoStore.getVersion() );

@@ -21,10 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ["neo4j/webadmin/ApplicationState"
    "ribcage/security/HtmlEscaper"
-   "lib/jquery"
-   "lib/neo4js"
-   "lib/backbone"],
-  (ApplicationState, HtmlEscaper) ->
+   "lib/amd/Backbone"
+   "lib/amd/neo4js"],
+  (ApplicationState, HtmlEscaper, Backbone, neo4js) ->
   
     class Bootstrapper
 
@@ -36,14 +35,14 @@ define(
 
         # JQuery global setup
         jQuery.ajaxSetup({
-        timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
+          timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
         })
 
         appState = new ApplicationState
-        appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
+        appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)
 
-        jQuery () ->
-        m.init(appState) for m in modules
-        Backbone.history.start()
+        jQuery ->
+          m.init(appState) for m in modules
+          Backbone.history.start()
       
 )

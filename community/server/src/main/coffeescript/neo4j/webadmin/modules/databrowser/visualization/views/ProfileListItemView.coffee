@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   './profileListItem',
-   'ribcage/View',
-   'lib/backbone'], 
-  (ItemUrlResolver, template, View) ->
+   './profileListItem'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, template, View, $) ->
   
     class ProfileListItemView extends View
 

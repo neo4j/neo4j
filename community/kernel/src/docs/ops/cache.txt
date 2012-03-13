@@ -110,6 +110,12 @@ Object cache
 ***********
 
 The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
+
+Neo4j will utilize as much as it can out of the allocated heap memory for the JVM for the object cache. Note however that Neo4j is "competing" for the heap space with other objects in the same JVM, such as a custom application, if deployed in embedded mode, and Neo4j will let the application "win" by using less memory if the application needs more.
+
+[TIP]
+The use of heap memory is subject to the java garbage collector - depending on the cache type some tuning might be needed to play well with the GC at large heap sizes . Therefore, if you assigning large a heaps for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses. Instead leave some RAM space for Neo4j's filesystem caches. These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
+
 The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
 Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
 This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.

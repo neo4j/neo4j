@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -211,7 +212,7 @@ public class Config implements DiagnosticsProvider
 
     private Map<String, String> params;
 
-    public Config(StringLogger msgLog, Map<String, String> inputParams)
+    public Config( StringLogger msgLog, FileSystemAbstraction fileSystem, Map<String, String> inputParams )
     {
         // Migrate settings
         ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( msgLog );
@@ -222,7 +223,7 @@ public class Config implements DiagnosticsProvider
         params = configurationDefaults.apply( inputParams );
 
         // Apply autoconfiguration for memory settings
-        AutoConfigurator autoConfigurator = new AutoConfigurator( get(NeoStoreXaDataSource.Configuration.store_dir), getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ), getBoolean( GraphDatabaseSettings.dump_configuration ) );
+        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem, get(NeoStoreXaDataSource.Configuration.store_dir), getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ), getBoolean( GraphDatabaseSettings.dump_configuration ) );
         Map<String,String> autoConfiguration = autoConfigurator.configure( );
         for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
         {
@@ -252,7 +253,7 @@ public class Config implements DiagnosticsProvider
     
     public int getInteger(GraphDatabaseSetting.IntegerSetting setting)
     {
-        return Integer.parseInt(get( setting ));
+        return Integer.parseInt( get( setting ) );
     }
 
     public long getLong(GraphDatabaseSetting.LongSetting setting)
@@ -304,13 +305,13 @@ public class Config implements DiagnosticsProvider
     {
         return getClass().getName();
     }
-    
+
     @Override
     public void acceptDiagnosticsVisitor( Object visitor )
     {
         // nothing visits configuration
     }
-    
+
     @Override
     public void dump( DiagnosticsPhase phase, StringLogger log )
     {

@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
-
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -74,7 +71,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
-    private AtomicLong nextFreeId = new AtomicLong( -1 );
+    private final AtomicLong nextFreeId = new AtomicLong( -1 );
     // total bytes read from file, used in writeIdBatch() and close()
     private long totalBytesRead = 0;
     // true if more defragged ids can be read from file
@@ -85,6 +82,7 @@ public class IdGeneratorImpl implements IdGenerator
     private long defraggedIdCount = -1;
 
     private final String fileName;
+    private final FileSystemAbstraction fs;
     private FileChannel fileChannel = null;
     // in memory defragged ids read from file (and from freeId)
     private final LinkedList<Long> defragedIdList =
@@ -121,8 +119,9 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( String fileName, int grabSize, long max, boolean aggressiveReuse )
+    public IdGeneratorImpl( FileSystemAbstraction fs, String fileName, int grabSize, long max, boolean aggressiveReuse )
     {
+        this.fs = fs;
         this.aggressiveReuse = aggressiveReuse;
         if ( grabSize < 1 )
         {
@@ -403,22 +402,25 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to create the id generator
      */
-    public static void createGenerator( String fileName )
+    public static void createGenerator( FileSystemAbstraction fs, String fileName )
     {
         // sanity checks
+        if ( fs == null )
+        {
+            throw new IllegalArgumentException( "Null filesystem" );
+        }
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        File file = new File( fileName );
-        if ( file.exists() )
+        if ( fs.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create IdGeneratorFile["
                 + fileName + "], file already exists" );
         }
         try
         {
-            FileChannel channel = new FileOutputStream( fileName ).getChannel();
+            FileChannel channel = fs.create( fileName );
             // write the header
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             buffer.put( CLEAN_GENERATOR ).putLong( 0 ).flip();
@@ -438,7 +440,7 @@ public class IdGeneratorImpl implements IdGenerator
     {
         try
         {
-            fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
+            fileChannel = fs.open( fileName, "rw" );
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             totalBytesRead = fileChannel.read( buffer );
             if ( totalBytesRead != HEADER_SIZE )
@@ -589,7 +591,7 @@ public class IdGeneratorImpl implements IdGenerator
     {
         return defraggedIdCount;
     }
-    
+
     public void clearFreeIds()
     {
         releasedIdList.clear();
@@ -604,7 +606,7 @@ public class IdGeneratorImpl implements IdGenerator
             throw new RuntimeException( e );
         }
     }
-    
+
     @Override
     public void delete()
     {
@@ -612,7 +614,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new RuntimeException( "Must be closed to delete" );
         }
-        if ( !new File( fileName ).delete() )
+        if ( !fs.deleteFile( fileName ) )
         {
             throw new UnderlyingStorageException( "Unable to delete id generator " + fileName );
         }

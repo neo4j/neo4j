@@ -123,12 +123,13 @@ public class TestRecovery
         // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
         
         // Instead I have to do this
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystemAbstraction = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());
-        Config config = new Config( StringLogger.DEV_NULL, params );
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params );
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
-                                                   new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()));
+                                                   new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()));
         ds.close();
     }
 }

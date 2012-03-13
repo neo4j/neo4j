@@ -37,6 +37,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -335,8 +336,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "store_dir", "target/var" );
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( StringLogger.DEV_NULL, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -397,7 +399,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( StringLogger.DEV_NULL, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
+            FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

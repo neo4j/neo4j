@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone'], 
-  () ->
+  ['lib/amd/Backbone'], 
+  (Backbone) ->
     ###
     A local collection keeps track of ids locally, and adds the 
     methods #setFetchMethod and #setSaveMethod to the Collection

@@ -20,13 +20,12 @@
 package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.visualization.PropertyType;
 
 class DefaultNodeStyle implements NodeStyle
 {
-	private final DefaultStyleConfiguration config;
+    protected final DefaultStyleConfiguration config;
 
 	DefaultNodeStyle( DefaultStyleConfiguration configuration )
 	{

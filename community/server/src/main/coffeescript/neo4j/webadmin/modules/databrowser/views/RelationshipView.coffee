@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./relationship',
-   './PropertyContainerView','lib/backbone'], 
+  ['./relationship'
+   './PropertyContainerView'], 
   (template, PropertyContainerView) ->
   
     class RelationshipView extends PropertyContainerView

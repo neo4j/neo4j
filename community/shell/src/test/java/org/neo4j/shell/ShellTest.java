@@ -19,17 +19,8 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-
 import java.io.File;
 import java.io.PrintWriter;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -37,6 +28,11 @@ import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.Config.*;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class ShellTest
 {
@@ -197,7 +193,8 @@ public class ShellTest
         doc.run();
         server.shutdown();
         PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
-        writer.println( createGraphViz( "Shell Matrix Example", db, "graph" ) );
+        writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db,
+                "graph" ) );
         writer.flush();
         writer.close();
         db.shutdown();

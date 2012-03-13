@@ -19,12 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['order!lib/jquery'
-   'order!lib/arbor'
-   'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'
-   'order!lib/backbone'],
-  () ->
+  ['lib/amd/arbor'
+   'lib/amd/Backbone',
+   'lib/amd/jQuery'],
+  (arbor, Backbone, $) ->
     class Renderer
 
       ###

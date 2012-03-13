@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone', 'lib/jquery'], 
-  () ->
+  ['lib/amd/jQuery'], 
+  ($) ->
 
     class FormHelper
     

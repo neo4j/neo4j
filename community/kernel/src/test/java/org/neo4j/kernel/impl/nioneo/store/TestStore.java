@@ -148,7 +148,7 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, new Config( StringLogger.DEV_NULL, MapUtil.stringMap(
+            super( fileName, new Config( StringLogger.DEV_NULL, FILE_SYSTEM, MapUtil.stringMap(
                     "store_dir", "target/var/teststore" )), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
         }
 
@@ -164,7 +164,7 @@ public class TestStore
 
         public static Store createStore( String fileName) throws IOException
         {
-            new StoreFactory(new Config(StringLogger.DEV_NULL, Collections.<String,String>emptyMap()), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
+            new StoreFactory(new Config(StringLogger.DEV_NULL, FILE_SYSTEM, Collections.<String,String>emptyMap()), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
             return new Store( fileName );
         }
 

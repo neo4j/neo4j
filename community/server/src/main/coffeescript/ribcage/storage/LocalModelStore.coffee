@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone', 'lib/has'], 
-  () ->
+  ['lib/amd/Backbone', 'lib/has'], 
+  (Backbone) ->
 
     class LocalStorageStoringStrategy
       

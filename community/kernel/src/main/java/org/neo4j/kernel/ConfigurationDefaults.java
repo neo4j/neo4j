@@ -81,7 +81,6 @@ public class ConfigurationDefaults
         Default defaultAnnotation = field.getAnnotation( Default.class );
         if (defaultAnnotation == null)
         {
-            msgLog.logMessage( "WARNING:"+field.getName() +" has no default value. Will use null instead" );
             return null;
         }
         

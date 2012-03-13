@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import java.util.List;
 import java.util.Map;
-
 import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -34,8 +32,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.junit.Assert.*;
 
 public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -54,7 +51,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
      * (returns a non-2xx HTTP status code), the transaction will be rolled back
      * and all changes will be undone.
      * 
-     * Each job description should contain a +path+ attribute, with a value
+     * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
      * 

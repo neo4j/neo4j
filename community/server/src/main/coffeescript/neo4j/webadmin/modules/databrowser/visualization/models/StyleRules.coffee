@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./StyleRule', 'ribcage/LocalCollection'], 
+  ['./StyleRule'
+   'ribcage/LocalCollection'], 
   (StyleRule, LocalCollection) ->
     class StyleRules extends LocalCollection
       

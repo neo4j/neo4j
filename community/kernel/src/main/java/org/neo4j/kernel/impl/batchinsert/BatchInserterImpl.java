@@ -96,11 +96,11 @@ public class BatchInserterImpl implements BatchInserter
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
-        Config config = new Config( StringLogger.DEV_NULL, params );
+        final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params );
         boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
         this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
-        final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
 
         StoreFactory sf = new StoreFactory( config,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
 
@@ -798,7 +798,7 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int nameId = (int) typeStore.nextNameId();
+        int nameId = typeStore.nextNameId();
         record.setNameId( nameId );
         Collection<DynamicRecord> nameRecords = typeStore.allocateNameRecords( nameId, encodeString( name ) );
         for ( DynamicRecord typeRecord : nameRecords )

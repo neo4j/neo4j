@@ -20,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define( 
   ['./splash'
-   'ribcage/storage/CookieStorage'], 
-  (template, CookieStorage) ->
+   'ribcage/storage/CookieStorage'
+   'lib/amd/jQuery'], 
+  (template, CookieStorage, $) ->
     
     class Splash
       

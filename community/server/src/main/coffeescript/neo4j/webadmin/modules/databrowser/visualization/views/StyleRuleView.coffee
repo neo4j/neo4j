@@ -20,12 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   './styleRule',
-   '../models/Filters',
-   '../models/filters/PropertyFilter',
-   'ribcage/View',
-   'lib/backbone'], 
-  (ItemUrlResolver, template, Filters, PropertyFilter, View) ->
+   './styleRule'
+   '../models/Filters'
+   '../models/filters/PropertyFilter'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, template, Filters, PropertyFilter, View, $) ->
   
     class StyleRuleView extends View
 

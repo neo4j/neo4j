@@ -45,6 +45,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
@@ -176,7 +177,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * @throws IOException
      *             If unable to create data source
      */
-    public NeoStoreXaDataSource( Config conf, StoreFactory sf, LockManager lockManager, LockReleaser lockReleaser, StringLogger stringLogger, XaFactory xaFactory,
+    public NeoStoreXaDataSource( Config conf, StoreFactory sf, FileSystemAbstraction fileSystemAbstraction, LockManager lockManager, LockReleaser lockReleaser, StringLogger stringLogger, XaFactory xaFactory,
                                  List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver) throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
@@ -190,7 +191,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         storeDir = conf.get( Configuration.store_dir );
         String store = conf.get( Configuration.neo_store );
         File file = new File( store );
-        if ( !readOnly && !file.exists())
+        if ( !readOnly && !fileSystemAbstraction.fileExists( store ))
         {
             msgLog.logMessage( "Creating new db @ " + store, true );
             autoCreatePath( store );
@@ -245,7 +246,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.getPropertyStore() );
             this.idGenerators.put( PropertyIndex.class,
                 neoStore.getPropertyStore().getIndexStore() );
-            setKeepLogicalLogsIfSpecified( conf.getBoolean( Configuration.online_backup_enabled) ? "true" : conf.get( Configuration.keep_logical_logs ), Config.DEFAULT_DATA_SOURCE_NAME );
+            setKeepLogicalLogsIfSpecified( conf.getBoolean( Configuration.online_backup_enabled ) ? "true" : conf.get( Configuration.keep_logical_logs ), Config.DEFAULT_DATA_SOURCE_NAME );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
         catch ( Throwable e )
@@ -338,7 +339,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private class InterceptingTransactionFactory extends TransactionFactory
     {
-        private DependencyResolver dependencyResolver;
+        private final DependencyResolver dependencyResolver;
 
         public InterceptingTransactionFactory( DependencyResolver dependencyResolver )
         {

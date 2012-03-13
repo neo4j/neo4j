@@ -19,21 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,6 +32,9 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -90,6 +84,19 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.getLocation()
                 .toString()
                 .matches( NODE_URI_PATTERN ) );
+    }
+    
+    @Test
+    public void create_Node_with_array_properties() throws Exception
+    {
+        String response = gen.get()
+                .payload( "{\"foo\" : [1,2,3]}" )
+                .expectedStatus( 201 )
+                .expectedHeader( "Location" )
+                .expectedHeader( "Content-Length" )
+                .post( functionalTestHelper.nodeUri() )
+                .response().getEntity();
+        assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
     }
 
     /**

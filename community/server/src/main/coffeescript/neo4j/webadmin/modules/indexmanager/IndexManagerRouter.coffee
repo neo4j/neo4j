@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./views/IndexManagerView'
    './models/IndexManager'
-   'ribcage/Router'
-   'lib/backbone'],
+   'ribcage/Router'],
   (IndexManagerView, IndexManager, Router) ->
   
     class IndexManagerRouter extends Router

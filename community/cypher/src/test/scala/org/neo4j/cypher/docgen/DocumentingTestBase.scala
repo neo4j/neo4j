@@ -77,7 +77,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
 
   private def emitGraphviz(fileName: String): String = {
     val out = new ByteArrayOutputStream();
-    val writer = new GraphvizWriter(new AsciiDocStyle());
+    val writer = new GraphvizWriter(AsciiDocStyle.withAutomaticRelationshipTypeColors());
     writer.emit(out, Walker.fullGraph(db));
 
     """

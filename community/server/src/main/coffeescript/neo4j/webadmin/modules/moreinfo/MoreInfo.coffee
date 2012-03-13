@@ -18,10 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ->
-  class MoreInfo
+define( 
+  ['lib/amd/jQuery'],
+  ($) ->
     
-    init : ->
-      $("a.foldout_trigger").live "click", (ev) ->
-        ev.preventDefault();
-        $(ev.target).closest(".foldout").toggleClass "visible"
+    class MoreInfo
+      init : ->
+        $("a.foldout_trigger").live "click", (ev) ->
+          ev.preventDefault();
+          $(ev.target).closest(".foldout").toggleClass "visible"
+)

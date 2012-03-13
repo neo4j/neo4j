@@ -37,6 +37,7 @@ public class DefaultFileSystemAbstraction
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
+        // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         return new RandomAccessFile( fileName, mode ).getChannel();
     }
 

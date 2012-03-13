@@ -104,7 +104,7 @@ public class StoreUpgrader
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
         upgradeConfig.put( "neo_store", upgradeFileName );
         
-        Config upgradeConfiguration = new Config( msgLog, upgradeConfig );
+        Config upgradeConfiguration = new Config( msgLog, fileSystemAbstraction, upgradeConfig );
         
         NeoStore neoStore = new StoreFactory(upgradeConfiguration, idGeneratorFactory, fileSystemAbstraction, null, StringLogger.DEV_NULL, null).createNeoStore(upgradeFileName);
         try

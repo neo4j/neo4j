@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['./base',
    'ribcage/View',
-   'lib/backbone'], 
-  (template, View) ->
+   'lib/amd/jQuery'], 
+  (template, View, $) ->
   
     class BaseView extends View
       

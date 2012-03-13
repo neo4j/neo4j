@@ -18,35 +18,31 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define(
-  ['lib/backbone'], 
-  () ->
-    
-    class CookieStorage
-      ###
-      A cookie manager based on Peter-Paul Kochs cookie code.
-      ###
-      get : (key) ->
-        nameEQ = "#{key}="
-        cookieStrings = document.cookie.split(';')
-        for cookieStr in cookieStrings
-          while cookieStr.charAt(0) is ' '
-            cookieStr = cookieStr.substring(1,cookieStr.length)
-          if cookieStr.indexOf(nameEQ) is 0
-            return cookieStr.substring(nameEQ.length,cookieStr.length)
+define [], ->
 
-        return null
+  class CookieStorage
+    ###
+    A cookie manager based on Peter-Paul Kochs cookie code.
+    ###
+    get : (key) ->
+      nameEQ = "#{key}="
+      cookieStrings = document.cookie.split(';')
+      for cookieStr in cookieStrings
+        while cookieStr.charAt(0) is ' '
+          cookieStr = cookieStr.substring(1,cookieStr.length)
+        if cookieStr.indexOf(nameEQ) is 0
+          return cookieStr.substring(nameEQ.length,cookieStr.length)
 
-      set : (key, value, days=365) ->
-        if days
-          date = new Date()
-          date.setTime(date.getTime()+(days*24*60*60*1000))
-          expires = "; expires="+date.toGMTString()
-        else 
-          expires = ""
-        document.cookie = "#{key}=#{value}#{expires}; path=/"
+      return null
 
-      remove : (key) ->
-        @set key, "", -1
+    set : (key, value, days=365) ->
+      if days
+        date = new Date()
+        date.setTime(date.getTime()+(days*24*60*60*1000))
+        expires = "; expires="+date.toGMTString()
+      else 
+        expires = ""
+      document.cookie = "#{key}=#{value}#{expires}; path=/"
 
-)
+    remove : (key) ->
+      @set key, "", -1

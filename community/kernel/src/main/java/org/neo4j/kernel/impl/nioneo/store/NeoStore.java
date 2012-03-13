@@ -50,7 +50,7 @@ public class NeoStore extends AbstractStore
     {
         public static final GraphDatabaseSetting.IntegerSetting relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
     }
-    
+
     public static final String TYPE_DESCRIPTOR = "NeoStore";
 
     /*
@@ -69,9 +69,9 @@ public class NeoStore extends AbstractStore
     private long lastCommittedTx = -1;
 
     private final int REL_GRAB_SIZE;
-    private String fileName;
-    private Config conf;
-    private LastCommittedTxIdSetter lastCommittedTxIdSetter;
+    private final String fileName;
+    private final Config conf;
+    private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
 
     public NeoStore(String fileName, Config conf,
                     LastCommittedTxIdSetter lastCommittedTxIdSetter,
@@ -95,7 +95,7 @@ public class NeoStore extends AbstractStore
          * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
          * unclean shutdown on such a db with 1.5.M02 < neo4j version <= 1.6.M02 would make that
          * db unable to start for that version with a "Mismatching store version found" exception.
-         * 
+         *
          * This will make a cleanly shut down 1.5.M02, then started and cleanly shut down with 1.6.M03 (or higher)
          * successfully add the missing record.
          */
@@ -141,7 +141,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(configuration.get( Configuration.neo_store) ));
+                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -159,12 +159,12 @@ public class NeoStore extends AbstractStore
                     + getStorageFileName(), e );
         }
     }
-    
+
     @Override
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         super.verifyFileSizeAndTruncate();
-        
+
         /* MP: 2011-11-23
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
@@ -310,23 +310,22 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public static long getStoreVersion( String storeDir )
+    public static long getStoreVersion( FileSystemAbstraction fs, String storeDir )
     {
-        return getRecord( storeDir, 4 );
+        return getRecord( fs, storeDir, 4 );
     }
 
-    public static long getTxId( String storeDir )
+    public static long getTxId( FileSystemAbstraction fs, String storeDir )
     {
-        return getRecord( storeDir, 3 );
+        return getRecord( fs, storeDir, 3 );
     }
 
-    private static long getRecord( String storeDir, long recordPosition )
+    private static long getRecord( FileSystemAbstraction fs, String storeDir, long recordPosition )
     {
-        RandomAccessFile file = null;
+        FileChannel channel = null;
         try
         {
-            file = new RandomAccessFile( new File( storeDir ), "rw" );
-            FileChannel channel = file.getChannel();
+            channel = fs.open( storeDir, "rw" );
             /*
              * We have to check size, because the store version
              * field was introduced with 1.5, so if there is a non-clean
@@ -351,7 +350,7 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                if ( file != null ) file.close();
+                if ( channel != null ) channel.close();
             }
             catch ( IOException e )
             {
@@ -481,7 +480,7 @@ public class NeoStore extends AbstractStore
             releaseWindow( window );
         }
     }
-    
+
     public long getStoreVersion()
     {
         return getRecord( 4 );
@@ -491,17 +490,17 @@ public class NeoStore extends AbstractStore
     {
         setRecord( 4, version );
     }
-    
+
     public long getGraphNextProp()
     {
         return getRecord( 5 );
     }
-    
+
     public void setGraphNextProp( long propId )
     {
         setRecord( 5, propId );
     }
-    
+
     /**
      * Returns the node store.
      *
@@ -608,6 +607,7 @@ public class NeoStore extends AbstractStore
         stringLogger.flush();
     }
 
+    @Override
     public void logIdUsage( StringLogger.LineLogger msgLog )
     {
         msgLog.logLine( "Id usage:" );
@@ -617,7 +617,7 @@ public class NeoStore extends AbstractStore
         propStore.logIdUsage( msgLog );
         stringLogger.flush();
     }
-    
+
     public NeoStoreRecord asRecord()
     {
         NeoStoreRecord result = new NeoStoreRecord();

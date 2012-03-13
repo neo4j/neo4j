@@ -162,7 +162,7 @@ public abstract class AbstractGraphDatabase
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
 
-    private LifeSupport life = new LifeSupport();
+    private final LifeSupport life = new LifeSupport();
 
     protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
                                     Iterable<IndexProvider> indexProviders)
@@ -206,8 +206,10 @@ public abstract class AbstractGraphDatabase
         params.put( "logical_log", logicalLog );
         // END SMELL
 
+        fileSystem = life.add(createFileSystemAbstraction());
+
         // Setup proper configuration
-        config = new Config( msgLog, params );
+        config = new Config( msgLog, fileSystem, params );
         
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.getBoolean( Configuration.read_only );
@@ -221,8 +223,6 @@ public abstract class AbstractGraphDatabase
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
         txHook = createTxHook();
-
-        fileSystem = life.add(createFileSystemAbstraction());
 
         xaDataSourceManager = life.add( new XaDataSourceManager( msgLog ) );
 
@@ -299,7 +299,7 @@ public abstract class AbstractGraphDatabase
         indexStore = new IndexStore( this.storeDir, fileSystem);
 
         diagnosticsManager.prependProvider( config );
-        
+
         // Config can auto-configure memory mapping settings and what not, so reassign params
         // after we've instantiated Config.
         params = config.getParams();
@@ -327,7 +327,7 @@ public abstract class AbstractGraphDatabase
         // TODO This cyclic dependency should be resolved
         indexManager.setNodeAutoIndexer( nodeAutoIndexer );
         indexManager.setRelAutoIndexer( relAutoIndexer );
-        
+
         recoveryVerifier = createRecoveryVerifier();
 
         // Factories for things that needs to be created later
@@ -349,18 +349,18 @@ public abstract class AbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, lockManager, lockReleaser, msgLog, xaFactory, providers, new DependencyResolverImpl());
+                    storeFactory, fileSystem, lockManager, lockReleaser, msgLog, xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
         {
             throw new IllegalStateException("Could not create Neo XA datasource", e);
         }
-        
+
         life.add( new StuffToDoAfterRecovery() );
 
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
-        
+
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
     }
@@ -387,7 +387,7 @@ public abstract class AbstractGraphDatabase
     {
         return CommonFactories.defaultRecoveryVerifier();
     }
-    
+
     protected KernelData createKernelData()
     {
         return new DefaultKernelData(config, this);
@@ -420,7 +420,7 @@ public abstract class AbstractGraphDatabase
                 // TODO: add CAS check here for requests not in tx to guard against shutdown
                 return nodeManager.getRelationshipForProxy( relationshipId, null );
             }
-            
+
             @Override
             public RelationshipImpl lookupRelationship( long relationshipId, LockType lock )
             {
@@ -458,7 +458,7 @@ public abstract class AbstractGraphDatabase
                 // TODO: add CAS check here for requests not in tx to guard against shutdown
                 return nodeManager.getNodeForProxy( nodeId, null );
             }
-            
+
             @Override
             public NodeImpl lookup( long nodeId, LockType lock )
             {
@@ -514,7 +514,7 @@ public abstract class AbstractGraphDatabase
         });
         return stringLogger;
     }
-    
+
     public final String getStoreDir()
     {
         return storeDir;
@@ -524,7 +524,7 @@ public abstract class AbstractGraphDatabase
     {
         return storeId;
     }
-    
+
     @Override
     public Transaction beginTx()
     {
@@ -605,13 +605,13 @@ public abstract class AbstractGraphDatabase
     {
         return getClass().getSimpleName() + " [" + getStoreDir() + "]";
     }
-    
+
     @Override
     public Iterable<Node> getAllNodes()
     {
         return GlobalGraphOperations.at( this ).getAllNodes();
     }
-    
+
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
@@ -761,7 +761,7 @@ public abstract class AbstractGraphDatabase
         }
         throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
     }
-    
+
     public KernelData getKernelData()
     {
         return extensions;
@@ -830,7 +830,7 @@ public abstract class AbstractGraphDatabase
     {
         return msgLog;
     }
-    
+
     @Override
     public KernelPanicEventGenerator getKernelPanicGenerator()
     {
@@ -884,7 +884,7 @@ public abstract class AbstractGraphDatabase
 	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final Config config;
-        private GraphDatabaseSPI graphDb;
+        private final GraphDatabaseSPI graphDb;
 
         public DefaultKernelData(Config config, GraphDatabaseSPI graphDb)
         {
@@ -1123,7 +1123,7 @@ public abstract class AbstractGraphDatabase
             // TODO: Starting database. Make sure none can access it through lock or CAS
         }
     }
-    
+
     // TODO Probably change name
     class StuffToDoAfterRecovery implements Lifecycle
     {

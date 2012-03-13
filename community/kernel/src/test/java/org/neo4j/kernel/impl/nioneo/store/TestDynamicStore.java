@@ -158,7 +158,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config(StringLogger.SYSTEM, MapUtil.stringMap(
+        return new Config(StringLogger.SYSTEM, FILE_SYSTEM, MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
                 "store_dir", path()));
     }

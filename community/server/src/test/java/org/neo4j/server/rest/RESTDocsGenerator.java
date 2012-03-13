@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -36,21 +36,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.junit.Assert.*;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -505,7 +499,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                fw.append( AsciidocHelper.createGraphViz( "Final Graph", graph, title));
+                fw.append( AsciidocHelper.createGraphVizWithNodeId(
+                        "Final Graph", graph, title ) );
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
