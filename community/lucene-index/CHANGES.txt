@@ -1,3 +1,7 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Added LowerCaseKeywordAnalyzer and a clear test for it which shows how to configure a case-insensitive exact index.
+
 1.6 (2012-01-19)
 ----------------
 o Fixed a ConcurrentModificationException problem when rotating logs and listing store files.

@@ -1,3 +1,14 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Fixed issues #116
+o Fixed a NPE in guarded database for the result of Index#putIfAbsent.
+o Added Jasmine unit test framework for webadmin, with a first test and JUnit formatted test reports.
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups.
+o Added SSL support in the server.
+o SecurityRule implementations can now use simple wildcards to allow whole sub paths of URIs to be covered by the rule.
+o Added an "order" parameter to index REST queries to control result ordering.
+
 1.6 (2012-01-19)
 ----------------
 o Fixes issues #173, #118, #138, #103
