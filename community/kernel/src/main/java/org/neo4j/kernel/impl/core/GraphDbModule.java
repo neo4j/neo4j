@@ -43,10 +43,11 @@ import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class GraphDbModule
 {
-    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.array;
+    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.soft;
     private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
@@ -57,11 +58,11 @@ public class GraphDbModule
     private final TransactionManager transactionManager;
     private final LockManager lockManager;
     private final EntityIdGenerator idGenerator;
-    
+
     private NodeManager nodeManager;
-    
+
     private MeasureDoNothing monitorGc;
-    
+
     private boolean readOnly = false;
 
     public GraphDbModule( GraphDatabaseService graphDb, LockManager lockManager,
@@ -74,20 +75,20 @@ public class GraphDbModule
         this.idGenerator = idGenerator;
         this.readOnly = readOnly;
     }
-    
+
     public void init()
     {
     }
 
-    public void start( LockReleaser lockReleaser, 
+    public void start( LockReleaser lockReleaser,
         PersistenceManager persistenceManager, RelationshipTypeCreator relTypeCreator,
-        Map<Object,Object> params )
+        DiagnosticsManager diagnostics, Map<Object,Object> params )
     {
         if ( !startIsOk )
         {
             return;
         }
-        
+
         String cacheTypeName = (String) params.get( Config.CACHE_TYPE );
         CacheType cacheType = null;
         try
@@ -100,18 +101,18 @@ public class GraphDbModule
                     Arrays.asList( CacheType.values() ) + " or keep empty for default (" +
                     DEFAULT_CACHE_TYPE + ")", e.getCause() );
         }
-        
+
         if ( !readOnly )
         {
             nodeManager = new NodeManager( graphDbService,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, relTypeCreator, cacheType, (StringLogger) params.get( StringLogger.class ) );
+                    persistenceManager, idGenerator, relTypeCreator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService,
                     lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator, cacheType, (StringLogger) params.get( StringLogger.class ) );
+                    transactionManager, persistenceManager, idGenerator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
         }
         // load and verify from PS
         NameData[] relTypes = null;
@@ -127,12 +128,12 @@ public class GraphDbModule
             nodeManager.setHasAllpropertyIndexes( true );
         }
         nodeManager.start( params );
-        
+
         startGCMonitor( params );
-        
+
         startIsOk = false;
     }
-    
+
     private void startGCMonitor( Map<Object, Object> params )
     {
         int monitor_wait_time = 100;
@@ -174,16 +175,16 @@ public class GraphDbModule
         }
         catch ( NotSupportedException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to begin transaction.", e );
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to begin transaction.", e );
         }
     }
-    
+
     private void commitTx()
     {
         try
@@ -215,7 +216,7 @@ public class GraphDbModule
             throw new TransactionFailureException( "Failed to commit.", e );
         }
     }
-    
+
     public void setReferenceNodeId( Long nodeId )
     {
         nodeManager.setReferenceNodeId( nodeId.longValue() );

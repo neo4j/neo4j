@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Map;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,16 +33,17 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 
 class ReadOnlyNodeManager extends NodeManager
 {
     ReadOnlyNodeManager( GraphDatabaseService graphDbService, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            CacheType cacheType, StringLogger logger )
+            CacheType cacheType, DiagnosticsManager diagnostics, StringLogger logger, Map<Object,Object> params )
     {
         super( graphDbService, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator, null, cacheType, logger );
+                transactionManager, persistenceManager, idGenerator, null, cacheType, diagnostics, logger, params );
     }
 
     @Override

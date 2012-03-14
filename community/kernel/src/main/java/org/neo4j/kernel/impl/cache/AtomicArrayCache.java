@@ -24,61 +24,59 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.kernel.info.DiagnosticsProvider;
 
-public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
+public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, DiagnosticsProvider
 {
+    public static final long MIN_SIZE = 1;
     public final AtomicReferenceArray<E> cache;
     private final long maxSize;
     private final AtomicLong currentSize = new AtomicLong( 0 );
+    private final long minLogInterval;
     private final String name;
-    
+
     // non thread safe, only ~statistics (atomic update will affect performance)
     private long hitCount = 0;
     private long missCount = 0;
     private long totalPuts = 0;
     private long collisions = 0;
     private long purgeCount = 0;
-    
+
     private StringLogger logger;
 
-    public AtomicArrayCache( long maxSizeInBytes )
+    public AtomicArrayCache( long maxSizeInBytes, int arrayHeapFraction )
     {
-        logger = null;
-        long memToUse = Runtime.getRuntime().maxMemory() / 100;
-        int maxElementCount = (int) (memToUse / 8);
-        if ( memToUse < 0 )
-        {
-            maxElementCount = Integer.MAX_VALUE;
-        }
-        if ( maxSizeInBytes < 1 )
-        {
-            throw new IllegalArgumentException( "Max size can not be " + maxSizeInBytes );
-        }
-        
-        this.cache = new AtomicReferenceArray<E>( maxElementCount );
-        this.maxSize = maxSizeInBytes;
-        this.name = super.toString();
+        this( maxSizeInBytes, arrayHeapFraction, 5000, null, null );
     }
-    
-    public AtomicArrayCache( long maxSizeInBytes, String name, StringLogger logger )
+
+    public AtomicArrayCache( long maxSizeInBytes, int arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
-        long memToUse = Runtime.getRuntime().maxMemory() / 100;
-        int maxElementCount = (int) (memToUse / 8);
-        if ( memToUse < 0 )
+        this.minLogInterval = minLogInterval;
+        if ( arrayHeapFraction < 1 || arrayHeapFraction > 10 )
+        {
+            throw new IllegalArgumentException(
+                                                "The heap fraction used by an array cache must be between 1% and 10%, not "
+                                                        + arrayHeapFraction + "%" );
+        }
+        logger = null;
+        long memToUse = arrayHeapFraction * Runtime.getRuntime().maxMemory() / 100;
+        long maxElementCount = (int) ( memToUse / 8 );
+        if ( memToUse > Integer.MAX_VALUE )
         {
             maxElementCount = Integer.MAX_VALUE;
         }
-        if ( maxSizeInBytes < 1 )
+        if ( maxSizeInBytes < MIN_SIZE )
         {
             throw new IllegalArgumentException( "Max size can not be " + maxSizeInBytes );
         }
-        
-        this.cache = new AtomicReferenceArray<E>( maxElementCount );
+
+        this.cache = new AtomicReferenceArray<E>( (int) maxElementCount );
         this.maxSize = maxSizeInBytes;
-        this.name = name;
+        this.name = name == null ? super.toString() : name;
         this.logger = logger;
     }
-    
+
     private int getPosition( EntityWithSize obj )
     {
         return (int) ( obj.getId() % cache.length() );
@@ -89,18 +87,19 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
         return (int) ( id % cache.length() );
     }
 
+
     private long putTimeStamp = 0;
-    
+
     public void put( E obj )
     {
         long time = System.currentTimeMillis();
-        if ( time - putTimeStamp > 5000 )
+        if ( time - putTimeStamp > minLogInterval )
         {
             putTimeStamp = time;
             printStatistics();
         }
         int pos = getPosition( obj );
-        E oldObj = cache.get(pos);
+        E oldObj = cache.get( pos );
         if ( !cache.compareAndSet( pos, oldObj, obj ) )
         {
             put( obj );
@@ -164,7 +163,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
     }
 
     private long lastPurgeLogTimestamp = 0;
-    
+
     private synchronized void purgeFrom( int pos )
     {
         purgeCount++;
@@ -201,7 +200,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
         finally
         {
             long timestamp = System.currentTimeMillis();
-            if ( timestamp - lastPurgeLogTimestamp > 5000 )
+            if ( timestamp - lastPurgeLogTimestamp > minLogInterval )
             {
                 lastPurgeLogTimestamp = timestamp;
                 long sizeAfter = currentSize.get();
@@ -209,27 +208,57 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
                 String sizeBeforeStr = getSize( sizeBefore );
                 String sizeAfterStr = getSize( sizeAfter );
                 String diffStr = getSize( sizeBefore - sizeAfter );
-                
-                String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";  
+
+                String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
-                
-                log( " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr + 
-                        ") " + missPercentage + " misses, " + colPercentage + " collitions.", true );
+
+                logger().logMessage( " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
+                        ") " + missPercentage + " misses, " + colPercentage + " collisions.", true );
             }
         }
     }
-    
+
+    private StringLogger logger()
+    {
+        StringLogger logger = this.logger;
+        if ( logger == null ) logger = StringLogger.SYSTEM;
+        return logger;
+    }
+
     public void printStatistics()
     {
-        String currentSizeStr = getSize( currentSize.get() );
-        
-        String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";  
-        String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
-        
-        log( " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +  
-                missPercentage + " misses, " + colPercentage + " collitions.", true );
+        logStatistics( logger() );
     }
-    
+
+    @Override
+    public String getDiagnosticsIdentifier()
+    {
+        return getName();
+    }
+
+    @Override
+    public void acceptDiagnosticsVisitor( Object visitor )
+    {
+        // accept no visitors.
+    }
+
+    @Override
+    public void dump( DiagnosticsPhase phase, StringLogger log )
+    {
+        if (phase.isExplicitlyRequested()) logStatistics(log);
+    }
+
+    private void logStatistics( @SuppressWarnings( "hiding" ) StringLogger logger )
+    {
+        String currentSizeStr = getSize( currentSize.get() );
+
+        String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
+        String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
+
+        logger.logMessage( " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
+                missPercentage + " misses, " + colPercentage + " collisions.", true );
+    }
+
     private String getSize( long size )
     {
         if ( size > ( 1024 * 1024 * 1024 ) )
@@ -250,19 +279,6 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
         return size + "b";
     }
 
-    private void log( String msg, boolean force )
-    {
-        if ( logger != null )
-        {
-            logger.logMessage( "AtomicArrayCache[" + getName() + "] " + msg, force );
-            // System.out.println( "AtomicArrayCache[" + getName() + "] " + msg );
-        }
-        else
-        {
-            System.out.println( "AtomicArrayCache[" + getName() + "] " + msg );
-        }
-    }
-    
     public void clear()
     {
         for ( int i = 0; i < cache.length(); i++ )
@@ -270,7 +286,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
             cache.set( i, null );
         }
     }
-    
+
     public void putAll( Collection<E> objects )
     {
         for ( E obj : objects )
@@ -324,10 +340,5 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>
                 purgeFrom( pos );
             }
         }
-    }
-    
-    public void setLogger( StringLogger logger )
-    {
-        this.logger = logger;
     }
 }
