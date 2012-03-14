@@ -78,9 +78,9 @@ public class MeasureDoNothing extends Thread
             if ( time > TIME_BEFORE_BLOCK )
             {
                 long blockTime = (time - TIME_TO_WAIT);
-                logger.logMessage( "GC Monitor: Application threads blocked for an additional " + blockTime + 
-                        " [total block time: " + (timeBlocked / 1000.0f) + "s]", true );
                 timeBlocked += blockTime;
+                logger.logMessage( "GC Monitor: Application threads blocked for an additional " + blockTime + 
+                        "ms [total block time: " + (timeBlocked / 1000.0f) + "s]", true );
             }
         }
         logger.logMessage( "GC Monitor stopped. " );

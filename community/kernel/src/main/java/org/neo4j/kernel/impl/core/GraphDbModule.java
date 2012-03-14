@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class GraphDbModule
 {
-    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.array;
+    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.soft;
     private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
