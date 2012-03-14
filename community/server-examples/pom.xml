@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.examples</groupId>
@@ -89,38 +89,20 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>docs-maven-plugin</artifactId>
+        <configuration>
+          <sourceDirectories>
+            <sourceDirectory>${basedir}/src/docs</sourceDirectory>
+            <sourceDirectory>${basedir}/src/main/resources/META-INF/services</sourceDirectory>
+          </sourceDirectories>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
             <id>attach-javadocs</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>docs</id>
-            <phase>package</phase>
-            <configuration>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-docs</id>
             <phase>none</phase>
           </execution>
         </executions>
