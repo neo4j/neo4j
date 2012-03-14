@@ -25,7 +25,7 @@
 
   <properties>
     <short-name>installer-qa</short-name>
-    <neo4j.version>1.6.2.RC1</neo4j.version>
+    <neo4j.version>1.6.2-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
