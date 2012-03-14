@@ -43,14 +43,14 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
     private long collisions = 0;
     private long purgeCount = 0;
 
-    private StringLogger logger;
+    private final StringLogger logger;
 
-    public AtomicArrayCache( long maxSizeInBytes, int arrayHeapFraction )
+    public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction )
     {
-        this( maxSizeInBytes, arrayHeapFraction, 5000, null, null );
+        this( maxSizeInBytes, arrayHeapFraction, 5000, null, StringLogger.SYSTEM );
     }
 
-    public AtomicArrayCache( long maxSizeInBytes, int arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
+    public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
         this.minLogInterval = minLogInterval;
         if ( arrayHeapFraction < 1 || arrayHeapFraction > 10 )
@@ -59,8 +59,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
                                                 "The heap fraction used by an array cache must be between 1% and 10%, not "
                                                         + arrayHeapFraction + "%" );
         }
-        logger = null;
-        long memToUse = arrayHeapFraction * Runtime.getRuntime().maxMemory() / 100;
+        long memToUse = (long)(((double)arrayHeapFraction) * Runtime.getRuntime().maxMemory() / 100);
         long maxElementCount = (int) ( memToUse / 8 );
         if ( memToUse > Integer.MAX_VALUE )
         {
@@ -74,7 +73,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         this.cache = new AtomicReferenceArray<E>( (int) maxElementCount );
         this.maxSize = maxSizeInBytes;
         this.name = name == null ? super.toString() : name;
-        this.logger = logger;
+        this.logger = logger == null ? StringLogger.SYSTEM : logger;
     }
 
     private int getPosition( EntityWithSize obj )
@@ -212,22 +211,15 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
                 String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
 
-                logger().logMessage( " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
+                logger.logMessage( " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
                         ") " + missPercentage + " misses, " + colPercentage + " collisions.", true );
             }
         }
     }
 
-    private StringLogger logger()
-    {
-        StringLogger logger = this.logger;
-        if ( logger == null ) logger = StringLogger.SYSTEM;
-        return logger;
-    }
-
     public void printStatistics()
     {
-        logStatistics( logger() );
+        logStatistics( logger );
     }
 
     @Override

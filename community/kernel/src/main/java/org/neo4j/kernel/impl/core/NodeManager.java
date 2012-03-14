@@ -41,6 +41,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.Config;
@@ -77,8 +78,6 @@ public class NodeManager
     private final GraphDatabaseService graphDbService;
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
-//    private final AtomicArrayCache<NodeImpl> nodeCache;
-//    private final AtomicArrayCache<RelationshipImpl> relCache;
 
     private final CacheType cacheType;
 
@@ -1322,9 +1321,9 @@ public class NodeManager
                 long result = 60000; // Default: a minute
                 try
                 {
-                    if ( interval != null ) result = Long.parseLong( interval );
+                    if ( interval != null ) result = TimeUtil.parseTimeMillis( interval );
                 }
-                catch ( NumberFormatException e )
+                catch ( Exception e )
                 {
                     throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
                                                         + Config.ARRAY_CACHE_MIN_LOG_INTERVAL, e );
@@ -1376,13 +1375,13 @@ public class NodeManager
                 return isNode ? node : rel;
             }
 
-            private int fraction( Map<Object, Object> params, String param )
+            private float fraction( Map<Object, Object> params, String param )
             {
                 String fraction = (String)params.get( Config.NODE_ARRAY_CACHE_ARRAY_FRACTION );
-                int result = 1;
+                float result = 1;
                 try
                 {
-                    if ( fraction != null ) result = Integer.parseInt( fraction );
+                    if ( fraction != null ) result = Float.parseFloat( fraction );
                 }
                 catch ( NumberFormatException e )
                 {

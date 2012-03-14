@@ -168,6 +168,7 @@ public class Config implements DiagnosticsProvider
 
     /**
      * The minimal time that must pass in between logging statistics from the cache (when using the 'array' cache).
+     * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit be seconds, minutes or milliseconds respectively.
      */
     @Documented
     public static final String ARRAY_CACHE_MIN_LOG_INTERVAL = "array_cache_min_log_interval";
