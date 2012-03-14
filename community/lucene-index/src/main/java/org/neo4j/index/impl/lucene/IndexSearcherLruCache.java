@@ -40,7 +40,7 @@ public class IndexSearcherLruCache extends LruCache<IndexIdentifier, Pair<IndexS
      */
     public IndexSearcherLruCache( int maxSize )
     {
-        super( "IndexSearcherCache", maxSize, null );
+        super( "IndexSearcherCache", maxSize );
     }
 
     @Override

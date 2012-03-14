@@ -52,7 +52,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testDefaultCache()
     {
         GraphDatabaseService db = newDb( null );
-        assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        assertEquals( CacheType.array, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
 
@@ -89,12 +89,20 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     }
     
     @Test
-    public void testOldCache()
+    public void testArrayCache()
     {
-        GraphDatabaseService db = newDb( "old" );
-        assertEquals( CacheType.old, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        GraphDatabaseService db = newDb( "array" );
+        assertEquals( CacheType.array, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
+    
+//    @Test
+//    public void testOldCache()
+//    {
+//        GraphDatabaseService db = newDb( "old" );
+//        assertEquals( CacheType.old, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+//        db.shutdown();
+//    }
 
     @Test
     public void testInvalidCache()

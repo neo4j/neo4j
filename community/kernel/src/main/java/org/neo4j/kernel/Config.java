@@ -30,7 +30,6 @@ import javax.transaction.TransactionManager;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -225,9 +224,22 @@ public class Config implements DiagnosticsProvider
     @Documented
     public static final String LUCENE_WRITER_CACHE_SIZE = "lucene_writer_cache_size";
 
+    /**
+     * Amount of time in ms the GC monitor thread will wait before taking another measurement. 
+     * Default is 100 ms.
+     */
+    @Documented
+    public static final String GC_MONITOR_WAIT_TIME = "gc_monitor_wait_time";
+    
+    /**
+     * The amount of time in ms the monitor thread has to be blocked before logging a message it was blocked.
+     * Default is 200ms
+     */
+    @Documented
+    public static final String GC_MONITOR_THRESHOLD = "gc_monitor_threshold";
+    
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
-    private final AdaptiveCacheManager cacheManager;
     private final TxModule txModule;
     private final LockManager lockManager;
     private final LockReleaser lockReleaser;
@@ -250,7 +262,7 @@ public class Config implements DiagnosticsProvider
     private final TxIdGenerator txIdGenerator;
     private final DiagnosticsManager diagnostics;
     private final KernelPanicEventGenerator kpe;
-
+    
     Config( AbstractGraphDatabase graphDb, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
@@ -279,9 +291,8 @@ public class Config implements DiagnosticsProvider
         this.backupSlave = Boolean.parseBoolean( (String) params.get( BACKUP_SLAVE ) );
         this.syncHookFactory = txSyncHookFactory;
         this.persistenceModule = new PersistenceModule();
-        this.cacheManager = new AdaptiveCacheManager();
         this.params.put( FileSystemAbstraction.class, fileSystem );
-        graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
+        graphDbModule = new GraphDbModule( graphDb, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
         indexStore = new IndexStore( storeDir, fileSystem );
