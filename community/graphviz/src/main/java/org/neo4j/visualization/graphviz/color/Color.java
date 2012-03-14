@@ -26,13 +26,13 @@ package org.neo4j.visualization.graphviz.color;
 public enum Color
 {
     GREY( "#2e3436", "#888a85" ),
-    BLUE( "#204a87", "#3465a4" ),
-    RED( "#a40000", "#cc0000" ),
     GREEN( "#4e9a06", "#73d216" ),
-    PURPLE( "#5c3566", "#75507b" ),
-    ORANGE( "#ce5c00", "#f57900" ),
+    RED( "#a40000", "#cc0000" ),
+    BLUE( "#204a87", "#3465a4" ),
     BROWN( "#8f5902", "#c17d11" ),
-    YELLOW( "#c4a000", "#edd400" );
+    PURPLE( "#5c3566", "#75507b" ),
+    YELLOW( "#c4a000", "#edd400" ),
+    ORANGE( "#ce5c00", "#f57900" );
 
     String dark;
     String light;
