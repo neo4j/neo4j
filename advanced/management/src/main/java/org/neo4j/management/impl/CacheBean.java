@@ -45,7 +45,7 @@ public class CacheBean extends ManagementBeanProvider
     {
         NodeManager nm = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
         Collection<CacheManager> cacheBeans = new LinkedList<CacheBean.CacheManager>();
-        for ( Cache<?, ?> cache : nm.caches() )
+        for ( Cache<?> cache : nm.caches() )
         {
             cacheBeans.add( new CacheManager( management, nm, cache ) );
         }
@@ -60,10 +60,10 @@ public class CacheBean extends ManagementBeanProvider
 
     private class CacheManager extends Neo4jMBean implements org.neo4j.management.Cache
     {
-        private final Cache<?, ?> cache;
+        private final Cache<?> cache;
         private final NodeManager nodeManager;
 
-        CacheManager( ManagementData management, NodeManager nodeManager, Cache<?, ?> cache )
+        CacheManager( ManagementData management, NodeManager nodeManager, Cache<?> cache )
                 throws NotCompliantMBeanException
         {
             super( management, cache.getName() );
@@ -82,7 +82,7 @@ public class CacheBean extends ManagementBeanProvider
         }
 
         @Override
-        public int getNumberOfCachedElements()
+        public long getCacheSize()
         {
             return cache.size();
         }

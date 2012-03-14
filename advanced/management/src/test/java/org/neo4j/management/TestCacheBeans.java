@@ -94,7 +94,7 @@ public class TestCacheBeans
             @Override
             long get( Cache bean )
             {
-                return bean.getNumberOfCachedElements();
+                return bean.getCacheSize();
             }
         },
         HIT_COUNT
