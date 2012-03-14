@@ -26,6 +26,7 @@ import static org.neo4j.test.LogTestUtils.EVERYTHING_BUT_DONE_RECORDS;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 import static org.neo4j.test.LogTestUtils.filterTxLog;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,10 +35,10 @@ import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
+import org.neo4j.test.LogTestUtils.LogHook;
 import org.neo4j.test.TargetDirectory;
 
 @Ignore( "Used from another test case and isn't a test case in itself" )
@@ -104,7 +105,7 @@ public class CreateTransactionsAndDie
 
     private static void remove2PCAndDoneFromLog( String dir ) throws IOException
     {
-        filterNeostoreLogicalLog( dir, new Predicate<LogEntry>()
+        filterNeostoreLogicalLog( dir, new LogHook<LogEntry>()
         {
             private final Set<Integer> prune = new HashSet<Integer>();
             
@@ -118,6 +119,16 @@ public class CreateTransactionsAndDie
                 }
                 else if ( prune.contains( item.getIdentifier() ) ) return false;
                 return true;
+            }
+
+            @Override
+            public void file( File file )
+            {
+            }
+
+            @Override
+            public void done( File file )
+            {
             }
         } );
     }
