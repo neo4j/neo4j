@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -96,6 +100,8 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import static org.neo4j.helpers.Exceptions.*;
 
@@ -106,6 +112,9 @@ import static org.neo4j.helpers.Exceptions.*;
 public abstract class AbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseSPI
 {
+
+    protected LoggerContext loggerContext;
+
     public static class Configuration
     {
         public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
@@ -195,8 +204,6 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
-        this.msgLog = createStringLogger();
-
         // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
         String separator = System.getProperty( "file.separator" );
         String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
@@ -209,8 +216,10 @@ public abstract class AbstractGraphDatabase
         fileSystem = life.add(createFileSystemAbstraction());
 
         // Setup proper configuration
-        config = new Config( msgLog, fileSystem, params );
-        
+        config = new Config( StringLogger.logger(StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger( "neo4j.config" )), fileSystem, params );
+
+        this.msgLog = createStringLogger();
+
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.getBoolean( Configuration.read_only );
 
@@ -218,13 +227,13 @@ public abstract class AbstractGraphDatabase
 
         kernelEventHandlers = new KernelEventHandlers();
 
-        diagnosticsManager = life.add(new DiagnosticsManager( msgLog ));
+        diagnosticsManager = life.add(new DiagnosticsManager( StringLogger.logger(loggerContext.getLogger( "neo4j.diagnostics" )) ));
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
         txHook = createTxHook();
 
-        xaDataSourceManager = life.add( new XaDataSourceManager( msgLog ) );
+        xaDataSourceManager = life.add( new XaDataSourceManager( StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )) ) );
 
         if (readOnly)
         {
@@ -235,7 +244,7 @@ public abstract class AbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, msgLog, fileSystem);
+                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, StringLogger.logger(loggerContext.getLogger( "neo4j.txmanager" )), fileSystem);
             }
             else {
                 TransactionManagerProvider provider;
@@ -245,7 +254,7 @@ public abstract class AbstractGraphDatabase
                     throw new IllegalStateException( "Unknown transaction manager implementation: "
                             + serviceName );
                 }
-                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, msgLog, fileSystem);
+                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, StringLogger.logger(loggerContext.getLogger( "neo4j.txmanager" )), fileSystem);
             }
         }
         life.add( txManager );
@@ -332,7 +341,7 @@ public abstract class AbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog, recoveryVerifier );
+        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, StringLogger.logger(loggerContext.getLogger( "neo4j.xafactory" )), recoveryVerifier );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
@@ -349,7 +358,7 @@ public abstract class AbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, fileSystem, lockManager, lockReleaser, msgLog, xaFactory, providers, new DependencyResolverImpl());
+                    storeFactory, fileSystem, lockManager, lockReleaser, StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )), xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
         {
@@ -380,7 +389,7 @@ public abstract class AbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook);
+        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, StringLogger.logger(loggerContext.getLogger( "neo4j.neostore" )), txHook);
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -502,16 +511,30 @@ public abstract class AbstractGraphDatabase
 
     protected StringLogger createStringLogger()
     {
-        final StringLogger stringLogger = StringLogger.logger( this.storeDir );
-        life.add( new LifecycleAdapter()
+        File file = new File( storeDir ).getAbsoluteFile();
+        if (!file.exists())
+            file.mkdirs();
+
+        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext( loggerContext );
+        loggerContext.putProperty( "neo_store", storeDir );
+        loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings.remote_logging_enabled ) );
+        loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings.remote_logging_host ) );
+        loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings.remote_logging_port ) );
+        try
         {
-            @Override
-            public void shutdown()
-                throws Throwable
-            {
-                stringLogger.close();
-            }
-        });
+            configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );
+        }
+        catch( JoranException e )
+        {
+            throw new IllegalStateException("Failed to configure logging", e );
+        }
+        loggerContext.getLogger( Logger.ROOT_LOGGER_NAME ).info( "TEST" );
+
+        final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
+        final StringLogger stringLogger = StringLogger.logger( neo4j );
+
         return stringLogger;
     }
 
@@ -958,15 +981,15 @@ public abstract class AbstractGraphDatabase
         public void init()
             throws Throwable
         {
-            loaded = extensions.loadExtensionConfigurations( msgLog );
-            loadIndexImplementations(indexManager, msgLog);
+            loaded = extensions.loadExtensionConfigurations( StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )) );
+            loadIndexImplementations(indexManager, StringLogger.logger(loggerContext.getLogger( "neo4j.index" )));
         }
 
         @Override
         public void start()
             throws Throwable
         {
-            extensions.loadExtensions( loaded, msgLog );
+            extensions.loadExtensions( loaded, StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )) );
         }
 
         @Override

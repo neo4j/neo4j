@@ -208,7 +208,7 @@ public abstract class CommonAbstractStore
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(configuration.getParams(), storageFileName ),
-            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
+            configuration.getBoolean( Configuration.use_memory_mapped_buffers ), isReadOnly() && !isBackupSlave() ) );
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -396,11 +396,6 @@ public abstract class CommonAbstractStore
         {
             idGenerator.setHighId( highId );
         }
-    }
-
-    protected boolean getIfMemoryMapped()
-    {
-        return configuration.getBoolean( Configuration.use_memory_mapped_buffers );
     }
 
     /**

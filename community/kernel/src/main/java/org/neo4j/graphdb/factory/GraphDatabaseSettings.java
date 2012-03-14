@@ -47,6 +47,16 @@ public abstract class GraphDatabaseSettings
     @Default(FALSE)
     public static final BooleanSetting intercept_deserialized_transactions = new BooleanSetting( "intercept_deserialized_transactions" );
 
+    // Remote logging
+    @Default(FALSE)
+    public static GraphDatabaseSetting remote_logging_enabled = new BooleanSetting( "remote_logging_enabled" );
+
+    @Default("127.0.0.1")
+    public static final StringSetting remote_logging_host = new StringSetting( "remote_logging_host", ".*", "Must be a valid hostname" );
+
+    @Default("4560")
+    public static final IntegerSetting remote_logging_port = new IntegerSetting( "remote_logging_port", "Must be a valid port number", 1, 65535 );
+
     // NodeManager settings
     @Default(FALSE)
     public static final BooleanSetting use_adaptive_cache = new BooleanSetting( "use_adaptive_cache" );
