@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,6 +28,7 @@ import java.nio.channels.FileChannel;
 import java.util.Random;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 public class IndexProviderStore
@@ -65,7 +68,21 @@ public class IndexProviderStore
             lastCommittedTx = bytesRead/8 >= 4 ? buf.getLong() : 1;
             Long readIndexVersion = bytesRead/8 >= 5 ? buf.getLong() : null;
             boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
-            if ( versionDiffers && !allowUpgrade ) throw new UpgradeNotAllowedByConfigurationException();
+            if ( versionDiffers && !allowUpgrade )
+            {
+                // We can throw a more explicit exception if we see that we're trying to run
+                // with an older version than the store is.
+                if ( readIndexVersion != null && expectedVersion < readIndexVersion.longValue() )
+                {
+                    String expected = versionLongToString( expectedVersion );
+                    String readVersion = versionLongToString( readIndexVersion.longValue() );
+                    throw new NotCurrentStoreVersionException( expected, readVersion,
+                            "Your index has been upgraded to " + readVersion +
+                            " and cannot run with an older version " + expected, false );
+                }
+                else
+                    throw new UpgradeNotAllowedByConfigurationException();
+            }
             indexVersion = expectedVersion;
             if ( versionDiffers ) writeOut();
         }
