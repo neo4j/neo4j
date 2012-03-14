@@ -99,4 +99,23 @@ public class TestIndexProviderStore
             throw e;
         }
     }
+
+    @Test( expected = NotCurrentStoreVersionException.class )
+    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade() throws Exception
+    {
+        String newerVersion = "3.5";
+        String olderVersion = "3.1";
+        try
+        {
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+            store.close();
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), true );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            assertTrue( e.getMessage().contains( newerVersion ) );
+            assertTrue( e.getMessage().contains( olderVersion ) );
+            throw e;
+        }
+    }
 }
