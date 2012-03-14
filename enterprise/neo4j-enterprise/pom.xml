@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise</artifactId>
-  <version>1.6.2-SNAPSHOT</version>
+  <version>1.6.2.RC1</version>
   <name>Neo4j Enterprise</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -37,17 +37,17 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2.RC1</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2.RC1</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2.RC1</version>
     </dependency>
   </dependencies>
 
