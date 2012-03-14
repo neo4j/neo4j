@@ -126,7 +126,7 @@ class GraphDbInstance
                 catch ( NoClassDefFoundError err )
                 { // ok index util not on class path
                 }
-    
+
                 try
                 {
                     Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
@@ -153,9 +153,9 @@ class GraphDbInstance
             persistenceSource.init();
             config.getIdGeneratorModule().init();
             config.getGraphDbModule().init();
-    
+
             kernelExtensionLoader.initializeIndexProviders();
-    
+
             config.getTxModule().start();
             config.getPersistenceModule().start( config.getTxModule().getTxManager(), persistenceSource,
                     config.getSyncHookFactory(), config.getLockReleaser() );
@@ -163,10 +163,10 @@ class GraphDbInstance
             config.getIdGeneratorModule().start();
             config.getGraphDbModule().start( config.getLockReleaser(),
                     config.getPersistenceModule().getPersistenceManager(),
-                    config.getRelationshipTypeCreator(), params );
-    
+                    config.getRelationshipTypeCreator(), config.getDiagnosticsManager(), params );
+
             started = true;
-    
+
             KernelDiagnostics.register( config.getDiagnosticsManager(), graphDb,
                     (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
             config.getDiagnosticsManager().startup();
