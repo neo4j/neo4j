@@ -105,11 +105,12 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         }
         else
         {
-            if ( obj.size() < 1 )
+            long objectSize = obj.size();
+            if ( objectSize < 1 )
             {
-                throw new RuntimeException( "" + obj.size() );
+                throw new RuntimeException( "" + objectSize );
             }
-            currentSize.addAndGet( obj.size() );
+            currentSize.addAndGet( objectSize );
             if ( oldObj != null )
             {
                 currentSize.addAndGet( oldObj.size() * -1 );

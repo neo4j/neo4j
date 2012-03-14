@@ -375,7 +375,7 @@ class NodeImpl extends ArrayBasedPrimitive
     @Override
     protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, sizeBefore, size() );
+        nodeManager.updateCacheSize( this, sizeBefore, sizeAfter );
     }
 
     private RelIdArray[] toRelIdArray( ArrayMap<String, RelIdArray> tmpRelMap )

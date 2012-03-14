@@ -93,6 +93,6 @@ class LowRelationshipImpl extends RelationshipImpl
     @Override
     protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, sizeBefore, size() );
+        nodeManager.updateCacheSize( this, sizeBefore, sizeAfter );
     }
 }
