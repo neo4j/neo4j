@@ -36,7 +36,23 @@ abstract class ArrayBasedPrimitive extends Primitive
     {
         super( newPrimitive );
     }
-
+    
+    public int size()
+    {
+        // properties(PropertyData[])
+        int size = 8;
+        if ( properties != null )
+        {
+            size += 16;
+            for ( PropertyData data : properties )
+            {
+                size += data.size();
+                size += 8; // array slot
+            }
+        }
+        return size;
+    }
+    
     @Override
     protected void setEmptyProperties()
     {
@@ -60,9 +76,11 @@ abstract class ArrayBasedPrimitive extends Primitive
     }
 
     @Override
-    public void setProperties( ArrayMap<Integer, PropertyData> properties )
+    public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
     {
+        int before = size();
         this.properties = toPropertyArray( properties );
+        updateSize( before, size(), nodeManager );
     }
 
     @Override
@@ -162,6 +180,7 @@ abstract class ArrayBasedPrimitive extends Primitive
                 }
             }
 
+            // these size changes are updated from lock releaser
             if ( newArraySize < newArray.length )
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];

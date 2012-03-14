@@ -29,6 +29,12 @@ public class RelIdArrayWithLoops extends RelIdArray
         super( type );
     }
     
+    @Override
+    public int size()
+    {
+        return super.size() + sizeOfBlock( lastLoopBlock );
+    }
+    
     protected RelIdArrayWithLoops( RelIdArray from )
     {
         super( from );
