@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -40,6 +42,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -105,7 +109,14 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected StringLogger createStringLogger()
     {
-        return StringLogger.DEV_NULL;
+        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
+
+        loggerContext.getLogger( "neo4j" ).setLevel( Level.WARN );
+        loggerContext.getLogger( "neo4j.diagnostics" ).setLevel( Level.WARN );
+        final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
+        final StringLogger stringLogger = StringLogger.logger( neo4j );
+
+        return stringLogger;
     }
 
     private static String path()

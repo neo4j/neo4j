@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
@@ -530,7 +529,6 @@ public abstract class AbstractGraphDatabase
         {
             throw new IllegalStateException("Failed to configure logging", e );
         }
-        loggerContext.getLogger( Logger.ROOT_LOGGER_NAME ).info( "TEST" );
 
         final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
         final StringLogger stringLogger = StringLogger.logger( neo4j );

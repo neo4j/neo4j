@@ -27,9 +27,11 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
  */
 public abstract class GraphDatabaseSettings
 {
+    @Description("Whether database is read-only or not")
     @Default( FALSE)
     public static final BooleanSetting read_only = new BooleanSetting("read_only");
 
+    @Description("Select the type of cache to use")
     @Default( CacheTypeSetting.soft)
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
@@ -41,11 +43,19 @@ public abstract class GraphDatabaseSettings
     
     public static final StringSetting tx_manager_impl = new StringSetting("tx_manager_impl",".*","Must be class name of TransactionManager implementation");
 
+    @Description( "Enable this to be able to upgrade a store from 1.4 -> 1.5 or 1.4 -> 1.6" )
     @Default( FALSE )
     public static BooleanSetting allow_store_upgrade = new BooleanSetting( "allow_store_upgrade" );
     
     @Default(FALSE)
     public static final BooleanSetting intercept_deserialized_transactions = new BooleanSetting( "intercept_deserialized_transactions" );
+
+    // Cypher version
+    @Description( "Enable this to specify a parser other than the default one. 1.5 and 1.6 are available" )
+    @Default("1.6")
+    public static final OptionsSetting cypher_parser_version = new OptionsSetting( "cypher_parser_version", "1.5","1.6" );
+    public static final String CYPHER_1_5 = "1.5";
+    public static final String CYPHER_1_6 = "1.6";
 
     // Remote logging
     @Default(FALSE)
@@ -77,14 +87,18 @@ public abstract class GraphDatabaseSettings
     public static final IntegerSetting max_relationship_cache_size = new IntegerSetting("max_node_cache_size", "Must be an integer");
 
     // Indexing
+    @Description("Enable auto-indexing for nodes")
     @Default(FALSE)
     public static final BooleanSetting node_auto_indexing = new BooleanSetting( "node_auto_indexing" );
 
+    @Description( "The node property keys to be auto-indexed, if enabled" )
     public static final StringSetting node_keys_indexable = new StringSetting("node_keys_indexable",".*","Must be a comma-separated list of keys to be indexed");
 
+    @Description( "Enable auto-indexing for relationships" )
     @Default(FALSE)
     public static final BooleanSetting relationship_auto_indexing = new BooleanSetting( "relationship_auto_indexing" );
 
+    @Description( "The relationship keys to be auto-indexed, if enabled" )
     public static final StringSetting relationship_keys_indexable = new StringSetting("relationship_keys_indexable",".*","Must be a comma-separated list of keys to be indexed");
 
     // Adaptive cache settings

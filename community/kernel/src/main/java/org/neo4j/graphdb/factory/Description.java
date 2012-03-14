@@ -26,11 +26,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specify a default value, as a string, for a GraphDatabaseSetting.
+ * Used to add description of settings in {@link GraphDatabaseSettings}. These can then be accessed through the {@link GraphDatabaseSettingsResourceBundle}.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.FIELD )
-public @interface Default
+public @interface Description
 {
     String value();
 }
