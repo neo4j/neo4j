@@ -19,7 +19,7 @@
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
-    <neo4j.version>1.6.2-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.6.2.RC1</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/ha.html</docs.url>
   </properties>
 
