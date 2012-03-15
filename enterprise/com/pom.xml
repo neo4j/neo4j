@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j</groupId>
@@ -17,6 +17,7 @@
     <bundle.namespace>org.neo4j.com</bundle.namespace>
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
+    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>
