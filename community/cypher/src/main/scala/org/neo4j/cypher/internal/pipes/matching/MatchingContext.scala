@@ -40,12 +40,14 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
     builder.getMatches(sourceRow)
   }
 
-  private def decideWhichMatcherToUse() = {
-//    if (JoinerBuilder.canHandlePatter(patternGraph)) {
-//      new JoinerBuilder(patternGraph, predicates)
-//    } else {
+  private def decideWhichMatcherToUse(): MatcherBuilder = {
+    /*if (JoinerBuilder.canHandlePatter(patternGraph)) {
+      new JoinerBuilder(patternGraph, predicates)
+    } else */if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
+      new SimplePatternMatcherBuilder(patternGraph)
+    } else {
       new PatterMatchingBuilder(patternGraph, predicates)
-//    }
+    }
   }
 
   private def buildPatternGraph(): PatternGraph = {
