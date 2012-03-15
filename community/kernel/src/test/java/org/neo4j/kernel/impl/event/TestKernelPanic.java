@@ -45,7 +45,7 @@ public class TestKernelPanic
     {
         String path = "target/var/testdb";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         XaDataSourceManager xaDs =
             ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
         

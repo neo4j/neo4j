@@ -33,7 +33,7 @@ public class AddRelToIndex
     {
         String path = args[0];
         String indexName = "myIndex";
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Index<Relationship> index = db.index().forRelationships( indexName );
         Transaction tx = db.beginTx();
         Node node = db.createNode();

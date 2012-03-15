@@ -40,7 +40,7 @@ public class TestUnforcedTransaction
     @BeforeClass
     public static void setupDb()
     {
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() ).newGraphDatabase();
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() );
     }
     
     @AfterClass

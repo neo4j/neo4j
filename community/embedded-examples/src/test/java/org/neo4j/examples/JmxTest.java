@@ -33,7 +33,7 @@ public class JmxTest
     @Test
     public void readJmxProperties()
     {
-        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/jmx-db" ).newGraphDatabase();
+        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabase( "target/jmx-db" );
         try
         {
             Date startTime = getStartTimeFromManagementBean( graphDbService );

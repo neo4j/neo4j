@@ -92,7 +92,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );
@@ -148,7 +148,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
@@ -218,7 +218,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
         
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Node n1 = db.getNodeById( node1 );
         Node n2 = db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
@@ -258,7 +258,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Node node1 = db.getNodeById( nodeId1 );
         Node node2 = db.getNodeById( nodeId2 );
         Index<Node> index = db.index().forNodes( "mine" );

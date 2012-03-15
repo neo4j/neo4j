@@ -35,7 +35,7 @@ class PerformanceTest extends Assertions {
 
   @Before
   def init() {
-    db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/db").newGraphDatabase();
+    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db");
     engine = new ExecutionEngine(db)
   }
 

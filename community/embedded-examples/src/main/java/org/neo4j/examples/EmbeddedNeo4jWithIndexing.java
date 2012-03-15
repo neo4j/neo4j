@@ -45,7 +45,7 @@ public class EmbeddedNeo4jWithIndexing
     public static void main( final String[] args )
     {
         // START SNIPPET: startDb
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         nodeIndex = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         // END SNIPPET: startDb

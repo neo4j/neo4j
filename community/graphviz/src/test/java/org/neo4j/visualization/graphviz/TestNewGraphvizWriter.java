@@ -48,7 +48,7 @@ public class TestNewGraphvizWriter
 	@Before
 	public void setUp()
 	{
-		neo = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  "target/neo" ).newGraphDatabase();
+		neo = new GraphDatabaseFactory().newEmbeddedDatabase(  "target/neo" );
 	}
 
 	@After

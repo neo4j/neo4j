@@ -66,14 +66,17 @@ public class TestIdReuse
         File storeDir = new File( "target/var/idreuse" );
         FileUtils.deleteRecursively( storeDir );
         File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).
+            setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).
+            newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
             setSomeAndRemoveSome( db.getReferenceNode(), value );
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
         for ( int i = 0; i < iterations; i++ )
         {
             setSomeAndRemoveSome( db.getReferenceNode(), value );

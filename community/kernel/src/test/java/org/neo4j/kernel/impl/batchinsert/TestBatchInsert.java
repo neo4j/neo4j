@@ -378,7 +378,7 @@ public class TestBatchInsert
         String storeDir = ((BatchInserterImpl)graphDb).getStore();
         graphDb.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Node realStartNode = db.getNodeById( startNode );
         Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
         Relationship realRelationship = db.getRelationshipById( relationship );
@@ -593,7 +593,7 @@ public class TestBatchInsert
         inserter.shutdown();
 
         // Delete node and all its relationships
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.getNodeById( nodeId );
         for ( Relationship relationship : node.getRelationships() )

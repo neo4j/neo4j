@@ -53,7 +53,7 @@ public abstract class AbstractTestBase
     public static final void beforeSuite()
     {
         deleteFileOrDirectory( new File( TARGET_NEODB ) );
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TARGET_NEODB ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( TARGET_NEODB );
     }
 
     @AfterClass

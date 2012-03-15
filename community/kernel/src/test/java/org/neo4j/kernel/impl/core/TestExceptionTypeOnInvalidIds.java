@@ -56,7 +56,7 @@ public class TestExceptionTypeOnInvalidIds
     {
         String storeDir = "target/var/id_test";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         graphDbReadOnly = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();

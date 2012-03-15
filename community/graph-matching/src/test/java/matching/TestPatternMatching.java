@@ -65,7 +65,7 @@ public class TestPatternMatching
 	@BeforeClass
 	public static void setUpDb()
 	{
-		graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  "target/var/db" ).newGraphDatabase();
+		graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(  "target/var/db" );
 	}
 	
 	@Before

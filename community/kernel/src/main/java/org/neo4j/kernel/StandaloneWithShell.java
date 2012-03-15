@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-
-import static org.neo4j.kernel.Config.*;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 /**
  * Standalone EmbeddedGraphDatabase with Shell enabled.
@@ -57,7 +57,7 @@ public class StandaloneWithShell
     private void initialize( Map<String, String> arguments )
     {
         String path = arguments.get( "path" );
-        this.embeddedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).setConfig( ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
+        this.embeddedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).setConfig( GraphDatabaseSettings.enable_remote_shell, GraphDatabaseSetting.TRUE ).newGraphDatabase();
         log.info( "Neo4j started at '" + path + "'" );
     }
 

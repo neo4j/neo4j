@@ -1043,7 +1043,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         String storeDir = "target/test-data/set-version";
         FileUtils.deleteRecursively( new File( storeDir ) );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
 

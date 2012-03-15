@@ -58,7 +58,7 @@ public class TestRecovery
     {
         String path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        return new GraphDatabaseFactory().newEmbeddedDatabase( path );
     }
     
     @Test
@@ -80,7 +80,7 @@ public class TestRecovery
         graphDb.shutdown();
         
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase();
+        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() );
         newGraphDb.shutdown();
     }
     
@@ -95,7 +95,7 @@ public class TestRecovery
         db.shutdown();
         
         // This doesn't seem to trigger recovery... it really should
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
     }
     
     @Test
@@ -108,7 +108,7 @@ public class TestRecovery
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 AddDeleteQuit.class.getName(), getDbPath() } ).waitFor() );
         
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getDbPath() ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
         db.shutdown();
     }
 

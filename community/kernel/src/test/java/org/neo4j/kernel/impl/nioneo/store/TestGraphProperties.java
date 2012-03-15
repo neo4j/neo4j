@@ -169,7 +169,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( getClass() ).directory( "zero", true ).getAbsolutePath() ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).directory( "zero", true ).getAbsolutePath() );
         String storeDir = db.getStoreDir();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -177,8 +177,8 @@ public class TestGraphProperties
         tx.success();
         tx.finish();
         db.shutdown();
-        
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( getClass() ).directory( "zero", false ).getAbsolutePath() ).newGraphDatabase();
+
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).directory( "zero", false ).getAbsolutePath() );
         tx = db.beginTx();
         db.getNodeManager().getGraphProperties().setProperty( "test", "something" );
         tx.success();
@@ -241,8 +241,8 @@ public class TestGraphProperties
     @Test
     public void upgradeDoesntAccidentallyAssignPropertyChainZero() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest(
-                        TestGraphProperties.class ).directory( "upgrade", true ).getAbsolutePath() ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest(
+                        TestGraphProperties.class ).directory( "upgrade", true ).getAbsolutePath() );
         String storeDir = db.getStoreDir();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -253,7 +253,7 @@ public class TestGraphProperties
         
         removeLastNeoStoreRecord( storeDir );
         
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() );
         tx = db.beginTx();
@@ -264,7 +264,7 @@ public class TestGraphProperties
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
         
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         properties = db.getNodeManager().getGraphProperties();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
@@ -298,7 +298,7 @@ public class TestGraphProperties
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 ProduceUncleanStore.class.getName(), storeDir } ).waitFor() );
         removeLastNeoStoreRecord( storeDir );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() ); 
         Transaction tx = db.beginTx();
@@ -320,7 +320,7 @@ public class TestGraphProperties
                 ProduceUncleanStore.class.getName(), storeDir, "true" } ).waitFor() );
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 ProduceUncleanStore.class.getName(), storeDir, "true" } ).waitFor() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         assertEquals( "Some value", db.getNodeManager().getGraphProperties().getProperty( "prop" ) );
         db.shutdown();
     }

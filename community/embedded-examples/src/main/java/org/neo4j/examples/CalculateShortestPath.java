@@ -44,7 +44,7 @@ public class CalculateShortestPath
     public static void main( final String[] args )
     {
         deleteFileOrDirectory( new File( DB_PATH ) );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         indexService = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         Transaction tx = graphDb.beginTx();

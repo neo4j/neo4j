@@ -78,7 +78,7 @@ public class TestOsSpecificLocks
     public void testDatabaseLocking()
     {
         assumeTrue( GraphDatabaseSetting.osIsWindows() );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
@@ -86,7 +86,7 @@ public class TestOsSpecificLocks
         assertTrue( new File( path + "\\lock" ).exists() );
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+            new GraphDatabaseFactory().newEmbeddedDatabase( path );
             fail("Should not be able to start up another db in the same dir");
         }
         catch ( Exception e )

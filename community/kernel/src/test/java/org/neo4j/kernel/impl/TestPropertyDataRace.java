@@ -212,8 +212,8 @@ public class TestPropertyDataRace
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest( TestPropertyDataRace.class ).graphDbDir( true )
-                                                            .getAbsolutePath() ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPropertyDataRace.class ).graphDbDir( true )
+                                                            .getAbsolutePath() );
     }
 
     @AfterClass

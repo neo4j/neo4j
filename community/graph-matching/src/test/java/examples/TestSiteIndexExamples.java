@@ -285,7 +285,7 @@ public class TestSiteIndexExamples
     @BeforeClass
     public static void startGraphDatabase()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/db" ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/db" );
     }
 
     @AfterClass

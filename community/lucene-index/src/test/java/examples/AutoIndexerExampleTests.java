@@ -140,7 +140,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         // START SNIPPET: APIAutoIndexer
 
         // Start without any configuration
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testAPI" ) ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getStoreDir( "testAPI" ) );
 
         // Get the Node AutoIndexer, set nodeProp1 and nodeProp2 as auto
         // indexed.
@@ -318,7 +318,7 @@ public class AutoIndexerExampleTests implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getAbsolutePath() ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getAbsolutePath() );
     }
 
     @AfterClass

@@ -41,7 +41,7 @@ public class TestChangingOfLogFormat
     {
         String storeDir = "target/var/oldlog";
         deleteFileOrDirectory( storeDir ); 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
@@ -54,7 +54,7 @@ public class TestChangingOfLogFormat
         
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             fail( "Shouldn't be able to do recovery (and upgrade log format version) on non-clean shutdown" );
         }
         catch ( Exception e )

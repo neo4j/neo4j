@@ -262,7 +262,7 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/db" ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/db" );
         Transaction tx = graphdb.beginTx();
         try
         {

@@ -47,7 +47,7 @@ public class TestShutdownSequence
     public @Before
     void createGraphDb()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStorePath( "shutdown" ) ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "shutdown" ) );
     }
 
     public @Test

@@ -47,7 +47,7 @@ public class JavaQuery
     void run()
     {
         // START SNIPPET: execute
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         // add some data first
         Transaction tx = db.beginTx();
         try

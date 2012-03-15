@@ -57,7 +57,7 @@ public class DbRepresentation implements Serializable
 
     public static DbRepresentation of( String storeDir )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
             return of( db );

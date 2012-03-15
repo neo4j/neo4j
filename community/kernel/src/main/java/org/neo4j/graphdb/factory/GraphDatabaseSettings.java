@@ -35,6 +35,9 @@ public abstract class GraphDatabaseSettings
     @Default( CacheTypeSetting.soft)
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
+    @Default(FALSE)
+    public static final BooleanSetting enable_remote_shell = new BooleanSetting( "enable_remote_shell" );
+
     @Default( TRUE)
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting("load_kernel_extensions");
 

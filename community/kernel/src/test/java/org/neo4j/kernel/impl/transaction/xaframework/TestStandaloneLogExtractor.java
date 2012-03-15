@@ -50,7 +50,7 @@ public class TestStandaloneLogExtractor
                 sourceDir, "" + cleanShutdown
         } ).waitFor();
 
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() ).newGraphDatabase();
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( sourceDir );
         long expectedTxId = 2;

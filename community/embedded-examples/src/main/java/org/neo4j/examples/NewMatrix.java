@@ -56,7 +56,7 @@ public class NewMatrix
     public void setUp()
     {
         deleteFileOrDirectory( new File( MATRIX_DB ) );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( MATRIX_DB ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();
     }

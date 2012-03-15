@@ -81,8 +81,8 @@ public abstract class AbstractNeo4jTestCase
         AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
 //        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
         graphDb = (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                                      new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStorePath( "neo-test" ) ).newGraphDatabase() :
-                                      new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase());
+                                      new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
+                                      new TestGraphDatabaseFactory().newImpermanentDatabase());
     }
 
     public GraphDatabaseAPI getEmbeddedGraphDb()

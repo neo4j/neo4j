@@ -33,7 +33,7 @@ public class RollbackUnclean
     public static void main( String[] args )
     {
         String storeDir = args[0];
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();

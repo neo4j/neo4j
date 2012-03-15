@@ -31,7 +31,7 @@ public class ProduceUncleanStore
     {
         String storeDir = args[0];
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );

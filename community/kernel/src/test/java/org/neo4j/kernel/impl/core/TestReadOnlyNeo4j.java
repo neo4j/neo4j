@@ -70,7 +70,7 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         DynamicRelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         Transaction tx = db.beginTx();
         Node prevNode = db.getReferenceNode();
         for ( int i = 0; i < 100; i++ )
@@ -90,7 +90,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();

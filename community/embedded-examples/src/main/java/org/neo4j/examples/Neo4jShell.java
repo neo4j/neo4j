@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.neo4j.graphdb.Direction;
@@ -33,7 +32,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -67,19 +67,9 @@ public class Neo4jShell
         shutdown();
     }
 
-    private static void startGraphDb()
-    {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
-    }
-
-    private static void startGraphDb( Map<String, String> settings )
-    {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).setConfig( settings ).newGraphDatabase();
-    }
-
     private static void startLocalShell() throws Exception
     {
-        startGraphDb();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         createExampleNodeSpace();
         ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
         new SameJvmClient( shellServer ).grabPrompt();
@@ -88,7 +78,10 @@ public class Neo4jShell
 
     private static void startRemoteShellAndWait() throws Exception
     {
-        startGraphDb( MapUtil.stringMap( "enable_remote_shell", "true" ) );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).
+            setConfig( GraphDatabaseSettings.enable_remote_shell, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
+
         createExampleNodeSpace();
         waitForUserInput( "Remote shell enabled, connect to it by executing\n"
                           + "the shell-client script in a separate terminal."

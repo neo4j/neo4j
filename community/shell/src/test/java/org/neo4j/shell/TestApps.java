@@ -260,7 +260,7 @@ public class TestApps extends AbstractShellTest
     {
         String storeDir = "target/test-data/db";
         FileUtils.deleteRecursively( new File( storeDir ) );
-        GraphDatabaseService newDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService newDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = newDb.beginTx();
         newDb.getReferenceNode().delete();
         Node node = newDb.createNode();

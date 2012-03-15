@@ -59,7 +59,7 @@ public class TestTxEntries
         streams.done();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
     }
     
     @Test

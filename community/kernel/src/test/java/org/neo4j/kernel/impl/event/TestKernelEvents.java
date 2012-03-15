@@ -45,7 +45,7 @@ public class TestKernelEvents
     @Test
     public void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
@@ -103,7 +103,7 @@ public class TestKernelEvents
     @Test
     public void testShutdownEvents()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/var/neodb" ).newGraphDatabase();
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/neodb" );
         DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             public ExecutionOrder orderComparedTo( KernelEventHandler other )

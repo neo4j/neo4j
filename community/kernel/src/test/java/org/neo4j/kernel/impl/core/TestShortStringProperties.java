@@ -48,7 +48,7 @@ public class TestShortStringProperties extends TestShortString
     @BeforeClass
     public static void startup()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getAbsolutePath() ).newGraphDatabase();
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getAbsolutePath() );
     }
 
     @AfterClass

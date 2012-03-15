@@ -81,7 +81,7 @@ public class TestProperties extends AbstractNeo4jTestCase
          */
         String path = TargetDirectory.forTest( TestProperties.class ).directory(
                 "empty-string" ).getCanonicalPath();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         long nodeId = node.getId();
@@ -90,7 +90,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         tx.finish();
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
         db.shutdown();
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
     }
 

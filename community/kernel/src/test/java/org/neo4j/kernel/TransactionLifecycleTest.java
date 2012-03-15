@@ -40,7 +40,7 @@ public class TransactionLifecycleTest
     @Before
     public void startGraphdb()
     {
-        this.graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.graphDbDir( true ).getPath() ).newGraphDatabase();
+        this.graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getPath() );
     }
 
     @After

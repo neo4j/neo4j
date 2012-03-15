@@ -29,7 +29,7 @@ public class DoSomeTransactionsThenWait
     public static void main( String[] args ) throws Exception
     {
         String storeDir = args[0];
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         int count = Integer.parseInt( args[1] );
         for ( int i = 0; i < count; i++ )
         {

@@ -33,7 +33,7 @@ public class AddDeleteQuit
 {
     public static void main( String[] args )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( args[0] ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
         Index<Node> index = db.index().forNodes( "index" );
         Transaction tx = db.beginTx();
         try

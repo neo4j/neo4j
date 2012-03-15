@@ -44,7 +44,7 @@ public class TestShortString
     public void doBefore()
     {
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( PATH ) );
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
     }
     
     @After
@@ -220,7 +220,7 @@ public class TestShortString
     {
         db.shutdown();
         long size = new File( PATH, "neostore.propertystore.db.strings" ).length();
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         return size;
     }
 

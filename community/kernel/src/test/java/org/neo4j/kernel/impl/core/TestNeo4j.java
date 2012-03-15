@@ -256,7 +256,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     {
         String storePath = getStorePath( "test-neo2" );
         deleteFileOrDirectory( storePath );
-        GraphDatabaseService graphDb2 = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storePath ).newGraphDatabase();
+        GraphDatabaseService graphDb2 = new GraphDatabaseFactory().newEmbeddedDatabase( storePath );
         Transaction tx2 = graphDb2.beginTx();
         getGraphDb().createNode();
         graphDb2.createNode();

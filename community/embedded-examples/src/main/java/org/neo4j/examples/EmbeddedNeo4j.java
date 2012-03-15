@@ -60,7 +60,7 @@ public class EmbeddedNeo4j
     {
         clearDb();
         // START SNIPPET: startDb
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         registerShutdownHook( graphDb );
         // END SNIPPET: startDb
 

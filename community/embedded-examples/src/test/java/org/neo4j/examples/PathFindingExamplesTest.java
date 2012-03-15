@@ -58,7 +58,7 @@ public class PathFindingExamplesTest
     {
         String storeDir = "target/var/examples";
         deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @Before

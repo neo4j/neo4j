@@ -608,7 +608,7 @@ public class TestIdGenerator
     {
         String storeDir = "target/var/free-id-once";
         deleteRecursively( new File( storeDir ) );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
         Node rootNode = db.getReferenceNode();
 
@@ -639,7 +639,7 @@ public class TestIdGenerator
 
         // After a clean shutdown, create new nodes and relationships and see so that
         // all ids are unique.
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         rootNode = db.getReferenceNode();
         tx = db.beginTx();
         for ( int i = 0; i < 100; i++ )

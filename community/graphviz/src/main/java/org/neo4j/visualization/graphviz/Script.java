@@ -164,7 +164,7 @@ public class Script extends ConfigurationParser
 
     protected GraphDatabaseService createGraphDb()
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir() ).newGraphDatabase();
+        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
     }
 
     protected Walker createGraphWalker( GraphDatabaseService graphdb )

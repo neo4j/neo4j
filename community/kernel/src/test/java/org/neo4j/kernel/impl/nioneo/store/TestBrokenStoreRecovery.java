@@ -64,6 +64,6 @@ public class TestBrokenStoreRecovery
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
         File log = new File( storeDir, "nioneo_logical.log.1" );
         trimFileToSize( log, 78 );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
     }
 }
