@@ -50,7 +50,20 @@ public class GraphProperties extends Primitive implements PropertyContainer
         super( false );
         this.nodeManager = nodeManager;
     }
+    
+    public int size()
+    {
+        // only one instance of this and will never go into cache
+        throw new UnsupportedOperationException();
+    }
 
+    @Override
+    protected void updateSize( int before, int after, NodeManager nodeManager )
+    {
+        // only one instance of this and will never go into cache
+        throw new UnsupportedOperationException();
+    }
+    
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
@@ -169,7 +182,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
 
     @Override
-    protected void setProperties( ArrayMap<Integer, PropertyData> loadedProperties )
+    protected void setProperties( ArrayMap<Integer, PropertyData> loadedProperties, NodeManager nodeManager )
     {
         if ( loadedProperties != null && loadedProperties.size() > 0 )
         {

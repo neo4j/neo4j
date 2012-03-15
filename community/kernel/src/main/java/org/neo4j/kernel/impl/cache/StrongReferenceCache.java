@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.Map;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StrongReferenceCache<K,V> implements Cache<K,V>
+public class StrongReferenceCache<E extends EntityWithSize> implements Cache<E>
 {
     private final String name;
-    private final ConcurrentHashMap<K, V> cache = new ConcurrentHashMap<K, V>();
+    private final ConcurrentHashMap<Long,E> cache = new ConcurrentHashMap<Long,E>();
+
+    private final HitCounter counter = new HitCounter();
+
 
     public StrongReferenceCache( String name )
     {
@@ -37,11 +41,7 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
         cache.clear();
     }
 
-    public void elementCleaned( V value )
-    {
-    }
-
-    public V get( K key )
+    public E get( long key )
     {
         return counter.count( cache.get( key ) );
     }
@@ -51,32 +51,28 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
         return name;
     }
 
-    public boolean isAdaptive()
-    {
-        return false;
-    }
-
     public int maxSize()
     {
         return Integer.MAX_VALUE;
     }
 
-    public void put( K key, V value )
+    public void put( E value )
     {
-        cache.put( key, value );
+        cache.put( value.getId(), value );
     }
 
-    public void putAll( Map<K, V> map )
+    public void putAll( List<E> list )
     {
-        cache.putAll( map );
+        for ( E entity : list )
+        {
+            cache.put( entity.getId(), entity );
+        }
     }
 
-    public V remove( K key )
+    public E remove( long key )
     {
         return cache.remove( key );
     }
-
-    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()
@@ -90,16 +86,23 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
         return counter.getMissCount();
     }
 
-    public void resize( int newSize )
-    {
-    }
-
-    public void setAdaptiveStatus( boolean status )
-    {
-    }
-
-    public int size()
+    public long size()
     {
         return cache.size();
+    }
+
+    @Override
+    public void putAll( Collection<E> values )
+    {
+        for ( E entity : values )
+        {
+            cache.put( entity.getId(), entity );
+        }
+    }
+
+    @Override
+    public void updateSize( E entity, int sizeBefore, int sizeAfter )
+    {
+        // do nothing
     }
 }

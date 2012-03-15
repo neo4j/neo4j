@@ -221,6 +221,15 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
         appendProvider( extractedProvider( extractor, source ) );
     }
 
+    public <T> T tryAppendProvider( T protentialProvider )
+    {
+        if ( protentialProvider instanceof DiagnosticsProvider )
+        {
+            appendProvider( (DiagnosticsProvider) protentialProvider );
+        }
+        return protentialProvider;
+    }
+
     public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void registerAll( Class<E> extractorEnum, T source )
     {
         for ( DiagnosticsExtractor<T> extractor : extractorEnum.getEnumConstants() )

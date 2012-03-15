@@ -24,13 +24,14 @@ import java.util.List;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class Primitive
+abstract class Primitive implements EntityWithSize
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
@@ -59,7 +60,7 @@ abstract class Primitive
 
     protected abstract PropertyData getPropertyForIndex( int keyId );
     
-    protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties );
+    protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager );
     
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
@@ -566,7 +567,7 @@ abstract class Primitive
         // double checked locking
         if ( allProperties() == null ) synchronized ( this )
         {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ) );
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ), nodeManager );
         }
     }
 
@@ -575,7 +576,7 @@ abstract class Primitive
         // double checked locking
         if ( allProperties() == null ) synchronized ( this )
         {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ) );
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ), nodeManager );
         }
     }
 
@@ -615,4 +616,6 @@ abstract class Primitive
     public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
     
     abstract PropertyContainer asProxy( NodeManager nm );
+
+    abstract protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager );
 }

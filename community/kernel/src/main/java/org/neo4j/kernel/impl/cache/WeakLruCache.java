@@ -21,49 +21,54 @@ package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WeakLruCache<K,V> extends ReferenceCache<K,V>
+public class WeakLruCache<E extends EntityWithSize> extends ReferenceCache<E>
 {
-    private final ConcurrentHashMap<K,WeakValue<K,V>> cache =
-        new ConcurrentHashMap<K,WeakValue<K,V>>();
+    private final ConcurrentHashMap<Long,WeakValue<Long,E>> cache =
+        new ConcurrentHashMap<Long,WeakValue<Long,E>>();
 
-    private final WeakReferenceQueue<K,V> refQueue =
-        new WeakReferenceQueue<K,V>();
+    private final WeakReferenceQueue<Long,E> refQueue =
+        new WeakReferenceQueue<Long,E>();
 
     private final String name;
+
+    private final HitCounter counter = new HitCounter();
 
     public WeakLruCache( String name )
     {
         this.name = name;
     }
 
-    public void put( K key, V value )
+    public void put( E value )
     {
-        WeakValue<K,V> ref =
-            new WeakValue<K,V>( key, value, (ReferenceQueue<V>) refQueue );
+        Long key = value.getId();
+        WeakValue<Long,E> ref =
+            new WeakValue<Long,E>( key, value, (ReferenceQueue) refQueue );
         cache.put( key, ref );
         pollClearedValues();
     }
 
-    public void putAll( Map<K,V> map )
+    public void putAll( Collection<E> entities )
     {
-        Map<K,WeakValue<K,V>> softMap = new HashMap<K,WeakValue<K,V>>( map.size() * 2 );
-        for ( Map.Entry<K, V> entry : map.entrySet() )
+        Map<Long,WeakValue<Long,E>> softMap = new HashMap<Long,WeakValue<Long,E>>( entities.size() * 2 );
+        for ( E entity : entities )
         {
-            WeakValue<K,V> ref =
-                new WeakValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
-            softMap.put( entry.getKey(), ref );
+            Long key = entity.getId();
+            WeakValue<Long,E> ref =
+                new WeakValue<Long,E>( key, entity, (ReferenceQueue) refQueue );
+            softMap.put( key, ref );
         }
         cache.putAll( softMap );
         pollClearedValues();
     }
 
-    public V get( K key )
+    public E get( long key )
     {
-        WeakReference<V> ref = cache.get( key );
+        WeakReference<E> ref = cache.get( key );
         if ( ref != null )
         {
             if ( ref.get() == null )
@@ -72,12 +77,12 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
             }
             return counter.count( ref.get() );
         }
-        return counter.<V>count( null );
+        return counter.<E>count( null );
     }
 
-    public V remove( K key )
+    public E remove( long key )
     {
-        WeakReference<V> ref = cache.remove( key );
+        WeakReference<E> ref = cache.remove( key );
         if ( ref != null )
         {
             return ref.get();
@@ -88,7 +93,7 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
     @Override
     protected void pollClearedValues()
     {
-        WeakValue<K,V> clearedValue = refQueue.safePoll();
+        WeakValue<Long,E> clearedValue = refQueue.safePoll();
         while ( clearedValue != null )
         {
             cache.remove( clearedValue.key );
@@ -96,7 +101,7 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
         }
     }
 
-    public int size()
+    public long size()
     {
         return cache.size();
     }
@@ -105,8 +110,6 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
     {
         cache.clear();
     }
-
-    private final HitCounter counter = new HitCounter();
 
     @Override
     public long hitCount()
@@ -120,30 +123,14 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
         return counter.getMissCount();
     }
 
-    public void elementCleaned( V value )
-    {
-    }
-
     public String getName()
     {
         return name;
     }
 
-    public boolean isAdaptive()
+    @Override
+    public void updateSize( E entity, int sizeBefore, int sizeAfter )
     {
-        return true;
-    }
-
-    public int maxSize()
-    {
-        return -1;
-    }
-
-    public void resize( int newSize )
-    {
-    }
-
-    public void setAdaptiveStatus( boolean status )
-    {
+        // do nothing
     }
 }
