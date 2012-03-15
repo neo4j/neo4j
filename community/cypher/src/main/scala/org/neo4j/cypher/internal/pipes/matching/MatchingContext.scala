@@ -24,6 +24,7 @@ import collection.immutable.Map
 import collection.{Traversable, Seq}
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
+import collection.mutable.{Map => MutableMap}
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound

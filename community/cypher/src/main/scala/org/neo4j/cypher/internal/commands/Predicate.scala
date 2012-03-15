@@ -26,6 +26,7 @@ import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyCont
 import org.neo4j.cypher.internal.pipes.Dependant
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import collection.Map
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)

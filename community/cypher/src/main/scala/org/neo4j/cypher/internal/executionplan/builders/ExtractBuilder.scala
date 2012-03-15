@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.symbols.Identifier
+import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
 
 class ExtractBuilder extends PlanBuilder {
   def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
     case (p, q) => {
-      (ExtractBuilder.extractIfNecessary(p, q.returns.map(_.token.expression)), q.copy(extracted = true))
+      ExtractBuilder.extractIfNecessary(q, p, q.returns.map(_.token.expression))
     }
   }
 
@@ -38,13 +39,20 @@ class ExtractBuilder extends PlanBuilder {
 }
 
 object ExtractBuilder {
-  def extractIfNecessary(p: Pipe, expressions: Seq[Expression]): Pipe = {
+
+  def extractIfNecessary(psq : PartiallySolvedQuery, p: Pipe, expressions: Seq[Expression]): (Pipe,PartiallySolvedQuery) = {
     val missing = p.symbols.missingExpressions(expressions)
 
     if (missing.nonEmpty) {
-      new ExtractPipe(p, expressions)
+      val newPsq = expressions.foldLeft(psq)( (psq, exp) => psq.rewrite(fromQueryExpression =>
+        if (exp == fromQueryExpression)
+          CachedExpression(fromQueryExpression.identifier.name, fromQueryExpression.identifier)
+        else
+          fromQueryExpression
+      ))
+      (new ExtractPipe(p, expressions),newPsq.copy(extracted = true))
     } else {
-      p
+      (p,psq.copy(extracted = true))
     }
   }
 }

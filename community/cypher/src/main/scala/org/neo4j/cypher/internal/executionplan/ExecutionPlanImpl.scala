@@ -25,6 +25,7 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
+import collection.mutable.{Map => MutableMap}
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
@@ -56,10 +57,10 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       checkForMissingPredicates(query, pipe)
     }
 
-
     val func = (params: Map[String, Any]) => {
       val start = System.currentTimeMillis()
-      val results = pipe.createResults(params)
+      val newMap = MutableMap() ++ params
+      val results = pipe.createResults(newMap)
       val timeTaken = System.currentTimeMillis() - start
 
       new PipeExecutionResult(results, pipe.symbols, inputQuery.returns.columns, timeTaken)

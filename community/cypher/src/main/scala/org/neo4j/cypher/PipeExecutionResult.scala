@@ -25,12 +25,13 @@ import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, No
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
 import internal.symbols.SymbolTable
-
-
-class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
+import collection.Map
+import collection.immutable.{Map => ImmutableMap}
+class PipeExecutionResult(r: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
   extends ExecutionResult
   with StringExtras {
-  
+
+  lazy val immutableResult = r.map( m => m.toMap )
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
@@ -66,7 +67,7 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: Sy
   }
 
   def dumpToString(writer: PrintWriter) {
-    val eagerResult = result.toList
+    val eagerResult = r.toList
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
@@ -121,10 +122,10 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: Sy
     }).mkString("| ", " | ", " |")
   }
 
-  val iterator = result.toIterator
+  lazy val iterator = immutableResult.toIterator
 
   def hasNext: Boolean = iterator.hasNext
 
-  def next(): Map[String, Any] = iterator.next()
+  def next(): ImmutableMap[String, Any] = iterator.next()
 }
 

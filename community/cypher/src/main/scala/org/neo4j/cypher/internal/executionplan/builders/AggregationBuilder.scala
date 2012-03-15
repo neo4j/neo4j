@@ -26,14 +26,15 @@ import org.neo4j.cypher.internal.commands.{Entity, AggregationExpression}
 class AggregationBuilder extends PlanBuilder {
   def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
     case (p, q) => {
-      val aggregationExpressions = q.aggregation.map(_.token)
-      val keyExpressions = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
+      val keyExpressionsToExtract = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
 
-      val extractor = ExtractBuilder.extractIfNecessary(p, keyExpressions)
+      val (extractor,newPsq) = ExtractBuilder.extractIfNecessary(q,p, keyExpressionsToExtract)
 
+      val keyExpressions = newPsq.returns.map(_.token.expression).filterNot(_.containsAggregate)
+      val aggregationExpressions = newPsq.aggregation.map(_.token)
       val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
 
-      val notKeyAndNotAggregate = q.returns.map(_.token.expression).filterNot(keyExpressions.contains)
+      val notKeyAndNotAggregate = newPsq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
 
       val resultPipe = if (notKeyAndNotAggregate.isEmpty) {
         aggregator
@@ -49,9 +50,9 @@ class AggregationBuilder extends PlanBuilder {
         new ExtractPipe(aggregator, rewritten)
       }
 
-      (resultPipe, q.copy(
-        aggregation = q.aggregation.map(_.solve),
-        aggregateQuery = q.aggregateQuery.solve,
+      (resultPipe, newPsq.copy(
+        aggregation = newPsq.aggregation.map(_.solve),
+        aggregateQuery = newPsq.aggregateQuery.solve,
         extracted = true
       ))
     }

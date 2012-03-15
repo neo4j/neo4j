@@ -23,10 +23,14 @@ import java.lang.String
 import org.neo4j.cypher._
 import internal.symbols._
 import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
-import collection.Seq
+import collection.Map
 
 abstract class Expression extends (Map[String, Any] => Any) {
-  def identifier: Identifier
+
+  protected def compute(v1: Map[String, Any]) : Any
+  def apply(m: Map[String, Any]) = m.getOrElse(identifier.name, compute(m))
+
+  val identifier: Identifier
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier]
 
@@ -48,10 +52,22 @@ abstract class Expression extends (Map[String, Any] => Any) {
   override def toString() = identifier.name
 }
 
-case class Add(a: Expression, b: Expression) extends Expression {
-  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+case class CachedExpression(key:String, identifier:Identifier) extends Expression {
+  override def apply(m: Map[String, Any]) = m(key)
 
-  def apply(m: Map[String, Any]) = {
+  protected def compute(v1: Map[String, Any]) = null
+
+  def declareDependencies(extectedType: AnyType) = Seq()
+
+  def rewrite(f: (Expression) => Expression) = f(this)
+
+  def filter(f: (Expression) => Boolean) = if(f(this)) Seq(this) else Seq()
+}
+
+case class Add(a: Expression, b: Expression) extends Expression {
+  val identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+
+  def compute(m: Map[String, Any]) = {
     val aVal = a(m)
     val bVal = b(m)
 
@@ -134,7 +150,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  def identifier = Identifier("%s %s %s".format(left.identifier.name, operand, right.identifier.name), ScalarType())
+  val identifier = Identifier("%s %s %s".format(left.identifier.name, operand, right.identifier.name), ScalarType())
 
   def operand: String
 
@@ -149,7 +165,7 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
     case _ => x.toString
   }
 
-  def apply(m: Map[String, Any]) = {
+  def compute(m: Map[String, Any]) = {
     val aVal = left(m)
     val bVal = right(m)
 
@@ -176,9 +192,9 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 }
 
 case class Literal(v: Any) extends Expression {
-  def apply(m: Map[String, Any]) = v
+  def compute(m: Map[String, Any]) = v
 
-  def identifier = Identifier(v.toString, AnyType.fromJava(v))
+  val identifier = Identifier(v.toString, AnyType.fromJava(v))
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 
@@ -195,9 +211,9 @@ abstract class CastableExpression extends Expression {
 }
 
 case class Nullable(expression: Expression) extends Expression {
-  def identifier = Identifier(expression.identifier.name + "?", expression.identifier.typ)
+  val identifier = Identifier(expression.identifier.name + "?", expression.identifier.typ)
 
-  def apply(m: Map[String, Any]) = try {
+  def compute(m: Map[String, Any]) = try {
     expression.apply(m)
   } catch {
     case x: EntityNotFoundException => null
@@ -216,7 +232,7 @@ case class Nullable(expression: Expression) extends Expression {
 }
 
 case class Property(entity: String, property: String) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = {
+  def compute(m: Map[String, Any]): Any = {
     m(entity).asInstanceOf[PropertyContainer] match {
       case null => null
       case propertyContainer => try {
@@ -227,7 +243,7 @@ case class Property(entity: String, property: String) extends CastableExpression
     }
   }
 
-  def identifier: Identifier = Identifier(entity + "." + property, ScalarType())
+  val identifier: Identifier = Identifier(entity + "." + property, ScalarType())
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
 
@@ -240,9 +256,9 @@ case class Property(entity: String, property: String) extends CastableExpression
 }
 
 case class Entity(entityName: String) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
+  def compute(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
-  def identifier: Identifier = Identifier(entityName, AnyType())
+  val identifier: Identifier = Identifier(entityName, AnyType())
 
   override def toString(): String = entityName
 
@@ -257,9 +273,9 @@ case class Entity(entityName: String) extends CastableExpression {
 }
 
 case class Collection(expressions:Expression*) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = expressions.map(e=>e(m))
+  def compute(m: Map[String, Any]): Any = expressions.map(e=>e(m))
 
-  def identifier: Identifier = Identifier(name, AnyIterableType())
+  val identifier: Identifier = Identifier(name, AnyIterableType())
   
   private def name = expressions.map(_.identifier.name).mkString("[", ", ", "]")
 
@@ -274,12 +290,12 @@ case class Collection(expressions:Expression*) extends CastableExpression {
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-" + parameterName + "-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
+  def compute(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-" + parameterName + "-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
     case ParameterValue(x) => x
     case _ => throw new ParameterNotFoundException("Expected a parameter named " + parameterName)
   }
 
-  def identifier: Identifier = Identifier(parameterName, AnyType())
+  val identifier: Identifier = Identifier(parameterName, AnyType())
 
   override def toString(): String = "{" + parameterName + "}"
 

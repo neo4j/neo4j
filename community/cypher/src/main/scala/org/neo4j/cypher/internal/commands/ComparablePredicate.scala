@@ -23,6 +23,7 @@ import collection.Seq
 import org.neo4j.cypher.internal.Comparer
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{AnyType, ScalarType, Identifier}
+import collection.Map
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean

@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.commands
 
 import org.scalatest.Assertions
-import org.junit.Test
+import collection.Map
+import org.junit.{Assert, Test}
+import org.neo4j.cypher.internal.symbols.{Identifier, AnyType}
 
 
 class CoalesceTest extends Assertions {
@@ -39,4 +41,21 @@ class CoalesceTest extends Assertions {
     assert( func(Map()) === "Alistair" )
   }
 
+  @Test def coalesce_should_be_lazy() {
+    val func = new CoalesceFunction(Literal("Hunger"), BreakingExpression())
+    assert( func(Map()) === "Hunger" )
+  }
+
+}
+
+case class BreakingExpression() extends Expression {
+  protected def compute(v1: Map[String, Any]) = Assert.fail("Coalesce is not lazy")
+
+  val identifier = Identifier("breaking",AnyType())
+
+  def declareDependencies(extectedType: AnyType) = null
+
+  def rewrite(f: (Expression) => Expression) = null
+
+  def filter(f: (Expression) => Boolean) = null
 }

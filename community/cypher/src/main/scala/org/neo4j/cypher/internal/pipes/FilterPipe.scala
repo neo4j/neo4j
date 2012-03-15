@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.commands.Predicate
+import collection.mutable.Map
 
 class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols

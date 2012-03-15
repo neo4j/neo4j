@@ -23,6 +23,7 @@ import matching.MatchingContext
 import java.lang.String
 import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, Predicate, Pattern}
 import org.neo4j.cypher.internal.symbols._
+import collection.mutable.Map
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
@@ -40,7 +41,11 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]
 
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
-    source.createResults(params).flatMap(sourcePipeRow => matchingContext.getMatches(sourcePipeRow))
+    source.createResults(params).flatMap(sourcePipeRow => {
+      matchingContext.getMatches(sourcePipeRow.toMap).map( patternMatch => {
+        sourcePipeRow ++ patternMatch
+      })
+    })
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"
 }

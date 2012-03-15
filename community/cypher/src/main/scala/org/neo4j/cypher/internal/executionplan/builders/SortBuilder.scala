@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.pipes.{SortPipe, Pipe}
 class SortBuilder extends PlanBuilder {
   def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
     case (p, q) => {
-      val sortItems = q.sort.map(_.token)
-      val sortExpressions = sortItems.map(_.expression)
+      val sortExpressionsToExtract = q.sort.map(_.token).map(_.expression)
 
-      val pipe = ExtractBuilder.extractIfNecessary(p, sortExpressions)
+      val (pipe, newPsq) = ExtractBuilder.extractIfNecessary(q,p, sortExpressionsToExtract)
 
+      val sortItems = newPsq.sort.map(_.token)
       val resultPipe = new SortPipe(pipe, sortItems.toList)
 
-      (resultPipe, q.copy(sort = q.sort.map(_.solve)))
+      (resultPipe, newPsq.copy(sort = newPsq.sort.map(_.solve)))
     }
   }
 

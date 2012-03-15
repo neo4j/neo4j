@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.commands
 import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, NumberType}
 import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
+import collection.Map
 
 abstract class MathFunction(arg: Expression) extends Expression {
   protected def asDouble(a: Any) = try {
@@ -35,7 +36,7 @@ abstract class MathFunction(arg: Expression) extends Expression {
 
   def innerExpectedType = NumberType()
 
-  def identifier = Identifier(toString(), NumberType())
+  val identifier = Identifier(toString(), NumberType())
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = arg.dependencies(AnyType())
 
@@ -52,7 +53,7 @@ abstract class MathFunction(arg: Expression) extends Expression {
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.abs(asDouble(argument(m)))
+  def compute(m: Map[String, Any]): Any = Math.abs(asDouble(argument(m)))
 
   protected def name = "abs"
 
@@ -60,7 +61,7 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.signum(asDouble(argument(m)))
+  def compute(m: Map[String, Any]): Any = Math.signum(asDouble(argument(m)))
 
   protected def name = "sign"
 
@@ -68,7 +69,7 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
 }
 
 case class RoundFunction(expression: Expression) extends MathFunction(expression) {
-  def apply(m: Map[String, Any]): Any = math.round(asDouble(expression(m)))
+  def compute(m: Map[String, Any]): Any = math.round(asDouble(expression(m)))
 
   protected def name = "round"
 
@@ -76,7 +77,7 @@ case class RoundFunction(expression: Expression) extends MathFunction(expression
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.sqrt(asDouble(argument(m))).toInt
+  def compute(m: Map[String, Any]): Any = Math.sqrt(asDouble(argument(m))).toInt
 
   protected def name = "sqrt"
 

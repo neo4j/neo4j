@@ -26,7 +26,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{NamedPath, NodeById, RelatedTo, True}
 import org.neo4j.cypher.internal.symbols.{RelationshipType, SymbolTable, Identifier, NodeType}
-
+import collection.mutable.Map
 
 class NamedPathBuilderTest extends PipeBuilder {
   val builder = new NamedPathBuilder

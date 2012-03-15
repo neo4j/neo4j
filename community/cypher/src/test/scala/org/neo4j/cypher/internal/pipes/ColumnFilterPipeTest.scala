@@ -24,6 +24,7 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.internal.commands.{Entity, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
+import collection.mutable.Map
 
 class ColumnFilterPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {

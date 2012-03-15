@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{Identifier, AnyIterableType}
+import collection.Map
 
 abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean

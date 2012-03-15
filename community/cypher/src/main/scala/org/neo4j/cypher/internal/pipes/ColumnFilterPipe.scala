@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
-import collection.Seq
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import collection.mutable.Map
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   extends PipeWithSource(source) {
@@ -35,12 +34,10 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   }
     
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val intermediate = source.createResults(params)
-    intermediate.map(m => {
-      val onlyRelevantValuesBeforeRenaming = m.filterKeys(key => returnItems.exists(ri => ri.expression.identifier.name == key))
-      onlyRelevantValuesBeforeRenaming.map {
-        case (key, value) => (returnItems.find(ri => ri.expression.identifier.name == key).get.columnName -> value)
-      }
+    source.createResults(params).map(m => {
+      val newMap = Map[String,Any]()
+      for (ri <- returnItems) newMap += (ri.columnName -> m(ri.expression.identifier.name))
+      newMap
     })
   }
 
