@@ -26,9 +26,20 @@ import java.util.Set;
 import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
 
 /**
- * Generates the default neo4j.properties file by using the {@link GraphDatabaseSettingsResourceBundle}
+ * Generates Asciidoc by using the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
+ * Format
+ * <pre>
+ * .Title
+ * [configsetting]
+ * ----
+ * key: default_value
+ * description
+ * value1: (description1)
+ * value2: (description2)
+ * ----
+ * </pre>
  */
-public class GenerateDefaultNeo4jProperties
+public class GenerateNeo4jSettingsAsciidoc
 {
     public static void main( String[] args )
     {
@@ -39,9 +50,30 @@ public class GenerateDefaultNeo4jProperties
         {
             if (property.endsWith( ".description" ))
             {
-                // Output description
                 String name = property.substring( 0, property.lastIndexOf( "." ) );
-                System.out.println( "# "+bundle.getString( property ) );
+                System.out.println("."+bundle.getString( name+".title" ));
+                
+                String minmax = "";
+                if (bundle.containsKey( name+".min" ) && bundle.containsKey( name+".max" ))
+                    minmax=",\"minmax\"";
+                else if (bundle.containsKey( name+".min" ))
+                    minmax=",\"minmax\"";
+                else if (bundle.containsKey( name+".max" ))
+                    minmax=",\"minmax\"";
+
+                System.out.println( "[\"configsetting\""+minmax+"]" );
+                System.out.println( "----" );
+
+                String defaultKey = name + ".default";
+                if (bundle.containsKey( defaultKey ))
+                {
+                    System.out.println( name+": "+bundle.getString( defaultKey ) );
+                } else
+                {
+                    System.out.println( name );
+                }
+
+                System.out.println( bundle.getString( property ) );
                 
                 // Output optional options
                 String optionsKey = name+".options";
@@ -50,30 +82,27 @@ public class GenerateDefaultNeo4jProperties
                     String[] options = bundle.getString( optionsKey ).split( "," );
                     if (bundle.containsKey( name+".option."+options[0] ))
                     {
-                        System.out.println("# Valid settings:");
                         for( String option : options )
                         {
                             String description = bundle.getString( name + ".option." + option );
-                            char[] spaces = new char[ option.length() + 3 ];
+                            char[] spaces = new char[ option.length() + 2 ];
                             Arrays.fill( spaces,' ' );
-                            description = description.replace( "\n", "\n#"+ new String( spaces ) );
-                            System.out.println("# "+option+": "+ description );
+                            description = description.replace( "\n", " ");
+                            System.out.println(option+": "+ description );
                         }
                     } else
                     {
-                        System.out.println("# Valid settings:"+bundle.getString( optionsKey ));
+                        System.out.println(bundle.getString( optionsKey ).replace( ","," \n" ));
                     }
                 }
-                
-                String defaultKey = name + ".default";
-                if (bundle.containsKey( defaultKey ))
-                {
-                    System.out.println( name+"="+bundle.getString( defaultKey ) );
-                } else
-                {
-                    System.out.println( "# "+name+"=" );
-                }
-                System.out.println( );
+
+                if (bundle.containsKey( name+".min" ))
+                    System.out.println(bundle.getString( name+".min" ));
+                if (bundle.containsKey( name+".max" ))
+                    System.out.println(bundle.getString( name+".max" ));
+
+                System.out.println( "----" );
+                System.out.println( "" );
             }
         }
     }

@@ -70,13 +70,50 @@ public abstract class GraphDatabaseSetting
             }
         }
     }
-
-    public static class IntegerSetting
+    
+    public static abstract class NumberSetting<T extends Number>
         extends GraphDatabaseSetting
     {
+        protected T min;
+        protected T max;
+
+        protected NumberSetting( String name )
+        {
+            super( name );
+        }
+
+        protected NumberSetting( String name, T min, T max )
+        {
+            super( name );
+            this.min = min;
+            this.max = max;
+        }
+        
+        protected void rangeCheck(Comparable value)
+        {
+            // Check range
+            if (min != null && value.compareTo( min ) < 0)
+                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
+
+            if (max != null && value.compareTo( max ) > 0)
+                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+        }
+
+        public T getMin()
+        {
+            return min;
+        }
+
+        public T getMax()
+        {
+            return max;
+        }
+    }
+    
+    public static class IntegerSetting
+        extends NumberSetting<Integer>
+    {
         private String formatMessage;
-        private Integer min;
-        private Integer max;
 
         public IntegerSetting( String name, String formatMessage )
         {
@@ -86,10 +123,8 @@ public abstract class GraphDatabaseSetting
 
         public IntegerSetting( String name, String formatMessage, Integer min, Integer max )
         {
-            super( name );
+            super( name, min, max );
             this.formatMessage = formatMessage;
-            this.min = min;
-            this.max = max;
         }
 
         @Override
@@ -105,21 +140,14 @@ public abstract class GraphDatabaseSetting
                 throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
-            // Check range
-            if (min != null && val < min)
-                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
-
-            if (max != null && val > max)
-                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+            rangeCheck( val );
         }
     }
 
     public static class LongSetting
-        extends GraphDatabaseSetting
+        extends NumberSetting<Long>
     {
         private String formatMessage;
-        private Long min;
-        private Long max;
 
         public LongSetting( String name, String formatMessage )
         {
@@ -129,10 +157,8 @@ public abstract class GraphDatabaseSetting
 
         public LongSetting( String name, String formatMessage, Long min, Long max )
         {
-            super( name );
+            super( name, min, max );
             this.formatMessage = formatMessage;
-            this.min = min;
-            this.max = max;
         }
 
         @Override
@@ -148,21 +174,14 @@ public abstract class GraphDatabaseSetting
                 throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
-            // Check range
-            if (min != null && val < min)
-                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
-
-            if (max != null && val > max)
-                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+            rangeCheck( val );
         }
     }
 
     public static class FloatSetting
-        extends GraphDatabaseSetting
+        extends NumberSetting<Float>
     {
         private String formatMessage;
-        private Float min;
-        private Float max;
 
         public FloatSetting( String name, String formatMessage )
         {
@@ -172,10 +191,8 @@ public abstract class GraphDatabaseSetting
 
         public FloatSetting( String name, String formatMessage, Float min, Float max )
         {
-            super( name );
+            super( name, min, max);
             this.formatMessage = formatMessage;
-            this.min = min;
-            this.max = max;
         }
 
         @Override
@@ -191,21 +208,14 @@ public abstract class GraphDatabaseSetting
                 throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
-            // Check range
-            if (min != null && val < min)
-                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
-
-            if (max != null && val > max)
-                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+            rangeCheck( val );
         }
     }
 
     public static class DoubleSetting
-        extends GraphDatabaseSetting
+        extends NumberSetting<Double>
     {
         private String formatMessage;
-        private Double min;
-        private Double max;
 
         public DoubleSetting( String name, String formatMessage )
         {
@@ -215,10 +225,8 @@ public abstract class GraphDatabaseSetting
 
         public DoubleSetting( String name, String formatMessage, Double min, Double max )
         {
-            super( name );
+            super( name, min, max );
             this.formatMessage = formatMessage;
-            this.min = min;
-            this.max = max;
         }
 
         @Override
@@ -234,12 +242,7 @@ public abstract class GraphDatabaseSetting
                 throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
-            // Check range
-            if (min != null && val < min)
-                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
-
-            if (max != null && val > max)
-                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+            rangeCheck( val );
         }
     }
 
@@ -279,22 +282,33 @@ public abstract class GraphDatabaseSetting
     public static class CacheTypeSetting
         extends OptionsSetting
     {
+        @Description("Use weak reference cache")
         public static final String weak = "weak";
+
+        @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
+                     "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.\n" +
+                     "This is the default cache implementation.")
         public static final String soft = "soft";
-        public static final String old = "old";
+
+        @Description("Don't use caching")
         public static final String none = "none";
+
+        @Description("Use strong references")
         public static final String strong = "strong";
 
         public CacheTypeSetting( )
         {
-            super( "cache_type", weak, soft, old, none, strong);
+            super( "cache_type", weak, soft, none, strong);
         }
     }
 
     public static class CypherParserSetting
         extends OptionsSetting
     {
+        @Description( "Cypher v1.5 syntax" )
         public static final String v1_5 = "1.5";
+
+        @Description( "Cypher v1.6 syntax" )
         public static final String v1_6 = "1.6";
 
         public CypherParserSetting( )

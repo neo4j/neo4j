@@ -27,6 +27,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
  */
 public abstract class GraphDatabaseSettings
 {
+    @Title( "Read only database" )
     @Description("Whether database is read-only or not")
     @Default( FALSE)
     public static final BooleanSetting read_only = new BooleanSetting("read_only");
@@ -65,6 +66,7 @@ public abstract class GraphDatabaseSettings
     @Default("127.0.0.1")
     public static final StringSetting remote_logging_host = new StringSetting( "remote_logging_host", ".*", "Must be a valid hostname" );
 
+    @Description( "Port for remote logging using LogBack SocketAppender" )
     @Default("4560")
     public static final IntegerSetting remote_logging_port = new IntegerSetting( "remote_logging_port", "Must be a valid port number", 1, 65535 );
 
