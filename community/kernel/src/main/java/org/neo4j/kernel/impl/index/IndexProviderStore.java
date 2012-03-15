@@ -52,7 +52,7 @@ public class IndexProviderStore
         try
         {
             // Create it if it doesn't exist
-            if ( !file.exists() )
+            if ( !fileSystem.fileExists( file.getAbsolutePath() ) )
                 create( file, fileSystem, expectedVersion );
             
             // Read all the records in the file
@@ -126,7 +126,7 @@ public class IndexProviderStore
     
     private void create( File file, FileSystemAbstraction fileSystem, long indexVersion ) throws IOException
     {
-        if ( file.exists() )
+        if ( fileSystem.fileExists( file.getAbsolutePath() ) )
             throw new IllegalArgumentException( file + " already exist" );
         
         FileChannel fileChannel = null;
