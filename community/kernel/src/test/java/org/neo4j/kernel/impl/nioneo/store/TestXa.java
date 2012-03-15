@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -418,7 +419,7 @@ public class TestXa extends AbstractNeo4jTestCase
         StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 
         PlaceboTm txManager = new PlaceboTm();
-        LogBufferFactory logBufferFactory = CommonFactories.defaultLogBufferFactory();
+        LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
         return new NeoStoreXaDataSource( config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()),
