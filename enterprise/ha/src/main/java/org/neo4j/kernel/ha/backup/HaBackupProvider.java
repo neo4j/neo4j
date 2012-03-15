@@ -51,7 +51,12 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             System.out.println( "Asking coordinator service at '" + address
                                 + "' for master" );
-            String clusterName = args.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
+            
+            // At first HaConfig.CONFIG_KEY_CLUSTER_NAME was used
+            String clusterName = args.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, null );
+            // but then later on -cluster was also added because it looks much nicer.
+            if ( clusterName == null )
+                clusterName = args.get( "cluster", HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
             master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
                     2 ), clusterName ); // skip the "//" part
             System.out.println( "Found master '" + master + "' in cluster" );

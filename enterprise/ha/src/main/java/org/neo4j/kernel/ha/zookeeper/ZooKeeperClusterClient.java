@@ -151,9 +151,8 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
     {
         waitForSyncConnected();
         StoreId storeId = getClusterStoreId( zooKeeper, clusterName );
-        if ( storeId == null ) return null;// throw new RuntimeException(
-                                           // "Cluster '" + clusterName +
-                                           // "' not found" );
+        if ( storeId == null )
+            throw new RuntimeException( "Cluster '" + clusterName + "' not found" );
         return asRootPath( storeId );
     }
     
