@@ -17,43 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
 
+import org.neo4j.vagrant.Shell.Result;
 
-public class SSHConfig {
+public class VagrantCommandException extends RuntimeException {
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -4692998497824820972L;
 
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    public VagrantCommandException(String name, Result r)
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        super("Vagrant command [" + name + "] failed with exit code " 
+                + r.getExitCode() 
+                + ". Output was:\n" + r.getOutput());
     }
 
-    public int port()
-    {
-        return port;
-    }
-
-    public String host()
-    {
-        return host;
-    }
-
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
-    }
-    
 }

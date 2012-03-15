@@ -17,43 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
 
+public class Init extends SimpleBaseCommand {
 
-public class SSHConfig {
+    private static final String INIT = "init";
+    private final String boxName;
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
-
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    public Init(String boxName)
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        this.boxName = boxName;
     }
 
-    public int port()
+    @Override
+    public String arguments()
     {
-        return port;
+        return INIT + " " + boxName;
     }
 
-    public String host()
-    {
-        return host;
-    }
-
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
-    }
-    
 }

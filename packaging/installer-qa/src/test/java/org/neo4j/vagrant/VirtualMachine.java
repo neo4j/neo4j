@@ -22,8 +22,18 @@ package org.neo4j.vagrant;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.lang.StringUtils;
 import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.vagrant.command.AddBox;
+import org.neo4j.vagrant.command.Commit;
+import org.neo4j.vagrant.command.Destroy;
+import org.neo4j.vagrant.command.EnableSandbox;
+import org.neo4j.vagrant.command.GetSshConfig;
+import org.neo4j.vagrant.command.Halt;
+import org.neo4j.vagrant.command.Init;
+import org.neo4j.vagrant.command.ListBoxes;
+import org.neo4j.vagrant.command.Rollback;
+import org.neo4j.vagrant.command.Up;
+import org.neo4j.vagrant.command.VagrantExecutor;
 
 public class VirtualMachine {
 
@@ -32,14 +42,15 @@ public class VirtualMachine {
 
     private static final String SCP_PATH_KEY = "scp.path";
     private static final String VAGRANT_PATH_KEY = "vagrant.path";
+    private static final int MAX_COMMAND_RETRIES = 5;
     
     private Shell sh;
     private SSHConfig sshConfig;
     private boolean transactional = false;
     private VMDefinition definition;
-    private String vagrantPath;
 
     private String scpPath;
+    private VagrantExecutor vagrant;
     
     public VirtualMachine(File projectFolder, VMDefinition config)
     {
@@ -54,13 +65,13 @@ public class VirtualMachine {
         this.sh = new Shell("host/" + config.vmName(), projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
         this.definition = config;
-        this.vagrantPath = vagrantPath;
         this.scpPath = scpPath;
+        this.vagrant = new VagrantExecutor(sh, vagrantPath, MAX_COMMAND_RETRIES);
     }
 
     public void ensureBoxExists(Box box)
     {
-        for (String boxName : vagrant("box list").getOutputAsList())
+        for (String boxName : vagrant.execute(new ListBoxes()))
         {
             if (boxName.equals(box.getName()))
             {
@@ -72,7 +83,9 @@ public class VirtualMachine {
         try
         {
             sh.setWorkingDir(File.createTempFile("ignore","").getParentFile());
-            vagrant("box add", box.getName(), box.getUrl());
+            
+            vagrant.execute(new AddBox(box));
+            
             sh.setWorkingDir(oldWorkingDir);
         } catch (IOException e)
         {
@@ -82,30 +95,48 @@ public class VirtualMachine {
 
     public void init(Box box)
     {
-        vagrant("init", box.getName());
+        vagrant.execute(new Init(box.getName()));
     }
 
     public void up()
     {
-        vagrant("up");
+        vagrant.execute(new Up());
         if(transactional) 
-            vagrant("sandbox on");
+            vagrant.execute(new EnableSandbox(true));
     }
 
     public void halt()
     {
-        vagrant("halt");
+        vagrant.execute(new Halt());
     }
 
     public void destroy()
     {
-        vagrant("destroy");
+        vagrant.execute(new Destroy());
     }
 
     public void reboot()
     {
         halt();
         up();
+    }
+    
+    public void commit()
+    {
+        if(transactional) {
+            vagrant.execute(new Commit());
+            return;
+        }
+        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
+    }
+    
+    public void rollback()
+    {
+        if(transactional) {
+            vagrant.execute(new Rollback());
+            return;
+        }
+        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
     }
 
     public SSHShell ssh()
@@ -151,29 +182,10 @@ public class VirtualMachine {
     {
         if (this.sshConfig == null)
         {
-            this.sshConfig = SSHConfig.createFromVagrantOutput(vagrant(
-                    "ssh-config").getOutputAsList());
+            this.sshConfig = vagrant.execute(new GetSshConfig());
         }
 
         return this.sshConfig;
-    }
-
-    public void commit()
-    {
-        if(transactional) {
-            vagrant("sandbox commit");
-            return;
-        }
-        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
-    }
-    
-    public void rollback()
-    {
-        if(transactional) {
-            vagrant("sandbox rollback");
-            return;
-        }
-        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
     }
 
     public Shell getShell()
@@ -190,18 +202,6 @@ public class VirtualMachine {
         return definition;
     }
 
-    protected Result vagrant(String... cmds)
-    {
-
-        Result r = sh.run(vagrantPath + " " + StringUtils.join(cmds, " "));
-
-        if (r.getExitCode() != 0)
-        {
-            throw new ShellException(r);
-        }
-        return r;
-    }
-
     private Result scp(String privateKeyPath, String from, String to, int port)
     {
         File tmpHostsFile = null;
@@ -211,7 +211,8 @@ public class VirtualMachine {
             
             tmpHostsFile = File.createTempFile("known-hosts", "throwaway");
             
-            Result r = sh.run("scp -i " + privateKeyPath
+            Result r = sh.run(scpPath 
+                    + " -i " + privateKeyPath
                     + " -o StrictHostKeyChecking=no"
                     + " -o UserKnownHostsFile=" + tmpHostsFile.getAbsolutePath()
                     + " -P " + port

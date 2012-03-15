@@ -17,43 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
 
+public class EnableSandbox extends SimpleBaseCommand {
 
-public class SSHConfig {
+    private final boolean enable;
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
-
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    public EnableSandbox(boolean enable)
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        this.enable = enable;
     }
 
-    public int port()
+    @Override
+    public String arguments()
     {
-        return port;
+        if(enable) {
+            return "sandbox on";
+        } else {
+            return "sandbox off";
+        }
     }
 
-    public String host()
+    @Override
+    public boolean isIdempotent()
     {
-        return host;
+        return true;
     }
 
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
-    }
-    
 }

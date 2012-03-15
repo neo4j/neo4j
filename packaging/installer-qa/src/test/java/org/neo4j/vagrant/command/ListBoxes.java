@@ -17,43 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
 
+import java.util.List;
 
-public class SSHConfig {
+import org.neo4j.vagrant.Shell;
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
+public class ListBoxes implements VagrantCommand<List<String>> {
 
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    @Override
+    public List<String> run(Shell sh, String vagrantPath)
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        return sh.run(vagrantPath + " box list").getOutputAsList();
     }
 
-    public int port()
+    @Override
+    public boolean isIdempotent()
     {
-        return port;
+        return true;
     }
 
-    public String host()
-    {
-        return host;
-    }
-
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
-    }
-    
 }

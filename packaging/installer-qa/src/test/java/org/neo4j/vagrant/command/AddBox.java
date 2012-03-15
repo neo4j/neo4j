@@ -17,43 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
+
+import org.neo4j.vagrant.Box;
 
 
-public class SSHConfig {
+public class AddBox extends SimpleBaseCommand {
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
+    private Box box;
 
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    public AddBox(Box box)
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        this.box = box;
     }
 
-    public int port()
+    @Override
+    public String arguments()
     {
-        return port;
+        return "box add" + " " + box.getName() + " " + box.getUrl();
     }
 
-    public String host()
+    @Override
+    public boolean isIdempotent()
     {
-        return host;
+        return true;
     }
-
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
-    }
-    
 }

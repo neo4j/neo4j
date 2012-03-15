@@ -17,43 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.vagrant.command;
+
+import org.neo4j.vagrant.Shell.Result;
 
 
-public class SSHConfig {
+public class Halt extends SimpleBaseCommand {
 
-    private String privateKeyPath;
-    private String user;
-    private String host;
-    private int port;
+    private static final String HALT = "halt";
 
-    public SSHConfig(String user, String privateKeyPath, String host,
-            Integer port)
+    @Override
+    public String arguments()
     {
-        this.privateKeyPath = privateKeyPath;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+        return HALT;
     }
 
-    public int port()
+    @Override
+    public boolean isIdempotent()
     {
-        return port;
-    }
-
-    public String host()
-    {
-        return host;
-    }
-
-    public String user()
-    {
-        return user;
-    }
-
-    public String privateKeyPath()
-    {
-        return privateKeyPath;
+        return true;
     }
     
+    @Override
+    protected boolean verify(Result r) {
+        return r.getOutput().endsWith("Attempting graceful shutdown of VM...\n");
+    }
+
 }
