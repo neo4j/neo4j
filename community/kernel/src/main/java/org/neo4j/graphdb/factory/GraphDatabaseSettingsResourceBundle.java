@@ -21,11 +21,11 @@
 package org.neo4j.graphdb.factory;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.ResourceBundle;
+import java.util.Set;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 
 /**
@@ -39,21 +39,22 @@ public class GraphDatabaseSettingsResourceBundle
     @Override
     protected Object handleGetObject( String key )
     {
+        String name = key.substring( 0, key.lastIndexOf( "." ));
         if (key.endsWith( ".description" ))
         {
-            Field settingField = getField( key.split( "\\." )[ 0 ] );
+            Field settingField = getField( name );
             return settingField.getAnnotation( Description.class ).value();
         }
 
-        if (key.endsWith( ".description" ))
+        if (key.endsWith( ".default" ))
         {
-            Field settingField = getField( key.split( "\\." )[ 0 ] );
+            Field settingField = getField( name );
             return settingField.getAnnotation( Default.class ).value();
         }
 
         if (key.endsWith( ".options" ))
         {
-            Field settingField = getField( key.split( "\\." )[ 0 ] );
+            Field settingField = getField( name );
             StringBuffer optionsBuilder = new StringBuffer(  );
             try
             {
@@ -78,24 +79,33 @@ public class GraphDatabaseSettingsResourceBundle
     {
         for( Field field : GraphDatabaseSettings.class.getFields() )
         {
-            try
+            if (GraphDatabaseSetting.class.isAssignableFrom( field.getType() ))
             {
-                GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                if (setting.name().equals( name ))
-                    return field;
-            }
-            catch( Exception e )
-            {
-                // Ignore
+                try
+                {
+                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
+                    if (setting.name().equals( name ))
+                        return field;
+                }
+                catch( Exception e )
+                {
+                    // Ignore
+                }
             }
         }
-        throw new IllegalResourceException( "Could not find resource for property" );
+        throw new IllegalResourceException( "Could not find resource for property with prefix "+name );
     }
 
     @Override
     public Enumeration<String> getKeys()
     {
-        List<String> keys = new ArrayList<String>(  );
+        return Collections.enumeration( keySet() );
+    }
+
+    @Override
+    public Set<String> keySet()
+    {
+        Set<String> keys = new LinkedHashSet<String>( );
         for( Field field : GraphDatabaseSettings.class.getFields() )
         {
             try
@@ -115,7 +125,6 @@ public class GraphDatabaseSettingsResourceBundle
                 // Ignore
             }
         }
-        
-        return Collections.enumeration( keys );
+        return keys;
     }
 }
