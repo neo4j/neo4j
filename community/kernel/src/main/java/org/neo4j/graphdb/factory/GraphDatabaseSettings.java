@@ -53,9 +53,7 @@ public abstract class GraphDatabaseSettings
     // Cypher version
     @Description( "Enable this to specify a parser other than the default one. 1.5 and 1.6 are available" )
     @Default("1.6")
-    public static final OptionsSetting cypher_parser_version = new OptionsSetting( "cypher_parser_version", "1.5","1.6" );
-    public static final String CYPHER_1_5 = "1.5";
-    public static final String CYPHER_1_6 = "1.6";
+    public static final OptionsSetting cypher_parser_version = new CypherParserSetting();
 
     // Remote logging
     @Default(FALSE)

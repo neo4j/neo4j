@@ -291,6 +291,18 @@ public abstract class GraphDatabaseSetting
         }
     }
 
+    public static class CypherParserSetting
+        extends OptionsSetting
+    {
+        public static final String v1_5 = "1.5";
+        public static final String v1_6 = "1.6";
+
+        public CypherParserSetting( )
+        {
+            super( "cypher_parser_version", v1_5, v1_6);
+        }
+    }
+
     public static class UseMemoryMappedBuffers
         extends BooleanSetting
         implements DefaultValue
