@@ -47,13 +47,13 @@ public class VagrantExecutor {
                 try
                 {
                     return cmd.run(sh, vagrantPath);
-                } catch (RuntimeException e)
+                } catch (VagrantCommandException e)
                 {
                     exception = e;
                 }
             }
 
-            throw exception;
+            throw new RuntimeException("Command failed, retried " + retries + " times. Giving up.", exception);
 
         } else
         {
