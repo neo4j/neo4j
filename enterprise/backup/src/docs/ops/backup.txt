@@ -80,6 +80,9 @@ NOTE: If you have specified a cluster name for your HA cluster, you need to spec
 
 # Performing an incremental backup from HA cluster, specifying only one coordinator
 ./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup
+
+# Performing an incremental backup from HA cluster with a specific name (specified by neo4j configuration 'ha.cluster_name')
+./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup -cluster my-cluster
 ----
 
 [[backup-restoring]]
