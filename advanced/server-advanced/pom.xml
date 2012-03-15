@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
 
@@ -36,6 +36,7 @@
 
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
+    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <packaging>jar</packaging>
