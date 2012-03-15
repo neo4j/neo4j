@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import collection.immutable.Map
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher, PatternNode => SimplePatternNode}
+import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.True
 
@@ -71,7 +71,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph) extends MatcherBuilder 
     val result = collection.mutable.Map(sourceRow.toSeq:_*)
 
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
-    PatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.map( patternMatch =>{
+    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.map( patternMatch =>{
       patternNodes.foreach{case (key, pn) => result += key -> patternMatch.getNodeFor(pn)}
       patternRels.foreach{case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)}
 

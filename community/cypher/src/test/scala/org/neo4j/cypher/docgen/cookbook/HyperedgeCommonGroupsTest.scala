@@ -79,10 +79,10 @@ To return Group1 and Group2 as User1 and User2 share at least one common role in
       		"hyperEdge1-[:hasRole]->role, " +
             "u2-[:hasRoleInGroup]->hyperEdge2-[:hasGroup]->group, " +
             "hyperEdge2-[:hasRole]->role " +
-            "return group.name, role " +
+            "return group.name, count(role) " +
             "order by group.name asc",
       returns = "The groups where +User1+ and +User2+ share at least one common role:",
-      (p) => assertEquals(List(Map("group.name" -> "Group1", "role"->1),Map("group.name" -> "Group2", "role"->1)), p.toList))
+      (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)"->1),Map("group.name" -> "Group2", "count(role)"->1)), p.toList))
   }
 
   
