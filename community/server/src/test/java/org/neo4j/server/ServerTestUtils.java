@@ -29,7 +29,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -38,20 +38,20 @@ public class ServerTestUtils
     public static final GraphDatabaseFactory EMBEDDED_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return (GraphDatabaseSPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseStoreDirectory ).setConfig( databaseProperties ).newGraphDatabase();
+            return (GraphDatabaseAPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseStoreDirectory ).setConfig( databaseProperties ).newGraphDatabase();
         }
     };
 
     public static final GraphDatabaseFactory EPHEMERAL_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return (GraphDatabaseSPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( databaseProperties ).newGraphDatabase();
+            return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( databaseProperties ).newGraphDatabase();
         }
     };
     

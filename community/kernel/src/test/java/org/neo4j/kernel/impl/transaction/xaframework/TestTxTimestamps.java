@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -42,14 +42,14 @@ import static org.junit.Assert.*;
 
 public class TestTxTimestamps
 {
-    private GraphDatabaseSPI db;
+    private GraphDatabaseAPI db;
     
     @Before
     public void doBefore() throws Exception
     {
         File storeDir = new File( "target/test-data/timestamp" );
         FileUtils.deleteRecursively( storeDir );
-        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath()).
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath()).
             setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
     }
     

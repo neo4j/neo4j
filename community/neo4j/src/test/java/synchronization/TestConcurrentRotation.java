@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -105,7 +105,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class Verifier implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             assertTrue( (Boolean) graphdb.getReferenceNode().getProperty( "success" ) );
         }
@@ -114,7 +114,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     private static class CreateInitialStateTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -141,7 +141,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             for ( int i = 0; i < count; i++ ) graphdb.index().forNodes( "index" + i ).get( "name", i ).getSingle();
             if ( resume ) resumeFlushThread();
@@ -153,7 +153,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         private volatile boolean success;
         
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -171,7 +171,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             }
         }
         
-        private void setSuccess( GraphDatabaseSPI graphdb, boolean success )
+        private void setSuccess( GraphDatabaseAPI graphdb, boolean success )
         {
             Transaction tx = graphdb.beginTx();
             graphdb.getReferenceNode().setProperty( "success", success );

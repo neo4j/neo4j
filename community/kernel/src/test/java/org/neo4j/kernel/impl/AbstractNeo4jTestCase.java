@@ -35,7 +35,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -66,7 +66,7 @@ public abstract class AbstractNeo4jTestCase
         }
     };
 
-    private static GraphDatabaseSPI graphDb;
+    private static GraphDatabaseAPI graphDb;
     private Transaction tx;
 
     private static boolean requiresPersistentGraphDatabase = false;
@@ -80,12 +80,12 @@ public abstract class AbstractNeo4jTestCase
     {
         AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
 //        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
-        graphDb = (GraphDatabaseSPI) (requiresPersistentGraphDatabase ?
+        graphDb = (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
                                       new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStorePath( "neo-test" ) ).newGraphDatabase() :
                                       new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase());
     }
 
-    public GraphDatabaseSPI getEmbeddedGraphDb()
+    public GraphDatabaseAPI getEmbeddedGraphDb()
     {
         return graphDb;
     }

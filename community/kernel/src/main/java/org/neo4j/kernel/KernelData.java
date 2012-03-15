@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -112,7 +111,7 @@ public abstract class KernelData
 
     public abstract Config getConfig();
 
-    public abstract GraphDatabaseSPI graphDatabase();
+    public abstract GraphDatabaseAPI graphDatabase();
 
     public abstract Map<String, String> getConfigParams();
 

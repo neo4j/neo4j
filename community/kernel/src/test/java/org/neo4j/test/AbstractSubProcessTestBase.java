@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
 
@@ -87,7 +87,7 @@ public class AbstractSubProcessTestBase
 
     protected interface Task extends Serializable
     {
-        void run( GraphDatabaseSPI graphdb );
+        void run( GraphDatabaseAPI graphdb );
     }
 
     @Before
@@ -256,7 +256,7 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( final GraphDatabaseSPI graphdb )
+        public void run( final GraphDatabaseAPI graphdb )
         {
             new Thread( new Runnable()
             {
@@ -272,9 +272,9 @@ public class AbstractSubProcessTestBase
     @SuppressWarnings( { "hiding", "serial" } )
     private static class SubInstance extends SubProcess<Instance, Bootstrapper> implements Instance
     {
-        private volatile GraphDatabaseSPI graphdb;
-        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseSPI> GRAPHDB = AtomicReferenceFieldUpdater
-                .newUpdater( SubInstance.class, GraphDatabaseSPI.class, "graphdb" );
+        private volatile GraphDatabaseAPI graphdb;
+        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseAPI> GRAPHDB = AtomicReferenceFieldUpdater
+                .newUpdater( SubInstance.class, GraphDatabaseAPI.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
         private volatile Throwable failure;
 
@@ -284,7 +284,7 @@ public class AbstractSubProcessTestBase
             this.bootstrap = bootstrap;
             try
             {
-                graphdb = (GraphDatabaseSPI) bootstrap.startup();
+                graphdb = (GraphDatabaseAPI) bootstrap.startup();
             }
             catch ( Throwable failure )
             {
@@ -334,7 +334,7 @@ public class AbstractSubProcessTestBase
                     throw new IllegalStateException( "instance has been shut down" );
             }
             graphdb.shutdown();
-            this.graphdb = (GraphDatabaseSPI) bootstrap.startup();
+            this.graphdb = (GraphDatabaseAPI) bootstrap.startup();
         }
 
         public <T> T getMBean( Class<T> beanType )
@@ -344,7 +344,7 @@ public class AbstractSubProcessTestBase
             {
                 if ( this.bootstrap == null ) throw new IllegalStateException( "instance has been shut down" );
             }
-            return ((GraphDatabaseSPI)graphdb).getSingleManagementBean( beanType );
+            return ((GraphDatabaseAPI)graphdb).getSingleManagementBean( beanType );
         }
     }
 

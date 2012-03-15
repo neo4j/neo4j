@@ -121,7 +121,7 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
 
     static KernelData getExtensions( GraphDatabaseService graphdb )
     {
-        return ((GraphDatabaseSPI)graphdb).getKernelData();
+        return ((GraphDatabaseAPI)graphdb).getKernelData();
     }
 
     @Test

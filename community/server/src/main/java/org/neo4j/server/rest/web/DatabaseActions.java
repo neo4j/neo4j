@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -55,7 +54,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -93,7 +92,7 @@ public class DatabaseActions
     public static final String RELEVANCE_ORDER = "relevance";
     public static final String INDEX_ORDER = "index";
     private final Database database;
-    private final GraphDatabaseSPI graphDb;
+    private final GraphDatabaseAPI graphDb;
     private final LeaseManager leases;
     private final ForceMode defaultForceMode;
 

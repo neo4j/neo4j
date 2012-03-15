@@ -27,7 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.management.ManagementFactory.*;
@@ -78,7 +78,7 @@ public class DescriptionTest
 
     private MBeanInfo kernelMBeanInfo() throws Exception
     {
-        Kernel kernel = ((GraphDatabaseSPI)graphdb).getSingleManagementBean( Kernel.class );
+        Kernel kernel = ((GraphDatabaseAPI)graphdb).getSingleManagementBean( Kernel.class );
         ObjectName query = kernel.getMBeanQuery();
         Hashtable<String, String> properties = new Hashtable<String, String>( query.getKeyPropertyList() );
         properties.put( "name", Kernel.NAME );

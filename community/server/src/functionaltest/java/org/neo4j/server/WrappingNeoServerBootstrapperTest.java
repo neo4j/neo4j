@@ -32,7 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -89,7 +89,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
-        GraphDatabaseSPI graphdb = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
         EmbeddedServerConfigurator config;
         config = new EmbeddedServerConfigurator( graphdb );
         // let the server endpoint be on a custom port

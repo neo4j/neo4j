@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
 
 import static java.lang.System.*;
@@ -35,12 +35,12 @@ import static org.neo4j.test.TargetDirectory.*;
 @Ignore( "It doesn't assert anything yet" )
 public class TestUnforcedTransaction
 {
-    private static GraphDatabaseSPI db;
+    private static GraphDatabaseAPI db;
     
     @BeforeClass
     public static void setupDb()
     {
-        db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() ).newGraphDatabase();
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() ).newGraphDatabase();
     }
     
     @AfterClass

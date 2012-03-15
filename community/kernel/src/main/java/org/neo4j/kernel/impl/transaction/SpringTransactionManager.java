@@ -28,7 +28,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class SpringTransactionManager implements TransactionManager
 {
@@ -44,7 +44,7 @@ public class SpringTransactionManager implements TransactionManager
     
     public SpringTransactionManager( GraphDatabaseService neo4j )
     {
-        this.tm = ((GraphDatabaseSPI) neo4j).getTxManager();
+        this.tm = ((GraphDatabaseAPI) neo4j).getTxManager();
     }
     
     public void begin() throws NotSupportedException, SystemException

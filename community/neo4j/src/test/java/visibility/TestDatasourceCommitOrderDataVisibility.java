@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.WriteTransaction;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -51,7 +51,7 @@ public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessT
     private static class CreateData implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Node node = graphdb.getReferenceNode();
             Transaction tx = graphdb.beginTx();
@@ -84,7 +84,7 @@ public class TestDatasourceCommitOrderDataVisibility extends AbstractSubProcessT
         }
 
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "indexed" ).getSingle();
             if ( !acceptNull ) assertNotNull( "node not in index", node );

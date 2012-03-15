@@ -31,7 +31,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -47,7 +47,7 @@ public class TestKernelPanic
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         XaDataSourceManager xaDs =
-            ((GraphDatabaseSPI)graphDb).getXaDataSourceManager();
+            ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
         
         IllBehavingXaDataSource noob = new IllBehavingXaDataSource(UTF8.encode( "554342" ), "noob");
         xaDs.registerDataSource( noob );
@@ -56,7 +56,7 @@ public class TestKernelPanic
         graphDb.registerKernelEventHandler( panic );
      
         org.neo4j.graphdb.Transaction gdbTx = graphDb.beginTx();
-        TransactionManager txMgr = ((GraphDatabaseSPI)graphDb).getTxManager();
+        TransactionManager txMgr = ((GraphDatabaseAPI)graphDb).getTxManager();
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();

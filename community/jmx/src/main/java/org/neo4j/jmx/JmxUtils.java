@@ -19,10 +19,7 @@
  */
 package org.neo4j.jmx;
 
-import static java.lang.String.format;
-
 import java.lang.management.ManagementFactory;
-
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -30,14 +27,15 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
-import org.neo4j.kernel.GraphDatabaseSPI;
+import static java.lang.String.*;
 
 public class JmxUtils {
 
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    public static ObjectName getObjectName(GraphDatabaseSPI database, String name) {
+    public static ObjectName getObjectName(GraphDatabaseAPI database, String name) {
         ObjectName neoQuery = database.getSingleManagementBean(Kernel.class).getMBeanQuery();
         String instance = neoQuery.getKeyProperty("instance");
         String domain = neoQuery.getDomain();

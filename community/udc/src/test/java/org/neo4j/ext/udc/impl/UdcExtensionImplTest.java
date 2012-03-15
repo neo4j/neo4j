@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -271,7 +271,7 @@ public class UdcExtensionImplTest
     private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
         dbToDestroy.shutdown();
-        FileUtils.deleteDirectory( new File( ((GraphDatabaseSPI)dbToDestroy).getStoreDir() ) );
+        FileUtils.deleteDirectory( new File( ((GraphDatabaseAPI)dbToDestroy).getStoreDir() ) );
     }
 
 }

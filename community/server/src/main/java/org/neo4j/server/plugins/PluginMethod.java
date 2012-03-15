@@ -21,8 +21,7 @@ package org.neo4j.server.plugins;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
 
@@ -44,7 +43,7 @@ class PluginMethod extends PluginPoint
     }
 
     @Override
-    public Representation invoke( GraphDatabaseSPI graphDb, Object source, ParameterList params )
+    public Representation invoke( GraphDatabaseAPI graphDb, Object source, ParameterList params )
             throws BadPluginInvocationException, PluginInvocationFailureException, BadInputException
     {
         Object[] arguments = new Object[extractors.length];

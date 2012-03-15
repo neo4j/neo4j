@@ -25,7 +25,6 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -34,7 +33,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
@@ -42,7 +40,7 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.BatchOperationFailedException;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -76,7 +74,7 @@ public class BatchOperationService
     public Response performBatchOperations( @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders,
                                             InputStream body ) throws BadInputException
     {
-        GraphDatabaseSPI db = database.graph;
+        GraphDatabaseAPI db = database.graph;
 
         Transaction tx = db.beginTx();
         try

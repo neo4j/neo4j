@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -148,7 +148,7 @@ public class TestPropertyDataRace
     @BreakpointTrigger( "enable breakpoints" )
     private void clearCaches()
     {
-        ((GraphDatabaseSPI)graphdb).getNodeManager().clearCache();
+        ((GraphDatabaseAPI)graphdb).getNodeManager().clearCache();
     }
 
     @BreakpointTrigger( "done" )

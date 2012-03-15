@@ -26,7 +26,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -57,12 +56,13 @@ class IndexManagerImpl implements IndexManager
     private Config config;
     private XaDataSourceManager xaDataSourceManager;
     private AbstractTransactionManager txManager;
-    private GraphDatabaseSPI graphDatabaseSPI;
+    private GraphDatabaseAPI graphDatabaseAPI;
 
     IndexManagerImpl( Config config,IndexStore indexStore,
-                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager, GraphDatabaseSPI graphDatabaseSPI)
+                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager, GraphDatabaseAPI graphDatabaseAPI
+    )
     {
-        this.graphDatabaseSPI = graphDatabaseSPI;
+        this.graphDatabaseAPI = graphDatabaseAPI;
         this.config = config;
         this.xaDataSourceManager = xaDataSourceManager;
         this.txManager = txManager;
@@ -234,7 +234,7 @@ class IndexManagerImpl implements IndexManager
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource(dataSourceName);
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-            Transaction tx = graphDatabaseSPI.tx().begin();
+            Transaction tx = graphDatabaseAPI.tx().begin();
             try
             {
                 javax.transaction.Transaction javaxTx = txManager.getTransaction();

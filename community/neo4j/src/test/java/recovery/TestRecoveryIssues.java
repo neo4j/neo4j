@@ -31,7 +31,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
@@ -92,7 +92,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class TwoWriteTransactions implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             Node node;
@@ -124,7 +124,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class SingleWriteTransaction implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -145,7 +145,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class Crash implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             throw new AssertionError( "Should not reach here - the breakpoint should avoid it" );
         }
@@ -154,7 +154,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class Verification implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             assertNotNull( "No graph database", graphdb );
             Index<Node> index = graphdb.index().forNodes( "nodes" );

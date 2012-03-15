@@ -25,10 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -158,7 +157,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
     }
 
     @Override
-    public <T> Representation invoke( GraphDatabaseSPI graphDb, String name, Class<T> type, String method,
+    public <T> Representation invoke( GraphDatabaseAPI graphDb, String name, Class<T> type, String method,
             T context, ParameterList params ) throws PluginLookupException, BadInputException,
             PluginInvocationFailureException, BadPluginInvocationException
     {

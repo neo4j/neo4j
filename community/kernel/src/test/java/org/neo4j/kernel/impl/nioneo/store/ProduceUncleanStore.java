@@ -23,7 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class ProduceUncleanStore
 {
@@ -35,7 +35,7 @@ public class ProduceUncleanStore
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
-        if ( setGraphProperty ) ((GraphDatabaseSPI)db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
+        if ( setGraphProperty ) ((GraphDatabaseAPI)db).getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
         tx.success();
         tx.finish();
         System.exit( 0 );

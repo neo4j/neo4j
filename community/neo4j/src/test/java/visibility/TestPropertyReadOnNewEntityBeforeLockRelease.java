@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -51,7 +51,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class CreateData implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -89,7 +89,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     private static class ReadData implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
             assertNotNull( "did not get the node from the index", node );
@@ -146,7 +146,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
      */
     public static void main( String... args ) throws Exception
     {
-        final GraphDatabaseSPI graphdb = (GraphDatabaseSPI) new GraphDatabaseFactory().
+        final GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
                                                   newEmbeddedDatabase( "target/test-data/" + TestPropertyReadOnNewEntityBeforeLockRelease.class
                                                       .getName() + "/graphdb" );
         final CountDownLatch completion = new CountDownLatch( 2 );

@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
 
@@ -36,7 +36,7 @@ public class CreateSomeTransactions
     {
         String sourceDir = args[0];
         boolean shutdown = Boolean.parseBoolean( args[1] );
-        GraphDatabaseSPI db = (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourceDir ).setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourceDir ).setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
         
         BatchTransaction tx = beginBatchTx( db );
         Node node = db.createNode();

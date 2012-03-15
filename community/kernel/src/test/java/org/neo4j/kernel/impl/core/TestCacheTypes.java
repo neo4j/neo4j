@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 
@@ -40,15 +40,15 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         deleteFileOrDirectory( new File( PATH ) );
     }
     
-    private GraphDatabaseSPI newDb( String cacheType )
+    private GraphDatabaseAPI newDb( String cacheType )
     {
-        return (GraphDatabaseSPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type, cacheType ).newGraphDatabase();
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type, cacheType ).newGraphDatabase();
     }
     
     @Test
     public void testDefaultCache()
     {
-        GraphDatabaseSPI db = newDb( null );
+        GraphDatabaseAPI db = newDb( null );
         assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -56,7 +56,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testWeakRefCache()
     {
-        GraphDatabaseSPI db = newDb( "weak" );
+        GraphDatabaseAPI db = newDb( "weak" );
         assertEquals( CacheType.weak, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -64,7 +64,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testSoftRefCache()
     {
-        GraphDatabaseSPI db = newDb( "soft" );
+        GraphDatabaseAPI db = newDb( "soft" );
         assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -72,7 +72,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testNoCache()
     {
-        GraphDatabaseSPI db = newDb( "none" );
+        GraphDatabaseAPI db = newDb( "none" );
         assertEquals( CacheType.none, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -80,7 +80,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testStrongCache()
     {
-        GraphDatabaseSPI db = newDb( "strong" );
+        GraphDatabaseAPI db = newDb( "strong" );
         assertEquals( CacheType.strong, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -88,7 +88,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testOldCache()
     {
-        GraphDatabaseSPI db = newDb( "old" );
+        GraphDatabaseAPI db = newDb( "old" );
         assertEquals( CacheType.old, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -97,7 +97,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testInvalidCache()
     {
         // invalid cache type should fail
-        GraphDatabaseSPI db = null;
+        GraphDatabaseAPI db = null;
         try
         {
             db = newDb( "whatever" );

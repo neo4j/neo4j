@@ -25,7 +25,7 @@ import javax.transaction.xa.Xid;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
@@ -110,7 +110,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class SetPropertyTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -130,7 +130,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class RemovePropertyAndFailTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -158,7 +158,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class CreateNamedNodeTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -179,7 +179,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class RotateTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -204,7 +204,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
 
         @SuppressWarnings( "rawtypes" )
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -225,7 +225,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class VerifyTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             assertFalse( graphdb.getReferenceNode().hasProperty( NAME ) );
             assertEquals( LONG_STRING_2, graphdb.getNodeById( 1 ).getProperty( NAME ) );
@@ -233,7 +233,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     }
     
     @SuppressWarnings( "unchecked" )
-    private static void messUpInternalWriteTransactionStateSoThatCommitFails( GraphDatabaseSPI graphdb )
+    private static void messUpInternalWriteTransactionStateSoThatCommitFails( GraphDatabaseAPI graphdb )
     {
         /* Behold: the path to WriteTransaction:
          * 

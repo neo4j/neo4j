@@ -34,43 +34,58 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
- * This SPI can be used by internals to get access to services.
+ * This API can be used to get access to services.
  *
- * TODO: This should go away. It indicates lack of abstractions somewhere. DO NOT ADD MORE USAGE OF THIS!
+ * TODO: The methods exposing internal services directly should go away. It indicates lack of abstractions somewhere. DO NOT ADD MORE USAGE OF THESE!
  */
-@Deprecated
-public interface GraphDatabaseSPI
+public interface GraphDatabaseAPI
     extends GraphDatabaseService
 {
+    @Deprecated
     NodeManager getNodeManager();
 
+    @Deprecated
     LockReleaser getLockReleaser();
 
+    @Deprecated
     LockManager getLockManager();
 
+    @Deprecated
     XaDataSourceManager getXaDataSourceManager();
 
+    @Deprecated
     TransactionManager getTxManager();
 
+    @Deprecated
     DiagnosticsManager getDiagnosticsManager();
     
+    @Deprecated
     StringLogger getMessageLog();
 
+    @Deprecated
     RelationshipTypeHolder getRelationshipTypeHolder();
 
+    @Deprecated
     IdGeneratorFactory getIdGeneratorFactory();
 
+    @Deprecated
     String getStoreDir();
 
+    @Deprecated
     KernelData getKernelData();
 
+    @Deprecated
     <T> T getSingleManagementBean( Class<T> type );
 
+    @Deprecated
     TransactionBuilder tx();
     
+    @Deprecated
     PersistenceSource getPersistenceSource();
 
+    @Deprecated
     <T> Collection<T> getManagementBeans( Class<T> type );
     
+    @Deprecated
     KernelPanicEventGenerator getKernelPanicGenerator();
 }

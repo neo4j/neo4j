@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 class SourceExtractor extends DataExtractor
 {
@@ -28,7 +28,7 @@ class SourceExtractor extends DataExtractor
     }
 
     @Override
-    Object extract( GraphDatabaseSPI graphDb, Object source, ParameterList parameters )
+    Object extract( GraphDatabaseAPI graphDb, Object source, ParameterList parameters )
     {
         return source;
     }

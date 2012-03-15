@@ -32,7 +32,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
@@ -103,7 +103,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
     private static class CreateIndexedNodeTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -132,7 +132,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
     private static class MessUpTask implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {

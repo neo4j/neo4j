@@ -19,25 +19,13 @@
  */
 package org.neo4j.server.rrd;
 
-import static java.lang.Double.NaN;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
-import static org.rrd4j.ConsolFun.AVERAGE;
-import static org.rrd4j.ConsolFun.MAX;
-import static org.rrd4j.ConsolFun.MIN;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -48,6 +36,13 @@ import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
+
+import static java.lang.Double.*;
+import static java.util.Arrays.*;
+import static java.util.concurrent.TimeUnit.*;
+import static org.neo4j.server.configuration.Configurator.*;
+import static org.rrd4j.ConsolFun.*;
+import static org.rrd4j.ConsolFun.MAX;
 
 public class RrdFactory
 {
@@ -67,9 +62,9 @@ public class RrdFactory
     {
         Sampleable[] primitives = {
 //                new MemoryUsedSampleable(),
-                new NodeIdsInUseSampleable( (GraphDatabaseSPI) db.graph ),
-                new PropertyCountSampleable( (GraphDatabaseSPI) db.graph ),
-                new RelationshipCountSampleable( (GraphDatabaseSPI) db.graph )
+                new NodeIdsInUseSampleable( (GraphDatabaseAPI) db.graph ),
+                new PropertyCountSampleable( (GraphDatabaseAPI) db.graph ),
+                new RelationshipCountSampleable( (GraphDatabaseAPI) db.graph )
         };
 
         Sampleable[] usage = {
@@ -82,7 +77,7 @@ public class RrdFactory
         };
 
         final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
-                getDefaultDirectory( (GraphDatabaseSPI) db.graph ) );
+                getDefaultDirectory( (GraphDatabaseAPI) db.graph ) );
         final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(
@@ -119,7 +114,7 @@ public class RrdFactory
         return result.toArray( new Sampleable[result.size()] );
     }
 
-    private String getDefaultDirectory( GraphDatabaseSPI db )
+    private String getDefaultDirectory( GraphDatabaseAPI db )
     {
         return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
     }

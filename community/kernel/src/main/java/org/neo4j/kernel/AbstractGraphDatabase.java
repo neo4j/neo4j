@@ -109,7 +109,7 @@ import static org.neo4j.helpers.Exceptions.*;
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
  */
 public abstract class AbstractGraphDatabase
-        implements GraphDatabaseService, GraphDatabaseSPI
+        implements GraphDatabaseService, GraphDatabaseAPI
 {
 
     protected LoggerContext loggerContext;
@@ -905,9 +905,9 @@ public abstract class AbstractGraphDatabase
 	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final Config config;
-        private final GraphDatabaseSPI graphDb;
+        private final GraphDatabaseAPI graphDb;
 
-        public DefaultKernelData(Config config, GraphDatabaseSPI graphDb)
+        public DefaultKernelData(Config config, GraphDatabaseAPI graphDb)
         {
             this.config = config;
             this.graphDb = graphDb;
@@ -932,7 +932,7 @@ public abstract class AbstractGraphDatabase
         }
 
         @Override
-        public GraphDatabaseSPI graphDatabase()
+        public GraphDatabaseAPI graphDatabase()
         {
             return graphDb;
         }

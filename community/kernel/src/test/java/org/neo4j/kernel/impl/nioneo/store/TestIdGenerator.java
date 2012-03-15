@@ -39,7 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -659,7 +659,7 @@ public class TestIdGenerator
         tx.finish();
 
         // Verify by loading everything from scratch
-        ((GraphDatabaseSPI)db).getNodeManager().clearCache();
+        ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
             lastOrNull( node.getRelationships() );

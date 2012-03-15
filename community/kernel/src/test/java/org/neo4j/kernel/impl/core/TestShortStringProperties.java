@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
@@ -88,7 +88,7 @@ public class TestShortStringProperties extends TestShortString
 
     private void clearCache()
     {
-        ((GraphDatabaseSPI)graphdb).getNodeManager().clearCache();
+        ((GraphDatabaseAPI)graphdb).getNodeManager().clearCache();
     }
 
     private static final String LONG_STRING = "this is a really long string, believe me!";
@@ -269,7 +269,7 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = ((GraphDatabaseSPI)graphdb).getXaDataSourceManager();
+        XaDataSourceManager dsMgr = ((GraphDatabaseAPI)graphdb).getXaDataSourceManager();
         return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
     }
 }

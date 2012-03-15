@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -89,7 +89,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class DoSimpleTransaction implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -112,7 +112,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class RotateLogs implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -137,7 +137,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
         
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -170,7 +170,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     static class Shutdown implements Task
     {
         @Override
-        public void run( GraphDatabaseSPI graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             graphdb.shutdown();
         }

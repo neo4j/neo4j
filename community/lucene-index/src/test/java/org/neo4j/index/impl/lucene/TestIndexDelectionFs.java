@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 import static org.junit.Assert.*;
@@ -57,7 +57,7 @@ public class TestIndexDelectionFs
         String indexName = "index";
         String otherIndexName = "other-index";
 
-        StringBuffer tempPath = new StringBuffer( ((GraphDatabaseSPI)db).getStoreDir())
+        StringBuffer tempPath = new StringBuffer( ((GraphDatabaseAPI)db).getStoreDir())
                 .append(File.separator).append("index").append(File.separator)
                 .append("lucene").append(File.separator).append("node")
                 .append(File.separator);

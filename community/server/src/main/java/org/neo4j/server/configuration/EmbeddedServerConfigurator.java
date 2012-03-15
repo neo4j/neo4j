@@ -22,9 +22,8 @@ package org.neo4j.server.configuration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
 /**
@@ -52,7 +51,7 @@ public class EmbeddedServerConfigurator implements Configurator
     private MapBasedConfiguration config = new MapBasedConfiguration();
     private Set<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
 
-    public EmbeddedServerConfigurator( GraphDatabaseSPI db )
+    public EmbeddedServerConfigurator( GraphDatabaseAPI db )
     {
         config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
     }

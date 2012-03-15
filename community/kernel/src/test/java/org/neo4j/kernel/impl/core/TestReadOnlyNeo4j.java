@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 
 import static org.junit.Assert.*;
@@ -137,12 +137,12 @@ public class TestReadOnlyNeo4j
         }
         
         // clear caches and try reads
-        ((GraphDatabaseSPI)db).getNodeManager().clearCache();
+        ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        ((GraphDatabaseSPI)db).getNodeManager().clearCache();
+        ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         
         assertEquals( "value1", node1.getProperty( "key1" ) );
         Relationship loadedRel = node1.getSingleRelationship( 
