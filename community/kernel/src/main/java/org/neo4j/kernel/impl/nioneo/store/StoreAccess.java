@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 
 /**
@@ -166,7 +166,7 @@ public class StoreAccess
         }
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
 
-        params.put( IdGeneratorFactory.class, new CommonFactories.DefaultIdGeneratorFactory() );
+        params.put( IdGeneratorFactory.class, new DefaultIdGeneratorFactory() );
         return params;
     }
 }

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -49,7 +48,7 @@ public class StoreVersionTest
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, config ), CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
+        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, config ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
 
         CommonAbstractStore[] stores = {
@@ -83,7 +82,7 @@ public class StoreVersionTest
         Config config = new Config( StringLogger.SYSTEM, fileSystem, new HashMap<String, String>(  ) );
         
         try {
-            new NodeStore( workingFile.getPath(), config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, StringLogger.SYSTEM );
+            new NodeStore( workingFile.getPath(), config, new DefaultIdGeneratorFactory(), fileSystem, StringLogger.SYSTEM );
             fail( "Should have thrown exception" );
         } catch ( NotCurrentStoreVersionException e ) {
             //expected
@@ -104,7 +103,7 @@ public class StoreVersionTest
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config(StringLogger.DEV_NULL, fileSystem, config), CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
+        StoreFactory sf = new StoreFactory(new Config(StringLogger.DEV_NULL, fileSystem, config), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

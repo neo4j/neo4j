@@ -40,6 +40,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -54,7 +55,6 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.*;
-import static org.neo4j.kernel.CommonFactories.*;
 
 @RunWith( Suite.class )
 @SuiteClasses( { IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
@@ -150,7 +150,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
-        factory = new StoreFactory( new Config( StringLogger.SYSTEM, fs, config ), defaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
+        factory = new StoreFactory( new Config( StringLogger.SYSTEM, fs, config ), new DefaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
     }
 
     @After
@@ -258,7 +258,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         @Override
         protected IdGeneratorFactory createIdGeneratorFactory()
         {
-            return defaultIdGeneratorFactory();
+            return new DefaultIdGeneratorFactory();
         }
     }
 

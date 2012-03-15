@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Properties;
-import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -98,7 +97,7 @@ public class PreStartupStoreUpgrader
             Config conf = new Config( StringLogger.SYSTEM, fileSystem, config );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
-                    new DatabaseFiles(), CommonFactories.defaultIdGeneratorFactory(), fileSystem );
+                    new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );
 
             try
             {

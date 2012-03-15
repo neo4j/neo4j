@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -38,7 +37,7 @@ import static org.junit.Assert.*;
 public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-            CommonFactories.defaultIdGeneratorFactory();
+            new DefaultIdGeneratorFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
     

@@ -500,7 +500,7 @@ public abstract class AbstractGraphDatabase
 
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        return new CommonFactories.DefaultIdGeneratorFactory();
+        return new DefaultIdGeneratorFactory();
     }
 
     protected LockManager createLockManager()

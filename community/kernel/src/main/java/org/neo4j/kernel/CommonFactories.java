@@ -19,41 +19,16 @@
  */
 package org.neo4j.kernel;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 
+@Deprecated
 public class CommonFactories
 {
-    public static class DefaultIdGeneratorFactory implements IdGeneratorFactory
-    {
-        private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
-
-        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType,
-                long highestIdInUse, boolean startup )
-        {
-            IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, idType.getMaxValue(), idType.allowAggressiveReuse() );
-            generators.put( idType, generator );
-            return generator;
-        }
-
-        public IdGenerator get( IdType idType )
-        {
-            return generators.get( idType );
-        }
-
-        public void create( FileSystemAbstraction fs, String fileName )
-        {
-            IdGeneratorImpl.createGenerator( fs, fileName );
-        }
-    }
 
     public static IdGeneratorFactory defaultIdGeneratorFactory()
     {
