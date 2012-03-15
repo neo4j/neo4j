@@ -272,7 +272,6 @@ manpages:
 	cp "$(MANPAGES)/"*.xml "$(ANNOTATEDDIR)"
 	mv "$(MANPAGES)/"*.xml "$(BUILDDIR)"
 	rm -rf "$(MANPAGES)/"*.html
-	# gzip -q "$(MANPAGES)/"*
 
 upgrade:
 	#

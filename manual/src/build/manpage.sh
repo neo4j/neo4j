@@ -20,6 +20,7 @@ do
   echo "Creating manpage '$page' from component '$component'."
 
   "$a2x" -k $verbose -f manpage -d  manpage -D "$mandir" "$importdir/neo4j-${component}-docs-jar/man/${page}.1.txt"
+  gzip -q "$mandir/${page}.1"
   "$a2x" -k $verbose -f text -d  manpage -D "$mandir" "$mandir/${page}.1.xml"
 
   cp -f "$scriptdir/bom" "$mandir/${page}.txt"

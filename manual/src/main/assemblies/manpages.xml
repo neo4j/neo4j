@@ -33,8 +33,8 @@
       <directory>target/manpages</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>neo4j.txt</include>
-        <include>neo4j-shell.txt</include>
+        <include>neo4j.*</include>
+        <include>neo4j-shell.*</include>
       </includes>
     </fileSet>
   </fileSets>
