@@ -34,6 +34,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
@@ -43,11 +44,10 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.*;
-import static org.neo4j.kernel.CommonFactories.*;
 
 public class TestLuceneDataSource
 {
-    private final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     private IndexStore indexStore;
     private File datasourceDirectory;
@@ -64,7 +64,7 @@ public class TestLuceneDataSource
     {
         datasourceDirectory = new File( dbPath );
         datasourceDirectory.mkdirs();
-        indexStore = new IndexStore( dbPath, defaultFileSystemAbstraction() );
+        indexStore = new IndexStore( dbPath, new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 
@@ -88,8 +88,8 @@ public class TestLuceneDataSource
     @Test
     public void testShouldReturnIndexWriterFromLRUCache() throws InstantiationException
     {
-        dataSource = new LuceneDataSource(new Config( StringLogger.DEV_NULL, fileSystem, config() ), indexStore, CommonFactories.defaultFileSystemAbstraction(),
-                                          new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config() ), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource(new Config( StringLogger.DEV_NULL, fileSystem, config() ), indexStore, new DefaultFileSystemAbstraction(),
+                                          new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config() ), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexWriter( identifier );
         assertSame( writer, dataSource.getIndexWriter( identifier ) );
@@ -99,8 +99,8 @@ public class TestLuceneDataSource
     public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException
     {
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, config() );
-        dataSource = new LuceneDataSource( config, indexStore, CommonFactories.defaultFileSystemAbstraction(),
-                                           new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
+                                           new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexWriter( identifier );
         IndexSearcherRef searcher = dataSource.getIndexSearcher( identifier, false );
@@ -115,8 +115,8 @@ public class TestLuceneDataSource
         Map<String,String> config = config();
         config.put( GraphDatabaseSettings.lucene_writer_cache_size.name(), "2");
         Config config1 = new Config( StringLogger.DEV_NULL, fileSystem, config );
-        dataSource = new LuceneDataSource( config1, indexStore, CommonFactories.defaultFileSystemAbstraction(),
-                                           new XaFactory(config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
+                                           new XaFactory(config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -135,7 +135,7 @@ public class TestLuceneDataSource
         Map<String,String> config = config();
         config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
         Config config1 = new Config( StringLogger.DEV_NULL, fileSystem, config );
-        dataSource = new LuceneDataSource( config1, indexStore, CommonFactories.defaultFileSystemAbstraction(),
+        dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                                            new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -155,8 +155,8 @@ public class TestLuceneDataSource
         Map<String,String> config = config();
         config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
         Config config1 = new Config( StringLogger.DEV_NULL, fileSystem, config );
-        dataSource = new LuceneDataSource( config1, indexStore, CommonFactories.defaultFileSystemAbstraction(),
-                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
+                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -176,8 +176,8 @@ public class TestLuceneDataSource
         Map<String,String> config = config();
         config.put( GraphDatabaseSettings.lucene_writer_cache_size.name(), "2");
         Config config1 = new Config( StringLogger.DEV_NULL, fileSystem, config );
-        dataSource = new LuceneDataSource( config1, indexStore, CommonFactories.defaultFileSystemAbstraction(),
-                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
+                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -194,8 +194,8 @@ public class TestLuceneDataSource
     public void testInvalidatingSearcherCreatesANewOne() throws InstantiationException
     {
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, config() );
-        dataSource = new LuceneDataSource( config, indexStore, CommonFactories.defaultFileSystemAbstraction(),
-            new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
+        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
+            new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()) );
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
         IndexSearcherRef oldSearcher = dataSource.getIndexSearcher( identifier, false );
         dataSource.invalidateIndexSearcher( identifier );

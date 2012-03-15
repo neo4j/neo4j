@@ -44,6 +44,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -118,7 +119,7 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteFileOrDirectory( new File( path() ) );
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, Collections.<String,String>emptyMap() ), CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
         sf.createNeoStore(file( "neo" )).close();
 
@@ -408,7 +409,7 @@ public class TestXa extends AbstractNeo4jTestCase
     private NeoStoreXaDataSource newNeoStore() throws InstantiationException,
             IOException
     {
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, MapUtil.stringMap(
             "store_dir", path(),
             "neo_store", file( "neo" ),

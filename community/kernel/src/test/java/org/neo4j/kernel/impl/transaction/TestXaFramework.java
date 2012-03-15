@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -336,7 +337,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "store_dir", "target/var" );
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -399,7 +400,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
-            FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+            FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );

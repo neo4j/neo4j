@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -94,7 +95,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         deleteFileOrDirectory( path() );
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( StringLogger.SYSTEM, fileSystem, new HashMap<String,String>(  ) );
         StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         sf.createNeoStore(file( "neo" )).close();
@@ -146,7 +147,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         LockManager lockManager = getEmbeddedGraphDb().getLockManager();
         LockReleaser lockReleaser = getEmbeddedGraphDb().getLockReleaser();
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, MapUtil.stringMap(
                         "store_dir", path(),
                         "neo_store", file("neo"),
@@ -1020,7 +1021,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         tearDownNeoStore();
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config(StringLogger.SYSTEM, fileSystem, MapUtil.stringMap( "string_block_size", "62",
                                                                            "array_block_size", "302" ));
         StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
@@ -1044,7 +1045,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, new HashMap<String, String>(  ) ),
                 CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 

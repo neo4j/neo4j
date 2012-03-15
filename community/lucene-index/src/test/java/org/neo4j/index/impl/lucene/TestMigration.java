@@ -40,10 +40,10 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
 
 import static org.junit.Assert.*;
-import static org.neo4j.kernel.CommonFactories.*;
 
 public class TestMigration
 {
@@ -165,7 +165,7 @@ public class TestMigration
 
     private void removeProvidersFromIndexDbFile( File storeDir )
     {
-        IndexStore indexStore = new IndexStore( storeDir.getPath(), defaultFileSystemAbstraction() );
+        IndexStore indexStore = new IndexStore( storeDir.getPath(), new DefaultFileSystemAbstraction() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

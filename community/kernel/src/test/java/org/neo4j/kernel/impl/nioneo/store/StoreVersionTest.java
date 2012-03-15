@@ -28,6 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -47,7 +48,7 @@ public class StoreVersionTest
 
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, config ), CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
 
@@ -78,7 +79,7 @@ public class StoreVersionTest
         File workingFile = new File( outputDir, "neostore.nodestore.db" );
         FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
 
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( StringLogger.SYSTEM, fileSystem, new HashMap<String, String>(  ) );
         
         try {
@@ -102,7 +103,7 @@ public class StoreVersionTest
 
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(new Config(StringLogger.DEV_NULL, fileSystem, config), CommonFactories.defaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
         // The first checks the instance method, the other the public one

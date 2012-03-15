@@ -34,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -96,7 +97,7 @@ public class BatchInserterImpl implements BatchInserter
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
-        final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, params );
         boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;

@@ -33,6 +33,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
@@ -123,7 +124,7 @@ public class TestRecovery
         // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
         
         // Instead I have to do this
-        FileSystemAbstraction fileSystemAbstraction = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());

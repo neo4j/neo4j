@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
@@ -93,7 +94,7 @@ public class PreStartupStoreUpgrader
                 return 0;
             }
             
-            FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+            FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             Config conf = new Config( StringLogger.SYSTEM, fileSystem, config );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),

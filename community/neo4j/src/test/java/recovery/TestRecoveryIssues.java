@@ -30,7 +30,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -236,7 +236,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
      */
     public static void main( String... args ) throws Exception
     {
-        TxLog log = new TxLog( args[0], CommonFactories.defaultFileSystemAbstraction() );
+        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction() );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
