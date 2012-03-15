@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
@@ -422,7 +423,7 @@ public class TestXa extends AbstractNeo4jTestCase
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
         return new NeoStoreXaDataSource( config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
-                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()),
+                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID),
         Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null);
     }
 

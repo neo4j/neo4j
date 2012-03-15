@@ -393,7 +393,7 @@ public abstract class AbstractGraphDatabase
 
     protected RecoveryVerifier createRecoveryVerifier()
     {
-        return CommonFactories.defaultRecoveryVerifier();
+        return RecoveryVerifier.ALWAYS_VALID;
     }
 
     protected KernelData createKernelData()
