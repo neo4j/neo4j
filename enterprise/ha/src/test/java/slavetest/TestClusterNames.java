@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -55,7 +54,6 @@ public class TestClusterNames
     }
 
     @Test
-//    @Ignore("getting build back to green")
     public void makeSureStoreIdInStoreMatchesZKData() throws Exception
     {
         HighlyAvailableGraphDatabase db0 = db( 0, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_PORT );
@@ -72,7 +70,7 @@ public class TestClusterNames
         assertEquals( storeId, zkStoreId );
     }
 
-    @Ignore( "TODO Broken since the assembly merge. Please fix" )
+//    @Ignore( "TODO Broken since the assembly merge. Please fix" )
     @Test
     public void makeSureMultipleHaClustersCanLiveInTheSameZKCluster() throws Exception
     {
@@ -111,12 +109,9 @@ public class TestClusterNames
         // Restart an instance and make sure it rejoins the correct cluster again
         db0Cluster1.shutdown();
         
-        // TODO do this in another way... wait?
-//        db1Cluster1.newMaster( new Exception() );
-        Thread.sleep( 10000 );
-        
-        assertTrue( db1Cluster1.isMaster() );
         pullUpdates( db1Cluster1 );
+        setRefNodeName( db1Cluster1, cluster1PropertyName );
+        assertTrue( db1Cluster1.isMaster() );
         db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
         pullUpdates( db0Cluster1, db1Cluster1 );
         db1Cluster2.shutdown();

@@ -28,7 +28,6 @@ import java.lang.reflect.Method;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HaConfig;
@@ -57,7 +56,6 @@ public class TestConfig
     }
 
     @Test
-    @Ignore("getting build back to green")
     public void testZkSessionTimeout() throws Exception
     {
         long timeout = 80000; // Default is 5000

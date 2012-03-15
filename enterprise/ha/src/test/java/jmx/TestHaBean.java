@@ -42,7 +42,6 @@ import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
-@Ignore("getting build back to green")
 public class TestHaBean
 {
     private static final TargetDirectory dir = TargetDirectory.forTest( TestHaBean.class );
