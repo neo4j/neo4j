@@ -62,6 +62,20 @@ case class CachedExpression(key:String, identifier:Identifier) extends Expressio
   def rewrite(f: (Expression) => Expression) = f(this)
 
   def filter(f: (Expression) => Boolean) = if(f(this)) Seq(this) else Seq()
+
+  override def toString() = "Cached(" + super.toString() + ")"
+}
+
+case class Null() extends Expression {
+  protected def compute(v1: Map[String, Any]): Any = null
+
+  val identifier: Identifier = Identifier("null", ScalarType())
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
+
+  def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = if(f(this)) Seq(this) else Seq()
 }
 
 case class Add(a: Expression, b: Expression) extends Expression {
@@ -98,10 +112,12 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def numberWithNumber(a: Number, b: Number) = a.doubleValue() - b.doubleValue()
 
-  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  println("wut?")
+  
   def operand = "%"
 
   def verb = "modulo"
@@ -294,6 +310,9 @@ case class Parameter(parameterName: String) extends CastableExpression {
     case ParameterValue(x) => x
     case _ => throw new ParameterNotFoundException("Expected a parameter named " + parameterName)
   }
+
+
+  override def apply(m: Map[String, Any]) = compute(m)
 
   val identifier: Identifier = Identifier(parameterName, AnyType())
 

@@ -57,11 +57,15 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       checkForMissingPredicates(query, pipe)
     }
 
+    println(pipe.executionPlan())
+
     val func = (params: Map[String, Any]) => {
       val start = System.currentTimeMillis()
       val newMap = MutableMap() ++ params
       val results = pipe.createResults(newMap)
       val timeTaken = System.currentTimeMillis() - start
+      
+      println(pipe.executionPlan())
 
       new PipeExecutionResult(results, pipe.symbols, inputQuery.returns.columns, timeTaken)
     }

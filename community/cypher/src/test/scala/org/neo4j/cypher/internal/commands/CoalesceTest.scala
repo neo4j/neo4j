@@ -32,12 +32,12 @@ class CoalesceTest extends Assertions {
   }
 
   @Test def givenANullValueThenReturnsNull() {
-    val func = new CoalesceFunction(Literal(null))
+    val func = new CoalesceFunction(Null())
     assert( func(Map()) === null )
   }
 
   @Test def givenOneNullAndOneValueThenReturnsTheValue() {
-    val func = new CoalesceFunction(Literal(null), Literal("Alistair"))
+    val func = new CoalesceFunction(Null(), Literal("Alistair"))
     assert( func(Map()) === "Alistair" )
   }
 
@@ -45,7 +45,6 @@ class CoalesceTest extends Assertions {
     val func = new CoalesceFunction(Literal("Hunger"), BreakingExpression())
     assert( func(Map()) === "Hunger" )
   }
-
 }
 
 case class BreakingExpression() extends Expression {

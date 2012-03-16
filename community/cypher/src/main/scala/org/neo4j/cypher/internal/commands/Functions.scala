@@ -197,7 +197,7 @@ case class LastFunction(collection: Expression) extends NullInNullOutExpression(
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = collection.dependencies(AnyIterableType())
 
-  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(LastFunction(collection.rewrite(f)))
 
   def filter(f: (Expression) => Boolean) = if (f(this))
     Seq(this) ++ collection.filter(f)
@@ -217,7 +217,7 @@ case class TailFunction(collection: Expression) extends NullInNullOutExpression(
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = collection.dependencies(AnyIterableType())
 
-  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(TailFunction(collection.rewrite(f)))
 
   def filter(f: (Expression) => Boolean) = if (f(this))
     Seq(this) ++ collection.filter(f)
@@ -252,19 +252,14 @@ case class FilterFunction(collection: Expression, symbol: String, predicate: Pre
       case x => throw new IterableRequiredException(collection)
     }
 
-    val result = seq.filter {
-      case element => predicate.isMatch(m + (symbol -> element))
-    }
-
-    result
+    seq.filter(element => predicate.isMatch(m + (symbol -> element)))
   }
 
-  val identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection, predicate), collection.identifier.typ)
+  val identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection.identifier.name, predicate), collection.identifier.typ)
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = (collection.dependencies(PathType()) ++ predicate.dependencies).filterNot(_.name == symbol)
 
-  //TODO: Uh oh. Predicates don't do rewriting. Revisit while making predicates full on expressions
-  def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), symbol, predicate))
+  def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), symbol, predicate.rewrite(f)))
 
   def filter(f: (Expression) => Boolean) = if (f(this))
     Seq(this) ++ collection.filter(f)

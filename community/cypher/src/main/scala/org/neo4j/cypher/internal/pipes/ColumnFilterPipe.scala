@@ -36,7 +36,11 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     source.createResults(params).map(m => {
       val newMap = Map[String,Any]()
-      for (ri <- returnItems) newMap += (ri.columnName -> m(ri.expression.identifier.name))
+      for (ri <- returnItems) {
+        val name = ri.expression.identifier.name
+        val keys= m.keys.toSeq
+        newMap += (ri.columnName -> m(name))
+      }
       newMap
     })
   }
