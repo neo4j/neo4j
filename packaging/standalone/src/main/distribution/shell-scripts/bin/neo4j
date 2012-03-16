@@ -295,7 +295,7 @@ installservice() {
       if [[ $HEADLESS == false ]]; then
         read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
       else
-        $yn='y'
+        yn='y'
       fi
       case $yn in
               [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
@@ -333,7 +333,7 @@ installservice() {
             if [[ $HEADLESS == false ]]; then
               read -p "User \"$proposed_user\" does not yet exist. Shall I create the account for you? [Yn]" yn
             else
-              $yn="y"
+              yn="y"
             fi
             case $yn in
               [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
