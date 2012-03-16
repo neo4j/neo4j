@@ -88,7 +88,9 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %s ms".format(eagerResult.size, timeTaken)
+    
+    val row = if(eagerResult.size>1) "rows" else "row"
+    val footer = "%d %s, %s ms".format(eagerResult.size, row, timeTaken)
 
     writer.println(---)
     writer.println(headerLine)
