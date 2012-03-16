@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.immutable.Set
 import collection.Seq
+import collection.Map
 
 class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    predicates: Seq[Predicate],

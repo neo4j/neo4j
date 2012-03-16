@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import collection.immutable.Map
+import collection.Map
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
 import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.True
 
+import collection.breakOut
 class SimplePatternMatcherBuilder(pattern: PatternGraph) extends MatcherBuilder {
   val patternNodes = pattern.patternNodes.map {
     case (key, pn) => {
@@ -75,7 +76,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph) extends MatcherBuilder 
       patternNodes.foreach{case (key, pn) => result += key -> patternMatch.getNodeFor(pn)}
       patternRels.foreach{case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)}
 
-      result.toMap
+      result.clone()
     })
   }
 }

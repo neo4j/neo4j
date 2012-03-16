@@ -25,6 +25,7 @@ import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.commands._
 import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, Identifier, SymbolTable}
+import collection.Map
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null

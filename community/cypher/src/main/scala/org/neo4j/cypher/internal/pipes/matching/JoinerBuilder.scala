@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.symbols.RelationshipType
 import org.neo4j.cypher.internal.commands.{True, And, Predicate}
+import collection.Map
 
 object JoinerBuilder {
   def canHandlePatter(patternGraph: PatternGraph): Boolean =

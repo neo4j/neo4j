@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.commands.Predicate
+import collection.Map
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {

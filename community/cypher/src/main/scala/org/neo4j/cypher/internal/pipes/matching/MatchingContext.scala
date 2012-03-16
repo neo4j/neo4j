@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.SyntaxException
-import collection.immutable.Map
+import collection.Map
 import collection.{Traversable, Seq}
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
@@ -45,11 +45,12 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
     /*if (JoinerBuilder.canHandlePatter(patternGraph)) {
       new JoinerBuilder(patternGraph, predicates)
     } else */
-    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
+    /*if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
       new SimplePatternMatcherBuilder(patternGraph)
     } else {
+    */
       new PatterMatchingBuilder(patternGraph, predicates)
-    }
+    //}
   }
 
   private def buildPatternGraph(): PatternGraph = {
