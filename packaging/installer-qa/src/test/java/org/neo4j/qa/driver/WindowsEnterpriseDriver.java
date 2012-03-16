@@ -23,7 +23,7 @@ import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
 
-public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements EnterpriseDriver {
+public class WindowsEnterpriseDriver extends WindowsBaseDriver implements EnterpriseDriver {
 
     private static final String BACKUP_DIR_NAME = "backups";
     private static final String ZOOKEEPER_INSTALL_DIR = "zookeeper\\ with\\ space";

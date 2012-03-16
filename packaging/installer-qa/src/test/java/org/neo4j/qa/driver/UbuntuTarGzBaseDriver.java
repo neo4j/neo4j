@@ -26,13 +26,13 @@ import org.apache.commons.io.FileUtils;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public abstract class AbstractUbuntuTarGzDriver extends AbstractPosixDriver {
+public class UbuntuTarGzBaseDriver extends AbstractPosixDriver {
 
     private static final String INSTALL_DIR = "/var/lib/neo4j";
     private String installerPath;
     private String installerFileName;
 
-    public AbstractUbuntuTarGzDriver(VirtualMachine vm, String installerPath)
+    public UbuntuTarGzBaseDriver(VirtualMachine vm, String installerPath)
     {
         super(vm);
         this.installerPath = installerPath;

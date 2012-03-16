@@ -41,13 +41,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.neo4j.qa.driver.Neo4jDriver;
 import org.neo4j.qa.driver.UbuntuDebAdvancedDriver;
-import org.neo4j.qa.driver.UbuntuDebCommunityDriver;
+import org.neo4j.qa.driver.UbuntuDebBaseDriver;
 import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
-import org.neo4j.qa.driver.UbuntuTarGzAdvancedDriver;
-import org.neo4j.qa.driver.UbuntuTarGzCommunityDriver;
+import org.neo4j.qa.driver.UbuntuTarGzBaseDriver;
 import org.neo4j.qa.driver.UbuntuTarGzEnterpriseDriver;
-import org.neo4j.qa.driver.WindowsAdvancedDriver;
-import org.neo4j.qa.driver.WindowsCommunityDriver;
+import org.neo4j.qa.driver.WindowsBaseDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -80,23 +78,23 @@ public class CommonQualityAssuranceTest {
         
         // Windows
         platforms.put(Platforms.WINDOWS, new Neo4jDriver[] {
-            new WindowsCommunityDriver(  windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER ),
-            new WindowsAdvancedDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER ),
+            new WindowsBaseDriver(   windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER ),
+            new WindowsBaseDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER ),
             new WindowsEnterpriseDriver( windows, 
                     SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
                     SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) });
         
         // Ubuntu, with debian installer
         platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
-                new UbuntuDebCommunityDriver(   ubuntu, SharedConstants.DEBIAN_COMMUNITY_INSTALLER ),
+                new UbuntuDebBaseDriver(        ubuntu, SharedConstants.DEBIAN_COMMUNITY_INSTALLER ),
                 new UbuntuDebAdvancedDriver(    ubuntu, SharedConstants.DEBIAN_ADVANCED_INSTALLER ),
                 new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
                                                         SharedConstants.DEBIAN_COORDINATOR_INSTALLER )});
         
         // Ubuntu, with tarball packages
         platforms.put(Platforms.UBUNTU_TAR_GZ, new Neo4jDriver[] {
-                new UbuntuTarGzCommunityDriver(   ubuntu, SharedConstants.UNIX_COMMUNITY_TARBALL ),
-                new UbuntuTarGzAdvancedDriver(    ubuntu, SharedConstants.UNIX_ADVANCED_TARBALL ),
+                new UbuntuTarGzBaseDriver(        ubuntu, SharedConstants.UNIX_COMMUNITY_TARBALL ),
+                new UbuntuTarGzBaseDriver(        ubuntu, SharedConstants.UNIX_ADVANCED_TARBALL ),
                 new UbuntuTarGzEnterpriseDriver(  ubuntu, SharedConstants.UNIX_ENTERPRISE_TARBALL, 
                                                           SharedConstants.UNIX_ENTERPRISE_TARBALL )});
         

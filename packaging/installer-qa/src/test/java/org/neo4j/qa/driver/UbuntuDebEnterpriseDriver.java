@@ -22,7 +22,7 @@ package org.neo4j.qa.driver;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver implements EnterpriseDriver {
+public class UbuntuDebEnterpriseDriver extends UbuntuDebBaseDriver implements EnterpriseDriver {
 
     private static final String ZOOKEEPER_INSTALL_DIR = "/var/lib/neo4j-coordinator";
     private static final String BACKUP_DIR = "/home/vagrant";

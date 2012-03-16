@@ -21,7 +21,7 @@ package org.neo4j.qa.driver;
 
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuDebAdvancedDriver extends AbstractUbuntuDebDriver {
+public class UbuntuDebAdvancedDriver extends UbuntuDebBaseDriver {
 
     public UbuntuDebAdvancedDriver(VirtualMachine vm, String installerPath)
     {

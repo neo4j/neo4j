@@ -28,10 +28,7 @@ import org.neo4j.vagrant.CygwinShell;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-/*
- * We extend AbstractPosixDriver, because we use Cygwin to talk to windows.
- */
-public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
+public class WindowsBaseDriver extends AbstractPosixDriver {
 
     private static final String TEMP_DOWNLOAD_LOG_PATH = "/home/vagrant/tobedownloaded.log";
     protected static final String WIN_INSTALL_DIR = "C:\\neo4j install with spaces";
@@ -42,7 +39,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     protected String installerFileName;
     protected CygwinShell cygSh;
 
-    public AbstractWindowsDriver(VirtualMachine vm, String installerPath) {
+    public WindowsBaseDriver(VirtualMachine vm, String installerPath) {
         super(vm);
         this.installerPath = installerPath;
         this.installerFileName = new File(installerPath).getName();
@@ -156,5 +153,4 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
             throw new RuntimeException(e);
         }
     }
-    
 }
