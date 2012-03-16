@@ -27,6 +27,7 @@ import java.lang.String
 import internal.symbols.SymbolTable
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
+import java.text.DecimalFormat
 
 class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
   extends ExecutionResult
@@ -68,10 +69,18 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     columnSizes.toMap
   }
 
-  def dumpToString(writer: PrintWriter) {
+  private def createTimedResults = {
     val start = System.nanoTime()
     val eagerResult = r.toList
-    val timeTaken = .001 * (System.nanoTime() - start)
+    val ms = .00001 * (System.nanoTime() - start)
+    val myFormatter = new DecimalFormat("####.##");
+    val timeTaken = myFormatter.format(ms);
+
+    (eagerResult, timeTaken)
+  }
+
+  def dumpToString(writer: PrintWriter) {
+    val (eagerResult, timeTaken) = createTimedResults
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
@@ -79,7 +88,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %f ms".format(eagerResult.size, timeTaken)
+    val footer = "%d rows, %s ms".format(eagerResult.size, timeTaken)
 
     writer.println(---)
     writer.println(headerLine)
