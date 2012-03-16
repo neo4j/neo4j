@@ -28,7 +28,7 @@ import java.io.{PrintWriter, File, FileWriter}
 import org.neo4j.graphdb._
 import org.scalatest.junit.JUnitSuite
 import java.io.ByteArrayOutputStream
-import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
+import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
@@ -77,9 +77,13 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/dev/ql/"
   }
 
+  protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocStyle.withAutomaticRelationshipTypeColors()
+  }
+
   private def emitGraphviz(fileName: String): String = {
     val out = new ByteArrayOutputStream();
-    val writer = new GraphvizWriter(AsciiDocStyle.withAutomaticRelationshipTypeColors());
+    val writer = new GraphvizWriter(getGraphvizStyle);
     writer.emit(out, Walker.fullGraph(db));
 
     """
