@@ -27,11 +27,13 @@ import java.lang.String
 import internal.symbols.SymbolTable
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
-class PipeExecutionResult(r: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
+
+class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
   extends ExecutionResult
   with StringExtras {
 
-  lazy val immutableResult = r.map( m => m.toMap )
+  lazy val immutableResult = r.map(m => m.toMap)
+
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
@@ -67,7 +69,9 @@ class PipeExecutionResult(r: Traversable[Map[String, Any]], val symbols: SymbolT
   }
 
   def dumpToString(writer: PrintWriter) {
+    val start = System.nanoTime()
     val eagerResult = r.toList
+    val timeTaken = .001 * (System.nanoTime() - start)
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
@@ -75,7 +79,7 @@ class PipeExecutionResult(r: Traversable[Map[String, Any]], val symbols: SymbolT
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %d ms".format(eagerResult.size, timeTaken)
+    val footer = "%d rows, %f ms".format(eagerResult.size, timeTaken)
 
     writer.println(---)
     writer.println(headerLine)
