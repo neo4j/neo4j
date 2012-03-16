@@ -28,7 +28,7 @@
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     
-    <box-path-ubuntu-11.04-amd64>https://github.com/downloads/divio/vagrant-boxes/vagrant-ubuntu-11.04-server-amd64-v1.box</box-path-ubuntu-11.04-amd64>
+    <box-path-ubuntu-11.04-amd64-with-jre>${basedir}/boxes/ubuntu-11.04-server-amd64-with-jre.box</box-path-ubuntu-11.04-amd64-with-jre>
     <box-path-win2008-amd64>${basedir}/boxes/win2008-amd64.box</box-path-win2008-amd64>
     
     <vagrant.path>vagrant</vagrant.path>
@@ -124,6 +124,24 @@
                   file="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb"
                   failonerror="false" />
+
+                <!-- Unix tar.gz packages -->
+                <move
+                  file="${project.build.directory}/neo4j-community-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-community.tar.gz"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-advanced-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-advanced.tar.gz"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-enterprise.tar.gz"
+                  failonerror="false" />
+                <copy
+                  file="${project.build.outputDirectory}/installer-unix-enterprise.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-coordinator.tar.gz"
+                  failonerror="false" />
               </target>
             </configuration>
           </execution>
@@ -154,7 +172,7 @@
             <neo4j.version>${neo4j.version}</neo4j.version>
             <java.util.logging.config.file>test-logging.properties</java.util.logging.config.file>
             
-            <box-path-ubuntu-11.04-amd64>${box-path-ubuntu-11.04-amd64}</box-path-ubuntu-11.04-amd64>
+            <box-path-ubuntu-11.04-amd64-with-jre>${box-path-ubuntu-11.04-amd64-with-jre}</box-path-ubuntu-11.04-amd64-with-jre>
             <box-path-win2008-amd64>${box-path-win2008-amd64}</box-path-win2008-amd64>
             
             <vagrant.path>${vagrant.path}</vagrant.path>
@@ -201,6 +219,12 @@
                           failonerror="false">
                       <fileset dir="${project.baseDir}/../../installer-windows/target">
                         <include name="*.msi"/>
+                      </fileset>
+                    </copy>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../standalone/target">
+                        <include name="*.tar.gz"/>
                       </fileset>
                     </copy>
                   </target>

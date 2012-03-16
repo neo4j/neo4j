@@ -24,8 +24,8 @@ public enum Box {
     WINDOWS_2008_R2_AMD64("windows-2008R2-amd64", 
             System.getProperty("box-path-win2008-amd64")),
             
-    UBUNTU_11_04_SERVER("ubuntu-11.04-amd64", 
-            System.getProperty("box-path-ubuntu-11.04-amd64"));
+    UBUNTU_11_04_SERVER("ubuntu-11.04-amd64-with-jre", 
+            System.getProperty("box-path-ubuntu-11.04-amd64-with-jre"));
     
     private String boxName;
     private String boxUrl;
