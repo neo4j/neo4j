@@ -43,6 +43,9 @@ import org.neo4j.qa.driver.Neo4jDriver;
 import org.neo4j.qa.driver.UbuntuDebAdvancedDriver;
 import org.neo4j.qa.driver.UbuntuDebCommunityDriver;
 import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
+import org.neo4j.qa.driver.UbuntuTarGzAdvancedDriver;
+import org.neo4j.qa.driver.UbuntuTarGzCommunityDriver;
+import org.neo4j.qa.driver.UbuntuTarGzEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsAdvancedDriver;
 import org.neo4j.qa.driver.WindowsCommunityDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
@@ -85,13 +88,21 @@ public class CommonQualityAssuranceTest {
         
         // Ubuntu, with debian installer
         platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
-                new UbuntuDebCommunityDriver(  ubuntu, SharedConstants.UBUNTU_COMMUNITY_INSTALLER ),
-                new UbuntuDebAdvancedDriver(  ubuntu, SharedConstants.UBUNTU_ADVANCED_INSTALLER ),
-                new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
-                                                        SharedConstants.UBUNTU_COORDINATOR_INSTALLER )});
+                new UbuntuDebCommunityDriver(   ubuntu, SharedConstants.DEBIAN_COMMUNITY_INSTALLER ),
+                new UbuntuDebAdvancedDriver(    ubuntu, SharedConstants.DEBIAN_ADVANCED_INSTALLER ),
+                new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
+                                                        SharedConstants.DEBIAN_COORDINATOR_INSTALLER )});
+        
+        // Ubuntu, with tarball packages
+        platforms.put(Platforms.UBUNTU_TAR_GZ, new Neo4jDriver[] {
+                new UbuntuTarGzCommunityDriver(   ubuntu, SharedConstants.UNIX_COMMUNITY_TARBALL ),
+                new UbuntuTarGzAdvancedDriver(    ubuntu, SharedConstants.UNIX_ADVANCED_TARBALL ),
+                new UbuntuTarGzEnterpriseDriver(  ubuntu, SharedConstants.UNIX_ENTERPRISE_TARBALL, 
+                                                          SharedConstants.UNIX_ENTERPRISE_TARBALL )});
         
         for(String platform : Platforms.getPlaformsToUse()) {
-            for(Neo4jDriver d : platforms.get(platform)) {
+            for(Neo4jDriver d : platforms.get(platform)) 
+            {
                 String name = CommonQualityAssuranceTest.class.getName() + "_" + d.getClass().getName();
                 testParameters.add(new Object[]{name, d});
             }
@@ -143,16 +154,16 @@ public class CommonQualityAssuranceTest {
     
     private void assertInstallWorks() throws Throwable
     {
-        driver.runInstall();
-        driver.stopService();
-        driver.setConfig(driver.installDir() + "/conf/neo4j-server.properties","org.neo4j.server.webserver.address", "0.0.0.0");
-        driver.startService();
+        driver.installNeo4j();
+        driver.stopNeo4j();
+        driver.setConfig(driver.neo4jInstallDir() + "/conf/neo4j-server.properties","org.neo4j.server.webserver.address", "0.0.0.0");
+        driver.startNeo4j();
         assertRESTWorks();
     }
 
     private void assertUninstallWorks() throws Throwable
     {
-        driver.runUninstall();
+        driver.uninstallNeo4j();
         assertRESTDoesNotWork();
         driver.reboot();
         assertRESTDoesNotWork();
@@ -168,18 +179,18 @@ public class CommonQualityAssuranceTest {
     private void assertServiceStartStopWorks() throws Throwable
     {
         assertRESTWorks();
-        driver.stopService();
+        driver.stopNeo4j();
         assertRESTDoesNotWork();
-        driver.startService();
+        driver.startNeo4j();
         assertRESTWorks();
     }
 
     private void assertDocumentationIsCorrect() throws Throwable
     {
-        String file = driver.readFile(driver.installDir() + "/doc/manual/html/index.html");
+        String file = driver.readFile(driver.neo4jInstallDir() + "/doc/manual/html/index.html");
         assertThat(file, containsString(SharedConstants.NEO4J_VERSION));
 
-        List<String> files = driver.listDir(driver.installDir() + "/doc/manual/text");
+        List<String> files = driver.listDir(driver.neo4jInstallDir() + "/doc/manual/text");
         assertThat(files, hasItem("neo4j-manual.txt"));
     }
 

@@ -35,12 +35,12 @@ public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver implement
     }
     
     @Override
-    public void runUninstall() {
+    public void uninstallNeo4j() {
         sh.run("sudo dpkg -r neo4j-enterprise");
     }
 
     @Override
-    public void runZookeeperInstall()
+    public void installZookeeper()
     {
         vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.deb");
         sh.run("sudo dpkg -i /home/vagrant/zookeeper.deb");
@@ -48,19 +48,19 @@ public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver implement
     }
 
     @Override
-    public void runZookeeperUninstall()
+    public void uninstallZookeeper()
     {
         sh.run("sudo apt-get -qy remove zookeeper");
     }
 
     @Override
-    public void startZookeeperService()
+    public void startZookeeper()
     {
         sh.run("sudo /etc/init.d/neo4j-coord start");
     }
 
     @Override
-    public void stopZookeeperService()
+    public void stopZookeeper()
     {
         sh.run("sudo /etc/init.d/neo4j-coord stop");
     }
@@ -87,23 +87,23 @@ public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver implement
     @Override
     public void replaceGraphDataDirWithBackup(String backupName)
     {
-        sh.run("sudo rm -rf " + installDir() + "/data/graph.db");
-        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + installDir() + "/data/graph.db");
-        sh.run("sudo chown neo4j:adm -R " + installDir() + "/data/graph.db");
+        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
+        sh.run("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
     public void downloadLogsTo(String target) {
         super.downloadLogsTo(target);
         String ip = vm().definition().ip();
-        downloadLog(installDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
+        downloadLog(neo4jInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
         downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-server.log");
     }
     
     private void haBackup(String backupName, String coordinatorAddresses,
             String mode)
     {
-        Result r = sh.run("cd " + installDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
+        Result r = sh.run("cd " + neo4jInstallDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
                 " -" + mode +
                 " -from ha://" + coordinatorAddresses +
                 " -to " + BACKUP_DIR + "/" + backupName);

@@ -37,9 +37,14 @@ public class SharedConstants {
     public static final String WINDOWS_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-windows-enterprise.msi";
     public static final String WINDOWS_COORDINATOR_INSTALLER  = INSTALLER_DIR + "installer-windows-coordinator.msi";
     
-    public static final String UBUNTU_COMMUNITY_INSTALLER = INSTALLER_DIR + "installer-debian-community.deb";
-    public static final String UBUNTU_ADVANCED_INSTALLER = INSTALLER_DIR + "installer-debian-advanced.deb";
-    public static final String UBUNTU_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-debian-enterprise.deb";
-    public static final String UBUNTU_COORDINATOR_INSTALLER  = INSTALLER_DIR + "installer-debian-coordinator.deb";
+    public static final String DEBIAN_COMMUNITY_INSTALLER = INSTALLER_DIR + "installer-debian-community.deb";
+    public static final String DEBIAN_ADVANCED_INSTALLER = INSTALLER_DIR + "installer-debian-advanced.deb";
+    public static final String DEBIAN_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-debian-enterprise.deb";
+    public static final String DEBIAN_COORDINATOR_INSTALLER  = INSTALLER_DIR + "installer-debian-coordinator.deb";
+    
+    public static final String UNIX_COMMUNITY_TARBALL = INSTALLER_DIR + "installer-unix-community.tar.gz";
+    public static final String UNIX_ADVANCED_TARBALL = INSTALLER_DIR + "installer-unix-advanced.tar.gz";
+    public static final String UNIX_ENTERPRISE_TARBALL = INSTALLER_DIR + "installer-unix-enterprise.tar.gz";
+    public static final String UNIX_COORDINATOR_TARBALL  = INSTALLER_DIR + "installer-unix-coordinator.tar.gz";
     
 }

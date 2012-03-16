@@ -21,10 +21,10 @@ package org.neo4j.qa.driver;
 
 public interface EnterpriseDriver extends Neo4jDriver {
 
-    void runZookeeperInstall();
-    void runZookeeperUninstall();
-    void startZookeeperService();
-    void stopZookeeperService();
+    void installZookeeper();
+    void uninstallZookeeper();
+    void startZookeeper();
+    void stopZookeeper();
     String zookeeperInstallDir();
     
     void performFullHABackup(String backupName, String coordinatorAddresses);

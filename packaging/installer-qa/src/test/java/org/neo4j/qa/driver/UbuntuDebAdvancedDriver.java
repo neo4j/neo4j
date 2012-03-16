@@ -29,7 +29,7 @@ public class UbuntuDebAdvancedDriver extends AbstractUbuntuDebDriver {
     }
     
     @Override
-    public void runUninstall() {
+    public void uninstallNeo4j() {
         sh.run("sudo dpkg -r neo4j-advanced");
     }
 }

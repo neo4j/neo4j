@@ -49,7 +49,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     }
     
     @Override
-    public void runInstall() {
+    public void installNeo4j() {
         vm.copyFromHost(installerPath, "/home/vagrant/" + installerFileName);
         cygSh.run("touch install.log");
         cygSh.runDOS("msiexec /quiet /L* install.log /i " + installerFileName + " INSTALL_DIR=\""+WIN_INSTALL_DIR+"\"");
@@ -60,7 +60,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     }
     
     @Override
-    public void runUninstall() {
+    public void uninstallNeo4j() {
         cygSh.run("net stop neo4j");
         cygSh.run(":> uninstall.log");
         cygSh.runDOS("msiexec /quiet /L* uninstall.log /x " + installerFileName);
@@ -77,7 +77,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     }
     
     @Override
-    public void startService() {
+    public void startNeo4j() {
         Result r = sh.run("net start neo4j");
         if(!r.getOutput().contains("service was started successfully")) {
             throw new RuntimeException("Tried to start neo4j ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
@@ -85,7 +85,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     }
     
     @Override
-    public void stopService() {
+    public void stopNeo4j() {
         Result r = sh.run("net stop neo4j");
         if(!r.getOutput().contains("service was stopped successfully")) {
             throw new RuntimeException("Tried to stop neo4j ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
@@ -93,7 +93,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     }    
     
     @Override
-    public String installDir() {
+    public String neo4jInstallDir() {
         return INSTALL_DIR;
     }
     
@@ -101,8 +101,8 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     public void downloadLogsTo(String target) {
         String ip = vm().definition().ip();
         System.out.println("Downloading logs for server " + ip + " to " + target + ".");
-        downloadLog(installDir() + "/data/graph.db/messages.log", target + "/" + ip + "-messages.log");
-        downloadLog(installDir() + "/data/log/neo4j.0.0.log", target + "/" + ip + "-neo4j.0.0.log");
+        downloadLog(neo4jInstallDir() + "/data/graph.db/messages.log", target + "/" + ip + "-messages.log");
+        downloadLog(neo4jInstallDir() + "/data/log/neo4j.0.0.log", target + "/" + ip + "-neo4j.0.0.log");
         downloadLog("/home/vagrant/install.log", target + "/" + ip + "-install.log");
         downloadLog("/home/vagrant/uninstall.log", target + "/" + ip + "-uninstall.log");
     }

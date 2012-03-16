@@ -60,12 +60,12 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     }
     
     @Override
-    public void destroyDatabase() {
-        sh.run("sudo rm -rf " + installDir() + "/data/graph.db");
+    public void deleteDatabase() {
+        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
-    public Neo4jServerAPI api() {
+    public Neo4jServerAPI neo4jClient() {
         if(serverAPI == null) {
             serverAPI = new Neo4jServerAPI("http://" + vm().definition().ip() + ":7474");
         }

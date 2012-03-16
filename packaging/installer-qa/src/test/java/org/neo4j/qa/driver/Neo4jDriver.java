@@ -30,12 +30,12 @@ public interface Neo4jDriver {
     /**
      * Should install some edition of Neo4j.
      */
-    void runInstall();
+    void installNeo4j();
     
     /**
      * Should uninstall Neo4j.
      */
-    void runUninstall();
+    void uninstallNeo4j();
 
     /**
      * Restart the VM
@@ -50,17 +50,17 @@ public interface Neo4jDriver {
     /**
      * Stop the neo4j service.
      */
-    void stopService();
+    void stopNeo4j();
 
     /**
      * Start the neo4j service.
      */
-    void startService();
+    void startNeo4j();
 
     /**
      * Delete the database
      */
-    void destroyDatabase();
+    void deleteDatabase();
 
     /**
      * Close resources, like running
@@ -71,7 +71,7 @@ public interface Neo4jDriver {
     /**
      * @return the directory where neo4j is installed.
      */
-    String installDir();
+    String neo4jInstallDir();
 
     /**
      * Read a file.
@@ -106,7 +106,7 @@ public interface Neo4jDriver {
     /** 
      * Get a simple REST API client
      */
-    Neo4jServerAPI api();
+    Neo4jServerAPI neo4jClient();
 
     /**
      * Download relevant neo4j logs to the 

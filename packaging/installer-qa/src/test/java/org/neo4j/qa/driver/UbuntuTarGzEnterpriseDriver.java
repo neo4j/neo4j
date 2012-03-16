@@ -22,64 +22,58 @@ package org.neo4j.qa.driver;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
+public class UbuntuTarGzEnterpriseDriver extends AbstractUbuntuTarGzDriver implements EnterpriseDriver {
 
-public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements EnterpriseDriver {
-
-    private static final String BACKUP_DIR_NAME = "backups";
-    private static final String ZOOKEEPER_INSTALL_DIR = "zookeeper\\ with\\ space";
-    private static final String ZOOKEEPER_WIN_INSTALL_DIR = "zookeeper with space";
-    private static final String ZOOKEEPER_SERVICE = "Neo4jCoordinator";
+    private static final String ZOOKEEPER_INSTALL_DIR = "/var/lib/neo4j-coordinator";
+    private static final String BACKUP_DIR = "/home/vagrant";
     private String zookeeperInstallerPath;
 
-    public WindowsEnterpriseDriver(VirtualMachine vm, String installerName, String zookeeperInstallerPath)
+    public UbuntuTarGzEnterpriseDriver(VirtualMachine vm, String installerPath, String zookeeperInstallerPath)
     {
-        super(vm, installerName);
+        super(vm, installerPath);
         this.zookeeperInstallerPath = zookeeperInstallerPath;
     }
 
     @Override
     public void installZookeeper()
     {
-        vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.msi");
-        cygSh.run(":> zookeeper-install.log");
-        cygSh.runDOS("msiexec /quiet /L* zookeeper-install.log /i zookeeper.msi INSTALL_DIR=\"C:\\"+ZOOKEEPER_WIN_INSTALL_DIR+"\"");
-        if(!installIsSuccessful("/home/vagrant/zookeeper-install.log")){
-            throw new RuntimeException("Zookeeper install failed ["+vm().definition().ip()+"].");
-        }
+        sh.run("mkdir /home/vagrant/zk-installer");
+        sh.run("sudo mkdir " + ZOOKEEPER_INSTALL_DIR);
+
+        vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zk-installer/zookeeper.tar.gz");
+        
+        sh.run("cd /home/vagrant/zk-installer/ && tar xvf zookeeper.tar.gz");
+        sh.run("sudo mv /home/vagrant/zk-installer/neo4j*/* " + ZOOKEEPER_INSTALL_DIR);
+        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
+        
+        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h -u neo4j install");
+        sh.run("sudo chown neo4j:neo4j -R " + ZOOKEEPER_INSTALL_DIR);
+        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
     }
 
     @Override
     public void uninstallZookeeper()
     {
-        cygSh.run(":> zookeeper-uninstall.log");
-        cygSh.runDOS("msiexec /quiet /L* zookeeper-uninstall.log /x zookeeper.msi");
-        if(!installIsSuccessful("/home/vagrant/zookeeper-uninstall.log")){
-            throw new RuntimeException("Zookeeper uninstall failed ["+vm().definition().ip()+"].");
-        }
+        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h -u neo4j remove");
+        sh.run("sudo rm " + ZOOKEEPER_INSTALL_DIR + " -rf");
     }
 
     @Override
     public void startZookeeper()
     {
-        Result r = sh.run("net start " + ZOOKEEPER_SERVICE);
-        if(!r.getOutput().contains("service was started successfully")) {
-            throw new RuntimeException("Tried to start neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
-        }
+        sh.run("sudo /etc/init.d/neo4j-coord start");
     }
 
     @Override
     public void stopZookeeper()
     {
-        Result r = sh.run("net stop " + ZOOKEEPER_SERVICE);
-        if(!r.getOutput().contains("service was stopped successfully")) {
-            throw new RuntimeException("Tried to stop neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
-        }
+        sh.run("sudo /etc/init.d/neo4j-coord stop");
     }
 
     @Override
     public String zookeeperInstallDir()
     {
-        return "/cygdrive/c/" + ZOOKEEPER_INSTALL_DIR;
+        return ZOOKEEPER_INSTALL_DIR;
     }
 
     @Override
@@ -87,7 +81,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     {
         haBackup(backupName, coordinatorAddresses, "full");
     }
-
+    
     @Override
     public void performIncrementalHABackup(String backupName,
             String coordinatorAddresses)
@@ -98,8 +92,9 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     @Override
     public void replaceGraphDataDirWithBackup(String backupName)
     {
-        cygSh.run("rm -rf " + neo4jInstallDir() + "/data/graph.db");
-        cygSh.run("mv " + neo4jInstallDir()+"/"+BACKUP_DIR_NAME+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
+        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
+        sh.run("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
@@ -108,21 +103,18 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
         String ip = vm().definition().ip();
         downloadLog(neo4jInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
         downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-server.log");
-        downloadLog("/home/vagrant/zookeeper-install.log", target + "/" + ip + "-zookeeper-install.log");
-        downloadLog("/home/vagrant/zookeeper-uninstall.log", target + "/" + ip + "-zookeeper-uninstall.log");
     }
     
     private void haBackup(String backupName, String coordinatorAddresses,
             String mode)
     {
-        Result r = cygSh.run("cd " + neo4jInstallDir() + " && bin/Neo4jBackup.bat" + 
+        Result r = sh.run("cd " + neo4jInstallDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
                 " -" + mode +
                 " -from ha://" + coordinatorAddresses +
-                " -to " + BACKUP_DIR_NAME + "/" + backupName);
+                " -to " + BACKUP_DIR + "/" + backupName);
         if(!r.getOutput().contains("Done")) {
             throw new RuntimeException("Performing backup failed. Expected output to say 'Done', got this instead: \n" + r.getOutput());
         }
     }
-
-
 }
+

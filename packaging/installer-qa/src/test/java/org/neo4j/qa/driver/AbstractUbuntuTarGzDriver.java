@@ -26,13 +26,13 @@ import org.apache.commons.io.FileUtils;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public abstract class AbstractUbuntuDebDriver extends AbstractPosixDriver {
+public abstract class AbstractUbuntuTarGzDriver extends AbstractPosixDriver {
 
     private static final String INSTALL_DIR = "/var/lib/neo4j";
     private String installerPath;
     private String installerFileName;
 
-    public AbstractUbuntuDebDriver(VirtualMachine vm, String installerPath)
+    public AbstractUbuntuTarGzDriver(VirtualMachine vm, String installerPath)
     {
         super(vm);
         this.installerPath = installerPath;
@@ -46,14 +46,24 @@ public abstract class AbstractUbuntuDebDriver extends AbstractPosixDriver {
     
     @Override
     public void installNeo4j() {
-        vm.copyFromHost(installerPath, "/home/vagrant/" + installerFileName);
-        sh.run("sudo dpkg -i " + installerFileName);
+        sh.run("mkdir /home/vagrant/installer");
+        sh.run("sudo mkdir " + INSTALL_DIR);
+        
+        vm.copyFromHost(installerPath, "/home/vagrant/installer/" + installerFileName);
+        
+        sh.run("cd /home/vagrant/installer/ && tar xvf " + installerFileName);
+        sh.run("sudo mv /home/vagrant/installer/neo4j*/* " + INSTALL_DIR);
+        
+        sh.run("sudo " + INSTALL_DIR + "/bin/neo4j -h -u neo4j install");
+
+        sh.run("sudo chown neo4j:neo4j -R " + INSTALL_DIR);
         sh.run("sudo chmod -R 777 " + INSTALL_DIR + "/conf");
     }
     
     @Override
     public void uninstallNeo4j() {
-        sh.run("sudo dpkg -r neo4j");
+        sh.run("sudo " + INSTALL_DIR + "/bin/neo4j -h -u neo4j remove");
+        sh.run("sudo rm " + INSTALL_DIR + " -rf");
     }
     
     @Override

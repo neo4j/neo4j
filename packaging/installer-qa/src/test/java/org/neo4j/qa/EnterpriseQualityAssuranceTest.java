@@ -78,14 +78,14 @@ public class EnterpriseQualityAssuranceTest {
                 EnterpriseQualityAssuranceTest.class.getName() + "_" + UbuntuDebEnterpriseDriver.class.getName(),
                 new EnterpriseDriver []{
                     new UbuntuDebEnterpriseDriver( ubuntu1, 
-                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
-                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ),
+                            SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
+                            SharedConstants.DEBIAN_COORDINATOR_INSTALLER  ),
                     new UbuntuDebEnterpriseDriver( ubuntu2, 
-                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
-                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ),
+                            SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
+                            SharedConstants.DEBIAN_COORDINATOR_INSTALLER  ),
                     new UbuntuDebEnterpriseDriver( ubuntu3, 
-                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
-                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ) 
+                            SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
+                            SharedConstants.DEBIAN_COORDINATOR_INSTALLER  ) 
                 }});
         
         for(String platform : Platforms.getPlaformsToUse()) {
@@ -167,14 +167,14 @@ public class EnterpriseQualityAssuranceTest {
     private void setupZookeeper(EnterpriseDriver d, int serverId) {
         String zookeeperConf = d.zookeeperInstallDir() + "/conf/coord.cfg";
         
-        d.runZookeeperInstall();
-        d.stopZookeeperService();
+        d.installZookeeper();
+        d.stopZookeeper();
         for( int o=0; o<drivers.length; o++) {
             d.setConfig(zookeeperConf, "server." + (o+1), drivers[o].vm().definition().ip() + ":2888:3888");
         }
         d.setConfig(zookeeperConf, "clientPort", (zooClientPortBase + serverId) + "");
         d.writeFile("" + serverId, d.zookeeperInstallDir() + "/data/coordinator/myid");
-        d.startZookeeperService();
+        d.startZookeeper();
     }
 
     private void setupHighAvailabilityCluster()
@@ -185,11 +185,11 @@ public class EnterpriseQualityAssuranceTest {
         {
             driver = drivers[i];
             
-            String neo4jConf = driver.installDir() + "/conf/neo4j.properties";
-            String serverConf = driver.installDir() + "/conf/neo4j-server.properties";
+            String neo4jConf = driver.neo4jInstallDir() + "/conf/neo4j.properties";
+            String serverConf = driver.neo4jInstallDir() + "/conf/neo4j-server.properties";
             
-            driver.runInstall();
-            driver.stopService();
+            driver.installNeo4j();
+            driver.stopNeo4j();
             
             driver.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
             driver.setConfig(neo4jConf, "ha.server", driver.vm().definition().ip() + ":6001");
@@ -199,9 +199,9 @@ public class EnterpriseQualityAssuranceTest {
             driver.setConfig(serverConf, "org.neo4j.server.webserver.address", "0.0.0.0");
             
             // The database folder has to be empty on first boot
-            driver.destroyDatabase();
+            driver.deleteDatabase();
             
-            driver.startService();
+            driver.startNeo4j();
         }
     }
     
@@ -219,17 +219,17 @@ public class EnterpriseQualityAssuranceTest {
             try {
                 switch(i % 4) {
                 case 0:
-                    nodeId = driver.api().createNode();
+                    nodeId = driver.neo4jClient().createNode();
                     break;
                 case 1:
-                    driver.api().waitUntilNodeExists(nodeId);
+                    driver.neo4jClient().waitUntilNodeExists(nodeId);
                     break;
                 case 2: 
-                    driver.api().waitUntilNodeExists(nodeId);
-                    driver.api().deleteNode(nodeId);
+                    driver.neo4jClient().waitUntilNodeExists(nodeId);
+                    driver.neo4jClient().deleteNode(nodeId);
                     break;
                 case 3:
-                    driver.api().waitUntilNodeDoesNotExist(nodeId);
+                    driver.neo4jClient().waitUntilNodeDoesNotExist(nodeId);
                     break;
                 }
             } catch(Exception e) {
@@ -242,26 +242,26 @@ public class EnterpriseQualityAssuranceTest {
     {
         EnterpriseDriver driver = drivers[0];
         
-        long nodeId = driver.api().createNode();
+        long nodeId = driver.neo4jClient().createNode();
         
         driver.performFullHABackup("neobackup", coordinatorAddresses);
         driver.performIncrementalHABackup("neobackup", coordinatorAddresses);
         
         // Shut down the cluster
         for(EnterpriseDriver d : drivers) {
-            d.stopService();
-            d.destroyDatabase();
+            d.stopNeo4j();
+            d.deleteDatabase();
         }
         
         driver.replaceGraphDataDirWithBackup("neobackup");
         
         // Start the cluster back up
-        for(EnterpriseDriver d : drivers) d.startService();
+        for(EnterpriseDriver d : drivers) d.startNeo4j();
         
         // Wait for all databases to be up to date
         for(EnterpriseDriver d : drivers) {
             try {
-                d.api().waitUntilNodeExists(nodeId);
+                d.neo4jClient().waitUntilNodeExists(nodeId);
             } catch(Exception e){
                 throw new RuntimeException("Restoring backup failed on server " + d.vm().definition().ip(), e);
             }

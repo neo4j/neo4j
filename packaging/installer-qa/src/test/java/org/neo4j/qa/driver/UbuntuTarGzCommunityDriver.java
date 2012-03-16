@@ -17,37 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.qa;
+package org.neo4j.qa.driver;
 
-import org.apache.commons.lang.StringUtils;
+import org.neo4j.vagrant.VirtualMachine;
 
-public class Platforms {
+public class UbuntuTarGzCommunityDriver extends AbstractUbuntuTarGzDriver {
 
-    /**
-     *  Windows with windows installers
-     */
-    public static final String WINDOWS = "windows";
-    
-    /**
-     *  Ubuntu with debian packages
-     */
-    public static final String UBUNTU_DEB = "ubuntu-deb";
-    
-    /**
-     *  Ubuntu with tarball packages
-     */
-    public static final String UBUNTU_TAR_GZ = "ubuntu-tar-gz";
-
-    /**
-     * Comma separated list of all available platforms.
-     */
-    public static final String ALL = StringUtils.join(new String[]{
-            WINDOWS,
-            UBUNTU_DEB,
-            UBUNTU_TAR_GZ},",");
-
-    public static String[] getPlaformsToUse() {
-        return System.getProperty("test-platforms", Platforms.ALL).split(",");
+    public UbuntuTarGzCommunityDriver(VirtualMachine vm, String installerPath)
+    {
+        super(vm, installerPath);
     }
-    
 }
