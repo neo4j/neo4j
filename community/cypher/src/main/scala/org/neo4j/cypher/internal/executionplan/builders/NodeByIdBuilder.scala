@@ -29,8 +29,7 @@ import org.neo4j.cypher.internal.executionplan._
 class NodeByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def priority: Int = PlanBuilder.NodeById
 
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (inPipe, inQ) => {
+  def apply(inPipe: Pipe, inQ: PartiallySolvedQuery): (Pipe, PartiallySolvedQuery) = {
       val startItemToken = interestingStartItems(inQ).head
       val Unsolved(NodeById(key, expression)) = startItemToken
 
@@ -40,9 +39,8 @@ class NodeByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
       (pipe, inQ.copy(start = remainingQ))
     }
-  }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = interestingStartItems(x._2).nonEmpty
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery): Boolean = interestingStartItems(q).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(NodeById(_, expression)) => true

@@ -24,13 +24,9 @@ import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilde
 import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
 
 class ExtractBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => ExtractBuilder.extractIfNecessary(q, p, q.returns.map(_.token.expression))
-  }
+  def apply(p: Pipe, q: PartiallySolvedQuery) = ExtractBuilder.extractIfNecessary(q, p, q.returns.map(_.token.expression))
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery)= !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
 
   def priority: Int = PlanBuilder.Extraction
 }

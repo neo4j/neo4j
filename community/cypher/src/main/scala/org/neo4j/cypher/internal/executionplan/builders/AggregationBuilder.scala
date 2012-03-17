@@ -24,28 +24,25 @@ import org.neo4j.cypher.internal.pipes.{ExtractPipe, EagerAggregationPipe, Pipe}
 import org.neo4j.cypher.internal.commands.{Entity, AggregationExpression}
 
 class AggregationBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val keyExpressionsToExtract = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+    val keyExpressionsToExtract = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
+    val (extractor,newPsq) = ExtractBuilder.extractIfNecessary(q,p, keyExpressionsToExtract)
+    val keyExpressions = newPsq.returns.map(_.token.expression).filterNot(_.containsAggregate)
+    val aggregationExpressions = newPsq.aggregation.map(_.token)
+    val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
 
-      val (extractor,newPsq) = ExtractBuilder.extractIfNecessary(q,p, keyExpressionsToExtract)
+    val notKeyAndNotAggregate = newPsq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
 
-      val keyExpressions = newPsq.returns.map(_.token.expression).filterNot(_.containsAggregate)
-      val aggregationExpressions = newPsq.aggregation.map(_.token)
-      val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
+    val resultPipe = if (notKeyAndNotAggregate.isEmpty) {
+      aggregator
+    } else {
 
-      val notKeyAndNotAggregate = newPsq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
-
-      val resultPipe = if (notKeyAndNotAggregate.isEmpty) {
-        aggregator
-      } else {
-
-        val rewritten = notKeyAndNotAggregate.map(e => {
-          e.rewrite {
-            case x: AggregationExpression => Entity(x.identifier.name)
-            case x => x
-          }
-        })
+      val rewritten = notKeyAndNotAggregate.map(e => {
+        e.rewrite {
+          case x: AggregationExpression => Entity(x.identifier.name)
+          case x => x
+        }
+      })
 
         new ExtractPipe(aggregator, rewritten)
       }
@@ -55,15 +52,18 @@ class AggregationBuilder extends PlanBuilder {
         aggregateQuery = newPsq.aggregateQuery.solve,
         extracted = true
       ))
-    }
+
+    (resultPipe, q.copy(
+      aggregation = q.aggregation.map(_.solve),
+      aggregateQuery = q.aggregateQuery.solve,
+      extracted = true
+    ))
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) =>
-      q.aggregateQuery.token &&
-        q.aggregateQuery.unsolved &&
-        q.readyToAggregate
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) =
+    q.aggregateQuery.token &&
+      q.aggregateQuery.unsolved &&
+      q.readyToAggregate
 
   def priority: Int = PlanBuilder.Aggregation
 }

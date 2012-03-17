@@ -43,6 +43,7 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   override def toString = left.toString() + " " + sign + " " + right.toString()
   def exists(f: (Expression) => Boolean) = left.exists(f) || right.exists(f)
   def containsIsNull = false
+  def filter(f: (Expression) => Boolean): Seq[Expression] = left.filter(f) ++ right.filter(f)
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
@@ -57,6 +58,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   override def toString = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
+  def filter(f: (Expression) => Boolean): Seq[Expression] = a.filter(f) ++ b.filter(f)
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

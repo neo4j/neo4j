@@ -40,9 +40,9 @@ class SortBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
 
-    val (_, resultQ) = builder((p, q))
+    val (_, resultQ) = builder(p, q)
 
     assert(resultQ.sort === expected)
   }
@@ -55,7 +55,7 @@ class SortBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should accept this", builder.isDefinedAt(p, q))
   }
 
 }

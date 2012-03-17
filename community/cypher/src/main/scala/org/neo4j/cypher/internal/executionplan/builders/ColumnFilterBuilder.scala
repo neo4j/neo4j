@@ -23,22 +23,17 @@ import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilde
 import org.neo4j.cypher.internal.pipes.{ColumnFilterPipe, Pipe}
 
 class ColumnFilterBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-
+  def apply(p: Pipe, q: PartiallySolvedQuery)=    {
       val resultPipe = new ColumnFilterPipe(p, q.returns.map(_.token))
       val resultQ = q.copy(returns = q.returns.map(_.solve))
 
       (resultPipe, resultQ)
     }
-  }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.extracted &&
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.extracted &&
       !q.sort.exists(_.unsolved) &&
       !q.slice.exists(_.unsolved) &&
       q.returns.exists(_.unsolved)
-  }
 
-  def priority: Int = PlanBuilder.ColumnFilter
+  def priority = PlanBuilder.ColumnFilter
 }

@@ -37,7 +37,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l"))
     
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -48,7 +48,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -59,9 +59,9 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
     
-    val (_,resultQ) = builder((p,q))
+    val (_,resultQ) = builder(p,q)
 
     assert( resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, None))) )
   }
@@ -74,7 +74,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
 }

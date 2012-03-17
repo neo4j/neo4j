@@ -36,11 +36,11 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     var pipe: Pipe = new ParameterPipe()
     var query = PartiallySolvedQuery(inputQuery)
 
-    while (builders.exists(_.isDefinedAt((pipe, query)))) {
-      val matchingBuilders = builders.filter(_.isDefinedAt((pipe, query)))
+    while (builders.exists(_.isDefinedAt(pipe, query))) {
+      val matchingBuilders = builders.filter(_.isDefinedAt(pipe, query))
 
       val builder = matchingBuilders.sortBy(_.priority).head
-      val (p, q) = builder((pipe, query))
+      val (p, q) = builder(pipe, query)
 
       if(p==pipe && q == query) {
         throw new InternalException("Something went wrong trying to build your query. The offending builder was: " + builder.getClass.getSimpleName)

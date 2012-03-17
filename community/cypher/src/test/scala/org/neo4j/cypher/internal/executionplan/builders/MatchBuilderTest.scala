@@ -41,7 +41,7 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertTrue(builder.isDefinedAt((p, q)))
+    assertTrue(builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -52,7 +52,7 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Should not accept this query", builder.isDefinedAt((p, q)))
+    assertFalse("Should not accept this query", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -63,7 +63,7 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val inP = createPipe(nodes = Seq("l"))
     
-    val (_, q) = builder((inP, inQ))
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns === Seq(Solved(RelatedTo("l", "r", "rel", None, Direction.OUTGOING, false, True()))))
   }
@@ -77,7 +77,7 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val inP  = createPipe(nodes = Seq("a"))
     
-    val (_, q) = builder((inP, inQ))
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", None, Direction.OUTGOING, false, True())),
       Unsolved(RelatedTo("b", "r2", "rel2", None, Direction.OUTGOING, false, True()))))
@@ -92,7 +92,7 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val inP = createPipe(nodes = Seq("a","b"))
 
-    val (_, q) = builder((inP, inQ))
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", None, Direction.OUTGOING, false, True())),
       Solved(RelatedTo("b", "r2", "rel2", None, Direction.OUTGOING, false, True()))))
@@ -106,6 +106,6 @@ class MatchBuilderTest extends Assertions with PipeBuilder {
 
     val inP = createPipe(nodes = Seq("l"))
 
-    assertFalse(builder.isDefinedAt((inP,inQ)))
+    assertFalse(builder.isDefinedAt(inP,inQ))
   }
 }

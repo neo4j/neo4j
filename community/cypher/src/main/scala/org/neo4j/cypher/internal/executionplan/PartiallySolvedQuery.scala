@@ -93,9 +93,6 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
     namedPaths.exists(_.unsolved))
 
   def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
-
-
-
     this.copy(
       returns = returns.map {
         case Unsolved(ReturnItem(expression, name)) => Unsolved(ReturnItem(expression.rewrite(f), name))
@@ -127,6 +124,24 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
     )
   }
 
+  def unsolvedExpressions = {
+    val rExpressions = returns.flatMap {
+      case Unsolved(ReturnItem(expression, _)) => expression.filter( e=>true )
+      case _ => None
+    }
+
+    val wExpressions = where.flatMap {
+      case Unsolved(pred) => pred.filter( e=>true )
+      case _ => Seq()
+    }
+
+    val aExpressions = aggregation.flatMap {
+      case Unsolved(expression) => expression.filter( e=>true )
+      case _ => Seq()
+    }
+
+   rExpressions ++ wExpressions ++ aExpressions
+  }
 }
 
 abstract class QueryToken[T](val token: T) {

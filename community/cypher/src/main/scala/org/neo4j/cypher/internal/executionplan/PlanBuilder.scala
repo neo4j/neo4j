@@ -24,7 +24,10 @@ import org.neo4j.cypher.internal.pipes.Pipe
 /*
 PlanBuilders take a unsolved query, and solves another piece of it.
 */
-trait PlanBuilder extends PartialFunction[(Pipe, PartiallySolvedQuery),(Pipe, PartiallySolvedQuery)] {
+trait PlanBuilder {
+  def apply(p: Pipe, q: PartiallySolvedQuery) : (Pipe, PartiallySolvedQuery)
+  def isDefinedAt(p: Pipe, q:PartiallySolvedQuery) : Boolean
+
   // Lower priority wins
   def priority:Int
 }
@@ -32,6 +35,7 @@ trait PlanBuilder extends PartialFunction[(Pipe, PartiallySolvedQuery),(Pipe, Pa
 // The priorities are all here, to make it easy to change and compare
 // Lower priority wins
 object PlanBuilder extends Enumeration {
+  val CachedExpressions = -100
   val Filter = -10
   val NamedPath = -9
   val NodeById = -1

@@ -39,9 +39,9 @@ class SortedAggregationBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("n"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
 
-    val (_, resultQ) = builder((p, q))
+    val (_, resultQ) = builder(p, q)
 
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
@@ -61,7 +61,7 @@ class SortedAggregationBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test def should_not_accept_if_there_are_still_other_things_to_do_in_the_query() {
@@ -75,6 +75,6 @@ class SortedAggregationBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq())
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 }

@@ -41,7 +41,7 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -54,9 +54,9 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
 
-    assertTrue("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should not accept this", builder.isDefinedAt(p, q))
     
-    val (_, resultQ) = builder((p,q))
+    val (_, resultQ) = builder(p,q)
     
     assert(resultQ.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", None, Direction.OUTGOING, false, True())))))
   }
@@ -76,7 +76,7 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 }
 

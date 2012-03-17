@@ -40,21 +40,18 @@ class ExecutionPlanImplTest extends Assertions with Timed {
     
     assertTrue(exception.getCause.isInstanceOf[InternalException])
   }
-
 }
 
 class FakeEPI(q: Query, gds: GraphDatabaseService) extends ExecutionPlanImpl(q, gds) {
-  override lazy val builders: Seq[PlanBuilder] = Seq(new BadBuilder)
+  override lazy val builders = Seq(new BadBuilder)
 }
 
 // This is a builder that accepts everything, but changes nothing
 // It's a never ending loop waiting to happen
 class BadBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1
-
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = true
-
-  def priority: Int = 0
+  def apply(p: Pipe, q: PartiallySolvedQuery) = (p,q)
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = true
+  def priority = 0
 }
 
 trait Timed {
