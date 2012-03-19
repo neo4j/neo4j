@@ -52,6 +52,11 @@ class BranchDetectingTxVerifier implements TxChecksumVerifier
         try
         {
             Pair<Integer, Long> readChecksum = dataSource().getMasterForCommittedTx( txId );
+            /*
+             * For masters with the "high-bits-set" bug, the order in checksumMatch matters.
+             * The first one should be the one from a slave which is generated correctly. The
+             * second should be the one read, which is generated wrong.
+             */
             boolean match = masterId == readChecksum.first()
                             && LogEntry.Start.checksumMatch( checksum, readChecksum.other() );
 
