@@ -441,6 +441,7 @@ public class LockReleaser
             NodeImpl node = nodeManager.getNodeIfCached( entry.getKey() );
             if ( node != null )
             {
+                int sizeBefore = node.size();
                 CowNodeElement nodeElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
@@ -454,6 +455,8 @@ public class LockReleaser
                     throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
+                int sizeAfter = node.size();
+                nodeManager.updateCacheSize( node, sizeBefore, sizeAfter );
             }
         }
         ArrayMap<Long,CowRelElement> cowRelElements = element.relationships;
@@ -464,6 +467,7 @@ public class LockReleaser
             RelationshipImpl rel = nodeManager.getRelIfCached( entry.getKey() );
             if ( rel != null )
             {
+                int sizeBefore = rel.size();
                 CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
@@ -475,6 +479,8 @@ public class LockReleaser
                     throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
+                int sizeAfter = rel.size();
+                nodeManager.updateCacheSize( rel, sizeBefore, sizeAfter );
             }
         }
         if ( element.graph != null && param == Status.STATUS_COMMITTED )

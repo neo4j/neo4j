@@ -31,14 +31,14 @@ public class TestLruCache
     {
         try
         {
-            new LruCache<Object,Object>( "TestCache", 0, null );
+            new LruCache<Object,Object>( "TestCache", 0 );
             fail( "Illegal maxSize should throw exception" );
         }
         catch ( IllegalArgumentException e )
         { // good
         }
         LruCache<Object,Object> cache = new LruCache<Object,Object>(
-            "TestCache", 70, null );
+            "TestCache", 70 );
         try
         {
             cache.put( null, new Object() );
@@ -81,7 +81,7 @@ public class TestLruCache
 
         LruCacheTest( String name, int maxSize )
         {
-            super( name, maxSize, null );
+            super( name, maxSize );
         }
 
         @Override

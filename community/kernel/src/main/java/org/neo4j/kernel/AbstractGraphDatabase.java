@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,7 +52,8 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing;
+import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -96,8 +99,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -138,7 +139,6 @@ public abstract class AbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected RagManager ragManager;
     protected LockManager lockManager;
-    protected AdaptiveCacheManager cacheManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected RelationshipTypeCreator relationshipTypeCreator;
     protected LastCommittedTxIdSetter lastCommittedTxIdSetter;
@@ -156,6 +156,8 @@ public abstract class AbstractGraphDatabase
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
+    
+    protected MeasureDoNothing monitorGc;
 
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
@@ -243,8 +245,6 @@ public abstract class AbstractGraphDatabase
         ragManager = new RagManager(txManager);
         lockManager = createLockManager();
 
-        cacheManager = life.add( new AdaptiveCacheManager( ConfigProxy.config( params, AdaptiveCacheManager.Configuration.class ) ) );
-
         idGeneratorFactory = createIdGeneratorFactory();
 
         relationshipTypeCreator = new DefaultRelationshipTypeCreator();
@@ -268,16 +268,19 @@ public abstract class AbstractGraphDatabase
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
-        nodeManager = !readOnly ? new NodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this, cacheManager,
-                lockManager, lockReleaser, txManager,
-                persistenceManager, persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager,
-
-                createNodeLookup(), createRelationshipLookups() ):
+        nodeManager = !readOnly ? 
+                
+                new NodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this,
+                        lockManager, lockReleaser, txManager,
+                        persistenceManager, persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager,
+                        createNodeLookup(), createRelationshipLookups(), msgLog, diagnosticsManager ) :
+                    
                 new ReadOnlyNodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this,
-                        cacheManager, lockManager, lockReleaser,
+                        lockManager, lockReleaser,
                         txManager, persistenceManager, persistenceSource,
                         relationshipTypeHolder, cacheType, propertyIndexManager,
-                        createNodeLookup(), createRelationshipLookups());
+                        createNodeLookup(), createRelationshipLookups(), msgLog, diagnosticsManager );
+                
         life.add( nodeManager );
 
         lockReleaser.setNodeManager(nodeManager); // TODO Another cyclic dep that needs to be refactored
@@ -354,6 +357,8 @@ public abstract class AbstractGraphDatabase
 
         life.add( new StuffToDoAfterRecovery() );
 
+        life.add( new MonitorGc( ConfigProxy.config( params, MonitorGc.Configuration.class ), msgLog ) );
+        
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
 
@@ -361,6 +366,7 @@ public abstract class AbstractGraphDatabase
         life.add( kernelEventHandlers );
     }
 
+    
     @Override
     public void shutdown()
     {

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
     private static final String PATH = getStorePath( "cache-db" );
-    
+
     @BeforeClass
     public static void clear()
     {
@@ -45,13 +45,19 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     {
         return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( Config.CACHE_TYPE, cacheType ) );
     }
-    
+
     @Test
     public void testDefaultCache()
     {
         EmbeddedGraphDatabase db = newDb( null );
-        assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
-        db.shutdown();
+        try
+        {
+            assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -61,7 +67,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.weak, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
     public void testSoftRefCache()
     {
@@ -85,15 +91,15 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.strong, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
-    public void testOldCache()
+    public void testArrayCache()
     {
-        EmbeddedGraphDatabase db = newDb( "old" );
-        assertEquals( CacheType.old, db.getNodeManager().getCacheType() );
+        EmbeddedGraphDatabase db = newDb( "array" );
+        assertEquals( CacheType.array, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-
+    
     @Test
     public void testInvalidCache()
     {
