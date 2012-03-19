@@ -23,7 +23,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.GraphDescription.Graph;
 import static org.neo4j.test.GraphDescription.createGraphFor;
 
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -53,7 +51,9 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TestData;
 
 public class TestPatternMatching implements GraphHolder
@@ -64,8 +64,7 @@ public class TestPatternMatching implements GraphHolder
         return graphDb;
     }
 
-    public
-    @Rule
+    public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphDb;
@@ -114,21 +113,17 @@ public class TestPatternMatching implements GraphHolder
 
     private Iterable<PatternMatch> doMatch( PatternNode pNode )
     {
-        return PatternMatcher.getMatcher().match( pNode,
-                new HashMap<String, PatternNode>() );
+        return PatternMatcher.getMatcher().match( pNode, new HashMap<String, PatternNode>() );
     }
 
     private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node )
     {
-        return PatternMatcher.getMatcher().match( pNode, node,
-                new HashMap<String, PatternNode>() );
+        return PatternMatcher.getMatcher().match( pNode, node, new HashMap<String, PatternNode>() );
     }
 
-    private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node,
-                                            PatternNode... optionalNodes )
+    private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node, PatternNode... optionalNodes )
     {
-        return PatternMatcher.getMatcher().match( pNode, node,
-                new HashMap<String, PatternNode>(), optionalNodes );
+        return PatternMatcher.getMatcher().match( pNode, node, new HashMap<String, PatternNode>(), optionalNodes );
     }
 
     @Test
@@ -148,8 +143,7 @@ public class TestPatternMatching implements GraphHolder
         PatternNode pB = new PatternNode();
         PatternRelationship pRel = pA.createRelationshipTo( pB );
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a1 ) )
+        for ( PatternMatch match : doMatch( pA, a1 ) )
         {
             assertEquals( match.getNodeFor( pA ), a1 );
             assertEquals( match.getNodeFor( pB ), b1 );
@@ -178,8 +172,7 @@ public class TestPatternMatching implements GraphHolder
         PatternRelationship pRel = pA.createRelationshipTo( pB );
         pRel.addPropertyConstraint( "musthave", CommonValueMatchers.has() );
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a1 ) )
+        for ( PatternMatch match : doMatch( pA, a1 ) )
         {
             assertEquals( match.getNodeFor( pA ), a1 );
             assertEquals( match.getNodeFor( pB ), b1 );
@@ -245,8 +238,7 @@ public class TestPatternMatching implements GraphHolder
         pDI.createRelationshipTo( pEI, R2 );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, aT ) )
+        for ( PatternMatch match : doMatch( pA, aT ) )
         {
             assertEquals( match.getNodeFor( pA ), aT );
             assertEquals( match.getNodeFor( pAI ), a1 );
@@ -271,8 +263,7 @@ public class TestPatternMatching implements GraphHolder
         assertEquals( 2, count );
 
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pCI, c2 ) )
+        for ( PatternMatch match : doMatch( pCI, c2 ) )
         {
             assertEquals( match.getNodeFor( pA ), aT );
             assertEquals( match.getNodeFor( pAI ), a1 );
@@ -315,8 +306,7 @@ public class TestPatternMatching implements GraphHolder
         PatternRelationship pBC = pB.createRelationshipTo( pC, R );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a ) )
+        for ( PatternMatch match : doMatch( pA, a ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node b = match.getNodeFor( pB );
@@ -339,8 +329,7 @@ public class TestPatternMatching implements GraphHolder
         }
         assertEquals( 3, count );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pB, b2 ) )
+        for ( PatternMatch match : doMatch( pB, b2 ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             assertEquals( match.getNodeFor( pB ), b2 );
@@ -378,8 +367,7 @@ public class TestPatternMatching implements GraphHolder
         pC.createRelationshipTo( pA, R );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a ) )
+        for ( PatternMatch match : doMatch( pA, a ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node b = match.getNodeFor( pB );
@@ -392,8 +380,7 @@ public class TestPatternMatching implements GraphHolder
         }
         assertEquals( 3, count );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pB, b2 ) )
+        for ( PatternMatch match : doMatch( pB, b2 ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node b = match.getNodeFor( pB );
@@ -404,7 +391,7 @@ public class TestPatternMatching implements GraphHolder
             assertEquals( match.getNodeFor( pC ), c );
             count++;
         }
-        assertEquals( 3, count );
+        assertEquals( 1, count );
     }
 
     @Test
@@ -435,16 +422,14 @@ public class TestPatternMatching implements GraphHolder
         pA.addPropertyConstraint( "hasProperty", CommonValueMatchers.has() );
         PatternNode pB = new PatternNode();
         pB.addPropertyConstraint( "equals", CommonValueMatchers.exact( 1 ) );
-        pB.addPropertyConstraint( "name", CommonValueMatchers.regex( Pattern.compile(
-                "^Thomas.*" ) ) );
+        pB.addPropertyConstraint( "name", CommonValueMatchers.regex( Pattern.compile( "^Thomas.*" ) ) );
         PatternNode pC = new PatternNode();
 
         pA.createRelationshipTo( pB, R );
         pB.createRelationshipTo( pC, R );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a ) )
+        for ( PatternMatch match : doMatch( pA, a ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node b = match.getNodeFor( pB );
@@ -457,8 +442,7 @@ public class TestPatternMatching implements GraphHolder
         }
         assertEquals( 2, count );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pB, b2 ) )
+        for ( PatternMatch match : doMatch( pB, b2 ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             assertEquals( match.getNodeFor( pB ), b2 );
@@ -507,7 +491,7 @@ public class TestPatternMatching implements GraphHolder
         PatternNode oB1 = new PatternNode( "pB" );
         oA1.createOptionalRelationshipTo( oB1, R1 );
 
-//		// Second optional branch
+        // // Second optional branch
         PatternNode oA2 = new PatternNode( "pA" );
         PatternNode oF2 = new PatternNode( "pF" );
         oA2.createOptionalRelationshipTo( oF2, R3 );
@@ -522,8 +506,7 @@ public class TestPatternMatching implements GraphHolder
         // Test that all permutations are there and that multiple optional
         // branches work.
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a, oA1, oA2, oC3 ) )
+        for ( PatternMatch match : doMatch( pA, a, oA1, oA2, oC3 ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node bMatch = match.getNodeFor( oB1 );
@@ -532,8 +515,7 @@ public class TestPatternMatching implements GraphHolder
                 fail( "either b1 or b2" );
             }
             Node fMatch = match.getNodeFor( oF2 );
-            if ( !fMatch.equals( f1 ) && !fMatch.equals( f2 ) &&
-                    !fMatch.equals( f3 ) )
+            if ( !fMatch.equals( f1 ) && !fMatch.equals( f2 ) && !fMatch.equals( f3 ) )
             {
                 fail( "either f1, f2 or f3" );
             }
@@ -556,8 +538,7 @@ public class TestPatternMatching implements GraphHolder
         pK.createOptionalRelationshipTo( pL, R2 );
 
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pI, a, pI, pK ) )
+        for ( PatternMatch match : doMatch( pI, a, pI, pK ) )
         {
             assertEquals( match.getNodeFor( pI ), a );
             Node jMatch = match.getNodeFor( pJ );
@@ -601,15 +582,13 @@ public class TestPatternMatching implements GraphHolder
         oB.createOptionalRelationshipTo( oC, R2 );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a, oB ) )
+        for ( PatternMatch match : doMatch( pA, a, oB ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node bMatch = match.getNodeFor( pB );
             Node optionalBMatch = match.getNodeFor( oB );
             Node optionalCMatch = match.getNodeFor( oC );
-            if ( !bMatch.equals( b1 ) && !bMatch.equals( b2 ) &&
-                    !bMatch.equals( b3 ) )
+            if ( !bMatch.equals( b1 ) && !bMatch.equals( b2 ) && !bMatch.equals( b3 ) )
             {
                 fail( "either b1, b2 or b3" );
             }
@@ -619,10 +598,12 @@ public class TestPatternMatching implements GraphHolder
                 if ( optionalBMatch.equals( b1 ) )
                 {
                     assertEquals( optionalCMatch, c1 );
-                } else if ( optionalBMatch.equals( b3 ) )
+                }
+                else if ( optionalBMatch.equals( b3 ) )
                 {
                     assertEquals( optionalCMatch, c3 );
-                } else
+                }
+                else
                 {
                     assertEquals( optionalCMatch, null );
                 }
@@ -638,9 +619,9 @@ public class TestPatternMatching implements GraphHolder
         Node a = createInstance( "A" );
         a.setProperty( "hasProperty", true );
         Node b1 = createInstance( "B1" );
-        b1.setProperty( "equals", new Integer[]{19, 1} );
+        b1.setProperty( "equals", new Integer[] { 19, 1 } );
         Node b2 = createInstance( "B2" );
-        b2.setProperty( "equals", new Integer[]{1, 10, 12} );
+        b2.setProperty( "equals", new Integer[] { 1, 10, 12 } );
         Node b3 = createInstance( "B3" );
         b3.setProperty( "equals", 2 );
         Node c = createInstance( "C" );
@@ -664,8 +645,7 @@ public class TestPatternMatching implements GraphHolder
         pB.createRelationshipTo( pC, R );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a ) )
+        for ( PatternMatch match : doMatch( pA, a ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             Node b = match.getNodeFor( pB );
@@ -678,8 +658,7 @@ public class TestPatternMatching implements GraphHolder
         }
         assertEquals( 2, count );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pB, b2 ) )
+        for ( PatternMatch match : doMatch( pB, b2 ) )
         {
             assertEquals( match.getNodeFor( pA ), a );
             assertEquals( match.getNodeFor( pB ), b2 );
@@ -692,11 +671,11 @@ public class TestPatternMatching implements GraphHolder
     @Test
     public void testDiamond()
     {
-        //    C
-        //   / \
-        //  B---D
-        //   \ /
-        //    A
+        // C
+        // / \
+        // B---D
+        // \ /
+        // A
         Node a = createInstance( "A" );
         Node b = createInstance( "B" );
         Node c = createInstance( "C" );
@@ -721,8 +700,7 @@ public class TestPatternMatching implements GraphHolder
         pC.createRelationshipTo( pD, R1, Direction.BOTH );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA, a ) )
+        for ( PatternMatch match : doMatch( pA, a ) )
         {
             count++;
         }
@@ -730,42 +708,43 @@ public class TestPatternMatching implements GraphHolder
     }
 
     @Test
-    @Graph({"User1 hasRoleInGroup U1G1R12",
-            "U1G1R12 hasGroup Group1",
-            "U1G1R12 hasRole Role1",
-            "U1G1R12 hasRole Role2",
-            "User1 hasRoleInGroup U1G2R23",
-            "U1G2R23 hasGroup Group2",
-            "U1G2R23 hasRole Role2",
-            "U1G2R23 hasRole Role3",
-            "User1 hasRoleInGroup U1G3R34",
-            "U1G3R34 hasGroup Group3",
-            "U1G3R34 hasRole Role3",
-            "U1G3R34 hasRole Role4",
-            "User2 hasRoleInGroup U2G1R25",
-            "U2G1R25 hasGroup Group1",
-            "U2G1R25 hasRole Role2",
-            "U2G1R25 hasRole Role5",
-            "User2 hasRoleInGroup U2G2R34",
-            "U2G2R34 hasGroup Group2",
-            "U2G2R34 hasRole Role3",
-            "U2G2R34 hasRole Role4",
-            "User2 hasRoleInGroup U2G3R56",
-            "U2G3R56 hasGroup Group3",
-            "U2G3R56 hasRole Role5",
-            "U2G3R56 hasRole Role6"})
-    @Ignore
+    @Graph( { 
+        "User1 hasRoleInGroup U1G1R12", 
+        "U1G1R12 hasGroup Group1", 
+        "U1G1R12 hasRole Role1",
+        "U1G1R12 hasRole Role2", 
+        "User1 hasRoleInGroup U1G2R23", 
+        "U1G2R23 hasGroup Group2",
+        "U1G2R23 hasRole Role2", 
+        "U1G2R23 hasRole Role3", 
+        "User1 hasRoleInGroup U1G3R34",
+        "U1G3R34 hasGroup Group3", 
+        "U1G3R34 hasRole Role3", 
+        "U1G3R34 hasRole Role4",
+        "User2 hasRoleInGroup U2G1R25", 
+        "U2G1R25 hasGroup Group1", 
+        "U2G1R25 hasRole Role2",
+        "U2G1R25 hasRole Role5", 
+        "User2 hasRoleInGroup U2G2R34", 
+        "U2G2R34 hasGroup Group2",
+        "U2G2R34 hasRole Role3", 
+        "U2G2R34 hasRole Role4", 
+        "User2 hasRoleInGroup U2G3R56",
+        "U2G3R56 hasGroup Group3", 
+        "U2G3R56 hasRole Role5", 
+        "U2G3R56 hasRole Role6" 
+        } )
     public void testHyperedges()
     {
         Map<String, Node> nodeMap = data.get();
+        Node user1 = nodeMap.get( "User1" );
 
-
-        PatternNode u1 = new PatternNode();
-        PatternNode u2 = new PatternNode();
-        PatternNode hyperEdge1 = new PatternNode();
-        PatternNode hyperEdge2 = new PatternNode();
-        PatternNode group = new PatternNode();
-        PatternNode role = new PatternNode();
+        PatternNode u1 = new PatternNode( "U1" );
+        PatternNode u2 = new PatternNode( "U2" );
+        PatternNode hyperEdge1 = new PatternNode( "UGR1" );
+        PatternNode hyperEdge2 = new PatternNode( "UGR2" );
+        PatternNode group = new PatternNode( "G" );
+        PatternNode role = new PatternNode( "R" );
 
         u1.createRelationshipTo( hyperEdge1, MyRelTypes.hasRoleInGroup, Direction.OUTGOING );
         u2.createRelationshipTo( hyperEdge2, MyRelTypes.hasRoleInGroup, Direction.OUTGOING );
@@ -779,27 +758,33 @@ public class TestPatternMatching implements GraphHolder
         u1.setAssociation( nodeMap.get( "User1" ) );
         u2.setAssociation( nodeMap.get( "User2" ) );
 
-        List<Node> expected = new ArrayList<Node> ( asList( nodeMap.get( "Group1" ), nodeMap.get( "Group2" ) ));
-        
-        for ( PatternMatch match :
-                doMatch( u1, nodeMap.get( "User1" ) ) )
+        List<Node> expected = new ArrayList<Node>( asList( nodeMap.get( "Group1" ), nodeMap.get( "Group2" ) ) );
+
+        for ( PatternMatch match : doMatch( u1, nodeMap.get( "User1" ) ) )
         {
             Node matchedNode = match.getNodeFor( group );
             boolean remove = expected.remove( matchedNode );
             assertTrue( "Unexpected node matched: " + matchedNode.getProperty( "name" ), remove );
         }
-        
         assertTrue( "Not all nodes were found", expected.isEmpty() );
+    }
+
+    private void execAndWait( String... args ) throws Exception
+    {
+        Process process = Runtime.getRuntime().exec( args );
+        ProcessStreamHandler handler = new ProcessStreamHandler( process );
+        handler.launch();
+        process.waitFor();
     }
 
     @Test
     public void testDiamondWithAssociation()
     {
-        //    C
-        //   / \
-        //  B---D
-        //   \ /
-        //    A
+        // C
+        // / \
+        // B---D
+        // \ /
+        // A
         Node a = createInstance( "A" );
         Node b = createInstance( "B" );
         Node c = createInstance( "C" );
@@ -821,8 +806,7 @@ public class TestPatternMatching implements GraphHolder
 
         pA.createRelationshipTo( pB, R1, Direction.BOTH );
         pB.createRelationshipTo( pC, R2, Direction.BOTH );
-        PatternRelationship lastRel =
-                pC.createRelationshipTo( pD, R1, Direction.BOTH );
+        PatternRelationship lastRel = pC.createRelationshipTo( pD, R1, Direction.BOTH );
 
         pA.setAssociation( a );
         pB.setAssociation( b );
@@ -830,8 +814,7 @@ public class TestPatternMatching implements GraphHolder
         pD.setAssociation( a );
 
         int count = 0;
-        for ( PatternMatch match :
-                doMatch( pA ) )
+        for ( PatternMatch match : doMatch( pA ) )
         {
             count++;
         }
@@ -839,8 +822,7 @@ public class TestPatternMatching implements GraphHolder
 
         pD.setAssociation( null );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pA ) )
+        for ( PatternMatch match : doMatch( pA ) )
         {
             count++;
         }
@@ -848,8 +830,7 @@ public class TestPatternMatching implements GraphHolder
 
         lastRel.setAssociation( relAD );
         count = 0;
-        for ( PatternMatch match :
-                doMatch( pA ) )
+        for ( PatternMatch match : doMatch( pA ) )
         {
             count++;
         }
