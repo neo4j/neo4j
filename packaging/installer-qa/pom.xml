@@ -149,7 +149,7 @@
           <!-- Tar the log files from all tests -->
           <execution>
             <phase>package</phase>
-            <id>tar-log-files</id>
+            <id>default-cli</id>
             <goals>
               <goal>run</goal>
             </goals>
