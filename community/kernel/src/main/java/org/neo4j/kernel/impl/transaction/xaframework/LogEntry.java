@@ -109,9 +109,14 @@ public abstract class LogEntry
             return ( highBits << 32 ) | lowBits;
         }
 
+        /*
+         * The second should come from the checksum generation with the bug (1.5.3 and earlier)
+         * For example, a master with the bug should pass in its extracted checksum as the second
+         * argument and the one from the slave as the first
+         */
         public static boolean checksumMatch( long first, long second )
         {
-            return first == second || ( areHalfHighBitsSet( first ) && ( first == second ) );
+            return first == second || ( areHalfHighBitsSet( second ) && ( (int) first == (int) second ) );
         }
 
         private static boolean areHalfHighBitsSet( long number )

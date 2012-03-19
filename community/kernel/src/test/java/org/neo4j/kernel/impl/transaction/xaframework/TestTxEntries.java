@@ -50,6 +50,30 @@ public class TestTxEntries
         assertCorrectChecksumEquality( randomXid( Boolean.FALSE ), false );
     }
 
+    @Test
+    public void testUpgradeToVersionWithCorrectChecksumWorks()
+    {
+        /*
+         * Tests that when the checksum bug is fixed the old version will continue
+         * working with the new version slaves.
+         */
+        long xidChecksum = -123L;
+        long idsHash = 2 * 37 + 3;
+
+        // Old version, with the bug
+        long damagedChecksum = ( idsHash << 32 ) | xidChecksum;
+        // New version, with the bug
+        long correctChecksum = ( idsHash << 32 ) | ( xidChecksum & 0xFFFFFFFFL );
+
+        /*
+         * The first argument is the slave's checksum, the second is the old
+         * master's extracted damaged checksum. When the bug is fixed, the
+         * first assertion should fail and this test be removed.
+         */
+        assertTrue( Start.checksumMatch( correctChecksum, damagedChecksum ) );
+        assertFalse( Start.checksumMatch( damagedChecksum, correctChecksum ) );
+    }
+
     private void assertCorrectChecksumEquality( Xid refXid, boolean positive )
     {
         Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime );
