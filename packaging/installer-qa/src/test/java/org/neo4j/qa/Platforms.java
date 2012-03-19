@@ -46,7 +46,7 @@ public class Platforms {
             UBUNTU_DEB,
             UBUNTU_TAR_GZ},",");
 
-    public static String[] getPlaformsToUse() {
+    public static String[] selectedPlatforms() {
         return System.getProperty("test-platforms", Platforms.ALL).split(",");
     }
     

@@ -96,13 +96,15 @@ public class CommonQualityAssuranceTest {
                 new UbuntuTarGzBaseDriver(        ubuntu, SharedConstants.UNIX_COMMUNITY_TARBALL ),
                 new UbuntuTarGzBaseDriver(        ubuntu, SharedConstants.UNIX_ADVANCED_TARBALL ),
                 new UbuntuTarGzEnterpriseDriver(  ubuntu, SharedConstants.UNIX_ENTERPRISE_TARBALL, 
-                                                          SharedConstants.UNIX_ENTERPRISE_TARBALL )});
+                                                          SharedConstants.UNIX_COORDINATOR_TARBALL )});
         
-        for(String platform : Platforms.getPlaformsToUse()) {
-            for(Neo4jDriver d : platforms.get(platform)) 
-            {
-                String name = CommonQualityAssuranceTest.class.getName() + "_" + d.getClass().getName();
-                testParameters.add(new Object[]{name, d});
+        for(String platformKey : Platforms.selectedPlatforms()) {
+            if(platforms.containsKey(platformKey)) {
+                for(Neo4jDriver d : platforms.get(platformKey)) 
+                {
+                    String name = CommonQualityAssuranceTest.class.getName() + "_" + d.getClass().getName();
+                    testParameters.add(new Object[]{name, d});
+                }
             }
         }
         

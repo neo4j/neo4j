@@ -37,6 +37,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.neo4j.qa.driver.EnterpriseDriver;
 import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
+import org.neo4j.qa.driver.UbuntuTarGzEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
 import org.neo4j.vagrant.VirtualMachine;
 
@@ -48,7 +49,6 @@ public class EnterpriseQualityAssuranceTest {
     {
 
         Map<String, Object[]> platforms = new HashMap<String, Object[]>();
-        List<Object[]> testParameters = new ArrayList<Object[]>();
         
         VirtualMachine win1 = vm(Neo4jVM.WIN_1);
         VirtualMachine win2 = vm(Neo4jVM.WIN_2);
@@ -88,10 +88,27 @@ public class EnterpriseQualityAssuranceTest {
                             SharedConstants.DEBIAN_COORDINATOR_INSTALLER  ) 
                 }});
         
-        for(String platform : Platforms.getPlaformsToUse()) {
-            testParameters.add(platforms.get(platform));
-        }
+        // Ubuntu, with tarball packages
+        platforms.put(Platforms.UBUNTU_TAR_GZ, new Object[] { 
+                EnterpriseQualityAssuranceTest.class.getName() + "_" + UbuntuTarGzEnterpriseDriver.class.getName(),
+                new EnterpriseDriver []{
+                    new UbuntuTarGzEnterpriseDriver( ubuntu1, 
+                            SharedConstants.UNIX_ENTERPRISE_TARBALL, 
+                            SharedConstants.UNIX_COORDINATOR_TARBALL  ),
+                    new UbuntuTarGzEnterpriseDriver( ubuntu2, 
+                            SharedConstants.UNIX_ENTERPRISE_TARBALL, 
+                            SharedConstants.UNIX_COORDINATOR_TARBALL  ),
+                    new UbuntuTarGzEnterpriseDriver( ubuntu3, 
+                            SharedConstants.UNIX_ENTERPRISE_TARBALL, 
+                            SharedConstants.UNIX_COORDINATOR_TARBALL  ) 
+                }});
         
+        List<Object[]> testParameters = new ArrayList<Object[]>();
+        for(String platformKey : Platforms.selectedPlatforms()) {
+            if(platforms.containsKey(platformKey)) {
+                testParameters.add(platforms.get(platformKey));
+            }
+        }
         return testParameters;
     }
 
