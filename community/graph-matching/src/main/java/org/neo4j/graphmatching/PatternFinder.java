@@ -249,7 +249,6 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         {
             uncompletedPositions.pop();
         }
-        System.out.println( "pop" );
         callStack.pop();
         foundElements.pop();
         return false;
@@ -307,7 +306,6 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
                 {
                     return true;
                 }
-                System.out.println( "pop" );
                 callStack.pop();
                 visitedRels.remove( rel );
             }
@@ -323,7 +321,6 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         if ( !uncompletedPositions.isEmpty() )
         {
             PatternPosition digPos = uncompletedPositions.pop();
-            System.out.println( "popped uncompleted now at: " + digPos );
             digPos.reset();
             matchFound = traverse( digPos, false );
             uncompletedPositions.push( digPos );
