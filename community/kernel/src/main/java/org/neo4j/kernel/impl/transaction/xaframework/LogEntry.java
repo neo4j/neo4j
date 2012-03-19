@@ -72,7 +72,7 @@ public abstract class LogEntry
         {
             return xid;
         }
-        
+
         public int getMasterId()
         {
             return masterId;
@@ -92,12 +92,12 @@ public abstract class LogEntry
         {
             this.startPosition = position;
         }
-        
+
         long getTimeWritten()
         {
             return timeWritten;
         }
-        
+
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */
@@ -106,7 +106,22 @@ public abstract class LogEntry
             // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
             long lowBits = xid.hashCode();
             long highBits = masterId*37 + myId;
-            return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+            return ( highBits << 32 ) | lowBits;
+        }
+
+        /*
+         * The second should come from the checksum generation with the bug (1.5.3 and earlier)
+         * For example, a master with the bug should pass in its extracted checksum as the second
+         * argument and the one from the slave as the first
+         */
+        public static boolean checksumMatch( long first, long second )
+        {
+            return first == second || ( areHalfHighBitsSet( second ) && ( (int) first == (int) second ) );
+        }
+
+        private static boolean areHalfHighBitsSet( long number )
+        {
+            return ( number & 0xFFFFFFFF00000000L ) == 0xFFFFFFFF00000000L;
         }
 
         @Override
@@ -115,7 +130,7 @@ public abstract class LogEntry
             return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" + timestamp( timeWritten ) + "]";
         }
     }
-    
+
     static class Prepare extends LogEntry
     {
         private final long timeWritten;
@@ -125,7 +140,7 @@ public abstract class LogEntry
             super( identifier );
             this.timeWritten = timeWritten;
         }
-        
+
         public long getTimeWritten()
         {
             return timeWritten;
@@ -154,7 +169,7 @@ public abstract class LogEntry
         {
             return txId;
         }
-        
+
         public long getTimeWritten()
         {
             return timeWritten;

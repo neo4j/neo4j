@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Random;
 
@@ -43,35 +44,78 @@ public class TestTxEntries
     public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
     {
         // Positive Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.TRUE ) );
-        
+        assertCorrectChecksumEquality( randomXid( Boolean.TRUE ), true );
+
         // Negative Xid hashcode
-        assertorrectChecksumEquality( randomXid( Boolean.FALSE ) );
+        assertCorrectChecksumEquality( randomXid( Boolean.FALSE ), false );
     }
 
-    private void assertorrectChecksumEquality( Xid refXid )
+    @Test
+    public void testUpgradeToVersionWithCorrectChecksumWorks()
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime ); 
+        /*
+         * Tests that when the checksum bug is fixed the old version will continue
+         * working with the new version slaves.
+         */
+        long xidChecksum = -123L;
+        long idsHash = 2 * 37 + 3;
+
+        // Old version, with the bug
+        long damagedChecksum = ( idsHash << 32 ) | xidChecksum;
+        // New version, with the bug
+        long correctChecksum = ( idsHash << 32 ) | ( xidChecksum & 0xFFFFFFFFL );
+
+        /*
+         * The first argument is the slave's checksum, the second is the old
+         * master's extracted damaged checksum. When the bug is fixed, the
+         * first assertion should fail and this test be removed.
+         */
+        assertTrue( Start.checksumMatch( correctChecksum, damagedChecksum ) );
+        assertFalse( Start.checksumMatch( damagedChecksum, correctChecksum ) );
+    }
+
+    private void assertCorrectChecksumEquality( Xid refXid, boolean positive )
+    {
+        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime );
         assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime ) );
-        
+
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ),
+                true, positive );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster + 1, refMe, startPosition, refTime ), false,
+                positive );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime ) );
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe + 1, startPosition, refTime ), false,
+                positive );
     }
 
-    private void assertChecksumsNotEqual( Start ref, Start other )
+    private void assertChecksumsNotEqual( Start ref, Start other, boolean differentXid, boolean positive )
     {
-        assertFalse( ref.getChecksum() == other.getChecksum() );
+        if ( positive || differentXid )
+        {
+            assertFalse( Start.checksumMatch( ref.getChecksum(), other.getChecksum() ) );
+        }
+        else
+        {
+            /*
+             * same negative xids, means the checksums are equal no matter what.
+             * Check all 32 high bits are set (this is the bug tested here)
+             * Check the checksums are equal as numbers.
+             * Check the LogEntry.Start method agrees
+             */
+            assertEquals( "not all high bits were set", 0xFFFFFFFF00000000L, ref.getChecksum() & 0xFFFFFFFF00000000L );
+            assertEquals( "not all high bits were set", 0xFFFFFFFF00000000L, other.getChecksum() & 0xFFFFFFFF00000000L );
+            assertEquals( ref.getChecksum(), other.getChecksum() );
+            assertTrue( Start.checksumMatch( ref.getChecksum(), other.getChecksum() ) );
+        }
     }
 
     private void assertChecksumsEquals( Start ref, Start other )
     {
-        assertEquals( ref.getChecksum(), other.getChecksum() );
+        assertTrue( Start.checksumMatch( ref.getChecksum(), other.getChecksum() ) );
     }
 
     private Xid randomXid( Boolean trueForPositive )
