@@ -107,8 +107,6 @@ The delete semantics can be summarized in the following bullets:
 * Any write operation on a node or relationship after it has been deleted (but not yet committed) will throw an exception
 * After commit trying to acquire a new or work with an old reference to a deleted node or relationship will throw an exception.
 
-<<<<<<< HEAD
-=======
 [[transactions-unique-nodes]]
 == Creating unique nodes ==
 In many use cases, a certain level of uniqueness is desired among entities. You could for instance imagine that only
@@ -167,4 +165,3 @@ At this point the transaction is still running so changes can still be made. How
 This method can also throw an exception and will, in such a case, prevent the transaction from being committed (where a call to +afterRollback+ will follow).
 If +beforeCommit+ is successfully executed the transaction will be committed and the +afterCommit+ method will be called with the same transaction data as well as the object returned from +beforeCommit+.
 This assumes that all other handlers (if more were registered) also executed +beforeCommit+ successfully.
->>>>>>> 7db7ad5... Replaced invalid test for trying to do optimistic unique node creation by relying on a particular implementation detail in Lucene, namely document ids being persistent. Instead added an example of using the UniqueFactory, which also replaced that previous section in the manual
