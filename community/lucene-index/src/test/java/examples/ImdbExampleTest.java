@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
@@ -62,7 +63,6 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.CacheTypeSetting.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
 
 public class ImdbExampleTest
 {
@@ -72,7 +72,7 @@ public class ImdbExampleTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( cache_type, soft ).newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, CacheTypeSetting.weak ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {

@@ -20,53 +20,83 @@
 package org.neo4j.jmx.impl;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
+import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Description;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.annotations.Documented;
 
 @Description( "The configuration parameters used to configure Neo4j" )
 public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
     private final Map<String, String> config;
+    private Config configuration;
 
     ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( CONFIGURATION_MBEAN_NAME, kernel, support );
-        this.config = kernel.getConfigParams();
+        this.config = new HashMap<String, String>(kernel.getConfigParams());
+        this.configuration = kernel.getConfig();
+        configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
     }
 
     private static final Map<String, String> parameterDescriptions;
     static
     {
         final Map<String, String> descriptions = new HashMap<String, String>();
-        for ( final Field field : Config.class.getFields() )
+        for ( final Field field : GraphDatabaseSettings.class.getFields() )
         {
             if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
             {
-                final Documented documentation = field.getAnnotation( Documented.class );
-                if ( documentation == null || field.getType() != String.class ) continue;
+                final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
+                if ( documentation == null || !GraphDatabaseSetting.class.isAssignableFrom(field.getType()) ) continue;
                 try
                 {
                     if ( !field.isAccessible() ) field.setAccessible( true );
-                    descriptions.put( (String) field.get( null ), documentation.value() );
+                    
+                    String description = documentation.value();
+                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
+                    if (setting instanceof GraphDatabaseSetting.OptionsSetting)
+                    {
+                        GraphDatabaseSetting.OptionsSetting optionsSetting = ( GraphDatabaseSetting.OptionsSetting) setting;
+                        description += ". Valid options:"+ Arrays.asList( optionsSetting.options() );
+                    }
+                    
+                    if (setting instanceof GraphDatabaseSetting.NumberSetting )
+                    {
+                        GraphDatabaseSetting.NumberSetting numberSetting = ( GraphDatabaseSetting.NumberSetting) setting;
+                        if (numberSetting.getMin() != null || numberSetting.getMax() != null)
+                        {
+                            description += ". ";
+                            if (numberSetting.getMin() != null)
+                                description+=numberSetting.getMin()+" < ";
+                            description += setting.name();
+                            if (numberSetting.getMax() != null)
+                                description+=" < "+numberSetting.getMax();
+                        }
+
+                    }
+                    
+                    descriptions.put( setting.name(), description );
                 }
                 catch ( Exception e )
                 {
@@ -91,10 +121,24 @@ public final class ConfigurationBean extends Neo4jMBean
             if ( entry.getKey() instanceof String )
             {
                 keys.add( new MBeanAttributeInfo( (String) entry.getKey(), String.class.getName(),
-                        describeConfigParameter( (String) entry.getKey() ), true, false, false ) );
+                        describeConfigParameter( (String) entry.getKey() ), true, true, false ) );
             }
         }
         return keys.toArray( new MBeanAttributeInfo[keys.size()] );
+    }
+
+    private MBeanOperationInfo[] methods()
+    {
+        List<MBeanOperationInfo> methods = new ArrayList<MBeanOperationInfo>();
+        try
+        {
+            methods.add( new MBeanOperationInfo( "Apply settings", getClass().getMethod( "apply" ) ) );
+        }
+        catch( NoSuchMethodException e )
+        {
+            e.printStackTrace(  );
+        }
+        return methods.toArray( new MBeanOperationInfo[methods.size()] );
     }
 
     @Override
@@ -123,10 +167,63 @@ public final class ConfigurationBean extends Neo4jMBean
     }
 
     @Override
+    public void setAttribute( Attribute attribute )
+        throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
+    {
+        if (config.containsKey( attribute.getName() ))
+            config.put( attribute.getName(), attribute.getValue().toString() );
+    }
+
+    @Override
     public MBeanInfo getMBeanInfo()
     {
         Description description = getClass().getAnnotation( Description.class );
         return new MBeanInfo( getClass().getName(), description != null ? description.value() : "Neo4j configuration",
-                keys(), null, null, null );
+                keys(), null, methods(), null );
+    }
+
+    @Override
+    public Object invoke( String s, Object[] objects, String[] strings )
+        throws MBeanException, ReflectionException
+    {
+        try
+        {
+            return getClass().getMethod( s ).invoke( this );
+        }
+        catch( InvocationTargetException e )
+        {
+            throw new MBeanException( (Exception) e.getTargetException() );
+        }
+        catch( Exception e )
+        {
+            throw new MBeanException( e );
+        }
+    }
+
+    public void apply()
+    {
+        // Apply new config
+        try
+        {
+            System.out.println( "Apply new config" );
+            configuration.applyChanges( config );
+        }
+        catch( Throwable e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private class UpdatedConfigurationListener
+        implements Config.ConfigurationChangeListener
+    {
+        @Override
+        public void notifyConfigurationChanges( Iterable<Config.ConfigurationChange> change )
+        {
+            for( Config.ConfigurationChange configurationChange : change )
+            {
+                config.put( configurationChange.getName(), configurationChange.getNewValue() );
+            }
+        }
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,6 +42,48 @@ import static java.util.regex.Pattern.*;
  */
 public class Config implements DiagnosticsProvider
 {
+    private List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
+
+    public interface ConfigurationChangeListener
+    {
+        void notifyConfigurationChanges(Iterable<ConfigurationChange> change);
+    }
+    
+    public class ConfigurationChange
+    {
+        private String name;
+        private String oldValue;
+        private String newValue;
+
+        public ConfigurationChange( String name, String oldValue, String newValue )
+        {
+            this.name = name;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public String getOldValue()
+        {
+            return oldValue;
+        }
+
+        public String getNewValue()
+        {
+            return newValue;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name+":"+oldValue+"->"+newValue;
+        }
+    }
+    
     static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
@@ -231,9 +274,6 @@ public class Config implements DiagnosticsProvider
             if (!inputParams.containsKey( autoConfig.getKey() ))
                 params.put( autoConfig.getKey(), autoConfig.getValue() );
         }
-
-        // Configuration may not be changed at runtime
-        this.params = Collections.unmodifiableMap(this.params);
     }
 
     public Map<String, String> getParams()
@@ -337,5 +377,38 @@ public class Config implements DiagnosticsProvider
                 }
             }, true );
         }
+    }
+    
+    public synchronized void applyChanges(Map<String,String> newConfiguration)
+    {
+        // Figure out what changed
+        List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>(  );
+        for( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
+        {
+            String oldValue = params.get( stringStringEntry.getKey() );
+            String newValue = stringStringEntry.getValue();
+            if (!(oldValue == null && newValue == null) &&
+                (oldValue == null || newValue == null || !oldValue.equals( newValue )))
+                configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue, newValue ) );
+        }
+
+        // Make the change
+        params.putAll( newConfiguration );
+
+        // Notify listeners
+        for( ConfigurationChangeListener listener : listeners )
+        {
+            listener.notifyConfigurationChanges(configurationChanges);
+        }
+    }
+    
+    public void addConfigurationChangeListener(ConfigurationChangeListener listener)
+    {
+        listeners.add(listener);
+    }
+    
+    public void removeConfigurationChangeListener(ConfigurationChangeListener listener)
+    {
+        listeners.remove( listener );
     }
 }

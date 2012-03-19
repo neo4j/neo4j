@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,6 +53,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
@@ -371,6 +374,35 @@ public abstract class AbstractGraphDatabase
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
+        
+        config.addConfigurationChangeListener( new Config.ConfigurationChangeListener()
+        {
+            Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
+            
+            @Override
+            public void notifyConfigurationChanges( final Iterable<Config.ConfigurationChange> change )
+            {
+                executor.execute( new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        // Restart
+                        try
+                        {
+                            life.stop();
+                            life.start();
+
+                            msgLog.logMessage( "Database restarted with the following configuration changes:"+change );
+                        }
+                        catch( LifecycleException e )
+                        {
+                            msgLog.logMessage( "Could not restart database", e );
+                        }
+                    }
+                });
+            }
+        } );
     }
 
     @Override
@@ -1128,6 +1160,7 @@ public abstract class AbstractGraphDatabase
             throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
+            msgLog.logMessage( "Started - database is now available" );
         }
 
         @Override
@@ -1135,6 +1168,7 @@ public abstract class AbstractGraphDatabase
             throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
+            msgLog.logMessage( "Stopping - database is now unavailable" );
         }
 
         @Override
