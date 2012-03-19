@@ -25,6 +25,7 @@ import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.commands._
 import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, Identifier, SymbolTable}
+import collection.Map
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -169,6 +170,40 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("A" -> a, "B" -> c, "C" -> b, "D" -> d, "pr1" -> r2, "pr2" -> r1, "pr3" -> r4, "pr4" -> r3))
   }
 
+  private def createDiamondWithExtraLoop(start: Node):Node={
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val e = createNode()
+
+    relate(a, b, "x", "r1")
+    relate(a, c, "x", "r2")
+    relate(b, d, "x", "r3")
+    relate(c, d, "x", "r4")
+    relate(b, e, "IN", "r4")
+    relate(c, e, "IN", "r4")
+
+    e
+  }
+
+  @Test def should_be_able_to_handle_double_loops() {
+    val e = createDiamondWithExtraLoop(a)
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("A", "B", "pr1", None, Direction.OUTGOING, false, True()),
+      RelatedTo("A", "C", "pr2", None, Direction.OUTGOING, false, True()),
+      RelatedTo("B", "D", "pr3", None, Direction.OUTGOING, false, True()),
+      RelatedTo("C", "D", "pr4", None, Direction.OUTGOING, false, True()),
+      RelatedTo("B", "E", "pr5", Some("IN"), Direction.OUTGOING, false, True()),
+      RelatedTo("C", "E", "pr6", Some("IN"), Direction.OUTGOING, false, True())
+    )
+
+    val matchingContext = new MatchingContext(patterns, bind("A", "E"))
+
+    val matches = matchingContext.getMatches(Map("A" -> a, "E" -> e))
+
+    assertMatches(matches, 2)
+  }
 
   @Test def pinnedNodeMakesNoMatchesInDisjunctGraph() {
     relate(a, b, "rel")
@@ -414,7 +449,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
     val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(Property("a", "prop"), Literal("not value"))))
 
-    assert(matchingContext.getMatches(Map("a" -> a)).toSeq.length === 0)
+    assert(matchingContext.getMatches(Map("a" -> a)).size === 0)
   }
 
   @Test def predicateInPatternRelationship() {

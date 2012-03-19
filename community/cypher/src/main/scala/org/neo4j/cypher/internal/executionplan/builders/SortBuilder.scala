@@ -20,33 +20,21 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.pipes.{ExtractPipe, SortPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.{SortPipe, Pipe}
 
 class SortBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val sortItems = q.sort.map(_.token)
-      val sortExpressions = sortItems.map(_.expression)
-      val returnItems = q.returns.map(_.token.expression)
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+    val sortExpressionsToExtract = q.sort.map(_.token).map(_.expression)
 
-      val missing = sortItems.map(_.expression).filterNot(returnItems.contains)
+    val (pipe, newPsq) = ExtractBuilder.extractIfNecessary(q,p, sortExpressionsToExtract)
 
-      val pipe = if (missing.nonEmpty) {
-        new ExtractPipe(p, sortExpressions)
-      } else {
-        p
-      }
+    val sortItems = newPsq.sort.map(_.token)
+    val resultPipe = new SortPipe(pipe, sortItems.toList)
 
-      val resultPipe = new SortPipe(pipe, sortItems.toList)
-
-      (resultPipe, q.copy(sort = q.sort.map(_.solve)))
-    }
+    (resultPipe, newPsq.copy(sort = newPsq.sort.map(_.solve)))
   }
 
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.extracted && q.sort.filter(_.unsolved).nonEmpty
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.extracted && q.sort.filter(_.unsolved).nonEmpty
-  }
-
-  def priority: Int = 0
+  def priority: Int = PlanBuilder.Sort
 }

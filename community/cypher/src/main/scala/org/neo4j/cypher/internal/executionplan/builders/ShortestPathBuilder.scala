@@ -25,24 +25,20 @@ import org.neo4j.cypher.internal.pipes.{SingleShortestPathPipe, AllShortestPaths
 import org.neo4j.cypher.SyntaxException
 
 class ShortestPathBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val items = q.patterns.filter(yesOrNo(p, _))
-      val shortestPaths = items.map(_.token.asInstanceOf[ShortestPath])
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+    val item = q.patterns.filter(yesOrNo(p, _)).head
+    val shortestPath = item.token.asInstanceOf[ShortestPath]
 
-      var pipe = p
-      shortestPaths.foreach(p => {
-        if (p.single)
-          pipe = new SingleShortestPathPipe(pipe, p)
-        else
-          pipe = new AllShortestPathsPipe(pipe, p)
-      })
+    val pipe = if (shortestPath.single)
+      new SingleShortestPathPipe(p, shortestPath)
+    else
+      new AllShortestPathsPipe(p, shortestPath)
 
-      (pipe, q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)))
-    }
+
+    (pipe, q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x._2.patterns.filter(yesOrNo(x._1, _)).nonEmpty
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.patterns.exists(yesOrNo(p, _))
 
   private def yesOrNo(p: Pipe, token: QueryToken[_]): Boolean = token match {
     case Unsolved(sp: ShortestPath) => p.symbols.satisfies(sp.dependencies)

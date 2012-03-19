@@ -24,20 +24,16 @@ import org.neo4j.cypher.internal.executionplan.{Unsolved, QueryToken, PartiallyS
 import org.neo4j.cypher.internal.pipes.{NamedPathPipe, Pipe}
 
 class NamedPathBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p,q) => {
-      val item = q.namedPaths.filter( yesOrNo(_, p) ).head
-      val namedPaths = item.token
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+    val item = q.namedPaths.filter(yesOrNo(_, p)).head
+    val namedPaths = item.token
 
-      val pipe = new NamedPathPipe(p, namedPaths)
+    val pipe = new NamedPathPipe(p, namedPaths)
 
-      (pipe, q.copy(namedPaths = q.namedPaths.filterNot(_ == item) ++ Seq(item.solve)))
-    }
+    (pipe, q.copy(namedPaths = q.namedPaths.filterNot(_ == item) :+ item.solve))
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.namedPaths.exists(yesOrNo(_, p))
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.namedPaths.exists(yesOrNo(_, p))
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
     case Unsolved(np: NamedPath) => {

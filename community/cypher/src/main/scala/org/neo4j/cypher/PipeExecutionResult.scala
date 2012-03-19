@@ -25,12 +25,16 @@ import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, No
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
 import internal.symbols.SymbolTable
+import collection.Map
+import collection.immutable.{Map => ImmutableMap}
+import java.text.DecimalFormat
 
-
-class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
+class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
   extends ExecutionResult
   with StringExtras {
-  
+
+  lazy val immutableResult = r.map(m => m.toMap)
+
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
@@ -65,8 +69,18 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: Sy
     columnSizes.toMap
   }
 
+  private def createTimedResults = {
+    val start = System.nanoTime()
+    val eagerResult = r.toList
+    val ms = .00001 * (System.nanoTime() - start)
+    val myFormatter = new DecimalFormat("####.##");
+    val timeTaken = myFormatter.format(ms);
+
+    (eagerResult, timeTaken)
+  }
+
   def dumpToString(writer: PrintWriter) {
-    val eagerResult = result.toList
+    val (eagerResult, timeTaken) = createTimedResults
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
@@ -74,7 +88,9 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: Sy
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %d ms".format(eagerResult.size, timeTaken)
+    
+    val row = if(eagerResult.size>1) "rows" else "row"
+    val footer = "%d %s, %s ms".format(eagerResult.size, row, timeTaken)
 
     writer.println(---)
     writer.println(headerLine)
@@ -121,10 +137,10 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: Sy
     }).mkString("| ", " | ", " |")
   }
 
-  val iterator = result.toIterator
+  lazy val iterator = immutableResult.toIterator
 
   def hasNext: Boolean = iterator.hasNext
 
-  def next(): Map[String, Any] = iterator.next()
+  def next(): ImmutableMap[String, Any] = iterator.next()
 }
 

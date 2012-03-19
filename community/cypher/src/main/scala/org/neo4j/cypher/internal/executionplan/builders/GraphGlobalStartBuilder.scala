@@ -27,16 +27,15 @@ import collection.JavaConverters._
 import org.neo4j.tooling.GlobalGraphOperations
 
 class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = {
-    val (pipe, q) = v1
+  def apply(pipe: Pipe, q: PartiallySolvedQuery) = {
     val item = q.start.filter(filter).head
 
     val newPipe = createStartPipe(pipe, item.token)
 
-    (newPipe, q.copy(start = q.start.filterNot(_ == item) ++ Seq(item.solve)))
+    (newPipe, q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
-  private def filter(q: QueryToken[_]): Boolean = q match {
+  private def filter(q: QueryToken[_]) = q match {
     case Unsolved(AllNodes(_)) => true
     case Unsolved(AllRelationships(_)) => true
     case _ => false
@@ -47,10 +46,7 @@ class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala)
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = {
-    val (_, q) = x
-    q.start.exists(filter)
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.start.exists(filter)
 
-  def priority: Int = PlanBuilder.GlobalStart
+  def priority = PlanBuilder.GlobalStart
 }

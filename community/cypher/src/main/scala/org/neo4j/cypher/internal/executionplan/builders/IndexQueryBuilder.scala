@@ -27,13 +27,12 @@ import collection.JavaConverters._
 import java.lang.{Iterable=>JIterable}
 
 class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = {
-    val (pipe, q) = v1
+  def apply(pipe: Pipe, q: PartiallySolvedQuery) = {
     val item = q.start.filter(filter).head
 
     val newPipe = createStartPipe(pipe, item.token)
 
-    (newPipe, q.copy(start = q.start.filterNot(_ == item) ++ Seq(item.solve)))
+    (newPipe, q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
   private def filter(q: QueryToken[_]): Boolean = q match {
@@ -77,10 +76,7 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   }
 
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = {
-    val (_, q) = x
-    q.start.exists(filter)
-  }
+  def isDefinedAt(pipe: Pipe, q: PartiallySolvedQuery): Boolean = q.start.exists(filter)
 
   def priority: Int = PlanBuilder.IndexQuery
 }

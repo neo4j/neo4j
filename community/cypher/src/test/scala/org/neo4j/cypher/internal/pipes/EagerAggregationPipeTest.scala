@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.commands._
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
+import collection.mutable.Map
 
 class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {

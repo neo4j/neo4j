@@ -35,7 +35,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s"))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertTrue("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -43,7 +43,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(AllNodes("x"))))
 
-    val (_, remaining) = builder((new NullPipe(), q))
+    val (_, remaining) = builder(new NullPipe(), q)
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -55,7 +55,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
       copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(RelationshipById("x", 1))))
 
 
-    val (_, result) = builder((new NullPipe(), q))
+    val (_, result) = builder(new NullPipe(), q)
 
     val expected = Set(Solved(AllNodes("s")), Unsolved(RelationshipById("x", 1)))
 
@@ -67,7 +67,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("s", 0))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -76,7 +76,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeById("s", Parameter("x")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -84,7 +84,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s"))))
 
-    val (_, remainingQ) = builder((new NullPipe(), q))
+    val (_, remainingQ) = builder(new NullPipe(), q)
 
     assert(remainingQ.start === Seq(Solved(AllNodes("s"))))
   }

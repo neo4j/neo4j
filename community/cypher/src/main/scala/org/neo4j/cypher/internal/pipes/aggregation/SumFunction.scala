@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.Expression
+import collection.Map
 
 class SumFunction(val value: Expression)
   extends AggregationFunction

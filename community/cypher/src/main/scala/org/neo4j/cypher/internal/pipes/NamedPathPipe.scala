@@ -26,6 +26,7 @@ import collection.Seq
 import java.lang.String
 import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, NamedPath}
 import org.neo4j.cypher.internal.symbols.{PathType, Identifier}
+import collection.mutable.Map
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
@@ -46,7 +47,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
       case path:PathPattern => getPath(m, path.pathName, soFar)
     })
 
-    m + (path.pathName -> buildPath(p))
+    m += (path.pathName -> buildPath(p))
   })
 
 

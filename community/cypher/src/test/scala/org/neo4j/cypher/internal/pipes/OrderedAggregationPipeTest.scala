@@ -29,6 +29,7 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.symbols._
+import collection.mutable.Map
 
 class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
   @Test def shouldReturnColumnsFromReturnItems() {
