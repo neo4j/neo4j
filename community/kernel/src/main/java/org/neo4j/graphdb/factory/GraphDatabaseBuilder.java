@@ -70,7 +70,7 @@ public class GraphDatabaseBuilder
     }
 
     /**
-     * @Deprecated
+     * @deprecated
      * Use setConfig with explicit GraphDatabaseSetting instead
      *
      * Set unvalidated config option
