@@ -81,7 +81,7 @@ public class StoreFactory
         }
     }
 
-    private NeoStore attemptNewNeoStore( String fileName )
+    NeoStore attemptNewNeoStore( String fileName )
     {
         return new NeoStore( fileName, ConfigProxy.config(config, NeoStore.Configuration.class),
                 lastCommittedTxIdSetter, idGeneratorFactory, fileSystemAbstraction, stringLogger, txHook,
