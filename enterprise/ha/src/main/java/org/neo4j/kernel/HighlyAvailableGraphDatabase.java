@@ -1241,6 +1241,7 @@ public class HighlyAvailableGraphDatabase
             this.broker.shutdown();
         }
         internalShutdown( false );
+        messageLog.close();
     }
 
     protected synchronized void close()
