@@ -41,8 +41,8 @@ public interface Cache
     int getRelationshipCacheSize();
     */
 
-    @Description( "The number of entities currently in this cache" )
-    int getNumberOfCachedElements();
+    @Description( "The size of this cache (nr of entities or total size in bytes)" )
+    long getCacheSize();
 
     @Description( "The number of times a cache query returned a result" )
     long getHitCount();
