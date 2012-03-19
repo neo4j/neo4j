@@ -206,9 +206,9 @@ public class CommonQualityAssuranceTest {
 
     private void assertRESTWorks() throws Exception
     {
-        JaxRsResponse r = RestRequest.req().get(
-                "http://"+vm.definition().ip()+":7474/db/data/");
-        assertThat(r.getStatus(), equalTo(200));
+        String url = "http://"+vm.definition().ip()+":7474/db/data/";
+        JaxRsResponse r = RestRequest.req().get(url);
+        assertThat(url + " responds with HTTP 200 on a HTTP GET request.", r.getStatus(), equalTo(200));
     }
 
 }
