@@ -20,7 +20,7 @@
 package org.neo4j.server.webadmin.rest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
 import java.io.UnsupportedEncodingException;
@@ -82,20 +82,14 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
         assertEquals( 200, response.getStatus() );
         String result = decode( response ).get(0);
 
-        // Awful hack: Result contains a timestamp for how
-        // long the query took, remove that timestamp to get 
-        // a deterministic test.
-        result = result.replaceAll("\\d+ ms", "");
-        
         String expected = "+-----------+"+LN
                          +"| n         |"+LN
                          +"+-----------+"+LN
                          +"| Node[0]{} |"+LN
                          +"+-----------+"+LN
-                         +"1 rows, "+LN
-                         +""+LN;
+                         +"1 row";
         
-        assertThat( result, is(expected) );
+        assertThat( result, containsString( expected ) );
     }
     
     private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
