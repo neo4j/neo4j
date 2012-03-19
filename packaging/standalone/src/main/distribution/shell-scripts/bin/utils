@@ -245,7 +245,12 @@ create_user() {
 
 remove_user() {
   if [[ $wrapper_user_created == "true" ]]; then
-    read -p "It appears that user \"${wrapper_user}\" was created during install. Remove that user now? [yN] " yn
+    if [[ $HEADLESS == false ]]; then
+      read -p "It appears that user \"${wrapper_user}\" was created during install. Remove that user now? [yN] " yn
+    else
+      yn="y"
+    fi
+    
     case $yn in
       [Yy]* ) deluser $wrapper_user
               modify_user_config "" created=true
@@ -273,9 +278,10 @@ removeservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
-	  update-rc.d -f ${SERVICE_NAME} remove
+	        update-rc.d -f ${SERVICE_NAME} remove
           rm /etc/init.d/${SERVICE_NAME}
         fi
+
         # remove effective user, if created by install-script
         remove_user
       else
