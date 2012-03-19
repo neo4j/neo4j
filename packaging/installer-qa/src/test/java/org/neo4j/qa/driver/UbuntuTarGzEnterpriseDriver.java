@@ -54,7 +54,7 @@ public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzBaseDriver implement
     @Override
     public void uninstallZookeeper()
     {
-        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h -u neo4j remove");
+        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h remove");
         sh.run("sudo rm " + ZOOKEEPER_INSTALL_DIR + " -rf");
     }
 

@@ -62,7 +62,7 @@ public class UbuntuTarGzBaseDriver extends AbstractPosixDriver {
     
     @Override
     public void uninstallNeo4j() {
-        sh.run("sudo " + INSTALL_DIR + "/bin/neo4j -h -u neo4j remove");
+        sh.run("sudo " + INSTALL_DIR + "/bin/neo4j remove");
         sh.run("sudo rm " + INSTALL_DIR + " -rf");
     }
     
