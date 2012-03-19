@@ -49,7 +49,6 @@ public class TestStoreAccess
         // This doesn't actually check for recovery, it checks for startup of the DB (by
         // looking in the log) and we assume that recovery would happen during DB startup.
         assertFalse( "should not have started GraphDatabase", data.contains( "STARTUP" ) );
-        System.out.println( data );
         assertTrue( "Store should be unclean", isUnclean( testdir.directory() ) );
     }
 
