@@ -34,5 +34,13 @@ public class VagrantCommandException extends RuntimeException {
                 + r.getExitCode() 
                 + ". Output was:\n" + r.getOutput());
     }
+    
+    public VagrantCommandException(String name, Result r, String note)
+    {
+        super("Vagrant command [" + name + "] failed with exit code " 
+                + r.getExitCode() 
+                + ". Note: '" + note + "'\n" 
+                + "Output was:\n" + r.getOutput());
+    }
 
 }

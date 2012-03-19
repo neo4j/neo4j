@@ -23,38 +23,39 @@ import org.neo4j.vagrant.Shell;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.command.Status.VirtualMachineState;
 
-public class Halt implements VagrantCommand<Object> {
+public class Status implements VagrantCommand<VirtualMachineState> {
 
-    private static final String HALT = "halt";
+    private static final String STATUS = "status";
+
+    public enum VirtualMachineState {
+        POWEROFF, RUNNING, NOT_CREATED
+    }
 
     @Override
-    public Object run(Shell sh, String vagrantPath)
+    public VirtualMachineState run(Shell sh, String vagrantPath)
     {
-        Result haltResult = sh.run(vagrantPath + " " + HALT);
+        Result statusResult = sh.run(vagrantPath + " " + STATUS);
+        String output = statusResult.getOutput();
 
-        if (!verify(haltResult))
+        if (output.contains("running\n"))
         {
-            Status status = new Status();
-            if (status.run(sh, vagrantPath) != VirtualMachineState.POWEROFF)
-            {
-                throw new VagrantCommandException(getClass().getName(),
-                        haltResult);
-            }
+            return VirtualMachineState.RUNNING;
+        } else if (output.contains("poweroff\n"))
+        {
+            return VirtualMachineState.POWEROFF;
+        } else if (output.contains("not created\n"))
+        {
+            return VirtualMachineState.NOT_CREATED;
         }
 
-        return null;
+        throw new VagrantCommandException(getClass().getName(), statusResult,
+                "Did not recognize VM state.");
     }
 
     @Override
     public boolean isIdempotent()
     {
         return true;
-    }
-
-    protected boolean verify(Result r)
-    {
-        return r.getOutput()
-                .endsWith("Attempting graceful shutdown of VM...\n");
     }
 
 }
