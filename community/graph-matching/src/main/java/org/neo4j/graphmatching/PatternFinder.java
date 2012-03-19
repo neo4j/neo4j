@@ -150,52 +150,62 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
             {
                 // found first match, return it
                 currentPosition = null;
-                HashMap<PatternNode, PatternElement> filteredElements =
-                    new HashMap<PatternNode, PatternElement>();
-                HashMap<PatternRelationship, Relationship> relElements =
-                    new HashMap<PatternRelationship, Relationship>();
-                for ( PatternElement element : foundElements )
-                {
-                    filteredElements.put( element.getPatternNode(), element );
-                    relElements.put( element.getFromPatternRelationship(),
-                        element.getFromRelationship() );
-                }
-                PatternMatch patternMatch = new PatternMatch( filteredElements,
-                    relElements );
-                foundElements.pop();
-                return patternMatch;
+                return extractPotentialResult();
             }
             currentPosition = null;
         }
-        else if ( !callStack.isEmpty() )
+        else
         {
-            // Traverse deeper into the sub graph and see if there's more of
-            // the pattern which matches the graph.
-            boolean matchFound = false;
-            do
+            return traverseFromCallStack();
+        }
+        return null;
+    }
+
+    private PatternMatch extractPotentialResult()
+    {
+        HashMap<PatternNode, PatternElement> filteredElements =
+            new HashMap<PatternNode, PatternElement>();
+        HashMap<PatternRelationship, Relationship> relElements =
+            new HashMap<PatternRelationship, Relationship>();
+        boolean patternValid = true;
+        for ( PatternElement element : foundElements )
+        {
+            PatternElement other = filteredElements.get( element.getPatternNode() );
+            if ( other != null && !other.getNode().equals( element.getNode() ) )
             {
-                CallPosition callStackInformation = callStack.peek();
-                matchFound = traverse( callStackInformation );
+                patternValid = false;
+                break;
             }
-            while ( !callStack.isEmpty() && !matchFound );
-            if ( matchFound )
-            {
-                // found another match, returning it
-                HashMap<PatternNode, PatternElement> filteredElements =
-                    new HashMap<PatternNode, PatternElement>();
-                HashMap<PatternRelationship, Relationship> relElements =
-                    new HashMap<PatternRelationship, Relationship>();
-                for ( PatternElement element : foundElements )
-                {
-                    filteredElements.put( element.getPatternNode(), element );
-                    relElements.put( element.getFromPatternRelationship(),
-                        element.getFromRelationship() );
-                }
-                PatternMatch patternMatch = new PatternMatch( filteredElements,
-                    relElements );
-                foundElements.pop();
-                return patternMatch;
-            }
+            filteredElements.put( element.getPatternNode(), element );
+            relElements.put( element.getFromPatternRelationship(),
+                element.getFromRelationship() );
+        }
+        PatternMatch patternMatch = new PatternMatch( filteredElements,
+            relElements );
+        foundElements.pop();
+        if ( patternValid )
+        {
+            return patternMatch;
+        }
+        return traverseFromCallStack();
+    }
+
+    private PatternMatch traverseFromCallStack()
+    {
+        if ( callStack.isEmpty() )
+        {
+            return null;
+        }
+        boolean matchFound = false;
+        do
+        {
+            CallPosition callStackInformation = callStack.peek();
+            matchFound = traverse( callStackInformation );
+        }
+        while ( !callStack.isEmpty() && !matchFound );
+        if ( matchFound )
+        {
+            return extractPotentialResult();
         }
         return null;
     }
@@ -253,7 +263,6 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         {
             return false;
         }
-
         if ( pushElement )
         {
             foundElements.push( new PatternElement(
