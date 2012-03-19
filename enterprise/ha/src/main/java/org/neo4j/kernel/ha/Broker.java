@@ -51,6 +51,8 @@ public interface Broker
 
     void restart();
 
+    void start();
+
     void setConnectionInformation( KernelData kernel );
 
     ConnectionInformation getConnectionInformation( int machineId );

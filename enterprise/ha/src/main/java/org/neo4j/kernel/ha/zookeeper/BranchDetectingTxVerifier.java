@@ -27,6 +27,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -44,15 +45,21 @@ class BranchDetectingTxVerifier implements TxChecksumVerifier
         this.db = db;
         msgLog = StringLogger.getLogger( db.getStoreDir() );
     }
-    
+
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
         try
         {
             Pair<Integer, Long> readChecksum = dataSource().getMasterForCommittedTx( txId );
-            boolean match = masterId == readChecksum.first() && checksum == readChecksum.other();
-            
+            /*
+             * For masters with the "high-bits-set" bug, the order in checksumMatch matters.
+             * The first one should be the one from a slave which is generated correctly. The
+             * second should be the one read, which is generated wrong.
+             */
+            boolean match = masterId == readChecksum.first()
+                            && LogEntry.Start.checksumMatch( checksum, readChecksum.other() );
+
             /* MP: This "packing" of a BranchedDataException inside a ComException is just to
              * let it be able to be picked up by current catch clauses and code paths. The only
              * special hacky thing needed in HAGraphDb would be to look for the cause in the exception
@@ -66,7 +73,7 @@ class BranchDetectingTxVerifier implements TxChecksumVerifier
             throw new BranchedDataException( e );
         }
     }
-    
+
     private XaDataSource dataSource()
     {
         if ( dataSource == null ) dataSource = db.getConfig().getTxModule().getXaDataSourceManager()
