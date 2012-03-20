@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +36,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class LifeSupport
     implements Lifecycle
 {
-    public enum Status
-    {
-        NONE,INITIALIZING,STARTING,STARTED,STOPPING,STOPPED,SHUTTING_DOWN,SHUTDOWN
-    }
-
     List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>(  );
-    Status status = Status.NONE;
+    LifecycleStatus status = LifecycleStatus.NONE;
+    List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
 
     public <T> T add(T instance)
     {
@@ -51,9 +47,19 @@ public class LifeSupport
         return instance;
     }
 
-    public synchronized Status getStatus()
+    public synchronized LifecycleStatus getStatus()
     {
         return status;
+    }
+    
+    public synchronized void addLifecycleListener(LifecycleListener listener)
+    {
+        listeners.add( listener );
+    }
+    
+    public synchronized void removeLifecycleListener(LifecycleListener listener)
+    {
+        listeners.remove( listener );
     }
 
     /**
@@ -66,9 +72,9 @@ public class LifeSupport
     public synchronized void init()
         throws LifecycleException
     {
-        if (status == Status.NONE)
+        if (status == LifecycleStatus.NONE)
         {
-            status = Status.INITIALIZING;
+            status = changedStatus(this, status, LifecycleStatus.INITIALIZING);
             for( LifecycleInstance instance : instances )
             {
                 try
@@ -77,7 +83,7 @@ public class LifeSupport
                 }
                 catch( LifecycleException e )
                 {
-                    status = Status.STOPPED;
+                    status = changedStatus( this, status, LifecycleStatus.STOPPED);
                     try
                     {
                         shutdown();
@@ -89,7 +95,7 @@ public class LifeSupport
                     throw e;
                 }
             }
-            status = Status.STOPPED;
+            status = changedStatus( this, status, LifecycleStatus.STOPPED);
         }
     }
 
@@ -109,9 +115,9 @@ public class LifeSupport
     {
         init();
         
-        if (status == Status.STOPPED)
+        if (status == LifecycleStatus.STOPPED)
         {
-            status = Status.STARTING;
+            status = changedStatus( this, status, LifecycleStatus.STARTING);
             for( LifecycleInstance instance : instances )
             {
                 try
@@ -120,7 +126,7 @@ public class LifeSupport
                 }
                 catch( LifecycleException e )
                 {
-                    status = Status.STARTED;
+                    status = changedStatus( this, status, LifecycleStatus.STARTED);
                     try
                     {
                         stop();
@@ -132,7 +138,7 @@ public class LifeSupport
                     throw e;
                 }
             }
-            status = Status.STARTED;
+            status = changedStatus( this, status, LifecycleStatus.STARTED);
         }
     }
 
@@ -148,9 +154,9 @@ public class LifeSupport
     public synchronized void stop()
         throws LifecycleException
     {
-        if (status == Status.STARTED)
+        if (status == LifecycleStatus.STARTED)
         {
-            status = Status.STOPPING;
+            status = changedStatus( this, status, LifecycleStatus.STOPPING);
             LifecycleException ex = null;
             for( int i = instances.size()-1; i >=0; i-- )
             {
@@ -165,7 +171,7 @@ public class LifeSupport
                 }
             }
             
-            status = Status.STOPPED;
+            status = changedStatus( this, status, LifecycleStatus.STOPPED);
             
             if (ex != null)
                 throw ex;
@@ -194,9 +200,9 @@ public class LifeSupport
             ex = e;
         }
         
-        if (status == Status.STOPPED)
+        if (status == LifecycleStatus.STOPPED)
         {
-            status = Status.SHUTTING_DOWN;
+            status = changedStatus( this, status, LifecycleStatus.SHUTTING_DOWN);
             for( int i = instances.size()-1; i >=0; i-- )
             {
                 LifecycleInstance lifecycleInstance = instances.get( i );
@@ -210,7 +216,7 @@ public class LifeSupport
                 }
             }
 
-            status = Status.SHUTDOWN;
+            status = changedStatus( this, status, LifecycleStatus.SHUTDOWN);
 
             if (ex != null)
                 throw ex;
@@ -230,7 +236,7 @@ public class LifeSupport
     public synchronized void restart(Lifecycle instance)
         throws LifecycleException, IllegalArgumentException
     {
-        if (status == Status.STARTED)
+        if (status == LifecycleStatus.STARTED)
         {
             boolean foundRestartingInstance = false;
             List<LifecycleInstance> restartingInstances = new ArrayList<LifecycleInstance>(  );
@@ -249,7 +255,7 @@ public class LifeSupport
                 throw new IllegalArgumentException( "Instance is not registered" );
 
             // Stop instances
-            status = Status.STOPPING; 
+            status = changedStatus( this, status, LifecycleStatus.STOPPING);
             LifecycleException ex = null;
             for( int i = restartingInstances.size()-1; i >=0; i-- )
             {
@@ -267,7 +273,7 @@ public class LifeSupport
             // Failed stop - stop the whole thing to be safe
             if (ex != null)
             {
-                status = Status.STARTED;
+                status = changedStatus( this, status, LifecycleStatus.STARTED);
                 try
                 {
                     stop();
@@ -287,12 +293,12 @@ public class LifeSupport
                     LifecycleInstance lifecycle = restartingInstances.get( i );
                     lifecycle.start();
                 }
-                status = Status.STARTED;
+                status = changedStatus( this, status, LifecycleStatus.STARTED);
             }
             catch( LifecycleException e )
             {
                 // Failed restart - stop the whole thing to be safe
-                status = Status.STARTED;
+                status = changedStatus( this, status, LifecycleStatus.STARTED);
                 try
                 {
                     stop();
@@ -339,11 +345,25 @@ public class LifeSupport
         return exception;
     }
 
-    private static class LifecycleInstance
+    private LifecycleStatus changedStatus( Lifecycle instance,
+                                          LifecycleStatus oldStatus,
+                                          LifecycleStatus newStatus
+    )
+    {
+        for( LifecycleListener listener : listeners )
+        {
+            listener.notifyStatusChanged( instance, oldStatus, newStatus  );
+        }
+
+        return newStatus;
+    }
+
+
+    private class LifecycleInstance
         implements Lifecycle
     {
         Lifecycle instance;
-        Status currentStatus = Status.NONE;
+        LifecycleStatus currentStatus = LifecycleStatus.NONE;
 
         private LifecycleInstance( Lifecycle instance )
         {
@@ -354,18 +374,18 @@ public class LifeSupport
         public void init()
             throws LifecycleException
         {
-            if (currentStatus == Status.NONE )
+            if (currentStatus == LifecycleStatus.NONE )
             {
-                currentStatus = Status.INITIALIZING;
+                currentStatus = changedStatus(instance, currentStatus, LifecycleStatus.INITIALIZING);
                 try
                 {
                     instance.init();
-                    currentStatus = Status.STOPPED;
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED);
                 }
                 catch( Throwable e )
                 {
-                    currentStatus = Status.NONE;
-                    throw new LifecycleException( instance, Status.NONE, Status.STOPPED, e );
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.NONE);
+                    throw new LifecycleException( instance, LifecycleStatus.NONE, LifecycleStatus.STOPPED, e );
                 }
             }
         }
@@ -374,18 +394,18 @@ public class LifeSupport
         public void start()
             throws LifecycleException
         {
-            if (currentStatus == Status.STOPPED )
+            if (currentStatus == LifecycleStatus.STOPPED )
             {
-                currentStatus = Status.STARTING;
+                currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STARTING);
                 try
                 {
                     instance.start();
-                    currentStatus = Status.STARTED;
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STARTED);
                 }
                 catch( Throwable e )
                 {
-                    currentStatus = Status.STOPPED;
-                    throw new LifecycleException( instance, Status.STOPPED, Status.STARTED, e );
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED);
+                    throw new LifecycleException( instance, LifecycleStatus.STOPPED, LifecycleStatus.STARTED, e );
                 }
             }
         }
@@ -394,19 +414,19 @@ public class LifeSupport
         public void stop()
             throws LifecycleException
         {
-            if (currentStatus == Status.STARTED )
+            if (currentStatus == LifecycleStatus.STARTED )
             {
-                currentStatus = Status.STOPPING;
+                currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPING);
                 try
                 {
                     instance.stop();
                 }
                 catch( Throwable e )
                 {
-                    throw new LifecycleException( instance, Status.STARTED, Status.STOPPED, e );
+                    throw new LifecycleException( instance, LifecycleStatus.STARTED, LifecycleStatus.STOPPED, e );
                 } finally
                 {
-                    currentStatus = Status.STOPPED;
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED);
                 }
             }
         }
@@ -415,19 +435,19 @@ public class LifeSupport
         public void shutdown()
             throws LifecycleException
         {
-            if (currentStatus == Status.STOPPED )
+            if (currentStatus == LifecycleStatus.STOPPED )
             {
-                currentStatus = Status.SHUTTING_DOWN;
+                currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.SHUTTING_DOWN);
                 try
                 {
                     instance.shutdown();
                 }
                 catch( Throwable e )
                 {
-                    throw new LifecycleException( instance, Status.STOPPED, Status.SHUTTING_DOWN, e );
+                    throw new LifecycleException( instance, LifecycleStatus.STOPPED, LifecycleStatus.SHUTTING_DOWN, e );
                 } finally
                 {
-                    currentStatus = Status.SHUTDOWN;
+                    currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.SHUTDOWN);
                 }
             }
         }

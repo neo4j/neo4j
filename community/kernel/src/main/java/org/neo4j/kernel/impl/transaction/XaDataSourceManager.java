@@ -36,12 +36,12 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * All datasources that have been defined in the XA data source configuration

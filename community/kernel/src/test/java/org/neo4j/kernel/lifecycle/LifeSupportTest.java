@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.lifecycle;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,34 +45,34 @@ public class LifeSupportTest
         lifeSupport.add( instance3 );
 
         lifeSupport.init();
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus());
 
         lifeSupport.start();
-        assertEquals( LifeSupport.Status.STARTED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance2.getStatus() );
-        assertEquals( LifeSupport.Status.STARTED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance2.getStatus() );
+        assertEquals( LifecycleStatus.STARTED, instance3.getStatus());
 
         lifeSupport.stop();
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus());
 
         lifeSupport.start();
-        assertEquals( LifeSupport.Status.STARTED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance3.getStatus());
 
         lifeSupport.shutdown();
-        assertEquals( LifeSupport.Status.SHUTDOWN, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance1.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance2.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance3.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance1.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance2.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance3.getStatus());
     }
 
     @Test()
@@ -97,10 +97,10 @@ public class LifeSupportTest
         {
             assertEquals( initThrowable, throwable.getCause() );
         }
-        assertEquals( LifeSupport.Status.SHUTDOWN, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN , instance1.getStatus());
-        assertEquals( LifeSupport.Status.NONE , instance2.getStatus() );
-        assertEquals( LifeSupport.Status.NONE , instance3.getStatus() );
+        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN , instance1.getStatus());
+        assertEquals( LifecycleStatus.NONE , instance2.getStatus() );
+        assertEquals( LifecycleStatus.NONE , instance3.getStatus() );
     }
 
     @Test()
@@ -125,10 +125,10 @@ public class LifeSupportTest
         {
             assertEquals( startThrowable, throwable.getCause());
         }
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED , instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED , instance2.getStatus() );
-        assertEquals( LifeSupport.Status.STOPPED , instance3.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED , instance2.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED , instance3.getStatus() );
     }
 
     @Test()
@@ -158,10 +158,10 @@ public class LifeSupportTest
 
         lifeSupport.dump( StringLogger.SYSTEM );
 
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus() );
-        assertEquals( LifeSupport.Status.STOPPED , instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED , instance2.getStatus() );
-        assertEquals( LifeSupport.Status.STOPPED , instance3.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED , instance2.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED , instance3.getStatus() );
     }
 
     @Test()
@@ -189,10 +189,10 @@ public class LifeSupportTest
         {
             assertEquals( stopThrowable, throwable.getCause());
         }
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED , instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED , instance2.getStatus() );
-        assertEquals( LifeSupport.Status.STOPPED , instance3.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED , instance2.getStatus() );
+        assertEquals( LifecycleStatus.STOPPED , instance3.getStatus() );
     }
 
     @Test()
@@ -220,10 +220,10 @@ public class LifeSupportTest
         {
             assertEquals( shutdownThrowable, throwable.getCause());
         }
-        assertEquals( LifeSupport.Status.SHUTDOWN, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN , instance1.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN , instance2.getStatus() );
-        assertEquals( LifeSupport.Status.SHUTDOWN , instance3.getStatus() );
+        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN , instance1.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN , instance2.getStatus() );
+        assertEquals( LifecycleStatus.SHUTDOWN , instance3.getStatus() );
     }
 
     @Test
@@ -240,34 +240,34 @@ public class LifeSupportTest
         lifeSupport.add( instance3 );
 
         lifeSupport.init();
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus());
 
         lifeSupport.start();
-        assertEquals( LifeSupport.Status.STARTED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance2.getStatus() );
-        assertEquals( LifeSupport.Status.STARTED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance2.getStatus() );
+        assertEquals( LifecycleStatus.STARTED, instance3.getStatus());
 
         lifeSupport.stop();
-        assertEquals( LifeSupport.Status.STOPPED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STOPPED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus());
 
         lifeSupport.start();
-        assertEquals( LifeSupport.Status.STARTED, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance1.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance2.getStatus());
-        assertEquals( LifeSupport.Status.STARTED, instance3.getStatus());
+        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance1.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance2.getStatus());
+        assertEquals( LifecycleStatus.STARTED, instance3.getStatus());
 
         lifeSupport.shutdown();
-        assertEquals( LifeSupport.Status.SHUTDOWN, lifeSupport.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance1.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance2.getStatus());
-        assertEquals( LifeSupport.Status.SHUTDOWN, instance3.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance1.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance2.getStatus());
+        assertEquals( LifecycleStatus.SHUTDOWN, instance3.getStatus());
     }
 
     public class LifecycleMock
@@ -278,7 +278,7 @@ public class LifeSupportTest
         Throwable stopThrowable;
         Throwable shutdownThrowable;
         
-        LifeSupport.Status status = LifeSupport.Status.NONE;
+        LifecycleStatus status = LifecycleStatus.NONE;
 
         public LifecycleMock( Throwable initThrowable,
                               Throwable startThrowable,
@@ -299,7 +299,7 @@ public class LifeSupportTest
             if (initThrowable != null)
                 throw initThrowable;
 
-            status = LifeSupport.Status.STOPPED;
+            status = LifecycleStatus.STOPPED;
         }
 
         @Override
@@ -309,14 +309,14 @@ public class LifeSupportTest
             if (startThrowable != null)
                 throw startThrowable;
 
-            status = LifeSupport.Status.STARTED;
+            status = LifecycleStatus.STARTED;
         }
 
         @Override
         public void stop()
             throws Throwable
         {
-            status = LifeSupport.Status.STOPPED;
+            status = LifecycleStatus.STOPPED;
 
             if (stopThrowable != null)
                 throw stopThrowable;
@@ -326,13 +326,13 @@ public class LifeSupportTest
         public void shutdown()
             throws Throwable
         {
-            status = LifeSupport.Status.SHUTDOWN;
+            status = LifecycleStatus.SHUTDOWN;
 
             if (shutdownThrowable != null)
                 throw shutdownThrowable;
         }
 
-        public LifeSupport.Status getStatus()
+        public LifecycleStatus getStatus()
         {
             return status;
         }

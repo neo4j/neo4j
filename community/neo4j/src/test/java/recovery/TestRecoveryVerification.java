@@ -33,13 +33,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.LifecycleException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 
 import static java.nio.ByteBuffer.*;
 import static org.junit.Assert.*;

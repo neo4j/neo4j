@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.transaction;
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
-
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * This interface extends the TransactionManager, with the rationale that it

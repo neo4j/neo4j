@@ -42,9 +42,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.runners.model.MultipleFailureException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.Math.*;
 import static org.neo4j.helpers.collection.IteratorUtil.*;

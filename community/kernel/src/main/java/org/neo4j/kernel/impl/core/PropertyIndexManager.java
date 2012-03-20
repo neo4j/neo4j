@@ -25,18 +25,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class PropertyIndexManager
     implements Lifecycle

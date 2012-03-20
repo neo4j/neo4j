@@ -18,30 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.lifecycle;
 
 /**
- * Lifecycle interface for kernel components. Init is called first, 
- * followed by start, 
- * and then any number of stop-start sequences,
- * and finally stop and shutdown.
- * 
- * As a stop-start cycle could be due to change of configuration, please perform anything that depends on config
- * in start().
- *
- * Implementations can throw any exception. Caller must handle this properly.
+ * This exception is thrown by LifeSupport if a lifecycle transition fails. If many exceptions occur
+ * they will be chained through the cause exception mechanism.
  */
-public interface Lifecycle
+public class LifecycleException
+    extends RuntimeException
 {
-    void init()
-        throws Throwable;
+    LifecycleStatus from;
+    LifecycleStatus to;
     
-    void start()
-        throws Throwable;
-    
-    void stop()
-        throws Throwable;
-    
-    void shutdown()
-        throws Throwable;
+    public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
+    {
+        super("Failed to transition "+instance.toString()+" from "+from.name()+" to "+to.name(), cause);
+        this.from = from;
+        this.to = to;
+    }
 }

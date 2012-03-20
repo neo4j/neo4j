@@ -43,7 +43,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
@@ -67,6 +66,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class NodeManager
     implements Lifecycle

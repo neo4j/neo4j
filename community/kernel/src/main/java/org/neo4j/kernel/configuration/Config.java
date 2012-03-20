@@ -39,7 +39,14 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 import static java.util.regex.Pattern.*;
 
 /**
- * A non-standard configuration object.
+ * This class holds the overall configuration of a Neo4j database instance. Use the accessors
+ * to convert the internal key-value settings to other types. 
+ * 
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults
+ * have been applied.
+ * 
+ * UI's can change configuration by calling applyChanges. Any listener, such as services that use
+ * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
 public class Config implements DiagnosticsProvider
 {

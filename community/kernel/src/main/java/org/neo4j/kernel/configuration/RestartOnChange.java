@@ -26,7 +26,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Specification;
 import org.neo4j.helpers.Specifications;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.Lifecycle;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.helpers.Specifications.*;
 import static org.neo4j.helpers.collection.Iterables.*;
