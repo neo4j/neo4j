@@ -96,6 +96,10 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
 
+    /**
+    * To delete a single property
+    * from a node, see the example below.
+    */
     @Documented
     @Test
     public void delete_a_named_property_from_a_node() throws DatabaseBlockedException
@@ -106,6 +110,7 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
         helper.setNodeProperties( nodeId, map );
         gen.get()
         .expectedStatus( 204 )
+        .description( startGraph( "delete named property start" ))
         .delete( functionalTestHelper.nodePropertyUri( nodeId, "name") );
     }
 
