@@ -143,8 +143,13 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "World" ) );
     }
     
+    /**
+     * Sending a query with syntax errors will give a bad request (HTTP 400)
+     * response together with an error message.
+     */
     @Test
     @Documented
+    @Title( "Send queries with syntax errors" )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_syntax_errors() throws Exception {
         data.get();
@@ -199,8 +204,13 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         tx.finish();
     }
 
+    /**
+     * This example shows what happens if you misspell
+     * an identifier.
+     */
     @Test
     @Documented
+    @Title("Send queries with errors")
     @Ignore
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {

@@ -56,7 +56,8 @@ public class DocumentationProcessor extends AnnotationProcessor
     {
         if ( values.size() != 1 )
         {
-            warn( annotated, annotation, "Annotation values don't match the expectation" );
+            error( annotated, annotation,
+                    "Annotation values don't match the expectation" );
             return;
         }
         String value = (String) values.values().iterator().next().getValue();
@@ -65,7 +66,9 @@ public class DocumentationProcessor extends AnnotationProcessor
             String javadoc = processingEnv.getElementUtils().getDocComment( annotated );
             if ( javadoc == null )
             {
-                warn( annotated, annotation, "Cannot extract JavaDoc documentation comment for " + annotated );
+                error( annotated, annotation,
+                        "Cannot extract JavaDoc documentation comment for "
+                                + annotated );
                 // return no period, since that could mess up Title generation;
                 javadoc = "Documentation not available";
             }
