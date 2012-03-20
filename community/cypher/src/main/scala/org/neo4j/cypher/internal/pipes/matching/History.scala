@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.graphdb.Node
+import collection.Map
+import collection.Set
+import collection.mutable.{Map => MutableMap}
+import org.neo4j.graphdb.{Relationship, Path, Node}
+import scala.Option
 
 /**
  * This class is responsible for keeping track of the already visited parts of the pattern, and the matched
@@ -27,24 +31,65 @@ import org.neo4j.graphdb.Node
  *
  * It's also used to emit the subgraph when the whole pattern has been matched (that's the toMap method)
  */
-class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
-  def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => seen.exists(_.matches(r)))
+abstract class History {
+  val seen : Set[MatchingPair]
+
+  def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => matches(r))
 
   def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match {
-    case SingleGraphRelationship(r) => seen.exists(h => h.matches(r))
-    case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
-  }).toSeq
+    case SingleGraphRelationship(r) => matches(r)
+    case VariableLengthGraphRelationship(p) => matches(p)
+  })
 
-  def add(pair: MatchingPair): History = new History(source, seen ++ Seq(pair))
+  def matches(p : Any) : Boolean
 
-  def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
+  def add(pair: MatchingPair): History
+
+  val toMap: Map[String, Any]
+
+  def contains(p : MatchingPair) : Boolean
+  override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
+}
+
+class InitialHistory(source : Map[String,Any]) extends History {
+  lazy val seen = Set[MatchingPair]()
+
+  def matches(p: Any) = false
+
+  def contains(p : MatchingPair) = false
+
+  def add(pair: MatchingPair) = new AddedHistory(this,pair)
+
+  val toMap = source
+}
+
+class AddedHistory(val parent : History, val pair : MatchingPair) extends History {
+  lazy val seen = parent.seen + pair
+
+  def matches(p: Any) = pair.matches(p) || parent.matches(p)
+
+  def contains(p : MatchingPair) = pair == p || parent.contains(p)
+
+  def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this,pair)
+
+  lazy val toMap = {
+    parent.toMap ++ toSeq(pair)
+  }
+
+  def toSeq(p: MatchingPair) : Seq[(String,Any)] = {
+    p match {
       case MatchingPair(pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
       case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
       case MatchingPair(pe: PatternRelationship, null) => Seq(pe.key -> null)
-      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path) ++ relationshipIterable(pe, entity)
-  }).toMap
+      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => {
+        relationshipIterable(pe, entity) match {
+          case Some(aPair) => Seq(pe.key -> entity.path, aPair)
+          case None => Seq(pe.key -> entity.path)
+        }
+
+      }
+    }
+  }
 
   private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, Any)] = pe.relIterable.map(_->entity.relationships)
-
-  override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
 }

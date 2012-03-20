@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>31</version>
+        <version>33</version>
         <relativePath />
     </parent>
 
@@ -22,6 +22,7 @@
         <short-name>server</short-name>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
+        <docs-plugin.filter>true</docs-plugin.filter>
 
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
@@ -30,7 +31,10 @@
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
-        <neo4j.codename />
+        <neo4j.codename>Bastuträsk Bänk</neo4j.codename>
+
+        <!-- Relative to /webadmin/ -->
+        <neo4j.codename.icon>img/icons/branding/1.7.png</neo4j.codename.icon>
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -375,20 +379,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>docs</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <attach>true</attach>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    <execution>
                         <id>sources</id>
                         <phase>package</phase>
                         <configuration>
@@ -420,8 +410,8 @@
             </plugin>
 
             <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
+                <groupId>org.neo4j.build.plugins</groupId>
+                <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <strictCheck>true</strictCheck>
                     <header>${license-text.header}</header>

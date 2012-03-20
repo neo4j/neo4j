@@ -36,7 +36,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertTrue("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -46,7 +46,7 @@ class IndexQueryBuilderTest extends Assertions {
         Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))),
         Unsolved(NodeByIndexQuery("x", "idx", Literal("foo")))))
 
-    val (_, remaining) = builder((new NullPipe(), q))
+    val (_, remaining) = builder(new NullPipe(), q)
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -58,7 +58,7 @@ class IndexQueryBuilderTest extends Assertions {
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1))))
 
 
-    val (_, result) = builder((new NullPipe(), q))
+    val (_, result) = builder(new NullPipe(), q)
 
     val expected = Set(Solved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1)))
 
@@ -70,7 +70,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -78,7 +78,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    val (_, remainingQ) = builder((new NullPipe(), q))
+    val (_, remainingQ) = builder(new NullPipe(), q)
 
     assert(remainingQ.start === Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
   }

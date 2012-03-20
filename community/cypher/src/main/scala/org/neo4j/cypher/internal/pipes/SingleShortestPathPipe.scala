@@ -23,6 +23,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory
 import java.lang.String
 import org.neo4j.graphdb.{Expander, Node}
 import org.neo4j.cypher.internal.commands.ShortestPath
+import collection.mutable.Map
 
 class SingleShortestPathPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source,ast) {
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "SingleShortestPath(" + ast + ")"
@@ -32,9 +33,9 @@ class SingleShortestPathPipe(source: Pipe, ast: ShortestPath) extends ShortestPa
     val findSinglePath = finder.findSinglePath(start, end)
 
     (findSinglePath, optional) match {
-      case (null, true) => Seq(m ++ Map(pathName -> null))
+      case (null, true) => Seq(m += pathName -> null)
       case (null, false) => Seq()
-      case (path, _) => Seq(m ++ Map(pathName -> path))
+      case (path, _) => Seq(m += pathName -> path)
     }
   }
 

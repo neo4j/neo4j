@@ -27,22 +27,20 @@ import org.neo4j.graphdb.{Relationship, GraphDatabaseService}
 import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, Pipe}
 
 class RelationshipByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def priority: Int = PlanBuilder.RelationshipById
+  def priority = PlanBuilder.RelationshipById
 
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (inPipe, inQ) => {
+  def apply(inPipe: Pipe, inQ: PartiallySolvedQuery) = {
       val startItemToken = interestingStartItems(inQ).head
       val Unsolved(RelationshipById(key, expression)) = startItemToken
 
       val pipe = new RelationshipStartPipe(inPipe, key, m => getElements[Relationship](expression(m), key, graph.getRelationshipById))
 
-      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) ++ Seq[QueryToken[StartItem]](Solved(RelationshipById(key,expression)))
+      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 
       (pipe, inQ.copy(start = remainingQ))
-    }
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = interestingStartItems(x._2).nonEmpty
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = interestingStartItems(q).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(RelationshipById(_, expression)) => true

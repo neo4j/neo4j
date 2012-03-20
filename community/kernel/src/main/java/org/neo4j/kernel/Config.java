@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.regex.Pattern.quote;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static java.util.regex.Pattern.quote;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -119,10 +119,41 @@ public class Config implements DiagnosticsProvider
 
     /**
      * The type of cache to use for nodes and relationships, one of [weak, soft,
-     * none]
+     * none, array]
      */
     @Documented
     public static final String CACHE_TYPE = "cache_type";
+
+    /**
+     * The amount of memory to use for the node cache (when using the 'array' cache).
+     */
+    @Documented
+    public static final String NODE_ARRAY_CACHE_SIZE = "node_cache_size";
+
+    /**
+     * The amount of memory to use for the relationship cache (when using the 'array' cache).
+     */
+    @Documented
+    public static final String RELATIONSHIP_ARRAY_CACHE_SIZE = "relationship_cache_size";
+
+    /**
+     * The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'array' cache).
+     */
+    @Documented
+    public static final String NODE_ARRAY_CACHE_ARRAY_FRACTION = "node_cache_array_fraction";
+
+    /**
+     * The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'array' cache).
+     */
+    @Documented
+    public static final String RELATIONSHIP_ARRAY_CACHE_ARRAY_FRACTION = "relationship_cache_array_fraction";
+
+    /**
+     * The minimal time that must pass in between logging statistics from the cache (when using the 'array' cache).
+     * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit be seconds, minutes or milliseconds respectively.
+     */
+    @Documented
+    public static final String ARRAY_CACHE_MIN_LOG_INTERVAL = "array_cache_min_log_interval";
 
     /**
      * The name of the Transaction Manager service to use as defined in the TM
@@ -205,6 +236,20 @@ public class Config implements DiagnosticsProvider
      */
     @Documented
     public static final String LUCENE_WRITER_CACHE_SIZE = "lucene_writer_cache_size";
+
+    /**
+     * Amount of time in ms the GC monitor thread will wait before taking another measurement.
+     * Default is 100 ms.
+     */
+    @Documented
+    public static final String GC_MONITOR_WAIT_TIME = "gc_monitor_wait_time";
+
+    /**
+     * The amount of time in ms the monitor thread has to be blocked before logging a message it was blocked.
+     * Default is 200ms
+     */
+    @Documented
+    public static final String GC_MONITOR_THRESHOLD = "gc_monitor_threshold";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 

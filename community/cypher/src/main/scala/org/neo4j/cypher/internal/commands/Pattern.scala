@@ -34,6 +34,8 @@ abstract class Pattern {
   protected def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
 
   protected def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
+
+  def rewrite( f : Expression => Expression) : Pattern
 }
 
 object RelatedTo {
@@ -52,6 +54,8 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
   }
 
   val possibleStartPoints: Seq[Identifier] = Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(relName, RelationshipType()))
+
+  def rewrite(f: (Expression) => Expression) = new RelatedTo(left,right,relName,relType,direction,optional,predicate.rewrite(f))
 }
 
 abstract class PathPattern extends Pattern {
@@ -103,6 +107,8 @@ case class VarLengthRelatedTo(pathName: String,
   }
 
   lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()), Identifier(pathName, PathType()) )
+
+  def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,start,end, minHops,maxHops,relType,direction,relIterator,optional,predicate.rewrite(f))
 }
 
 case class ShortestPath(pathName: String,
@@ -134,4 +140,6 @@ case class ShortestPath(pathName: String,
   }
 
   lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()))
+
+  def rewrite(f: (Expression) => Expression) = new ShortestPath(pathName,start,end,relType,dir,maxDepth,optional,single,relIterator,predicate.rewrite(f))
 }

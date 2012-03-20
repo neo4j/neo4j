@@ -23,17 +23,13 @@ import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilde
 import org.neo4j.cypher.internal.pipes.{SlicePipe, Pipe}
 
 class SliceBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val slice = q.slice.map(_.token).head
-      val pipe = new SlicePipe(p, slice.from, slice.limit)
-      (pipe, q.copy(slice = q.slice.map(_.solve)))
-    }
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+    val slice = q.slice.map(_.token).head
+    val pipe = new SlicePipe(p, slice.from, slice.limit)
+    (pipe, q.copy(slice = q.slice.map(_.solve)))
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
 
   def priority: Int = PlanBuilder.Slice
 }

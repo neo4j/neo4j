@@ -25,6 +25,8 @@ import java.lang.String
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, SymbolTable}
 import org.neo4j.cypher.internal.commands.{Expression, AggregationExpression}
+import collection.mutable.Map
+import collection.immutable.{Map => ImmutableMap}
 
 // This class can be used to aggregate if the values sub graphs come in the order that they are keyed on
 class OrderedAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], aggregations: Seq[AggregationExpression]) extends PipeWithSource(source) {
@@ -56,7 +58,9 @@ private class OrderedAggregator(source: Traversable[Map[String, Any]],
   val keyColumns = returnItems.map(_.identifier.name)
   val aggregateColumns = aggregations.map(_.identifier.name)
 
-  def getIntermediateResults[U] = (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).toMap
+  def getIntermediateResults[U]: Map[String, Any] = {
+    (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).foldLeft(Map[String,Any]())( _ += _ )
+  }
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {

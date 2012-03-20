@@ -25,12 +25,11 @@ import org.neo4j.cypher.internal.executionplan.{QueryToken, Unsolved, PartiallyS
 import org.neo4j.cypher.internal.pipes.{FilterPipe, Pipe}
 
 class FilterBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = {
-    val (p, q) = v1
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
     val item = q.where.filter(pred => yesOrNo(pred, p))
-    val pred:Predicate = item.map(_.token).reduce(_ ++ _)
+    val pred: Predicate = item.map(_.token).reduce(_ ++ _)
     val newPipe = new FilterPipe(p, pred)
-    val newQuery  = q.where.filterNot(item.contains) ++ item.map(_.solve)
+    val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)
 
     (newPipe, q.copy(where = newQuery))
   }
@@ -40,9 +39,7 @@ class FilterBuilder extends PlanBuilder {
     case _ => false
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.where.exists(pred => yesOrNo(pred, p))
-  }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.where.exists(pred => yesOrNo(pred, p))
 
   def priority: Int = PlanBuilder.Filter
 }

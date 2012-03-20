@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.executionplan
 
 import org.neo4j.cypher.internal.commands._
 import collection.Seq
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 
 object PartiallySolvedQuery {
@@ -90,6 +91,57 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
     patterns.exists(_.unsolved) ||
     where.exists(_.unsolved) ||
     namedPaths.exists(_.unsolved))
+
+  def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
+    this.copy(
+      returns = returns.map {
+        case Unsolved(ReturnItem(expression, name)) => Unsolved(ReturnItem(expression.rewrite(f), name))
+        case x => x
+      },
+      where = where.map {
+        case Unsolved(pred) => Unsolved(pred.rewrite(f))
+        case x => x
+      },
+      sort = sort.map {
+        case Unsolved(SortItem(expression, asc)) => Unsolved(SortItem(expression.rewrite(f),asc))
+        case x => x
+      },
+      patterns = patterns.map {
+        case Unsolved(p) => Unsolved(p.rewrite(f))
+        case x => x
+      },
+      aggregation = aggregation.map {
+        case Unsolved(exp) => Unsolved(exp.rewrite(f) match {
+                  case x: AggregationExpression => x
+                  case _ => throw new ThisShouldNotHappenError("Andrés & Michael","aggregation expressions should never be rewritten to non-aggregation-expressions")
+        })
+        case x => x
+      },
+      namedPaths = namedPaths.map {
+        case Unsolved(namedPath) => Unsolved(namedPath.rewrite(f))
+        case x => x
+      }
+    )
+  }
+
+  def unsolvedExpressions = {
+    val rExpressions = returns.flatMap {
+      case Unsolved(ReturnItem(expression, _)) => expression.filter( e=>true )
+      case _ => None
+    }
+
+    val wExpressions = where.flatMap {
+      case Unsolved(pred) => pred.filter( e=>true )
+      case _ => Seq()
+    }
+
+    val aExpressions = aggregation.flatMap {
+      case Unsolved(expression) => expression.filter( e=>true )
+      case _ => Seq()
+    }
+
+   rExpressions ++ wExpressions ++ aExpressions
+  }
 }
 
 abstract class QueryToken[T](val token: T) {

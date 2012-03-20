@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, PathType}
 import org.neo4j.cypher.internal.commands.{ReturnItem, ShortestPath}
-
+import collection.mutable.Map
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  *

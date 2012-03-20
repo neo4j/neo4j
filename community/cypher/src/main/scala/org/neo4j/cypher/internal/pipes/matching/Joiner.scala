@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import collection.{Iterable, Traversable}
-import collection.immutable.Map
+import collection.Map
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.helpers.ThisShouldNotHappenError
 

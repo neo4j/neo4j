@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import collection.mutable.ListBuffer
 import org.neo4j.cypher.internal.commands.Expression
+import collection.Map
 
 
 class CollectFunction(value:Expression) extends AggregationFunction {

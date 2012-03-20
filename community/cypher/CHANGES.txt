@@ -1,5 +1,5 @@
-<NOT YET RELEASED>
-------------------
+1.7.M01 (2012-03-12)
+--------------------
 o Added literal collections and the IN predicate
 o Added HEAD, TAIL, LAST and FILTER
 o Added comments

@@ -25,6 +25,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
 import collection.Traversable
+import collection.mutable.Map
 
 class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
   def runThroughPipeAndGetPath(a: Node, b: Node): Traversable[Path] = {

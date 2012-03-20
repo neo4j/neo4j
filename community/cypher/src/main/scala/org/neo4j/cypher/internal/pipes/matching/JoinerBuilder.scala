@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.symbols.RelationshipType
 import org.neo4j.cypher.internal.commands.{True, And, Predicate}
+import collection.Map
 
 object JoinerBuilder {
   def canHandlePatter(patternGraph: PatternGraph): Boolean =
@@ -52,10 +53,10 @@ class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) exte
       patternRelationshipsNotAlreadyDone.foreach(rel => {
         val (start, end, dir) =
           if (done.contains(rel.startNode)) {
-            done = done ++ Seq(rel.endNode)
+            done = done :+ rel.endNode
             (rel.startNode.key, rel.endNode.key, figureOutDirection(rel.dir, true))
           } else {
-            done = done ++ Seq(rel.startNode)
+            done = done :+ rel.startNode
             (rel.endNode.key, rel.startNode.key, figureOutDirection(rel.dir, false))
           }
 

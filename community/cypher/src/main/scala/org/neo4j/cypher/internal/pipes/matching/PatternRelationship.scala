@@ -41,7 +41,7 @@ class PatternRelationship(key: String,
     val result = (relType match {
       case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
       case None => realNode.getRelationships(getDirection(node))
-    }).asScala.map(new SingleGraphRelationship(_)).toSeq
+    }).asScala.toStream.map(new SingleGraphRelationship(_))
 
 
     if (startNode == endNode)
@@ -120,7 +120,7 @@ class VariableLengthPatternRelationship(pathName: String,
       case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
       case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
     }
-    traversalDescription.traverse(realNode).asScala.toSeq.map(p => VariableLengthGraphRelationship(p))
+    traversalDescription.traverse(realNode).asScala.toStream.map(p => VariableLengthGraphRelationship(p))
   }
 }
 

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
 
@@ -78,26 +78,6 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>docs</id>
-            <phase>package</phase>
-            <configuration>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <configuration>
           <reportPlugins combine.children="append">
@@ -121,6 +101,17 @@ the relevant Commercial Agreement.
             <phase>none</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>docs-maven-plugin</artifactId>
+        <configuration>
+          <sourceDirectories>
+            <sourceDirectory>${basedir}/src/docs</sourceDirectory>
+            <sourceDirectory>${project.build.directory}/docs</sourceDirectory>
+            <sourceDirectory>${basedir}/src/test/resources</sourceDirectory>
+          </sourceDirectories>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -20,13 +20,14 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -44,6 +45,9 @@ public class StoreAccess
     private final RecordStore<PropertyIndexRecord> propIndexStore;
     private final RecordStore<DynamicRecord> typeNameStore;
     private final RecordStore<DynamicRecord> propKeyStore;
+    // internal state
+    private boolean closeable;
+    private NeoStore neoStore;
 
     public StoreAccess( AbstractGraphDatabase graphdb )
     {
@@ -59,6 +63,7 @@ public class StoreAccess
     {
         this( store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
                 store.getRelationshipTypeStore() );
+        this.neoStore = store;
     }
 
     public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
@@ -73,6 +78,35 @@ public class StoreAccess
         this.propIndexStore = wrapStore( propStore.getIndexStore() );
         this.typeNameStore = wrapStore( typeStore.getNameStore() );
         this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
+    }
+
+    public StoreAccess( String path )
+    {
+        this( path, defaultParams() );
+    }
+
+    public StoreAccess( String path, Map<String, String> params )
+    {
+        this(
+              new StoreFactory( requiredParams( params, path ), CommonFactories.defaultIdGeneratorFactory(),
+                                CommonFactories.defaultFileSystemAbstraction(),
+                                CommonFactories.defaultLastCommittedTxIdSetter(), initLogger( path ),
+                                CommonFactories.defaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
+        this.closeable = true;
+    }
+
+    private static StringLogger initLogger( String path )
+    {
+        StringLogger logger = StringLogger.logger( path );
+        logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
+        return logger;
+    }
+
+    private static Map<String, String> requiredParams( Map<String, String> params, String path )
+    {
+        params = new HashMap<String, String>( params );
+        params.put( "neo_store", new File( path, "neostore" ).getAbsolutePath() );
+        return params;
     }
 
     public RecordStore<NodeRecord> getNodeStore()
@@ -148,25 +182,33 @@ public class StoreAccess
         processor.applyFiltered( store, RecordStore.IN_USE );
     }
 
-    private static Map<Object, Object> defaultParams()
+    private static Map<String, String> defaultParams()
     {
-        Map<Object, Object> params = new HashMap<Object, Object>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( Config.NODE_STORE_MMAP_SIZE, "20M" );
+        params.put( Config.PROPERTY_STORE_MMAP_SIZE, "90M" );
+        params.put( Config.PROPERTY_INDEX_STORE_MMAP_SIZE, "1M" );
+        params.put( Config.PROPERTY_INDEX_KEY_STORE_MMAP_SIZE, "1M" );
+        params.put( Config.STRING_PROPERTY_STORE_MMAP_SIZE, "130M" );
+        params.put( Config.ARRAY_PROPERTY_STORE_MMAP_SIZE, "130M" );
+        params.put( Config.RELATIONSHIP_STORE_MMAP_SIZE, "100M" );
         // if on windows, default no memory mapping
         String nameOs = System.getProperty( "os.name" );
         if ( nameOs.startsWith( "Windows" ) )
         {
-            params.put( "use_memory_mapped_buffers", "false" );
+            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         }
         params.put( Config.REBUILD_IDGENERATORS_FAST, "true" );
 
-        params.put( IdGeneratorFactory.class, new CommonFactories.DefaultIdGeneratorFactory() );
         return params;
+    }
+
+    public synchronized void close()
+    {
+        if ( closeable )
+        {
+            closeable = false;
+            neoStore.close();
+        }
     }
 }

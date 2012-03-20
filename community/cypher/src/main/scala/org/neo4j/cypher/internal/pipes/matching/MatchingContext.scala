@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.SyntaxException
-import collection.immutable.Map
+import collection.Map
 import collection.{Traversable, Seq}
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
+import collection.mutable.{Map => MutableMap}
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -40,10 +41,14 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
     builder.getMatches(sourceRow)
   }
 
-  private def decideWhichMatcherToUse() = {
-//    if (JoinerBuilder.canHandlePatter(patternGraph)) {
-//      new JoinerBuilder(patternGraph, predicates)
+  private def decideWhichMatcherToUse(): MatcherBuilder = {
+    /*if (JoinerBuilder.canHandlePatter(patternGraph)) {
+      new JoinerBuilder(patternGraph, predicates)
+    } else */
+//    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
+//      new SimplePatternMatcherBuilder(patternGraph)
 //    } else {
+
       new PatterMatchingBuilder(patternGraph, predicates)
 //    }
   }

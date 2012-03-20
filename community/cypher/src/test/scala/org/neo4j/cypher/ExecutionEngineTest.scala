@@ -1570,7 +1570,7 @@ RETURN x0.name?
   }
 
   @Test def shouldHandleParametersNamedAsIdentifiers() {
-    val a = createNode("bar" -> "Andres")
+    createNode("bar" -> "Andres")
 
     val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     assert(List(Map("foo.bar" -> "Andres")) === result.toList)

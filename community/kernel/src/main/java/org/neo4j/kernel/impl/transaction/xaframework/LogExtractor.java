@@ -71,9 +71,9 @@ public class LogExtractor
     public static class LogPositionCache
     {
         private final LruCache<Long, TxPosition> txStartPositionCache =
-                new LruCache<Long, TxPosition>( "Tx start position cache", 10000, null );
+                new LruCache<Long, TxPosition>( "Tx start position cache", 10000 );
         private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache =
-                new LruCache<Long, Long>( "Log header cache", 1000, null );
+                new LruCache<Long, Long>( "Log header cache", 1000 );
         
         public void clear()
         {

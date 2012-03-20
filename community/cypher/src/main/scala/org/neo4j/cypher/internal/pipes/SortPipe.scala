@@ -23,6 +23,7 @@ import scala.math.signum
 import org.neo4j.cypher.internal.commands.SortItem
 import java.lang.String
 import org.neo4j.cypher.internal.Comparer
+import collection.mutable.Map
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols = source.symbols

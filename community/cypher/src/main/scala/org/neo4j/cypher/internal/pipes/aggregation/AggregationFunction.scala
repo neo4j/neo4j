@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
+import collection.Map
+
 /**
  * Base class for aggregation functions. The function is stateful
  * and aggregates by having it's apply method called once for every

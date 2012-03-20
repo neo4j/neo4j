@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.assertTrue;
 
 public class JavaQueryTest
 {

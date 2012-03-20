@@ -25,6 +25,7 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
+import collection.mutable.{Map => MutableMap}
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
@@ -35,12 +36,16 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     var pipe: Pipe = new ParameterPipe()
     var query = PartiallySolvedQuery(inputQuery)
 
-    while (builders.exists(_.isDefinedAt((pipe, query)))) {
-      val matchingBuilders = builders.filter(_.isDefinedAt((pipe, query)))
+    while (builders.exists(_.isDefinedAt(pipe, query))) {
+      val matchingBuilders = builders.filter(_.isDefinedAt(pipe, query))
 
       val builder = matchingBuilders.sortBy(_.priority).head
-      val (p, q) = builder((pipe, query))
+      val (p, q) = builder(pipe, query)
 
+      if(p==pipe && q == query) {
+        throw new InternalException("Something went wrong trying to build your query. The offending builder was: " + builder.getClass.getSimpleName)
+      }
+      
       pipe = p
       query = q
     }
@@ -52,13 +57,9 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       checkForMissingPredicates(query, pipe)
     }
 
-
     val func = (params: Map[String, Any]) => {
-      val start = System.currentTimeMillis()
-      val results = pipe.createResults(params)
-      val timeTaken = System.currentTimeMillis() - start
-
-      new PipeExecutionResult(results, pipe.symbols, inputQuery.returns.columns, timeTaken)
+      val newMap = MutableMap() ++ params
+      new PipeExecutionResult(pipe.createResults(newMap), pipe.symbols, inputQuery.returns.columns)
     }
     val executionPlan = pipe.executionPlan()
 
