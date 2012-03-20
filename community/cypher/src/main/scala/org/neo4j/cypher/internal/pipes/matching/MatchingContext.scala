@@ -45,12 +45,12 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
     /*if (JoinerBuilder.canHandlePatter(patternGraph)) {
       new JoinerBuilder(patternGraph, predicates)
     } else */
-    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
-      new SimplePatternMatcherBuilder(patternGraph)
-    } else {
+//    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
+//      new SimplePatternMatcherBuilder(patternGraph)
+//    } else {
 
       new PatterMatchingBuilder(patternGraph, predicates)
-    }
+//    }
   }
 
   private def buildPatternGraph(): PatternGraph = {
