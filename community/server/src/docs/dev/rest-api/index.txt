@@ -83,6 +83,8 @@ include::property-values-can-not-be-nested.txt[]
 
 include::delete-all-properties-from-node.txt[]
 
+include::delete-a-named-property-from-a-node.txt[]
+
 [[rest-api-relationship-properties]]
 == Relationship properties ==
 
@@ -151,6 +153,8 @@ include::add-a-relationship-to-an-index-unless-a-relationship-already-exists-for
 
 [[rest-api-auto-indexes]]
 == Automatic Indexes ==
+
+To enable automatic indexes in neo4j, set up the database for that, see <<auto-indexing-config>>. With this feature enabled, you can then index and query nodes in these indexes.
 
 include::find-node-by-exact-match-from-an-automatic-index.txt[]
 
