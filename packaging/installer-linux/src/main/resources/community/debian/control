@@ -11,6 +11,5 @@ Architecture: all
 Depends: ${misc:Depends}, daemon, adduser, psmisc, default-jre
 Conflicts: 
 Replaces: neo4j-enterprise, neo4j-advanced
-Description: The Neo4j database server. 
-             .
-             Neo4j server is a database that stores data as graphs rather than tables.
+Description: graph database server
+ Neo4j server is a database that stores data as graphs rather than tables.

@@ -32,18 +32,15 @@ case "$1" in
         fi
       
         # directories needed for neo4j
-        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j
-        # we don't do "chmod 750" so that the user can choose the pemission for g and o on their own
-        chmod u+rwx /var/lib/neo4j /var/log/neo4j
-      
-        chmod 0755 /var/lib/neo4j/bin/neo4j
+        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
+        chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
 
         # Tell neo4j to install itself as a service using headless (-h) mode
         # with user (-u) neo4j as running user.
         /var/lib/neo4j/bin/neo4j -h -u neo4j install
         
         # Start neo4j
-        /etc/init.d/neo4j-service restart
+        invoke-rc.d neo4j-service start
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
