@@ -24,8 +24,9 @@ import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
 import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate] ) extends MatcherBuilder {
+class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   val patternNodes = pattern.patternNodes.map {
     case (key, pn) => {
       key -> {
@@ -39,17 +40,17 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
       val start = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
 
-      val patternRel = if(pr.relTypes.isEmpty)
+      val patternRel = if (pr.relTypes.isEmpty)
         start.createRelationshipTo(end, pr.dir)
       else {
         // The SimplePatternMatcher does not support multiple relationship types
         // re-visit this if it ever does
-        start.createRelationshipTo (end, DynamicRelationshipType.withName(pr.relTypes.head), pr.dir)
+        start.createRelationshipTo(end, DynamicRelationshipType.withName(pr.relTypes.head), pr.dir)
       }
 
       patternRel.setLabel(pr.key)
 
-      key->patternRel
+      key -> patternRel
     }
   }
 
@@ -71,16 +72,20 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
 
   def getMatches(sourceRow: Map[String, Any]) = {
     setAssociations(sourceRow)
-    val result = collection.mutable.Map(sourceRow.toSeq:_*)
-
+    val result = collection.mutable.Map(sourceRow.toSeq: _*)
+    val validPredicates = predicates.filter(p => symbolTable.satisfies(p.dependencies))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
-    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap( patternMatch =>{
-      patternNodes.foreach{case (key, pn) => result += key -> patternMatch.getNodeFor(pn)}
-      patternRels.foreach{case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)}
+    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
+      patternNodes.foreach {
+        case (key, pn) => result += key -> patternMatch.getNodeFor(pn)
+      }
+      patternRels.foreach {
+        case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)
+      }
 
-      if (predicates.forall(p => p.isMatch(result))) 
+      if (validPredicates.forall(p => p.isMatch(result)))
         Some(result.clone())
-      else 
+      else
         None
     })
   }
@@ -89,9 +94,9 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
 object SimplePatternMatcherBuilder {
   def canHandle(graph: PatternGraph): Boolean = {
     val a = !graph.containsOptionalElements
-    val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.predicate != True() || pr.startNode == pr.endNode || pr.relTypes.size>1)
-    val c = !graph.patternRels.keys.exists( graph.boundElements.contains )
-    val d = !graph.patternNodes.values.exists( pn => pn.relationships.isEmpty)
+    val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.predicate != True() || pr.startNode == pr.endNode || pr.relTypes.size > 1)
+    val c = !graph.patternRels.keys.exists(graph.boundElements.contains)
+    val d = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty)
     a && b && c && d
   }
 }
