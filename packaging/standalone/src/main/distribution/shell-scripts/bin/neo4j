@@ -241,7 +241,7 @@ startit() {
     exit 1
   else
     echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
-    exit 1
+    exit 0
   fi
 }
 
@@ -407,37 +407,45 @@ done
 case "${!OPTIND}" in
   console)
     console
+    exit 0
     ;;
 
   start)
     startit
+    exit 0
     ;;
 
   stop)
     stopit
+    exit 0
     ;;
 
   restart)
     stopit
     startit
+    exit 0
     ;;
 
   status)
     reportstatus
+    exit 0
     ;;
 
   info)
     showinfo
+    exit 0
     ;;
   install)
     installservice
+    exit 0
     ;;
   remove)
     removeservice
+    exit 0
     ;;
   *)
     echo "Usage: neo4j { start | stop | restart | status | info | install | remove }"
-    exit 1;;
+    exit 0;;
 
 esac
 
