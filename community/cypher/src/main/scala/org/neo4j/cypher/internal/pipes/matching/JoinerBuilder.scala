@@ -63,7 +63,7 @@ class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) exte
         val doneKeys = joiner.providesKeys() ++ Seq(rel.key, end)
 
         val clause = predicateHolder.getMatchingClauses(doneKeys)
-        joiner = new Joiner(joiner, start, dir, end, rel.relType, rel.key, clause)
+        joiner = new Joiner(joiner, start, dir, end, rel.relTypes, rel.key, clause)
       })
 
     }

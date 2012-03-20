@@ -38,12 +38,12 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
     b = createNode()
   }
 
-  def createPredicate(dir: Direction, relType: Option[String]): HasRelationshipTo = HasRelationshipTo(Entity("a"), Entity("b"), dir, relType)
+  def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Entity("a"), Entity("b"), dir, relType)
 
   @Test def givenTwoRelatedNodesThenReturnsTrue() {
     relate(a, b)
 
-    val predicate = createPredicate(Direction.BOTH, None)
+    val predicate = createPredicate(Direction.BOTH, Seq())
 
     assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
   }
@@ -51,7 +51,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   @Test def checksTheRelationshipType() {
     relate(a, b, "KNOWS")
 
-    val predicate = createPredicate(Direction.BOTH, Some("FEELS"))
+    val predicate = createPredicate(Direction.BOTH, Seq("FEELS"))
 
     assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
   }
@@ -59,7 +59,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   @Test def checksTheRelationshipTypeAndDirection() {
     relate(a, b, "KNOWS")
 
-    val predicate = createPredicate(Direction.INCOMING, Some("KNOWS"))
+    val predicate = createPredicate(Direction.INCOMING, Seq("KNOWS"))
 
     assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
   }

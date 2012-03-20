@@ -33,7 +33,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode()
     val r = relate(a, b, "X")
 
-    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", None, "r", True())
+    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", Seq(), "r", True())
     assert(joiner.getResult(Map("A" -> a)).toList === List(Map("A" -> a, "B" -> b, "r" -> r)))
   }
 
@@ -44,7 +44,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val r1 = relate(a, b, "X")
     val r2 = relate(b, c, "X")
 
-    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.BOTH, "B", None, "r", True())
+    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.BOTH, "B", Seq(), "r", True())
     val traversable = joiner.getResult(Map("A" -> b))
     assert(traversable.toSet === Set(
       Map("A" -> b, "B" -> a, "r" -> r1),
@@ -59,8 +59,8 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val r1 = relate(a, b, "X")
     val r2 = relate(b, c, "X")
 
-    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", None, "r", True())
-    val joiner2 = new Joiner(joiner, "B", Direction.OUTGOING, "C", None, "r2", True())
+    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", Seq(), "r", True())
+    val joiner2 = new Joiner(joiner, "B", Direction.OUTGOING, "C", Seq(), "r2", True())
 
 
     val traversable = joiner2.getResult(Map("A" -> a))
@@ -74,8 +74,8 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val r1 = relate(a, b, "X")
     val r2 = relate(a, c, "X")
 
-    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", None, "r", True())
-    val joiner2 = new Joiner(joiner, "A", Direction.OUTGOING, "C", None, "r2", True())
+    val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", Seq(), "r", True())
+    val joiner2 = new Joiner(joiner, "A", Direction.OUTGOING, "C", Seq(), "r2", True())
 
 
     val traversable = joiner2.getResult(Map("A" -> a))

@@ -14,4 +14,4 @@ An expression in Cypher can be:
 * A collection of expressions -- `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`
 * A function call -- `length(p)`, `nodes(p)`
 * An aggregate function -- `avg(x.prop)`, `count(*)`
-
+* Relationship types - :REL_TYPE, +:\`REL TYPE`+, :REL1|REL2

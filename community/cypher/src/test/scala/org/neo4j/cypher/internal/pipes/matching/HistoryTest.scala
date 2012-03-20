@@ -32,7 +32,7 @@ class HistoryTest extends GraphDatabaseTestBase with Assertions {
   @Test def excludingPatternRelsWorksAsExpected() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
-    val pr = a.relateTo("r", b, None, Direction.BOTH, false, True())
+    val pr = a.relateTo("r", b, Seq(), Direction.BOTH, false, True())
     val r = relate(graph.getReferenceNode, graph.getReferenceNode, "rel")
     val mp = new MatchingPair(pr, r)
     val history = new InitialHistory(Map()).add(mp)

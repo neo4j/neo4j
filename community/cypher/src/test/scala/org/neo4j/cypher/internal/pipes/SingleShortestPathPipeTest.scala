@@ -28,7 +28,7 @@ import collection.mutable.Map
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
-  val path = ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true, None, True())
+  val path = ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = true, None, True())
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
@@ -79,7 +79,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     relate(a, c, "rel", Map("foo" -> "notBar"))
 
     val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
-    val path = ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, Some("r"), pred)
+    val path = ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, Some("r"), pred)
 
 
     val result = runThroughPipeAndGetPath(a, c, path)

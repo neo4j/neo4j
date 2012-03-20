@@ -51,10 +51,10 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
       "U2G3R56 hasRole Role6"
       )
 
-  def section = "cookbook"
+    def section = "cookbook"
 
-  @Test def findCommonGroups() {
-    testQuery(
+    @Test def findCommonGroups() {
+      testQuery(
       title = "Find common groups based on shared roles",
       text = """Assume you have a more complicated graph:
 

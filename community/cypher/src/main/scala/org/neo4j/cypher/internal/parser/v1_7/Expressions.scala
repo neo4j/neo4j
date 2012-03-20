@@ -217,18 +217,17 @@ trait Expressions extends Base {
     NullablePredicate(pred, map  )
   }
 
-
   def expressionOrEntity = expression | entity
 
   def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ { case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2) }
 
   def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ { case a ~ rel  => HasRelationship(a, rel._1, rel._2) }
 
-  def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
+  def relInfo: Parser[(Direction, Seq[String])] = opt("<") ~ "-" ~ opt("[:" ~> rep1sep(identity, "|") <~ "]") ~ "-" ~ opt(">") ^^ {
     case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.", "query", 666)
-    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
+    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType.toSeq.flatten)
+    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType.toSeq.flatten)
+    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType.toSeq.flatten)
   }
 
 }
