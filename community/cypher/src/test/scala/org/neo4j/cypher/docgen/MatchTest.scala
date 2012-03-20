@@ -85,7 +85,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Match by multiple relationship types",
       text = "If multiple types are acceptable, you can specify this by chaining them with the pipe symbol |",
       queryText = """start n=node(%A%) match (n)-[:BLOCKS|KNOWS]->(x) return x""",
-      returns = """All nodes that are BLOCKed by A.""",
+      returns = """All nodes with a +BLOCK+ or +KNOWS+ relationship to A.""",
       assertions = (p) => assertEquals(List(node("C"), node("B")), p.columnAs[Node]("x").toList)
     )
   }
