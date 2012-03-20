@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class KernelData

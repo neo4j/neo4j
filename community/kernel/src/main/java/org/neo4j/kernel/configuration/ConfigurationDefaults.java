@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

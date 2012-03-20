@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Config;
+package org.neo4j.kernel.configuration;
 
-public class StartDbWithShell
+/**
+* TODO
+*/
+public interface ConfigurationChangeListener
 {
-    public static void main( String[] args ) throws Exception
-    {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/test-data/shell-db").setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
-        System.out.println( "ENTER to quit" );
-        System.in.read();
-        db.shutdown();
-    }
+    void notifyConfigurationChanges( Iterable<ConfigurationChange> change );
 }

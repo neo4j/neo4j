@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -44,46 +45,6 @@ public class Config implements DiagnosticsProvider
 {
     private List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
 
-    public interface ConfigurationChangeListener
-    {
-        void notifyConfigurationChanges(Iterable<ConfigurationChange> change);
-    }
-    
-    public class ConfigurationChange
-    {
-        private String name;
-        private String oldValue;
-        private String newValue;
-
-        public ConfigurationChange( String name, String oldValue, String newValue )
-        {
-            this.name = name;
-            this.oldValue = oldValue;
-            this.newValue = newValue;
-        }
-
-        public String getName()
-        {
-            return name;
-        }
-
-        public String getOldValue()
-        {
-            return oldValue;
-        }
-
-        public String getNewValue()
-        {
-            return newValue;
-        }
-
-        @Override
-        public String toString()
-        {
-            return name+":"+oldValue+"->"+newValue;
-        }
-    }
-    
     static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 

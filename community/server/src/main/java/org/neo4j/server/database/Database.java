@@ -24,10 +24,10 @@ import java.util.Map;
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.statistic.StatisticCollector;
@@ -73,8 +73,8 @@ public class Database
             databaseProperties = new HashMap<String, String>();
         }
 
-        putIfAbsent( databaseProperties, Config.ENABLE_REMOTE_SHELL, "true" );
-        databaseProperties.put( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
+        putIfAbsent( databaseProperties, GraphDatabaseSettings.enable_remote_shell.name(), GraphDatabaseSetting.TRUE );
+        databaseProperties.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
         databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );

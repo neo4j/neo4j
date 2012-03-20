@@ -30,16 +30,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.Lifecycle;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;

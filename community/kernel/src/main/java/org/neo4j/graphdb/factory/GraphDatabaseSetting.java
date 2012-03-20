@@ -33,6 +33,9 @@ public abstract class GraphDatabaseSetting
     public static final String TRUE = "true";
     public static final String FALSE = "false";
 
+    // Regular expression that matches any string
+    public static final String ANY = ".*";
+
     public interface DefaultValue
     {
         String getDefaultValue();

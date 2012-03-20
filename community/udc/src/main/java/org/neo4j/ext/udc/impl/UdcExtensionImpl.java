@@ -25,12 +25,11 @@ import java.net.NetworkInterface;
 import java.util.Formatter;
 import java.util.Properties;
 import java.util.Timer;
-
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 /**

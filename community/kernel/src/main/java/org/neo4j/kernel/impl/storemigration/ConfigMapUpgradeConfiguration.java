@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.Config;
+import org.neo4j.kernel.configuration.Config;
 
 public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
 {

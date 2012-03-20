@@ -30,8 +30,8 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.Lifecycle;
+import org.neo4j.kernel.configuration.Config;
 
 public class AdaptiveCacheManager
     implements Lifecycle

@@ -31,7 +31,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.Config.*;
+import static org.neo4j.kernel.configuration.Config.*;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class ShellTest

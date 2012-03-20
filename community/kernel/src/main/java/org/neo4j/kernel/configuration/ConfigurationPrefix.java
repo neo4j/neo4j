@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Config;
+package org.neo4j.kernel.configuration;
 
-public class StartDbWithShell
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Add this annotation to configuration interfaces to specify what prefix to use
+ * For example, HA configuration interfaces would have @ConfigurationPrefix("ha.") as annotation
+ */
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.TYPE)
+public @interface ConfigurationPrefix
 {
-    public static void main( String[] args ) throws Exception
-    {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/test-data/shell-db").setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
-        System.out.println( "ENTER to quit" );
-        System.in.read();
-        db.shutdown();
-    }
+    String value();
 }

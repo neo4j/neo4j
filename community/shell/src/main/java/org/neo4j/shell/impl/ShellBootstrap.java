@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.impl;
 
-import static org.neo4j.kernel.Config.configValueContainsMultipleParameters;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,13 +30,14 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static org.neo4j.kernel.configuration.Config.*;
 
 public class ShellBootstrap implements Serializable
 {

@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.configuration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +58,20 @@ public class ConfigurationMigrator
                 }
 
                 deprecationMessage( "enable_online_backup has been replaced with online_backup_enabled and online_backup_port" );
+                continue;
+            }
+
+            // Flip the UDC enable setting
+            if (key.equals( "neo4j.ext.udc.disable" ))
+            {
+                if ("true".equalsIgnoreCase( value ))
+                {
+                    migratedConfiguration.put( "neo4j.ext.udc.enabled", "false" );
+                } else
+                {
+                    migratedConfiguration.put( "neo4j.ext.udc.enabled", "true" );
+                }
+                deprecationMessage( "neo4j.ext.udc.disable has been replaced with neo4j.ext.udc.enabled" );
                 continue;
             }
 

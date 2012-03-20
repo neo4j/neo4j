@@ -19,22 +19,16 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.Config;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -42,6 +36,10 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 public class Neo4jShellConsoleSessionTest implements SessionFactory
 {
@@ -55,7 +53,7 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     public void setUp() throws Exception
     {
         Map<String, String> params = new HashMap<String, String>();
-        params.put(Config.ENABLE_REMOTE_SHELL, "true");
+        params.put( Config.ENABLE_REMOTE_SHELL, "true");
         this.database = new Database( new ImpermanentGraphDatabase(params) );
         this.consoleService = new ConsoleService( this, database, new OutputFormat( new JsonFormat(), uri, null ) );
     }

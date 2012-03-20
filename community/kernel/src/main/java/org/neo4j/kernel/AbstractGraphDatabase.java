@@ -56,6 +56,9 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationChange;
+import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -375,12 +378,12 @@ public abstract class AbstractGraphDatabase
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
         
-        config.addConfigurationChangeListener( new Config.ConfigurationChangeListener()
+        config.addConfigurationChangeListener( new ConfigurationChangeListener()
         {
             Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
             
             @Override
-            public void notifyConfigurationChanges( final Iterable<Config.ConfigurationChange> change )
+            public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )
             {
                 executor.execute( new Runnable()
                 {

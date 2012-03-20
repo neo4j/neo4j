@@ -18,20 +18,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.neo4j.kernel.configuration;
 
 /**
- * Add this annotation to configuration interfaces to specify what prefix to use
- * For example, HA configuration interfaces would have @ConfigurationPrefix("ha.") as annotation
- */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.TYPE)
-public @interface ConfigurationPrefix
+* TODO
+*/
+public class ConfigurationChange
 {
-    String value();
+    private String name;
+    private String oldValue;
+    private String newValue;
+
+    public ConfigurationChange( String name, String oldValue, String newValue )
+    {
+        this.name = name;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public String getOldValue()
+    {
+        return oldValue;
+    }
+
+    public String getNewValue()
+    {
+        return newValue;
+    }
+
+    @Override
+    public String toString()
+    {
+        return name+":"+oldValue+"->"+newValue;
+    }
 }
