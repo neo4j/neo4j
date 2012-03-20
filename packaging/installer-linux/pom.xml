@@ -139,6 +139,15 @@
                     includes="**" />
                 </copy>
 
+                <!-- Make scripts executable -->
+                <chmod perm="700">
+                  <fileset dir="${project.build.outputDirectory}">
+                    <include name="**/server/bin/neo4j" />
+                    <include name="**/server/bin/neo4j-shell" />
+                    <include name="**/server/bin/utils" />
+                  </fileset>
+                </chmod>
+
                 <!-- Run installer projects -->
                 <exec executable="debuild"
                   dir="${project.build.outputDirectory}/community"
