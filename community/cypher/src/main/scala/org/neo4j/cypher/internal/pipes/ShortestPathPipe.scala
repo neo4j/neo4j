@@ -35,7 +35,7 @@ import collection.mutable.Map
 abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
   def startName = ast.start
   def endName = ast.end
-  def relType = ast.relType
+  def relType = ast.relTypes
   def dir = ast.dir
   def maxDepth = ast.maxDepth
   def optional = ast.optional
@@ -44,8 +44,8 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
     val (start, end) = getStartAndEnd(m)
-    val expander: Expander = createExpander()
-    val depth: Int = maxDepth.getOrElse(15)
+    val expander = createExpander
+    val depth = maxDepth.getOrElse(15)
 
     findResult(expander, start, end,  depth, m)
   })
@@ -58,10 +58,11 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
     (start, end)
   }
 
-  private def createExpander[U](): Expander = relType match {
-      case None => Traversal.expanderForAllTypes(dir)
-      case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
-    }
+  private lazy val createExpander: Expander = if (relType.isEmpty) {
+    Traversal.expanderForAllTypes(dir)
+  } else {
+    relType.foldLeft(Traversal.emptyExpander()){case(e,t)=>e.add(DynamicRelationshipType.withName(t), dir)}
+  }
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 

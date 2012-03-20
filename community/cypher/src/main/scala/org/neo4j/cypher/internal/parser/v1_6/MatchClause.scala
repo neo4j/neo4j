@@ -145,7 +145,7 @@ trait MatchClause extends Base {
   def workingLink = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
       case Some((relName, relType, varLength, optional)) => (back, relName, relType, forward, end, varLength, optional)
-      case None => (back, None, None, forward, end, None, false)
+      case None => (back, None, Seq(), forward, end, None, false)
     }
   }
 
@@ -154,7 +154,7 @@ trait MatchClause extends Base {
     case Some(x) => Some(x.toInt)
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] =
+  def relationshipInfo: Parser[(Option[String], Seq[String], Option[(Option[Int], Option[Int])], Boolean)] =
     opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ^^ {
       case relName ~ optional ~ relType ~ varLength => {
         val hops = varLength match {
@@ -162,7 +162,7 @@ trait MatchClause extends Base {
           case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
           case None => None
         }
-        (relName, relType, hops, optional.isDefined)
+        (relName, relType.toSeq, hops, optional.isDefined)
       }
     }
 }

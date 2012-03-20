@@ -101,13 +101,16 @@ case class Not(a: Predicate) extends Predicate {
   def filter(f: (Expression) => Boolean) = a.filter(f)
 }
 
-case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Option[String]) extends Predicate {
+case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
     val toNode = to(m).asInstanceOf[Node]
-    relType match {
-      case None => fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
-      case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+    
+    if(relType.isEmpty) {
+      fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+    } else {
+      val types = relType.map(t=>  DynamicRelationshipType.withName(t))
+      fromNode.getRelationships(dir, types:_*).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
     }
   }
 
@@ -119,13 +122,14 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def filter(f: (Expression) => Boolean) = from.filter(f) ++ to.filter(f)
 }
 
-case class HasRelationship(from: Expression, dir: Direction, relType: Option[String]) extends Predicate {
+case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
-    relType match {
-      case None => fromNode.getRelationships(dir).iterator().hasNext
-      case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().hasNext
-    }
+
+    if (relType.isEmpty)
+      fromNode.getRelationships(dir).iterator().hasNext
+    else
+      fromNode.getRelationships(dir, relType.map(t => DynamicRelationshipType.withName(t)): _*).iterator().hasNext
   }
 
   def atoms: Seq[Predicate] = Seq(this)

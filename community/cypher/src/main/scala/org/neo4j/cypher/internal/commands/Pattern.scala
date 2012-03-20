@@ -25,14 +25,13 @@ import collection.Seq
 import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, Identifier}
 
 abstract class Pattern {
-  val optional: Boolean
-  val predicate: Predicate
-  val possibleStartPoints: Seq[Identifier]
+  def optional: Boolean
+  def predicate: Predicate
+  def possibleStartPoints: Seq[Identifier]
+  def relTypes:Seq[String]
 
   protected def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
-
   protected def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
-
   protected def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
@@ -40,22 +39,22 @@ abstract class Pattern {
 
 object RelatedTo {
   def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false, predicate: Predicate = True()) =
-    new RelatedTo(left, right, relName, Some(relType), direction, optional, predicate)
+    new RelatedTo(left, right, relName, Seq(relType), direction, optional, predicate)
 }
 
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean, predicate: Predicate) extends Pattern {
+case class RelatedTo(left: String, right: String, relName: String, relTypes: Seq[String], direction: Direction, optional: Boolean, predicate: Predicate) extends Pattern {
   override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
 
   private def relInfo: String = {
     var info = if (relName.startsWith("  UNNAMED")) "" else relName
     if (optional) info = info + "?"
-    if (relType.nonEmpty) info = info + ":" + relType.get
+    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
     if (info == "") "" else "[" + info + "]"
   }
 
   val possibleStartPoints: Seq[Identifier] = Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(relName, RelationshipType()))
 
-  def rewrite(f: (Expression) => Expression) = new RelatedTo(left,right,relName,relType,direction,optional,predicate.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = new RelatedTo(left,right,relName,relTypes,direction,optional,predicate.rewrite(f))
 }
 
 abstract class PathPattern extends Pattern {
@@ -71,8 +70,8 @@ abstract class PathPattern extends Pattern {
 }
 
 object VarLengthRelatedTo {
-  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false, predicate: Predicate = True()) =
-    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional, predicate)
+  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relTypes: String, direction: Direction, optional: Boolean = false, predicate: Predicate = True()) =
+    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Seq(relTypes), direction, None, optional, predicate)
 }
 
 case class VarLengthRelatedTo(pathName: String,
@@ -80,7 +79,7 @@ case class VarLengthRelatedTo(pathName: String,
                               end: String,
                               minHops: Option[Int],
                               maxHops: Option[Int],
-                              relType: Option[String],
+                              relTypes: Seq[String],
                               direction: Direction,
                               relIterator: Option[String],
                               optional: Boolean,
@@ -89,11 +88,11 @@ case class VarLengthRelatedTo(pathName: String,
   override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
 
 
-  def cloneWithOtherName(newName: String) = VarLengthRelatedTo(newName, start, end, minHops, maxHops, relType, direction, relIterator, optional, predicate)
+  def cloneWithOtherName(newName: String) = VarLengthRelatedTo(newName, start, end, minHops, maxHops, relTypes, direction, relIterator, optional, predicate)
 
   private def relInfo: String = {
     var info = if (optional) "?" else ""
-    if (relType.nonEmpty) info = info + ":" + relType.get
+    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
     val hops = (minHops, maxHops) match {
       case (None, None) => "*"
       case (Some(min), None) => "*" + min + ".."
@@ -108,13 +107,13 @@ case class VarLengthRelatedTo(pathName: String,
 
   lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()), Identifier(pathName, PathType()) )
 
-  def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,start,end, minHops,maxHops,relType,direction,relIterator,optional,predicate.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,start,end, minHops,maxHops,relTypes,direction,relIterator,optional,predicate.rewrite(f))
 }
 
 case class ShortestPath(pathName: String,
                         start: String,
                         end: String,
-                        relType: Option[String],
+                        relTypes: Seq[String],
                         dir: Direction,
                         maxDepth: Option[Int],
                         optional: Boolean,
@@ -128,12 +127,12 @@ case class ShortestPath(pathName: String,
   
   def dependencies: Seq[Identifier] = Seq(Identifier(start, NodeType()),Identifier(end, NodeType())) ++ predicate.dependencies
 
-  def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relType, dir, maxDepth, optional, single, None)
+  def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relTypes, dir, maxDepth, optional, single, None)
 
   private def relInfo: String = {
     var info = "["
     if (optional) info = info + "?"
-    if (relType.nonEmpty) info = info + ":" + relType.get
+    if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
     info = info + "*"
     if (maxDepth.nonEmpty) info = info + ".." + maxDepth.get
     info + "]"
@@ -141,5 +140,5 @@ case class ShortestPath(pathName: String,
 
   lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()))
 
-  def rewrite(f: (Expression) => Expression) = new ShortestPath(pathName,start,end,relType,dir,maxDepth,optional,single,relIterator,predicate.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = new ShortestPath(pathName,start,end,relTypes,dir,maxDepth,optional,single,relIterator,predicate.rewrite(f))
 }

@@ -37,7 +37,7 @@ class Joiner(source: Linkable,
              start: String,
              dir: Direction,
              end: String,
-             relType: Option[String],
+             relType: Seq[String],
              relName: String,
              predicate: Predicate)
   extends Linkable {
@@ -50,10 +50,10 @@ class Joiner(source: Linkable,
       case _ => throw new ThisShouldNotHappenError("Andres Taylor", "The start node has to come from the underlying pipe!")
     }
 
-    val rels = (relType match {
-      case None => startNode.getRelationships(dir)
-      case Some(x) => startNode.getRelationships(DynamicRelationshipType.withName(x), dir)
-    }).asScala
+    val rels = if (relType.isEmpty)
+      startNode.getRelationships(dir).asScala
+    else
+      startNode.getRelationships(dir, relType.map(t => DynamicRelationshipType.withName(t)):_*) .asScala
 
     val between = rels.flatMap(rel => {
       val otherNode = rel.getOtherNode(startNode)

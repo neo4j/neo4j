@@ -145,7 +145,7 @@ trait MatchClause extends Base with Expressions {
   def workingLink = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
       case Some((relName, relType, varLength, optional, predicate)) => (back, relName, relType, forward, end, varLength, optional, predicate)
-      case None => (back, None, None, forward, end, None, false, True())
+      case None => (back, None, Seq(), forward, end, None, false, True())
     }
   }
 
@@ -154,8 +154,8 @@ trait MatchClause extends Base with Expressions {
     case Some(x) => Some(x.toInt)
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean, Predicate)] =
-    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where")~> predicate) ^^ {
+  def relationshipInfo: Parser[(Option[String], Seq[String], Option[(Option[Int], Option[Int])], Boolean, Predicate)] =
+    opt(identity) ~ opt("?") ~ opt(":" ~> rep1sep(identity, "|")) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where")~> predicate) ^^ {
       case relName ~ optional ~ relType ~ varLength ~ pred => {
         val predicate = pred match {
           case None => True()
@@ -167,7 +167,9 @@ trait MatchClause extends Base with Expressions {
           case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
           case None => None
         }
-        (relName, relType, hops, optional.isDefined, predicate)
+        
+
+        (relName, relType.toSeq.flatten, hops, optional.isDefined, predicate)
       }
     }
 }

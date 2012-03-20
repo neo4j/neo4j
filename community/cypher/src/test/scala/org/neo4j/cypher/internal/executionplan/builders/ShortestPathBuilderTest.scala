@@ -33,7 +33,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
   def should_not_accept_if_no_shortest_paths_exist() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", None, Direction.OUTGOING, false, True()))))
+      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
 
     val p = createPipe(nodes = Seq("l"))
     
@@ -44,7 +44,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
   def should_not_accept_if_both_start_and_end_have_not_been_solved_yet() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Unsolved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val p = createPipe(nodes = Seq("a"))
 
@@ -55,7 +55,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
   def should_accept_if_both_start_and_end_have_been_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, None))))
+      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 
@@ -63,14 +63,14 @@ class ShortestPathBuilderTest extends PipeBuilder {
     
     val (_,resultQ) = builder(p,q)
 
-    assert( resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, None))) )
+    assert( resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))) )
   }
   
   @Test
   def should_not_accept_work_id_predicates_depend_on_something_not_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0)), Unsolved(NodeById("x", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, None, Equals(Property("x", "foo"), Literal(42))))))
+      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None, Equals(Property("x", "foo"), Literal(42))))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 

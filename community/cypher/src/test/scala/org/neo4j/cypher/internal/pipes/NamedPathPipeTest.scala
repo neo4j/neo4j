@@ -35,7 +35,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var pattern: Pattern = null
 
   @Before def init() {
-    pattern = VarLengthRelatedTo("x", "a", "b", None, None, None, Direction.BOTH, None, false, True())
+    pattern = VarLengthRelatedTo("x", "a", "b", None, None, Seq(), Direction.BOTH, None, false, True())
     a = createNode("a")
     b = createNode("b")
     c = createNode("c")

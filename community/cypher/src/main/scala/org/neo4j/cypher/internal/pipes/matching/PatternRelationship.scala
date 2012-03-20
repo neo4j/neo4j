@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
-                          val relType: Option[String],
+                          val relTypes: Seq[String],
                           val dir: Direction,
                           val optional: Boolean,
                           val predicate: Predicate)
@@ -36,13 +36,15 @@ class PatternRelationship(key: String,
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
+  lazy val neo4jRelTypes = relTypes.map(t=>DynamicRelationshipType.withName(t))
 
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    val result = (relType match {
-      case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
-      case None => realNode.getRelationships(getDirection(node))
+    
+    val result = (if(relTypes.isEmpty) {
+      realNode.getRelationships(getDirection(node))
+    } else {
+      realNode.getRelationships(getDirection(node), neo4jRelTypes:_*)
     }).asScala.toStream.map(new SingleGraphRelationship(_))
-
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode)
@@ -97,11 +99,13 @@ class VariableLengthPatternRelationship(pathName: String,
                                         val relIterable: Option[String],
                                         minHops: Option[Int],
                                         maxHops: Option[Int],
-                                        relType: Option[String],
+                                        relType: Seq[String],
                                         dir: Direction,
                                         optional: Boolean,
                                         predicate: Predicate)
   extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
+
+
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
 
@@ -116,10 +120,15 @@ class VariableLengthPatternRelationship(pathName: String,
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
-    val traversalDescription = relType match {
-      case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
-      case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
+    val traversalDescription = if(relType.isEmpty) {
+      baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
+    } else {
+      val emptyExpander = Traversal.emptyExpander()
+      val dir = getDirection(node)
+      val expander = relType.foldLeft(emptyExpander){ case (e,t) => e.add(DynamicRelationshipType.withName(t), dir) }
+      baseTraversalDescription.expand(expander)
     }
+
     traversalDescription.traverse(realNode).asScala.toStream.map(p => VariableLengthGraphRelationship(p))
   }
 }
