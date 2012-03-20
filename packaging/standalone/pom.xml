@@ -14,7 +14,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.5.3-SNAPSHOT</version>
+  <version>1.5.3.RC1</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -328,7 +328,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>windows-service-wrapper</artifactId>
-      <version>${windows-wrapper.version}</version>
+      <version>4</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
