@@ -19,18 +19,21 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import org.neo4j.cypher.internal.commands.Query;
-import org.neo4j.cypher.javacompat.CypherParser;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.server.plugins.*;
+import org.neo4j.server.plugins.Description;
+import org.neo4j.server.plugins.Name;
+import org.neo4j.server.plugins.Parameter;
+import org.neo4j.server.plugins.PluginTarget;
+import org.neo4j.server.plugins.ServerPlugin;
+import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.Representation;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Description( "DEPRECATED (go to /db/data/cypher): A server side plugin for the Cypher Query Language" )
 public class CypherPlugin extends ServerPlugin
@@ -51,13 +54,11 @@ public class CypherPlugin extends ServerPlugin
         {
             parameters = new HashMap<String, Object>();
         }
-        CypherParser parser = new CypherParser();
         ExecutionResult result;
         try
         {
-            Query compiledQuery = parser.parse( query );
             ExecutionEngine engine = new ExecutionEngine( neo4j );
-            result = engine.execute( compiledQuery, parameters );
+            result = engine.execute( query, parameters );
         }
         catch ( Exception e )
         {

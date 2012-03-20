@@ -198,7 +198,7 @@ the relevant Commercial Agreement.
     <repository>
       <id>neo4j-build</id>
       <name>neo4j.org repository</name>
-      <url>https://repo.neo4j.org/content/groups/build/</url>
+      <url>http://m2.neo4j.org/content/groups/everything/</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
