@@ -115,7 +115,7 @@ startit() {
       exit 0
     elif [ $LAUNCHDPID -gt 0 ] ; then
       echo "Instance already running via launchd with PID $LAUNCHDPID"
-      exit 1
+      exit 0
     fi
     # We fall through here since if there is no launchd install we start manually
   fi
@@ -154,7 +154,7 @@ startit() {
     exit 1
   else
     echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
-    exit 1
+    exit 0
   fi
 }
 
@@ -207,7 +207,7 @@ installservice() {
         read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
       else
         echo "It was not possible to determine JAVA_HOME. This will need to be set to start neo4j-coordinator."
-        yn= "y"
+        yn="y"
       fi
       case $yn in
               [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
@@ -309,33 +309,41 @@ done
 case "${!OPTIND}" in
   console)
     console
+    exit 0
     ;;
 
   start)
     startit
+    exit 0
     ;;
 
   stop)
     stopit
+    exit 0
     ;;
 
   restart)
     stopit
     startit
+    exit 0
     ;;
 
   status)
     reportstatus
+    exit 0
     ;;
 
   info)
     showinfo
+    exit 0
     ;;
   install)
     installservice
+    exit 0
     ;;
   remove)
     removeservice
+    exit 0
     ;;
   *)
     echo "Usage: neo4j { start | stop | restart | status | info | install | remove }"
