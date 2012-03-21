@@ -67,10 +67,13 @@ public class IndexProviderStore
             Long readIndexVersion = records[4];
             
             // Compare version and throw exception if there's a mismatch, also considering "allow upgrade"
-            compareExpectedVersionWithStoreVersion( expectedVersion, allowUpgrade, readIndexVersion );
+            boolean versionDiffers = compareExpectedVersionWithStoreVersion( expectedVersion, allowUpgrade, readIndexVersion );
             
             // Here we know that either the version matches or we just upgraded to the expected version
             indexVersion = expectedVersion;
+            if ( versionDiffers )
+                // We have upgraded the version, let's write it
+                writeOut();
         }
         catch ( IOException e )
         {
@@ -78,7 +81,7 @@ public class IndexProviderStore
         }
     }
 
-    private void compareExpectedVersionWithStoreVersion( long expectedVersion,
+    private boolean compareExpectedVersionWithStoreVersion( long expectedVersion,
             boolean allowUpgrade, Long readIndexVersion )
     {
         boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
@@ -100,12 +103,7 @@ public class IndexProviderStore
                 throw new UpgradeNotAllowedByConfigurationException();
             }
         }
-        
-        if ( versionDiffers )
-        {
-            // We have upgraded the version, let's write it
-            writeOut();
-        }
+        return versionDiffers;
     }
     
     private Long[] readRecordsWithNullDefaults( FileChannel fileChannel, int count, int expectAtLeastCount ) throws IOException
