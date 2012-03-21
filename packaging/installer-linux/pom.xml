@@ -34,6 +34,21 @@
     <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpages</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpagesenterprise</classifier>
+    </dependency>
+  </dependencies>
+
   <build>
     <resources>
       <resource>
@@ -52,6 +67,35 @@
             <goals>
               <goal>resources</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>unpack-manpages-enterprise</id>
+            <phase>generate-resources</phase>
+            <goals><goal>unpack</goal></goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                 <groupId>org.neo4j.doc</groupId>
+                 <artifactId>neo4j-manual</artifactId>
+                 <version>${neo4j.version}</version>
+                 <classifier>manpagesenterprise</classifier>
+                 <type>jar</type>
+                 <outputDirectory>${project.build.directory}/manpages</outputDirectory>
+                 <includes>*.gz</includes>
+                 <excludes>META-INF/**</excludes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -126,14 +170,12 @@
                     dir="${project.build.outputDirectory}/neo4j-advanced-${neo4j.version}"
                     includes="**" />
                 </move>
-                <move
-                  toDir="${project.build.outputDirectory}/enterprise/server">
+                <move toDir="${project.build.outputDirectory}/enterprise/server">
                   <fileset
                     dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
                     includes="**" />
                 </move>
-                <copy
-                  toDir="${project.build.outputDirectory}/coordinator/server">
+                <copy toDir="${project.build.outputDirectory}/coordinator/server">
                   <fileset
                     dir="${project.build.outputDirectory}/enterprise/server"
                     includes="**" />
@@ -150,6 +192,20 @@
                     <include name="**/server/bin/neo4j-coordinator-shell" />
                   </fileset>
                 </chmod>
+
+                <!-- Copy manpages into build folder -->
+                <copy toDir="${project.build.outputDirectory}/community/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/advanced/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/enterprise/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/coordinator/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
 
                 <!-- Run installer projects -->
                 <exec executable="debuild"
