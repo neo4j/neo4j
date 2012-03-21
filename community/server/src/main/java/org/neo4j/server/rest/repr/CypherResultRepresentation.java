@@ -31,30 +31,38 @@ import java.util.Map;
 
 public class CypherResultRepresentation extends ObjectRepresentation
 {
-    private final ExecutionResult queryResult;
+    private final Representation resultRepresentation;
+    private final ListRepresentation columns;
+
 
     public CypherResultRepresentation( ExecutionResult result )
     {
         super( RepresentationType.STRING );
-        this.queryResult = result;
+        resultRepresentation = createResultRepresentation(result);
+        columns = ListRepresentation.string( result.columns() );
     }
 
     @Mapping( "columns" )
     public Representation columns()
     {
-        return ListRepresentation.string( queryResult.columns() );
+        return columns;
     }
 
     @Mapping( "data" )
     public Representation data()
     {
+        return resultRepresentation;
+
+    }
+
+    private Representation createResultRepresentation(ExecutionResult executionResult) {
         // rows
         List<Representation> rows = new ArrayList<Representation>();
-        for ( Map<String, Object> row : queryResult )
+        for ( Map<String, Object> row : executionResult)
         {
             List<Representation> fields = new ArrayList<Representation>();
             // columns
-            for ( String column : queryResult.columns() )
+            for ( String column : executionResult.columns() )
             {
                 Representation rowRep = getRepresentation( row.get( column ) );
                 fields.add( rowRep );
