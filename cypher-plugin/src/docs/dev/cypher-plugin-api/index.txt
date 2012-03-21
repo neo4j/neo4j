@@ -4,7 +4,7 @@ Cypher Plugin
 
 WARNING: This functionality is now provided by the core REST API. 
 The plugin will continue to work for some time, but is as of Neo4j 1.6 deprecated.
-See <<rest-api-cypher>> for documentation on the built in cypher support.
+See <<rest-api-cypher>> for documentation on the built-in Cypher support.
 
 The Neo4j Cypher Plugin enables querying with the <<cypher-query-lang>>.
 The results are returned as a list of string headers (+columns+), and a +data+ part,
