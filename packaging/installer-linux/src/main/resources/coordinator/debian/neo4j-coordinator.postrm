@@ -22,7 +22,7 @@ set -e
 
 case "$1" in
     purge)
-        rm -rf /var/log/neo4j
+        rm -rf /var/log/neo4j-coordinator
     ;;
     
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

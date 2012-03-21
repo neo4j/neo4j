@@ -1,1 +1,1 @@
-neo4j_${neo4j.version.debian_compliant}_all.deb devel extra
+neo4j-advanced_${neo4j.version.debian_compliant}_all.deb devel extra

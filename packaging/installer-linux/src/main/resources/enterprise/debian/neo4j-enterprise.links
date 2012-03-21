@@ -7,3 +7,4 @@ var/log/neo4j            var/lib/neo4j/data/log
 etc/neo4j                var/lib/neo4j/conf
 
 var/lib/neo4j/bin/neo4j-shell   usr/bin/neo4j-shell
+var/lib/neo4j/bin/neo4j-backup  usr/bin/neo4j-backup

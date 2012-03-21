@@ -12,6 +12,5 @@ Depends: ${misc:Depends}, daemon, adduser, psmisc, default-jre
 Conflicts: 
 Replaces: 
 Description: Coordinator service for Neo4j clusters.
-             .
-             This is a Neo4j packaged version of Apache Zookeeper, used to 
-             coordinate neo4j clusters.
+ This is a Neo4j packaged version of Apache Zookeeper, used to 
+ coordinate neo4j clusters.

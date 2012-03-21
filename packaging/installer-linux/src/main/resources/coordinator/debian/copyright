@@ -1,6 +1,6 @@
 This package was debianized by Jacob Hansson <jacob@voltvoodoo.com> on Fri, 4 Feb 2011 11:00:55 -0700.
 
-Upstream Author(s): 
+Upstream Author: 
 
     http://neo4j.org/
 
@@ -8,12 +8,6 @@ Copyright:
 
     Copyright (c) 2002-2012 "Neo Technology," Network Engine for Objects in Lund AB
     [http://neotechnology.com]
-
-    This product includes software developed by "Neo Technology,"
-    Network Engine for Objects in Lund AB (http://neotechnology.com).
-
-    The bundled Zookeeper product is copyright The Apache Software Foundation
-    and licensed under the Apache License, Version 2.0.
 
 License:
  
@@ -27,6 +21,4 @@ License:
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
  
-    You should have received a copy of the GNU General Public License
-    along with this package; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+    See /usr/share/common-licenses/GPL-3

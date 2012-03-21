@@ -21,7 +21,7 @@ case "$1" in
     remove|upgrade|deconfigure)
 
         # Stop the neo4j service
-        /etc/init.d/neo4j-coord stop
+        invoke-rc.d neo4j-coord stop
 
         # Tell neo4j to uninstall itself
         /var/lib/neo4j-coordinator/bin/neo4j-coordinator -h -u neo4j remove

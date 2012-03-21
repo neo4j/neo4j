@@ -21,27 +21,23 @@ set -e
 case "$1" in
     configure)
 
-        [ -r /etc/default/neo4j ] && . /etc/default/neo4j
+        [ -r /etc/default/neo4j-coordinator ] && . /etc/default/neo4j-coordinator
         : ${NEO_USER:=neo4j}
 
         # Create neo4j user if it doesn't exist.
         if ! id $NEO_USER > /dev/null 2>&1 ; then
-            adduser --system --home /var/lib/neo4j --no-create-home \
+            adduser --system --home /var/lib/neo4j-coordinator --no-create-home \
                 --ingroup nogroup --disabled-password --shell /bin/bash \
                 $NEO_USER
         fi
       
         # directories needed for neo4j
-        chown -R $NEO_USER:adm /var/lib/neo4j-coordinator
-        # we don't do "chmod 750" so that the user can choose the pemission for g and o on their own
-        chmod u+rwx /var/lib/neo4j-coordinator
-      
-        chmod 0755 /var/lib/neo4j-coordinator/bin/neo4j-coordinator
+        chown -R $NEO_USER:adm /var/lib/neo4j-coordinator /var/log/neo4j-coordinator /etc/neo4j-coordinator /usr/share/neo4j-coordinator
+        chmod u+rwx /var/lib/neo4j-coordinator /var/log/neo4j-coordinator /etc/neo4j-coordinator /usr/share/neo4j-coordinator
 
-        # Tell neo4j to install itself as a service using headless (-h) mode
+        # Tell neo4j-coordinator to install itself as a service using headless (-h) mode
         # with user (-u) neo4j as running user.
         /var/lib/neo4j-coordinator/bin/neo4j-coordinator -h -u neo4j install
-        
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
