@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,71 +28,49 @@ import java.nio.channels.FileChannel;
 import java.util.Random;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 public class IndexProviderStore
 {
-    private static final int FILE_LENGTH = 8*5;
+    private static final int RECORD_SIZE = 8;
+    private static final int RECORD_COUNT = 5;
     
-    private long creationTime;
-    private long randomIdentifier;
+    private final long creationTime;
+    private final long randomIdentifier;
     private long version;
-    private long indexVersion;
+    private final long indexVersion;
     
     private final FileChannel fileChannel;
-    private final ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
+    private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE*RECORD_COUNT );
     private long lastCommittedTx;
     private final File file;
     
     public IndexProviderStore( File file, FileSystemAbstraction fileSystem, long expectedVersion, boolean allowUpgrade )
     {
         this.file = file;
-        if ( !file.exists() )
-        {
-            create( file, fileSystem, expectedVersion );
-        }
         try
         {
+            // Create it if it doesn't exist
+            if ( !fileSystem.fileExists( file.getAbsolutePath() ) )
+                create( file, fileSystem, expectedVersion );
+            
+            // Read all the records in the file
             fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
-            int bytesRead = fileChannel.read( buf );
-            if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 && !allowUpgrade )
-            {
-                throw new RuntimeException( "Expected to read " + FILE_LENGTH +
-                        " or " + (FILE_LENGTH-8) + " bytes" );
-            }
-            buf.flip();
-            creationTime = buf.getLong();
-            randomIdentifier = buf.getLong();
-            version = buf.getLong();
-            lastCommittedTx = bytesRead/8 >= 4 ? buf.getLong() : 1;
-            Long readIndexVersion = bytesRead/8 >= 5 ? buf.getLong() : null;
-            boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
-            if ( versionDiffers && !allowUpgrade ) throw new UpgradeNotAllowedByConfigurationException();
+            Long[] records = readRecordsWithNullDefaults( fileChannel, RECORD_COUNT, allowUpgrade ?
+                    RECORD_COUNT-1 : // 1.6 introduced indexVersion record. This (-1 expectation) isn't a generic solution though
+                    RECORD_COUNT );
+            creationTime = records[0].longValue();
+            randomIdentifier = records[1].longValue();
+            version = records[2].longValue();
+            lastCommittedTx = records[3].longValue();
+            Long readIndexVersion = records[4];
+            
+            // Compare version and throw exception if there's a mismatch, also considering "allow upgrade"
+            compareExpectedVersionWithStoreVersion( expectedVersion, allowUpgrade, readIndexVersion );
+            
+            // Here we know that either the version matches or we just upgraded to the expected version
             indexVersion = expectedVersion;
-            if ( versionDiffers ) writeOut();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-    
-    private void create( File file, FileSystemAbstraction fileSystem, long indexVersion )
-    {
-        if ( file.exists() )
-        {
-            throw new IllegalArgumentException( file + " already exist" );
-        }
-        try
-        {
-            FileChannel fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
-            ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
-            long time = System.currentTimeMillis();
-            long identifier = new Random( time ).nextLong();
-            buf.putLong( time ).putLong( identifier ).putLong( 0 ).putLong( 1 ).putLong( indexVersion );
-            buf.flip();
-            writeBuffer( fileChannel, buf );
-            fileChannel.close();
         }
         catch ( IOException e )
         {
@@ -98,13 +78,82 @@ public class IndexProviderStore
         }
     }
 
-    private void writeBuffer( FileChannel fileChannel, ByteBuffer buf ) throws IOException
+    private void compareExpectedVersionWithStoreVersion( long expectedVersion,
+            boolean allowUpgrade, Long readIndexVersion )
     {
-        int written = fileChannel.write( buf );
-        if ( written != FILE_LENGTH )
+        boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
+        if ( versionDiffers )
         {
-            throw new RuntimeException( "Expected to write " + FILE_LENGTH + " bytes, but wrote " + written );
+            // We can throw a more explicit exception if we see that we're trying to run
+            // with an older version than the store is.
+            if ( readIndexVersion != null && expectedVersion < readIndexVersion.longValue() )
+            {
+                String expected = versionLongToString( expectedVersion );
+                String readVersion = versionLongToString( readIndexVersion.longValue() );
+                throw new NotCurrentStoreVersionException( expected, readVersion,
+                        "Your index has been upgraded to " + readVersion +
+                        " and cannot run with an older version " + expected, false );
+            }
+            else if ( !allowUpgrade )
+            {
+                // We try to run with a newer version than the store is but isn't allowed to upgrade.
+                throw new UpgradeNotAllowedByConfigurationException();
+            }
         }
+        
+        if ( versionDiffers )
+        {
+            // We have upgraded the version, let's write it
+            writeOut();
+        }
+    }
+    
+    private Long[] readRecordsWithNullDefaults( FileChannel fileChannel, int count, int expectAtLeastCount ) throws IOException
+    {
+        buf.clear();
+        int bytesRead = fileChannel.read( buf );
+        int wholeRecordsRead = bytesRead/RECORD_SIZE;
+        if ( wholeRecordsRead < expectAtLeastCount )
+            throw new RuntimeException( "Expected to read at least " + expectAtLeastCount + " records, but could only read " +
+                    wholeRecordsRead + " (" + bytesRead + "b)" );
+        
+        buf.flip();
+        Long[] result = new Long[count];
+        for ( int i = 0; i < wholeRecordsRead; i++ )
+            result[i] = buf.getLong();
+        return result;
+    }
+    
+    private void create( File file, FileSystemAbstraction fileSystem, long indexVersion ) throws IOException
+    {
+        if ( fileSystem.fileExists( file.getAbsolutePath() ) )
+            throw new IllegalArgumentException( file + " already exist" );
+        
+        FileChannel fileChannel = null;
+        try
+        {
+            fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
+            write( fileChannel, System.currentTimeMillis(), new Random( System.currentTimeMillis() ).nextLong(),
+                    0, 1, indexVersion );
+        }
+        finally
+        {
+            fileChannel.close();
+        }
+    }
+
+    private void write( FileChannel channel, long time, long identifier, long version, long lastCommittedTxId,
+            long indexVersion ) throws IOException
+    {
+        buf.clear();
+        buf.putLong( time ).putLong( identifier ).putLong( version ).putLong( lastCommittedTxId ).putLong( indexVersion );
+        buf.flip();
+        channel.position( 0 );
+
+        int written = channel.write( buf );
+        int expectedLength = RECORD_COUNT*RECORD_SIZE;
+        if ( written != expectedLength )
+            throw new RuntimeException( "Expected to write " + expectedLength + " bytes, but wrote " + written );
     }
     
     public File getFile()
@@ -151,12 +200,6 @@ public class IndexProviderStore
         this.lastCommittedTx = txId;
     }
     
-    public synchronized void setIndexVersion( long indexVersion )
-    {
-        this.indexVersion = indexVersion;
-        writeOut();
-    }
-    
     public long getLastCommittedTx()
     {
         return this.lastCommittedTx;
@@ -164,14 +207,9 @@ public class IndexProviderStore
     
     private void writeOut()
     {
-        buf.clear();
-        buf.putLong( creationTime ).putLong( randomIdentifier ).putLong( 
-            version ).putLong( lastCommittedTx ).putLong( indexVersion );
-        buf.flip();
         try
         {
-            fileChannel.position( 0 );
-            writeBuffer( fileChannel, buf );
+            write( fileChannel, creationTime, randomIdentifier, version, lastCommittedTx, indexVersion );
         }
         catch ( IOException e )
         {
@@ -182,9 +220,7 @@ public class IndexProviderStore
     public void close()
     {
         if ( !fileChannel.isOpen() )
-        {
             return;
-        }
         
         writeOut();
         try
