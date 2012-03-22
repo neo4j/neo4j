@@ -6,7 +6,7 @@ NAME
 ----
 neo4j-backup - Neo4j Backup Tool
 
-[[neo4j-manpage]]
+[[neo4j-backup-manpage]]
 SYNOPSIS
 --------
 
