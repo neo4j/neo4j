@@ -56,7 +56,8 @@ public final class LockInfo
         this.readCount = readCount;
         this.writeCount = writeCount;
         this.waitingThreads = new ArrayList<WaitingThread>();
-        for ( LockingTransaction tx : this.lockingTxs = locking.toArray( new LockingTransaction[locking.size()] ) )
+        this.lockingTxs = locking.toArray( new LockingTransaction[locking.size()] );
+        for ( LockingTransaction tx : this.lockingTxs )
         {
             if ( tx instanceof WaitingThread )
             {

@@ -442,22 +442,19 @@ public class LockReleaser
             NodeImpl node = nodeManager.getNodeIfCached( entry.getKey() );
             if ( node != null )
             {
-                int sizeBefore = node.size();
                 CowNodeElement nodeElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap,
-                        nodeElement.relationshipRemoveMap, nodeElement.firstRel );
+                        nodeElement.relationshipRemoveMap, nodeElement.firstRel, nodeManager );
                     node.commitPropertyMaps( nodeElement.propertyAddMap,
-                        nodeElement.propertyRemoveMap, nodeElement.firstProp );
+                        nodeElement.propertyRemoveMap, nodeElement.firstProp, nodeManager );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
                     throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
-                int sizeAfter = node.size();
-                nodeManager.updateCacheSize( node, sizeBefore, sizeAfter );
             }
         }
         ArrayMap<Long,CowRelElement> cowRelElements = element.relationships;
@@ -468,26 +465,23 @@ public class LockReleaser
             RelationshipImpl rel = nodeManager.getRelIfCached( entry.getKey() );
             if ( rel != null )
             {
-                int sizeBefore = rel.size();
                 CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     rel.commitPropertyMaps( relElement.propertyAddMap,
-                        relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue() );
+                        relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue(), nodeManager );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
                     throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
-                int sizeAfter = rel.size();
-                nodeManager.updateCacheSize( rel, sizeBefore, sizeAfter );
             }
         }
         if ( element.graph != null && param == Status.STATUS_COMMITTED )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( element.graph.getPropertyAddMap( false ),
-                    element.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue() );
+                    element.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue(), nodeManager );
         }
         cowMap.remove( cowTxId );
     }

@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 
-class NodeImpl extends ArrayBasedPrimitive
+public class NodeImpl extends ArrayBasedPrimitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
@@ -359,11 +359,11 @@ class NodeImpl extends ArrayBasedPrimitive
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 int sizeBefore = size();
                 this.relationships = toRelIdArray( tmpRelMap );
-                updateSize( sizeBefore, size(), nodeManager );
                 if ( rels != null )
                 {
                     setRelChainPosition( rels.third() );
                 }
+                updateSize( sizeBefore, size(), nodeManager );
             }
         }
         if ( rels != null )
@@ -479,8 +479,8 @@ class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
-            nodeManager.updateCacheSize( this, sizeBefore, size() );
             setRelChainPosition( rels.third() );
+            updateSize( sizeBefore, size(), nodeManager );
         }
         nodeManager.putAllInRelCache( rels.second() );
         return true;
@@ -618,7 +618,7 @@ class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel )
+        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
     {
         if ( relationships == null )
         {
@@ -628,6 +628,7 @@ class NodeImpl extends ArrayBasedPrimitive
 
         synchronized ( this )
         {
+            int sizeBefore = size();
             if ( cowRelationshipAddMap != null )
             {
                 for ( String type : cowRelationshipAddMap.keySet() )
@@ -659,6 +660,8 @@ class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
+            int sizeAfter = size();
+            updateSize( sizeBefore, sizeAfter, nodeManager );
         }
     }
 
