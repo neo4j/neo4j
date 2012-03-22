@@ -53,6 +53,10 @@ call:parseConfig "%~dp0..\%configFile%"
 for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^status$ ^restart$ ^install$ ^uninstall$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
+    if not %1 == "" (
+           echo This command is not supported by the Neo4j utility. Please try "Neo4j.bat help" for more info.
+           goto:eof
+    )
     set command=console
 )
 
