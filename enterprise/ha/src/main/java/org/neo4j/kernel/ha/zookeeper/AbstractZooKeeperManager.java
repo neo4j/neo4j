@@ -386,8 +386,71 @@ public abstract class AbstractZooKeeperManager
 
     enum WaitMode
     {
-        STARTUP,
-        SESSION;
+        STARTUP
+        {
+            @Override
+            public WaitStrategy getStrategy( AbstractZooKeeperManager zooClient )
+            {
+                return new StartupWaitStrategy( zooClient.msgLog );
+            }
+        },
+        SESSION
+        {
+            @Override
+            public WaitStrategy getStrategy( AbstractZooKeeperManager zooClient )
+            {
+                return new SessionWaitStrategy( zooClient.getSessionTimeout() );
+            }
+        };
+
+        public abstract WaitStrategy getStrategy( AbstractZooKeeperManager zooClient );
+    }
+
+    interface WaitStrategy
+    {
+        abstract boolean waitMore( long waitedSoFar );
+    }
+
+    private static class SessionWaitStrategy implements WaitStrategy
+    {
+        private final long sessionTimeout;
+
+        SessionWaitStrategy( long sessionTimeout )
+        {
+            this.sessionTimeout = sessionTimeout;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            return waitedSoFar < sessionTimeout;
+        }
+    }
+
+    private static class StartupWaitStrategy implements WaitStrategy
+    {
+        static final long SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS = 30;
+
+        private long lastNotification = 0;
+        private final StringLogger msgLog;
+
+        public StartupWaitStrategy( StringLogger msgLog )
+        {
+            this.msgLog = msgLog;
+        }
+
+        @Override
+        public boolean waitMore( long waitedSoFar )
+        {
+            long currentNotification = waitedSoFar / ( SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS * 1000 );
+            if ( currentNotification > lastNotification )
+            {
+                lastNotification = currentNotification;
+                msgLog.logMessage( "Have been waiting for " + SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS
+                                   * currentNotification + " seconds for the ZooKeeper cluster to respond." );
+            }
+            return true;
+        }
     }
 
     public String getServers()

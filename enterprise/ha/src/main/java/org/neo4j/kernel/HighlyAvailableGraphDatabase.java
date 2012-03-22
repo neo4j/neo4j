@@ -69,7 +69,7 @@ import org.neo4j.kernel.ha.EnterpriseConfigurationMigrator;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.ha.SlaveDatabaseOperations;
 import org.neo4j.kernel.ha.SlaveGraphDatabase;
 import org.neo4j.kernel.ha.shell.ZooClientFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -134,8 +134,7 @@ public class HighlyAvailableGraphDatabase
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
 
-    private final ResponseReceiver responseReceiver;
-    private final ClusterEventReceiver clusterReceiver;
+    private final LocalDatabaseOperations slaveOperations;
     private volatile Broker broker;
     private ClusterClient clusterClient;
     private int machineId;
@@ -178,9 +177,7 @@ public class HighlyAvailableGraphDatabase
          * TODO
          * lame, i know, but better than before.
          */
-        HAResponseReceiver receiver = new HAResponseReceiver();
-        responseReceiver = receiver;
-        clusterReceiver = receiver;
+        slaveOperations = new LocalDatabaseOperations();
 
 //        databaseLock = new ReentrantReadWriteLock(  );
 
@@ -638,7 +635,7 @@ public class HighlyAvailableGraphDatabase
         if ( logVersion == -1 )
         {
             // No log version, just apply to the latest one
-            responseReceiver.receive( response );
+            slaveOperations.receive( response );
             return;
         }
         XaDataSource ds = localGraph().getXaDataSourceManager().getXaDataSource(
@@ -815,8 +812,8 @@ public class HighlyAvailableGraphDatabase
                     newMaster( storeId, new NullPointerException(
                             "master returned from broker" ) );
                 }
-                responseReceiver.receive( broker.getMaster().first().pullUpdates(
-                    responseReceiver.getSlaveContext( -1 ) ) );
+                slaveOperations.receive( broker.getMaster().first().pullUpdates(
+                    slaveOperations.getSlaveContext( -1 ) ) );
             }
         }
         catch ( ZooKeeperException e )
@@ -1040,7 +1037,7 @@ public class HighlyAvailableGraphDatabase
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, config, this, broker, messageLog,
-                responseReceiver, clusterReceiver, slaveUpdateMode.createUpdater( broker ), nodeLookup,
+                slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups );
 /*
 
@@ -1390,7 +1387,8 @@ public class HighlyAvailableGraphDatabase
             public ZooClient newZooClient()
             {
                         return new ZooClient( storeDir, messageLog, storeIdGetter, ConfigProxy.config( config,
-                                ZooClient.Configuration.class ), responseReceiver, clusterReceiver );
+                                ZooClient.Configuration.class ), /* as SlaveDatabaseOperations for extracting master for tx */
+                        slaveOperations, /* as ClusterEventReceiver */slaveOperations );
             }
         } );
     }
@@ -1519,7 +1517,7 @@ public class HighlyAvailableGraphDatabase
         }
     }
 
-    class HAResponseReceiver implements ResponseReceiver, ClusterEventReceiver
+    class LocalDatabaseOperations implements SlaveDatabaseOperations, ClusterEventReceiver
     {
         @Override
         public SlaveContext getSlaveContext( int eventIdentifier )
@@ -1571,6 +1569,16 @@ public class HighlyAvailableGraphDatabase
         public void handle( Exception e )
         {
             newMaster( e );
+        }
+
+        @Override
+        public void exceptionHappened( RuntimeException e )
+        {
+            if ( e instanceof ZooKeeperException || e instanceof ComException )
+            {
+                slaveOperations.newMaster( e );
+                throw e;
+            }
         }
 
         @Override

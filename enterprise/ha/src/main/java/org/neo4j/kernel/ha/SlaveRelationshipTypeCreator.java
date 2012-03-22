@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.com.ComException;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -32,14 +30,12 @@ import org.neo4j.kernel.impl.transaction.TxManager;
 public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
 {
     private final Broker broker;
-    private final ResponseReceiver responseReceiver;
-    private final ClusterEventReceiver clusterReceiver;
+    private final SlaveDatabaseOperations databaseOperations;
 
-    public SlaveRelationshipTypeCreator( Broker broker, ResponseReceiver receiver, ClusterEventReceiver zkReceiver )
+    public SlaveRelationshipTypeCreator( Broker broker, SlaveDatabaseOperations databaseOperations )
     {
         this.broker = broker;
-        this.responseReceiver = receiver;
-        this.clusterReceiver = zkReceiver;
+        this.databaseOperations = databaseOperations;
     }
 
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
@@ -48,17 +44,12 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
         try
         {
             int eventIdentifier = ((TxManager) txManager).getEventIdentifier();
-            return responseReceiver.receive( broker.getMaster().first().createRelationshipType(
-                    responseReceiver.getSlaveContext( eventIdentifier ), name ) );
+            return databaseOperations.receive( broker.getMaster().first().createRelationshipType(
+                    databaseOperations.getSlaveContext( eventIdentifier ), name ) );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }

@@ -21,13 +21,11 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
@@ -40,19 +38,17 @@ public class SlaveLockManager extends LockManager
 {
     private final Broker broker;
     private final TxManager tm;
-    private final ResponseReceiver receiver;
-    private final ClusterEventReceiver clusterReceiver;
+    private final SlaveDatabaseOperations databaseOperations;
     private final TxHook txHook;
 
     public SlaveLockManager( RagManager ragManager, TxManager tm, TxHook txHook, Broker broker,
-            ResponseReceiver receiver, ClusterEventReceiver zkReceiver )
+            SlaveDatabaseOperations databaseOperations )
     {
         super( ragManager );
         this.tm = tm;
         this.txHook = txHook;
         this.broker = broker;
-        this.receiver = receiver;
-        this.clusterReceiver = zkReceiver;
+        this.databaseOperations = databaseOperations;
     }
 
     private int getLocalTxId()
@@ -83,8 +79,8 @@ public class SlaveLockManager extends LockManager
             do
             {
                 int eventIdentifier = getLocalTxId();
-                result = receiver.receive( grabber.acquireLock( broker.getMaster().first(),
-                        receiver.getSlaveContext( eventIdentifier ), resource ) );
+                result = databaseOperations.receive( grabber.acquireLock( broker.getMaster().first(),
+                        databaseOperations.getSlaveContext( eventIdentifier ), resource ) );
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
@@ -96,14 +92,9 @@ public class SlaveLockManager extends LockManager
             }
             while ( result.getStatus() == LockStatus.NOT_LOCKED );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }
@@ -140,8 +131,8 @@ public class SlaveLockManager extends LockManager
             do
             {
                 int eventIdentifier = getLocalTxId();
-                result = receiver.receive( grabber.acquireLock( broker.getMaster().first(),
-                        receiver.getSlaveContext( eventIdentifier ), resource ) );
+                result = databaseOperations.receive( grabber.acquireLock( broker.getMaster().first(),
+                        databaseOperations.getSlaveContext( eventIdentifier ), resource ) );
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
@@ -153,14 +144,9 @@ public class SlaveLockManager extends LockManager
             }
             while ( result.getStatus() == LockStatus.NOT_LOCKED );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }

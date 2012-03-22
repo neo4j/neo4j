@@ -36,7 +36,6 @@ public class TestZooClient
 {
     private static final ClusterEventReceiver DummyClusterReceiver = new ClusterEventReceiver()
     {
-
         @Override
         public void reconnect( Exception cause )
         {

@@ -24,12 +24,10 @@ import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -41,33 +39,28 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     public static class SlaveTxIdGeneratorFactory implements TxIdGeneratorFactory
     {
         private final Broker broker;
-        private final ResponseReceiver receiver;
-        private final ClusterEventReceiver clusterReceiver;
+        private final SlaveDatabaseOperations databaseOperations;
 
-        public SlaveTxIdGeneratorFactory( Broker broker, ResponseReceiver receiver, ClusterEventReceiver clusterReceiver )
+        public SlaveTxIdGeneratorFactory( Broker broker, SlaveDatabaseOperations databaseOperations )
         {
             this.broker = broker;
-            this.receiver = receiver;
-            this.clusterReceiver = clusterReceiver;
+            this.databaseOperations = databaseOperations;
         }
 
         public TxIdGenerator create( TransactionManager txManager )
         {
-            return new SlaveTxIdGenerator( broker, receiver, clusterReceiver, txManager );
+            return new SlaveTxIdGenerator( broker, databaseOperations, txManager );
         }
     }
 
     private final Broker broker;
-    private final ResponseReceiver responseReceiver;
-    private final ClusterEventReceiver clusterReceiver;
+    private final SlaveDatabaseOperations databaseOperations;
     private final TxManager txManager;
 
-    public SlaveTxIdGenerator( Broker broker, ResponseReceiver receiver, ClusterEventReceiver clusterReceiver,
-            TransactionManager txManager )
+    public SlaveTxIdGenerator( Broker broker, SlaveDatabaseOperations databaseOperations, TransactionManager txManager )
     {
         this.broker = broker;
-        this.responseReceiver = receiver;
-        this.clusterReceiver = clusterReceiver;
+        this.databaseOperations = databaseOperations;
         this.txManager = (TxManager) txManager;
     }
 
@@ -77,7 +70,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             final int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
-                    onlyForThisDataSource( responseReceiver.getSlaveContext( eventIdentifier ), dataSource ),
+                    onlyForThisDataSource( databaseOperations.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
                     {
                         @Override
@@ -106,16 +99,11 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                             }
                         }
                     });
-            return responseReceiver.receive( response );
+            return databaseOperations.receive( response );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }

@@ -21,24 +21,19 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.com.ComException;
 import org.neo4j.kernel.GraphDatabaseSPI;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
 public class SlaveTxHook implements TxHook
 {
     private final Broker broker;
-    private final ResponseReceiver responseReceiver;
-    private final ClusterEventReceiver clusterReceiver;
+    private final SlaveDatabaseOperations databaseOperations;
     private GraphDatabaseSPI spi;
 
-    public SlaveTxHook( Broker broker, ResponseReceiver receiver, ClusterEventReceiver zkReceiver,
-            GraphDatabaseSPI spi )
+    public SlaveTxHook( Broker broker, SlaveDatabaseOperations databaseOperations, GraphDatabaseSPI spi )
     {
         this.broker = broker;
-        this.responseReceiver = receiver;
-        this.clusterReceiver = zkReceiver;
+        this.databaseOperations = databaseOperations;
         this.spi = spi;
     }
 
@@ -47,16 +42,11 @@ public class SlaveTxHook implements TxHook
     {
         try
         {
-            responseReceiver.receive( broker.getMaster().first().initializeTx( responseReceiver.getSlaveContext( eventIdentifier ) ) );
+            databaseOperations.receive( broker.getMaster().first().initializeTx( databaseOperations.getSlaveContext( eventIdentifier ) ) );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }
@@ -70,17 +60,12 @@ public class SlaveTxHook implements TxHook
     {
         try
         {
-            responseReceiver.receive( broker.getMaster().first().finishTransaction(
-                    responseReceiver.getSlaveContext( eventIdentifier ), success ) );
+            databaseOperations.receive( broker.getMaster().first().finishTransaction(
+                    databaseOperations.getSlaveContext( eventIdentifier ), success ) );
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }

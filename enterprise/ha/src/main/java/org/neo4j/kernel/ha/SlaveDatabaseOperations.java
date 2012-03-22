@@ -23,7 +23,7 @@ import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 
-public interface ResponseReceiver extends ConnectionLostHandler
+public interface SlaveDatabaseOperations extends ConnectionLostHandler
 {
     /**
      * Returns a {@link SlaveContext} instance that has {@code eventIdentifier}
@@ -35,6 +35,8 @@ public interface ResponseReceiver extends ConnectionLostHandler
     SlaveContext getSlaveContext( int eventIdentifier );
 
     <T> T receive( Response<T> response );
+
+    void exceptionHappened( RuntimeException e );
 
     int getMasterForTx( long tx );
 }

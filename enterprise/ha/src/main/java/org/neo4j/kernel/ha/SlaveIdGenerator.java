@@ -30,7 +30,6 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -42,16 +41,16 @@ public class SlaveIdGenerator implements IdGenerator
     public static class SlaveIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Broker broker;
-        private final ClusterEventReceiver clusterReceiver;
+        private final SlaveDatabaseOperations databaseOperations;
         private final Map<IdType, SlaveIdGenerator> generators =
                 new EnumMap<IdType, SlaveIdGenerator>( IdType.class );
         private final IdGeneratorFactory localFactory =
                 CommonFactories.defaultIdGeneratorFactory();
 
-        public SlaveIdGeneratorFactory( Broker broker, ClusterEventReceiver zkReceiver )
+        public SlaveIdGeneratorFactory( Broker broker, SlaveDatabaseOperations databaseOperations )
         {
             this.broker = broker;
-            this.clusterReceiver = zkReceiver;
+            this.databaseOperations = databaseOperations;
         }
 
         public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
@@ -59,7 +58,7 @@ public class SlaveIdGenerator implements IdGenerator
             if ( startup ) new File( fileName ).delete();
             IdGenerator localIdGenerator = localFactory.open( fs, fileName, grabSize,
                     idType, highestIdInUse, startup );
-            SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, clusterReceiver,
+            SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, databaseOperations,
                     localIdGenerator );
             generators.put( idType, generator );
             return generator;
@@ -85,7 +84,7 @@ public class SlaveIdGenerator implements IdGenerator
     };
 
     private final Broker broker;
-    private final ClusterEventReceiver clusterReceiver;
+    private final SlaveDatabaseOperations databaseOperations;
     private volatile long highestIdInUse;
     private volatile long defragCount;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
@@ -94,11 +93,11 @@ public class SlaveIdGenerator implements IdGenerator
     private final IdGenerator localIdGenerator;
 
     public SlaveIdGenerator( IdType idType, long highestIdInUse, Broker broker,
-            ClusterEventReceiver zkReceiver, IdGenerator localIdGenerator )
+            SlaveDatabaseOperations databaseOperations, IdGenerator localIdGenerator )
     {
         this.idType = idType;
         this.broker = broker;
-        this.clusterReceiver = zkReceiver;
+        this.databaseOperations = databaseOperations;
         this.localIdGenerator = localIdGenerator;
     }
 
@@ -153,14 +152,9 @@ public class SlaveIdGenerator implements IdGenerator
             }
             return nextId;
         }
-        catch ( ZooKeeperException e )
+        catch ( RuntimeException e )
         {
-            clusterReceiver.newMaster( e );
-            throw e;
-        }
-        catch ( ComException e )
-        {
-            clusterReceiver.newMaster( e );
+            databaseOperations.exceptionHappened( e );
             throw e;
         }
     }

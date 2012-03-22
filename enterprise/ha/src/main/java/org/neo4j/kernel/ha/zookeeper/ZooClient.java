@@ -48,10 +48,10 @@ import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.SlaveUpdateMode;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.ConnectionInformation;
+import org.neo4j.kernel.ha.SlaveDatabaseOperations;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -105,7 +105,7 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String storeDir;
     private long sessionId = -1;
     private Configuration conf;
-    private final ResponseReceiver responseReceiver;
+    private final SlaveDatabaseOperations localDatabase;
     private final ClusterEventReceiver clusterReceiver;
     private final int backupPort;
     private final boolean writeLastCommittedTx;
@@ -113,7 +113,7 @@ public class ZooClient extends AbstractZooKeeperManager
     private final boolean allowCreateCluster;
 
     public ZooClient( String storeDir, StringLogger stringLogger, StoreIdGetter storeIdGetter, Configuration conf,
-            ResponseReceiver responseReceiver, ClusterEventReceiver clusterReceiver )
+            SlaveDatabaseOperations localDatabase, ClusterEventReceiver clusterReceiver )
     {
         super( conf.coordinators(),
             storeIdGetter, stringLogger,
@@ -123,7 +123,7 @@ public class ZooClient extends AbstractZooKeeperManager
             conf.zk_session_timeout( HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT ));
         this.storeDir = storeDir;
         this.conf = conf;
-        this.responseReceiver = responseReceiver;
+        this.localDatabase = localDatabase;
         this.clusterReceiver = clusterReceiver;
         machineId = conf.server_id();
         backupPort = conf.online_backup_port( Server.DEFAULT_BACKUP_PORT );
@@ -194,7 +194,7 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             throw new ZooKeeperException( "ZooKeeper client has been shutdwon" );
         }
-        WaitStrategy strategy = getStrategyFromMode( mode );
+        WaitStrategy strategy = mode.getStrategy( this );
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
         synchronized ( keeperStateMonitor )
@@ -629,7 +629,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         waitForSyncConnected();
         this.committedTx = tx;
-        int master = responseReceiver.getMasterForTx( tx );
+        int master = localDatabase.getMasterForTx( tx );
         this.masterForCommittedTx = master;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
@@ -857,64 +857,4 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         }
     }
-
-    private WaitStrategy getStrategyFromMode( WaitMode mode )
-    {
-        switch ( mode )
-        {
-        case SESSION:
-            return new SessionWaitStrategy( getSessionTimeout() );
-        case STARTUP:
-            return new StartupWaitStrategy( msgLog );
-        }
-        throw new IllegalArgumentException( "Cannot create strategy from " + mode );
-    }
-
-    interface WaitStrategy
-    {
-        abstract boolean waitMore( long waitedSoFar );
-    }
-
-    private static class SessionWaitStrategy implements WaitStrategy
-    {
-        private final long sessionTimeout;
-
-        SessionWaitStrategy( long sessionTimeout )
-        {
-            this.sessionTimeout = sessionTimeout;
-        }
-
-        @Override
-        public boolean waitMore( long waitedSoFar )
-        {
-            return waitedSoFar < sessionTimeout;
-        }
-    }
-
-    private static class StartupWaitStrategy implements WaitStrategy
-    {
-        static final long SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS = 30;
-
-        private long lastNotification = 0;
-        private final StringLogger msgLog;
-
-        public StartupWaitStrategy( StringLogger msgLog )
-        {
-            this.msgLog = msgLog;
-        }
-
-        @Override
-        public boolean waitMore( long waitedSoFar )
-        {
-            long currentNotification = waitedSoFar / ( SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS * 1000 );
-            if ( currentNotification > lastNotification )
-            {
-                lastNotification = currentNotification;
-                msgLog.logMessage( "Have been waiting for " + SECONDS_TO_WAIT_BETWEEN_NOTIFICATIONS
-                                   * currentNotification + " seconds for the ZooKeeper cluster to respond." );
-            }
-            return true;
-        }
-    }
-
 }
