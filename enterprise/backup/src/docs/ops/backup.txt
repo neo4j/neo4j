@@ -12,8 +12,8 @@ while copying, transactions will continue and the store will change. For this re
 is noted and, when the copy operation completes, all transactions from the latter down to the one happening at the end of the copy are replayed on the backup
 files. This ensures that the backed up data represent a consistent and up-to-date snapshot of the database storage.
 
-In contrast, _incremental backup_ does not copy store files - instead it copies the logs of the transactions that have taken place since the last full or
-incremental backup which are then replayed over an existing backup store. This makes incremental backups far more efficient that doing full backups every
+In contrast, an _incremental backup_ does not copy store files -- instead it copies the logs of the transactions that have taken place since the last full or
+incremental backup which are then replayed over an existing backup store. This makes incremental backups far more efficient than doing full backups every
 time but they also require that a _full backup_ has taken place before they are executed.
 
 Regardless of the mode a backup is created with, the resulting files represent a consistent database snapshot and they can be used to boot up a Neo4j instance.
@@ -24,7 +24,7 @@ The database to be backed up is specified using a URI with syntax
 
 Running mode must be defined and is either _single_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
 points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
-are useful for passing multiple coordinator instances
+are useful for passing multiple coordinator instances.
 
 [IMPORTANT]
 Backups can only be performed on databases which have the configuration parameter `enable_online_backup=true` set.
@@ -71,7 +71,7 @@ To perform a backup on an HA cluster you specify one or more coordinators managi
 
 NOTE: If you have specified a cluster name for your HA cluster, you need to specify
       it when doing backups, so that the backup system knows which cluster to back up.
-      Add the config parameter: -ha.cluster_name my_custom_cluster_name
+      Add the config parameter: `-cluster my_custom_cluster_name`
 
 [source,shell]
 ----
