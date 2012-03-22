@@ -30,7 +30,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, DiagnosticsProvider
 {
     public static final long MIN_SIZE = 1;
-    public final AtomicReferenceArray<E> cache;
+    private final AtomicReferenceArray<E> cache;
     private final long maxSize;
     private final AtomicLong currentSize = new AtomicLong( 0 );
     private final long minLogInterval;
@@ -45,6 +45,15 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private final StringLogger logger;
 
+    AtomicArrayCache( AtomicReferenceArray<E> cache )
+    {
+        this.cache = cache;
+        this.minLogInterval = Long.MAX_VALUE;
+        this.maxSize = 1024l*1024*1024;
+        this.name = "test cache";
+        this.logger = null;
+    }
+    
     public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
         this.minLogInterval = minLogInterval;
@@ -81,7 +90,6 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         return (int) ( id % cache.length() );
     }
 
-
     private long putTimeStamp = 0;
 
     public void put( E obj )
@@ -96,14 +104,14 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         E oldObj = cache.get( pos );
         if ( oldObj != obj )
         {
-            int oldObjSize = 0;
-            if ( oldObj != null )
-            {
-                oldObjSize = oldObj.size();
-            }
             int objectSize = obj.size();
             if ( cache.compareAndSet( pos, oldObj, obj ) )
             {
+                int oldObjSize = 0;
+                if ( oldObj != null )
+                {
+                    oldObjSize = oldObj.size();
+                }
                 long size = currentSize.addAndGet( objectSize - oldObjSize );
                 if ( oldObj != null )
                 {
@@ -120,17 +128,13 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     public E remove( long id )
     {
-        if ( id < 0 )
-        {
-            throw new IllegalArgumentException( "Can not remove enity with negative id (" + id + ")" );
-        }
         int pos = getPosition( id );
         E obj = cache.get(pos);
         if ( obj != null )
         {
-            int objSize = obj.size();
             if ( cache.compareAndSet( pos, obj, null ) )
             {
+                int objSize = obj.size();
                 currentSize.addAndGet( objSize * -1 );
             }
         }
@@ -206,20 +210,20 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
                 logger.logMessage( name + " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
                         ") " + missPercentage + " misses, " + colPercentage + " collisions.", true );
-//                int elementCount = 0;
-//                long size = 0;
-//                for ( int i = 0; i < cache.length(); i++ )
-//                {
-//                    EntityWithSize obj = cache.get( i );
-//                    if ( obj != null )
-//                    {
-//                        elementCount++;
-//                        size += obj.size();
-//                    }
-//                }
-//                logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount now=" + elementCount + " and size=" + getSize(size) + 
-//                            " (" + getSize( currentSize.get() ) + ") [" + getSize(currentSize.get() - size ) + "]", true );
-            }
+                int elementCount = 0;
+                long size = 0;
+                for ( int i = 0; i < cache.length(); i++ )
+                {
+                    EntityWithSize obj = cache.get( i );
+                    if ( obj != null )
+                    {
+                        elementCount++;
+                        size += obj.size();
+                    }
+                }
+                logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount now=" + elementCount + " and size=" + getSize(size) + 
+                            " (" + getSize( currentSize.get() ) + ") [" + getSize(currentSize.get() - size ) + "]", true );
+             }
         }
     }
 
