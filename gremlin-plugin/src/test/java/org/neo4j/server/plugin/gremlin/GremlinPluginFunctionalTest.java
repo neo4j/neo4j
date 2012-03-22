@@ -71,7 +71,6 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * Sample docs
      */
     @Test
-    @Documented
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void testIndexIteration() throws UnsupportedEncodingException
     {
