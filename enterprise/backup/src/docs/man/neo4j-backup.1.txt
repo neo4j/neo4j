@@ -16,11 +16,11 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-A tool to perform live backups over the network from a running Neo4j graph database onto a local copy.
+A tool to perform live backups over the network from a running Neo4j graph database onto a local filesystem.
 Backups can be either full or incremental.
 The first backup must be a full backup, after that incremental backups can be performed.
 
-The source(s) are given as URIs in a special format, the target is a file system location.
+The source(s) are given as URIs in a special format, the target is a filesystem location.
 
 BACKUP TYPE
 -----------
@@ -80,19 +80,19 @@ EXAMPLES
 neo4j-backup -full -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup
-neo4j-backup -incremental -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+neo4j-backup -incremental -from single://freja -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup where the service is registered on a custom port
-neo4j-backup -incremental -from single://192.168.1.34:9999 -to /mnt/backup/neo4j-backup
+neo4j-backup -incremental -from single://freja:9999 -to /mnt/backup/neo4j-backup
 
 # Performing a full backup from HA cluster, specifying two possible coordinators
-./neo4j-backup -full -from ha://192.168.1.15:2181,192.168.1.16:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -full -from ha://oden:2181,loke:2181 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup from HA cluster, specifying only one coordinator
-./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -incremental -from ha://oden:2181 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup from HA cluster with a specific name (specified by neo4j configuration 'ha.cluster_name')
-./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup -cluster my-cluster
+./neo4j-backup -incremental -from ha://balder:2181 -to /mnt/backup/neo4j-backup -cluster my-cluster
 ----
 
 [[neo4j-backup-manpage-restore]]
