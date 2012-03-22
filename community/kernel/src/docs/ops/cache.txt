@@ -112,11 +112,11 @@ Object cache
 The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
 There are two different categories of object caches in Neo4j.
 
-There's the reference caches.
+There is the reference caches.
 Here neo4j will utilize as much as it can out of the allocated heap memory for the JVM for object caching and relies on garbage collection for eviction from the cache in an LRU manner.
-Note however that Neo4j is "competing" for the heap space with other objects in the same JVM, such as a custom application, if deployed in embedded mode, and Neo4j will let the application "win" by using less memory if the application needs more.
+Note however that Neo4j is "competing" for the heap space with other objects in the same JVM, such as a your application, if deployed in embedded mode, and Neo4j will let the application "win" by using less memory if the application needs more.
 
-The other is the _atomic array cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects from itself whenever it grows bigger than that.
+The other is the _atomic array cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
 It uses an +AtomicArrayReference+ to cache the objects and doesn't rely on garbage collection for evicting objects from the cache.
 Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
 The overhead of the array cache is also much smaller and insert/lookup times faster than for reference caches.
@@ -192,14 +192,6 @@ The amount of space to "give" to the other object is dependent on how high the l
 | `configuration option`   | Description (what it controls)                                           | Example value
 | node_cache_size          | Maximum size of the heap memory to dedicate to the cached nodes.         | 2G
 | relationship_cache_size  | Maximum size of the heap memory to dedicate to the cached relationships. | 800M
-|==========================================
-
-There's also an option for controlling if and how often statistics about the array cache is logged, for some kind of entry point to diagnose the behavior of your cache with the current configuration.
-
-[options="header",frame="none",cols="<15m,<85"]
-|==========================================
-| `configuration option`       | Description                                                          | Example value
-| array_cache_min_log_interval | Minimum time between statistical log messages about the array cache. | 30s (for 30 seconds) or 4m (for 4 minutes)
 |==========================================
 
 You can read about references and relevant JVM settings for Sun HotSpot here:
