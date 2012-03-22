@@ -67,6 +67,9 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "you" ) );
     }
     
+    /**
+     * Sample docs
+     */
     @Test
     @Documented
     @Graph( value = { "I know you" }, autoIndexNodes = true )
@@ -129,20 +132,22 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file can
      * be achieved through the Gremlin GraphMLReader. The following script
      * imports a small GraphML file from an URL into Neo4j, resulting in the
-     * depicted graph. It then returns a list of all nodes in the graph.
+     * depicted graph. The underlying database is auto-indexed, see <<auto-indexing>>
+     * so the script can return the imported node by index lookup.
      */
     @Test
     @Documented
+    @Graph( value = {"Peter is Test"},autoIndexNodes=true, autoIndexRelationships=true )
     @Title( "Load a sample graph" )
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
+        data.get().clear();
         String script = "" +
         		"g.clear();" +
         		"g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
-        		"g.V;";
+        		"g.idx('node_auto_index')[[name:'you']];";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
-        assertTrue( response.contains( "him" ) );
     }
     
     @Test
@@ -505,7 +510,6 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @Ignore //preparation to track down a Gremlin issue
     @Graph( value = { 
             "Root AllFriends John", 
             "Root AllFriends Jack", 
