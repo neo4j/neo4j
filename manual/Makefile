@@ -266,7 +266,7 @@ manpages:
 	#
 	#
 	mkdir -p "$(MANPAGES)"
-	"$(SCRIPTDIR)/manpage.sh" "$(V)" "$(MANPAGES)" "$(IMPORTDIR)" "$(A2X)" "$(SCRIPTDIR)" "neo4j server" "neo4j-shell shell" "neo4j-coordinator server" "neo4j-coordinator-shell server"
+	"$(SCRIPTDIR)/manpage.sh" "$(V)" "$(MANPAGES)" "$(IMPORTDIR)" "$(A2X)" "$(SCRIPTDIR)" "neo4j server" "neo4j-shell shell" "neo4j-coordinator server" "neo4j-coordinator-shell server" "neo4j-backup backup"
 	# clean up
 	mkdir -p "$(ANNOTATEDDIR)"
 	cp "$(MANPAGES)/"*.xml "$(ANNOTATEDDIR)"

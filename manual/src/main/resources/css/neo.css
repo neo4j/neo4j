@@ -295,6 +295,11 @@ div.warning, div.note, div.caution
   margin-top: 1em;
 }
 
+div.table td, div.informaltable td
+{
+  max-width: 35em;
+}
+
 div.table table, div.informaltable
 {
   border-collapse: collapse;
@@ -352,7 +357,8 @@ div.queryresult table tbody tr.evenresult
   background: #dfe8eb;
 }
 
-div.queryresult table thead th
+div.queryresult table thead th,
+div.configsetting table thead th
 {
   font-size: 0.9375em;
 }
@@ -455,5 +461,33 @@ div.abstract ul.itemizedlist li.listitem p a i
 div.titlepage hr
 {
   margin: 0;
+}
+
+p.configsetting-key
+{
+  margin-bottom: 0;
+  font-weight: bold;
+}
+p.configsetting-desc
+{
+  font-weight: normal;
+  font-size: 1em;
+  margin-bottom: 0;
+}
+
+div.configsetting table tbody td
+{
+  font-size: .9375em;
+}
+
+div.configsetting table tbody td p code
+{
+  font-size: 1em;
+}
+
+div.configsetting table tfoot th
+{
+  font-size: .9375em;
+  font-weight: normal;
 }
 
