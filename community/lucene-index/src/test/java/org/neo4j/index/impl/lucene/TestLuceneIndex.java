@@ -1619,4 +1619,28 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
     }
+    
+    @Test
+    public void numericValueForGetInExactIndex() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        numericValueForGet( index );
+    }
+
+    @Test
+    public void numericValueForGetInFulltextIndex() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.FULLTEXT_CONFIG );
+        numericValueForGet( index );
+    }
+    
+    private void numericValueForGet( Index<Node> index )
+    {
+        Node node = graphDb.createNode();
+        long id = 100L;
+        index.add( node, "name", ValueContext.numeric( id ) );
+        assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
+        restartTx();
+        assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
+    }
 }

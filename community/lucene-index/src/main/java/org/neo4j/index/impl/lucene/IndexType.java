@@ -41,6 +41,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
 import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.index.lucene.ValueContext;
 
 abstract class IndexType
 {
@@ -58,7 +59,7 @@ abstract class IndexType
         @Override
         public Query get( String key, Object value )
         {
-            return new TermQuery( new Term( key, value.toString() ) );
+            return queryForGet( key, value );
         }
 
         @Override
@@ -125,6 +126,8 @@ abstract class IndexType
         @Override
         public Query get( String key, Object value )
         {
+            // TODO we do value.toString() here since initially #addToDocument didn't
+            // honor ValueContext, and changing it would mean changing store format.
             return new TermQuery( new Term( exactKey( key ), value.toString() ) );
         }
 
@@ -136,6 +139,8 @@ abstract class IndexType
         @Override
         public void addToDocument( Document document, String key, Object value )
         {
+            // TODO We should honor ValueContext instead of doing value.toString() here.
+            // if changing it, also change #get to honor ValueContext.
             document.add( new Field( exactKey( key ), value.toString(), Store.YES, Index.NOT_ANALYZED ) );
             document.add( instantiateField( key, value, Index.ANALYZED ) );
         }
@@ -369,5 +374,19 @@ abstract class IndexType
     Similarity getSimilarity()
     {
         return null;
+    }
+    
+    Query queryForGet( String key, Object value )
+    {
+        if ( value instanceof ValueContext )
+        {
+            Object realValue = ((ValueContext)value).getValue();
+            if ( realValue instanceof Number )
+            {
+                Number number = (Number) realValue;
+                return LuceneUtil.rangeQuery( key, number, number, true, true );
+            }
+        }
+        return new TermQuery( new Term( key, value.toString() ) );
     }
 }
