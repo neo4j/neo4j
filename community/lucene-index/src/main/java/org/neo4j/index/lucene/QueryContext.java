@@ -22,11 +22,11 @@ package org.neo4j.index.lucene;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.impl.lucene.LuceneUtil;
 
 /**
  * This class has the extra query configuration to use
@@ -266,27 +266,6 @@ public class QueryContext
     public static QueryContext numericRange( String key, Number from, Number to,
             boolean includeFrom, boolean includeTo )
     {
-        Query query = null;
-        if ( from instanceof Long )
-        {
-            query = NumericRangeQuery.newLongRange( key, from != null ? from.longValue() : 0,
-                    to != null ? to.longValue() : Long.MAX_VALUE, includeFrom, includeTo );
-        }
-        else if ( from instanceof Double )
-        {
-            query = NumericRangeQuery.newDoubleRange( key, from != null ? from.doubleValue() : 0,
-                    to != null ? to.doubleValue() : Double.MAX_VALUE, includeFrom, includeTo );
-        }
-        else if ( from instanceof Float )
-        {
-            query = NumericRangeQuery.newFloatRange( key, from != null ? from.floatValue() : 0,
-                    to != null ? to.floatValue() : Float.MAX_VALUE, includeFrom, includeTo );
-        }
-        else
-        {
-            query = NumericRangeQuery.newIntRange( key, from != null ? from.intValue() : 0,
-                    to != null ? to.intValue() : Integer.MAX_VALUE, includeFrom, includeTo );
-        }
-        return new QueryContext( query );
+        return new QueryContext( LuceneUtil.rangeQuery( key, from, to, includeFrom, includeTo ) );
     }
 }
