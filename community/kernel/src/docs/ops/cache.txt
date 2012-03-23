@@ -121,6 +121,9 @@ It uses an +AtomicArrayReference+ to cache the objects and doesn't rely on garba
 Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
 The overhead of the array cache is also much smaller and insert/lookup times faster than for reference caches.
 
+[WARNING]
+The atomic array cache is experimental at this stage, so don't use in a production environment unless very well tested first in your setup.
+
 [TIP]
 The use of heap memory is subject to the java garbage collector - depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
 Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
