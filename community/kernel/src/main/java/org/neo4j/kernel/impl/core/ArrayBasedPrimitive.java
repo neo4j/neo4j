@@ -105,7 +105,7 @@ abstract class ArrayBasedPrimitive extends Primitive
     @Override
     protected void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp )
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
     {
         synchronized ( this )
         {
@@ -113,6 +113,7 @@ abstract class ArrayBasedPrimitive extends Primitive
             PropertyData[] newArray = properties;
             if ( newArray == null ) return;
 
+            int before = size();
             /*
              * add map will definitely be added in the properties array - all properties
              * added and later removed in the same tx are removed from there as well.
@@ -191,6 +192,8 @@ abstract class ArrayBasedPrimitive extends Primitive
             {
                 properties = newArray;
             }
+            int after = size();
+            updateSize( before, after, nodeManager );
         }
     }
 }

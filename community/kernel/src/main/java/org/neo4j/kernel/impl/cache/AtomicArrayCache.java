@@ -30,7 +30,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, DiagnosticsProvider
 {
     public static final long MIN_SIZE = 1;
-    public final AtomicReferenceArray<E> cache;
+    private final AtomicReferenceArray<E> cache;
     private final long maxSize;
     private final AtomicLong currentSize = new AtomicLong( 0 );
     private final long minLogInterval;
@@ -45,11 +45,15 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private final StringLogger logger;
 
-    public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction )
+    AtomicArrayCache( AtomicReferenceArray<E> cache )
     {
-        this( maxSizeInBytes, arrayHeapFraction, 5000, null, StringLogger.SYSTEM );
+        this.cache = cache;
+        this.minLogInterval = Long.MAX_VALUE;
+        this.maxSize = 1024l*1024*1024;
+        this.name = "test cache";
+        this.logger = null;
     }
-
+    
     public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
         this.minLogInterval = minLogInterval;
@@ -86,7 +90,6 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         return (int) ( id % cache.length() );
     }
 
-
     private long putTimeStamp = 0;
 
     public void put( E obj )
@@ -99,51 +102,40 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         }
         int pos = getPosition( obj );
         E oldObj = cache.get( pos );
-        if ( !cache.compareAndSet( pos, oldObj, obj ) )
+        if ( oldObj != obj )
         {
-            put( obj );
-        }
-        else
-        {
-            long objectSize = obj.size();
-            if ( objectSize < 1 )
+            int objectSize = obj.size();
+            if ( cache.compareAndSet( pos, oldObj, obj ) )
             {
-                throw new RuntimeException( "" + objectSize );
-            }
-            currentSize.addAndGet( objectSize );
-            if ( oldObj != null )
-            {
-                currentSize.addAndGet( oldObj.size() * -1 );
-                if ( oldObj.getId() != obj.getId() )
+                int oldObjSize = 0;
+                if ( oldObj != null )
+                {
+                    oldObjSize = oldObj.size();
+                }
+                long size = currentSize.addAndGet( objectSize - oldObjSize );
+                if ( oldObj != null )
                 {
                     collisions++;
                 }
-            }
-            totalPuts++;
-            if ( currentSize.get() > maxSize )
-            {
-                purgeFrom( pos );
+                totalPuts++;
+                if ( size > maxSize )
+                {
+                    purgeFrom( pos );
+                }
             }
         }
     }
 
     public E remove( long id )
     {
-        if ( id < 0 )
-        {
-            throw new IllegalArgumentException( "Can not remove enity with negative id (" + id + ")" );
-        }
         int pos = getPosition( id );
         E obj = cache.get(pos);
         if ( obj != null )
         {
-            if ( !cache.compareAndSet( pos, obj, null ) )
+            if ( cache.compareAndSet( pos, obj, null ) )
             {
-                remove( id );
-            }
-            else
-            {
-                currentSize.addAndGet( obj.size() * -1 );
+                int objSize = obj.size();
+                currentSize.addAndGet( objSize * -1 );
             }
         }
         return obj;
@@ -166,6 +158,10 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private synchronized void purgeFrom( int pos )
     {
+        if ( currentSize.get() <= ( maxSize * 0.95f ) )
+        {
+            return;
+        }
         purgeCount++;
         long sizeBefore = currentSize.get();
         try
@@ -195,7 +191,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
             }
             while ( ( pos - index ) >= 0 || ( pos + index ) < cache.length() );
             // current object larger than max size, clear it
-            remove( pos );
+            remove( pos ); 
         }
         finally
         {
@@ -212,9 +208,22 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
                 String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
 
-                logger.logMessage( " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
+                logger.logMessage( name + " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
                         ") " + missPercentage + " misses, " + colPercentage + " collisions.", true );
-            }
+                int elementCount = 0;
+                long size = 0;
+                for ( int i = 0; i < cache.length(); i++ )
+                {
+                    EntityWithSize obj = cache.get( i );
+                    if ( obj != null )
+                    {
+                        elementCount++;
+                        size += obj.size();
+                    }
+                }
+                logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount now=" + elementCount + " and size=" + getSize(size) + 
+                            " (" + getSize( currentSize.get() ) + ") [" + getSize(currentSize.get() - size ) + "]", true );
+             }
         }
     }
 
@@ -241,14 +250,14 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         if (phase.isExplicitlyRequested()) logStatistics(log);
     }
 
-    private void logStatistics( @SuppressWarnings( "hiding" ) StringLogger logger )
+    private void logStatistics( StringLogger log )
     {
         String currentSizeStr = getSize( currentSize.get() );
 
         String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
         String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
 
-        logger.logMessage( " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
+        log.logMessage( name + " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
                 missPercentage + " misses, " + colPercentage + " collisions.", true );
     }
 
@@ -278,6 +287,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         {
             cache.set( i, null );
         }
+        currentSize.set( 0 );
     }
 
     public void putAll( Collection<E> objects )
@@ -321,17 +331,10 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         {
             return;
         }
-        if ( !cache.compareAndSet( pos, oldObj, obj ) )
+        long size = currentSize.addAndGet( (sizeAfter - sizeBefore) );
+        if ( size > maxSize )
         {
-            put( obj );
-        }
-        else
-        {
-            currentSize.addAndGet( (sizeAfter - sizeBefore) );
-            if ( currentSize.get() > maxSize )
-            {
-                purgeFrom( pos );
-            }
+            purgeFrom( pos );
         }
     }
 }

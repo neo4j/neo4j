@@ -354,11 +354,11 @@ public class NodeImpl extends ArrayBasedPrimitive
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 int sizeBefore = size();
                 this.relationships = toRelIdArray( tmpRelMap );
-                updateSize( sizeBefore, size(), nodeManager );
                 if ( rels != null )
                 {
                     setRelChainPosition( rels.third() );
                 }
+                updateSize( sizeBefore, size(), nodeManager );
             }
         }
         if ( rels != null )
@@ -474,8 +474,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
-            nodeManager.updateCacheSize( this, sizeBefore, size() );
             setRelChainPosition( rels.third() );
+            updateSize( sizeBefore, size(), nodeManager );
         }
         nodeManager.putAllInRelCache( rels.second() );
         return true;
@@ -584,7 +584,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel )
+        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
     {
         if ( relationships == null )
         {
@@ -594,6 +594,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
         synchronized ( this )
         {
+            int sizeBefore = size();
             if ( cowRelationshipAddMap != null )
             {
                 for ( String type : cowRelationshipAddMap.keySet() )
@@ -625,6 +626,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
+            int sizeAfter = size();
+            updateSize( sizeBefore, sizeAfter, nodeManager );
         }
     }
 

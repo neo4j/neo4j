@@ -116,7 +116,7 @@ public abstract class AbstractGraphDatabase
         boolean load_kernel_extensions( boolean def );
     }
 
-    private static final NodeManager.CacheType DEFAULT_CACHE_TYPE = NodeManager.CacheType.soft;
+    private static final NodeManager.CacheType DEFAULT_CACHE_TYPE = NodeManager.CacheType.array;
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 

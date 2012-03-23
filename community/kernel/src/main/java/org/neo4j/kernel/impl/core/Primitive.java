@@ -64,7 +64,7 @@ abstract class Primitive implements EntityWithSize
     
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp );
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager );
     
     @Override
     public int hashCode()
