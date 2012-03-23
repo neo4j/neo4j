@@ -675,6 +675,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
         assertThat( indexResult4, isEmpty() );
+
+        IndexHits<Node> indexResult5 = index.query( "number", numericRange( "number", null, 98, true, true ) );
+        assertContains( indexResult5, node1, node2 );
+
+        IndexHits<Node> indexResult6 = index.query( "number", numericRange( "number", 47, null, true, true ) );
+        assertContains( indexResult6, node1, node2 );
     }
 
     @Test
