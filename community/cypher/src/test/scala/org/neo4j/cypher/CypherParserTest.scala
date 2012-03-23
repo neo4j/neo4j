@@ -1344,6 +1344,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Entity("a"), "a")))
   }
 
+  @Test def variable_length_path_with_iterable_name() {
+    testAll("start a=node(0) match a -[r?*1..3]-> x return x",
+      Query.
+        start(NodeById("a", 0)).
+        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(1), Some(3), Seq(), Direction.OUTGOING, Some("r"), true, True())).
+        returns(ReturnItem(Entity("x"), "x"))
+    )
+  }
+
   def test_1_5(query: String, expectedQuery: Query) {
     testQuery(Some("1.5 "), query, expectedQuery)
   }
