@@ -122,7 +122,7 @@ Here the competition with other objects in the heap as well as GC-pauses can be 
 The overhead of the array cache is also much smaller and insert/lookup times faster than for reference caches.
 
 [WARNING]
-The atomic array cache is experimental at this stage, so don't use in a production environment unless very well tested first in your setup.
+The atomic array cache is experimental. Production use is only advisable after extensive user testing.
 
 [TIP]
 The use of heap memory is subject to the java garbage collector - depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
