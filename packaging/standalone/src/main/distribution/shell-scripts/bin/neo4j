@@ -159,12 +159,25 @@ checkupgrade() {
     fi
 }
 
+detectrunning() {
+  ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
+  ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
+  newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+  newpid=${newpid:1}
+}
+
 startit() {
 
   detectos
   exitonnojava
   checkstatus
   checklimits
+
+  detectrunning
+  if [ $newpid ] ; then
+	     echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."
+	     exit 2;
+  fi
 
   if [ $DIST_OS = "macosx" ] ; then
     getlaunchdpid
@@ -203,42 +216,44 @@ startit() {
     fi
     STARTED_PID=$( cat "$PID_FILE" )
 
-    printf " process [$STARTED_PID]... waiting for server to be ready."
+    echo -n "process [$STARTED_PID]"
 
-    x=0
-    while ( [ $x -lt 120 ] ) ; do
-      ## wait for start
-      ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
-      ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
-      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
-      newpid=${newpid:1}
-      if [ $newpid ] ; then
-         break
-      fi
+	if [ $WAIT = "true" ] ; then
+	echo -n "... waiting for server to be ready."
+	    x=0
+	    while ( [ $x -lt 120 ] ) ; do
+	      ## wait for start, pick up the server listening on the port
+	      detectrunning
+	      if [ $newpid ] ; then
+	         break
+	      fi
 
-      kill -0 $STARTED_PID 2> /dev/null || break
-      printf "."
-      sleep 1
-      x=$[$x +1]
-    done
+	      kill -0 $STARTED_PID 2> /dev/null || break
+	      printf "."
+	      sleep 1
+	      x=$[$x +1]
+	    done
 
-    if kill -0 $STARTED_PID 2>/dev/null ; then
-      if [ "$newpid" != "$STARTED_PID" ] ; then
+	    if kill -0 $STARTED_PID 2>/dev/null ; then
+	    # This should never happen, we checked before we started.
+	      if [ "$newpid" != "$STARTED_PID" ] ; then
+		    rm "$PID_FILE"
+	        kill -9 $STARTED_PID
+	        echo " BAD."
+	        exit 2
+	      fi
+
+	      echo " OK."
+	      exit 0
+	    fi
+
+	    echo " BAD."
+	    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
 	    rm "$PID_FILE"
-        kill -9 $STARTED_PID
-        echo " BAD."
-        echo " another server-process is running with [$newpid]"
-        exit 2
-      fi
-
-      echo " OK."
-      exit 0
+	    exit 1
+    else
+        echo "...Started the server in the background, returning..."
     fi
-
-    echo " BAD."
-    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
-    rm "$PID_FILE"
-    exit 1
   else
     echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
     exit 1
@@ -410,6 +425,12 @@ case "${!OPTIND}" in
     ;;
 
   start)
+    WAIT=true
+    startit
+    ;;
+
+  start-no-wait)
+    WAIT=false
     startit
     ;;
 
