@@ -1764,7 +1764,16 @@ RETURN x0.name?
     val result = parseAndExecute("start a=node(1,2) where a-[:A|B]->() return a").toList
 
     assert(List(Map("a" -> a), Map("a" -> b)) === result)
-  } 
+  }
+
+  @Test def nullable_var_length_path_should_work() {
+    createNode()
+    val b = createNode()
+
+    val result = parseAndExecute("start a=node(1), b=node(2) match a-[r?*]-b where r is null and a <> b return b").toList
+
+    assert(List(Map("b" -> b)) === result)
+  }
 
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
