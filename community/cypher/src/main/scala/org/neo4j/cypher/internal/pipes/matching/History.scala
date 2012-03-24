@@ -40,6 +40,7 @@ class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
   def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
       case MatchingPair(pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
       case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
+      case MatchingPair(pe: VariableLengthPatternRelationship, null) => Seq(pe.key -> null) ++ pe.relIterable.map( _ -> null)
       case MatchingPair(pe: PatternRelationship, null) => Seq(pe.key -> null)
       case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path) ++ relationshipIterable(pe, entity)
   }).toMap
