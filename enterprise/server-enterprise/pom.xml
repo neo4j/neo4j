@@ -34,7 +34,7 @@
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4j.version>1.6.2.RC2</neo4j.version>
+    <neo4j.version>1.6.2-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
   </properties>
 
