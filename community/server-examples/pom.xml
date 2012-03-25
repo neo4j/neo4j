@@ -9,7 +9,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-server-examples</artifactId>
   <name>Neo4j Server Examples</name>
-  <version>1.6.2-SNAPSHOT</version>
+  <version>1.6.2.RC2</version>
   <description>Neo4j Server Plugin Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
 
@@ -28,12 +28,12 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2.RC2</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2.RC2</version>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
