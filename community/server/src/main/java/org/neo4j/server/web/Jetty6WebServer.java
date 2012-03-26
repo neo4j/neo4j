@@ -52,7 +52,7 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.guard.Guard;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
@@ -404,8 +404,15 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void addExecutionLimitFilter( final Guard guard )
+    public void addExecutionLimitFilter( final int timeout )
     {
+        final Guard guard = server.getDatabase().graph.getGuard();
+        if (guard == null)
+        {
+            //TODO enable guard and restart EmbeddedGraphdb
+            throw new RuntimeException("unable to use guard, enable guard-insertion in neo4j.properties");
+        }
+
         jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
         {
             @Override
@@ -416,7 +423,7 @@ public class Jetty6WebServer implements WebServer
                     if ( handler instanceof Context )
                     {
                         final Context context = (Context) handler;
-                        final Filter jettyFilter = new GuardingRequestFilter( guard );
+                        final Filter jettyFilter = new GuardingRequestFilter( guard, timeout );
                         final FilterHolder holder = new FilterHolder( jettyFilter );
                         context.addFilter( holder, "/*", Handler.ALL );
                     }

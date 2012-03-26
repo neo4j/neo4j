@@ -1,0 +1,131 @@
+/**
+ * Copyright (c) 2002-2012 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel;
+
+import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.guard.GuardException;
+import org.neo4j.kernel.guard.GuardOperationsCountException;
+import org.neo4j.kernel.guard.GuardTimeoutException;
+import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static java.lang.Integer.MAX_VALUE;
+import static junit.framework.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.TestGuard.Rels.REL1;
+
+public class TestGuard {
+
+    @Test
+    public void testGuardNotInsertedByDefault() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
+        assertNull(db.getGuard());
+    }
+
+    @Test
+    public void testGuardInsertedByDefault() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase(stringMap("insert_guard", "true"));
+        assertNotNull(db.getGuard());
+    }
+
+    @Test
+    public void testGuardOnDifferentGraphOps() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase(stringMap("insert_guard", "true"));
+        db.beginTx();
+
+        db.getGuard().startOperationsCount(MAX_VALUE);
+        db.createNode();
+        db.createNode();
+        db.createNode();
+        Guard.OperationsCount ops1 = db.getGuard().stop();
+        assertEquals(3, ops1.getOpsCount());
+
+        db.getGuard().startOperationsCount(MAX_VALUE);
+        Node n0 = db.getNodeById(0);
+        Node n1 = db.getNodeById(1);
+        Node n2 = db.getNodeById(2);
+        Node n3 = db.getNodeById(3);
+        Guard.OperationsCount ops2 = db.getGuard().stop();
+        assertEquals(4, ops2.getOpsCount());
+
+        db.getGuard().startOperationsCount(MAX_VALUE);
+        n0.createRelationshipTo(n1, REL1);
+        Guard.OperationsCount ops3 = db.getGuard().stop();
+        assertEquals(2, ops3.getOpsCount());
+
+
+        db.getGuard().startOperationsCount(MAX_VALUE);
+        for (Path position : Traversal.description().breadthFirst().relationships(REL1).traverse(n0)) {
+        }
+        Guard.OperationsCount ops4 = db.getGuard().stop();
+        assertEquals(3, ops4.getOpsCount());
+    }
+
+    @Test
+    public void testOpsCountGuardFail() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase(stringMap("insert_guard", "true"));
+        db.beginTx();
+        Guard guard = db.getGuard();
+
+        guard.startOperationsCount(2);
+        Node n0 = db.getNodeById(0);
+        Node n1 = db.createNode();
+        try {
+            Node n2 = db.createNode();
+            fail();
+        } catch (GuardException e) {
+            assertTrue(e instanceof GuardOperationsCountException);
+        }
+    }
+
+    @Test
+    public void testTimeoutGuardFail() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase(stringMap("insert_guard", "true"));
+        db.beginTx();
+
+        db.getGuard().startTimeout(2);
+        int i = 0;
+        try {
+            for (i = 0; i < 1000; i++) {
+                db.createNode();
+            }
+            fail();
+        } catch (GuardException e) {
+            assertTrue(e instanceof GuardTimeoutException);
+        }
+        assertTrue(i > 0);
+    }
+
+    @Test
+    public void testTimeoutGuardPass() {
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase(stringMap("insert_guard", "true"));
+        db.beginTx();
+
+        db.getGuard().startTimeout(1000);
+        for (int i = 0; i < 1000; i++) {
+            db.createNode();
+        }
+    }
+
+    public enum Rels implements RelationshipType {REL1}
+}

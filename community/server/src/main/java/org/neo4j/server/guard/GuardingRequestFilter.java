@@ -19,26 +19,42 @@
  */
 package org.neo4j.server.guard;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.guard.GuardException;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import static java.lang.System.currentTimeMillis;
 import static javax.servlet.http.HttpServletResponse.SC_REQUEST_TIMEOUT;
 
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 public class GuardingRequestFilter implements Filter {
 
-    private final Guard guard;
+    private static final Log LOG = LogFactory.getLog(GuardingRequestFilter.class);
 
-    public GuardingRequestFilter(final Guard guard) {
+    private final Guard guard;
+    private final int timeout;
+    private final Timer timer = new Timer();
+
+    private final TimerTask timerTask = new TimerTask() {
+
+        @Override
+        public void run() {
+            LOG.warn("request canceld");
+            LOG.error("TODO: restarting the server is not proper implemented, request was not canceled");
+            // TODO current.interrupt(); + restart server
+        }
+    };
+
+    public GuardingRequestFilter(final Guard guard, final int timeout) {
         this.guard = guard;
+        this.timeout = timeout;
     }
 
     @Override
@@ -52,15 +68,18 @@ public class GuardingRequestFilter implements Filter {
 
             int timeLimit = getTimeLimit(request);
             if (timeLimit <= 0) {
-                guard.clear();
                 chain.doFilter(req, res);
             } else {
-                guard.start(currentTimeMillis() + timeLimit);
+                final long valid = currentTimeMillis() + timeLimit;
+                guard.startTimeout(valid);
+                timer.schedule(timerTask, valid + 5000);
+
                 try {
                     chain.doFilter(req, res);
                 } catch (GuardException e) {
                     response.setStatus(SC_REQUEST_TIMEOUT);
                 } finally {
+                    timerTask.cancel();
                     guard.stop();
                 }
             }
@@ -73,7 +92,7 @@ public class GuardingRequestFilter implements Filter {
     }
 
     private int getTimeLimit(HttpServletRequest request) {
-        int timeLimit = guard.getTimeLimit();
+        int timeLimit = timeout;
         String headerValue = request.getHeader("max-execution-time");
         if (headerValue != null) {
             int maxHeader = Integer.parseInt(headerValue);
