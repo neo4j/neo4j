@@ -110,11 +110,11 @@ public abstract class AbstractGraphDatabase
 
     interface Configuration
     {
-        boolean read_only(boolean def);
+        boolean read_only( boolean def );
 
-        boolean insert_guard(boolean def);
+        boolean insert_guard( boolean def );
 
-        NodeManager.CacheType cache_type(NodeManager.CacheType def);
+        NodeManager.CacheType cache_type( NodeManager.CacheType def );
 
         boolean load_kernel_extensions( boolean def );
     }
@@ -160,7 +160,7 @@ public abstract class AbstractGraphDatabase
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
     protected Guard guard;
-    
+
     protected MeasureDoNothing monitorGc;
 
     protected NodeAutoIndexerImpl nodeAutoIndexer;
@@ -216,7 +216,7 @@ public abstract class AbstractGraphDatabase
 
         fileSystem = life.add(createFileSystemAbstraction());
 
-        guard = conf.insert_guard(false) ? new Guard(msgLog) : null;
+        guard = conf.insert_guard( false ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 
@@ -275,8 +275,8 @@ public abstract class AbstractGraphDatabase
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
         nodeManager = guard != null ?
-                createGuardedNodeManager(readOnly, cacheType) :
-                createNodeManager(readOnly, cacheType);
+                createGuardedNodeManager( readOnly, cacheType ) :
+                createNodeManager( readOnly, cacheType );
 
         life.add( nodeManager );
 
@@ -355,7 +355,7 @@ public abstract class AbstractGraphDatabase
         life.add( new StuffToDoAfterRecovery() );
 
         life.add( new MonitorGc( ConfigProxy.config( params, MonitorGc.Configuration.class ), msgLog ) );
-        
+
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
 
@@ -363,110 +363,120 @@ public abstract class AbstractGraphDatabase
         life.add( kernelEventHandlers );
     }
 
-    private NodeManager createNodeManager(final boolean readOnly, final NodeManager.CacheType cacheType)
+    private NodeManager createNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
     {
-        final NodeManager.Configuration config = ConfigProxy.config(params, NodeManager.Configuration.class);
-        if (readOnly)
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
+        if ( readOnly )
         {
-            return new ReadOnlyNodeManager(config, this, lockManager, lockReleaser, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), msgLog, diagnosticsManager);
+                    createRelationshipLookups(), msgLog, diagnosticsManager );
         }
 
-        return new NodeManager(config, this, lockManager, lockReleaser, txManager, persistenceManager,
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), msgLog, diagnosticsManager);
+                createRelationshipLookups(), msgLog, diagnosticsManager );
     }
 
-    private NodeManager createGuardedNodeManager(final boolean readOnly, final NodeManager.CacheType cacheType)
+    private NodeManager createGuardedNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
     {
-        final NodeManager.Configuration config = ConfigProxy.config(params, NodeManager.Configuration.class);
-        if (readOnly)
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
+        if ( readOnly )
         {
-            return new ReadOnlyNodeManager(config, this, lockManager, lockReleaser, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), msgLog, diagnosticsManager)
+                    createRelationshipLookups(), msgLog, diagnosticsManager )
             {
-                @Override protected Node getNodeByIdOrNull(final long nodeId)
+                @Override
+                protected Node getNodeByIdOrNull( final long nodeId )
                 {
                     guard.check();
-                    return super.getNodeByIdOrNull(nodeId);
+                    return super.getNodeByIdOrNull( nodeId );
                 }
 
-                @Override public NodeImpl getNodeForProxy(final long nodeId, final LockType lock)
+                @Override
+                public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
                 {
                     guard.check();
-                    return super.getNodeForProxy(nodeId, lock);
+                    return super.getNodeForProxy( nodeId, lock );
                 }
 
-                @Override public RelationshipImpl getRelationshipForProxy(final long relId, final LockType lock)
+                @Override
+                public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
                 {
                     guard.check();
-                    return super.getRelationshipForProxy(relId, lock);
+                    return super.getRelationshipForProxy( relId, lock );
                 }
 
-                @Override protected Relationship getRelationshipByIdOrNull(final long relId)
+                @Override
+                protected Relationship getRelationshipByIdOrNull( final long relId )
                 {
                     guard.check();
-                    return super.getRelationshipByIdOrNull(relId);
+                    return super.getRelationshipByIdOrNull( relId );
                 }
 
-                @Override public Node createNode()
+                @Override
+                public Node createNode()
                 {
                     guard.check();
                     return super.createNode();
                 }
 
                 @Override
-                public Relationship createRelationship(final Node startNodeProxy, final NodeImpl startNode,
-                                                       final Node endNode, final RelationshipType type)
+                public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                        final Node endNode, final RelationshipType type )
                 {
                     guard.check();
-                    return super.createRelationship(startNodeProxy, startNode, endNode, type);
+                    return super.createRelationship( startNodeProxy, startNode, endNode, type );
                 }
             };
         }
 
-        return new NodeManager(config, this, lockManager, lockReleaser, txManager, persistenceManager,
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), msgLog, diagnosticsManager)
+                createRelationshipLookups(), msgLog, diagnosticsManager )
         {
-            @Override protected Node getNodeByIdOrNull(final long nodeId)
+            @Override
+            protected Node getNodeByIdOrNull( final long nodeId )
             {
                 guard.check();
-                return super.getNodeByIdOrNull(nodeId);
+                return super.getNodeByIdOrNull( nodeId );
             }
 
-            @Override public NodeImpl getNodeForProxy(final long nodeId, final LockType lock)
+            @Override
+            public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
             {
                 guard.check();
-                return super.getNodeForProxy(nodeId, lock);
+                return super.getNodeForProxy( nodeId, lock );
             }
 
-            @Override public RelationshipImpl getRelationshipForProxy(final long relId, final LockType lock)
+            @Override
+            public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
             {
                 guard.check();
-                return super.getRelationshipForProxy(relId, lock);
+                return super.getRelationshipForProxy( relId, lock );
             }
 
-            @Override protected Relationship getRelationshipByIdOrNull(final long relId)
+            @Override
+            protected Relationship getRelationshipByIdOrNull( final long relId )
             {
                 guard.check();
-                return super.getRelationshipByIdOrNull(relId);
+                return super.getRelationshipByIdOrNull( relId );
             }
 
-            @Override public Node createNode()
+            @Override
+            public Node createNode()
             {
                 guard.check();
                 return super.createNode();
             }
 
             @Override
-            public Relationship createRelationship(final Node startNodeProxy, final NodeImpl startNode,
-                                                   final Node endNode, final RelationshipType type)
+            public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                    final Node endNode, final RelationshipType type )
             {
                 guard.check();
-                return super.createRelationship(startNodeProxy, startNode, endNode, type);
+                return super.createRelationship( startNodeProxy, startNode, endNode, type );
             }
         };
     }

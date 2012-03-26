@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.guard;
 
-public class GuardTimeoutException extends GuardException {
+public class GuardTimeoutException extends GuardException
+{
 
     private final long overtime;
 
-    public GuardTimeoutException(final long overtime) {
-        super(String.format("timeout occured (overtime=%d)", overtime));
+    public GuardTimeoutException( final long overtime )
+    {
+        super( String.format( "timeout occured (overtime=%d)", overtime ) );
         this.overtime = overtime;
     }
 
-    public long getOvertime() {
+    public long getOvertime()
+    {
         return overtime;
     }
 }

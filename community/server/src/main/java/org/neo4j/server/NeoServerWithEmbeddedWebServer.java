@@ -251,10 +251,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             SecurityRule[] securityRules = createSecurityRulesFrom(configurator.configuration());
             webServer.addSecurityRules(securityRules);
 
-            Integer limit = getConfiguration().getInteger(WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null);
-            if (limit != null)
+            Integer limit = getConfiguration().getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+            if ( limit != null )
             {
-                webServer.addExecutionLimitFilter(limit);
+                webServer.addExecutionLimitFilter( limit );
             }
 
             webServer.start();

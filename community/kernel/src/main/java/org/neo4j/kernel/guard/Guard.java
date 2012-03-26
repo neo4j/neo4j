@@ -19,95 +19,117 @@
  */
 package org.neo4j.kernel.guard;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
 import static java.lang.System.currentTimeMillis;
 
-public class Guard {
+import org.neo4j.kernel.impl.util.StringLogger;
+
+public class Guard
+{
 
     private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<GuardInternal>();
 
     private final StringLogger logger;
 
-    public Guard(final StringLogger logger) {
+    public Guard( final StringLogger logger )
+    {
         this.logger = logger;
     }
 
-    public void check() {
+    public void check()
+    {
         GuardInternal guardInternal = currentGuard();
-        if (guardInternal != null) {
+        if ( guardInternal != null )
+        {
             guardInternal.check();
         }
     }
 
-    public <T extends GuardInternal> T currentGuard() {
+    public <T extends GuardInternal> T currentGuard()
+    {
         return (T) threadLocal.get();
     }
 
-    public void startOperationsCount(final long maxOps) {
-        start(new OperationsCount(maxOps));
+    public void startOperationsCount( final long maxOps )
+    {
+        start( new OperationsCount( maxOps ) );
     }
 
-    public void startTimeout(final long validFor) {
-        final Timeout timeout = new Timeout(validFor + currentTimeMillis());
-        start(timeout);
+    public void startTimeout( final long validFor )
+    {
+        final Timeout timeout = new Timeout( validFor + currentTimeMillis() );
+        start( timeout );
     }
 
-    public void start(final GuardInternal guard) {
-        threadLocal.set(guard);
+    public void start( final GuardInternal guard )
+    {
+        threadLocal.set( guard );
     }
 
-    public <T extends GuardInternal> T stop() {
+    public <T extends GuardInternal> T stop()
+    {
         T guardInternal = currentGuard();
-        if (guardInternal != null) {
+        if ( guardInternal != null )
+        {
             threadLocal.remove();
         }
         return guardInternal;
     }
 
-    public interface GuardInternal {
+    public interface GuardInternal
+    {
 
         void check();
     }
 
-    public class OperationsCount implements GuardInternal {
+    public class OperationsCount implements GuardInternal
+    {
 
         private final long max;
         private long opsCount = 0;
 
-        private OperationsCount(final long max) {
+        private OperationsCount( final long max )
+        {
             this.max = max;
         }
 
-        @Override public void check() {
+        @Override
+        public void check()
+        {
             opsCount++;
 
-            if (max < opsCount) {
-                logger.logMessage("guard-timeout: node-ops: more than " + max);
-                throw new GuardOperationsCountException(opsCount);
+            if ( max < opsCount )
+            {
+                logger.logMessage( "guard-timeout: node-ops: more than " + max );
+                throw new GuardOperationsCountException( opsCount );
             }
         }
 
-        public long getOpsCount() {
+        public long getOpsCount()
+        {
             return opsCount;
         }
     }
 
-    public class Timeout implements GuardInternal {
+    public class Timeout implements GuardInternal
+    {
 
         private final long valid;
         private final long start;
 
-        private Timeout(final long valid) {
+        private Timeout( final long valid )
+        {
             this.valid = valid;
             this.start = currentTimeMillis();
         }
 
-        @Override public void check() {
-            if (valid < currentTimeMillis()) {
+        @Override
+        public void check()
+        {
+            if ( valid < currentTimeMillis() )
+            {
                 final long overtime = currentTimeMillis() - valid;
-                logger.logMessage("guard-timeout:" + (valid - start) + "(+" + overtime + ")ms");
-                throw new GuardTimeoutException(overtime);
+                logger.logMessage( "guard-timeout:" + (valid - start) + "(+" + overtime + ")ms" );
+                throw new GuardTimeoutException( overtime );
             }
         }
     }

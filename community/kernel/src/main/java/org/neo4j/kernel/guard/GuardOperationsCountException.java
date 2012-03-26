@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.guard;
 
-public class GuardOperationsCountException extends GuardException {
+public class GuardOperationsCountException extends GuardException
+{
 
     private final long opsCount;
 
-    public GuardOperationsCountException(final long opsCount) {
-        super(String.format("max ops (ops=%d)", opsCount));
+    public GuardOperationsCountException( final long opsCount )
+    {
+        super( String.format( "max ops (ops=%d)", opsCount ) );
         this.opsCount = opsCount;
     }
 
-    public long getOpsCount() {
+    public long getOpsCount()
+    {
         return opsCount;
     }
 }

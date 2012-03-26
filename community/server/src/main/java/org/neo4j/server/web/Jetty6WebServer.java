@@ -97,9 +97,9 @@ public class Jetty6WebServer implements WebServer
 
             connector.setPort( jettyHttpPort );
             connector.setHost( jettyAddr );
-            
+
             jetty.addConnector( connector );
-            
+
             if(httpsEnabled) {
                if(httpsCertificateInformation != null) {
                    jetty.addConnector( sslSocketFactory.createConnector(httpsCertificateInformation, jettyAddr, jettyHttpsPort) );
@@ -107,7 +107,7 @@ public class Jetty6WebServer implements WebServer
                    throw new RuntimeException("HTTPS set to enabled, but no HTTPS configuration provided.");
                }
             }
-            
+
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
@@ -154,7 +154,7 @@ public class Jetty6WebServer implements WebServer
 
         ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder( container );
-        servletHolder.setInitParameter(ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf(true));
+        servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( true ) );
         servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
                 AllowAjaxFilter.class.getName() );
@@ -204,22 +204,22 @@ public class Jetty6WebServer implements WebServer
     {
         return jetty;
     }
-    
+
     @Override
     public void setEnableHttps( boolean enable ) {
         httpsEnabled = enable;
     }
-    
+
     @Override
     public void setHttpsPort( int portNo )  {
         jettyHttpsPort = portNo;
     }
-    
+
     @Override
     public void setHttpsCertificateInformation( KeyStoreInformation config ) {
         httpsCertificateInformation = config;
     }
-    
+
 
     protected void startJetty()
     {
@@ -232,7 +232,7 @@ public class Jetty6WebServer implements WebServer
             throw new RuntimeException( e );
         }
     }
-    
+
     private int tenThreadsPerProcessor()
     {
         return 10 * Runtime.getRuntime()
@@ -334,15 +334,13 @@ public class Jetty6WebServer implements WebServer
                 staticContext.setBaseResource( resource );
                 log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
                 jetty.addHandler( staticContext );
-            }
-            else
+            } else
             {
                 log.error(
                         "No static content available for Neo Server at port [%d], management console may not be available.",
                         jettyHttpPort );
             }
-        }
-        catch ( Exception e )
+        } catch ( Exception e )
         {
             log.error( e );
             e.printStackTrace();
@@ -407,10 +405,10 @@ public class Jetty6WebServer implements WebServer
     public void addExecutionLimitFilter( final int timeout )
     {
         final Guard guard = server.getDatabase().graph.getGuard();
-        if (guard == null)
+        if ( guard == null )
         {
             //TODO enable guard and restart EmbeddedGraphdb
-            throw new RuntimeException("unable to use guard, enable guard-insertion in neo4j.properties");
+            throw new RuntimeException( "unable to use guard, enable guard-insertion in neo4j.properties" );
         }
 
         jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()

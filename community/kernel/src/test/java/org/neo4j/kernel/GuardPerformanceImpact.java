@@ -19,73 +19,97 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.Transaction;
-
-import java.io.File;
-import java.io.IOException;
-
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.valueOf;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class GuardPerformanceImpact {
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.Transaction;
+
+public class GuardPerformanceImpact
+{
 
     private static final int RUNS = 10;
     private static final int PER_TX = 10000;
     private static final int TX = 100;
 
-    private enum Type {
+    private enum Type
+    {
         without, enabled, activeTimeout, activeOpscount
     }
 
-    public static void main(String[] args) throws IOException {
-        test(Type.enabled);
+    public static void main( String[] args ) throws IOException
+    {
+        test( Type.enabled );
     }
 
-    private static void test(final Type type) throws IOException {
-        switch (type) {
+    private static void test( final Type type ) throws IOException
+    {
+        switch ( type )
+        {
             case without:
-                for (int i = 0; i < RUNS; i++) System.err.println(withoutGuard());
+                for ( int i = 0; i < RUNS; i++ )
+                {
+                    System.err.println( withoutGuard() );
+                }
                 break;
 
             case enabled:
-                for (int i = 0; i < RUNS; i++) System.err.println(guardEnabled());
+                for ( int i = 0; i < RUNS; i++ )
+                {
+                    System.err.println( guardEnabled() );
+                }
                 break;
 
             case activeOpscount:
-                for (int i = 0; i < RUNS; i++) System.err.println(guardEnabledAndActiveOpsCount());
+                for ( int i = 0; i < RUNS; i++ )
+                {
+                    System.err.println( guardEnabledAndActiveOpsCount() );
+                }
                 break;
 
             case activeTimeout:
-                for (int i = 0; i < RUNS; i++) System.err.println(guardEnabledAndActiveTimeout());
+                for ( int i = 0; i < RUNS; i++ )
+                {
+                    System.err.println( guardEnabledAndActiveTimeout() );
+                }
                 break;
         }
     }
 
-    private static long withoutGuard() throws IOException {
-        final AbstractGraphDatabase db = prepare(false);
-        try {
+    private static long withoutGuard() throws IOException
+    {
+        final AbstractGraphDatabase db = prepare( false );
+        try
+        {
             final long start = currentTimeMillis();
 
-            createData(db);
+            createData( db );
 
             return currentTimeMillis() - start;
-        } finally {
-            cleanup(db);
+        } finally
+        {
+            cleanup( db );
         }
     }
 
-    private static AbstractGraphDatabase prepare(boolean insertGuard) throws IOException {
-        File tmpFile = File.createTempFile("neo4j-test", "");
+    private static AbstractGraphDatabase prepare( boolean insertGuard ) throws IOException
+    {
+        File tmpFile = File.createTempFile( "neo4j-test", "" );
         tmpFile.delete();
-        return new EmbeddedGraphDatabase(tmpFile.getCanonicalPath(), stringMap("insert_guard", valueOf(insertGuard)));
+        return new EmbeddedGraphDatabase( tmpFile.getCanonicalPath(), stringMap( "insert_guard", valueOf( insertGuard ) ) );
     }
 
-    private static void createData(final AbstractGraphDatabase db) {
-        for (int j = 0; j < TX; j++) {
+    private static void createData( final AbstractGraphDatabase db )
+    {
+        for ( int j = 0; j < TX; j++ )
+        {
             final Transaction tx = db.beginTx();
-            for (int i = 0; i < PER_TX; i++) {
+            for ( int i = 0; i < PER_TX; i++ )
+            {
                 db.createNode();
             }
             tx.success();
@@ -93,60 +117,73 @@ public class GuardPerformanceImpact {
         }
     }
 
-    private static void cleanup(final AbstractGraphDatabase db) {
+    private static void cleanup( final AbstractGraphDatabase db )
+    {
         db.shutdown();
-        deleteFiles(new File(db.getStoreDir()));
+        deleteFiles( new File( db.getStoreDir() ) );
     }
 
-    private static void deleteFiles(final File directory) {
+    private static void deleteFiles( final File directory )
+    {
         final File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                deleteFiles(file);
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                deleteFiles( file );
             }
         }
         directory.delete();
     }
 
-    private static long guardEnabled() throws IOException {
-        final AbstractGraphDatabase db = prepare(true);
-        try {
+    private static long guardEnabled() throws IOException
+    {
+        final AbstractGraphDatabase db = prepare( true );
+        try
+        {
             final long start = currentTimeMillis();
 
-            createData(db);
+            createData( db );
             return currentTimeMillis() - start;
-        } finally {
-            cleanup(db);
+        } finally
+        {
+            cleanup( db );
         }
     }
 
-    private static long guardEnabledAndActiveOpsCount() throws IOException {
-        final AbstractGraphDatabase db = prepare(true);
-        try {
+    private static long guardEnabledAndActiveOpsCount() throws IOException
+    {
+        final AbstractGraphDatabase db = prepare( true );
+        try
+        {
             final long start = currentTimeMillis();
 
-            db.getGuard().startOperationsCount(MAX_VALUE);
+            db.getGuard().startOperationsCount( MAX_VALUE );
 
-            createData(db);
+            createData( db );
 
             return currentTimeMillis() - start;
-        } finally {
-            cleanup(db);
+        } finally
+        {
+            cleanup( db );
         }
     }
 
-    private static long guardEnabledAndActiveTimeout() throws IOException {
-        final AbstractGraphDatabase db = prepare(true);
-        try {
+    private static long guardEnabledAndActiveTimeout() throws IOException
+    {
+        final AbstractGraphDatabase db = prepare( true );
+        try
+        {
             final long start = currentTimeMillis();
 
-            db.getGuard().startTimeout(MAX_VALUE);
+            db.getGuard().startTimeout( MAX_VALUE );
 
-            createData(db);
+            createData( db );
 
             return currentTimeMillis() - start;
-        } finally {
-            cleanup(db);
+        } finally
+        {
+            cleanup( db );
         }
     }
 }
