@@ -70,13 +70,11 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
   }
 
   private def createTimedResults = {
-    val start = System.nanoTime()
+    val start = System.currentTimeMillis()
     val eagerResult = r.toList
-    val ms = .00001 * (System.nanoTime() - start)
-    val myFormatter = new DecimalFormat("####.##");
-    val timeTaken = myFormatter.format(ms);
+    val ms = System.currentTimeMillis() - start
 
-    (eagerResult, timeTaken)
+    (eagerResult, ms.toString)
   }
 
   def dumpToString(writer: PrintWriter) {
