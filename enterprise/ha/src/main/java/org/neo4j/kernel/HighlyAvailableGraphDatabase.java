@@ -61,6 +61,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
@@ -1723,5 +1724,11 @@ public class HighlyAvailableGraphDatabase
     public PersistenceSource getPersistenceSource()
     {
         return localGraph().getPersistenceSource();
+    }
+    
+    @Override
+    public Guard getGuard()
+    {
+        return localGraph().getGuard();
     }
 }
