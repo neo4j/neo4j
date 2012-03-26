@@ -169,7 +169,7 @@ trait MatchClause extends Base with Expressions {
         }
         
 
-        (relName, relType.toSeq.flatten, hops, optional.isDefined, predicate)
+        (relName, relType.toSeq.flatten.distinct, hops, optional.isDefined, predicate)
       }
     }
 }

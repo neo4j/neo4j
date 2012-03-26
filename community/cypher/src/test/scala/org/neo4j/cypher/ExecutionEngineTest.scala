@@ -1775,6 +1775,16 @@ RETURN x0.name?
     assert(List(Map("b" -> b)) === result)
   }
 
+  @Test def listing_rel_types_multiple_times_should_not_give_multiple_returns() {
+    val a = createNode()
+    val b = createNode()
+    relate(a,b, "REL")
+
+    val result = parseAndExecute("start a=node(1) match a-[:REL|REL]-b return b").toList
+
+    assert(List(Map("b" -> b)) === result)
+  }
+
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
     val engine = new ExecutionEngine(db)
