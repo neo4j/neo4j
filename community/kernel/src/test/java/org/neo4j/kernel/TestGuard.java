@@ -20,20 +20,20 @@
 package org.neo4j.kernel;
 
 import static java.lang.Integer.MAX_VALUE;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.sleep;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.TestGuard.Rels.REL1;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.GuardException;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -77,13 +77,13 @@ public class TestGuard
         assertEquals( 4, ops2.getOpsCount() );
 
         db.getGuard().startOperationsCount( MAX_VALUE );
-        n0.createRelationshipTo( n1, REL1 );
+        n0.createRelationshipTo( n1, withName( "REL" ));
         Guard.OperationsCount ops3 = db.getGuard().stop();
         assertEquals( 2, ops3.getOpsCount() );
 
 
         db.getGuard().startOperationsCount( MAX_VALUE );
-        for ( Path position : Traversal.description().breadthFirst().relationships( REL1 ).traverse( n0 ) )
+        for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) )
         {
         }
         Guard.OperationsCount ops4 = db.getGuard().stop();
@@ -104,32 +104,34 @@ public class TestGuard
         {
             Node n2 = db.createNode();
             fail();
-        } catch ( GuardException e )
+        } catch ( GuardOperationsCountException e )
         {
-            assertTrue( e instanceof GuardOperationsCountException );
+            // expected
         }
     }
 
     @Test
-    public void testTimeoutGuardFail()
+    public void testTimeoutGuardFail() throws InterruptedException
     {
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
-        db.getGuard().startTimeout( 2 );
+        db.getGuard().startTimeout( 50 );
         int i = 0;
         try
         {
             for ( i = 0; i < 1000; i++ )
             {
                 db.createNode();
+                sleep(1);
             }
             fail();
-        } catch ( GuardException e )
+        } catch ( GuardTimeoutException e )
         {
-            assertTrue( e instanceof GuardTimeoutException );
+            // expected
         }
-        assertTrue( i > 0 );
+        assertTrue( i > 1 );
+        assertTrue( i < 100 );
     }
 
     @Test
@@ -138,15 +140,20 @@ public class TestGuard
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
-        db.getGuard().startTimeout( 1000 );
-        for ( int i = 0; i < 1000; i++ )
+        int timeout = 1000;
+        db.getGuard().startTimeout(timeout);
+        long startTime = currentTimeMillis();
+        try
         {
-            db.createNode();
+            for (int i = 0; i < 1000; i++)
+                db.createNode();
         }
-    }
-
-    public enum Rels implements RelationshipType
-    {
-        REL1
+        catch (GuardTimeoutException e )
+        {
+            // Just extra stability check. If it actually took longer than the threshold
+            // that the test was designed to run within it still passes.
+            if ( currentTimeMillis() - startTime < timeout )
+                throw e;
+        }
     }
 }
