@@ -17,35 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate.modifier;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.driver.Neo4jDriver;
+import org.neo4j.qa.machinestate.StateAtom;
+import org.neo4j.qa.machinestate.StateRegistry;
 
-public class CygwinShell {
+public class RestCreateNode implements MachineModifier {
+    
+    private long nodeId;
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    @Override
+    public void modify(Neo4jDriver driver, StateRegistry state)
     {
-        this.sh = ssh;
+        nodeId = driver.neo4jClient().createNode();
     }
 
-    public Result run(String ... cmds)
+    @Override
+    public StateAtom[] stateModifications()
     {
-        return sh.run(cmds);
+        return new StateAtom[]{};
     }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+    
+    public long getCreatedNodeId() {
+        return nodeId;
     }
 
 }

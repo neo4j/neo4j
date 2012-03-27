@@ -21,9 +21,9 @@ package org.neo4j.vagrant.command;
 
 import org.neo4j.vagrant.Shell;
 import org.neo4j.vagrant.Shell.Result;
-import org.neo4j.vagrant.command.Status.VirtualMachineState;
+import org.neo4j.vagrant.command.GetState.VirtualMachineState;
 
-public class Status implements VagrantCommand<VirtualMachineState> {
+public class GetState implements VagrantCommand<VirtualMachineState> {
 
     private static final String STATUS = "status";
 

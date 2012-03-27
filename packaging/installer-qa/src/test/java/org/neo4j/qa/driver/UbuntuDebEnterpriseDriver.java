@@ -19,50 +19,58 @@
  */
 package org.neo4j.qa.driver;
 
+import org.neo4j.qa.SharedConstants;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuDebEnterpriseDriver extends UbuntuDebBaseDriver implements EnterpriseDriver {
+public class UbuntuDebEnterpriseDriver extends UbuntuDebCommunityDriver implements EnterpriseDriver {
 
     private static final String ZOOKEEPER_INSTALL_DIR = "/var/lib/neo4j-coordinator";
     private static final String BACKUP_DIR = "/home/vagrant";
     private String zookeeperInstallerPath;
+    
+    public UbuntuDebEnterpriseDriver(VirtualMachine vm)
+    {
+        this(vm, 
+             SharedConstants.DEBIAN_ENTERPRISE_INSTALLER, 
+             SharedConstants.DEBIAN_COORDINATOR_INSTALLER);
+    }
 
     public UbuntuDebEnterpriseDriver(VirtualMachine vm, String installerPath, String zookeeperInstallerPath)
     {
         super(vm, installerPath);
         this.zookeeperInstallerPath = zookeeperInstallerPath;
     }
-    
+
     @Override
     public void uninstallNeo4j() {
-        sh.run("sudo dpkg -r neo4j-enterprise");
+        sh("sudo dpkg -r neo4j-enterprise");
     }
 
     @Override
     public void installZookeeper()
     {
         vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.deb");
-        sh.run("sudo dpkg -i /home/vagrant/zookeeper.deb");
-        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
+        sh("sudo dpkg -i /home/vagrant/zookeeper.deb");
+        sh("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
     }
 
     @Override
     public void uninstallZookeeper()
     {
-        sh.run("sudo apt-get -qy remove zookeeper");
+        sh("sudo apt-get -qy remove zookeeper");
     }
 
     @Override
     public void startZookeeper()
     {
-        sh.run("sudo /etc/init.d/neo4j-coord start");
+        sh("sudo /etc/init.d/neo4j-coord start");
     }
 
     @Override
     public void stopZookeeper()
     {
-        sh.run("sudo /etc/init.d/neo4j-coord stop");
+        sh("sudo /etc/init.d/neo4j-coord stop");
     }
 
     @Override
@@ -87,9 +95,9 @@ public class UbuntuDebEnterpriseDriver extends UbuntuDebBaseDriver implements En
     @Override
     public void replaceGraphDataDirWithBackup(String backupName)
     {
-        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
-        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
-        sh.run("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo mv " + BACKUP_DIR+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
@@ -103,7 +111,7 @@ public class UbuntuDebEnterpriseDriver extends UbuntuDebBaseDriver implements En
     private void haBackup(String backupName, String coordinatorAddresses,
             String mode)
     {
-        Result r = sh.run("cd " + neo4jInstallDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
+        Result r = sh("cd " + neo4jInstallDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
                 " -" + mode +
                 " -from ha://" + coordinatorAddresses +
                 " -to " + BACKUP_DIR + "/" + backupName);

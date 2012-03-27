@@ -17,35 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import java.util.HashMap;
+import java.util.Map;
 
-public class CygwinShell {
+public class StateRegistry {
 
-    private SSHShell sh;
+    private Map<Class<?>, StateAtom> state = new HashMap<Class<?>, StateAtom>();
 
-    public CygwinShell(SSHShell ssh)
+    public void put(StateAtom atom)
     {
-        this.sh = ssh;
+        state.put(atom.getClass(), atom);
     }
 
-    public Result run(String ... cmds)
+    public boolean contains(StateAtom atom)
     {
-        return sh.run(cmds);
+        return state.containsKey(atom.getClass());
     }
 
-    public void close()
+    public <T extends StateAtom> T get(StateAtom atom)
     {
-        sh.close();
+        return get(atom.getClass());
     }
 
-    public Result runDOS(String ... cmds)
+    @SuppressWarnings("unchecked")
+    public <T extends StateAtom> T get(Class<? extends StateAtom> atomClass)
     {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return (T) state.get(atomClass);
     }
 
+    public void clear()
+    {
+        state.clear();
+    }
+    
 }

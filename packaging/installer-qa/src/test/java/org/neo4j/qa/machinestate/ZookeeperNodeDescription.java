@@ -17,35 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+public class ZookeeperNodeDescription {
 
-public class CygwinShell {
-
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
-    {
-        this.sh = ssh;
+    private String ip;
+    private int id;
+    private int clientPort;
+    private MachineModel machine;
+    
+    public ZookeeperNodeDescription(int id, String ip, int clientPort, MachineModel machine) {
+        this.ip = ip;
+        this.id = id;
+        this.clientPort = clientPort;
+        this.machine = machine;
     }
 
-    public Result run(String ... cmds)
+    public int getId()
     {
-        return sh.run(cmds);
+        return id;
     }
 
-    public void close()
+    public String getPeerConnectionURL()
     {
-        sh.close();
+        return ip + ":2888:3888";
     }
 
-    public Result runDOS(String ... cmds)
+    public int getClientPort()
     {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return clientPort;
+    }
+    
+    public MachineModel getMachine() {
+        return machine;
+    }
+
+    public String getClientConnectionURL()
+    {
+        return ip + ":" + getClientPort();
     }
 
 }

@@ -17,35 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.runner;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.vagrant.ShellException;
 
-public class CygwinShell {
+public class VagrantIssueIdentifier {
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    public boolean potentiallyAVagrantIssue(Throwable e)
     {
-        this.sh = ssh;
-    }
-
-    public Result run(String ... cmds)
-    {
-        return sh.run(cmds);
-    }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        System.out.println(e);
+        System.out.println("CAUGHT ONE");
+        if (e instanceof ShellException)
+        {
+            return true;
+        }
+        
+        return false;
     }
 
 }

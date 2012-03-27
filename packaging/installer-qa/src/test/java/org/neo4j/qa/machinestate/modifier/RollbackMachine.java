@@ -17,35 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate.modifier;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.driver.Neo4jDriver;
+import org.neo4j.qa.machinestate.StateAtom;
+import org.neo4j.qa.machinestate.StateRegistry;
+import org.neo4j.vagrant.command.GetState.VirtualMachineState;
 
-public class CygwinShell {
+public class RollbackMachine implements MachineModifier {
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    @Override
+    public void modify(Neo4jDriver driver, StateRegistry state)
     {
-        this.sh = ssh;
+        if (driver.vm().state() != VirtualMachineState.RUNNING)
+            driver.vm().up();
+        driver.vm().rollback();
+        
+        state.clear();
     }
 
-    public Result run(String ... cmds)
+    @Override
+    public StateAtom[] stateModifications()
     {
-        return sh.run(cmds);
-    }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return new StateAtom[] {};
     }
 
 }

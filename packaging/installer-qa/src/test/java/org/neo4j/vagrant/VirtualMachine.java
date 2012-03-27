@@ -28,6 +28,8 @@ import org.neo4j.vagrant.command.Commit;
 import org.neo4j.vagrant.command.Destroy;
 import org.neo4j.vagrant.command.EnableSandbox;
 import org.neo4j.vagrant.command.GetSshConfig;
+import org.neo4j.vagrant.command.GetState;
+import org.neo4j.vagrant.command.GetState.VirtualMachineState;
 import org.neo4j.vagrant.command.Halt;
 import org.neo4j.vagrant.command.Init;
 import org.neo4j.vagrant.command.ListBoxes;
@@ -93,9 +95,9 @@ public class VirtualMachine {
         }
     }
 
-    public void init(Box box)
+    public void init()
     {
-        vagrant.execute(new Init(box.getName()));
+        vagrant.execute(new Init(definition.box().getName()));
     }
 
     public void up()
@@ -137,6 +139,10 @@ public class VirtualMachine {
             return;
         }
         throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
+    }
+    
+    public VirtualMachineState state() {
+        return vagrant.execute(new GetState());
     }
 
     public SSHShell ssh()

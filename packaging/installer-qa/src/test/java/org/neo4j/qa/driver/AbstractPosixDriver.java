@@ -22,12 +22,13 @@ package org.neo4j.qa.driver;
 import java.util.List;
 
 import org.neo4j.vagrant.SSHShell;
+import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
 public abstract class AbstractPosixDriver implements Neo4jDriver {
 
     protected VirtualMachine vm;
-    protected SSHShell sh;
+    private SSHShell sh;
     private Neo4jServerAPI serverAPI;
 
     public AbstractPosixDriver(VirtualMachine vm)
@@ -37,7 +38,10 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
 
     @Override
     public void close() {
-        if(sh != null) sh.close();
+        if(sh != null) {
+            sh.close();
+            sh = null;
+        }
     }   
 
     @Override
@@ -49,19 +53,18 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     @Override
     public void up() {
         vm.up();
-        sh = vm.ssh();
     }
     
     @Override
     public void reboot() {
-        sh.close();
+        close();
         vm.halt();
         up();
     }
     
     @Override
     public void deleteDatabase() {
-        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
@@ -78,24 +81,31 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     
     @Override
     public String readFile(String path) {
-        return sh.run("cat", path).getOutput();
+        return sh("cat", path).getOutput();
     }
     
     @Override
     public List<String> listDir(String path) {
-        return sh.run("ls", path).getOutputAsList();
+        return sh("ls", path).getOutputAsList();
     }
     
     @Override
     public void writeFile(String contents, String path) {
-        sh.run("echo '"+contents+"' | sudo tee " + path + " > /dev/null");
+        sh("echo '"+contents+"' | sudo tee " + path + " > /dev/null");
     }
 
     @Override
     public void setConfig(String configFilePath, String key, String value) {
         // Remove any pre-existing config directive for this key, then append
         // the new setting at the bottom of the file.
-        sh.run("sudo sed -i 's/^"+key+"=.*//g' "+configFilePath+" && sudo echo " + key + "=" + value + " >> " + configFilePath);
+        sh("sudo sed -i 's/^"+key+"=.*//g' "+configFilePath+" && sudo echo " + key + "=" + value + " >> " + configFilePath);
+    }
+    
+    protected Result sh(String ... cmds) {
+        if(sh == null) {
+            sh = vm.ssh();
+        }
+        return sh.run(cmds);
     }
     
 }

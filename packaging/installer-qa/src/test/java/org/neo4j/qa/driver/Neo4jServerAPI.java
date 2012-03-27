@@ -25,7 +25,7 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 
 public class Neo4jServerAPI {
-    
+
     private String url;
 
     public Neo4jServerAPI(String url)
@@ -36,17 +36,20 @@ public class Neo4jServerAPI {
     public void waitUntilNodeDoesNotExist(long nodeId)
     {
         JaxRsResponse r = null;
-        long start = new Date().getTime(), 
-             timeout = 1000 * 60;
+        long start = new Date().getTime(), timeout = 1000 * 60 * 1;
         try
         {
-            do {
+            do
+            {
                 r = RestRequest.req().get(url + "/db/data/node/" + nodeId);
-                    Thread.sleep(100);
-                if(new Date().getTime() - start > timeout) {
-                    throw new RuntimeException("Waiting for node to disappear took longer than the timout specified.");
+                Thread.sleep(100);
+                if (new Date().getTime() - start > timeout)
+                {
+                    System.out.println(r.getStatus());
+                    throw new RuntimeException(
+                            "Waiting for node to disappear took longer than the timout specified.");
                 }
-            } while(r.getStatus() == 200);
+            } while (r.getStatus() == 200);
         } catch (InterruptedException e)
         {
             throw new RuntimeException(e);
@@ -55,26 +58,31 @@ public class Neo4jServerAPI {
 
     public void deleteNode(long nodeId)
     {
-        JaxRsResponse r = RestRequest.req().delete(url + "/db/data/node/" + nodeId);
-        if(r.getStatus() != 204) {
-            throw new RuntimeException("Unable to delete node " + nodeId + ". HTTP status was: " + r.getStatus());
+        JaxRsResponse r = RestRequest.req().delete(
+                url + "/db/data/node/" + nodeId);
+        if (r.getStatus() != 204)
+        {
+            throw new RuntimeException("Unable to delete node " + nodeId
+                    + ". HTTP status was: " + r.getStatus());
         }
     }
 
     public void waitUntilNodeExists(long nodeId)
     {
         JaxRsResponse r = null;
-        long start = new Date().getTime(), 
-             timeout = 1000 * 60;
+        long start = new Date().getTime(), timeout = 1000 * 60;
         try
         {
-            do {
+            do
+            {
                 r = RestRequest.req().get(url + "/db/data/node/" + nodeId);
-                    Thread.sleep(100);
-                if(new Date().getTime() - start > timeout) {
-                    throw new RuntimeException("Waiting for node to exist took longer than the timout specified.");
+                Thread.sleep(100);
+                if (new Date().getTime() - start > timeout)
+                {
+                    throw new RuntimeException(
+                            "Waiting for node to exist took longer than the timout specified.");
                 }
-            } while(r.getStatus() != 200);
+            } while (r.getStatus() != 200);
         } catch (InterruptedException e)
         {
             throw new RuntimeException(e);
@@ -84,11 +92,13 @@ public class Neo4jServerAPI {
     public long createNode()
     {
         JaxRsResponse r = RestRequest.req().post(url + "/db/data/node", "{}");
-        if(r.getStatus() != 201) {
-            throw new RuntimeException("Unable to create node. HTTP status was: " + r.getStatus());
+        if (r.getStatus() != 201)
+        {
+            throw new RuntimeException(
+                    "Unable to create node. HTTP status was: " + r.getStatus());
         }
         String[] parts = r.getLocation().getPath().split("/");
         return Long.valueOf(parts[parts.length - 1]);
     }
-    
+
 }

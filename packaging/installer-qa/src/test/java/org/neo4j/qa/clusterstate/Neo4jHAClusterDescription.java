@@ -17,35 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.clusterstate;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import java.util.ArrayList;
+import java.util.List;
 
-public class CygwinShell {
+import org.neo4j.qa.machinestate.Neo4jHANodeDescription;
 
-    private SSHShell sh;
+public class Neo4jHAClusterDescription {
 
-    public CygwinShell(SSHShell ssh)
-    {
-        this.sh = ssh;
+    List<Neo4jHANodeDescription> nodes = new ArrayList<Neo4jHANodeDescription>();
+    
+    public List<Neo4jHANodeDescription> getNodes() {
+        return nodes;
     }
 
-    public Result run(String ... cmds)
+    public void addNode(Neo4jHANodeDescription node)
     {
-        return sh.run(cmds);
+        nodes.add(node);
     }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
-    }
-
+    
 }

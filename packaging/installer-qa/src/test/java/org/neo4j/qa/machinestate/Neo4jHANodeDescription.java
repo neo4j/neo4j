@@ -17,35 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+public class Neo4jHANodeDescription {
 
-public class CygwinShell {
+    private MachineModel machine;
+    private int id;
+    private String ip;
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    public Neo4jHANodeDescription(int id, String ip, MachineModel machine)
     {
-        this.sh = ssh;
+        this.id = id;
+        this.ip = ip;
+        this.machine = machine;
     }
 
-    public Result run(String ... cmds)
+    public MachineModel getMachine()
     {
-        return sh.run(cmds);
+        return machine;
     }
 
-    public void close()
+    public int getId()
     {
-        sh.close();
+        return id;
     }
 
-    public Result runDOS(String ... cmds)
+    public String getIp()
     {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return ip;
     }
 
 }

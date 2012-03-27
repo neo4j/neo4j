@@ -21,7 +21,7 @@ package org.neo4j.vagrant.command;
 
 import org.neo4j.vagrant.Shell;
 import org.neo4j.vagrant.Shell.Result;
-import org.neo4j.vagrant.command.Status.VirtualMachineState;
+import org.neo4j.vagrant.command.GetState.VirtualMachineState;
 
 public class Halt implements VagrantCommand<Object> {
 
@@ -34,7 +34,7 @@ public class Halt implements VagrantCommand<Object> {
 
         if (!verify(haltResult))
         {
-            Status status = new Status();
+            GetState status = new GetState();
             if (status.run(sh, vagrantPath) != VirtualMachineState.POWEROFF)
             {
                 throw new VagrantCommandException(getClass().getName(),

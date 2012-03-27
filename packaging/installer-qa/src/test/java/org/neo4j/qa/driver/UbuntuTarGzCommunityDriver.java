@@ -23,16 +23,21 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
+import org.neo4j.qa.SharedConstants;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuDebBaseDriver extends AbstractPosixDriver {
+public class UbuntuTarGzCommunityDriver extends AbstractPosixDriver {
 
     private static final String INSTALL_DIR = "/var/lib/neo4j";
     private String installerPath;
     private String installerFileName;
 
-    public UbuntuDebBaseDriver(VirtualMachine vm, String installerPath)
+    public UbuntuTarGzCommunityDriver(VirtualMachine vm) {
+        this(vm, SharedConstants.UNIX_COMMUNITY_TARBALL);
+    }
+    
+    public UbuntuTarGzCommunityDriver(VirtualMachine vm, String installerPath)
     {
         super(vm);
         this.installerPath = installerPath;
@@ -40,25 +45,30 @@ public class UbuntuDebBaseDriver extends AbstractPosixDriver {
     }
     
     @Override
-    public void up() {
-        super.up();
-    }
-    
-    @Override
     public void installNeo4j() {
-        vm.copyFromHost(installerPath, "/home/vagrant/" + installerFileName);
-        sh.run("sudo dpkg -i " + installerFileName);
-        sh.run("sudo chmod -R 777 " + INSTALL_DIR + "/conf");
+        sh("mkdir /home/vagrant/installer");
+        sh("sudo mkdir " + INSTALL_DIR);
+        
+        vm.copyFromHost(installerPath, "/home/vagrant/installer/" + installerFileName);
+        
+        sh("cd /home/vagrant/installer/ && tar xvf " + installerFileName);
+        sh("sudo mv /home/vagrant/installer/neo4j*/* " + INSTALL_DIR);
+        
+        sh("sudo " + INSTALL_DIR + "/bin/neo4j -h -u neo4j install");
+
+        sh("sudo chown neo4j:neo4j -R " + INSTALL_DIR);
+        sh("sudo chmod -R 777 " + INSTALL_DIR + "/conf");
     }
     
     @Override
     public void uninstallNeo4j() {
-        sh.run("sudo dpkg -r neo4j");
+        sh("sudo " + INSTALL_DIR + "/bin/neo4j -h remove");
+        sh("sudo rm " + INSTALL_DIR + " -rf");
     }
     
     @Override
     public void startNeo4j() {
-        Result r = sh.run("sudo /etc/init.d/neo4j-service start");
+        Result r = sh("sudo /etc/init.d/neo4j-service start");
         if(r.getOutput().contains("BAD.")) {
             throw new RuntimeException("Starting neo4j service failed on ["+vm.definition().ip()+"]");
         }
@@ -66,7 +76,7 @@ public class UbuntuDebBaseDriver extends AbstractPosixDriver {
     
     @Override
     public void stopNeo4j() {
-        Result r = sh.run("sudo /etc/init.d/neo4j-service stop");
+        Result r = sh("sudo /etc/init.d/neo4j-service stop");
         if(r.getOutput().endsWith("done")) {
             throw new RuntimeException("Stopping neo4j service failed on ["+vm.definition().ip()+"]");
         }
@@ -87,7 +97,7 @@ public class UbuntuDebBaseDriver extends AbstractPosixDriver {
     
     protected void downloadLog(String from, String to)
     {
-        if( ! sh.run("ls " + from).getOutput().contains("No such file")) {
+        if( ! sh("ls " + from).getOutput().contains("No such file")) {
             vm().copyFromVM(from, to);
         } else {
             try

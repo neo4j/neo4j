@@ -17,35 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.clusterstate.modifier;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.machinestate.MachineModel;
+import org.neo4j.qa.machinestate.StateRegistry;
+import org.neo4j.qa.machinestate.modifier.RollbackMachine;
 
-public class CygwinShell {
+public class RollbackAllMachines implements ClusterModifier {
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    @Override
+    public void modify(MachineModel[] machines, StateRegistry state)
     {
-        this.sh = ssh;
-    }
-
-    public Result run(String ... cmds)
-    {
-        return sh.run(cmds);
-    }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        RollbackMachine rollbackMachine = new RollbackMachine();
+        for(MachineModel machine : machines) {
+            machine.forceApply(rollbackMachine);
+        }
     }
 
 }

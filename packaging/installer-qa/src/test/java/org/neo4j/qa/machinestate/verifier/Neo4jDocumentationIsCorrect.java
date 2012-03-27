@@ -17,25 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.qa.driver;
+package org.neo4j.qa.machinestate.verifier;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertThat;
+
+import java.util.List;
 
 import org.neo4j.qa.SharedConstants;
-import org.neo4j.vagrant.VirtualMachine;
+import org.neo4j.qa.driver.Neo4jDriver;
 
-public class UbuntuDebAdvancedDriver extends UbuntuDebCommunityDriver {
-    
-    public UbuntuDebAdvancedDriver(VirtualMachine vm)
-    {
-        this(vm, SharedConstants.DEBIAN_ADVANCED_INSTALLER);
-    }
+public class Neo4jDocumentationIsCorrect implements Verifier {
 
-    public UbuntuDebAdvancedDriver(VirtualMachine vm, String installerPath)
-    {
-        super(vm, installerPath);
+    public static Neo4jDocumentationIsCorrect neo4jDocumentationIsCorrect() {
+        return new Neo4jDocumentationIsCorrect();
     }
 
     @Override
-    public void uninstallNeo4j() {
-        sh("sudo dpkg -r neo4j-advanced");
+    public void verify(Neo4jDriver driver)
+    {
+        String file = driver.readFile(driver.neo4jInstallDir() + "/doc/manual/html/index.html");
+        assertThat(file, containsString(SharedConstants.NEO4J_VERSION));
+
+        List<String> files = driver.listDir(driver.neo4jInstallDir() + "/doc/manual/text");
+        assertThat(files, hasItem("neo4j-manual.txt"));
     }
 }

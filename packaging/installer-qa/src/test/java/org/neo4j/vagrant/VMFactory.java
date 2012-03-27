@@ -41,7 +41,7 @@ public class VMFactory {
             projectFolder.mkdirs();
             v = vm(projectFolder, templateFolder, sharedFolder, config);
             if(!templateFolder.exists()) {
-                v.init(config.box());
+                v.init();
             }
         } else
         {

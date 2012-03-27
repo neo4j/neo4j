@@ -17,35 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate.modifier;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.driver.Neo4jDriver;
+import org.neo4j.qa.machinestate.StateAtom;
+import org.neo4j.qa.machinestate.StateRegistry;
 
-public class CygwinShell {
-
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
-    {
-        this.sh = ssh;
+public class VMStateModifier implements MachineModifier {
+    
+    private enum Command {
+        REBOOT
     }
 
-    public Result run(String ... cmds)
-    {
-        return sh.run(cmds);
+    public static VMStateModifier vmReboot() {
+        return new VMStateModifier(Command.REBOOT);
     }
 
-    public void close()
+    private Command command;
+    
+    public VMStateModifier(Command command)
     {
-        sh.close();
+        this.command = command;
     }
 
-    public Result runDOS(String ... cmds)
+    @Override
+    public void modify(Neo4jDriver driver, StateRegistry state)
     {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        switch(command) {
+        case REBOOT:
+            driver.vm().reboot();
+            break;
+        }
     }
 
+    @Override
+    public StateAtom[] stateModifications()
+    {
+        return new StateAtom[]{};
+    }
 }

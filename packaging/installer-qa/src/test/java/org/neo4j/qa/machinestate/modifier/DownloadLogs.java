@@ -17,35 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.machinestate.modifier;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import java.io.File;
 
-public class CygwinShell {
+import org.neo4j.qa.driver.Neo4jDriver;
+import org.neo4j.qa.machinestate.StateAtom;
+import org.neo4j.qa.machinestate.StateRegistry;
 
-    private SSHShell sh;
+public class DownloadLogs implements MachineModifier {
 
-    public CygwinShell(SSHShell ssh)
+    private final String targetFolder;
+
+    public DownloadLogs(String targetFolder)
     {
-        this.sh = ssh;
+        this.targetFolder = targetFolder;
     }
 
-    public Result run(String ... cmds)
+    @Override
+    public void modify(Neo4jDriver driver, StateRegistry state)
     {
-        return sh.run(cmds);
+        new File(targetFolder).mkdirs();
+        try {
+            driver.downloadLogsTo(targetFolder);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public void close()
+    @Override
+    public StateAtom[] stateModifications()
     {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return new StateAtom[] {};
     }
 
 }

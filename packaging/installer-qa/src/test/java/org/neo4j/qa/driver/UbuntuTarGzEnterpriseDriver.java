@@ -19,16 +19,25 @@
  */
 package org.neo4j.qa.driver;
 
+import org.neo4j.qa.SharedConstants;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzBaseDriver implements EnterpriseDriver {
+public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzCommunityDriver
+        implements EnterpriseDriver {
 
     private static final String ZOOKEEPER_INSTALL_DIR = "/var/lib/neo4j-coordinator";
     private static final String BACKUP_DIR = "/home/vagrant";
     private String zookeeperInstallerPath;
 
-    public UbuntuTarGzEnterpriseDriver(VirtualMachine vm, String installerPath, String zookeeperInstallerPath)
+    public UbuntuTarGzEnterpriseDriver(VirtualMachine vm)
+    {
+        this(vm, SharedConstants.UNIX_ENTERPRISE_TARBALL,
+                SharedConstants.UNIX_COORDINATOR_TARBALL);
+    }
+
+    public UbuntuTarGzEnterpriseDriver(VirtualMachine vm, String installerPath,
+            String zookeeperInstallerPath)
     {
         super(vm, installerPath);
         this.zookeeperInstallerPath = zookeeperInstallerPath;
@@ -37,37 +46,40 @@ public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzBaseDriver implement
     @Override
     public void installZookeeper()
     {
-        sh.run("mkdir /home/vagrant/zk-installer");
-        sh.run("sudo mkdir " + ZOOKEEPER_INSTALL_DIR);
+        sh("mkdir /home/vagrant/zk-installer");
+        sh("sudo mkdir " + ZOOKEEPER_INSTALL_DIR);
 
-        vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zk-installer/zookeeper.tar.gz");
-        
-        sh.run("cd /home/vagrant/zk-installer/ && tar xvf zookeeper.tar.gz");
-        sh.run("sudo mv /home/vagrant/zk-installer/neo4j*/* " + ZOOKEEPER_INSTALL_DIR);
-        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
-        
-        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h -u neo4j install");
-        sh.run("sudo chown neo4j:neo4j -R " + ZOOKEEPER_INSTALL_DIR);
-        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
+        vm.copyFromHost(zookeeperInstallerPath,
+                "/home/vagrant/zk-installer/zookeeper.tar.gz");
+
+        sh("cd /home/vagrant/zk-installer/ && tar xvf zookeeper.tar.gz");
+        sh("sudo mv /home/vagrant/zk-installer/neo4j*/* "
+                + ZOOKEEPER_INSTALL_DIR);
+        sh("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
+
+        sh("sudo " + ZOOKEEPER_INSTALL_DIR
+                + "/bin/neo4j-coordinator -h -u neo4j install");
+        sh("sudo chown neo4j:neo4j -R " + ZOOKEEPER_INSTALL_DIR);
+        sh("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
     }
 
     @Override
     public void uninstallZookeeper()
     {
-        sh.run("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h remove");
-        sh.run("sudo rm " + ZOOKEEPER_INSTALL_DIR + " -rf");
+        sh("sudo " + ZOOKEEPER_INSTALL_DIR + "/bin/neo4j-coordinator -h remove");
+        sh("sudo rm " + ZOOKEEPER_INSTALL_DIR + " -rf");
     }
 
     @Override
     public void startZookeeper()
     {
-        sh.run("sudo /etc/init.d/neo4j-coord start");
+        sh("sudo /etc/init.d/neo4j-coord start");
     }
 
     @Override
     public void stopZookeeper()
     {
-        sh.run("sudo /etc/init.d/neo4j-coord stop");
+        sh("sudo /etc/init.d/neo4j-coord stop");
     }
 
     @Override
@@ -77,11 +89,12 @@ public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzBaseDriver implement
     }
 
     @Override
-    public void performFullHABackup(String backupName, String coordinatorAddresses)
+    public void performFullHABackup(String backupName,
+            String coordinatorAddresses)
     {
         haBackup(backupName, coordinatorAddresses, "full");
     }
-    
+
     @Override
     public void performIncrementalHABackup(String backupName,
             String coordinatorAddresses)
@@ -92,29 +105,35 @@ public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzBaseDriver implement
     @Override
     public void replaceGraphDataDirWithBackup(String backupName)
     {
-        sh.run("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
-        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
-        sh.run("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh("sudo mv " + BACKUP_DIR + "/" + backupName + " " + neo4jInstallDir()
+                + "/data/graph.db");
+        sh("sudo chown neo4j:adm -R " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
-    public void downloadLogsTo(String target) {
+    public void downloadLogsTo(String target)
+    {
         super.downloadLogsTo(target);
         String ip = vm().definition().ip();
-        downloadLog(neo4jInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
-        downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-server.log");
+        downloadLog(neo4jInstallDir() + "/data/log/neo4j-zookeeper.log", target
+                + "/" + ip + "-neo4j-zookeeper-client.log");
+        downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log",
+                target + "/" + ip + "-neo4j-zookeeper-server.log");
     }
-    
+
     private void haBackup(String backupName, String coordinatorAddresses,
             String mode)
     {
-        Result r = sh.run("cd " + neo4jInstallDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
-                " -" + mode +
-                " -from ha://" + coordinatorAddresses +
-                " -to " + BACKUP_DIR + "/" + backupName);
-        if(!r.getOutput().contains("Done")) {
-            throw new RuntimeException("Performing backup failed. Expected output to say 'Done', got this instead: \n" + r.getOutput());
+        Result r = sh("cd " + neo4jInstallDir()
+                + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup"
+                + " -" + mode + " -from ha://" + coordinatorAddresses + " -to "
+                + BACKUP_DIR + "/" + backupName);
+        if (!r.getOutput().contains("Done"))
+        {
+            throw new RuntimeException(
+                    "Performing backup failed. Expected output to say 'Done', got this instead: \n"
+                            + r.getOutput());
         }
     }
 }
-

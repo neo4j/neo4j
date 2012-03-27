@@ -34,7 +34,7 @@ public class VagrantExecutor {
         this.maxRetries = maxRetries;
     }
 
-    public <T> T execute(VagrantCommand<T> cmd)
+    public synchronized <T> T execute(VagrantCommand<T> cmd)
     {
         if (cmd.isIdempotent())
         {

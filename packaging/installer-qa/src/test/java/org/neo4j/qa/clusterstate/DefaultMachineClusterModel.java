@@ -17,35 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.clusterstate;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.clusterstate.modifier.ClusterModifier;
+import org.neo4j.qa.clusterstate.verifier.ClusterVerifier;
+import org.neo4j.qa.machinestate.MachineModel;
+import org.neo4j.qa.machinestate.StateRegistry;
 
-public class CygwinShell {
+public class DefaultMachineClusterModel implements MachineClusterModel {
 
-    private SSHShell sh;
+    private MachineModel[] machines;
+    private StateRegistry state = new StateRegistry();
 
-    public CygwinShell(SSHShell ssh)
+    public DefaultMachineClusterModel(MachineModel ... machines)
     {
-        this.sh = ssh;
+        this.machines = machines; 
     }
 
-    public Result run(String ... cmds)
+    @Override
+    public void forceApply(ClusterModifier modifier)
     {
-        return sh.run(cmds);
+        modifier.modify(machines, state);
     }
 
-    public void close()
+    @Override
+    public void apply(ClusterModifier modifier)
     {
-        sh.close();
+        modifier.modify(machines, state);
     }
 
-    public Result runDOS(String ... cmds)
+    @Override
+    public void verifyThat(ClusterVerifier verifier)
     {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        verifier.verify(machines);
     }
 
 }

@@ -22,11 +22,11 @@ package org.neo4j.qa;
 public class SharedConstants {
 
     public static final String NEO4J_VERSION = System.getProperty(
-            "neo4j.version", "NO-NEO4J.VERSION-ENV-VAR-SET");
+            "neo4j.version", "");
+    
     public static final String INSTALLER_DIR = System.getProperty(
             "neo4j.installer-dir", System.getProperty("user.dir")
                     + "/target/classes/");
-    
 
     public static final String TEST_LOGS_DIR = System.getProperty(
             "neo4j.installer-dir", System.getProperty("user.dir")

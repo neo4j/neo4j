@@ -19,11 +19,12 @@
  */
 package org.neo4j.qa.driver;
 
+import org.neo4j.qa.SharedConstants;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
 
-public class WindowsEnterpriseDriver extends WindowsBaseDriver implements EnterpriseDriver {
+public class WindowsEnterpriseDriver extends WindowsCommunityDriver implements EnterpriseDriver {
 
     private static final String BACKUP_DIR_NAME = "backups";
     private static final String ZOOKEEPER_INSTALL_DIR = "zookeeper\\ with\\ space";
@@ -37,12 +38,19 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
         this.zookeeperInstallerPath = zookeeperInstallerPath;
     }
 
+    public WindowsEnterpriseDriver(VirtualMachine vm)
+    {
+        this(vm, 
+            SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+            SharedConstants.WINDOWS_COORDINATOR_INSTALLER);
+    }
+
     @Override
     public void installZookeeper()
     {
         vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.msi");
-        cygSh.run(":> zookeeper-install.log");
-        cygSh.runDOS("msiexec /quiet /L* zookeeper-install.log /i zookeeper.msi INSTALL_DIR=\"C:\\"+ZOOKEEPER_WIN_INSTALL_DIR+"\"");
+        sh(":> zookeeper-install.log");
+        bash("msiexec /quiet /L* zookeeper-install.log /i zookeeper.msi INSTALL_DIR=\"C:\\"+ZOOKEEPER_WIN_INSTALL_DIR+"\"");
         if(!installIsSuccessful("/home/vagrant/zookeeper-install.log")){
             throw new RuntimeException("Zookeeper install failed ["+vm().definition().ip()+"].");
         }
@@ -51,8 +59,8 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
     @Override
     public void uninstallZookeeper()
     {
-        cygSh.run(":> zookeeper-uninstall.log");
-        cygSh.runDOS("msiexec /quiet /L* zookeeper-uninstall.log /x zookeeper.msi");
+        sh(":> zookeeper-uninstall.log");
+        bash("msiexec /quiet /L* zookeeper-uninstall.log /x zookeeper.msi");
         if(!installIsSuccessful("/home/vagrant/zookeeper-uninstall.log")){
             throw new RuntimeException("Zookeeper uninstall failed ["+vm().definition().ip()+"].");
         }
@@ -61,7 +69,7 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
     @Override
     public void startZookeeper()
     {
-        Result r = sh.run("net start " + ZOOKEEPER_SERVICE);
+        Result r = sh("net start " + ZOOKEEPER_SERVICE);
         if(!r.getOutput().contains("service was started successfully")) {
             throw new RuntimeException("Tried to start neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
@@ -70,8 +78,9 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
     @Override
     public void stopZookeeper()
     {
-        Result r = sh.run("net stop " + ZOOKEEPER_SERVICE);
-        if(!r.getOutput().contains("service was stopped successfully")) {
+        Result r = sh("net stop " + ZOOKEEPER_SERVICE);
+        if(!r.getOutput().contains("service was stopped successfully") &&
+           !r.getOutput().contains("service is not started.")) {
             throw new RuntimeException("Tried to stop neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
     }
@@ -98,8 +107,8 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
     @Override
     public void replaceGraphDataDirWithBackup(String backupName)
     {
-        cygSh.run("rm -rf " + neo4jInstallDir() + "/data/graph.db");
-        cygSh.run("mv " + neo4jInstallDir()+"/"+BACKUP_DIR_NAME+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
+        sh("rm -rf " + neo4jInstallDir() + "/data/graph.db");
+        sh("mv " + neo4jInstallDir()+"/"+BACKUP_DIR_NAME+"/"+backupName + " " + neo4jInstallDir() + "/data/graph.db");
     }
 
     @Override
@@ -115,7 +124,7 @@ public class WindowsEnterpriseDriver extends WindowsBaseDriver implements Enterp
     private void haBackup(String backupName, String coordinatorAddresses,
             String mode)
     {
-        Result r = cygSh.run("cd " + neo4jInstallDir() + " && bin/Neo4jBackup.bat" + 
+        Result r = sh("cd " + neo4jInstallDir() + " && bin/Neo4jBackup.bat" + 
                 " -" + mode +
                 " -from ha://" + coordinatorAddresses +
                 " -to " + BACKUP_DIR_NAME + "/" + backupName);

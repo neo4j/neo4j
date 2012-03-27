@@ -25,6 +25,7 @@ import java.security.PublicKey;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.connection.channel.direct.Session.Command;
+import net.schmizz.sshj.transport.TransportException;
 import net.schmizz.sshj.transport.verification.HostKeyVerifier;
 
 import org.apache.commons.lang.StringUtils;
@@ -97,6 +98,9 @@ public class SSHShell {
             try {
                 session = client.startSession();
             } catch(AssertionError e) {
+                connect();
+                session = client.startSession();
+            } catch(TransportException e) {
                 connect();
                 session = client.startSession();
             }

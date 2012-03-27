@@ -17,35 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.driver;
 
-import org.apache.commons.lang.StringUtils;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.qa.SharedConstants;
+import org.neo4j.vagrant.VirtualMachine;
 
-public class CygwinShell {
+public class WindowsAdvancedDriver extends WindowsCommunityDriver {
 
-    private SSHShell sh;
-
-    public CygwinShell(SSHShell ssh)
+    public WindowsAdvancedDriver(VirtualMachine vm, String installerName)
     {
-        this.sh = ssh;
+        super(vm, installerName);
     }
 
-    public Result run(String ... cmds)
+    public WindowsAdvancedDriver(VirtualMachine vm)
     {
-        return sh.run(cmds);
+        this(vm, SharedConstants.WINDOWS_ADVANCED_INSTALLER);
     }
-
-    public void close()
-    {
-        sh.close();
-    }
-
-    public Result runDOS(String ... cmds)
-    {
-        String cmd = StringUtils.join(cmds, " ");
-        String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
-    }
-
 }
