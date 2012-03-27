@@ -55,7 +55,7 @@ public class GuardingRequestFilter implements Filter
         @Override
         public void run()
         {
-            LOG.warn( "request canceld" );
+            LOG.warn( "request canceled" );
             LOG.error( "TODO: restarting the server is not proper implemented, request was not canceled" );
             // TODO current.interrupt(); + restart server
         }
