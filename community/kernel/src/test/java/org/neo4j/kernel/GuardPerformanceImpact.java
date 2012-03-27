@@ -100,7 +100,8 @@ public class GuardPerformanceImpact
     {
         File tmpFile = File.createTempFile( "neo4j-test", "" );
         tmpFile.delete();
-        return new EmbeddedGraphDatabase( tmpFile.getCanonicalPath(), stringMap( "insert_guard", valueOf( insertGuard ) ) );
+        return new EmbeddedGraphDatabase( tmpFile.getCanonicalPath(),
+                stringMap( "enable_execution_guard", valueOf( insertGuard ) ) );
     }
 
     private static void createData( final AbstractGraphDatabase db )

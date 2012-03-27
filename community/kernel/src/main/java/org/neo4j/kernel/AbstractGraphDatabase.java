@@ -112,7 +112,7 @@ public abstract class AbstractGraphDatabase
     {
         boolean read_only( boolean def );
 
-        boolean insert_guard( boolean def );
+        boolean enable_execution_guard( boolean def );
 
         NodeManager.CacheType cache_type( NodeManager.CacheType def );
 
@@ -216,7 +216,7 @@ public abstract class AbstractGraphDatabase
 
         fileSystem = life.add(createFileSystemAbstraction());
 
-        guard = conf.insert_guard( false ) ? new Guard( msgLog ) : null;
+        guard = conf.enable_execution_guard( false ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 

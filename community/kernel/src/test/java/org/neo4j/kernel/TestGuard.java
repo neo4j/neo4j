@@ -51,14 +51,14 @@ public class TestGuard
     @Test
     public void testGuardInsertedByDefault()
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "insert_guard", "true" ) );
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         assertNotNull( db.getGuard() );
     }
 
     @Test
     public void testGuardOnDifferentGraphOps()
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "insert_guard", "true" ) );
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         db.getGuard().startOperationsCount( MAX_VALUE );
@@ -93,7 +93,7 @@ public class TestGuard
     @Test
     public void testOpsCountGuardFail()
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "insert_guard", "true" ) );
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
         Guard guard = db.getGuard();
 
@@ -113,7 +113,7 @@ public class TestGuard
     @Test
     public void testTimeoutGuardFail()
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "insert_guard", "true" ) );
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         db.getGuard().startTimeout( 2 );
@@ -135,7 +135,7 @@ public class TestGuard
     @Test
     public void testTimeoutGuardPass()
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "insert_guard", "true" ) );
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         db.getGuard().startTimeout( 1000 );
