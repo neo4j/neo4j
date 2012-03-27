@@ -1749,7 +1749,7 @@ RETURN x0.name?
     val b = createNode()
     val r = relate(a,b)
     val result = parseAndExecute("start a=node(1), r=relationship(0) return a,r").toList
-    
+
     assert(List(Map("a"->a, "r"->r)) === result)
   }   
   
@@ -1783,6 +1783,13 @@ RETURN x0.name?
     val result = parseAndExecute("start a=node(1) match a-[:REL|REL]-b return b").toList
 
     assert(List(Map("b" -> b)) === result)
+  }
+  
+  @Test def should_throw_on_missing_indexes() {
+    intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex('value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=relationship:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=relationship:missingIndex('value') return a").toList)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
