@@ -116,13 +116,14 @@ There is the reference caches.
 Here neo4j will utilize as much as it can out of the allocated heap memory for the JVM for object caching and relies on garbage collection for eviction from the cache in an LRU manner.
 Note however that Neo4j is "competing" for the heap space with other objects in the same JVM, such as a your application, if deployed in embedded mode, and Neo4j will let the application "win" by using less memory if the application needs more.
 
-The other is the _atomic array cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
-It uses an +AtomicArrayReference+ to cache the objects and doesn't rely on garbage collection for evicting objects from the cache.
+The other is the _GC resistant cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
+It is assigned a maximum amount of memory which the sum of all cached objects in it will not exceed.
+Objects will be evicted from cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
 Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
-The overhead of the array cache is also much smaller and insert/lookup times faster than for reference caches.
+The overhead of the GC resistant cache is also much smaller as well as insert/lookup times faster than for reference caches.
 
 [WARNING]
-The atomic array cache is experimental. Production use is only advisable after extensive user testing.
+The GC resistant cache is experimental. Production use is only advisable after extensive user testing.
 
 [TIP]
 The use of heap memory is subject to the java garbage collector - depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
@@ -162,33 +163,33 @@ The available cache types are:
                  Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
 | strong       | This cache will hold on to *all data* that gets loaded to never release it again.
                  Provides good performance if your graph is small enough to fit in memory.
-| array        | Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
+| gcr          | Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
                  Small footprint and fast insert/lookup. Should be the best option for most scenarios. See below on how to configure it.
 |==========================================
 
-Array cache configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~
+GC resistant cache configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Since the array cache operates with a dedicated space in the JVM it may be configured per use case for optimal performance.
+Since the GC resistant cache operates with a maximum size in the JVM it may be configured per use case for optimal performance.
 There are two aspects of the cache size.
 
-One is the size of the actual array to put the references to the objects in. It is specified as a fraction of the heap, for example specifying +1+ will let the array size itself take up 1% out of the entire heap.
-Increasing the array size will reduce the chance of collisions (positions in the array are calculated from a hash based on the object id) at the expense of more heap used for it.
-More collisions means more redundant loading of objects from the low level cache to the high level cache.
+One is the size of the array referencing the objects that are put in the cache.
+It is specified as a fraction of the heap, for example specifying +5+ will let that array itself take up 5% out of the entire heap.
+Increasing this figure (up to a maximum of 10) will reduce the chance of hash collisions at the expense of more heap used for it.
+More collisions means more redundant loading of objects from the low level cache.
 
 [options="header",frame="none",cols="<15m,<85"]
 |==========================================
-| `configuration option`            | Description (what it controls)                                                        | Example value
-| node_cache_array_fraction         | Fraction of the heap to dedicate to the array holding the nodes in the cache.         | 1
-| relationship_cache_array_fraction | Fraction of the heap to dedicate to the array holding the relationships in the cache. | 2
+| `configuration option`            | Description (what it controls)                                                                 | Example value
+| node_cache_array_fraction         | Fraction of the heap to dedicate to the array holding the nodes in the cache (max 10).         | 7
+| relationship_cache_array_fraction | Fraction of the heap to dedicate to the array holding the relationships in the cache (max 10). | 5
 |==========================================
 
-The other aspect is the maximum size of all the objects in the cache. It is specified as size in bytes, for example +500M+ for 500 megabytes.
+The other aspect is the maximum size of all the objects in the cache. It is specified as size in bytes, for example +500M+ for 500 megabytes or +2G+ for two gigabytes.
 Right before the maximum size is reached a +purge+ is performed where (currently) random objects are evicted from the cache until the cache size gets below 90% of the maximum size.
-Optimal settings for the maximum size is dependent on the size of your graph.
-If your graph is small set it to be able to just fit your entire graph so that the rest of the heap can be used for other things.
-If your graph is large set it to a comfortable size where most or a decent portion of your graph fits in it, but still small enough to make room for other object in the heap.
-The amount of space to "give" to the other object is dependent on how high the load is so that garbage collection is able to keep up. 
+Optimal settings for the maximum size depends on the size of your graph.
+The configured maximum size should leave enough room for other objects to coexist in the same JVM, but at the same time large enough to keep loading from the low level cache at a minimum.
+Predicted load on the JVM as well as layout of domain level objects should also be take into consideration.  
 
 [options="header",frame="none",cols="<15m,<85"]
 |==========================================

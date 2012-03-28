@@ -21,5 +21,22 @@ package org.neo4j.kernel.impl.cache;
 
 public interface EntityWithSize extends SizeOf
 {
-    public long getId();
+    /**
+     * Id of this entity.
+     * @return the id of this entity.
+     */
+    long getId();
+    
+    /**
+     * Sets the size which was registered with the cache which this entity is in.
+     * @param size the size to store for future retrieval in {@link #getRegisteredSize()}.
+     */
+    void setRegisteredSize( int size );
+    
+    /**
+     * Returns the most recent registered size from {@link #setRegisteredSize(int)}.
+     * Called from the cache that this entity is in.
+     * @return the registered size of this entity.
+     */
+    int getRegisteredSize();
 }

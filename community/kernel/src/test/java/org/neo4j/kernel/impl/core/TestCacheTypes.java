@@ -52,7 +52,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         EmbeddedGraphDatabase db = newDb( null );
         try
         {
-            assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
+            assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         }
         finally
         {
@@ -93,10 +93,10 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testArrayCache()
+    public void testGcrCache()
     {
-        EmbeddedGraphDatabase db = newDb( "array" );
-        assertEquals( CacheType.array, db.getNodeManager().getCacheType() );
+        EmbeddedGraphDatabase db = newDb( "gcr" );
+        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
     
@@ -105,7 +105,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     {
         // invalid cache type should use default and print a warning
         EmbeddedGraphDatabase db = newDb( "whatever" );
-        assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
+        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
 }

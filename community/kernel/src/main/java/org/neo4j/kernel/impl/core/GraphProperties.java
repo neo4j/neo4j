@@ -51,6 +51,18 @@ public class GraphProperties extends Primitive implements PropertyContainer
         this.nodeManager = nodeManager;
     }
     
+    @Override
+    public void setRegisteredSize( int size )
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public int getRegisteredSize()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     public int size()
     {
         // only one instance of this and will never go into cache
@@ -58,7 +70,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
 
     @Override
-    protected void updateSize( int before, int after, NodeManager nodeManager )
+    protected void updateSize( NodeManager nodeManager )
     {
         // only one instance of this and will never go into cache
         throw new UnsupportedOperationException();

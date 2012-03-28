@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOf;
-import org.neo4j.kernel.impl.cache.SizeOfs;
 
 public class RelIdArray implements SizeOf
 {
@@ -91,17 +95,12 @@ public class RelIdArray implements SizeOf
     
     public int size()
     {
-        // Object + type(String) + lastOutBlock(Object) + lastInBlock(Object)
-        return 16 + SizeOfs.sizeOf( type ) + sizeOfBlock(lastOutBlock) + sizeOfBlock(lastInBlock); 
+        return withObjectOverhead( withReference( sizeOf( type ) ) + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
     }
     
-    static int sizeOfBlock( IdBlock block )
+    static int sizeOfBlockWithReference( IdBlock block )
     {
-        if ( block != null )
-        {
-            return 8 + block.size();
-        }
-        return 8;
+        return withReference( block != null ? block.size() : 0 );
     }
 
     public String getType()
@@ -396,8 +395,7 @@ public class RelIdArray implements SizeOf
         
         public int size()
         {
-            // ids(int[])
-            return 24 + 4*ids.length;
+            return withObjectOverhead( withReference( withArrayOverhead( 4*ids.length ) ) );
         }
         
         /**
@@ -481,13 +479,6 @@ public class RelIdArray implements SizeOf
     
     private static class LowIdBlock extends IdBlock
     {
-        
-        public int size()
-        {
-            // Object + super
-            return 16 + super.size();
-        }
-        
         @Override
         void setPrev( IdBlock prev )
         {
@@ -533,13 +524,12 @@ public class RelIdArray implements SizeOf
         
         public int size()
         {
-            // Objet + highBits(long) + prev(IdBlock) + super;
-            int size = 16 + 8;
+            int size = super.size() + 8 + 8;
             if ( prev != null )
             {
                 size += prev.size();
             }
-            return size + super.size();
+            return size;
         }
         
         @Override
