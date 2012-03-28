@@ -41,11 +41,13 @@ import org.neo4j.com.MasterCaller;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
+import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -210,13 +212,34 @@ public class MasterClient extends Client<Master> implements Master
 
     public Response<Void> finishTransaction( SlaveContext context, final boolean success )
     {
-        return sendRequest( HaRequestType.FINISH, context, new Serializer()
+        try
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            return sendRequest( HaRequestType.FINISH, context, new Serializer()
             {
-                buffer.writeByte( success ? 1 : 0 );
+                public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+                {
+                    buffer.writeByte( success ? 1 : 0 );
+                }
+            }, VOID_DESERIALIZER );
+        }
+        catch ( UnableToResumeTransactionException e )
+        {
+            if ( !success )
+            {
+                /* Here we are in a state where the client failed while the request
+                 * was processing on the server and the tx.finish() in the usual
+                 * try-finally transaction block gets called, only to find that
+                 * the transaction is already active... which is totally expected.
+                 * The fact that the transaction is already active here shouldn't
+                 * hide the original exception on the client, the exception which
+                 * cause the client to fail while the request was processing on the master.
+                 * This is effectively the use case of awaiting a lock that isn't granted
+                 * within the lock read timeout period.
+                 */
+                return new Response<Void>( null, getMyStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
-        }, VOID_DESERIALIZER );
+            throw e;
+        }
     }
 
     public void rollbackOngoingTransactions( SlaveContext context )
@@ -520,22 +543,19 @@ public class MasterClient extends Client<Master> implements Master
             this.includesSlaveContext = includesSlaveContext;
         }
 
-        protected int timeoutForLocking( int defaultTimeout )
-        {
-            // TODO Auto-generated method stub
-            return 0;
-        }
-
+        @Override
         public ObjectSerializer getObjectSerializer()
         {
             return serializer;
         }
 
+        @Override
         public MasterCaller getMasterCaller()
         {
             return caller;
         }
 
+        @Override
         public byte id()
         {
             return (byte) ordinal();
