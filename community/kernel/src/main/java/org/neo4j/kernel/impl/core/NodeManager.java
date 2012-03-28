@@ -363,7 +363,7 @@ public class NodeManager
         return lock;
     }
 
-    private Node getNodeByIdOrNull( long nodeId )
+    protected Node getNodeByIdOrNull( long nodeId )
     {
         NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
@@ -486,7 +486,7 @@ public class NodeManager
         this.referenceNodeId = nodeId;
     }
 
-    private Relationship getRelationshipByIdOrNull( long relId )
+    protected Relationship getRelationshipByIdOrNull( long relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )

@@ -23,6 +23,7 @@ package org.neo4j.kernel;
 import java.util.Collection;
 import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -73,4 +74,6 @@ public interface GraphDatabaseSPI
     <T> Collection<T> getManagementBeans( Class<T> type );
     
     KernelPanicEventGenerator getKernelPanicGenerator();
+
+    Guard getGuard();
 }

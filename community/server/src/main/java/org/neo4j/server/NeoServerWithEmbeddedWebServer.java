@@ -25,7 +25,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.guard.Guard;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
@@ -62,7 +61,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
-    private Guard guard;
 
     private SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
 
@@ -89,8 +87,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         // Start at the bottom of the stack and work upwards to the Web
         // container
         startupHealthCheck();
-
-        initGuard();
 
         initWebServer();
 
@@ -173,13 +169,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                                                          Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
         GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory(configurator.configuration());
 
-/*
-        if ( guard != null )
-        {
-            dbFactory = new GuardedDatabaseFactory( dbFactory, guard );
-        }
-*/
-
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if (databaseTuningProperties != null)
         {
@@ -190,12 +179,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             this.database = new Database(dbFactory, dbLocation);
         }
         return database.graph.getDiagnosticsManager();
-    }
-
-    private void initGuard()
-    {
-        Integer limit = getConfiguration().getInteger(WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null);
-        guard = limit != null ? new Guard(limit) : null;
     }
 
     @Override
@@ -210,7 +193,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         String webServerAddr = getWebServerAddress();
 
         int maxThreads = getMaxThreads();
-        
+
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
@@ -225,7 +208,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             log.info( "Enabling HTTPS on port [%s]", sslPort );
             webServer.setHttpsCertificateInformation(initHttpsKeyStore());
         }
-        
+
         webServer.init();
     }
 
@@ -268,9 +251,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             SecurityRule[] securityRules = createSecurityRulesFrom(configurator.configuration());
             webServer.addSecurityRules(securityRules);
 
-            if (guard != null)
+            Integer limit = getConfiguration().getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+            if ( limit != null )
             {
-                webServer.addExecutionLimitFilter(guard);
+                webServer.addExecutionLimitFilter( limit );
             }
 
             webServer.start();
@@ -291,7 +275,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         return configurator.configuration()
                            .getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT);
     }
-    
+
     protected boolean getHttpsEnabled()
     {
         return configurator.configuration()
@@ -323,21 +307,21 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         File keystorePath = new File(configurator.configuration().getString(
                 Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
                 Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH));
-        
+
         File privateKeyPath = new File(configurator.configuration().getString(
                 Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
                 Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH));
-        
+
         File certificatePath = new File(configurator.configuration().getString(
                 Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
                 Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH));
-        
+
         if(!certificatePath.exists()) {
             log.info("No SSL certificate found, generating a self-signed certificate..");
             SslCertificateFactory certFactory = new SslCertificateFactory();
             certFactory.createSelfSignedCertificate(certificatePath, privateKeyPath, getWebServerAddress());
         }
-        
+
         KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
         return keyStoreFactory.createKeyStore(keystorePath, privateKeyPath, certificatePath);
     }
