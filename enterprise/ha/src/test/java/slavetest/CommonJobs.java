@@ -414,6 +414,39 @@ public abstract class CommonJobs
         }
     }
 
+    public static class SetNodePropertyWithThrowJob implements Job<Void>
+    {
+        private final long id;
+        private final String key;
+        private final Object value;
+        private final long firstId;
+
+        public SetNodePropertyWithThrowJob( long firstId, long id, String key, Object value )
+        {
+            this.firstId = firstId;
+            this.id = id;
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public Void execute( GraphDatabaseSPI db )
+        {
+            Transaction tx = db.beginTx();
+            try
+            {
+                tx.acquireWriteLock( db.getNodeById( firstId ) );
+                db.getNodeById( id ).setProperty( key, value );
+                tx.success();
+                return null;
+            }
+            finally
+            {
+                tx.finish();
+            }
+        }
+    }
+    
     public static class CreateNodesJob extends TransactionalJob<Long[]>
     {
         private final int count;

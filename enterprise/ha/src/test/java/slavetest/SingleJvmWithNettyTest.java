@@ -20,6 +20,7 @@
 package slavetest;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -36,7 +37,9 @@ import java.io.FileReader;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
@@ -44,6 +47,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.Client;
 import org.neo4j.com.Client.ConnectionLostHandler;
+import org.neo4j.com.ComException;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -536,6 +540,40 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         lockHolder.start();
 
         executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
+    }
+    
+    @Test
+    public void lockWaitTimeoutShouldHaveSilentTxFinishRollingBackToNotHideOriginalException() throws Exception
+    {
+        final long lockTimeout = 1;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Long otherNodeId = executeJob( new CommonJobs.CreateNodeJob( true ), 0 );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        ExecutorService executor = newFixedThreadPool( 1 );
+        final long refNodeId = getMasterHaDb().getReferenceNode().getId();
+        Future<Void> lockHolder = executor.submit( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                executeJobOnMaster( new CommonJobs.HoldLongLock( refNodeId, latchFetcher ) );
+                return null;
+            }
+        } );
+        
+        DoubleLatch latch = latchFetcher.fetch();
+        latch.countDownFirst();
+        try
+        {
+            executeJob( new CommonJobs.SetNodePropertyWithThrowJob( otherNodeId.longValue(),
+                    refNodeId, "key", "value" ), 0 );
+            fail( "Should've failed" );
+        }
+        catch ( ComException e )
+        {   // Good
+        }
+        latch.countDownSecond();
+        assertNull( lockHolder.get() );
     }
 
     @Ignore
