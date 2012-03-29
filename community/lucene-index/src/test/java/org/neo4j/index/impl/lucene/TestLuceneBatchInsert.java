@@ -411,8 +411,9 @@ public class TestLuceneBatchInsert
         index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( key, 100000 );
         assertCacheIsEmpty( index, key );
-        index.add( 1, map( key, "Mattias" ) );
+        index.add( 1, map( key, "Persson" ) );
         assertCacheIsEmpty( index, key );
+        assertEquals( 1, index.get( key, "Persson" ).getSingle().intValue() );
         provider.shutdown();
         inserter.shutdown();
     }
