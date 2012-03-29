@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOf;
+import org.neo4j.kernel.impl.cache.SizeOfs;
 
 public class RelIdArray implements SizeOf
 {
@@ -524,7 +525,7 @@ public class RelIdArray implements SizeOf
         
         public int size()
         {
-            int size = super.size() + 8 + 8;
+            int size = super.size() + 8 + SizeOfs.REFERENCE_SIZE;
             if ( prev != null )
             {
                 size += prev.size();

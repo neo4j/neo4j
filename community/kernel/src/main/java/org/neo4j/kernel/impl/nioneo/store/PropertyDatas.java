@@ -410,7 +410,7 @@ public class PropertyDatas
         
         public int size()
         {
-            return withObjectOverhead( 8 /*id*/ + 8 /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
+            return withObjectOverhead( 8 /*id*/ + SizeOfs.REFERENCE_SIZE /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
             // TODO with padding the 'int index' will probably amount to 8 bytes.
         }
 

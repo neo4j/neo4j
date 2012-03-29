@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 
 public class SizeOfs
 {
+    public static final int REFERENCE_SIZE = 8;
+
     /**
      * The size of a {@link String} object including object overhead and all state.
      * @param value the String to calculate size for.
@@ -30,7 +32,8 @@ public class SizeOfs
      */
     public static int sizeOf( String value )
     {
-        return withObjectOverhead( 4/*offset*/ + 4/*count*/ + 4/*hash*/ + 8/*value[] ref*/ + withArrayOverhead( +value.length() * 2 )/*value[]*/ );
+        return withObjectOverhead( 4/*offset*/ + 4/*count*/ + 4/*hash*/ + REFERENCE_SIZE/*value[] ref*/ +
+                withArrayOverhead( +value.length() * 2 )/*value[]*/ );
     }
     
     public static int sizeOfArray( Object value )
@@ -69,7 +72,7 @@ public class SizeOfs
                     value instanceof Long[] || value instanceof Double[] )
             {
                 // worst case
-                base = 32;
+                base = withObjectOverhead( REFERENCE_SIZE + 8/*value in the boxed Number*/ );
             }
             else
             {
@@ -91,14 +94,14 @@ public class SizeOfs
         return 24 + size;
     }
     
-    public static int withArrayOverhead( int size, int length )
+    public static int withArrayOverheadIncludingReferences( int size, int length )
     {
-        return withArrayOverhead( size + length*8 );
+        return withArrayOverhead( size + length*REFERENCE_SIZE );
     }
     
     public static int withReference( int size )
     {
         // The standard size of a reference to an object.
-        return 8 + size;
+        return REFERENCE_SIZE + size;
     }
 }

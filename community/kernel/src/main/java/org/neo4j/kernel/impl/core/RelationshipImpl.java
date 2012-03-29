@@ -75,7 +75,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     @Override
     public int size()
     {
-        return super.size() + 8 + 8;
+        return super.size() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
     }
 
     @Override

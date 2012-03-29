@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 
 import java.util.Arrays;
@@ -35,6 +35,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -80,10 +81,10 @@ public class NodeImpl extends ArrayBasedPrimitive
     @Override
     public int size()
     {
-        int size = super.size() + 8/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
+        int size = super.size() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
         if ( relationships != null )
         {
-            size = withArrayOverhead( size, relationships.length );
+            size = withArrayOverheadIncludingReferences( size, relationships.length );
             for ( RelIdArray array : relationships )
                 size += array.size();
         }

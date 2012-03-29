@@ -52,31 +52,6 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
     
     @Override
-    public void setRegisteredSize( int size )
-    {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public int getRegisteredSize()
-    {
-        throw new UnsupportedOperationException();
-    }
-    
-    public int size()
-    {
-        // only one instance of this and will never go into cache
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void updateSize( NodeManager nodeManager )
-    {
-        // only one instance of this and will never go into cache
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         return this.nodeManager.getGraphDbService();
