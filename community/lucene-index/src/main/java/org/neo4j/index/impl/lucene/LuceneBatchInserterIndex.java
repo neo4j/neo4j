@@ -66,7 +66,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         String dbStoreDir = ((BatchInserterImpl) inserter).getStore();
         Pair<String, Boolean> storeDir = LuceneDataSource.getStoreDir( dbStoreDir );
-        this.createdNow = storeDir.other();
+        this.createdNow = !LuceneDataSource.getFileDirectory( storeDir.first(), identifier ).exists();
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
         this.writer = instantiateWriter( storeDir.first() );
