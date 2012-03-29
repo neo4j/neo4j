@@ -25,6 +25,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -35,6 +36,7 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,6 +44,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import junit.framework.Assert;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -59,6 +62,7 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.cache.LruCache;
 
 public class TestLuceneBatchInsert
 {
@@ -88,12 +92,12 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
     }
-    
+
     @Test
     public void testSome() throws Exception
     {
         // Different paths for each tests because there's a bug (on Windows)
-        // causing _0.cfs file to stay open 
+        // causing _0.cfs file to stay open
         String path = new File( PATH, "1" ).getAbsolutePath();
         BatchInserter inserter = new BatchInserterImpl( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
@@ -265,24 +269,24 @@ public class TestLuceneBatchInsert
         indexProvider.shutdown();
         inserter.shutdown();
     }
-    
+
     @Test
     public void triggerNPEAfterFlush()
     {
         BatchInserter inserter = new BatchInserterImpl( new File( PATH, "6" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "Node-exact", EXACT_CONFIG );
-        
+
         Map<String, Object> map = map( "name", "Something" );
         long node = inserter.createNode( map );
         index.add( node, map );
         index.flush();
         assertContains( index.get( "name", "Something" ), node );
-        
+
         provider.shutdown();
         inserter.shutdown();
     }
-    
+
     @Test
     public void testNumericValues()
     {
@@ -291,17 +295,17 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
-        
+
         long node1 = inserter.createNode( null );
         index.add( node1, map( "number", numeric( 45 ) ) );
         long node2 = inserter.createNode( null );
         index.add( node2, map( "number", numeric( 21 ) ) );
         assertContains( index.query( "number",
                 newIntRange( "number", 21, 50, true, true ) ), node1, node2 );
-        
+
         provider.shutdown();
         inserter.shutdown();
-        
+
         GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         Node n1 = db.getNodeById( node1 );
         Node n2 = db.getNodeById( node2 );
@@ -363,10 +367,10 @@ public class TestLuceneBatchInsert
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
         assertThat( indexResult4, isEmpty() );
 
-        
+
         db.shutdown();
     }
-    
+
     @Test
     public void indexNumbers() throws Exception
     {
@@ -374,16 +378,16 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
-        
+
         long id = inserter.createNode( null );
         Map<String, Object> props = new HashMap<String, Object>();
         props.put( "key", 123L );
         index.add( id, props );
         index.flush();
-        
+
         assertEquals( 1, index.get( "key", 123L ).size() );
         assertEquals( 1, index.get( "key", "123" ).size() );
-        
+
         provider.shutdown();
         inserter.shutdown();
     }
@@ -395,7 +399,7 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "update", EXACT_CONFIG );
-        
+
         long id = inserter.createNode( null );
         Map<String, Object> props = new HashMap<String, Object>();
         props.put( "key", "value" );
@@ -415,7 +419,7 @@ public class TestLuceneBatchInsert
         index.flush();
         assertEquals( 1, index.get( "key2", "value2" ).size() );
         assertEquals( 1, index.get( "key", "value" ).size() );
-        
+
         long id2 = inserter.createNode( null );
         props = new HashMap<String, Object>();
         props.put("2key","value");
@@ -428,6 +432,101 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
     }
+
+    @Test
+    public void useStandardAnalyzer() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "myindex", stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
+        index.add( 0, map( "name", "Mattias" ) );
+        provider.shutdown();
+        inserter.shutdown();
+    }
+
+    @Test
+    public void cachesShouldBeFilledWhenAddToMultipleIndexesCreatedNow() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "index1", LuceneIndexImplementation.EXACT_CONFIG );
+        index.setCacheCapacity( "name", 100000 );
+        String nameKey = "name";
+        String titleKey = "title";
+
+        assertCacheIsEmpty( index, nameKey, titleKey );
+        index.add( 0, map( "name", "Neo", "title", "Matrix" ) );
+        assertCacheContainsSomething( index, nameKey );
+        assertCacheIsEmpty( index, titleKey );
+
+        BatchInserterIndex index2 = provider.nodeIndex( "index2", LuceneIndexImplementation.EXACT_CONFIG );
+        index2.setCacheCapacity( "title", 100000 );
+        assertCacheIsEmpty( index2, nameKey, titleKey );
+        index2.add( 0, map( "name", "Neo", "title", "Matrix" ) );
+        assertCacheContainsSomething( index2, titleKey );
+        assertCacheIsEmpty( index2, nameKey );
+
+        provider.shutdown();
+        inserter.shutdown();
+    }
+
+    @Test
+    public void cachesDoesntGetFilledWhenAddingForAnExistingIndex() throws Exception
+    {
+        // Prepare the test case, i.e. create a store with a populated index.
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        String indexName = "index";
+        BatchInserterIndex index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
+        String key = "name";
+        index.add( 0, map( key, "Mattias" ) );
+        provider.shutdown();
+        inserter.shutdown();
+
+        // Test so that the next run doesn't start caching inserted stuff right away,
+        // because that would lead to invalid results being returned.
+        inserter = new BatchInserterImpl( PATH );
+        provider = new LuceneBatchInserterIndexProvider( inserter );
+        index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
+        index.setCacheCapacity( key, 100000 );
+        assertCacheIsEmpty( index, key );
+        index.add( 1, map( key, "Mattias" ) );
+        assertCacheIsEmpty( index, key );
+        provider.shutdown();
+        inserter.shutdown();
+    }
+
+    private void assertCacheContainsSomething( BatchInserterIndex index, String... keys )
+    {
+        Map<String, LruCache<String, Collection<Long>>> cache = getIndexCache( index );
+        for ( String key : keys )
+            assertTrue( cache.get( key ).size() > 0 );
+    }
+
+    private void assertCacheIsEmpty( BatchInserterIndex index, String... keys )
+    {
+        Map<String, LruCache<String, Collection<Long>>> cache = getIndexCache( index );
+        for ( String key : keys )
+        {
+            LruCache<String, Collection<Long>> keyCache = cache.get( key );
+            assertTrue( keyCache == null || keyCache.size() == 0 );
+        }
+    }
+
+    private Map<String, LruCache<String, Collection<Long>>> getIndexCache( BatchInserterIndex index )
+    {
+        try
+        {
+            Field field = index.getClass().getDeclaredField( "cache" );
+            field.setAccessible( true );
+            return (Map<String, LruCache<String, Collection<Long>>>) field.get( index );
+        }
+        catch ( Exception e )
+        {
+            throw launderedException( e );
+        }
+    }
+
     private enum EdgeType implements RelationshipType
     {
         KNOWS
