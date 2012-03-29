@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.examples</groupId>
@@ -23,6 +23,7 @@
     <apidocs-unpack>${project.build.directory}/neo4j-apidocs</apidocs-unpack>
     <apidocs-target>${project.build.directory}/site/apidocs</apidocs-target>
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
+    <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/tutorials-java-embedded.html</docs.url>
   </properties>
 
@@ -103,25 +104,6 @@
           <execution>
             <id>get-javadoc-sources</id>
             <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>docs-assembly</id>
-            <phase>package</phase>
-            <configuration>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

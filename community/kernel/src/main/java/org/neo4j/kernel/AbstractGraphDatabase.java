@@ -56,10 +56,9 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationChange;
-import org.neo4j.kernel.configuration.ConfigurationChangeListener;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing;
+import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -111,8 +110,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 
-import static org.neo4j.helpers.Exceptions.*;
-
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -128,6 +125,7 @@ public abstract class AbstractGraphDatabase
         public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
         public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+        public static final GraphDatabaseSetting.BooleanSetting execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final GraphDatabaseSetting.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
@@ -156,7 +154,6 @@ public abstract class AbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected RagManager ragManager;
     protected LockManager lockManager;
-    protected AdaptiveCacheManager cacheManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected RelationshipTypeCreator relationshipTypeCreator;
     protected LastCommittedTxIdSetter lastCommittedTxIdSetter;
@@ -174,6 +171,9 @@ public abstract class AbstractGraphDatabase
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
+    protected Guard guard;
+
+    protected MeasureDoNothing monitorGc;
 
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
@@ -243,6 +243,10 @@ public abstract class AbstractGraphDatabase
 
         xaDataSourceManager = life.add( new XaDataSourceManager( StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )) ) );
 
+        guard = conf.enable_execution_guard( false ) ? new Guard( msgLog ) : null;
+
+        xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
+
         if (readOnly)
         {
             txManager = new ReadOnlyTxManager(xaDataSourceManager);
@@ -274,8 +278,6 @@ public abstract class AbstractGraphDatabase
         ragManager = new RagManager(txManager );
         lockManager = createLockManager();
 
-        cacheManager = life.add( new AdaptiveCacheManager( config ) );
-
         idGeneratorFactory = createIdGeneratorFactory();
 
         relationshipTypeCreator = new DefaultRelationshipTypeCreator();
@@ -299,16 +301,10 @@ public abstract class AbstractGraphDatabase
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
-        nodeManager = !readOnly ? new NodeManager( config, this, cacheManager,
-                lockManager, lockReleaser, txManager,
-                persistenceManager, persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager,
+        nodeManager = guard != null ?
+                createGuardedNodeManager( readOnly, cacheType ) :
+                createNodeManager( readOnly, cacheType );
 
-                createNodeLookup(), createRelationshipLookups() ):
-                new ReadOnlyNodeManager( config, this,
-                        cacheManager, lockManager, lockReleaser,
-                        txManager, persistenceManager, persistenceSource,
-                        relationshipTypeHolder, cacheType, propertyIndexManager,
-                        createNodeLookup(), createRelationshipLookups());
         life.add( nodeManager );
 
         lockReleaser.setNodeManager(nodeManager); // TODO Another cyclic dep that needs to be refactored
@@ -375,6 +371,8 @@ public abstract class AbstractGraphDatabase
 
         life.add( new StuffToDoAfterRecovery() );
 
+        life.add( new MonitorGc( ConfigProxy.config( params, MonitorGc.Configuration.class ), msgLog ) );
+
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
 
@@ -410,6 +408,125 @@ public abstract class AbstractGraphDatabase
             }
         } );
     }
+
+    private NodeManager createNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
+    {
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
+        if ( readOnly )
+        {
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                    createRelationshipLookups(), msgLog, diagnosticsManager );
+        }
+
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                createRelationshipLookups(), msgLog, diagnosticsManager );
+    }
+
+    private NodeManager createGuardedNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
+    {
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
+        if ( readOnly )
+        {
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                    createRelationshipLookups(), msgLog, diagnosticsManager )
+            {
+                @Override
+                protected Node getNodeByIdOrNull( final long nodeId )
+                {
+                    guard.check();
+                    return super.getNodeByIdOrNull( nodeId );
+                }
+
+                @Override
+                public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+                {
+                    guard.check();
+                    return super.getNodeForProxy( nodeId, lock );
+                }
+
+                @Override
+                public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+                {
+                    guard.check();
+                    return super.getRelationshipForProxy( relId, lock );
+                }
+
+                @Override
+                protected Relationship getRelationshipByIdOrNull( final long relId )
+                {
+                    guard.check();
+                    return super.getRelationshipByIdOrNull( relId );
+                }
+
+                @Override
+                public Node createNode()
+                {
+                    guard.check();
+                    return super.createNode();
+                }
+
+                @Override
+                public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                        final Node endNode, final RelationshipType type )
+                {
+                    guard.check();
+                    return super.createRelationship( startNodeProxy, startNode, endNode, type );
+                }
+            };
+        }
+
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                createRelationshipLookups(), msgLog, diagnosticsManager )
+        {
+            @Override
+            protected Node getNodeByIdOrNull( final long nodeId )
+            {
+                guard.check();
+                return super.getNodeByIdOrNull( nodeId );
+            }
+
+            @Override
+            public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+            {
+                guard.check();
+                return super.getNodeForProxy( nodeId, lock );
+            }
+
+            @Override
+            public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+            {
+                guard.check();
+                return super.getRelationshipForProxy( relId, lock );
+            }
+
+            @Override
+            protected Relationship getRelationshipByIdOrNull( final long relId )
+            {
+                guard.check();
+                return super.getRelationshipByIdOrNull( relId );
+            }
+
+            @Override
+            public Node createNode()
+            {
+                guard.check();
+                return super.createNode();
+            }
+
+            @Override
+            public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                    final Node endNode, final RelationshipType type )
+            {
+                guard.check();
+                return super.createRelationship( startNodeProxy, startNode, endNode, type );
+            }
+        };
+    }
+
 
     @Override
     public void shutdown()
@@ -773,6 +890,12 @@ public abstract class AbstractGraphDatabase
         return defaultTxBuilder;
     }
 
+    @Override
+    public Guard getGuard()
+    {
+        return guard;
+    }
+
     public <T> Collection<T> getManagementBeans( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
@@ -1113,6 +1236,8 @@ public abstract class AbstractGraphDatabase
                 return (T) xaDataSourceManager;
             else if (FileSystemAbstraction.class.isAssignableFrom(type))
                 return (T) fileSystem;
+            else if (Guard.class.isAssignableFrom(type))
+                return (T) guard;
             else
                 throw new IllegalArgumentException("Could not resolve dependency of type:"+type.getName());
         }

@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.{Unsolved, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.commands.{Property, SortItem}
 import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commands.{CachedExpression, Property, SortItem}
+import org.neo4j.cypher.internal.symbols.{ScalarType, Identifier}
+import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
 
 class SortBuilderTest extends PipeBuilder with Assertions {
 
@@ -35,13 +36,15 @@ class SortBuilderTest extends PipeBuilder with Assertions {
       extracted = true
     )
 
+    val expected = List(Solved(SortItem(CachedExpression("x.foo", Identifier("x.foo", ScalarType())), true)))
+
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
-    
-    val (_, resultQ) = builder((p,q))
-    
-    assert(resultQ.sort === q.sort.map(_.solve))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
+
+    val (_, resultQ) = builder(p, q)
+
+    assert(resultQ.sort === expected)
   }
 
   @Test def should_not_accept_if_not_yet_extracted() {
@@ -52,7 +55,7 @@ class SortBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should accept this", builder.isDefinedAt(p, q))
   }
 
 }

@@ -28,6 +28,7 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
+import org.neo4j.test.TestData.Title;
 
 public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -69,8 +70,12 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity() );
     }
 
+    /**
+     * The automatic relationship index can not be removed.
+     */
     @Test
     @Documented
+    @Title( "Relationship AutoIndex is not removable" )
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
     public void Relationship_AutoIndex_is_not_removable() throws DatabaseBlockedException, JsonParseException
     {
@@ -81,8 +86,12 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity();
     }
 
+    /**
+     * The automatic node index can not be removed.
+     */
     @Test
     @Documented
+    @Title( "Node AutoIndex is not removable" )
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
     public void AutoIndex_is_not_removable() throws DatabaseBlockedException, JsonParseException
     {
@@ -92,9 +101,13 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity();
     }
 
+    /**
+     * It is not allowed to add items manually to automatic indexes.
+     */
     @Test
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
     @Documented
+    @Title( "Items can not be added manually to an node AutoIndex" )
     public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
     {
         data.get();
@@ -117,9 +130,13 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
         return "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\": \"" + targetUri + "\"}";
     }
 
+    /**
+     * It is not allowed to add items manually to automatic indexes.
+     */
     @Test
     @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
     @Documented
+    @Title( "Items can not be added manually to a relationship AutoIndex" )
     public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex() throws Exception
     {
         data.get();
@@ -138,9 +155,13 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity();
     }
 
+    /**
+     * It is not allowed to remove entries manually from automatic indexes.
+     */
     @Test
     @Documented
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
+    @Title( "Automatically indexed nodes cannot be removed from the index manually" )
     public void autoindexed_items_cannot_be_removed_manually() throws DatabaseBlockedException, JsonParseException
     {
         long id = data.get()
@@ -164,9 +185,13 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity();
     }
 
+    /**
+     * It is not allowed to remove entries manually from automatic indexes.
+     */
     @Test
     @Documented
     @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
+    @Title( "Automatically indexed relationships cannot be removed from the index manually" )
     public void autoindexed_relationships_cannot_be_removed_manually() throws DatabaseBlockedException,
             JsonParseException
     {
@@ -194,7 +219,11 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity();
     }
 
+    /**
+     * See the example request.
+     */
     @Documented
+    @Title( "Find relationship by query from an automatic index" )
     @Test
     @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
     public void Find_relationship_by_query_from_an_automatic_index() throws PropertyValueException
@@ -206,7 +235,11 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity() );
     }
 
+    /**
+     * See the example request.
+     */
     @Documented
+    @Title( "Find relationship by exact match from an automatic index" )
     @Test
     @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
     public void Find_relationship_by_exact_match_from_an_automatic_index() throws PropertyValueException

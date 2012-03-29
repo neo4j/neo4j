@@ -35,7 +35,7 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
     val q = PartiallySolvedQuery().
       copy(where = Seq(Unsolved(Equals(Property("s", "foo"), Literal("bar")))))
 
-    assertFalse("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -45,7 +45,7 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((pipe, q)))
+    assertTrue("Should be able to build on this", builder.isDefinedAt(pipe, q))
   }
 
   @Test
@@ -58,7 +58,7 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    val (_, result) = builder((pipe, q))
+    val (_, result) = builder(pipe, q)
 
     assert(result.where.toSet === Set(
       Solved(Equals(Property("s", "foo"), Literal("bar"))),

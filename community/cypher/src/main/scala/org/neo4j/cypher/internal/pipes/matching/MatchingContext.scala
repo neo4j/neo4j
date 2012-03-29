@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.SyntaxException
-import collection.immutable.Map
+import collection.Map
 import collection.{Traversable, Seq}
-import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.symbols._
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -36,16 +36,32 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
   val containsHardPatterns = patterns.find(!_.isInstanceOf[RelatedTo]).nonEmpty
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
+  private def identifiers:Seq[Identifier] = patterns.flatMap(_ match {
+    case RelatedTo(left, right, rel, _, _, _, _) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
+    case path: PathPattern => Seq(
+      Identifier(path.start, NodeType()),
+      Identifier(path.end, NodeType()),
+      Identifier(path.pathName, PathType())
+    ) ++ path.relIterator.map(Identifier(_, new IterableType(RelationshipType())))
+    case _ => Seq()
+  })
+
+  lazy val symbols = boundIdentifiers.add(identifiers: _*)
+
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     builder.getMatches(sourceRow)
   }
 
-  private def decideWhichMatcherToUse() = {
-//    if (JoinerBuilder.canHandlePatter(patternGraph)) {
-//      new JoinerBuilder(patternGraph, predicates)
-//    } else {
+  private def decideWhichMatcherToUse(): MatcherBuilder = {
+    /*if (JoinerBuilder.canHandlePatter(patternGraph)) {
+      new JoinerBuilder(patternGraph, predicates)
+    } else */
+    if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
+      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols)
+    } else {
+
       new PatterMatchingBuilder(patternGraph, predicates)
-//    }
+    }
   }
 
   private def buildPatternGraph(): PatternGraph = {

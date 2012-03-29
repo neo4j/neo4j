@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{AnyType, NodeType, RelationshipType, Identifier}
+import collection.mutable.Map
+import collection.{Traversable, Iterable}
 
 abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[T]) extends Pipe {
   def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, m => sourceIterable)
@@ -32,9 +34,14 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    inner.createResults(params).flatMap(sourceMap => {
-      createSource(sourceMap).map(x=> sourceMap ++ Map(name -> x))
+    val map = inner.createResults(params).flatMap(sourceMap => {
+      val source: Iterable[T] = createSource(sourceMap)
+      source.map(x =>{
+        val newMap: Map[String, Any] = sourceMap.clone().asInstanceOf[Map[String, Any]]
+        newMap += name -> x
+      })
     })
+    map
   }
 
   def visibleName: String

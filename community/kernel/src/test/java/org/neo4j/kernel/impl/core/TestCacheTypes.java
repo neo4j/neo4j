@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
     private static final String PATH = getStorePath( "cache-db" );
-    
+
     @BeforeClass
     public static void clear()
     {
@@ -44,7 +44,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     {
         return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type, cacheType ).newGraphDatabase();
     }
-    
+
     @Test
     public void testDefaultCache()
     {
@@ -60,7 +60,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.weak, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
     public void testSoftRefCache()
     {
@@ -84,15 +84,15 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.strong, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
-    public void testOldCache()
+    public void testArrayCache()
     {
-        GraphDatabaseAPI db = newDb( "old" );
-        assertEquals( CacheType.old, db.getNodeManager().getCacheType() );
+        GraphDatabaseAPI db = newDb( "array" );
+        assertEquals( CacheType.array, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
-
+    
     @Test
     public void testInvalidCache()
     {

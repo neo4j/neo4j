@@ -22,8 +22,7 @@ package org.neo4j.cypher
 import org.junit.{After, Before}
 import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.graphdb._
+import collection.Map
 
 class GraphDatabaseTestBase extends JUnitSuite {
   var graph: GraphDatabaseService = null

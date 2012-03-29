@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -43,9 +42,15 @@ public class OrderedPath
     static final String DB_PATH = "target/neo4j-orderedpath-db";
     GraphDatabaseService db;
 
+    public OrderedPath( GraphDatabaseService db )
+    {
+        this.db = db;
+    }
+
     public static void main( String[] args )
     {
-        OrderedPath op = new OrderedPath();
+        GraphDatabaseService db = new EmbeddedGraphDatabase( DB_PATH );
+        OrderedPath op = new OrderedPath( db );
         Node A = op.createTheGraph();
         TraversalDescription traversalDescription = op.findPaths();
         System.out.println( op.printPaths( traversalDescription, A ) );
@@ -54,7 +59,6 @@ public class OrderedPath
 
     public Node createTheGraph()
     {
-        db = new EmbeddedGraphDatabase( DB_PATH );
         Transaction tx = db.beginTx();
         // START SNIPPET: createGraph
         Node A = db.createNode();
@@ -123,25 +127,47 @@ public class OrderedPath
         String output = "";
         // START SNIPPET: printPath
         Traverser traverser = td.traverse( A );
+        PathPrinter pathPrinter = new PathPrinter( "name" );
         for ( Path path : traverser )
         {
-            for ( PropertyContainer entity : path )
-            {
-                if ( entity instanceof Relationship )
-                {
-                    Relationship relationship = (Relationship) entity;
-                    output += "--[" + relationship.getType()
-                            .name() + "]-->";
-                }
-                else if ( entity instanceof Node )
-                {
-                    Node node = (Node) entity;
-                    output += "(" + node.getProperty( "name" ) + ")";
-                }
-            }
+            output += Traversal.pathToString( path, pathPrinter );
         }
         // END SNIPPET: printPath
         output += "\n";
         return output;
     }
+
+    // START SNIPPET: pathPrinter
+    static class PathPrinter implements Traversal.PathDescriptor<Path>
+    {
+        private final String nodePropertyKey;
+
+        public PathPrinter( String nodePropertyKey )
+        {
+            this.nodePropertyKey = nodePropertyKey;
+        }
+
+        @Override
+        public String nodeRepresentation( Path path, Node node )
+        {
+            return "(" + node.getProperty( nodePropertyKey, "" ) + ")";
+        }
+
+        @Override
+        public String relationshipRepresentation( Path path, Node from,
+                Relationship relationship )
+        {
+            String prefix = "--", suffix = "--";
+            if ( from.equals( relationship.getEndNode() ) )
+            {
+                prefix = "<--";
+            }
+            else
+            {
+                suffix = "-->";
+            }
+            return prefix + "[" + relationship.getType().name() + "]" + suffix;
+        }
+    }
+    // END SNIPPET: pathPrinter
 }

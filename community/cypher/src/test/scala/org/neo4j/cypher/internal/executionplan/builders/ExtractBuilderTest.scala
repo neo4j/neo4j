@@ -38,9 +38,9 @@ class ExtractBuilderTest extends Assertions with PipeBuilder {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertTrue("This query should be accepted", builder.isDefinedAt((p, q)))
+    assertTrue("This query should be accepted", builder.isDefinedAt(p, q))
 
-    val (_, result) = builder((p, q))
+    val (_, result) = builder(p, q)
 
     assertTrue("the builder did not mark the query as extracted", result.extracted)
   }
@@ -55,7 +55,7 @@ class ExtractBuilderTest extends Assertions with PipeBuilder {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.isDefinedAt((p, q)))
+    assertFalse("This query should not be accepted", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -68,6 +68,6 @@ class ExtractBuilderTest extends Assertions with PipeBuilder {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.isDefinedAt((p, q)))
+    assertFalse("This query should not be accepted", builder.isDefinedAt(p, q))
   }
 }

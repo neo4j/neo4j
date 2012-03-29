@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
@@ -60,6 +61,7 @@ public class TxLog
     public static final byte MARK_COMMIT = 3;
     public static final byte TX_DONE = 4;
     private final FileSystemAbstraction fileSystem;
+    private final StringLogger msgLog;
 
     /**
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
@@ -68,16 +70,18 @@ public class TxLog
      * 
      * @param fileName
      *            Filename of file to use
+     * @param msgLog 
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( String fileName, FileSystemAbstraction fileSystem ) throws IOException
+    public TxLog( String fileName, FileSystemAbstraction fileSystem, StringLogger msgLog ) throws IOException
     {
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
         this.fileSystem = fileSystem;
+        this.msgLog = msgLog;
         FileChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel );
@@ -259,7 +263,17 @@ public class TxLog
         {
             XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0]
                 : branchId );
-            return "TxLogRecord[" + typeName() + "," + xid + "," + seqNr + "]";
+            return "TxLogRecord[" + typeName() + "," + xid + "," + seqNr + "," + (1+sizeOf( globalId )+sizeOf( branchId )) + "]";
+        }
+
+        private int sizeOf( byte[] id )
+        {
+            // If id is null it means this record type doesn't have it. TX_START/MARK_COMMIT/TX_DONE
+            // only has the global id, whereas BRANCH_ADD has got both the global and branch ids.
+            if ( id == null )
+                return 0;
+            // The length of the array (1 byte) + the actual array
+            return 1+id.length;
         }
 
         String typeName()
@@ -473,6 +487,7 @@ public class TxLog
                 return r1.getSequenceNumber() - r2.getSequenceNumber();
             }
         } );
+        msgLog.logMessage( "About to rotate " + name + " to " + newFile + " with dangling records " + records, true );
         Iterator<Record> recordItr = records.iterator();
         FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
@@ -485,5 +500,6 @@ public class TxLog
             writeRecord( record, ForceMode.forced );
         }
         force();
+        msgLog.logMessage( "Rotated " + name + " to, file channel now at " + fileChannel.position(), true );
     }
 }

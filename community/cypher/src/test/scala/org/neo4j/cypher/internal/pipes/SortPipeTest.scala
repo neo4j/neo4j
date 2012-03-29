@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Test
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.{Entity, ReturnItem, SortItem}
+import org.neo4j.cypher.internal.commands.{Entity, SortItem}
 import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
-import java.lang.String
+import collection.mutable.Map
 
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {

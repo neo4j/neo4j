@@ -17,30 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.guard;
+package org.neo4j.kernel.impl.cache;
 
-public class GuardException extends RuntimeException {
-
-    private final int opsCount;
-    private final int totalOpsCount;
-    private final long overtime;
-
-    public GuardException(final int opsCount, final int totalOpsCount, final long overtime) {
-        super(String.format("timeout occured (ops=%d,totalOps=%d,overtime=%d)", opsCount, totalOpsCount, overtime));
-        this.opsCount = opsCount;
-        this.totalOpsCount = totalOpsCount;
-        this.overtime = overtime;
-    }
-
-    public int getOpsCount() {
-        return opsCount;
-    }
-
-    public long getOvertime() {
-        return overtime;
-    }
-
-    public int getTotalOpsCount() {
-        return totalOpsCount;
-    }
+public interface EntityWithSize extends SizeOf
+{
+    public long getId();
 }

@@ -19,36 +19,36 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class NoCache<K,V> implements Cache<K,V>
+public class NoCache<E extends EntityWithSize> implements Cache<E>
 {
     private final String name;
     private volatile long misses;
-    private static final AtomicLongFieldUpdater<NoCache> MISSES = AtomicLongFieldUpdater.newUpdater( NoCache.class,
-            "misses" );
+    
+    private static final AtomicLong MISSES = new AtomicLong( 0 );
 
     public NoCache( String name )
     {
         this.name = name;
     }
 
-    public void put( K key, V value )
+    public void put( E value )
     {
     }
 
-    public void putAll( Map<K,V> map )
+    public void putAll( Collection<E> values )
     {
     }
 
-    public V get( K key )
+    public E get( long key )
     {
-        MISSES.incrementAndGet( this );
+        MISSES.incrementAndGet();
         return null;
     }
 
-    public V remove( K key )
+    public E remove( long key )
     {
         return null;
     }
@@ -65,7 +65,7 @@ public class NoCache<K,V> implements Cache<K,V>
         return misses;
     }
 
-    public int size()
+    public long size()
     {
         return 0;
     }
@@ -74,30 +74,14 @@ public class NoCache<K,V> implements Cache<K,V>
     {
     }
 
-    public void elementCleaned( V value )
-    {
-    }
-
     public String getName()
     {
         return name;
     }
 
-    public boolean isAdaptive()
+    @Override
+    public void updateSize( E entity, int sizeBefore, int sizeAfter )
     {
-        return true;
-    }
-
-    public int maxSize()
-    {
-        return -1;
-    }
-
-    public void resize( int newSize )
-    {
-    }
-
-    public void setAdaptiveStatus( boolean status )
-    {
+        // do nothing
     }
 }

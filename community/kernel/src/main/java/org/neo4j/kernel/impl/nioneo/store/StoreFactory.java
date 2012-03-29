@@ -83,7 +83,7 @@ public class StoreFactory
         }
     }
 
-    private NeoStore attemptNewNeoStore( String fileName )
+    NeoStore attemptNewNeoStore( String fileName )
     {
         return new NeoStore( fileName, config,
                 lastCommittedTxIdSetter, idGeneratorFactory, fileSystemAbstraction, stringLogger, txHook,

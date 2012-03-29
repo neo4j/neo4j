@@ -26,6 +26,8 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,7 +48,6 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -58,7 +59,15 @@ public class TxManager extends AbstractTransactionManager
 {
     private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
-    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
+    /*
+     * TODO
+     * This CHM here (and the one in init()) must at some point be removed and changed
+     * for something that is better bound to the transaction itself. A ThreadLocal<TransactionImpl>
+     * or even better the transaction passed through the stack are improvements over this.
+     * CHM will increase performance in multiple thread usage but it will reduce it in single
+     * thread accesses when compared to say an ArrayMap (which was here before).
+     */
+    private Map<Thread, TransactionImpl> txThreadMap = new ConcurrentHashMap<Thread, TransactionImpl>();
 
     private final String txLogDir;
     private static String separator = File.separator;
@@ -121,7 +130,7 @@ public class TxManager extends AbstractTransactionManager
     @Override
     public void init()
     {
-        txThreadMap = new ArrayMap<Thread,TransactionImpl>( (byte)5, true, true );
+        txThreadMap = new ConcurrentHashMap<Thread, TransactionImpl>();
         logSwitcherFileName = txLogDir + separator + "active_tx_log";
         txLog1FileName = "tm_tx_log.1";
         txLog2FileName = "tm_tx_log.2";
@@ -143,7 +152,7 @@ public class TxManager extends AbstractTransactionManager
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found."));
                 }
-                txLog = new TxLog( currentTxLog, fileSystem );
+                txLog = new TxLog( currentTxLog, fileSystem, msgLog );
                 msgLog.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
@@ -163,7 +172,7 @@ public class TxManager extends AbstractTransactionManager
                     .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem );
+                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem, msgLog );
                 msgLog.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
@@ -264,6 +273,7 @@ public class TxManager extends AbstractTransactionManager
         fc.write( buf );
         fc.force( true );
         fc.close();
+        msgLog.logMessage( "Active txlog set to " + newFileName, true );
     }
 
     void setTmNotOk( Throwable cause )
@@ -312,7 +322,8 @@ public class TxManager extends AbstractTransactionManager
     {
         begin( ForceMode.forced );
     }
-    
+
+    @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         if ( blocked )
@@ -785,13 +796,13 @@ public class TxManager extends AbstractTransactionManager
         }
         return -1;
     }
-    
+
     @Override
     public ForceMode getForceMode()
     {
         return ((TransactionImpl)getTransaction()).getForceMode();
     }
-    
+
     public int getStartedTxCount()
     {
         return startedTxCount.get();

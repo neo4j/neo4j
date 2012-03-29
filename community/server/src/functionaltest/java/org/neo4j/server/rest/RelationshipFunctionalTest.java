@@ -68,6 +68,9 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue(JsonHelper.jsonToMap( response ).containsKey( "start" ));
     }
 
+    /**
+     * See the example request below.
+     */
     @Test
     @Documented
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
@@ -85,8 +88,12 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 
     }
 
+    /**
+     * Attempting to remove a property that doesn't exist results in
+     * an error.
+     */
     @Test
-    @Documented( )
+    @Documented
     @Title( "Remove non-existent property from a relationship" )
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
@@ -98,6 +105,10 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
                 getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
 
+    /**
+     * Attempting to remove all properties from a relationship which doesn't
+     * exist results in an error.
+     */
     @Test
     @Graph( "I know you" )
     @Documented
@@ -110,6 +121,10 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 
     }
 
+    /**
+     * Attempting to remove a property from a relationship which doesn't exist
+     * results in an error.
+     */
     @Test
     @Graph( "I know you" )
     @Documented

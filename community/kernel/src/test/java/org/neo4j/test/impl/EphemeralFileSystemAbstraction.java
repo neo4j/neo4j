@@ -40,7 +40,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.junit.runners.model.MultipleFailureException;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -84,6 +87,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         super.finalize();
     }
 
+    @SuppressWarnings( "deprecation" )
     public void assertNoOpenFiles() throws Exception
     {
         List<Throwable> open = new ArrayList<Throwable>();
@@ -97,7 +101,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         if (!open.isEmpty())
         {
             if (open.size() == 1) throw (FileStillOpenException) open.get( 0 );
-            throw new MultipleFailureException( open );
+            throw new org.junit.internal.runners.model.MultipleFailureException( open );
         }
     }
 

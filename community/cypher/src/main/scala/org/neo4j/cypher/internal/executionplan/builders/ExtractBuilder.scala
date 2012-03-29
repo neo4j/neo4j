@@ -19,21 +19,33 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
 
 class ExtractBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val resultPipe = new ExtractPipe(p, q.returns.map(_.token.expression))
+  def apply(p: Pipe, q: PartiallySolvedQuery) = ExtractBuilder.extractIfNecessary(q, p, q.returns.map(_.token.expression))
 
-      (resultPipe, q.copy(extracted = true))
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery)= !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+
+  def priority: Int = PlanBuilder.Extraction
+}
+
+object ExtractBuilder {
+
+  def extractIfNecessary(psq: PartiallySolvedQuery, p: Pipe, expressions: Seq[Expression]): (Pipe, PartiallySolvedQuery) = {
+    val missing = p.symbols.missingExpressions(expressions)
+
+    if (missing.nonEmpty) {
+      val newPsq = expressions.foldLeft(psq)((psq, exp) => psq.rewrite(fromQueryExpression =>
+        if (exp == fromQueryExpression)
+          CachedExpression(fromQueryExpression.identifier.name, fromQueryExpression.identifier)
+        else
+          fromQueryExpression
+      ))
+      (new ExtractPipe(p, expressions), newPsq.copy(extracted = true))
+    } else {
+      (p, psq.copy(extracted = true))
     }
   }
-
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
-  }
-
-  def priority: Int = 0
 }

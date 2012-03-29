@@ -565,7 +565,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 command.execute();
                 removeRelationshipFromCache( command.getKey() );
-                if ( true /* doesn't work: command.isRemove(), the log doesn't contain the nodes */)
+                // if any of them are -1 both should be so we get an exception if that does not hold true
+                if ( command.getFirstNode() != -1 || command.getSecondNode() != -1 ) 
                 {
                     removeNodeFromCache( command.getFirstNode() );
                     removeNodeFromCache( command.getSecondNode() );

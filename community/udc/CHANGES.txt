@@ -1,3 +1,8 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Added possibility to interpret and store registration ID with a ping.
+o Added MAC address to pings.
+
 1.4.M03 (2011-05-26)
 --------------------
 o No changes.

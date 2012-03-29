@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.{GraphStyle, AsciiDocSimpleStyle}
 
 class HyperedgeTest extends DocumentingTestBase {
   def graphDescription = List("User1 in Group1", "User1 in Group2",
@@ -33,6 +34,10 @@ class HyperedgeTest extends DocumentingTestBase {
     "U1G1R2 hasRole Role2", "U1G1R2 hasGroup Group1")
 
   def section = "cookbook"
+
+  override protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  }
 
   @Test def findGroups() {
     testQuery(

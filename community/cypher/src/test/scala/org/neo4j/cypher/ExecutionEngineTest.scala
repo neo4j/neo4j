@@ -386,7 +386,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, false, True())).
       where(Equals(Property("n", "animal"), Property("x", "animal"))).
       returns(ReturnItem(Entity("n"), "n"), ReturnItem(Entity("x"), "x"))
 
@@ -440,7 +440,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false, True())).
+      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True())).
       aggregation(CountStar()).
       returns(ReturnItem(Entity("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
@@ -588,7 +588,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
       where(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS"))).
       returns(ReturnItem(Entity("x"), "x"))
 
@@ -604,7 +604,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
       returns(ReturnItem(RelationshipTypeFunction(Entity("r")), "type(r)"))
 
     val result = execute(query)
@@ -658,7 +658,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
       where(Or(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Entity("r")), Literal("HATES")))).
       returns(ReturnItem(Entity("x"), "x"))
 
@@ -673,7 +673,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false, True()))).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True()))).
       returns(ReturnItem(Entity("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
@@ -690,8 +690,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1)).
       namedPaths(NamedPath("p",
-      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING, false, True()),
-      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING, false, True()))).
+      RelatedTo("a", "b", "rel1", Seq(), Direction.OUTGOING, false, True()),
+      RelatedTo("b", "c", "rel2", Seq(), Direction.OUTGOING, false, True()))).
       returns(ReturnItem(Entity("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
@@ -885,7 +885,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), false, true, None)).
+      matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), false, true, None)).
       returns(ReturnItem(Entity("p"), "p"))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
@@ -903,7 +903,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", None, Direction.BOTH, None, false, true, None)).
+      matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, None, false, true, None)).
       returns(ReturnItem(Entity("p"), "p"))
 
     //Checking that we don't get an exception
@@ -1570,7 +1570,7 @@ RETURN x0.name?
   }
 
   @Test def shouldHandleParametersNamedAsIdentifiers() {
-    val a = createNode("bar" -> "Andres")
+    createNode("bar" -> "Andres")
 
     val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     assert(List(Map("foo.bar" -> "Andres")) === result.toList)
@@ -1749,9 +1749,48 @@ RETURN x0.name?
     val b = createNode()
     val r = relate(a,b)
     val result = parseAndExecute("start a=node(1), r=relationship(0) return a,r").toList
-    
+
     assert(List(Map("a"->a, "r"->r)) === result)
-  } 
+  }   
+  
+  @Test def relationship_predicate_with_multiple_rel_types() {
+    val a = createNode()
+    val b = createNode()
+    val x = createNode()
+    
+    relate(a,x,"A")
+    relate(b,x,"B")
+
+    val result = parseAndExecute("start a=node(1,2) where a-[:A|B]->() return a").toList
+
+    assert(List(Map("a" -> a), Map("a" -> b)) === result)
+  }
+
+  @Test def nullable_var_length_path_should_work() {
+    createNode()
+    val b = createNode()
+
+    val result = parseAndExecute("start a=node(1), b=node(2) match a-[r?*]-b where r is null and a <> b return b").toList
+
+    assert(List(Map("b" -> b)) === result)
+  }
+
+  @Test def listing_rel_types_multiple_times_should_not_give_multiple_returns() {
+    val a = createNode()
+    val b = createNode()
+    relate(a,b, "REL")
+
+    val result = parseAndExecute("start a=node(1) match a-[:REL|REL]-b return b").toList
+
+    assert(List(Map("b" -> b)) === result)
+  }
+  
+  @Test def should_throw_on_missing_indexes() {
+    intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex('value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=relationship:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](parseAndExecute("start a=relationship:missingIndex('value') return a").toList)
+  }
 
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)

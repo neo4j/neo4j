@@ -26,17 +26,22 @@ import org.neo4j.cypher.internal.pipes.NullPipe
 import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
+import java.lang.Iterable
+import org.neo4j.graphdb._
+import index._
+import java.util.Map
 
 class IndexQueryBuilderTest extends Assertions {
 
-  val builder = new IndexQueryBuilder(null)
-  //case class NodeByIndexQuery(varName:String, idxName: String, query: Expression) extends NodeStartItem(varName)
+  val builder = new IndexQueryBuilder(new Fake_Database_That_Has_All_Indexes)
+
   @Test
   def says_yes_to_node_by_id_queries() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertTrue("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -46,7 +51,7 @@ class IndexQueryBuilderTest extends Assertions {
         Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))),
         Unsolved(NodeByIndexQuery("x", "idx", Literal("foo")))))
 
-    val (_, remaining) = builder((new NullPipe(), q))
+    val (_, remaining) = builder(new NullPipe(), q)
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -58,7 +63,7 @@ class IndexQueryBuilderTest extends Assertions {
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1))))
 
 
-    val (_, result) = builder((new NullPipe(), q))
+    val (_, result) = builder(new NullPipe(), q)
 
     val expected = Set(Solved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1)))
 
@@ -70,7 +75,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
   }
 
   @Test
@@ -78,8 +83,62 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    val (_, remainingQ) = builder((new NullPipe(), q))
+    val (_, remainingQ) = builder(new NullPipe(), q)
 
     assert(remainingQ.start === Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
   }
+}
+
+class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with IndexManager {
+  def createNode(): Node = null
+
+  def existsForNodes(indexName: String): Boolean = true
+
+  def existsForRelationships(indexName: String): Boolean = true
+
+  def forNodes(indexName: String): Index[Node] = null
+
+  def forNodes(indexName: String, customConfiguration: Map[String, String]): Index[Node] = null
+
+  def forRelationships(indexName: String): RelationshipIndex = null
+
+  def forRelationships(indexName: String, customConfiguration: Map[String, String]): RelationshipIndex = null
+
+  def getConfiguration(index: Index[_ <: PropertyContainer]): Map[String, String] = null
+
+  def getNodeAutoIndexer: AutoIndexer[Node] = null
+
+  def getRelationshipAutoIndexer: RelationshipAutoIndexer = null
+
+  def nodeIndexNames(): Array[String] = null
+
+  def relationshipIndexNames(): Array[String] = null
+
+  def removeConfiguration(index: Index[_ <: PropertyContainer], key: String): String = ""
+
+  def setConfiguration(index: Index[_ <: PropertyContainer], key: String, value: String): String = ""
+
+  def beginTx(): Transaction = null
+
+  def getAllNodes: Iterable[Node] = null
+
+  def getNodeById(id: Long): Node = null
+
+  def getReferenceNode: Node = null
+
+  def getRelationshipById(id: Long): Relationship = null
+
+  def getRelationshipTypes: Iterable[RelationshipType] = null
+
+  def index(): IndexManager = this
+
+  def registerKernelEventHandler(handler: KernelEventHandler): KernelEventHandler = null
+
+  def registerTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] = null
+
+  def shutdown() {}
+
+  def unregisterKernelEventHandler(handler: KernelEventHandler): KernelEventHandler = null
+
+  def unregisterTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] = null
 }

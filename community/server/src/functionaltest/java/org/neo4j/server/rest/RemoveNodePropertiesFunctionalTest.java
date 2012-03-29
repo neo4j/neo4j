@@ -96,16 +96,22 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
 
+    /**
+    * To delete a single property
+    * from a node, see the example below.
+    */
+    @Documented
     @Test
-    public void shouldReturn204WhenPropertyIsRemoved() throws DatabaseBlockedException
+    public void delete_a_named_property_from_a_node() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put( "jim", "tobias" );
+        map.put( "name", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        JaxRsResponse response = removeNodePropertyOnServer(nodeId, "jim");
-        assertEquals( 204, response.getStatus() );
-        response.close();
+        gen.get()
+        .expectedStatus( 204 )
+        .description( startGraph( "delete named property start" ))
+        .delete( functionalTestHelper.nodePropertyUri( nodeId, "name") );
     }
 
     @Test

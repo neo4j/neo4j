@@ -43,3 +43,7 @@ class ParameterWrongTypeException(message:String, cause:Throwable) extends Cyphe
 }
 
 class PatternException(message:String) extends CypherException(message, null)
+
+class InternalException(message:String) extends CypherException(message, null)
+
+class MissingIndexException(indexName:String) extends CypherException("Index `" + indexName + "` does not exist")

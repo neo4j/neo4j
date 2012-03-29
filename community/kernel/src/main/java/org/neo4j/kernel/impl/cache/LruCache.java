@@ -30,14 +30,12 @@ import java.util.Set;
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
  * elements exceeds that limit the least recently used element will be removed.
  */
-public class LruCache<K,E> implements Cache<K,E>
+public class LruCache<K,E>
 {
     private final String name;
     int maxSize = 1000;
     private boolean resizing = false;
     private boolean adaptive = false;
-
-    private final AdaptiveCacheManager cacheManager;
 
     private final Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
     {
@@ -47,32 +45,12 @@ public class LruCache<K,E> implements Cache<K,E>
             // synchronization miss with old value on maxSize here is ok
             if ( super.size() > maxSize )
             {
-                if ( isAdaptive() && !isResizing() )
-                {
-                    adaptCache();
-                }
-                else
-                {
-                    super.remove( eldest.getKey() );
-                    elementCleaned( eldest.getValue() );
-                }
+                super.remove( eldest.getKey() );
+                elementCleaned( eldest.getValue() );
             }
             return false;
         }
     };
-
-    void adaptCache()
-    {
-        if ( cacheManager != null )
-        {
-            cacheManager.adaptCache( this );
-        }
-    }
-
-//    public void setMaxSize( int maxSize )
-//    {
-//        this.maxSize = maxSize;
-//    }
 
     /**
      * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an
@@ -85,9 +63,8 @@ public class LruCache<K,E> implements Cache<K,E>
      * @param cacheManager
      *            adaptive cache manager or null if adaptive caching not needed
      */
-    public LruCache( String name, int maxSize, AdaptiveCacheManager cacheManager )
+    public LruCache( String name, int maxSize )
     {
-        this.cacheManager = cacheManager;
         if ( name == null || maxSize < 1 )
         {
             throw new IllegalArgumentException( "maxSize=" + maxSize
@@ -255,13 +232,11 @@ public class LruCache<K,E> implements Cache<K,E>
 
     private final HitCounter counter = new HitCounter();
 
-    @Override
     public long hitCount()
     {
         return counter.getHitsCount();
     }
 
-    @Override
     public long missCount()
     {
         return counter.getMissCount();

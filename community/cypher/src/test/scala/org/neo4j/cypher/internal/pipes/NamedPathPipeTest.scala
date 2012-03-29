@@ -24,6 +24,7 @@ import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
 import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.commands.{True, Pattern, NamedPath, VarLengthRelatedTo}
+import collection.mutable.Map
 
 class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -34,7 +35,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var pattern: Pattern = null
 
   @Before def init() {
-    pattern = VarLengthRelatedTo("x", "a", "b", None, None, None, Direction.BOTH, None, false, True())
+    pattern = VarLengthRelatedTo("x", "a", "b", None, None, Seq(), Direction.BOTH, None, false, True())
     a = createNode("a")
     b = createNode("b")
     c = createNode("c")

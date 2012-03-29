@@ -40,9 +40,9 @@ class AggregationBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("n"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
 
-    val (_, resultQ) = builder((p, q))
+    val (_, resultQ) = builder(p, q)
 
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
@@ -64,6 +64,6 @@ class AggregationBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq())
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 }

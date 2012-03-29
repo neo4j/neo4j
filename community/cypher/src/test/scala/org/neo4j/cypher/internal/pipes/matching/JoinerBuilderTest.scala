@@ -31,7 +31,7 @@ class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
   @Test def simplestCase() {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
-    val pR = pA.relateTo("r", pB, None, Direction.BOTH, false, True())
+    val pR = pA.relateTo("r", pB, Seq(), Direction.BOTH, false, True())
     val symbols = new SymbolTable(Identifier("a", NodeType()))
 
     val nodes = Map("a" -> pA, "b" -> pB)

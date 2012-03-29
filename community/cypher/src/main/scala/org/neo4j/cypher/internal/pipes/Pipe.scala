@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
-
+import org.neo4j.cypher.internal.commands.Expression
+import collection.mutable.Map
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
  * wrap another pipe. StartPipes are the only exception to this.
@@ -40,4 +41,8 @@ class NullPipe extends Pipe {
   def symbols: SymbolTable = new SymbolTable()
 
   def executionPlan(): String = ""
+}
+
+class SubGraph(expressions:Seq[Expression]) {
+
 }

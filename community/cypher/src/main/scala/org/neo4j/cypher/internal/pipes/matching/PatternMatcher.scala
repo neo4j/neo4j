@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.commands.{True, Predicate}
+import collection.Map
 
 class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:Map[String,Any])
   extends Traversable[Map[String, Any]] {
@@ -30,7 +31,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
   def foreach[U](f: (Map[String, Any]) => U) {
     debug("startPatternMatching")
 
-    traverseNode(boundNodes.values.toSet, new History(source), f)
+    traverseNode(boundNodes.values.toSet, new InitialHistory(source), f)
   }
 
   protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
@@ -157,7 +158,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.dependencies.map(_.name).forall(m contains)).toList
+    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.dependencies.map(_.name).forall(m contains))
     predicate.forall(_.isMatch(m))
   }
 
@@ -179,7 +180,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     true
   }
 
-  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] = history.filter(patternNode.relationships.toSet).filter(_.optional == false || includeOptionals == true).toList
+  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] =
+    history.filter(patternNode.relationships).filter(_.optional == false || includeOptionals == true).toList
 
   val isDebugging = false
 

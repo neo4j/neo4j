@@ -1,3 +1,20 @@
+1.7.M01 (2012-03-12)
+--------------------
+o Fixed bug in PropertyStore that during recovery would throw exception if the last record was incomplete.
+o Fixes to transaction log start position caching which mitigates a performance issue and fixes a caching issue during rotation.
+o Fixed a couple of issue around copying incomplete transaction to new log during a log rotation.
+o Fixed a property cache poisoning bug and some stale references leaking.
+o Lots of improved toString() of internal classes and better exception messages.
+o Fixed a data race issue between threads removing the same property while the node is evicted from cache.
+o Fixed an issue where a property record in the logical log was missing its owner.
+o Added a checksum on a start record for a transaction combining Xid/master/me to get a pretty unique verification of equality.
+o Log messages in messages.log are now printed in UTC time zone so that it's the same across servers.
+o Fix for an issue where a full rebuild of an id generator (rebuild_idgenerators_fast=false) could result
+  in exception when adding free ids.
+o FileSystemAbstraction is in use everywhere instead of touch the FS directly.
+o Fix for issue which would close an id generator as clean if a startup failed at the wrong time, which would make
+  the id generator diverge from the store it held ids for and possible truncate that store file the next clean shutdown.
+
 1.6 (2012-01-19)
 ----------------
 o Minor performance optimization in property handling code.

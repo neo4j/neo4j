@@ -38,9 +38,9 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt((p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
 
-    val (_, resultQ) = builder((p, q))
+    val (_, resultQ) = builder(p, q)
 
     assert(resultQ.slice === q.slice.map(_.solve))
   }
@@ -54,7 +54,7 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test def should_not_accept_if_no_slice_in_the_query() {
@@ -64,7 +64,7 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt((p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
 }

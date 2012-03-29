@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 import static org.junit.Assert.*;
@@ -75,5 +76,43 @@ public class TestIndexProviderStore
         store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), true );
         assertEquals( "3.5", NeoStore.versionLongToString( store.getIndexVersion() ) );
         store.close();
+    }
+    
+    @Test( expected = NotCurrentStoreVersionException.class )
+    public void shouldFailToGoBackToOlderVersion() throws Exception
+    {
+        String newerVersion = "3.5";
+        String olderVersion = "3.1";
+        try
+        {
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+            store.close();
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), false );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            assertTrue( e.getMessage().contains( newerVersion ) );
+            assertTrue( e.getMessage().contains( olderVersion ) );
+            throw e;
+        }
+    }
+
+    @Test( expected = NotCurrentStoreVersionException.class )
+    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade() throws Exception
+    {
+        String newerVersion = "3.5";
+        String olderVersion = "3.1";
+        try
+        {
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+            store.close();
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), true );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            assertTrue( e.getMessage().contains( newerVersion ) );
+            assertTrue( e.getMessage().contains( olderVersion ) );
+            throw e;
+        }
     }
 }

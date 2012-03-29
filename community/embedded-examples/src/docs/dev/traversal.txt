@@ -179,3 +179,17 @@ Which will output:
 
 include::ordered-path-java-output.txt[]
 
+In this case we use a custom class to format the path output.
+This is how it's done:
+
+[snippet,java]
+----
+component=neo4j-examples
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
+tag=pathPrinter
+----
+
+For options regarding output of a +Path+, see the 
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html[Traversal] class.
+

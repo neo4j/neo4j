@@ -102,11 +102,11 @@ trait Predicates extends Base with Expressions with ReturnItems {
 
   def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ { case a ~ rel  => HasRelationship(a, rel._1, rel._2) }
 
-  def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
+  def relInfo: Parser[(Direction, Seq[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
     case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.", "query", 666)
-    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
+    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType.toSeq)
+    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType.toSeq)
+    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType.toSeq)
   }
 }
 

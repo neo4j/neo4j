@@ -1,3 +1,11 @@
+1.7.M01 (2012-03-12)
+--------------------
+o dbinfo command now able to print simple values as well as arrays and compound values as JSON output.
+o A shell server which isn't remotely avaiable doesn't touch RMI, neither does a client which connects
+  to a server within the same JVM. This makes for less RMI garbage when forgetting to call shutdown().
+o Fixes problem with eval command in that it couldn't execute a single-line command, which made it impossible
+  to do ./shell -c 'eval ...' from outside
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added mknode for creating new nodes w/o creating a relationship.
