@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.index;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -50,7 +52,11 @@ public class TestIndexImplOnNeo
     @Test
     public void createIndexWithProviderThatUsesNeoAsDataSource() throws Exception
     {
-        Index<Node> index = db.index().forNodes( "inneo", stringMap( PROVIDER, "test-dummy-neo-index" ) );
+        String indexName = "inneo";
+        assertFalse( db.index().existsForNodes( indexName ) );
+        Index<Node> index = db.index().forNodes( indexName, stringMap( PROVIDER, "test-dummy-neo-index" ) );
+        assertTrue( db.index().existsForNodes( indexName ) );
+        
         // Querying for "refnode" always returns the reference node for this dummy index.
         assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
         // Querying for something other than "refnode" returns null for this dummy index.
