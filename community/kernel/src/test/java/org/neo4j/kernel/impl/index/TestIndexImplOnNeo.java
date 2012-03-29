@@ -25,26 +25,36 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
+
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestIndexImplOnNeo
 {
-    private ImpermanentGraphDatabase db;
+    private EmbeddedGraphDatabase db;
+    private String storeDir = forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
 
     @Before
-    public void doBefore() throws Exception
+    public void createDb() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new EmbeddedGraphDatabase( storeDir );
+    }
+    
+    private void restartDb() throws Exception
+    {
+        shutdownDb();
+        createDb();
     }
 
     @After
-    public void doAfter() throws Exception
+    public void shutdownDb() throws Exception
     {
         db.shutdown();
     }
@@ -54,12 +64,19 @@ public class TestIndexImplOnNeo
     {
         String indexName = "inneo";
         assertFalse( db.index().existsForNodes( indexName ) );
-        Index<Node> index = db.index().forNodes( indexName, stringMap( PROVIDER, "test-dummy-neo-index" ) );
+        Map<String, String> config = stringMap( PROVIDER, "test-dummy-neo-index",
+                "config1", "A value", "another config", "Another value" );
+        Index<Node> index = db.index().forNodes( indexName, config );
         assertTrue( db.index().existsForNodes( indexName ) );
+        assertEquals( config, db.index().getConfiguration( index ) );
         
         // Querying for "refnode" always returns the reference node for this dummy index.
         assertEquals( db.getReferenceNode(), index.get( "key", "refnode" ).getSingle() );
         // Querying for something other than "refnode" returns null for this dummy index.
         assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
+        
+        restartDb();
+        assertTrue( db.index().existsForNodes( indexName ) );
+        assertEquals( config, db.index().getConfiguration( index ) );
     }
 }
