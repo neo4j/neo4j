@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.index;
 
 import java.util.Map;
 
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 
-public abstract class IndexXaConnection extends XaConnectionHelpImpl
+public interface IndexXaConnection
 {
-    public IndexXaConnection( XaResourceManager xaRm )
-    {
-        super( xaRm );
-    }
-
-    public abstract void createIndex( Class<? extends PropertyContainer> entityType,
+    void createIndex( Class<? extends PropertyContainer> entityType,
             String indexName, Map<String, String> config );
+
+    boolean enlistResource( Transaction javaxTx )
+        throws SystemException, RollbackException;
 }

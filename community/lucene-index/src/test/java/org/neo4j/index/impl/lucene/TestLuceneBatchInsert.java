@@ -19,7 +19,24 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.lucene.ValueContext.numeric;
+
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,6 +56,7 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.cache.LruCache;
 
 import static org.apache.lucene.search.NumericRangeQuery.*;
 import static org.hamcrest.core.Is.*;
@@ -356,6 +374,90 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
     }
     
+    @Test
+    public void cachesShouldBeFilledWhenAddToMultipleIndexesCreatedNow() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "index1", LuceneIndexImplementation.EXACT_CONFIG );
+        index.setCacheCapacity( "name", 100000 );
+        String nameKey = "name";
+        String titleKey = "title";
+        
+        assertCacheIsEmpty( index, nameKey, titleKey );
+        index.add( 0, map( "name", "Neo", "title", "Matrix" ) );
+        assertCacheContainsSomething( index, nameKey );
+        assertCacheIsEmpty( index, titleKey );
+        
+        BatchInserterIndex index2 = provider.nodeIndex( "index2", LuceneIndexImplementation.EXACT_CONFIG );
+        index2.setCacheCapacity( "title", 100000 );
+        assertCacheIsEmpty( index2, nameKey, titleKey );
+        index2.add( 0, map( "name", "Neo", "title", "Matrix" ) );
+        assertCacheContainsSomething( index2, titleKey );
+        assertCacheIsEmpty( index2, nameKey );
+        
+        provider.shutdown();
+        inserter.shutdown();
+    }
+    
+    @Test
+    public void cachesDoesntGetFilledWhenAddingForAnExistingIndex() throws Exception
+    {
+        // Prepare the test case, i.e. create a store with a populated index.
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        String indexName = "index";
+        BatchInserterIndex index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
+        String key = "name";
+        index.add( 0, map( key, "Mattias" ) );
+        provider.shutdown();
+        inserter.shutdown();
+        
+        // Test so that the next run doesn't start caching inserted stuff right away,
+        // because that would lead to invalid results being returned.
+        inserter = new BatchInserterImpl( PATH );
+        provider = new LuceneBatchInserterIndexProvider( inserter );
+        index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
+        index.setCacheCapacity( key, 100000 );
+        assertCacheIsEmpty( index, key );
+        index.add( 1, map( key, "Persson" ) );
+        assertCacheIsEmpty( index, key );
+        assertEquals( 1, index.get( key, "Persson" ).getSingle().intValue() );
+        provider.shutdown();
+        inserter.shutdown();
+    }
+    
+    private void assertCacheContainsSomething( BatchInserterIndex index, String... keys )
+    {
+        Map<String, LruCache<String, Collection<Long>>> cache = getIndexCache( index );
+        for ( String key : keys )
+            assertTrue( cache.get( key ).size() > 0 );
+    }
+
+    private void assertCacheIsEmpty( BatchInserterIndex index, String... keys )
+    {
+        Map<String, LruCache<String, Collection<Long>>> cache = getIndexCache( index );
+        for ( String key : keys )
+        {
+            LruCache<String, Collection<Long>> keyCache = cache.get( key );
+            assertTrue( keyCache == null || keyCache.size() == 0 );
+        }
+    }
+
+    private Map<String, LruCache<String, Collection<Long>>> getIndexCache( BatchInserterIndex index )
+    {
+        try
+        {
+            Field field = index.getClass().getDeclaredField( "cache" );
+            field.setAccessible( true );
+            return (Map<String, LruCache<String, Collection<Long>>>) field.get( index );
+        }
+        catch ( Exception e )
+        {
+            throw launderedException( e );
+        }
+    }
+
     private enum EdgeType implements RelationshipType
     {
         KNOWS
