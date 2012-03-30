@@ -49,7 +49,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.neo4j.com.SlaveContext.*;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -497,7 +497,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         for ( int i = 0; i < txsSize; i++ )
         {
             String ds = readString( buffer );
-            Tx tx = lastAppliedTx( ds, buffer.readLong() );
+            Tx tx = SlaveContext.lastAppliedTx( ds, buffer.readLong() );
             lastAppliedTransactions[i] = tx;
             
             // Only perform checksum checks on the neo data source.

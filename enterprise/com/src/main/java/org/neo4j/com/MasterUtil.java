@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import org.neo4j.com.SlaveContext.*;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Predicate;
@@ -99,7 +99,9 @@ public class MasterUtil
         {
             try
             {
-                appliedTransactions[i++] = lastAppliedTx( ds.getName(), ds.getXaContainer().getResourceManager().rotateLogicalLog() );
+                appliedTransactions[i++] = SlaveContext.lastAppliedTx( ds.getName(), ds.getXaContainer()
+                    .getResourceManager()
+                    .rotateLogicalLog() );
             }
             catch ( IOException e )
             {

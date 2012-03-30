@@ -40,7 +40,7 @@ import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.*;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
@@ -458,7 +458,7 @@ public class OnlineBackup
         List<Tx> txs = new ArrayList<Tx>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            txs.add( lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
+            txs.add( SlaveContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
         }
         return SlaveContext.anonymous( txs.toArray( new Tx[0] ) );
     }
