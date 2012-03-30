@@ -19,12 +19,11 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.subprocess.SubProcess;
 
 public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
@@ -42,7 +41,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
         }
         else
         {
-            this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
+            this.db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( Config.ENABLE_ONLINE_BACKUP, backupConfigValue ).newGraphDatabase();
         }
     }
 

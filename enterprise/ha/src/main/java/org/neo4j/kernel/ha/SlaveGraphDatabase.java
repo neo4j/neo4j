@@ -21,12 +21,14 @@
 package org.neo4j.kernel.ha;
 
 import java.util.Map;
-
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -42,14 +44,18 @@ public class SlaveGraphDatabase
     private final SlaveDatabaseOperations databaseOperations;
     private LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private SlaveIdGenerator.SlaveIdGeneratorFactory slaveIdGeneratorFactory;
+    private FileSystemAbstraction fileSystemAbstraction;
 
     public SlaveGraphDatabase( String storeDir, Map<String, String> params,
             HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker, StringLogger logger,
             SlaveDatabaseOperations databaseOperations,
             LastCommittedTxIdSetter lastCommittedTxIdSetter, NodeProxy.NodeLookup nodeLookup,
-            RelationshipProxy.RelationshipLookups relationshipLookups )
+            RelationshipProxy.RelationshipLookups relationshipLookups,
+            FileSystemAbstraction fileSystemAbstraction,
+            Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups );
+        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders, kernelExtensions );
+        this.fileSystemAbstraction = fileSystemAbstraction;
 
         assert broker != null && logger != null && databaseOperations != null  && lastCommittedTxIdSetter != null &&
                nodeLookup != null && relationshipLookups != null;
@@ -64,6 +70,12 @@ public class SlaveGraphDatabase
     protected TxHook createTxHook()
     {
         return new SlaveTxHook( broker, databaseOperations, this );
+    }
+
+    @Override
+    protected FileSystemAbstraction createFileSystemAbstraction()
+    {
+        return fileSystemAbstraction;
     }
 
     @Override

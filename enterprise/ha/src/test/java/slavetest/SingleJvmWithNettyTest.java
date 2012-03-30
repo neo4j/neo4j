@@ -19,17 +19,6 @@
  */
 package slavetest;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -38,7 +27,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -51,15 +39,18 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.ConfigProxy;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
@@ -70,6 +61,11 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.Arrays.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.HaConfig.*;
 
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
@@ -94,8 +90,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     protected Broker makeSlaveBroker( TestMaster master, int masterId, int id, HighlyAvailableGraphDatabase db, Map<String, String> config )
     {
         config.put( "server_id", Integer.toString( id ) );
-        AbstractBroker.Configuration conf = ConfigProxy.config( config, AbstractBroker.Configuration.class );
-        
+
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
         int readTimeout = getConfigInt( config, CONFIG_KEY_READ_TIMEOUT, TEST_READ_TIMEOUT );
@@ -107,7 +102,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, CONFIG_KEY_LOCK_READ_TIMEOUT, readTimeout ),
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
-        return new AbstractBroker( conf )
+        return new AbstractBroker( new Config( db.getMessageLog(), new DefaultFileSystemAbstraction(), config, Iterables
+                    .toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ) ) )
         {
             public boolean iAmMaster()
             {
@@ -130,7 +126,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return Pair.of( client, masterMachine );
             }
 
-            public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
+            public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
             {
                 throw new UnsupportedOperationException(
                         "cannot instantiate master server on slave" );
@@ -405,8 +401,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     public void committsAndRollbacksCountCorrectlyOnMaster() throws Exception
     {
         initializeDbs( 1 );
-        GraphDatabaseSPI master = getMaster().getGraphDb();
-        GraphDatabaseSPI slave = getSlave( 0 );
+        GraphDatabaseAPI master = getMaster().getGraphDb();
+        GraphDatabaseAPI slave = getSlave( 0 );
 
         // A successful tx on the master should increment number of commits on master
         Pair<Integer, Integer> masterTxsBefore = getTransactionCounts( master );
@@ -572,8 +568,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                     {
                         tx.finish();
                     }
-                    ( (GraphDatabaseSPI) slaveDb ).getLockManager().getReadLock( node );
-                    ( (GraphDatabaseSPI) slaveDb ).getLockReleaser().addLockToTransaction( node, LockType.READ );
+                    ( (GraphDatabaseAPI) slaveDb ).getLockManager().getReadLock( node );
+                    ( (GraphDatabaseAPI) slaveDb ).getLockReleaser().addLockToTransaction( node, LockType.READ );
                     id[0] = node.getId();
                     latch.countDownFirst();
                     latch.awaitSecond();
@@ -671,7 +667,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         }
     }
 
-    private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseSPI master )
+    private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseAPI master )
     {
         return Pair.of(
             ( (TxManager) master.getTxManager() ).getCommittedTxCount(),

@@ -19,30 +19,28 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.TestBackupToolEmbedded.BACKUP_PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
-import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_CLUSTER_NAME;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_COORDINATORS;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+
+import static org.junit.Assert.*;
+import static org.neo4j.backup.TestBackupToolEmbedded.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.HaConfig.*;
 
 public class TestBackupToolHa
 {
@@ -61,13 +59,14 @@ public class TestBackupToolHa
         {
             String storeDir = new File( PATH, "" + i ).getAbsolutePath();
             Map<String, String> config = stringMap(
-                    CONFIG_KEY_SERVER_ID, "" + i,
-                    CONFIG_KEY_SERVER, "localhost:" + (6666+i),
-                    CONFIG_KEY_COORDINATORS, zk.getConnectionString(),
-                    ENABLE_ONLINE_BACKUP, "port=" + (4444+i) );
+                HaSettings.server_id.name(), "" + i,
+                    HaSettings.server.name(), "localhost:" + (6666+i),
+                    HaSettings.coordinators.name(), zk.getConnectionString(),
+                    OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.TRUE,
+                    OnlineBackupSettings.online_backup_port.name(), ""+(4444+i) );
             if ( clusterName != null )
                 config.put( CONFIG_KEY_CLUSTER_NAME, clusterName );
-            GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config );
+            GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ) );
             instances.add( instance );
         }
         

@@ -19,10 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -30,15 +26,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
-
 import javax.transaction.xa.Xid;
-
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.ConfigParam;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -48,6 +42,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+
+import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.*;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.*;
 
 class RebuildFromLogs
 {

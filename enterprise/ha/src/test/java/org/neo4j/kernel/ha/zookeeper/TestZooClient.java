@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.Test;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+
+import static org.junit.Assert.*;
 
 public class TestZooClient
 {
@@ -57,8 +60,8 @@ public class TestZooClient
         stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( millisForSessionToExpire ) );
-        ZooClient.Configuration config = ConfigProxy.config( stringConfig, ZooClient.Configuration.class );
-
+        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
+        
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 
         final AtomicBoolean stop = new AtomicBoolean( false );
@@ -108,7 +111,7 @@ public class TestZooClient
         stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "localhost:2181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( secondsForSessionToExpire ) );
-        ZooClient.Configuration config = ConfigProxy.config( stringConfig, ZooClient.Configuration.class );
+        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
 
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 

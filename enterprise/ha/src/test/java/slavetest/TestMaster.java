@@ -25,7 +25,7 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
@@ -43,21 +43,21 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 class TestMaster implements Master
 {
     private final Master actual;
-    private GraphDatabaseSPI db;
+    private GraphDatabaseAPI db;
 
-    TestMaster( Master actual, GraphDatabaseSPI db )
+    TestMaster( Master actual, GraphDatabaseAPI db )
     {
         this.actual = actual;
         this.db = db;
     }
     
-    public GraphDatabaseSPI getGraphDb()
+    public GraphDatabaseAPI getGraphDb()
     {
         return db;
     }
     
     // This is for testing purposes, mainly because of the rigid broker mocking it has
-    public void setGraphDb( GraphDatabaseSPI db )
+    public void setGraphDb( GraphDatabaseAPI db )
     {
         this.db = db;
     }

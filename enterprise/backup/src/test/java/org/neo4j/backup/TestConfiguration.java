@@ -19,17 +19,15 @@
  */
 package org.neo4j.backup;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-
 import java.io.File;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+
+import static org.junit.Assert.*;
 
 public class TestConfiguration
 {
@@ -43,18 +41,10 @@ public class TestConfiguration
         FileUtils.deleteDirectory( new File( BACKUP_DIR ) );
     }
     
-    private GraphDatabaseService newDb( String onlineBackupConfig )
-    {
-        String path = SOURCE_DIR;
-        return onlineBackupConfig == null ?
-                new EmbeddedGraphDatabase( path ) :
-                new EmbeddedGraphDatabase( path, stringMap( ENABLE_ONLINE_BACKUP, onlineBackupConfig ) );
-    }
-    
     @Test
     public void testOffByDefault() throws Exception
     {
-        GraphDatabaseService db = newDb( null );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
         try
         {
             OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
@@ -69,7 +59,9 @@ public class TestConfiguration
     @Test
     public void testOffByConfig() throws Exception
     {
-        GraphDatabaseService db = newDb( "false" );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
+            newGraphDatabase();
         try
         {
             OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
@@ -84,7 +76,10 @@ public class TestConfiguration
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
-        GraphDatabaseService db = newDb( "true" );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
+
         OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
         db.shutdown();
     }
@@ -92,8 +87,10 @@ public class TestConfiguration
     @Test
     public void testEnableCustomPortInConfig() throws Exception
     {
-        int customPort = 12345;
-        GraphDatabaseService db = newDb( "port=" + customPort );
+        String customPort = "12345";
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( OnlineBackupSettings.online_backup_port, customPort ).newGraphDatabase(); 
         try
         {
             OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
@@ -103,7 +100,7 @@ public class TestConfiguration
         { // Good
         }
         
-        OnlineBackup.from( "localhost", customPort ).full( BACKUP_DIR );
+        OnlineBackup.from( "localhost", Integer.parseInt(customPort) ).full( BACKUP_DIR );
         db.shutdown();
     }
 }

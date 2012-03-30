@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.kernel.CommonFactories.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 
 public class MasterIdGeneratorFactory extends DefaultIdGeneratorFactory
 {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static java.util.Collections.synchronizedMap;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,12 +28,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -48,7 +44,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -60,6 +56,8 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.util.Collections.*;
+
 /**
  * This is the real master code that executes on a master. The actual
  * communication over network happens in {@link MasterClient} and
@@ -70,14 +68,14 @@ public class MasterImpl implements Master
     private static final int ID_GRAB_SIZE = 1000;
     public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 5;
 
-    private final GraphDatabaseSPI graphDb;
+    private final GraphDatabaseAPI graphDb;
     private final StringLogger msgLog;
 
     private final Map<SlaveContext, MasterTransaction> transactions = synchronizedMap( new HashMap<SlaveContext, MasterTransaction>() );
     private final ScheduledExecutorService unfinishedTransactionsExecutor;
     private int unfinishedTransactionThreshold;
 
-    public MasterImpl( GraphDatabaseSPI db, int timeOut )
+    public MasterImpl( GraphDatabaseAPI db, int timeOut )
     {
         this.graphDb = db;
         this.msgLog = graphDb.getMessageLog();
@@ -129,7 +127,7 @@ public class MasterImpl implements Master
         }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
     }
 
-    public GraphDatabaseSPI getGraphDb()
+    public GraphDatabaseAPI getGraphDb()
     {
         return this.graphDb;
     }

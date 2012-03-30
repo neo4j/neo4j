@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.zookeeper.Machine;
-import org.neo4j.kernel.ha.zookeeper.ZooClient;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    private ZooClient.Configuration zooClientConfig;
-
-    public FakeMasterBroker( Configuration conf, ZooClient.Configuration zooClientConfig )
+    public FakeMasterBroker( Config conf)
     {
         super( conf );
-        this.zooClientConfig = zooClientConfig;
     }
 
     public Machine getMasterMachine()
@@ -59,10 +55,10 @@ public class FakeMasterBroker extends AbstractBroker
         return getMyMachineId() == 0;
     }
 
-    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
+    public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb, zooClientConfig.lock_read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ) ),
-                Protocol.PORT, graphDb.getMessageLog(), zooClientConfig.max_concurrent_channels_per_slave( Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
-                zooClientConfig.lock_read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ), TxChecksumVerifier.ALWAYS_MATCH );
+        return new MasterServer( new MasterImpl( graphDb, config.getInteger( HaSettings.lock_read_timeout )),
+                Protocol.PORT, graphDb.getMessageLog(), config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
+                config.getInteger( HaSettings.lock_read_timeout ), TxChecksumVerifier.ALWAYS_MATCH );
     }
 }

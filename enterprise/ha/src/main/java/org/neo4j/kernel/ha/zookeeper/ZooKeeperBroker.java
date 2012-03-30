@@ -26,16 +26,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.Map;
-
 import javax.management.remote.JMXServiceURL;
-
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ConfigurationPrefix;
-import org.neo4j.kernel.GraphDatabaseSPI;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.ConnectionInformation;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.shell.ZooClientFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -44,22 +42,15 @@ import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
-    @ConfigurationPrefix( "ha." )
-    public interface Configuration
-        extends AbstractBroker.Configuration
-    {
-        int coordinator_fetch_info_timeout( int def );
-    }
-
     private final ZooClientFactory zooClientFactory;
     private volatile ZooClient zooClient;
     private int fetchInfoTimeout;
 
-    public ZooKeeperBroker( Configuration conf, ZooClientFactory zooClientFactory )
+    public ZooKeeperBroker( Config conf, ZooClientFactory zooClientFactory )
     {
         super( conf );
         this.zooClientFactory = zooClientFactory;
-        fetchInfoTimeout = conf.coordinator_fetch_info_timeout(HaConfig.CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT);
+        fetchInfoTimeout = conf.getInteger( HaSettings.coordinator_fetch_info_timeout );
         start();
     }
 
@@ -195,7 +186,7 @@ public class ZooKeeperBroker extends AbstractBroker
         return getZooClient().getMasterBasedOn( machines.values() );
     }
 
-    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
+    public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
         return zooClient.instantiateMasterServer( graphDb );
     }

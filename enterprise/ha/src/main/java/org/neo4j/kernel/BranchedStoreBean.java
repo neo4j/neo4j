@@ -24,11 +24,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.management.NotCompliantMBeanException;
-
 import org.neo4j.helpers.Service;
-import org.neo4j.jmx.impl.KernelBean;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -89,7 +86,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
         private File extractStorePath( ManagementData management )
         {
-            NeoStoreXaDataSource nioneodb = KernelBean.getNeoDataSource( management.getKernelData() );
+            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
             File path;
             try
             {

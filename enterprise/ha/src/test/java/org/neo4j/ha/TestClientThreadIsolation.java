@@ -19,11 +19,7 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -31,9 +27,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -45,6 +41,8 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
+
+import static org.junit.Assert.*;
 
 @ForeignBreakpoints( { @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.Client", method = "makeSureNextTransactionIsFullyFetched", on = Event.ENTRY ),
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.DechunkingChannelBuffer", method = "readNextChunk", on = Event.EXIT ) } )
@@ -74,21 +72,20 @@ public class TestClientThreadIsolation
             "readNextChunk", "waitTxCopyToStart", "finish" } )
     public void testTransactionsPulled() throws Exception
     {
-        final HighlyAvailableGraphDatabase master = new HighlyAvailableGraphDatabase(
-                TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                        "master", true ).getAbsolutePath(), MapUtil.stringMap(
-                        HaConfig.CONFIG_KEY_COORDINATORS,
-                        zoo.getConnectionString(),
-                        HaConfig.CONFIG_KEY_SERVER_ID, "1" ) );
+        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+            newHighlyAvailableDatabaseBuilder(TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
+                                    "master", true ).getAbsolutePath()  ).
+            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+            setConfig( HaSettings.server_id, "1" ).
+            newGraphDatabase();
 
-        final HighlyAvailableGraphDatabase slave1 = new HighlyAvailableGraphDatabase(
-                TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                        "slave1", true ).getAbsolutePath(), MapUtil.stringMap(
-                        HaConfig.CONFIG_KEY_COORDINATORS,
-                        zoo.getConnectionString(),
-                        HaConfig.CONFIG_KEY_SERVER_ID, "2",
-                        HaConfig.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE,
-                        "2" ) );
+        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+            newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
+                                    "slave1", true ).getAbsolutePath() ).
+            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+            setConfig( HaSettings.server_id, "2" ).
+            setConfig( HaSettings.max_concurrent_channels_per_slave, "2" ).
+            newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
             master.createNode().createRelationshipTo( master.createNode(),

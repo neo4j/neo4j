@@ -19,23 +19,22 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+
+import static org.junit.Assert.*;
 
 public class TestClusterNames
 {
@@ -171,12 +170,14 @@ public class TestClusterNames
     private HighlyAvailableGraphDatabase db( int serverId, String clusterName, int serverPort )
     {
         TargetDirectory dir = TargetDirectory.forTest( getClass() );
-        return new HighlyAvailableGraphDatabase( dir.directory( clusterName + "-" + serverId, true ).getAbsolutePath(), MapUtil.stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( serverId ),
-                HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString(),
-                HaConfig.CONFIG_KEY_CLUSTER_NAME, clusterName,
-                HaConfig.CONFIG_KEY_SERVER, "localhost:" + serverPort,
-                HaConfig.CONFIG_KEY_READ_TIMEOUT, String.valueOf( 2 ) ) );
+        return (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+            newHighlyAvailableDatabaseBuilder( dir.directory( clusterName + "-" + serverId, true ).getAbsolutePath() ).
+            setConfig( HaSettings.server_id, String.valueOf( serverId ) ).
+            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+            setConfig( HaSettings.cluster_name, clusterName ).
+            setConfig( HaSettings.server, "localhost:" + serverPort ).
+            setConfig( HaSettings.read_timeout, "2" ).
+            newGraphDatabase();
     }
 
     private void awaitStarted( GraphDatabaseService db )

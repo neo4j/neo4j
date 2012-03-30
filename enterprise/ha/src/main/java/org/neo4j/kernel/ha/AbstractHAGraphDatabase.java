@@ -21,10 +21,11 @@
 package org.neo4j.kernel.ha;
 
 import java.util.Map;
-
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -45,10 +46,11 @@ public class AbstractHAGraphDatabase
                                     HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
                                     Broker broker, StringLogger logger,
                                     NodeProxy.NodeLookup nodeLookup,
-                                    RelationshipProxy.RelationshipLookups relationshipLookups
+                                    RelationshipProxy.RelationshipLookups relationshipLookups,
+                                    Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions
     )
     {
-        super( storeDir, params );
+        super( storeDir, params, indexProviders1, kernelExtensions );
         this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
 
         assert broker != null && logger != null && nodeLookup != null && relationshipLookups != null;

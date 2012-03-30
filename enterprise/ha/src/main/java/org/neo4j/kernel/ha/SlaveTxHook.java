@@ -20,17 +20,16 @@
 package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
-
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
 public class SlaveTxHook implements TxHook
 {
     private final Broker broker;
     private final SlaveDatabaseOperations databaseOperations;
-    private GraphDatabaseSPI spi;
+    private GraphDatabaseAPI spi;
 
-    public SlaveTxHook( Broker broker, SlaveDatabaseOperations databaseOperations, GraphDatabaseSPI spi )
+    public SlaveTxHook( Broker broker, SlaveDatabaseOperations databaseOperations, GraphDatabaseAPI spi )
     {
         this.broker = broker;
         this.databaseOperations = databaseOperations;

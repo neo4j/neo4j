@@ -19,25 +19,22 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.configuration.Config;
 
 public class EmbeddedServer implements ServerInterface
 {
-    private EmbeddedGraphDatabase db;
+    private GraphDatabaseService db;
 
     public EmbeddedServer( String storeDir, String backupConfigValue )
     {
-        if ( backupConfigValue == null )
-        {
-            this.db = new EmbeddedGraphDatabase( storeDir );
-        }
-        else
-        {
-            this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
-        }
+        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        if ( backupConfigValue != null )
+            graphDatabaseBuilder.setConfig( Config.ENABLE_ONLINE_BACKUP, backupConfigValue );
+
+        this.db = graphDatabaseBuilder.newGraphDatabase();
     }
     
     public void shutdown()

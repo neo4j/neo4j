@@ -19,9 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -35,7 +32,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -53,14 +49,16 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.SlaveContext.*;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.Config;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.com.DechunkingChannelBuffer.*;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via

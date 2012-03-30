@@ -21,9 +21,10 @@
 package org.neo4j.kernel.ha;
 
 import java.util.Map;
-
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -46,10 +47,11 @@ public class MasterGraphDatabase
                                 StoreId storeId, HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
                                 Broker broker, StringLogger logger,
                                 NodeProxy.NodeLookup nodeLookup,
-                                RelationshipProxy.RelationshipLookups relationshipLookups
+                                RelationshipProxy.RelationshipLookups relationshipLookups,
+                                Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions
     )
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups );
+        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders1, kernelExtensions );
         this.storeId = storeId;
 
         run();
@@ -58,7 +60,7 @@ public class MasterGraphDatabase
     @Override
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(params, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook)
+        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook)
         {
             @Override
             public NeoStore createNeoStore( String fileName )

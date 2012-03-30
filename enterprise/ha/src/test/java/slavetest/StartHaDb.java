@@ -22,13 +22,13 @@ package slavetest;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
+import org.neo4j.shell.ShellSettings;
 
 public class StartHaDb
 {
@@ -57,12 +57,13 @@ public class StartHaDb
 
     private static GraphDatabaseService startDb() throws IOException
     {
-        return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, "" + MY_MACHINE_ID,
-                HaConfig.CONFIG_KEY_COORDINATORS, join( ZOO_KEEPER_SERVERS, "," ),
-                HaConfig.CONFIG_KEY_SERVER, ME,
-                Config.ENABLE_REMOTE_SHELL, "true",
-                Config.KEEP_LOGICAL_LOGS, "true" ) );
+        return new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
+            setConfig( HaSettings.server_id, ""+MY_MACHINE_ID ).
+            setConfig( HaSettings.coordinators, join( ZOO_KEEPER_SERVERS, "," ) ).
+            setConfig( HaSettings.server, ME ).
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
     }
     
 //    private static void doStuff( GraphDatabaseService db ) throws IOException

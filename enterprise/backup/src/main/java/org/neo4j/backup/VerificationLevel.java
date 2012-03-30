@@ -20,11 +20,10 @@
 package org.neo4j.backup;
 
 import java.util.Map;
-
 import org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider;
 import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.ConfigParam;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 enum VerificationLevel implements ConfigParam

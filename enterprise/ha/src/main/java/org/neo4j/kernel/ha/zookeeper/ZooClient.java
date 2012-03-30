@@ -26,9 +26,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
-
 import javax.management.remote.JMXServiceURL;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -36,53 +34,31 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.neo4j.backup.OnlineBackupExtension;
-import org.neo4j.com.Client;
-import org.neo4j.com.Server;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.StoreIdGetter;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ConfigurationPrefix;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.SlaveUpdateMode;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.ConnectionInformation;
-import org.neo4j.kernel.ha.SlaveDatabaseOperations;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.SlaveDatabaseOperations;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.ha.HaSettings.*;
+
 public class ZooClient extends AbstractZooKeeperManager
 {
-    @ConfigurationPrefix("ha.")
-    public interface Configuration
-        extends OnlineBackupExtension.Configuration
-    {
-        String coordinators();
-        int read_timeout(int def);
-        int lock_read_timeout(int def);
-
-        int max_concurrent_channels_per_slave( int def );
-
-        int server_id();
-
-        String server( String def );
-
-        SlaveUpdateMode slave_coordinator_update_mode( SlaveUpdateMode def );
-
-        String cluster_name( String def );
-
-        boolean allow_init_cluster( boolean def );
-
-        int zk_session_timeout( int def );
-    }
-
     static final String MASTER_NOTIFY_CHILD = "master-notify";
     static final String MASTER_REBOUND_CHILD = "master-rebound";
 
@@ -104,7 +80,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private final String storeDir;
     private long sessionId = -1;
-    private Configuration conf;
+    private Config conf;
     private final SlaveDatabaseOperations localDatabase;
     private final ClusterEventReceiver clusterReceiver;
     private final int backupPort;
@@ -112,26 +88,26 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String clusterName;
     private final boolean allowCreateCluster;
 
-    public ZooClient( String storeDir, StringLogger stringLogger, StoreIdGetter storeIdGetter, Configuration conf,
+    public ZooClient( String storeDir, StringLogger stringLogger, StoreIdGetter storeIdGetter, Config conf,
             SlaveDatabaseOperations localDatabase, ClusterEventReceiver clusterReceiver )
     {
-        super( conf.coordinators(),
+        super( conf.get( HaSettings.coordinators ),
             storeIdGetter, stringLogger,
-            conf.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ),
-            conf.lock_read_timeout( conf.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ) ),
-            conf.max_concurrent_channels_per_slave( Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
-            conf.zk_session_timeout( HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT ));
+            conf.getInteger( read_timeout ),
+            conf.getInteger( lock_read_timeout),
+            conf.getInteger( max_concurrent_channels_per_slave ),
+            conf.getInteger( zk_session_timeout ));
         this.storeDir = storeDir;
         this.conf = conf;
         this.localDatabase = localDatabase;
         this.clusterReceiver = clusterReceiver;
-        machineId = conf.server_id();
-        backupPort = conf.online_backup_port( Server.DEFAULT_BACKUP_PORT );
-        haServer = conf.server( defaultServer() );
-        writeLastCommittedTx = conf.slave_coordinator_update_mode( SlaveUpdateMode.async ).syncWithZooKeeper;
-        clusterName = conf.cluster_name(HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME);
+        machineId = conf.getInteger( server_id );
+        backupPort = conf.getInteger( OnlineBackupSettings.online_backup_port);
+        haServer = conf.isSet(server) ? conf.get( server ) : defaultServer();
+        writeLastCommittedTx = conf.getEnum(SlaveUpdateMode.class, slave_coordinator_update_mode).syncWithZooKeeper;
+        clusterName = conf.get( cluster_name );
         sequenceNr = "not initialized yet";
-        allowCreateCluster = conf.allow_init_cluster(true);
+        allowCreateCluster = conf.getBoolean( allow_init_cluster );
 
         try
         {
@@ -163,12 +139,12 @@ public class ZooClient extends AbstractZooKeeperManager
         return host.getHostAddress() + ":" + HaConfig.CONFIG_DEFAULT_PORT;
     }
 
-    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
+    public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
-        int timeOut = conf.lock_read_timeout( conf.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ) );
+        int timeOut = conf.isSet( lock_read_timeout ) ? conf.getInteger( lock_read_timeout ) : conf.getInteger( read_timeout );
         return new MasterServer( new MasterImpl( graphDb, timeOut ),
                 Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog(),
-                conf.max_concurrent_channels_per_slave( Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+                conf.getInteger( max_concurrent_channels_per_slave ),
                 clientLockReadTimeout, new BranchDetectingTxVerifier( graphDb ) );
     }
 

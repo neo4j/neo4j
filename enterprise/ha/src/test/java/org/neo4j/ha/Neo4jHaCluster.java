@@ -20,13 +20,14 @@
 package org.neo4j.ha;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Ignore;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 @Ignore
@@ -39,12 +40,13 @@ public class Neo4jHaCluster
     public static HighlyAvailableGraphDatabase single( LocalhostZooKeeperCluster zk, File storeDir,
             int haPort, Map<String, String> config )
     {
-        config = new HashMap<String, String>( config );
-        config.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
-        config.put( HaConfig.CONFIG_KEY_COORDINATORS, zk.getConnectionString() );
-        config.put( HaConfig.CONFIG_KEY_SERVER, ( "127.0.0.1:" + haPort ) );
-        config.put( Config.ENABLE_REMOTE_SHELL, "true" );
-        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        return new HighlyAvailableGraphDatabase( storeDir.getAbsolutePath(), config );
+        return (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() ).
+            setConfig( HaSettings.server_id, "1" ).
+            setConfig( HaSettings.coordinators, zk.getConnectionString() ).
+            setConfig( HaSettings.server, "127.0.0.1:" + haPort ).
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+            setConfig( config ).
+            newGraphDatabase();
     }
 }

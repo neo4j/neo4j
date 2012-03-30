@@ -19,14 +19,7 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.parseMapFromConfigValue;
-
-import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.ConfigProxy;
-import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 
@@ -54,32 +47,13 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
     @Override
     protected BackupServer load( KernelData kernel )
     {
-        Configuration config = ConfigProxy.config( kernel.getConfigParams(), Configuration.class );
-        
-        if (config.online_backup_enabled( false ))
+        if (kernel.getConfig().getBoolean( OnlineBackupSettings.online_backup_enabled ))
         {
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
-            return new BackupServer( backup, config.online_backup_port( BackupServer.DEFAULT_PORT ),
-                                                    (( GraphDatabaseSPI)kernel.graphDatabase()).getMessageLog());
+            return new BackupServer( backup, kernel.getConfig().getInteger( OnlineBackupSettings.online_backup_port ),
+                                                    kernel.graphDatabase().getMessageLog());
         } else
             return null;
-    }
-
-    public static Integer parsePort( String backupConfigValue )
-    {
-        if ( backupConfigValue != null )
-        {   // Backup is configured
-            if ( Config.configValueContainsMultipleParameters( backupConfigValue ) )
-            {   // Multi-value config, which means we have to parse the port
-                Args args = parseMapFromConfigValue( ENABLE_ONLINE_BACKUP, backupConfigValue );
-                return args.getNumber( "port", BackupServer.DEFAULT_PORT ).intValue();
-            }
-            else if ( Boolean.parseBoolean( backupConfigValue ) )
-            {   // Single-value config, true/false
-                return BackupServer.DEFAULT_PORT;
-            }
-        }
-        return null;
     }
 
     @Override

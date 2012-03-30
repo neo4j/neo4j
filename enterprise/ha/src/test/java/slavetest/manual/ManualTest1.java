@@ -21,12 +21,13 @@ package slavetest.manual;
 
 import java.io.File;
 import java.io.IOException;
-
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.shell.ShellSettings;
 
 public class ManualTest1
 {
@@ -43,12 +44,13 @@ public class ManualTest1
 
     private static GraphDatabaseService startDb() throws IOException
     {
-        return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, "1",
-                HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
-                HaConfig.CONFIG_KEY_SERVER, ME,
-                Config.ENABLE_REMOTE_SHELL, "true",
-                Config.KEEP_LOGICAL_LOGS, "true",
-                Config.ENABLE_ONLINE_BACKUP, "true" ) );
+        return new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
+                setConfig( HaSettings.server_id, "1" ).
+                setConfig( HaSettings.coordinators, "127.0.0.1:2181,127.0.0.1:2182" ).
+                setConfig( HaSettings.server, ME ).
+                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+                newGraphDatabase();
     }
 }

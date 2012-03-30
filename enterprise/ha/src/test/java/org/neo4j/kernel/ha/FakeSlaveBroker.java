@@ -20,14 +20,15 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
 
-    public FakeSlaveBroker( Master master, int masterMachineId, AbstractBroker.Configuration config)
+    public FakeSlaveBroker( Master master, int masterMachineId, Config config)
     {
         super( config );
         this.master = master;
@@ -48,7 +49,7 @@ public class FakeSlaveBroker extends AbstractBroker
         return false;
     }
 
-    public Object instantiateMasterServer( GraphDatabaseSPI graphDb )
+    public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
         throw new UnsupportedOperationException();
     }

@@ -19,24 +19,23 @@
  */
 package org.neo4j.ha;
 
-import static org.neo4j.test.TargetDirectory.forTest;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+
+import static org.neo4j.test.TargetDirectory.*;
+import static org.neo4j.test.ha.LocalhostZooKeeperCluster.*;
 
 public class TestConfig
 {
@@ -59,12 +58,13 @@ public class TestConfig
     public void testZkSessionTimeout() throws Exception
     {
         long timeout = 80000; // Default is 5000
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dir.directory( "zkTimeout" ).getAbsolutePath(),
-                MapUtil.stringMap( HaConfig.CONFIG_KEY_SERVER_ID, "1",
-                        HaConfig.CONFIG_KEY_COORDINATORS,
-                        zoo.getConnectionString(),
-                        HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT,
-                        "" + timeout ) );
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+            newHighlyAvailableDatabaseBuilder( dir.directory( "zkTimeout" ).getAbsolutePath() ).
+            setConfig( HaSettings.server_id, "1" ).
+            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+            setConfig( HaSettings.zk_session_timeout, ""+timeout ).
+            newGraphDatabase();
+            
         ZooKeeperBroker broker = (ZooKeeperBroker) db.getBroker();
 
         // Test ZooClient

@@ -22,11 +22,10 @@ package org.neo4j.server.enterprise;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.server.advanced.AdvancedNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -40,7 +39,7 @@ public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapp
         SINGLE
         {
             @Override
-            public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
                 return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
@@ -49,7 +48,7 @@ public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapp
         HA
         {
             @Override
-            public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
                 return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
@@ -57,7 +56,7 @@ public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapp
         };
 
         @Override
-        public abstract GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+        public abstract GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties );
     }
 

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -32,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,10 +34,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.TransactionManager;
-
-import org.neo4j.com.Client;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -58,15 +50,22 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.EnterpriseConfigurationMigrator;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
@@ -87,6 +86,7 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -102,33 +102,25 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
+import static java.util.concurrent.TimeUnit.*;
+import static org.neo4j.helpers.Exceptions.*;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
+
 public class HighlyAvailableGraphDatabase
-        implements GraphDatabaseService, GraphDatabaseSPI
+        implements GraphDatabaseService, GraphDatabaseAPI
 {
     private static final int NEW_MASTER_STARTUP_RETRIES = 3;
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
     private static final int STORE_COPY_RETRIES = 3;
 
-    @ConfigurationPrefix( "ha." )
-    public interface Configuration
-        extends AbstractGraphDatabase.Configuration
-    {
-
-        int read_timeout( int defaultReadResponseTimeoutSeconds );
-
-        SlaveUpdateMode slave_coordinator_update_mode( SlaveUpdateMode def );
-
-        int server_id();
-
-        BranchedDataPolicy branched_data_policy( BranchedDataPolicy def );
-    }
-
     private final int localGraphWait;
     protected volatile StoreId storeId;
     protected final StoreIdGetter storeIdGetter;
 
-    protected Configuration configuration;
+    protected Config configuration;
     private String storeDir;
+    private Iterable<IndexProvider> indexProviders;
+    private Iterable<KernelExtension> kernelExtensions;
     private final StringLogger messageLog;
     private Map<String, String> config;
     private volatile AbstractGraphDatabase internalGraphDatabase;
@@ -163,14 +155,29 @@ public class HighlyAvailableGraphDatabase
             new CopyOnWriteArrayList<KernelEventHandler>();
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
             new CopyOnWriteArraySet<TransactionEventHandler<?>>();
+    protected final FileSystemAbstraction fileSystemAbstraction;
 
     /**
-     * Will instantiate its own ZooKeeper broker
+     * Default IndexProviders and KernelExtensions by calling Service.load
+     *
+     * @param storeDir
+     * @param config
      */
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config)
+    {
+        this(storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ));
+    }
+
+    /**
+     * Create a new instance of HighlyAvailableGraphDatabase
+     */
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
     {
         this.storeDir = storeDir;
+        this.indexProviders = indexProviders;
+        this.kernelExtensions = kernelExtensions;
         messageLog = StringLogger.logger( this.storeDir );
+        fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
         this.config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
 
@@ -186,17 +193,17 @@ public class HighlyAvailableGraphDatabase
 
         this.relationshipLookups = new HARelationshipLookups();
 
-        this.config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        this.config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
 
-        configuration = ConfigProxy.config( config, Configuration.class );
+        configuration = new Config( messageLog, fileSystemAbstraction, config, Collections.<Class<?>>singletonList(HaSettings.class) );
 
         this.startupTime = System.currentTimeMillis();
         kernelEventHandlers.add( new TxManagerCheckKernelEventHandler() );
 
-        this.slaveUpdateMode = configuration.slave_coordinator_update_mode( SlaveUpdateMode.async );
-        this.machineId = configuration.server_id();
-        this.branchedDataPolicy = configuration.branched_data_policy( HighlyAvailableGraphDatabase.BranchedDataPolicy.keep_all );
-        this.localGraphWait = Math.max( configuration.read_timeout( Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS ), 5 );
+        this.slaveUpdateMode = configuration.getEnum( SlaveUpdateMode.class, HaSettings.slave_coordinator_update_mode );
+        this.machineId = configuration.getInteger( HaSettings.server_id );
+        this.branchedDataPolicy = configuration.getEnum( BranchedDataPolicy.class, HaSettings.branched_data_policy );
+        this.localGraphWait = configuration.getInteger( HaSettings.read_timeout );
 
         storeIdGetter = new StoreIdGetter()
         {
@@ -682,8 +689,11 @@ public class HighlyAvailableGraphDatabase
         long highestLogVersion = highestLogVersion();
         if ( highestLogVersion > -1 )
             NeoStore.setVersion( temp, highestLogVersion + 1 );
-        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( temp,
-                stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+        GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( temp ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
+
         try
         {
             MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
@@ -1039,7 +1049,7 @@ public class HighlyAvailableGraphDatabase
         this.storeId = storeId;
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, config, this, broker, messageLog,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
-                relationshipLookups );
+                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions );
 /*
 
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
@@ -1068,7 +1078,7 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
-        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, config, storeId, this, broker, messageLog, nodeLookup, relationshipLookups);
+        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, messageLog, nodeLookup, relationshipLookups, indexProviders, kernelExtensions);
 
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
@@ -1382,13 +1392,12 @@ public class HighlyAvailableGraphDatabase
 
     protected Broker createBroker()
     {
-        return new ZooKeeperBroker( ConfigProxy.config( config, ZooKeeperBroker.Configuration.class ), new ZooClientFactory()
+        return new ZooKeeperBroker( configuration, new ZooClientFactory()
         {
             @Override
             public ZooClient newZooClient()
             {
-                        return new ZooClient( storeDir, messageLog, storeIdGetter, ConfigProxy.config( config,
-                                ZooClient.Configuration.class ), /* as SlaveDatabaseOperations for extracting master for tx */
+                        return new ZooClient( storeDir, messageLog, storeIdGetter, configuration, /* as SlaveDatabaseOperations for extracting master for tx */
                         slaveOperations, /* as ClusterEventReceiver */slaveOperations );
             }
         } );
@@ -1401,11 +1410,10 @@ public class HighlyAvailableGraphDatabase
 
     private ClusterClient defaultClusterClient()
     {
-        ZooClient.Configuration clientConfig = ConfigProxy.config( config, ZooClient.Configuration.class );
         return new ZooKeeperClusterClient(
-                clientConfig.coordinators(), getMessageLog(),
-                clientConfig.cluster_name( HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME ),
-                clientConfig.zk_session_timeout( HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT ) );
+                configuration.get( HaSettings.coordinators ), getMessageLog(),
+                configuration.get( HaSettings.cluster_name ),
+                configuration.getInteger( HaSettings.zk_session_timeout ));
     }
 
     // TODO This should be removed. Analyze usages

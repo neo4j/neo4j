@@ -19,8 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-
 import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
@@ -29,26 +27,28 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.Ignore;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Format;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.AbstractBroker;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient;
-import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.test.subprocess.SubProcess;
-
 import slavetest.Job;
+
+import static java.util.Arrays.*;
 
 @Ignore
 public class StandaloneDatabase
@@ -116,17 +116,21 @@ public class StandaloneDatabase
                     {
                         if ( getMachineId() == masterId )
                         {
-                            ZooClient.Configuration zooConfig = ConfigProxy.config( removeDashes( config ), ZooClient.Configuration.class );
-                            AbstractBroker.Configuration brokerConfig = ConfigProxy.config( removeDashes( config ), AbstractBroker.Configuration.class );
-                            return new FakeMasterBroker( brokerConfig, zooConfig );
+                            Config configuration = new Config( StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), removeDashes( config ), Iterables
+                                                            .toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
+                            return new FakeMasterBroker( configuration );
                         }
                         else
                         {
+                            config.put( HaSettings.server_id.name(), Integer.toString( getMachineId() ) );
+                            Config configuration = new Config( StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), removeDashes( config ), Iterables
+                                                            .toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
+
                             return new FakeSlaveBroker( new MasterClient( "localhost",
                                     Protocol.PORT, getMessageLog(), storeIdGetter, Client.ConnectionLostHandler.NO_ACTION, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                                     Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                                     Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
-                                    masterId, ConfigProxy.config( MapUtil.stringMap( "ha.server_id", Integer.toString( getMachineId() ) ), AbstractBroker.Configuration.class ));
+                                    masterId, configuration);
                         }
                     }
                 };

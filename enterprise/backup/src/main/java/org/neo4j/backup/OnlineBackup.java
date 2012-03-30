@@ -19,14 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
-import static org.neo4j.kernel.CommonFactories.defaultLastCommittedTxIdSetter;
-import static org.neo4j.kernel.CommonFactories.defaultTxHook;
-import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -42,24 +34,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.com.Client;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.SlaveContext.*;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -68,6 +59,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.CommonFactories.*;
+import static org.neo4j.kernel.impl.util.StringLogger.*;
 
 public class OnlineBackup
 {
@@ -109,7 +104,7 @@ public class OnlineBackup
         {
             Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
                     new ToFileStoreWriter( targetDirectory ) ) );
-            GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory,
+            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
                     VerificationLevel.NONE /* run full check instead */ );
             try
             {
@@ -212,7 +207,7 @@ public class OnlineBackup
             bumpLogFile( targetDirectory, timestamp );
             if ( verification )
             {
-                StoreFactory factory = new StoreFactory( stringMap(), defaultIdGeneratorFactory(),
+                StoreFactory factory = new StoreFactory( new Config( stringMap(  )), defaultIdGeneratorFactory(),
                         defaultFileSystemAbstraction(), defaultLastCommittedTxIdSetter(), SYSTEM, defaultTxHook() );
                 NeoStore neoStore = factory.newNeoStore( new File( targetDirectory, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
                 try
@@ -312,7 +307,7 @@ public class OnlineBackup
             }
         };
 
-        GraphDatabaseSPI targetDb = startTemporaryDb( targetDirectory,
+        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
                 VerificationLevel.valueOf( verification ), keepLogs );
 
         long backupStartTime = System.currentTimeMillis();
@@ -371,7 +366,7 @@ public class OnlineBackup
      *            which will be the first in the returned stream
      * @return A backup context, ready to perform
      */
-    private OnlineBackup incrementalWithContext( GraphDatabaseSPI targetDb,
+    private OnlineBackup incrementalWithContext( GraphDatabaseAPI targetDb,
             SlaveContext context )
     {
         BackupClient client = new BackupClient( hostNameOrIp, port, targetDb.getMessageLog(),
@@ -389,7 +384,7 @@ public class OnlineBackup
         return this;
     }
 
-    private void trimLogicalLogCount( GraphDatabaseSPI targetDb )
+    private void trimLogicalLogCount( GraphDatabaseAPI targetDb )
     {
         for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
         {
@@ -431,12 +426,12 @@ public class OnlineBackup
         }
     }
 
-    public OnlineBackup incremental( GraphDatabaseSPI targetDb )
+    public OnlineBackup incremental( GraphDatabaseAPI targetDb )
     {
         return incrementalWithContext( targetDb, slaveContextOf( targetDb ) );
     }
 
-    private void unpackResponse( Response<Void> response, GraphDatabaseSPI graphDb, TxHandler txHandler )
+    private void unpackResponse( Response<Void> response, GraphDatabaseAPI graphDb, TxHandler txHandler )
     {
         try
         {
@@ -449,7 +444,7 @@ public class OnlineBackup
         }
     }
 
-    private void getLastCommittedTxs( GraphDatabaseSPI graphDb )
+    private void getLastCommittedTxs( GraphDatabaseAPI graphDb )
     {
         for ( XaDataSource ds : graphDb.getXaDataSourceManager().getAllRegisteredDataSources() )
         {
@@ -457,7 +452,7 @@ public class OnlineBackup
         }
     }
 
-    private SlaveContext slaveContextOf( GraphDatabaseSPI graphDb )
+    private SlaveContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         List<Tx> txs = new ArrayList<Tx>();
