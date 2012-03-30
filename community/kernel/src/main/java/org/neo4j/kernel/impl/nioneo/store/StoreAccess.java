@@ -26,8 +26,12 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
+import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -88,10 +92,10 @@ public class StoreAccess
     public StoreAccess( String path, Map<String, String> params )
     {
         this(
-              new StoreFactory( requiredParams( params, path ), CommonFactories.defaultIdGeneratorFactory(),
-                                CommonFactories.defaultFileSystemAbstraction(),
-                                CommonFactories.defaultLastCommittedTxIdSetter(), initLogger( path ),
-                                CommonFactories.defaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
+              new StoreFactory( new Config(requiredParams( params, path )), new DefaultIdGeneratorFactory(),
+                                new DefaultFileSystemAbstraction(),
+                                new DefaultLastCommittedTxIdSetter(), initLogger( path ),
+                                new DefaultTxHook()).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
         this.closeable = true;
     }
 
@@ -199,8 +203,6 @@ public class StoreAccess
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         }
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
-
-        params.put( IdGeneratorFactory.class, new CommonFactories.DefaultIdGeneratorFactory() );
         return params;
     }
 

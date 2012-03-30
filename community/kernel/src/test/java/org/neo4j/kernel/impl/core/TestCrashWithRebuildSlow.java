@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,8 +26,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised and also a problem
@@ -44,11 +45,17 @@ public class TestCrashWithRebuildSlow
     {
         // Produce the string store with holes in it
         String dir = TargetDirectory.forTest( getClass() ).directory( "holes", true ).getAbsolutePath();
-        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                ProduceNonCleanDefraggedStringStore.class.getName(), dir } ).waitFor() );
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-cp", System.getProperty( "java.class.path" ),
+            ProduceNonCleanDefraggedStringStore.class.getName(), dir
+        } );
+
+        int processResult = new ProcessStreamHandler( process, true ).waitForResult();
+
+        assertEquals( 0, processResult );
         
         // Recover with rebuild_idgenerators_fast=false
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.FALSE ).newGraphDatabase();
         try
         {
             int nameCount = 0;

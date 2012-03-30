@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -27,8 +28,10 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.AutoConfigurator;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -267,15 +270,24 @@ public class Config implements DiagnosticsProvider
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private Map<String, String> params;
-
-    public Config( StringLogger msgLog, FileSystemAbstraction fileSystem, Map<String, String> inputParams )
+    
+    public Config(Map<String, String> inputParams)
+    {
+        this(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), inputParams, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ));
+    }
+    
+    public Config( StringLogger msgLog,
+                   FileSystemAbstraction fileSystem,
+                   Map<String, String> inputParams,
+                   List<Class<?>> settingsClasses
+    )
     {
         // Migrate settings
         ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( msgLog );
         inputParams = configurationMigrator.migrateConfiguration( inputParams );
 
         // Apply defaults
-        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( msgLog, GraphDatabaseSettings.class );
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( msgLog, settingsClasses );
         params = configurationDefaults.apply( inputParams );
 
         // Apply autoconfiguration for memory settings
@@ -294,9 +306,17 @@ public class Config implements DiagnosticsProvider
         return this.params;
     }
     
+    public boolean isSet( GraphDatabaseSetting graphDatabaseSetting )
+    {
+        return params.containsKey( graphDatabaseSetting.name() ) && params.get( graphDatabaseSetting.name() ) != null;
+    }
+
     public String get(GraphDatabaseSetting setting)
     {
-        return params.get( setting.name() );
+        String string = params.get( setting.name() );
+        if (string != null)
+            string = string.trim();
+        return string;
     }
     
     public boolean getBoolean(GraphDatabaseSetting.BooleanSetting setting)
@@ -324,7 +344,34 @@ public class Config implements DiagnosticsProvider
         return Float.parseFloat( get( setting ));
     }
 
-    
+    public long getSize(GraphDatabaseSetting.StringSetting setting)
+    {
+        String mem = get( setting ).toLowerCase();
+        long multiplier = 1;
+        if ( mem.endsWith( "k" ) )
+        {
+            multiplier = 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+        else if ( mem.endsWith( "m" ) )
+        {
+            multiplier = 1024 * 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+        else if ( mem.endsWith( "g" ) )
+        {
+            multiplier = 1024 * 1024 * 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+
+        return Long.parseLong( mem ) * multiplier;
+    }
+
+    public long getDuration(GraphDatabaseSetting.StringSetting setting)
+    {
+        return TimeUtil.parseTimeMillis( get( setting ) );
+    }
+
     public <T extends Enum<T>> T getEnum( Class<T> enumType,
                                           GraphDatabaseSetting.OptionsSetting graphDatabaseSetting)
     {

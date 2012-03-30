@@ -24,6 +24,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.transaction.TransactionManager;
@@ -33,6 +34,7 @@ import javax.transaction.xa.Xid;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -340,7 +342,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config, Collections
+                            .<Class<?>>singletonList( GraphDatabaseSettings.class ) ), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -402,7 +405,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
+            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( StringLogger.DEV_NULL, fileSystem, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

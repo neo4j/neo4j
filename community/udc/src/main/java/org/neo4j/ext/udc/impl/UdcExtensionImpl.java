@@ -26,6 +26,7 @@ import java.util.Formatter;
 import java.util.Properties;
 import java.util.Timer;
 import org.neo4j.ext.udc.UdcProperties;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
@@ -79,6 +80,12 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
     }
 
     private static Timer timer = new Timer( "Neo4j UDC Timer", /*isDeamon=*/true );
+
+    @Override
+    public Class getSettingsClass()
+    {
+        return UdcSettings.class;
+    }
 
     @Override
     protected UdcTimerTask load( KernelData kernel )

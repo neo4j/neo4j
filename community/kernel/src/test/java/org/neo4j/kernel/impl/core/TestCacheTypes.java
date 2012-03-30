@@ -42,7 +42,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     
     private GraphDatabaseAPI newDb( String cacheType )
     {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type, cacheType ).newGraphDatabase();
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type.name(), cacheType ).newGraphDatabase();
     }
 
     @Test

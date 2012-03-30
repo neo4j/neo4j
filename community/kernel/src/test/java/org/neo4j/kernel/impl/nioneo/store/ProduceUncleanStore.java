@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.ProcessStreamHandler;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class ProduceUncleanStore
 {
@@ -45,9 +47,12 @@ public class ProduceUncleanStore
 
     public static void atPath( File path ) throws Exception
     {
-        int ret = Runtime.getRuntime()
-                         .exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                                              ProduceUncleanStore.class.getName(), path.getAbsolutePath() } ).waitFor();
+        Process process = Runtime.getRuntime()
+            .exec( new String[]{
+                "java", "-cp", System.getProperty( "java.class.path" ),
+                ProduceUncleanStore.class.getName(), path.getAbsolutePath()
+            } );
+        int ret = new ProcessStreamHandler(process, true).waitForResult();
         assertEquals( "ProduceUncleanStore terminated unsuccessfully", 0, ret );
     }
 }

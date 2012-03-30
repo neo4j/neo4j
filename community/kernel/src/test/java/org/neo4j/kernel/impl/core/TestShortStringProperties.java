@@ -20,75 +20,44 @@
 package org.neo4j.kernel.impl.core;
 
 import java.lang.reflect.Field;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.GraphTransactionRule;
 
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicRelationshipType.*;
 
 public class TestShortStringProperties extends TestShortString
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TestShortStringProperties.class );
-    private static GraphDatabaseService graphdb;
-
-    @BeforeClass
-    public static void startup()
-    {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getAbsolutePath() );
-    }
-
-    @AfterClass
-    public static void shutdown()
-    {
-        if ( graphdb != null ) graphdb.shutdown();
-        graphdb = null;
-    }
-
-    private Transaction tx;
-
-    @Before
-    public void beginTx()
-    {
-        if ( tx == null ) tx = graphdb.beginTx();
-    }
-
-    @After
-    public void finishTx()
-    {
-        if ( tx != null ) tx.finish();
-        tx = null;
-    }
-
+    @ClassRule
+    public static EmbeddedDatabaseRule graphdb = new EmbeddedDatabaseRule();
+    
+    @Rule
+    public GraphTransactionRule tx = new GraphTransactionRule( graphdb );
+    
     public void commit()
     {
-        if ( tx != null ) tx.success();
-        finishTx();
+        tx.success();
         clearCache();
     }
 
     public void newTx()
     {
-        commit();
-        beginTx();
+        tx.success();
+        tx.begin();
     }
 
     private void clearCache()
     {
-        ((GraphDatabaseAPI)graphdb).getNodeManager().clearCache();
+        graphdb.getGraphDatabaseAPI().getNodeManager().clearCache();
     }
 
     private static final String LONG_STRING = "this is a really long string, believe me!";
@@ -97,7 +66,7 @@ public class TestShortStringProperties extends TestShortString
     public void canAddMultipleShortStringsToTheSameNode() throws Exception
     {
         long recordCount = dynamicRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", "value" );
         node.setProperty( "reverse", "esrever" );
         commit();
@@ -110,7 +79,7 @@ public class TestShortStringProperties extends TestShortString
     public void canAddShortStringToRelationship() throws Exception
     {
         long recordCount = dynamicRecordsInUse();
-        Relationship rel = graphdb.createNode().createRelationshipTo( graphdb.createNode(), withName( "REL_TYPE" ) );
+        Relationship rel = graphdb.getGraphDatabaseService().createNode().createRelationshipTo( graphdb.getGraphDatabaseService().createNode(), withName( "REL_TYPE" ) );
         rel.setProperty( "type", rel.getType().name() );
         commit();
         assertEquals( recordCount, dynamicRecordsInUse() );
@@ -122,7 +91,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", "value" );
 
         newTx();
@@ -144,7 +113,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", LONG_STRING );
         newTx();
 
@@ -165,7 +134,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", "value" );
         newTx();
 
@@ -186,7 +155,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", "value" );
         newTx();
 
@@ -219,7 +188,7 @@ public class TestShortStringProperties extends TestShortString
     private void encode( String string, boolean isShort )
     {
         long recordCount = dynamicRecordsInUse();
-        Node node = graphdb.createNode();
+        Node node = graphdb.getGraphDatabaseService().createNode();
         node.setProperty( "key", string );
         newTx();
         if ( isShort )
@@ -269,7 +238,7 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = ((GraphDatabaseAPI)graphdb).getXaDataSourceManager();
+        XaDataSourceManager dsMgr = graphdb.getGraphDatabaseAPI().getXaDataSourceManager();
         return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
     }
 }

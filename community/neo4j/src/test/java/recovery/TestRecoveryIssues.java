@@ -237,7 +237,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
      */
     public static void main( String... args ) throws Exception
     {
-        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction() );
+        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

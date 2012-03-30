@@ -69,6 +69,19 @@ public class GraphDatabaseSettingsResourceBundle
             Field settingField = getField( name );
             return settingField.getAnnotation( Description.class ).value();
         }
+        
+        if (key.endsWith( ".validationmessage" ))
+        {
+            Field settingField = getField( name );
+            StringBuffer optionsBuilder = new StringBuffer();
+            try
+            {
+                GraphDatabaseSetting.OptionsSetting optionsSetting = (GraphDatabaseSetting.OptionsSetting) settingField.get( null );
+            } catch (Exception ex)
+            {
+                // Ignore
+            }
+        }
 
         if( key.endsWith( ".title" ) )
         {
@@ -186,6 +199,7 @@ public class GraphDatabaseSettingsResourceBundle
                 {
                     keys.add( setting.name() + ".description" );
                     keys.add( setting.name() + ".title" );
+                    keys.add( setting.name() + ".validationmessage" );
                     if( field.getAnnotation( Default.class ) != null )
                     {
                         keys.add( setting.name() + ".default" );
