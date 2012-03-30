@@ -26,16 +26,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.Before;
 import org.junit.Test;
 
-
-public class TestAtomicArrayCache
+public class TestGCResistantCache
 {
-    
-    private AtomicArrayCache<Entity> cache;
+    private GCResistantCache<Entity> cache;
 
     @Before
     public void setup()
     {
-        cache = new AtomicArrayCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) );
+        cache = new GCResistantCache<Entity>( new AtomicReferenceArray<Entity>( 10 ) );
     }
     
     @Test
@@ -69,7 +67,7 @@ public class TestAtomicArrayCache
             {
                 // when AAC.put asks the old object for size this will emulate a cache.updateSize( oldObj, size, size + 1 )
                 updateSize( size + 1 );
-                cache.updateSize( this, size, size + 1 );
+                cache.updateSize( this, size + 1 );
             }
         };
         cache.put( oldEntity ); // will increase internal size to 11 and update cache
@@ -90,7 +88,7 @@ public class TestAtomicArrayCache
             {
                 // when AAC.remove asks the object for size this will emulate a cache.updateSize( oldObj, size, size + 1 )
                 updateSize( size + 1 );
-                cache.updateSize( this, size, size + 1 );
+                cache.updateSize( this, size + 1 );
             }
         };
         cache.put( entity ); // will increase internal size to 11 and update cache
@@ -128,6 +126,7 @@ public class TestAtomicArrayCache
     {
         private final long id;
         private int size;
+        private int registeredSize;
         
         Entity( long id, int size )
         {
@@ -150,6 +149,18 @@ public class TestAtomicArrayCache
         public void updateSize( int newSize )
         {
             this.size = newSize;
+        }
+
+        @Override
+        public void setRegisteredSize( int size )
+        {
+            this.registeredSize = size;
+        }
+
+        @Override
+        public int getRegisteredSize()
+        {
+            return registeredSize;
         }
     }
     

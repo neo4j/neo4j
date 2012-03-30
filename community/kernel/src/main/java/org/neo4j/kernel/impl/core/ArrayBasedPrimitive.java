@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+
+import org.neo4j.kernel.impl.cache.EntityWithSize;
+import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -28,30 +33,41 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  * a Map based.
  * @author Mattias Persson
  */
-abstract class ArrayBasedPrimitive extends Primitive
+abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
 {
     private volatile PropertyData[] properties;
+    private volatile int registeredSize;
 
     ArrayBasedPrimitive( boolean newPrimitive )
     {
         super( newPrimitive );
     }
     
+    @Override
+    public void setRegisteredSize( int size )
+    {
+        this.registeredSize = size;
+    }
+    
+    @Override
+    public int getRegisteredSize()
+    {
+        return registeredSize;
+    }
+    
     public int size()
     {
-        // properties(PropertyData[])
-        int size = 8;
+        int size = SizeOfs.REFERENCE_SIZE/*properties reference*/ + 8/*registered size*/;
         if ( properties != null )
         {
-            size += 16;
+            size = withArrayOverheadIncludingReferences( size, properties.length ); // the actual properties[] object
             for ( PropertyData data : properties )
-            {
                 size += data.size();
-                size += 8; // array slot
-            }
         }
-        return size;
+        return withObjectOverhead( size );
     }
+    
+    abstract protected void updateSize( NodeManager nodeManager );
     
     @Override
     protected void setEmptyProperties()
@@ -78,9 +94,8 @@ abstract class ArrayBasedPrimitive extends Primitive
     @Override
     public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
     {
-        int before = size();
         this.properties = toPropertyArray( properties );
-        updateSize( before, size(), nodeManager );
+        updateSize( nodeManager );
     }
 
     @Override
@@ -113,7 +128,6 @@ abstract class ArrayBasedPrimitive extends Primitive
             PropertyData[] newArray = properties;
             if ( newArray == null ) return;
 
-            int before = size();
             /*
              * add map will definitely be added in the properties array - all properties
              * added and later removed in the same tx are removed from there as well.
@@ -192,8 +206,7 @@ abstract class ArrayBasedPrimitive extends Primitive
             {
                 properties = newArray;
             }
-            int after = size();
-            updateSize( before, after, nodeManager );
+            updateSize( nodeManager );
         }
     }
 }

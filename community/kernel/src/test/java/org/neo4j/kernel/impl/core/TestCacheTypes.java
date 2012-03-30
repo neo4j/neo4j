@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -27,8 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
-
-import static org.junit.Assert.*;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
@@ -49,14 +51,14 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testDefaultCache()
     {
         GraphDatabaseAPI db = newDb( null );
-        assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
+        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
 
     @Test
     public void testWeakRefCache()
     {
-        GraphDatabaseAPI db = newDb( "weak" );
+        GraphDatabaseAPI db = newDb( CacheType.weak.name() );
         assertEquals( CacheType.weak, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -64,7 +66,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testSoftRefCache()
     {
-        GraphDatabaseAPI db = newDb( "soft" );
+        GraphDatabaseAPI db = newDb( CacheType.soft.name() );
         assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -72,7 +74,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testNoCache()
     {
-        GraphDatabaseAPI db = newDb( "none" );
+        GraphDatabaseAPI db = newDb( CacheType.none.name() );
         assertEquals( CacheType.none, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -80,16 +82,16 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testStrongCache()
     {
-        GraphDatabaseAPI db = newDb( "strong" );
+        GraphDatabaseAPI db = newDb( CacheType.strong.name() );
         assertEquals( CacheType.strong, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
 
     @Test
-    public void testArrayCache()
+    public void testGcrCache()
     {
-        GraphDatabaseAPI db = newDb( "array" );
-        assertEquals( CacheType.array, db.getNodeManager().getCacheType() );
+        GraphDatabaseAPI db = newDb( CacheType.gcr.name() );
+        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
     

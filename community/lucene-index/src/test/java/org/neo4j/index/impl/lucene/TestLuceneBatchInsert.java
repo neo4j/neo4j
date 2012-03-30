@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -57,16 +58,6 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.cache.LruCache;
-
-import static org.apache.lucene.search.NumericRangeQuery.*;
-import static org.hamcrest.core.Is.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.index.Neo4jTestCase.*;
-import static org.neo4j.index.impl.lucene.Contains.*;
-import static org.neo4j.index.impl.lucene.IsEmpty.*;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.*;
-import static org.neo4j.index.lucene.ValueContext.*;
 
 public class TestLuceneBatchInsert
 {

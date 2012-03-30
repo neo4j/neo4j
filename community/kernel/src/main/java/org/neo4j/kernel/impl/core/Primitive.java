@@ -24,14 +24,13 @@ import java.util.List;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class Primitive implements EntityWithSize
+abstract class Primitive
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
@@ -616,6 +615,4 @@ abstract class Primitive implements EntityWithSize
     public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
     
     abstract PropertyContainer asProxy( NodeManager nm );
-
-    abstract protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager );
 }

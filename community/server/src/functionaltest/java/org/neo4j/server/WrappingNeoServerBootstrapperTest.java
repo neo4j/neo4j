@@ -19,18 +19,20 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse.Status;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -45,7 +47,8 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
 
 public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 {

@@ -487,7 +487,7 @@ public class TxLog
                 return r1.getSequenceNumber() - r2.getSequenceNumber();
             }
         } );
-        msgLog.logMessage( "About to rotate " + name + " to " + newFile + " with dangling records " + records, true );
+//        msgLog.logMessage( "About to rotate " + name + " to " + newFile + " with dangling records " + records, true );
         Iterator<Record> recordItr = records.iterator();
         FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
@@ -500,6 +500,6 @@ public class TxLog
             writeRecord( record, ForceMode.forced );
         }
         force();
-        msgLog.logMessage( "Rotated " + name + " to, file channel now at " + fileChannel.position(), true );
+//        msgLog.logMessage( "Rotated " + name + " to, file channel now at " + fileChannel.position(), true );
     }
 }
