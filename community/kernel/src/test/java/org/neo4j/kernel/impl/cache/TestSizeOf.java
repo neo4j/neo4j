@@ -55,7 +55,10 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 public class TestSizeOf
 {
     private static ImpermanentGraphDatabase db;
-    
+    public static final int _8_BYTES_FOR_ID = 8;
+    public static final int _4_BYTES_FOR_INDEX = 4;
+    public static final int _4_BYTES_FOR_VALUE = 4;
+
     @BeforeClass
     public static void setupDB()
     {
@@ -221,21 +224,126 @@ public class TestSizeOf
                 size );
     }
     
-    private int sizeOfRelIdArray( String type, int nrOut, int nrIn, int nrLoop )
+    public static RelationshipArraySize array( String type )
     {
-        int size =
-                8+8+8 + // references in RelIdArray
-                sizeOf( type );
-        for ( int rels : new int[] { nrOut, nrIn, nrLoop } )
-        {
-            if ( rels > 0 )
-                size += withObjectOverhead( withReference( withArrayOverhead( 4*(rels+1) ) ) );
-        }
-        if ( nrLoop > 0 )
-            size += 8; // RelIdArrayWithLoops is used for for those with loops in
-        return withObjectOverhead( size );
+        return new RelationshipArraySize( type );
     }
     
+    private static class RelationshipArraySize
+    {
+        private final String type;
+        private int nrOut;
+        private int nrIn;
+        private int nrLoop;
+
+        RelationshipArraySize( String type )
+        {
+            this.type = type;
+        }
+
+        RelationshipArraySize withOutRelationships( int nrOut )
+        {
+            this.nrOut = nrOut;
+            return this;
+        }
+
+        RelationshipArraySize withInRelationships( int nrIn )
+        {
+            this.nrIn = nrIn;
+            return this;
+        }
+
+        RelationshipArraySize withLoopRelationships( int nrLoop )
+        {
+            this.nrLoop = nrLoop;
+            return this;
+        }
+        
+        RelationshipArraySize withRelationshipInAllDirections( int nr )
+        {
+            this.nrOut = this.nrIn = this.nrLoop = nr;
+            return this;
+        }
+
+        int size()
+        {
+            int size = REFERENCE_SIZE + sizeOf( type ) +  // for the type String reference and size itself in RelIdArray
+                    REFERENCE_SIZE * 2; // for the IdBlock references in RelIdArray
+            for ( int rels : new int[] { nrOut, nrIn, nrLoop } )
+            {
+                if ( rels > 0 )
+                    size += withObjectOverhead( withReference( withArrayOverhead( 4 * (rels + 1) ) ) );
+            }
+            if ( nrLoop > 0 )
+                size += REFERENCE_SIZE; // RelIdArrayWithLoops is used for for those with loops in
+            return withObjectOverhead( size );
+        }
+    }
+    
+    static RelationshipsSize relationships()
+    {
+        return new RelationshipsSize();
+    }
+    
+    private static class RelationshipsSize
+    {
+        private int length;
+        private int size;
+        
+        RelationshipsSize add( RelationshipArraySize array )
+        {
+            this.size += array.size();
+            this.length++;
+            return this;
+        }
+        
+        int size()
+        {
+            return withArrayOverheadIncludingReferences( size, length );
+        }
+    }
+    
+    static PropertiesSize properties()
+    {
+        return new PropertiesSize();
+    }
+    
+    private static class PropertiesSize
+    {
+        private int length;
+        private int size;
+        
+        /*
+         * For each PropertyData, this will include the object overhead of the PropertyData object itself.
+         */
+        private PropertiesSize add( int size )
+        {
+            length++;
+            this.size += withObjectOverhead( size );
+            return this;
+        }
+        
+        PropertiesSize withSmallPrimitiveProperty()
+        {
+            return add( _8_BYTES_FOR_ID + _4_BYTES_FOR_INDEX + _4_BYTES_FOR_VALUE );
+        }
+        
+        PropertiesSize withStringProperty( String value )
+        {
+            return add( _8_BYTES_FOR_ID + _4_BYTES_FOR_INDEX + withReference( sizeOf( value ) ) );
+        }
+        
+        PropertiesSize withArrayProperty( Object array )
+        {
+            return add( _8_BYTES_FOR_ID + _4_BYTES_FOR_INDEX + REFERENCE_SIZE + sizeOfArray( array ) );
+        }
+        
+        public int size()
+        {
+            return withArrayOverheadIncludingReferences( size, length );
+        }
+    }
+
     private void assertArraySize( Object array, int sizePerItem )
     {
         assertEquals( withArrayOverhead( Array.getLength( array )*sizePerItem ), sizeOfArray( array ) );
@@ -252,7 +360,7 @@ public class TestSizeOf
     public void sizeOfNodeWithOneProperty() throws Exception
     {
         Node node = createNodeAndLoadFresh( map( "age", 5 ), 0, 0 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences( withObjectOverhead( 8+8 ), 1 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead( properties().withSmallPrimitiveProperty().size() ), sizeOfNode( node ) );
     }
     
     @Test
@@ -260,68 +368,63 @@ public class TestSizeOf
     {
         String name = "Mattias";
         Node node = createNodeAndLoadFresh( map( "age", 5, "name", name ), 0, 0 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences(
-                // PrimitivePropertyData objects
-                withObjectOverhead( 8/*id*/+8/*index+value*/ ) + // age
-                withObjectOverhead( 8/*id*/+REFERENCE_SIZE/*value reference*/+4/*index*/+sizeOf( name ) ), // name
-                2 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead(
+                properties().withSmallPrimitiveProperty().withStringProperty( name ).size() ),
+                sizeOfNode( node ) );
     }
-    
+
     @Test
     public void sizeOfNodeWithOneRelationship() throws Exception
     {
         Node node = createNodeAndLoadFresh( map(), 1, 1 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences(
-                sizeOfRelIdArray( relTypeName( 0 ), 1, 0, 0 ), 1 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead(
+                relationships().add( array( relTypeName( 0 ) ).withOutRelationships( 1 ) ).size() ),
+                sizeOfNode( node ) );
     }
     
     @Test
     public void sizeOfNodeWithSomeRelationshipsOfSameType() throws Exception
     {
         Node node = createNodeAndLoadFresh( map(), 10, 1 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences(
-                sizeOfRelIdArray( relTypeName( 0 ), 10, 0, 0 ), 1 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead( relationships().add(
+                array( relTypeName( 0 ) ).withOutRelationships( 10 ) ).size() ), sizeOfNode( node ) );
     }
     
     @Test
     public void sizeOfNodeWithSomeRelationshipOfDifferentTypes() throws Exception
     {
         Node node = createNodeAndLoadFresh( map(), 3, 3 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences(
-                sizeOfRelIdArray( relTypeName( 0 ), 3, 0, 0 ) +
-                sizeOfRelIdArray( relTypeName( 1 ), 3, 0, 0 ) +
-                sizeOfRelIdArray( relTypeName( 2 ), 3, 0, 0 ),
-                3 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead( relationships().add(
+                array( relTypeName( 0 ) ).withOutRelationships( 3 ) ).add(
+                array( relTypeName( 1 ) ).withOutRelationships( 3 ) ).add(
+                array( relTypeName( 2 ) ).withOutRelationships( 3 ) ).size() ), sizeOfNode( node ) );
     }
     
     @Test
     public void sizeOfNodeWithSomeRelationshipOfDifferentTypesAndDirections() throws Exception
     {
         Node node = createNodeAndLoadFresh( map(), 9, 3, 1 );
-        assertEquals( withNodeOverhead( withArrayOverheadIncludingReferences(
-                sizeOfRelIdArray( relTypeName( 0 ), 3, 3, 3 ) +
-                sizeOfRelIdArray( relTypeName( 1 ), 3, 3, 3 ) +
-                sizeOfRelIdArray( relTypeName( 2 ), 3, 3, 3 ),
-                3 ) ), sizeOfNode( node ) );
+        assertEquals( withNodeOverhead( relationships().add(
+                array( relTypeName( 0 ) ).withRelationshipInAllDirections( 3 ) ).add(
+                array( relTypeName( 1 ) ).withRelationshipInAllDirections( 3 ) ).add(
+                array( relTypeName( 2 ) ).withRelationshipInAllDirections( 3 ) ).size() ),
+                sizeOfNode( node ) );
     }
-    
+
     @Test
     public void sizeOfNodeWithRelationshipsAndProperties() throws Exception
     {
-        int[] array = new int[] { 10, 11, 12, 13 };
+        int[] array = new int[]{10, 11, 12, 13};
         Node node = createNodeAndLoadFresh( map( "age", 10, "array", array ), 9, 3, 1 );
-        assertEquals( withNodeOverhead(
-                withArrayOverheadIncludingReferences(
-                        sizeOfRelIdArray( relTypeName( 0 ), 3, 3, 3 ) +
-                        sizeOfRelIdArray( relTypeName( 1 ), 3, 3, 3 ) +
-                        sizeOfRelIdArray( relTypeName( 2 ), 3, 3, 3 ),
-                3 ) + withArrayOverheadIncludingReferences(
-                        // PrimitivePropertyData objects
-                        withObjectOverhead( 8/*id*/+8/*index+value*/ ) + // age
-                        withObjectOverhead( 8/*id*/+REFERENCE_SIZE/*value reference*/+4/*index*/+sizeOfArray( array ) ), // array
-                2 ) ), sizeOfNode( node ) );
+        assertEquals(
+            withNodeOverhead( relationships().add(
+                array( relTypeName( 0 ) ).withRelationshipInAllDirections( 3 ) ).add(
+                array( relTypeName( 1 ) ).withRelationshipInAllDirections( 3 ) ).add(
+                array( relTypeName( 2 ) ).withRelationshipInAllDirections( 3 ) ).size() +
+                properties().withSmallPrimitiveProperty().withArrayProperty( array ).size() ),
+            sizeOfNode( node ) );
     }
-    
+
     @Test
     public void sizeOfEmptyRelationship() throws Exception
     {
@@ -333,7 +436,8 @@ public class TestSizeOf
     public void sizeOfRelationshipWithOneProperty() throws Exception
     {
         Relationship relationship = createRelationshipAndLoadFresh( map( "age", 5 ) );
-        assertEquals( withRelationshipOverhead( withArrayOverheadIncludingReferences( withObjectOverhead( 8+8 ), 1 ) ), sizeOfRelationship( relationship ) );
+        assertEquals( withRelationshipOverhead( properties().withSmallPrimitiveProperty().size() ),
+                sizeOfRelationship( relationship ) );
     }
     
     @Test
@@ -341,13 +445,11 @@ public class TestSizeOf
     {
         String name = "Mattias";
         Relationship relationship = createRelationshipAndLoadFresh( map( "age", 5, "name", name ) );
-        assertEquals( withRelationshipOverhead( withArrayOverheadIncludingReferences(
-                // PrimitivePropertyData objects
-                withObjectOverhead( 8/*id*/+8/*index+value*/ ) + // age
-                withObjectOverhead( 8/*id*/+REFERENCE_SIZE/*value reference*/+4/*index*/+sizeOf( name ) ), // name
-                2 ) ), sizeOfRelationship( relationship ) );
+        assertEquals( withRelationshipOverhead(
+                properties().withSmallPrimitiveProperty().withStringProperty( name ).size() ),
+                sizeOfRelationship( relationship ) );
     }
-    
+
     @Test
     public void assumeWorstCaseJavaObjectOverhead() throws Exception
     {
@@ -367,14 +469,14 @@ public class TestSizeOf
     {
         int size = 24;
         int length = 5;
-        assertEquals( withArrayOverhead( size+SizeOfs.REFERENCE_SIZE*length ), SizeOfs.withArrayOverheadIncludingReferences( size, length ) );
+        assertEquals( withArrayOverhead( size+REFERENCE_SIZE*length ), withArrayOverheadIncludingReferences( size, length ) );
     }
     
     @Test
     public void assumeWorstCaseReferenceToJavaObject() throws Exception
     {
         int size = 24;
-        assertEquals( size + SizeOfs.REFERENCE_SIZE, withReference( size ) );
+        assertEquals( size + REFERENCE_SIZE, withReference( size ) );
     }
     
     @Test
