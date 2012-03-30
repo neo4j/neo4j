@@ -26,6 +26,7 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.index.IndexXaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 
@@ -33,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
  * An XA connection used with {@link LuceneDataSource}.
  * This class is public because the XA framework requires it.
  */
-public class LuceneXaConnection extends IndexXaConnection
+public class LuceneXaConnection extends XaConnectionHelpImpl implements IndexXaConnection
 {
     private final LuceneXaResource xaResource;
 
