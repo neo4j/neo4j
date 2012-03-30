@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,11 +77,6 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.util.Arrays.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.HaConfig.*;
 
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
