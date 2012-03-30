@@ -77,14 +77,18 @@ public class TestClusterNames
         // Here's one cluster
         String cluster1Name = "cluster_1";
         HighlyAvailableGraphDatabase db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+        System.out.println( "db0Cluster1:" + db0Cluster1 );
         HighlyAvailableGraphDatabase db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+        System.out.println( "db1Cluster1:" + db1Cluster1 );
         awaitStarted( db0Cluster1 );
         awaitStarted( db1Cluster1 );
 
         // Here's another cluster
         String cluster2Name = "cluster.2";
         HighlyAvailableGraphDatabase db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
+        System.out.println( "db0Cluster2:" + db0Cluster2 );
         HighlyAvailableGraphDatabase db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
+        System.out.println( "db1Cluster2:" + db1Cluster2 );
         awaitStarted( db0Cluster2 );
         awaitStarted( db1Cluster2 );
 
@@ -109,6 +113,7 @@ public class TestClusterNames
         // Restart an instance and make sure it rejoins the correct cluster again
         db0Cluster1.shutdown();
         
+        System.out.println( "here should be a reuse" );
         pullUpdates( db1Cluster1 );
         setRefNodeName( db1Cluster1, cluster1PropertyName );
         assertTrue( db1Cluster1.isMaster() );

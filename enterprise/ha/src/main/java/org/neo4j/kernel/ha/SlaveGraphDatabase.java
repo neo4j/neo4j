@@ -21,10 +21,12 @@
 package org.neo4j.kernel.ha;
 
 import java.util.Map;
+
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -52,9 +54,9 @@ public class SlaveGraphDatabase
             LastCommittedTxIdSetter lastCommittedTxIdSetter, NodeProxy.NodeLookup nodeLookup,
             RelationshipProxy.RelationshipLookups relationshipLookups,
             FileSystemAbstraction fileSystemAbstraction,
-            Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+            Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions, Caches caches )
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders, kernelExtensions );
+        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, caches );
         this.fileSystemAbstraction = fileSystemAbstraction;
 
         assert broker != null && logger != null && databaseOperations != null  && lastCommittedTxIdSetter != null &&

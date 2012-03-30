@@ -80,6 +80,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -139,6 +140,7 @@ public class HighlyAvailableGraphDatabase
     private long startupTime;
     private BranchedDataPolicy branchedDataPolicy;
     private final SlaveUpdateMode slaveUpdateMode;
+    private final Caches caches;
 
     // This lock is used to safeguard access to internal database
     // Users will acquire readlock, and upon master/slave switch
@@ -180,6 +182,8 @@ public class HighlyAvailableGraphDatabase
         messageLog = StringLogger.logger( this.storeDir );
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
+        caches = new Caches( messageLog );
+        
         config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
 
         /*
@@ -1062,7 +1066,7 @@ public class HighlyAvailableGraphDatabase
         this.storeId = storeId;
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, messageLog,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
-                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions );
+                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, caches );
 /*
 
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
@@ -1091,8 +1095,8 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
-        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, messageLog, nodeLookup, relationshipLookups, indexProviders, kernelExtensions);
-
+        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this,
+                broker, messageLog, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, caches);
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
