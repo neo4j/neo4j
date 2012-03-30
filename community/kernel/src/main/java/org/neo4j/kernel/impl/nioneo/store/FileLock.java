@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
-
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 public abstract class FileLock
 {
@@ -49,7 +48,7 @@ public abstract class FileLock
     public static FileLock getOsSpecificFileLock( String fileName, FileChannel channel )
             throws IOException
     {
-        if ( Config.osIsWindows() )
+        if ( GraphDatabaseSetting.osIsWindows() )
         {
             // Only grab one lock, say for the "neostore" file
             if ( fileName.endsWith( NeoStore.DEFAULT_NAME ) )

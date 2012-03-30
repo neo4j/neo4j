@@ -19,8 +19,6 @@
  */
 package org.neo4j.test.subprocess;
 
-import java.io.PrintStream;
-
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.IncompatibleThreadStateException;
@@ -29,6 +27,7 @@ import com.sun.jdi.LocalVariable;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
+import java.io.PrintStream;
 
 @SuppressWarnings( "restriction" )
 public class DebugInterface

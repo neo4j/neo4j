@@ -25,13 +25,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.BadPluginInvocationException;
 import org.neo4j.server.plugins.ParameterList;
@@ -57,7 +56,7 @@ public class ExtensionService
     private final InputFormat input;
     private final OutputFormat output;
     private final PluginInvocator extensions;
-    private final GraphDatabaseSPI graphDb;
+    private final GraphDatabaseAPI graphDb;
 
     public ExtensionService( @Context InputFormat input, @Context OutputFormat output,
             @Context PluginInvocator extensions, @Context Database database )

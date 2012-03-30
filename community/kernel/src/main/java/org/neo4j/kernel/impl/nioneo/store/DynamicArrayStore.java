@@ -24,9 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class DynamicArrayStore extends AbstractDynamicStore
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractDynamicStore.Configuration
     {
         
@@ -45,7 +45,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
-    public DynamicArrayStore(String fileName, Configuration configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public DynamicArrayStore(String fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }

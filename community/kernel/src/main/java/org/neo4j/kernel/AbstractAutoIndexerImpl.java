@@ -23,13 +23,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Default implementation of the AutoIndexer, binding to the beforeCommit hook

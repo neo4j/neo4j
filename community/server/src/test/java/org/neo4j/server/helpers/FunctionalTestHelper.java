@@ -19,24 +19,21 @@
  */
 package org.neo4j.server.helpers;
 
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_NODE_INDEX;
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX;
-
+import com.sun.jersey.api.client.Client;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.*;
 
 public final class FunctionalTestHelper
 {
@@ -231,7 +228,7 @@ public final class FunctionalTestHelper
         return extensionUri( name ) + "/relationship/" + id + "/" + method;
     }
 
-    public GraphDatabaseSPI getDatabase()
+    public GraphDatabaseAPI getDatabase()
     {
         return server.getDatabase().graph;
     }

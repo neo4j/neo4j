@@ -19,22 +19,20 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.nioneo.store.TestXa.*;
 
 public class TestChangingOfLogFormat
 {
@@ -43,7 +41,7 @@ public class TestChangingOfLogFormat
     {
         String storeDir = "target/var/oldlog";
         deleteFileOrDirectory( storeDir ); 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
@@ -56,7 +54,7 @@ public class TestChangingOfLogFormat
         
         try
         {
-            db = new EmbeddedGraphDatabase( storeDir );
+            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             fail( "Shouldn't be able to do recovery (and upgrade log format version) on non-clean shutdown" );
         }
         catch ( Exception e )

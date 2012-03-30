@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 public class TestStandaloneLogExtractor
 {
@@ -44,12 +46,14 @@ public class TestStandaloneLogExtractor
     private void run( boolean cleanShutdown, int nr ) throws Exception
     {
         String sourceDir = forTest( getClass() ).directory( "source" + nr, true ).getAbsolutePath();
-        Runtime.getRuntime().exec( new String[] {
-                "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
-                sourceDir, "" + cleanShutdown
-        } ).waitFor();
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
+            sourceDir, "" + cleanShutdown
+        } );
 
-        EmbeddedGraphDatabase newDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
+        new ProcessStreamHandler( process, true ).waitForResult();
+
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( sourceDir );
         long expectedTxId = 2;

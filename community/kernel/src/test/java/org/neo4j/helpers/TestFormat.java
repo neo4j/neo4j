@@ -76,7 +76,7 @@ public class TestFormat
 
     private long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
     {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(timeIsGivenInThisTimeZone);
         calendar.setTimeInMillis( timeWithDate );
         
         Calendar timeCalendar = Calendar.getInstance();

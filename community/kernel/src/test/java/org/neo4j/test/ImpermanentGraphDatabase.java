@@ -19,26 +19,32 @@
  */
 package org.neo4j.test;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -63,7 +69,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), withoutMemmap( params ));
+        super( path(), withoutMemmap( params ) );
+    }
+
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+    {
+        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions );
     }
 
     @Override
@@ -81,7 +92,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
-        result.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        result.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
         return result;
     }
 
@@ -99,7 +110,14 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected StringLogger createStringLogger()
     {
-        return StringLogger.DEV_NULL;
+        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
+
+        loggerContext.getLogger( "neo4j" ).setLevel( Level.WARN );
+        loggerContext.getLogger( "neo4j.diagnostics" ).setLevel( Level.WARN );
+        final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
+        final StringLogger stringLogger = StringLogger.logger( neo4j );
+
+        return stringLogger;
     }
 
     private static String path()
@@ -122,7 +140,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            if ( Config.osIsWindows() )
+            if ( GraphDatabaseSetting.osIsWindows() )
             {
                 System.err.println( "Couldn't clear directory, and that's ok because this is Windows. Next " +
                         ImpermanentGraphDatabase.class.getSimpleName() + " will get a new directory" );

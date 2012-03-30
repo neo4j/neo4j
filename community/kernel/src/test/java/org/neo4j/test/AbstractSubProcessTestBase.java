@@ -19,8 +19,6 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -28,15 +26,18 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import org.junit.After;
 import org.junit.Before;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static org.neo4j.helpers.collection.MapUtil.*;
 
 public class AbstractSubProcessTestBase
 {
@@ -86,7 +87,7 @@ public class AbstractSubProcessTestBase
 
     protected interface Task extends Serializable
     {
-        void run( EmbeddedGraphDatabase graphdb );
+        void run( GraphDatabaseAPI graphdb );
     }
 
     @Before
@@ -190,15 +191,15 @@ public class AbstractSubProcessTestBase
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
             return stringMap( new HashMap<String, String>( dbConfiguration ),
-                    Config.KEEP_LOGICAL_LOGS, "true" );
+                              GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
         }
 
-        protected EmbeddedGraphDatabase startup()
+        protected GraphDatabaseService startup()
         {
-            return new EmbeddedGraphDatabase( storeDir, dbConfiguration );
+            return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( dbConfiguration ).newGraphDatabase();
         }
 
-        protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
+        protected void shutdown( GraphDatabaseService graphdb, boolean normal )
         {
             graphdb.shutdown();
         }
@@ -238,7 +239,7 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
+        protected void shutdown( GraphDatabaseService graphdb, boolean normal )
         {
             if ( normal ) super.shutdown( graphdb, normal );
         }
@@ -255,7 +256,7 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        public void run( final EmbeddedGraphDatabase graphdb )
+        public void run( final GraphDatabaseAPI graphdb )
         {
             new Thread( new Runnable()
             {
@@ -271,9 +272,9 @@ public class AbstractSubProcessTestBase
     @SuppressWarnings( { "hiding", "serial" } )
     private static class SubInstance extends SubProcess<Instance, Bootstrapper> implements Instance
     {
-        private volatile EmbeddedGraphDatabase graphdb;
-        private static final AtomicReferenceFieldUpdater<SubInstance, EmbeddedGraphDatabase> GRAPHDB = AtomicReferenceFieldUpdater
-                .newUpdater( SubInstance.class, EmbeddedGraphDatabase.class, "graphdb" );
+        private volatile GraphDatabaseAPI graphdb;
+        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseAPI> GRAPHDB = AtomicReferenceFieldUpdater
+                .newUpdater( SubInstance.class, GraphDatabaseAPI.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
         private volatile Throwable failure;
 
@@ -283,7 +284,7 @@ public class AbstractSubProcessTestBase
             this.bootstrap = bootstrap;
             try
             {
-                graphdb = bootstrap.startup();
+                graphdb = (GraphDatabaseAPI) bootstrap.startup();
             }
             catch ( Throwable failure )
             {
@@ -311,7 +312,7 @@ public class AbstractSubProcessTestBase
         @Override
         protected void shutdown( boolean normal )
         {
-            AbstractGraphDatabase graphdb;
+            GraphDatabaseService graphdb;
             Bootstrapper bootstrap = this.bootstrap;
             graphdb = GRAPHDB.getAndSet( this, null );
             this.bootstrap = null;
@@ -325,7 +326,7 @@ public class AbstractSubProcessTestBase
         @Override
         public void restart()
         {
-            AbstractGraphDatabase graphdb;
+            GraphDatabaseService graphdb;
             Bootstrapper bootstrap = this.bootstrap;
             while ( ( graphdb = GRAPHDB.getAndSet( this, null ) ) == null )
             {
@@ -333,17 +334,17 @@ public class AbstractSubProcessTestBase
                     throw new IllegalStateException( "instance has been shut down" );
             }
             graphdb.shutdown();
-            this.graphdb = bootstrap.startup();
+            this.graphdb = (GraphDatabaseAPI) bootstrap.startup();
         }
 
         public <T> T getMBean( Class<T> beanType )
         {
-            AbstractGraphDatabase graphdb;
+            GraphDatabaseService graphdb;
             while ( ( graphdb = this.graphdb ) == null )
             {
                 if ( this.bootstrap == null ) throw new IllegalStateException( "instance has been shut down" );
             }
-            return graphdb.getManagementBean( beanType );
+            return ((GraphDatabaseAPI)graphdb).getSingleManagementBean( beanType );
         }
     }
 

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import java.util.List;
 import java.util.Map;
-
 import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -34,8 +32,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.junit.Assert.*;
 
 public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {

@@ -23,10 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.walk.Walker;
 
 public class Script extends ConfigurationParser
@@ -165,7 +164,7 @@ public class Script extends ConfigurationParser
 
     protected GraphDatabaseService createGraphDb()
     {
-        return new EmbeddedGraphDatabase( storeDir() );
+        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
     }
 
     protected Walker createGraphWalker( GraphDatabaseService graphdb )

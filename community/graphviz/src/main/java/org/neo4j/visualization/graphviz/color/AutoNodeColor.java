@@ -21,7 +21,6 @@ package org.neo4j.visualization.graphviz.color;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;

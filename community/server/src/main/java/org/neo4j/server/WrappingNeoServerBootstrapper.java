@@ -21,10 +21,9 @@ package org.neo4j.server;
 
 import java.util.Arrays;
 import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -39,7 +38,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
- * {@link GraphDatabaseSPI}, and optional configuration, and launches a
+ * {@link org.neo4j.kernel.GraphDatabaseAPI}, and optional configuration, and launches a
  * server using that database.
  * <p>
  * Use this to start up a full Neo4j server from within an application that
@@ -67,7 +66,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  */
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
-    private final GraphDatabaseSPI db;
+    private final GraphDatabaseAPI db;
     private final Configurator configurator;
     private static Logger log = Logger.getLogger( WrappingNeoServerBootstrapper.class );
 
@@ -76,7 +75,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      * 
      * @param db
      */
-    public WrappingNeoServerBootstrapper( GraphDatabaseSPI db )
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db )
     {
         this( db, new EmbeddedServerConfigurator( db ) );
     }
@@ -89,7 +88,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      * @param db
      * @param configurator
      */
-    public WrappingNeoServerBootstrapper( GraphDatabaseSPI db, Configurator configurator )
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, Configurator configurator )
     {
         this.db = db;
         this.configurator = configurator;
@@ -143,7 +142,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         return new GraphDatabaseFactory()
         {
             @Override
-            public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
                 return db;

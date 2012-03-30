@@ -21,10 +21,13 @@ package org.neo4j.kernel;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -35,7 +38,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
 
     static
     {
-        readOnlyParams.put( Config.READ_ONLY, "true" );
+        readOnlyParams.put( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE );
     }
 
     /**
@@ -48,8 +51,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir )
     {
         this( storeDir, readOnlyParams );
-        
-        run();
     }
 
     /**
@@ -67,7 +68,14 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
-        super( storeDir, addReadOnly(params) );
+        this( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ));
+    }
+
+    public EmbeddedReadOnlyGraphDatabase( String storeDir,
+            Map<String, String> params, Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions)
+    {
+        super( storeDir, addReadOnly(params), indexProviders1, kernelExtensions );
+        run();
     }
 
     private static Map<String, String> addReadOnly( Map<String, String> params )

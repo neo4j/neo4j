@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.CACHE_TYPE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
@@ -45,16 +45,20 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSizeOf
 {
-    private static ImpermanentGraphDatabase db;
+    private static GraphDatabaseAPI db;
     public static final int _8_BYTES_FOR_ID = 8;
     public static final int _4_BYTES_FOR_INDEX = 4;
     public static final int _4_BYTES_FOR_VALUE = 4;
@@ -62,7 +66,7 @@ public class TestSizeOf
     @BeforeClass
     public static void setupDB()
     {
-        db = new ImpermanentGraphDatabase( stringMap( CACHE_TYPE, CacheType.gcr.name() ) );
+        db = new ImpermanentGraphDatabase( stringMap( Config.CACHE_TYPE, CacheType.gcr.name() ) );
     }
     
     @AfterClass
@@ -99,6 +103,10 @@ public class TestSizeOf
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes, int directionStride )
     {
         Node node = null;
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+            newImpermanentDatabaseBuilder().
+            setConfig( GraphDatabaseSettings.cache_type, GraphDatabaseSettings.CacheTypeSetting.gcr ).
+            newGraphDatabase();
         Transaction tx = db.beginTx();
         try
         {

@@ -22,7 +22,6 @@ package org.neo4j.visualization.graphviz;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;

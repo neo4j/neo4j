@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.Is.is;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
 {
@@ -54,7 +54,7 @@ public class NodeIdsInUseSampleableTest
         assertThat( sampleable.getValue(), greaterThan( oldValue ) );
     }
 
-    private void createNode( GraphDatabaseSPI db )
+    private void createNode( GraphDatabaseAPI db )
     {
         Transaction tx = db.beginTx();
         db.createNode();

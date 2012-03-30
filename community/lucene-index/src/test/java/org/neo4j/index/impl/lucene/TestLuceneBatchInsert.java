@@ -47,6 +47,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
@@ -54,7 +55,6 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -101,7 +101,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );
@@ -157,7 +157,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
@@ -227,7 +227,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
         
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Node n1 = db.getNodeById( node1 );
         Node n2 = db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
@@ -267,7 +267,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Node node1 = db.getNodeById( nodeId1 );
         Node node2 = db.getNodeById( nodeId2 );
         Index<Node> index = db.index().forNodes( "mine" );

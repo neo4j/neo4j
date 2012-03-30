@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
 public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public PropertyCountSampleable( GraphDatabaseSPI db )
+    public PropertyCountSampleable( GraphDatabaseAPI db )
     {
         super( db );
     }

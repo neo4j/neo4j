@@ -20,9 +20,8 @@
 package org.neo4j.shell.impl;
 
 import java.util.Map;
-
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelExtensionContractTest;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 

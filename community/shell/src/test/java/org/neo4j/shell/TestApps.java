@@ -19,16 +19,9 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -38,10 +31,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
 
 public class TestApps extends AbstractShellTest
 {
@@ -264,7 +260,7 @@ public class TestApps extends AbstractShellTest
     {
         String storeDir = "target/test-data/db";
         FileUtils.deleteRecursively( new File( storeDir ) );
-        GraphDatabaseService newDb = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService newDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = newDb.beginTx();
         newDb.getReferenceNode().delete();
         Node node = newDb.createNode();

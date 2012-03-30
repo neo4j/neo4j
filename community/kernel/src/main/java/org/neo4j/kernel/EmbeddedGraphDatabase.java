@@ -21,8 +21,9 @@ package org.neo4j.kernel;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -65,7 +66,13 @@ public class EmbeddedGraphDatabase extends AbstractGraphDatabase
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
-        super( storeDir, params );
+        this( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ) );
+    }
+    
+    public EmbeddedGraphDatabase( String storeDir, Map<String,String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+    {
+        super( storeDir, params, indexProviders, kernelExtensions );
+        
         run();
     }
 }

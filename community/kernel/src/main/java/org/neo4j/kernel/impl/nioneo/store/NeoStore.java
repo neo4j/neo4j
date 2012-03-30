@@ -27,9 +27,11 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
@@ -43,10 +45,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class NeoStore extends AbstractStore
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-        int relationship_grab_size(int defaultRelGrabSize);
+        public static final GraphDatabaseSetting.IntegerSetting relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";
@@ -55,7 +57,6 @@ public class NeoStore extends AbstractStore
      *  6 longs in header (long + in use), time | random | version | txid | store version | graph next prop
      */
     public static final int RECORD_SIZE = 9;
-    private static final int DEFAULT_REL_GRAB_SIZE = 100;
 
     public static final String DEFAULT_NAME = "neostore";
 
@@ -69,10 +70,10 @@ public class NeoStore extends AbstractStore
 
     private final int REL_GRAB_SIZE;
     private final String fileName;
-    private final Configuration conf;
+    private final Config conf;
     private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
 
-    public NeoStore(String fileName, Configuration conf,
+    public NeoStore(String fileName, Config conf,
                     LastCommittedTxIdSetter lastCommittedTxIdSetter,
                     IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction,
                     StringLogger stringLogger, TxHook txHook,
@@ -86,7 +87,7 @@ public class NeoStore extends AbstractStore
         this.propStore = propStore;
         this.relStore = relStore;
         this.nodeStore = nodeStore;
-        REL_GRAB_SIZE = conf.relationship_grab_size(DEFAULT_REL_GRAB_SIZE);
+        REL_GRAB_SIZE = conf.getInteger( Configuration.relationship_grab_size );
         this.txHook = txHook;
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
@@ -140,7 +141,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.neo_store()) );
+                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(

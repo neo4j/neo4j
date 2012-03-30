@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +37,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -50,9 +55,7 @@ import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
+import static org.junit.Assert.*;
 
 @RunWith( Suite.class )
 @SuiteClasses( { IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
@@ -147,8 +150,8 @@ public class IdGeneratorRebuildFailureEmulationTest
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> config = new HashMap<String, String>();
-        config.put( "rebuild_idgenerators_fast", "false" );
-        factory = new StoreFactory( config, defaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
+        config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
+        factory = new StoreFactory( new Config( StringLogger.SYSTEM, fs, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
     }
 
     @After
@@ -256,7 +259,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         @Override
         protected IdGeneratorFactory createIdGeneratorFactory()
         {
-            return defaultIdGeneratorFactory();
+            return new DefaultIdGeneratorFactory();
         }
     }
 

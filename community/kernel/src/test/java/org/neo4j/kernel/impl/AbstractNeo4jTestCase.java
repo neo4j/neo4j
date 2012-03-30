@@ -26,7 +26,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -34,13 +33,14 @@ import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
@@ -66,12 +66,12 @@ public abstract class AbstractNeo4jTestCase
         }
     };
 
-    private static EmbeddedGraphDatabase graphDb;
+    private static GraphDatabaseAPI graphDb;
     private Transaction tx;
 
     private static boolean requiresPersistentGraphDatabase = false;
 
-    public EmbeddedGraphDatabase getGraphDb()
+    public GraphDatabaseService getGraphDb()
     {
         return graphDb;
     }
@@ -80,10 +80,12 @@ public abstract class AbstractNeo4jTestCase
     {
         AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
 //        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
-        graphDb = requiresPersistentGraphDatabase ? new EmbeddedGraphDatabase( getStorePath( "neo-test" ) ) : new ImpermanentGraphDatabase();
+        graphDb = (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
+                                      new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
+                                      new TestGraphDatabaseFactory().newImpermanentDatabase());
     }
 
-    public EmbeddedGraphDatabase getEmbeddedGraphDb()
+    public GraphDatabaseAPI getEmbeddedGraphDb()
     {
         return graphDb;
     }

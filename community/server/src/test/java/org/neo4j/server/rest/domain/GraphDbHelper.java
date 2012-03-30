@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -33,7 +32,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
@@ -58,7 +57,7 @@ public class GraphDbHelper
 
     private int numberOfEntitiesFor( Class<? extends PropertyContainer> type ) throws DatabaseBlockedException
     {
-        return (int) ( (EmbeddedGraphDatabase) database.graph ).getNodeManager().getNumberOfIdsInUse( type );
+        return (int) ( (GraphDatabaseAPI) database.graph ).getNodeManager().getNumberOfIdsInUse( type );
     }
 
     public Map<String, Object> getNodeProperties( long nodeId ) throws DatabaseBlockedException

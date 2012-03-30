@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import javax.ws.rs.core.Response.Status;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,15 +37,9 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
-import javax.ws.rs.core.Response.Status;
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
-
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.*;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -177,8 +174,8 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall(script, Status.OK);
 
         Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
-        assertEquals(2, resultMap.size());
-        assertThat(response, containsString("\"I\", \"you\""));
+        assertEquals( 2, resultMap.size() );
+        assertThat( response, containsString( "\"I\", \"you\"" ) );
     }
 
     @Test
@@ -190,8 +187,8 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String script = "start n = node(%I%) return n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
-        assertThat(response, containsString("[ 1, 2, 3 ]"));
-        assertThat(response, containsString("[ \"a\", \"b\", \"c\" ]"));
+        assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
+        assertThat( response, containsString( "[ \"a\", \"b\", \"c\" ]" ) );
     }
 
     void setProperty(String nodeName, String propertyName, Object propertyValue) {

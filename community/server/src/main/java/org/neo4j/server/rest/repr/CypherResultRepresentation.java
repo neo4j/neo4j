@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class CypherResultRepresentation extends ObjectRepresentation
 {

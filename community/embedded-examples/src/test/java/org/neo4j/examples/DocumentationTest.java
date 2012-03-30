@@ -20,13 +20,11 @@
 // START SNIPPET: _sampleDocumentation
 package org.neo4j.examples;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class DocumentationTest extends AbstractJavaDocTestbase
 {

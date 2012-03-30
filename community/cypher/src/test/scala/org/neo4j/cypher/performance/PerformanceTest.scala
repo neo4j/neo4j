@@ -21,21 +21,21 @@ package org.neo4j.cypher.performance
 
 import scala.util.Random
 import org.neo4j.cypher.ExecutionEngine
-import org.neo4j.kernel.EmbeddedGraphDatabase
 import org.scalatest.Assertions
-import org.neo4j.graphdb.{DynamicRelationshipType, Node}
 import org.junit.{Ignore, After, Before, Test}
+import org.neo4j.graphdb.{GraphDatabaseService, DynamicRelationshipType, Node}
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
 
 @Ignore
 class PerformanceTest extends Assertions {
   val r = new Random()
 
-  var db: EmbeddedGraphDatabase = null
+  var db: GraphDatabaseService = null
   var engine: ExecutionEngine = null
 
   @Before
   def init() {
-    db = new EmbeddedGraphDatabase("target/db")
+    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db");
     engine = new ExecutionEngine(db)
   }
 

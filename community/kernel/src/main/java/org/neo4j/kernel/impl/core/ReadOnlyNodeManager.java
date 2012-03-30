@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.core;
 
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -35,8 +35,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager(NodeManager.Configuration config, GraphDatabaseService graphDb,
-                               LockManager lockManager, LockReleaser lockReleaser,
+    public ReadOnlyNodeManager(Config config, GraphDatabaseService graphDb, LockManager lockManager, LockReleaser lockReleaser,
                                TransactionManager transactionManager, PersistenceManager persistenceManager,
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                CacheType cacheType, PropertyIndexManager propertyIndexManager,

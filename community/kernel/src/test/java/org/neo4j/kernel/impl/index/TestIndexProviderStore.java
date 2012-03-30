@@ -19,20 +19,17 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.*;
 
 public class TestIndexProviderStore
 {
@@ -43,7 +40,7 @@ public class TestIndexProviderStore
     public void createStore()
     {
         file = new File( "target/test-data/index-provider-store" );
-        fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        fileSystem = new DefaultFileSystemAbstraction();
         file.mkdirs();
         file.delete();
     }

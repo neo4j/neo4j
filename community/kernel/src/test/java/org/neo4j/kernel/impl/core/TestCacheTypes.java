@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
+
+import static org.junit.Assert.*;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
@@ -41,29 +40,23 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         deleteFileOrDirectory( new File( PATH ) );
     }
     
-    private EmbeddedGraphDatabase newDb( String cacheType )
+    private GraphDatabaseAPI newDb( String cacheType )
     {
-        return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( Config.CACHE_TYPE, cacheType ) );
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type.name(), cacheType ).newGraphDatabase();
     }
 
     @Test
     public void testDefaultCache()
     {
-        EmbeddedGraphDatabase db = newDb( null );
-        try
-        {
-            assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        GraphDatabaseAPI db = newDb( null );
+        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
+        db.shutdown();
     }
 
     @Test
     public void testWeakRefCache()
     {
-        EmbeddedGraphDatabase db = newDb( "weak" );
+        GraphDatabaseAPI db = newDb( CacheType.weak.name() );
         assertEquals( CacheType.weak, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -71,7 +64,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testSoftRefCache()
     {
-        EmbeddedGraphDatabase db = newDb( "soft" );
+        GraphDatabaseAPI db = newDb( CacheType.soft.name() );
         assertEquals( CacheType.soft, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -79,7 +72,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testNoCache()
     {
-        EmbeddedGraphDatabase db = newDb( "none" );
+        GraphDatabaseAPI db = newDb( CacheType.none.name() );
         assertEquals( CacheType.none, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -87,7 +80,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testStrongCache()
     {
-        EmbeddedGraphDatabase db = newDb( "strong" );
+        GraphDatabaseAPI db = newDb( CacheType.strong.name() );
         assertEquals( CacheType.strong, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -95,7 +88,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testGcrCache()
     {
-        EmbeddedGraphDatabase db = newDb( "gcr" );
+        GraphDatabaseAPI db = newDb( CacheType.gcr.name() );
         assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
         db.shutdown();
     }
@@ -103,9 +96,16 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testInvalidCache()
     {
-        // invalid cache type should use default and print a warning
-        EmbeddedGraphDatabase db = newDb( "whatever" );
-        assertEquals( CacheType.gcr, db.getNodeManager().getCacheType() );
-        db.shutdown();
+        // invalid cache type should fail
+        GraphDatabaseAPI db = null;
+        try
+        {
+            db = newDb( "whatever" );
+            fail( "Wrong cache type should not be allowed" );
+        }
+        catch( Exception e )
+        {
+            // Ok
+        }
     }
 }

@@ -17,28 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.configuration;
 
-import static java.util.regex.Pattern.quote;
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.AutoConfigurator;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
+import static java.util.regex.Pattern.*;
+
 /**
- * A non-standard configuration object.
+ * This class holds the overall configuration of a Neo4j database instance. Use the accessors
+ * to convert the internal key-value settings to other types. 
+ * 
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults
+ * have been applied.
+ * 
+ * UI's can change configuration by calling applyChanges. Any listener, such as services that use
+ * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
 public class Config implements DiagnosticsProvider
 {
+    private List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
+
     static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
@@ -254,76 +270,115 @@ public class Config implements DiagnosticsProvider
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private Map<String, String> params;
-
-    private final AutoConfigurator autoConfigurator;
-
-    Config( FileSystemAbstraction fileSystem, String storeDir, Map<String, String> inputParams)
+    
+    public Config(Map<String, String> inputParams)
     {
-        // Get the default params and override with the user supplied values
-        this.params = getDefaultParams();
-
-        // Try auto-configuring some of the numbers
-        boolean useMemoryMapped = Boolean.parseBoolean( inputParams.get(
-                Config.USE_MEMORY_MAPPED_BUFFERS) );
-        boolean dumpToConsole = Boolean.parseBoolean( inputParams.get(
-                Config.DUMP_CONFIGURATION) );
-        autoConfigurator = new AutoConfigurator( fileSystem, storeDir, useMemoryMapped, dumpToConsole );
-        autoConfigurator.configure(params);
-
-        this.params.putAll(inputParams);
-
-        // Configuration may not be changed at runtime
-        this.params = Collections.unmodifiableMap(this.params);
+        this(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), inputParams, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ));
     }
-
-    public static Map<String, String> getDefaultParams()
+    
+    public Config( StringLogger msgLog,
+                   FileSystemAbstraction fileSystem,
+                   Map<String, String> inputParams,
+                   List<Class<?>> settingsClasses
+    )
     {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
-        // if on windows, default no memory mapping
-        if ( osIsWindows() )
+        // Migrate settings
+        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( msgLog );
+        inputParams = configurationMigrator.migrateConfiguration( inputParams );
+
+        // Apply defaults
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( msgLog, settingsClasses );
+        params = configurationDefaults.apply( inputParams );
+
+        // Apply autoconfiguration for memory settings
+        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem, get(NeoStoreXaDataSource.Configuration.store_dir), getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ), getBoolean( GraphDatabaseSettings.dump_configuration ) );
+        Map<String,String> autoConfiguration = autoConfigurator.configure( );
+        for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
         {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+            // Don't override explicit settings
+            if (!inputParams.containsKey( autoConfig.getKey() ))
+                params.put( autoConfig.getKey(), autoConfig.getValue() );
         }
-        else
-        {
-            // If not on win, default use memory mapping
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
-        }
-
-        params.put( NODE_AUTO_INDEXING, "false" );
-        params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
-        return params;
-    }
-
-    public AutoConfigurator getAutoConfigurator()
-    {
-        return autoConfigurator;
-    }
-
-    public static boolean osIsWindows()
-    {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.startsWith("Windows");
-    }
-
-    public static boolean osIsMacOS()
-    {
-        String nameOs = System.getProperty( "os.name" );
-        return nameOs.equalsIgnoreCase( "Mac OS X" );
     }
 
     public Map<String, String> getParams()
     {
         return this.params;
     }
+    
+    public boolean isSet( GraphDatabaseSetting graphDatabaseSetting )
+    {
+        return params.containsKey( graphDatabaseSetting.name() ) && params.get( graphDatabaseSetting.name() ) != null;
+    }
 
+    public String get(GraphDatabaseSetting setting)
+    {
+        String string = params.get( setting.name() );
+        if (string != null)
+            string = string.trim();
+        return string;
+    }
+    
+    public boolean getBoolean(GraphDatabaseSetting.BooleanSetting setting)
+    {
+        return Boolean.parseBoolean( get( setting ) );
+    }
+    
+    public int getInteger(GraphDatabaseSetting.IntegerSetting setting)
+    {
+        return Integer.parseInt( get( setting ) );
+    }
+
+    public long getLong(GraphDatabaseSetting.LongSetting setting)
+    {
+        return Long.parseLong(get( setting ));
+    }
+
+    public double getDouble(GraphDatabaseSetting.DoubleSetting setting)
+    {
+        return Double.parseDouble(get( setting ));
+    }
+
+    public float getFloat(GraphDatabaseSetting.FloatSetting setting)
+    {
+        return Float.parseFloat( get( setting ));
+    }
+
+    public long getSize(GraphDatabaseSetting.StringSetting setting)
+    {
+        String mem = get( setting ).toLowerCase();
+        long multiplier = 1;
+        if ( mem.endsWith( "k" ) )
+        {
+            multiplier = 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+        else if ( mem.endsWith( "m" ) )
+        {
+            multiplier = 1024 * 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+        else if ( mem.endsWith( "g" ) )
+        {
+            multiplier = 1024 * 1024 * 1024;
+            mem = mem.substring( 0, mem.length() - 1 );
+        }
+
+        return Long.parseLong( mem ) * multiplier;
+    }
+
+    public long getDuration(GraphDatabaseSetting.StringSetting setting)
+    {
+        return TimeUtil.parseTimeMillis( get( setting ) );
+    }
+
+    public <T extends Enum<T>> T getEnum( Class<T> enumType,
+                                          GraphDatabaseSetting.OptionsSetting graphDatabaseSetting)
+    {
+        return Enum.valueOf( enumType, get( graphDatabaseSetting ) );
+    }
+    
+    
     public static boolean configValueContainsMultipleParameters( String configValue )
     {
         return configValue != null && configValue.contains( "=" );
@@ -343,13 +398,6 @@ public class Config implements DiagnosticsProvider
             result.put( tokens[0], tokens[1] );
         }
         return new Args( result );
-    }
-
-    public static Object getFromConfig( Map<?, ?> config, Object key,
-            Object defaultValue )
-    {
-        Object result = config != null ? config.get( key ) : defaultValue;
-        return result != null ? result : defaultValue;
     }
 
     @Override
@@ -389,5 +437,38 @@ public class Config implements DiagnosticsProvider
                 }
             }, true );
         }
+    }
+    
+    public synchronized void applyChanges(Map<String,String> newConfiguration)
+    {
+        // Figure out what changed
+        List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>(  );
+        for( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
+        {
+            String oldValue = params.get( stringStringEntry.getKey() );
+            String newValue = stringStringEntry.getValue();
+            if (!(oldValue == null && newValue == null) &&
+                (oldValue == null || newValue == null || !oldValue.equals( newValue )))
+                configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue, newValue ) );
+        }
+
+        // Make the change
+        params.putAll( newConfiguration );
+
+        // Notify listeners
+        for( ConfigurationChangeListener listener : listeners )
+        {
+            listener.notifyConfigurationChanges(configurationChanges);
+        }
+    }
+    
+    public void addConfigurationChangeListener(ConfigurationChangeListener listener)
+    {
+        listeners.add(listener);
+    }
+    
+    public void removeConfigurationChangeListener(ConfigurationChangeListener listener)
+    {
+        listeners.remove( listener );
     }
 }

@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-            CommonFactories.defaultIdGeneratorFactory();
+            new DefaultIdGeneratorFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
-            CommonFactories.defaultFileSystemAbstraction();
+            new DefaultFileSystemAbstraction();
     
     private String path()
     {
@@ -150,8 +150,8 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, ConfigProxy.config(MapUtil.stringMap(
-                    "store_dir", "target/var/teststore" ), AbstractStore.Configuration.class), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
+            super( fileName, new Config( StringLogger.DEV_NULL, FILE_SYSTEM, MapUtil.stringMap(
+                    "store_dir", "target/var/teststore" ), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
         }
 
         public int getRecordSize()
@@ -166,7 +166,7 @@ public class TestStore
 
         public static Store createStore( String fileName) throws IOException
         {
-            new StoreFactory(Collections.<String,String>emptyMap(), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
+            new StoreFactory(new Config(StringLogger.DEV_NULL, FILE_SYSTEM, Collections.<String,String>emptyMap(), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
             return new Store( fileName );
         }
 

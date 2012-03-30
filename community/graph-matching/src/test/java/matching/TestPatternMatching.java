@@ -19,12 +19,6 @@
  */
 package matching;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.GraphDescription.createGraphFor;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -51,10 +44,14 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TestData;
+
+import static java.util.Arrays.*;
+import static org.junit.Assert.*;
 
 public class TestPatternMatching implements GraphHolder
 {
@@ -65,7 +62,7 @@ public class TestPatternMatching implements GraphHolder
     }
 
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( createGraphFor( this, true ) );
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphDb;
     private Transaction tx;
@@ -772,9 +769,7 @@ public class TestPatternMatching implements GraphHolder
     private void execAndWait( String... args ) throws Exception
     {
         Process process = Runtime.getRuntime().exec( args );
-        ProcessStreamHandler handler = new ProcessStreamHandler( process );
-        handler.launch();
-        process.waitFor();
+        new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     @Test

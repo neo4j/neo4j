@@ -27,18 +27,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import static java.lang.Boolean.parseBoolean;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.AutoConfigurator;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -66,8 +65,8 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static java.lang.Boolean.*;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.*;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -97,18 +96,14 @@ public class BatchInserterImpl implements BatchInserter
         rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
-        params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
-        new AutoConfigurator( CommonFactories.defaultFileSystemAbstraction(), storeDir, false, dump ).configure( params );
-        for ( Map.Entry<String,String> entry : stringParams.entrySet() )
-        {
-            params.put( entry.getKey(), entry.getValue() );
-        }
+        params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
+        final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
-        this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
-        final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
-        StoreFactory sf = new StoreFactory(params,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory( config,idGeneratorFactory, fileSystem, null, StringLogger.DEV_NULL, null);
 
         String store = fixPath( storeDir, sf );
         if ( dump )
@@ -388,7 +383,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rejectAutoUpgrade( Map<String, String> stringParams )
     {
-        if ( parseBoolean( stringParams.get( ALLOW_STORE_UPGRADE ) ) )
+        if ( parseBoolean( stringParams.get( GraphDatabaseSettings.allow_store_upgrade.name() ) ) )
         {
             throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
             		", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );

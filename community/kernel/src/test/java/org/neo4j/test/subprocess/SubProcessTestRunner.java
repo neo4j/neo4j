@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.internal.runners.statements.RunBefores;
 import org.junit.runner.notification.Failure;

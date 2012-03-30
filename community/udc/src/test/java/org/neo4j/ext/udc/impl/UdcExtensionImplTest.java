@@ -19,11 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -31,12 +26,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -66,7 +66,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldNotCrashNormalGraphdbCreation() throws IOException
     {
-        EmbeddedGraphDatabase graphdb = createTempDatabase( null );
+        GraphDatabaseService graphdb = createTempDatabase( null );
         destroy( graphdb );
     }
 
@@ -76,7 +76,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = createTempDatabase( null );
+        GraphDatabaseService graphdb = createTempDatabase( null );
         // when the UDC extension successfully loads, it initializes the attempts count to 0
         assertGotSuccessWithRetry( IS_ZERO );
         destroy( graphdb );
@@ -88,8 +88,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        EmbeddedGraphDatabase graphdb1 = createTempDatabase( null );
-        EmbeddedGraphDatabase graphdb2 = createTempDatabase( null );
+        GraphDatabaseService graphdb1 = createTempDatabase( null );
+        GraphDatabaseService graphdb2 = createTempDatabase( null );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -103,7 +103,7 @@ public class UdcExtensionImplTest
         Map<String, String> config = new HashMap<String, String>();
         config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" ); // first delay must be long enough to allow class initialization to complete
         config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1" );
-        EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( "should-record-failures", config );
+        GraphDatabaseService graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "should-record-failures").setConfig( config ).newGraphDatabase();
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
         destroy( graphdb );
     }
@@ -124,7 +124,7 @@ public class UdcExtensionImplTest
         config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
         config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
 
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertGotFailureWithRetry( IS_ZERO );
         destroy( graphdb );
@@ -147,7 +147,7 @@ public class UdcExtensionImplTest
         config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
         config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
 
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "test", handler.getQueryMap().get( "source" ) );
 
@@ -172,7 +172,7 @@ public class UdcExtensionImplTest
         config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
         config.put( UdcExtensionImpl.UDC_REGISTRATION_KEY, "marketoid" );
 
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "marketoid", handler.getQueryMap().get( "reg" ) );
 
@@ -196,7 +196,7 @@ public class UdcExtensionImplTest
         config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
         config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
 
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertNotNull(handler.getQueryMap().get("mac"));
 
@@ -249,9 +249,8 @@ public class UdcExtensionImplTest
         fail();
     }
 
-    private EmbeddedGraphDatabase createTempDatabase( Map<String, String> config ) throws IOException
+    private GraphDatabaseService createTempDatabase( Map<String, String> config ) throws IOException
     {
-        EmbeddedGraphDatabase tempdb = null;
         String randomDbName = "tmpdb-" + rnd.nextInt();
         File possibleDirectory = new File( "target" + File.separator
                 + randomDbName );
@@ -259,20 +258,20 @@ public class UdcExtensionImplTest
         {
             FileUtils.deleteDirectory( possibleDirectory );
         }
-        if ( config == null )
+
+        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( randomDbName );
+        if ( config != null )
         {
-            tempdb = new EmbeddedGraphDatabase( randomDbName );
-        } else
-        {
-            tempdb = new EmbeddedGraphDatabase( randomDbName, config );
+            graphDatabaseBuilder.setConfig( config );
         }
-        return tempdb;
+
+        return graphDatabaseBuilder.newGraphDatabase();
     }
 
-    private void destroy( EmbeddedGraphDatabase dbToDestroy ) throws IOException
+    private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
         dbToDestroy.shutdown();
-        FileUtils.deleteDirectory( new File( dbToDestroy.getStoreDir() ) );
+        FileUtils.deleteDirectory( new File( ((GraphDatabaseAPI)dbToDestroy).getStoreDir() ) );
     }
 
 }

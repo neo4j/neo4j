@@ -21,7 +21,6 @@ package org.neo4j.visualization.graphviz.color;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 
 /**

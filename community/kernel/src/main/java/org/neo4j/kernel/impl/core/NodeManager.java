@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,15 +37,15 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Lifecycle;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.impl.cache.GCResistantCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
@@ -69,24 +67,36 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class NodeManager
     implements Lifecycle
 {
-    public interface Configuration
+    public static class Configuration
     {
-        String node_cache_size(String def);
-        String relationship_cache_size( String def );
-        String node_cache_array_fraction( String def );
-        String relationship_cache_array_fraction( String def );
-        String array_cache_min_log_interval( String def );
+        public static final GraphDatabaseSetting.BooleanSetting use_adaptive_cache = GraphDatabaseSettings.use_adaptive_cache;
+        public static final GraphDatabaseSetting.FloatSetting adaptive_cache_heap_ratio = GraphDatabaseSettings.adaptive_cache_heap_ratio;
+        public static final GraphDatabaseSetting.IntegerSetting min_node_cache_size = GraphDatabaseSettings.min_node_cache_size;
+
+        public static final GraphDatabaseSetting.IntegerSetting min_relationship_cache_size = GraphDatabaseSettings.min_relationship_cache_size;
+
+        public static final GraphDatabaseSetting.IntegerSetting max_node_cache_size = GraphDatabaseSettings.max_node_cache_size;
+
+        public static final GraphDatabaseSetting.IntegerSetting max_relationship_cache_size = GraphDatabaseSettings.max_relationship_cache_size;
+
+        public static final GraphDatabaseSetting.StringSetting node_cache_size = GraphDatabaseSettings.node_cache_size;
+        public static final GraphDatabaseSetting.StringSetting relationship_cache_size = GraphDatabaseSettings.relationship_cache_size;
+        public static final GraphDatabaseSetting.FloatSetting node_cache_array_fraction = GraphDatabaseSettings.node_cache_array_fraction;
+        public static final GraphDatabaseSetting.FloatSetting relationship_cache_array_fraction = GraphDatabaseSettings.relationship_cache_array_fraction;
+        public static final GraphDatabaseSetting.StringSetting array_cache_min_log_interval = GraphDatabaseSettings.array_cache_min_log_interval;
     }
     
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private long referenceNodeId = 0;
 
-    private Configuration config;
+    private Config config;
+
     private final GraphDatabaseService graphDbService;
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
@@ -116,10 +126,7 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    private final StringLogger logger;
-
-    public NodeManager( Configuration config, GraphDatabaseService graphDb,
-            LockManager lockManager,
+    public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             RelationshipTypeHolder relationshipTypeHolder, CacheType cacheType, PropertyIndexManager propertyIndexManager,
@@ -127,7 +134,6 @@ public class NodeManager
             DiagnosticsManager diagnostics )
     {
         this.config = config;
-        this.logger = logger;
         this.graphDbService = graphDb;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
@@ -980,7 +986,7 @@ public class NodeManager
             }
         }
         return persistenceManager.nodeChangeProperty( node.getId(), property,
-                value );
+                                                      value );
     }
 
     void nodeRemoveProperty( NodeImpl node, PropertyData property )
@@ -1049,7 +1055,7 @@ public class NodeManager
             }
         }
         return persistenceManager.relChangeProperty( rel.getId(), property,
-                value );
+                                                     value );
     }
 
     void relRemoveProperty( RelationshipImpl rel, PropertyData property )
@@ -1187,13 +1193,13 @@ public class NodeManager
         weak( "weak reference cache" )
         {
             @Override
-            Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config )
+            Cache<NodeImpl> node( StringLogger logger, Config config )
             {
                 return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
             {
                 return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
@@ -1201,13 +1207,13 @@ public class NodeManager
         soft( "soft reference cache" )
         {
             @Override
-            Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config )
+            Cache<NodeImpl> node( StringLogger logger, Config config )
             {
                 return new SoftLruCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
             {
                 return new SoftLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
@@ -1215,13 +1221,13 @@ public class NodeManager
         none( "no cache" )
         {
             @Override
-            Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config )
+            Cache<NodeImpl> node( StringLogger logger, Config config )
             {
                 return new NoCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
             {
                 return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
@@ -1229,13 +1235,13 @@ public class NodeManager
         strong( "strong reference cache" )
         {
             @Override
-            Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config )
+            Cache<NodeImpl> node( StringLogger logger, Config config )
             {
                 return new StrongReferenceCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
             {
                 return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
@@ -1243,51 +1249,27 @@ public class NodeManager
         gcr( "GC resistant cache" )
         {
             @Override
-            Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config )
+            Cache<NodeImpl> node( StringLogger logger, Config config )
             {
                 long available = Runtime.getRuntime().maxMemory();
                 long defaultMem = ( available / 4);
-                String defaultMemStr = "" + defaultMem;
-                long node = memory( config.node_cache_size( defaultMemStr ), Config.NODE_CACHE_SIZE );
-                long rel = memory( config.relationship_cache_size( defaultMemStr ), Config.RELATIONSHIP_CACHE_SIZE );
+                long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
+                long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<NodeImpl>( node, fraction( config.node_cache_array_fraction( "1" ), 
-                        Config.NODE_CACHE_ARRAY_FRACTION ), minLogInterval( config.array_cache_min_log_interval( "60000" ) ), 
+                return new GCResistantCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
                         NODE_CACHE_NAME, logger );
             }
 
             @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
             {
                 long available = Runtime.getRuntime().maxMemory();
                 long defaultMem = ( available / 4);
-                String defaultMemStr = "" + defaultMem;
-                long node = memory( config.node_cache_size( defaultMemStr ), Config.NODE_CACHE_SIZE );
-                long rel = memory( config.relationship_cache_size( defaultMemStr ), Config.RELATIONSHIP_CACHE_SIZE );
+                long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
+                long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<RelationshipImpl>( rel, fraction( config.relationship_cache_array_fraction( "1" ), 
-                        Config.RELATIONSHIP_CACHE_ARRAY_FRACTION ), minLogInterval( config.array_cache_min_log_interval( "60000" ) ), 
+                return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
                         RELATIONSHIP_CACHE_NAME, logger );
-            }
-
-            private long minLogInterval( String interval )
-            {
-                long result = 60000; // Default: a minute
-                try
-                {
-                    if ( interval != null ) result = TimeUtil.parseTimeMillis( interval );
-                }
-                catch ( Exception e )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL, e );
-                }
-                if ( result < 0 )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL );
-                }
-                return result;
             }
 
             @SuppressWarnings( "boxing" )
@@ -1307,55 +1289,6 @@ public class NodeManager
                     logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
                                                       node, rel, total, advicedMax ) );
             }
-
-            private float fraction( String fraction, String param )
-            {
-                float result = 1;
-                try
-                {
-                    if ( fraction != null ) result = Float.parseFloat( fraction );
-                }
-                catch ( NumberFormatException e )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param,
-                                                        e );
-                }
-                if ( result < 1 || result > 10 )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param );
-                }
-                return result;
-            }
-
-            @SuppressWarnings( "boxing" )
-            private Long memory( String mem, String param )
-            {
-                mem = mem.trim().toLowerCase();
-                long multiplier = 1;
-                if ( mem.endsWith( "m" ) )
-                {
-                    multiplier = 1024 * 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "k" ) )
-                {
-                    multiplier = 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "g" ) )
-                {
-                    multiplier = 1024 * 1024 * 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                try
-                {
-                    return Long.parseLong( mem ) * multiplier;
-                }
-                catch ( NumberFormatException e )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + mem + "] for " + param, e );
-                }
-            }
         };
 
 
@@ -1369,9 +1302,9 @@ public class NodeManager
             this.description = description;
         }
 
-        abstract Cache<NodeImpl> node( StringLogger logger, NodeManager.Configuration config );
+        abstract Cache<NodeImpl> node( StringLogger logger, Config config );
 
-        abstract Cache<RelationshipImpl> relationship( StringLogger logger, NodeManager.Configuration config );
+        abstract Cache<RelationshipImpl> relationship( StringLogger logger, Config config );
 
         public String getDescription()
         {

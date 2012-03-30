@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 class ParameterExtractor extends DataExtractor
@@ -40,7 +40,7 @@ class ParameterExtractor extends DataExtractor
     }
 
     @Override
-    Object extract( GraphDatabaseSPI graphDb, Object source, ParameterList parameters ) throws BadInputException
+    Object extract( GraphDatabaseAPI graphDb, Object source, ParameterList parameters ) throws BadInputException
     {
         Object result = caster.get( graphDb, parameters, name );
         if ( optional || result != null ) return result;

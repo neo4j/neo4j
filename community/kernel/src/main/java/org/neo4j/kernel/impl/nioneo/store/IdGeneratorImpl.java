@@ -25,7 +25,7 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
+import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a

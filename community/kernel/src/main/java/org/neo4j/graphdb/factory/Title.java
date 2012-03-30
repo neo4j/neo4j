@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.graphdb.factory;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -26,12 +26,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Add this annotation to configuration interfaces to specify what prefix to use
- * For example, HA configuration interfaces would have @ConfigurationPrefix("ha.") as annotation
+ * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}. These can then be accessed through the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.TYPE)
-public @interface ConfigurationPrefix
+@Target( ElementType.FIELD )
+public @interface Title
 {
     String value();
 }

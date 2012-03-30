@@ -18,35 +18,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel;
+package org.neo4j.kernel.lifecycle;
 
 /**
- * Adapter for Lifecycle interface. Subclass and override methods as needed
+ * Lifecycle interface for kernel components. Init is called first, 
+ * followed by start, 
+ * and then any number of stop-start sequences,
+ * and finally stop and shutdown.
+ * 
+ * As a stop-start cycle could be due to change of configuration, please perform anything that depends on config
+ * in start().
+ *
+ * Implementations can throw any exception. Caller must handle this properly.
  */
-public class LifecycleAdapter
-    implements Lifecycle
+public interface Lifecycle
 {
-    @Override
-    public void init()
-        throws Throwable
-    {
-    }
-
-    @Override
-    public void start()
-        throws Throwable
-    {
-    }
-
-    @Override
-    public void stop()
-        throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown()
-        throws Throwable
-    {
-    }
+    void init()
+        throws Throwable;
+    
+    void start()
+        throws Throwable;
+    
+    void stop()
+        throws Throwable;
+    
+    void shutdown()
+        throws Throwable;
 }

@@ -19,28 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
+
+import static java.lang.System.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 @Ignore( "It doesn't assert anything yet" )
 public class TestUnforcedTransaction
 {
-    private static AbstractGraphDatabase db;
+    private static GraphDatabaseAPI db;
     
     @BeforeClass
     public static void setupDb()
     {
-        db = new EmbeddedGraphDatabase( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() );
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( forTest( TestUnforcedTransaction.class ).directory( "d", true ).getAbsolutePath() );
     }
     
     @AfterClass

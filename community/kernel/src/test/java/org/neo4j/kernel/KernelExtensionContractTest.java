@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.Collections;
 import java.util.Map;
-
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
 
 /**
  * Base class for testing a {@link KernelExtension}. The base test cases in this
@@ -56,11 +54,11 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
         this.key = key;
     }
 
-    EmbeddedGraphDatabase graphdb( String name, boolean loadExtensions, int instance )
+    GraphDatabaseService graphdb( String name, boolean loadExtensions, int instance )
     {
         Map<String, String> config = configuration( true, instance );
-        config.put( Config.LOAD_EXTENSIONS, Boolean.toString( loadExtensions ) );
-        return new EmbeddedGraphDatabase( target.directory( name, true ).getAbsolutePath(), config );
+        config.put( GraphDatabaseSettings.load_kernel_extensions.name(), Boolean.toString( loadExtensions ) );
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.directory( name, true ).getAbsolutePath()).setConfig( config ).newGraphDatabase();
     }
 
     /**
@@ -121,9 +119,9 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
         return state != null;
     }
 
-    static KernelData getExtensions( EmbeddedGraphDatabase graphdb )
+    static KernelData getExtensions( GraphDatabaseService graphdb )
     {
-        return graphdb.getKernelData();
+        return ((GraphDatabaseAPI)graphdb).getKernelData();
     }
 
     @Test
@@ -183,7 +181,7 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     @Test
     public void canLoadKernelExtension() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
             assertTrue( "Failed to load extension", isLoadedOk( getExtensions( graphdb ) ) );
@@ -197,7 +195,7 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     @Test
     public void differentInstancesUseSameState() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", true, 0 );
+        GraphDatabaseService graphdb = graphdb( "graphdb", true, 0 );
         try
         {
             KernelData kernel = getExtensions( graphdb );
@@ -212,10 +210,10 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     @Test
     public void sameInstanceCanLoadWithMultipleKernels() throws Exception
     {
-        EmbeddedGraphDatabase graphdb1 = graphdb( "graphdb1", /*loadExtensions=*/false, 1 );
+        GraphDatabaseService graphdb1 = graphdb( "graphdb1", /*loadExtensions=*/false, 1 );
         try
         {
-            EmbeddedGraphDatabase graphdb2 = graphdb( "graphdb2", /*loadExtensions=*/false, 2 );
+            GraphDatabaseService graphdb2 = graphdb( "graphdb2", /*loadExtensions=*/false, 2 );
             try
             {
                 KernelData extensions1 = getExtensions( graphdb1 ), extensions2 = getExtensions( graphdb2 );

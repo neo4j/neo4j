@@ -19,30 +19,33 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-import java.io.IOException;
-import java.util.*;
-
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static java.util.Arrays.*;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.*;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.*;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 public class JavaExecutionEngineTests {
 
-    private AbstractGraphDatabase db;
+    private GraphDatabaseService db;
     private ExecutionEngine engine;
     private Node andreasNode;
     private Node johanNode;
@@ -50,7 +53,7 @@ public class JavaExecutionEngineTests {
 
     @Before
     public void setUp() throws IOException {
-        db = new ImpermanentGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         engine = new ExecutionEngine( db );
         Transaction tx = db.beginTx();
         andreasNode = db.createNode();

@@ -21,26 +21,30 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.*;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.ReadableRelationshipIndex;
+import org.neo4j.graphdb.index.RelationshipAutoIndexer;
+import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
         implements RelationshipAutoIndexer
 {
-    public interface Configuration
+    public static abstract class Configuration
     {
-
-        boolean relationship_auto_indexing(boolean def);
-
-        String relationship_keys_indexable(String def);
+        public static final GraphDatabaseSetting.BooleanSetting relationship_auto_indexing = GraphDatabaseSettings.relationship_auto_indexing;
+        public static final GraphDatabaseSetting.StringSetting relationship_keys_indexable = GraphDatabaseSettings.relationship_keys_indexable;
     }
     
     static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
-    private Configuration config;
+    private Config config;
     private IndexManagerImpl indexManager;
     private NodeManager nodeManager;
 
-    public RelationshipAutoIndexerImpl( Configuration config, IndexManagerImpl indexManager, NodeManager nodeManager)
+    public RelationshipAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager)
     {
         super( );
         this.config = config;
@@ -57,8 +61,8 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     @Override
     public void start()
     {
-        setEnabled(config.relationship_auto_indexing(false));
-        propertyKeysToInclude.addAll( parseConfigList( config.relationship_keys_indexable(null)) );
+        setEnabled(config.getBoolean( Configuration.relationship_auto_indexing ));
+        propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.relationship_keys_indexable )) );
     }
 
     @Override

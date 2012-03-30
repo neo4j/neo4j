@@ -30,26 +30,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
+import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 public class TestIdGenerator
 {
@@ -579,7 +577,7 @@ public class TestIdGenerator
         long id = (long) Math.pow( 2, 32 )-3;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
-        assertEquals( id+1, idGenerator.nextId() );
+        assertEquals( id + 1, idGenerator.nextId() );
         // Here we make sure that id+2 (integer -1) is skipped
         assertEquals( id+3, idGenerator.nextId() );
         assertEquals( id+4, idGenerator.nextId() );
@@ -610,7 +608,7 @@ public class TestIdGenerator
     {
         String storeDir = "target/var/free-id-once";
         deleteRecursively( new File( storeDir ) );
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
         Node rootNode = db.getReferenceNode();
 
@@ -641,7 +639,7 @@ public class TestIdGenerator
 
         // After a clean shutdown, create new nodes and relationships and see so that
         // all ids are unique.
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         rootNode = db.getReferenceNode();
         tx = db.beginTx();
         for ( int i = 0; i < 100; i++ )
@@ -661,7 +659,7 @@ public class TestIdGenerator
         tx.finish();
 
         // Verify by loading everything from scratch
-        db.getNodeManager().clearCache();
+        ((GraphDatabaseAPI)db).getNodeManager().clearCache();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
             lastOrNull( node.getRelationships() );

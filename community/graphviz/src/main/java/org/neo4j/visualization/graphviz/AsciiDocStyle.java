@@ -20,7 +20,6 @@
 package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
-
 import org.neo4j.visualization.graphviz.StyleParameter.Simple;
 import org.neo4j.visualization.graphviz.color.AutoRelationshipTypeColor;
 

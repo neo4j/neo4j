@@ -22,7 +22,6 @@ package org.neo4j.visualization.asciidoc;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;

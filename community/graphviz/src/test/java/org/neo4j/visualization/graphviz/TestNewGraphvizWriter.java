@@ -21,7 +21,6 @@ package org.neo4j.visualization.graphviz;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +33,7 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.walk.Walker;
 
 public class TestNewGraphvizWriter
@@ -49,7 +48,7 @@ public class TestNewGraphvizWriter
 	@Before
 	public void setUp()
 	{
-		neo = new EmbeddedGraphDatabase( "target/neo" );
+		neo = new GraphDatabaseFactory().newEmbeddedDatabase(  "target/neo" );
 	}
 
 	@After

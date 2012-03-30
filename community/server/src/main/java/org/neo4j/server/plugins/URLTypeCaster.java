@@ -22,14 +22,13 @@ package org.neo4j.server.plugins;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 class URLTypeCaster extends TypeCaster
 {
     @Override
-    Object get( GraphDatabaseSPI graphDb, ParameterList parameters, String name ) throws BadInputException
+    Object get( GraphDatabaseAPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         try
         {
@@ -43,7 +42,7 @@ class URLTypeCaster extends TypeCaster
     }
 
     @Override
-    Object[] getList( GraphDatabaseSPI graphDb, ParameterList parameters, String name ) throws BadInputException
+    Object[] getList( GraphDatabaseAPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         URI[] uris = parameters.getUriList( name );
         URL[] urls = new URL[uris.length];

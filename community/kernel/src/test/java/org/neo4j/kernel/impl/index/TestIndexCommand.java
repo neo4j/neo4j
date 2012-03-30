@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static java.io.File.createTempFile;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
-import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -37,13 +31,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static java.io.File.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.impl.index.IndexCommand.*;
 
 public class TestIndexCommand
 {
@@ -151,7 +150,7 @@ public class TestIndexCommand
     {
         File file = createTempFile( "index", "command" );
         FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
-        LogBuffer writeBuffer = defaultLogBufferFactory().create( fileChannel );
+        LogBuffer writeBuffer = new DefaultLogBufferFactory().create( fileChannel );
         List<Long> startPositions = new ArrayList<Long>();
         for ( XaCommand command : commands )
         {

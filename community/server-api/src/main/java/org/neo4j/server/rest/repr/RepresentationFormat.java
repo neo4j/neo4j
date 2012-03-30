@@ -21,13 +21,11 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import javax.ws.rs.core.MediaType;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.plugins.ParameterList;
 import org.neo4j.server.rest.web.NodeNotFoundException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
@@ -141,14 +139,14 @@ public abstract class RepresentationFormat implements InputFormat
             }
 
             @Override
-            protected Node convertNode( GraphDatabaseSPI graphDb, Object value )
+            protected Node convertNode( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return RepresentationFormat.this.convertNode( graphDb, value );
             }
 
             @Override
-            protected Relationship convertRelationship( GraphDatabaseSPI graphDb, Object value )
+            protected Relationship convertRelationship( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return RepresentationFormat.this.convertRelationship( graphDb, value );
@@ -174,7 +172,7 @@ public abstract class RepresentationFormat implements InputFormat
         };
     }
 
-    protected Relationship convertRelationship( GraphDatabaseSPI graphDb, Object value )
+    protected Relationship convertRelationship( GraphDatabaseAPI graphDb, Object value )
             throws BadInputException
     {
         if ( value instanceof Relationship )
@@ -206,7 +204,7 @@ public abstract class RepresentationFormat implements InputFormat
         throw new BadInputException( "Could not convert!" );
     }
 
-    protected Node convertNode( GraphDatabaseSPI graphDb, Object value )
+    protected Node convertNode( GraphDatabaseAPI graphDb, Object value )
             throws BadInputException
     {
         if ( value instanceof Node )
@@ -238,7 +236,7 @@ public abstract class RepresentationFormat implements InputFormat
         throw new BadInputException( "Could not convert!" );
     }
 
-    protected Node getNode( GraphDatabaseSPI graphDb, String value ) throws BadInputException,
+    protected Node getNode( GraphDatabaseAPI graphDb, String value ) throws BadInputException,
             NodeNotFoundException
     {
         try
@@ -251,7 +249,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
     }
 
-    protected Node getNode( GraphDatabaseSPI graphDb, URI uri ) throws BadInputException,
+    protected Node getNode( GraphDatabaseAPI graphDb, URI uri ) throws BadInputException,
             NodeNotFoundException
     {
         try
@@ -277,7 +275,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
     }
 
-    private Relationship getRelationship( GraphDatabaseSPI graphDb, String value )
+    private Relationship getRelationship( GraphDatabaseAPI graphDb, String value )
             throws BadInputException, RelationshipNotFoundException
     {
         try
@@ -290,7 +288,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
     }
 
-    protected Relationship getRelationship( GraphDatabaseSPI graphDb, URI uri )
+    protected Relationship getRelationship( GraphDatabaseAPI graphDb, URI uri )
             throws BadInputException, RelationshipNotFoundException
     {
         try

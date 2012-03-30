@@ -22,8 +22,8 @@ package org.neo4j.index.impl.lucene;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * This class is used by {@link TestRecovery} so that a graph database can
@@ -33,7 +33,7 @@ public class AddDeleteQuit
 {
     public static void main( String[] args )
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( args[0] );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
         Index<Node> index = db.index().forNodes( "index" );
         Transaction tx = db.beginTx();
         try

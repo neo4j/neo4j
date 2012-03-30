@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,9 +30,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 public class TestExceptionTypeOnInvalidIds
 {
@@ -56,8 +56,10 @@ public class TestExceptionTypeOnInvalidIds
     {
         String storeDir = "target/var/id_test";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphdb = new EmbeddedGraphDatabase( storeDir );
-        graphDbReadOnly = new EmbeddedReadOnlyGraphDatabase( storeDir );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        graphDbReadOnly = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
+            setConfig( GraphDatabaseSettings.read_only, TRUE ).
+            newGraphDatabase();
     }
 
     @AfterClass

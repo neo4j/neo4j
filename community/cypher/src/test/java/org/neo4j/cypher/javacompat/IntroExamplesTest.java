@@ -19,13 +19,9 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -40,6 +36,8 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class IntroExamplesTest implements GraphHolder
 {

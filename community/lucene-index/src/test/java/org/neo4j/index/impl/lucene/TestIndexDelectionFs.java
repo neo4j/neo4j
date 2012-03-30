@@ -19,31 +19,30 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.junit.Assert.*;
 
 public class TestIndexDelectionFs
 {
-    private static AbstractGraphDatabase db;
+    private static GraphDatabaseService db;
     
     @BeforeClass
     public static void doBefore() throws IOException
     {
         FileUtils.deleteRecursively( new File( "target/test-data/deletion" ) );
-        db = new EmbeddedGraphDatabase( "target/test-data/deletion" );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/deletion" );
     }
     
     @AfterClass
@@ -58,7 +57,7 @@ public class TestIndexDelectionFs
         String indexName = "index";
         String otherIndexName = "other-index";
 
-        StringBuffer tempPath = new StringBuffer( db.getStoreDir())
+        StringBuffer tempPath = new StringBuffer( ((GraphDatabaseAPI)db).getStoreDir())
                 .append(File.separator).append("index").append(File.separator)
                 .append("lucene").append(File.separator).append("node")
                 .append(File.separator);
