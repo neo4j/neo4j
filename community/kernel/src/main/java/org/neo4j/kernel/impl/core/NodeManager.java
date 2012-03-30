@@ -44,8 +44,8 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.impl.cache.GCResistantCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.cache.AtomicArrayCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
@@ -207,13 +207,13 @@ public class NodeManager
     @Override
     public void shutdown()
     {
-        if ( nodeCache instanceof AtomicArrayCache )
+        if ( nodeCache instanceof GCResistantCache )
         {
-            ((AtomicArrayCache<NodeImpl>) nodeCache).printStatistics();
+            ((GCResistantCache<NodeImpl>) nodeCache).printStatistics();
         }
-        if ( relCache instanceof AtomicArrayCache )
+        if ( relCache instanceof GCResistantCache )
         {
-            ((AtomicArrayCache<RelationshipImpl>) relCache).printStatistics();
+            ((GCResistantCache<RelationshipImpl>) relCache).printStatistics();
         }
         nodeCache.clear();
         relCache.clear();
@@ -1246,7 +1246,7 @@ public class NodeManager
                 return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        array( "atomic array reference cache" )
+        gcr( "GC resistant cache" )
         {
             @Override
             Cache<NodeImpl> node( StringLogger logger, Config config )
@@ -1256,7 +1256,7 @@ public class NodeManager
                 long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
                 long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new AtomicArrayCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
+                return new GCResistantCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
                         NODE_CACHE_NAME, logger );
             }
 
@@ -1268,7 +1268,7 @@ public class NodeManager
                 long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
                 long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new AtomicArrayCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
+                return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
                         RELATIONSHIP_CACHE_NAME, logger );
             }
 
@@ -1277,9 +1277,9 @@ public class NodeManager
             {
                 long advicedMax = available / 2;
                 long total = 0;
-                node = Math.max( AtomicArrayCache.MIN_SIZE, node );
+                node = Math.max( GCResistantCache.MIN_SIZE, node );
                 total += node;
-                rel = Math.max( AtomicArrayCache.MIN_SIZE, rel );
+                rel = Math.max( GCResistantCache.MIN_SIZE, rel );
                 total += rel;
                 if ( total > available )
                     throw new IllegalArgumentException(
@@ -1356,13 +1356,13 @@ public class NodeManager
         graphProperties = instantiateGraphProperties();
     }
 
-    void updateCacheSize( NodeImpl node, int sizeBefore, int sizeAfter )
+    void updateCacheSize( NodeImpl node, int newSize )
     {
-        nodeCache.updateSize( node, sizeBefore, sizeAfter );
+        nodeCache.updateSize( node, newSize );
     }
 
-    void updateCacheSize( RelationshipImpl rel, int sizeBefore, int sizeAfter )
+    void updateCacheSize( RelationshipImpl rel, int newSize )
     {
-        relCache.updateSize( rel, sizeBefore, sizeAfter );
+        relCache.updateSize( rel, newSize );
     }
 }

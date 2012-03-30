@@ -19,6 +19,10 @@
  */
 package org.neo4j.test.impl;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -41,16 +45,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static java.lang.Math.*;
-import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
 {

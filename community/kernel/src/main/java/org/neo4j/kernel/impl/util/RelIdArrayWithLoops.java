@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-
 public class RelIdArrayWithLoops extends RelIdArray
 {
     private IdBlock lastLoopBlock;
@@ -32,7 +31,7 @@ public class RelIdArrayWithLoops extends RelIdArray
     @Override
     public int size()
     {
-        return super.size() + sizeOfBlock( lastLoopBlock );
+        return super.size() + sizeOfBlockWithReference( lastLoopBlock );
     }
     
     protected RelIdArrayWithLoops( RelIdArray from )

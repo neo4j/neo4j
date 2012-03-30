@@ -71,6 +71,12 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return nodeManager.relAddProperty( this, index, value );
     }
+    
+    @Override
+    public int size()
+    {
+        return super.size() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
+    }
 
     @Override
     protected void removeProperty( NodeManager nodeManager,
@@ -230,8 +236,8 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager )
+    protected void updateSize( NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, sizeBefore, sizeAfter );
+        nodeManager.updateCacheSize( this, size() );
     }
 }

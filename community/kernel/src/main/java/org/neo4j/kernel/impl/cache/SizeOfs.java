@@ -23,21 +23,29 @@ import java.lang.reflect.Array;
 
 public class SizeOfs
 {
+    public static final int REFERENCE_SIZE = 8;
+
+    /**
+     * The size of a {@link String} object including object overhead and all state.
+     * @param value the String to calculate size for.
+     * @return the size of a {@link String} object including object overhead and all state.
+     */
     public static int sizeOf( String value )
     {
-        return 52 + value.length() * 2;
+        return withObjectOverhead( 4/*offset*/ + 4/*count*/ + 4/*hash*/ + REFERENCE_SIZE/*value[] ref*/ +
+                withArrayOverhead( +value.length() * 2 )/*value[]*/ );
     }
     
     public static int sizeOfArray( Object value )
     {
         if ( value instanceof String[] )
         {
-            int size = 16;
+            int size = 0;
             for ( String string : (String[]) value )
             {
-                size += 8 + sizeOf( string );
+                size += withReference( sizeOf( string ) );
             }
-            return size;
+            return withArrayOverhead( size );
         }
         else
         {
@@ -63,14 +71,37 @@ public class SizeOfs
                     value instanceof Integer[] || value instanceof Float[] ||
                     value instanceof Long[] || value instanceof Double[] )
             {
-                base = 8;
+                // worst case
+                base = withObjectOverhead( REFERENCE_SIZE + 8/*value in the boxed Number*/ );
             }
             else
             {
                 throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" ); 
             }
-            return 16 + base * Array.getLength( value );
+            return withArrayOverhead( base * Array.getLength( value ) );
         }
-        
+    }
+    
+    public static int withObjectOverhead( int size )
+    {
+        // worst case, avg is somewhere between 8-16 depending on heap size
+        return 16 + size;
+    }
+    
+    public static int withArrayOverhead( int size )
+    {
+        // worst case, avg is somewhere between 12-24 depending on heap size
+        return 24 + size;
+    }
+    
+    public static int withArrayOverheadIncludingReferences( int size, int length )
+    {
+        return withArrayOverhead( size + length*REFERENCE_SIZE );
+    }
+    
+    public static int withReference( int size )
+    {
+        // The standard size of a reference to an object.
+        return REFERENCE_SIZE + size;
     }
 }

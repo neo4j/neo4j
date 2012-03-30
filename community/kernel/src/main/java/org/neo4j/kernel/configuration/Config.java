@@ -141,35 +141,35 @@ public class Config implements DiagnosticsProvider
     public static final String CACHE_TYPE = "cache_type";
 
     /**
-     * The amount of memory to use for the node cache (when using the 'array' cache).
+     * The amount of memory to use for the node cache (when using the 'gcr' cache).
      */
     @Documented
-    public static final String NODE_ARRAY_CACHE_SIZE = "node_cache_size";
+    public static final String NODE_CACHE_SIZE = "node_cache_size";
 
     /**
-     * The amount of memory to use for the relationship cache (when using the 'array' cache).
+     * The amount of memory to use for the relationship cache (when using the 'gcr' cache).
      */
     @Documented
-    public static final String RELATIONSHIP_ARRAY_CACHE_SIZE = "relationship_cache_size";
+    public static final String RELATIONSHIP_CACHE_SIZE = "relationship_cache_size";
 
     /**
-     * The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'array' cache).
+     * The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache).
      */
     @Documented
-    public static final String NODE_ARRAY_CACHE_ARRAY_FRACTION = "node_cache_array_fraction";
+    public static final String NODE_CACHE_ARRAY_FRACTION = "node_cache_array_fraction";
 
     /**
-     * The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'array' cache).
+     * The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache).
      */
     @Documented
-    public static final String RELATIONSHIP_ARRAY_CACHE_ARRAY_FRACTION = "relationship_cache_array_fraction";
+    public static final String RELATIONSHIP_CACHE_ARRAY_FRACTION = "relationship_cache_array_fraction";
 
     /**
-     * The minimal time that must pass in between logging statistics from the cache (when using the 'array' cache).
+     * The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache).
      * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit be seconds, minutes or milliseconds respectively.
      */
     @Documented
-    public static final String ARRAY_CACHE_MIN_LOG_INTERVAL = "array_cache_min_log_interval";
+    public static final String GCR_CACHE_MIN_LOG_INTERVAL = "gcr_cache_min_log_interval";
 
     /**
      * The name of the Transaction Manager service to use as defined in the TM

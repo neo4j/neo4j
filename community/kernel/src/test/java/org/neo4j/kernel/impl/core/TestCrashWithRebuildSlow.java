@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -29,10 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised and also a problem
