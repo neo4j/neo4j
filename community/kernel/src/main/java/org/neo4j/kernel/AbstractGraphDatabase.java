@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -685,6 +686,8 @@ public abstract class AbstractGraphDatabase
             file.mkdirs();
 
         loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
+
+        // Remove Console appender
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext( loggerContext );
         loggerContext.putProperty( "neo_store", storeDir );

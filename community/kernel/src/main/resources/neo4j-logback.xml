@@ -1,39 +1,30 @@
 <!--
+  Copyright (c) 2002-2012 "Neo Technology,"
+  Network Engine for Objects in Lund AB [http://neotechnology.com]
 
-    Copyright (c) 2002-2012 "Neo Technology,"
-    Network Engine for Objects in Lund AB [http://neotechnology.com]
+  This file is part of Neo4j.
 
-    This file is part of Neo4j.
+  Neo4j is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    Neo4j is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
--->
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
 
 <configuration>
-
-  <logger name="neo4j.diagnostics" level="DEBUG" />
-
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>${neo_store}/messages.log</file>
     <encoder>
       <pattern>%date{ISO8601} %-5level [%c]: %message%n</pattern>
     </encoder>
   </appender>
-
-  <root level="INFO">
-    <appender-ref ref="FILE" />
-  </root>
 
   <if condition='property("remote_logging_enabled").contains("true")'>
       <then>
@@ -43,11 +34,20 @@
             <reconnectionDelay>10000</reconnectionDelay>
             <includeCallerData>true</includeCallerData>
         </appender>
-        <root>
+        <logger name="neo4j">
           <appender-ref ref="SOCKET" />
-        </root>
+        </logger>
       </then>
   </if>
 
+  <logger name="neo4j.diagnostics" level="DEBUG">
+  </logger>
+
+  <logger name="neo4j" additivity="false">
+    <appender-ref ref="FILE" />
+  </logger>
+
+  <root level="INFO">
+  </root>
 
 </configuration>

@@ -21,7 +21,6 @@
 package org.neo4j.shell;
 
 import java.io.PrintWriter;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -90,7 +89,6 @@ public class ShellTest
         }
     }
 
-    @Ignore("This doesn't seem to work at all.")
     @Test
     public void canConnectAsAgent() throws Exception
     {

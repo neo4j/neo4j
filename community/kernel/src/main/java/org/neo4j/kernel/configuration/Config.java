@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
@@ -279,7 +280,7 @@ public class Config implements DiagnosticsProvider
     public Config( StringLogger msgLog,
                    FileSystemAbstraction fileSystem,
                    Map<String, String> inputParams,
-                   List<Class<?>> settingsClasses
+                   Iterable<Class<?>> settingsClasses
     )
     {
         // Migrate settings
