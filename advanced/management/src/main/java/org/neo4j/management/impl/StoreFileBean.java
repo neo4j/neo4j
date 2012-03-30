@@ -21,8 +21,11 @@ package org.neo4j.management.impl;
 
 import java.io.File;
 import java.io.IOException;
+
 import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.jmx.impl.KernelBean;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -57,7 +60,7 @@ public final class StoreFileBean extends ManagementBeanProvider
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
+            NeoStoreXaDataSource nioneodb = KernelBean.getNeoDataSource( management.getKernelData() );
             File path;
             try
             {

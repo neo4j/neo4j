@@ -21,8 +21,11 @@ package org.neo4j.management.impl;
 
 import java.util.Collection;
 import java.util.Iterator;
+
 import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.jmx.impl.KernelBean;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -58,13 +61,13 @@ public final class MemoryMappingBean extends ManagementBeanProvider
         MemoryMappingImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.datasource = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
+            this.datasource = KernelBean.getNeoDataSource( management.getKernelData() );
         }
 
         MemoryMappingImpl( ManagementData management, boolean isMxBean )
         {
             super( management, isMxBean );
-            this.datasource = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
+            this.datasource = KernelBean.getNeoDataSource( management.getKernelData() );
         }
 
         public WindowPoolInfo[] getMemoryPools()

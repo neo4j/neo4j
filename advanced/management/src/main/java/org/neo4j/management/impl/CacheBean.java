@@ -21,7 +21,9 @@ package org.neo4j.management.impl;
 
 import java.util.Collection;
 import java.util.LinkedList;
+
 import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
@@ -58,10 +60,10 @@ public class CacheBean extends ManagementBeanProvider
 
     private class CacheManager extends Neo4jMBean implements org.neo4j.management.Cache
     {
-        private final Cache cache;
+        private final Cache<?> cache;
         private final NodeManager nodeManager;
 
-        CacheManager( ManagementData management, NodeManager nodeManager, Cache cache )
+        CacheManager( ManagementData management, NodeManager nodeManager, Cache<?> cache )
                 throws NotCompliantMBeanException
         {
             super( management, cache.getName() );
