@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.ha;
 
+import ch.qos.logback.classic.LoggerContext;
 import java.util.Map;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * TODO
@@ -82,6 +84,7 @@ public class AbstractHAGraphDatabase
     @Override
     protected StringLogger createStringLogger()
     {
+        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
         return logger;
     }
 

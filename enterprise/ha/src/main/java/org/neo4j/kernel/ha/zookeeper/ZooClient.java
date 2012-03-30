@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
@@ -94,7 +95,7 @@ public class ZooClient extends AbstractZooKeeperManager
         super( conf.get( HaSettings.coordinators ),
             storeIdGetter, stringLogger,
             conf.getInteger( read_timeout ),
-            conf.getInteger( lock_read_timeout),
+            conf.isSet( lock_read_timeout ) ? conf.getInteger( lock_read_timeout) : conf.getInteger( read_timeout ),
             conf.getInteger( max_concurrent_channels_per_slave ),
             conf.getInteger( zk_session_timeout ));
         this.storeDir = storeDir;

@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package slavetest;
 
 import org.junit.After;
@@ -176,7 +177,7 @@ public class TestClusterNames
             setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
             setConfig( HaSettings.cluster_name, clusterName ).
             setConfig( HaSettings.server, "localhost:" + serverPort ).
-            setConfig( HaSettings.read_timeout, "2" ).
+            setConfig( HaSettings.read_timeout, "5" ).
             newGraphDatabase();
     }
 

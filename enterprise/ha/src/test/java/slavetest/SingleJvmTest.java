@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package slavetest;
 
 import java.io.File;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.FakeClusterClient;
@@ -174,6 +176,8 @@ public class SingleJvmTest extends AbstractHaTest
     @Override
     protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
+        extraConfig = new ConfigurationDefaults( StringLogger.DEV_NULL, Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ).apply( extraConfig );
+
         int timeOut = Integer.parseInt(extraConfig.containsKey( HaSettings.lock_read_timeout.name() ) ? extraConfig.get( HaSettings.lock_read_timeout.name() ) : extraConfig.get( HaSettings.read_timeout.name() ));
         HighlyAvailableGraphDatabase db = startUpMasterDb( extraConfig );
         master = new TestMaster( new MasterImpl( db, timeOut ), db );

@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Protocol;
@@ -57,8 +58,10 @@ public class FakeMasterBroker extends AbstractBroker
 
     public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb, config.getInteger( HaSettings.lock_read_timeout )),
+        int timeOut = config.isSet( HaSettings.lock_read_timeout ) ? config.getInteger( HaSettings.lock_read_timeout ) : config
+            .getInteger( HaSettings.read_timeout );
+        return new MasterServer( new MasterImpl( graphDb, timeOut ),
                 Protocol.PORT, graphDb.getMessageLog(), config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
-                config.getInteger( HaSettings.lock_read_timeout ), TxChecksumVerifier.ALWAYS_MATCH );
+                timeOut, TxChecksumVerifier.ALWAYS_MATCH );
     }
 }

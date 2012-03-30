@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.backup;
 
 import java.io.File;
@@ -47,6 +48,10 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -61,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.CommonFactories.*;
 import static org.neo4j.kernel.impl.util.StringLogger.*;
 
 public class OnlineBackup
@@ -207,8 +211,8 @@ public class OnlineBackup
             bumpLogFile( targetDirectory, timestamp );
             if ( verification )
             {
-                StoreFactory factory = new StoreFactory( new Config( stringMap(  )), defaultIdGeneratorFactory(),
-                        defaultFileSystemAbstraction(), defaultLastCommittedTxIdSetter(), SYSTEM, defaultTxHook() );
+                StoreFactory factory = new StoreFactory( new Config( stringMap(  )), new DefaultIdGeneratorFactory(),
+                        new DefaultFileSystemAbstraction(), new DefaultLastCommittedTxIdSetter(), SYSTEM, new DefaultTxHook() );
                 NeoStore neoStore = factory.newNeoStore( new File( targetDirectory, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
                 try
                 {

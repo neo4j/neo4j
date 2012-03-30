@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package recovery;
 
 import java.io.File;
@@ -38,7 +39,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
@@ -307,7 +308,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             graphdb.shutdown();
         }
 
-        TxLog log = new TxLog( args[0], CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL );
+        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

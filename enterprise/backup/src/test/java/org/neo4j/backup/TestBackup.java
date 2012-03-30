@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.backup;
 
 import java.io.File;
@@ -477,7 +478,7 @@ public class TestBackup
         String sourcePath = "target/var/serverdb-lock";
         FileUtils.deleteDirectory( new File( sourcePath ) );
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
         try

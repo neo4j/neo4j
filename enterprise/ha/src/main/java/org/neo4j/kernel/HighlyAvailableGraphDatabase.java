@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
 import java.io.File;
@@ -26,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -35,6 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.transaction.TransactionManager;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -58,6 +59,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -122,7 +124,6 @@ public class HighlyAvailableGraphDatabase
     private Iterable<IndexProvider> indexProviders;
     private Iterable<KernelExtension> kernelExtensions;
     private final StringLogger messageLog;
-    private Map<String, String> config;
     private volatile AbstractGraphDatabase internalGraphDatabase;
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
@@ -179,7 +180,7 @@ public class HighlyAvailableGraphDatabase
         messageLog = StringLogger.logger( this.storeDir );
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
-        this.config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
+        config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
 
         /*
          * TODO
@@ -193,9 +194,9 @@ public class HighlyAvailableGraphDatabase
 
         this.relationshipLookups = new HARelationshipLookups();
 
-        this.config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
 
-        configuration = new Config( messageLog, fileSystemAbstraction, config, Collections.<Class<?>>singletonList(HaSettings.class) );
+        configuration = new Config( messageLog, fileSystemAbstraction, config, Iterables.iterable( HaSettings.class, OnlineBackupSettings.class ));
 
         this.startupTime = System.currentTimeMillis();
         kernelEventHandlers.add( new TxManagerCheckKernelEventHandler() );
@@ -210,7 +211,10 @@ public class HighlyAvailableGraphDatabase
             @Override
             public StoreId get()
             {
-                if ( storeId == null ) throw new IllegalStateException( "No store ID" );
+                if( storeId == null )
+                {
+                    throw new IllegalStateException( "No store ID" );
+                }
                 return storeId;
             }
         };
@@ -687,8 +691,10 @@ public class HighlyAvailableGraphDatabase
         Response<Void> response = master.first().copyStore( emptyContext(),
                 new ToFileStoreWriter( temp ) );
         long highestLogVersion = highestLogVersion();
-        if ( highestLogVersion > -1 )
+        if( highestLogVersion > -1 )
+        {
             NeoStore.setVersion( temp, highestLogVersion + 1 );
+        }
         GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( temp ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
@@ -772,8 +778,10 @@ public class HighlyAvailableGraphDatabase
 //        }
 
         AbstractGraphDatabase result = internalGraphDatabase;
-        if ( result != null )
+        if( result != null )
+        {
             return result;
+        }
 
         long endTime = System.currentTimeMillis()+SECONDS.toMillis( localGraphWait );
         while ( result == null && System.currentTimeMillis() < endTime )
@@ -781,8 +789,10 @@ public class HighlyAvailableGraphDatabase
             sleepWithoutInterruption( 1, "Failed waiting for local graph to be available" );
             result = internalGraphDatabase;
         }
-        if ( result != null )
+        if( result != null )
+        {
             return result;
+        }
 
         if ( causeOfShutdown != null )
         {
@@ -1014,7 +1024,10 @@ public class HighlyAvailableGraphDatabase
     {
         try
         {
-            if ( newDb != null ) newDb.shutdown();
+            if( newDb != null )
+            {
+                newDb.shutdown();
+            }
         }
         catch ( Exception e )
         {
@@ -1047,7 +1060,7 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
-        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, config, this, broker, messageLog,
+        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, messageLog,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions );
 /*
@@ -1171,7 +1184,7 @@ public class HighlyAvailableGraphDatabase
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
-        long pullInterval = HaConfig.getPullIntervalFromConfig( config );
+        long pullInterval = configuration.getDuration( HaSettings.pull_interval );
         if ( pullInterval > 0 && updatePuller == null )
         {
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
@@ -1497,7 +1510,10 @@ public class HighlyAvailableGraphDatabase
             for ( File file : relevantDbFiles( db ) )
             {
                 File dest = new File( branchedDataDir, file.getName() );
-                if ( !file.renameTo( dest ) ) db.messageLog.logMessage( "Couldn't move " + file.getPath() );
+                if( !file.renameTo( dest ) )
+                {
+                    db.messageLog.logMessage( "Couldn't move " + file.getPath() );
+                }
             }
         }
 
@@ -1542,8 +1558,10 @@ public class HighlyAvailableGraphDatabase
                 for ( XaDataSource dataSource : dataSources )
                 {
                     long txId = dataSource.getLastCommittedTxId();
-                    if ( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                    if( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                    {
                         master = dataSource.getMasterForCommittedTx( txId );
+                    }
                     txs[i++] = SlaveContext.lastAppliedTx( dataSource.getName(), txId );
                 }
                 return new SlaveContext( startupTime, machineId, eventIdentifier, txs, master.first(), master.other() );

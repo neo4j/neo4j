@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha.zookeeper;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -60,7 +62,7 @@ public class TestZooClient
         stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( millisForSessionToExpire ) );
-        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
+        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ) ));
         
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 
@@ -111,7 +113,7 @@ public class TestZooClient
         stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "localhost:2181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( secondsForSessionToExpire ) );
-        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ));
+        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.iterable( OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ) );
 
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 

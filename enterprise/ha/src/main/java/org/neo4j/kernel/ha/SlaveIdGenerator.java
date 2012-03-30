@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha;
 
 import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -44,8 +44,7 @@ public class SlaveIdGenerator implements IdGenerator
         private final SlaveDatabaseOperations databaseOperations;
         private final Map<IdType, SlaveIdGenerator> generators =
                 new EnumMap<IdType, SlaveIdGenerator>( IdType.class );
-        private final IdGeneratorFactory localFactory =
-                CommonFactories.defaultIdGeneratorFactory();
+        private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
 
         public SlaveIdGeneratorFactory( Broker broker, SlaveDatabaseOperations databaseOperations )
         {
