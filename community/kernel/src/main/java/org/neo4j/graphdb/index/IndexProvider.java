@@ -20,22 +20,22 @@
 package org.neo4j.graphdb.index;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Service;
 
-/**
- * Contract for IndexProvider implementations. It is an interface to
- * allow proper proxying.
- * @author ceefour
- *
- */
-public interface IndexProvider
+public abstract class IndexProvider extends Service
 {
-    /**
-     * Load the implementation.
-     * @param dependencyResolver
-     * @return
-     * @throws Exception
-     */
-    IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
+    private final String identifier;
 
-    public String identifier();
+    public IndexProvider( String identifier )
+    {
+        super( identifier );
+        this.identifier = identifier;
+    }
+
+    public abstract IndexImplementation load( DependencyResolver dependencyResolver) throws Exception;
+
+    public final String identifier()
+    {
+        return identifier;
+    }
 }

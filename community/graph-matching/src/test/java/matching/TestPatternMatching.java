@@ -44,7 +44,8 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.GraphDescription.*;
+import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TestData;
@@ -61,7 +62,7 @@ public class TestPatternMatching implements GraphHolder
     }
 
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( createGraphFor( this, true ) );
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphDb;
     private Transaction tx;

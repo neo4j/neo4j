@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 
-public class LuceneIndexProvider implements IndexProvider
+public class LuceneIndexProvider extends IndexProvider
 {
     private static List<WeakReference<LuceneIndexImplementation>> previousProviders = new ArrayList<WeakReference<LuceneIndexImplementation>>();
     
@@ -50,12 +50,12 @@ public class LuceneIndexProvider implements IndexProvider
     {
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
     }
-    
-	@Override
-	public String identifier() {
-		return LuceneIndexImplementation.SERVICE_NAME;
-	}
-	
+
+    public LuceneIndexProvider( )
+    {
+        super( LuceneIndexImplementation.SERVICE_NAME );
+    }
+
     @Override
     public IndexImplementation load( DependencyResolver dependencyResolver)
     {
