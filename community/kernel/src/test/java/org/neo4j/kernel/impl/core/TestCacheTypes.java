@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -27,8 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
-
-import static org.junit.Assert.*;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
