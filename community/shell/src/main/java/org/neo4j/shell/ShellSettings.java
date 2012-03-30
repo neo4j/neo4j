@@ -30,7 +30,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
  */
 public class ShellSettings
 {
-    @Default( TRUE )
+    @Default( FALSE )
     public static final GraphDatabaseSetting.BooleanSetting remote_shell_enabled = new GraphDatabaseSetting.BooleanSetting( "remote_shell_enabled" );
 
     @Default( "1337" )

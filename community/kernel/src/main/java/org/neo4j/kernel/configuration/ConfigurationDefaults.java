@@ -58,11 +58,13 @@ public class ConfigurationDefaults
                         if (setting instanceof GraphDatabaseSetting.DefaultValue)
                         {
                             String defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                            configuration.put( setting.name(), defaultValue );
+                            if (defaultValue != null)
+                                configuration.put( setting.name(), defaultValue );
                         } else
                         {
                             String defaultValue = getDefaultValue( field );
-                            configuration.put( setting.name(), defaultValue );
+                            if (defaultValue != null)
+                                configuration.put( setting.name(), defaultValue );
                         }
                     }
                 }
