@@ -209,12 +209,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 msgLog.logMessage( "Error handling request", e );
                 ctx.getChannel().close();
                 tryToFinishOffChannel( ctx.getChannel() );
-                e.printStackTrace();
-                if ( e instanceof Exception )
-                {
-                    throw (Exception) e;
-                }
-                throw new RuntimeException( e );
+                throw Exceptions.launderedException( e );
             }
         }
 
@@ -267,15 +262,17 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             finishOffChannel( channel, slave );
             unmapSlave( channel, slave );
         }
-        catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
-        {
-            submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-        }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
             submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-            msgLog.logMessage( "Could not finish off dead channel", failure );
+            if ( shouldLogFailureToFinishOffChannel( failure ) )
+                msgLog.logMessage( "Could not finish off dead channel", failure );
         }
+    }
+
+    protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
+    {
+        return true;
     }
 
     private void submitSilent( ExecutorService service, Runnable job )
