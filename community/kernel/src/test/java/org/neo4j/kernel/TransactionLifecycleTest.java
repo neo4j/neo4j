@@ -19,39 +19,25 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.*;
 
 
 public class TransactionLifecycleTest
 {
-    public TargetDirectory target = TargetDirectory.forTest( getClass() );
-    private GraphDatabaseService graphdb;
-    
-    @Before
-    public void startGraphdb()
-    {
-        this.graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getPath() );
-    }
+    @Rule
+    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
 
-    @After
-    public void stopGraphdb()
-    {
-        if ( graphdb != null ) graphdb.shutdown();
-        graphdb = null;
-    }
-    
     @Test(expected=NotFoundException.class)
     public void givenACallToFailATransactionSubsequentSuccessCallsShouldBeSwallowedSilently() {
+        GraphDatabaseService graphdb = database.getGraphDatabaseService();
         Transaction tx = graphdb.beginTx();
         Node someNode = null;
         try {

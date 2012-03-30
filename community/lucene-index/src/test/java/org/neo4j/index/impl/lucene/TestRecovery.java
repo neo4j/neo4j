@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.ProcessStreamHandler;
 
 import static org.junit.Assert.*;
 
@@ -104,9 +107,12 @@ public class TestRecovery
         GraphDatabaseService db = newGraphDbService();
         db.index().forNodes( "index" );
         db.shutdown();
-        
-        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                AddDeleteQuit.class.getName(), getDbPath() } ).waitFor() );
+
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-cp", System.getProperty( "java.class.path" ),
+            AddDeleteQuit.class.getName(), getDbPath()
+        } );
+        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
         
         new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
         db.shutdown();
@@ -117,8 +123,11 @@ public class TestRecovery
     {
         String path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-Xdebug","-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp", System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), getDbPath() } ).waitFor() );
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp", System.getProperty( "java.class.path" ),
+            AddRelToIndex.class.getName(), getDbPath()
+        } );
+        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
         
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
@@ -129,7 +138,7 @@ public class TestRecovery
         FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());
-        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params );
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
                                                    new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();

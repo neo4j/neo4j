@@ -71,6 +71,17 @@ public abstract class KernelExtension<S> extends Service
         return this.getClass().equals( obj.getClass() );
     }
 
+    /**
+     * Return the class that contains GraphDatabaseSetting fields that define
+     * the properties needed by this extension.
+     *
+     * @return a class or null if no settings are needed
+     */
+    public Class getSettingsClass()
+    {
+        return null;
+    }
+
     public final void loadAgent( String agentArgs )
     {
         KernelData.visitAll( this, agentArgument( agentArgs ) );

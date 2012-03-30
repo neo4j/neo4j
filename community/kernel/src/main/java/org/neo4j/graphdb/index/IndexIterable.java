@@ -24,7 +24,6 @@ package org.neo4j.graphdb.index;
  * Workaround for https://issues.apache.org/jira/browse/ARIES-834
  * 
  * Should be removed when the bug is fixed or Neo4j kernel code has been refactored to use dependency injection.
- * @author ceefour
  *
  */
 public interface IndexIterable extends Iterable<IndexProvider>

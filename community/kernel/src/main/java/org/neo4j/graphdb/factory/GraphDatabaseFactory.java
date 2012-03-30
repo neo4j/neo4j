@@ -29,6 +29,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.KernelExtension;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting.*;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
@@ -39,10 +40,12 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
 public class GraphDatabaseFactory
 {
     protected List<IndexProvider> indexProviders;
+    protected List<KernelExtension> kernelExtensions;
 
     public GraphDatabaseFactory()
     {
         indexProviders = Iterables.toList(Service.load( IndexProvider.class ));
+        kernelExtensions = Iterables.toList( Service.load(KernelExtension.class) );
     }
 
     public GraphDatabaseService newEmbeddedDatabase(String path)
@@ -59,9 +62,9 @@ public class GraphDatabaseFactory
                 config.put( "ephemeral", "false" );
 
                 if ( TRUE.equalsIgnoreCase(config.get( read_only.name() )))
-                    return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders);
+                    return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders, kernelExtensions);
                 else
-                    return new EmbeddedGraphDatabase(path, config, indexProviders);
+                    return new EmbeddedGraphDatabase(path, config, indexProviders, kernelExtensions);
             }
         });
     }
@@ -80,9 +83,24 @@ public class GraphDatabaseFactory
      */
     public void setIndexProviders(IndexIterable indexIterable) 
     {
+        indexProviders.clear();
         for (IndexProvider indexProvider : indexIterable)
         {
             this.indexProviders.add(indexProvider);
+        }
+    }
+    
+    public Iterable<KernelExtension> getKernelExtension()
+    {
+        return kernelExtensions;
+    }
+    
+    public void setKernelExtensions(Iterable<KernelExtension> newKernelExtensions)
+    {
+        kernelExtensions.clear();
+        for( KernelExtension newKernelExtension : newKernelExtensions )
+        {
+            kernelExtensions.add( newKernelExtension );
         }
     }
 }

@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -71,9 +72,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super( path(), withoutMemmap( params ) );
     }
 
-    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders)
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
     {
-        super( path(), withoutMemmap( params ), indexProviders );
+        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions );
     }
 
     @Override

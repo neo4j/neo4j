@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
@@ -55,7 +56,7 @@ public class TestRecoveryVerification
 
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
-            super( dir, stringMap(), Service.load( IndexProvider.class ) );
+            super( dir, stringMap(), Service.load( IndexProvider.class ), Service.load( KernelExtension.class ) );
             this.verifier = recoveryVerifier;
             run();
         }
@@ -108,7 +109,7 @@ public class TestRecoveryVerification
         int count = 10;
         String dir = produceNonCleanDbWhichWillRecover2PCsOnStartup( "order", count );
         // Just make it recover
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase().shutdown();
         verifyOrderedRecords( dir, count );
     }
 

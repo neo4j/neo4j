@@ -22,6 +22,7 @@ package org.neo4j.ext.udc;
 /**
  * Property keys used to configure the UDC extension.
  */
+@Deprecated
 public interface UdcProperties {
 
     /**

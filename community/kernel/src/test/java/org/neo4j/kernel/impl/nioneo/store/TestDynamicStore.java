@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -161,7 +163,7 @@ public class TestDynamicStore
     {
         return new Config(StringLogger.SYSTEM, FILE_SYSTEM, MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
-                "store_dir", path()));
+                "store_dir", path()), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
     }
 
     @Test

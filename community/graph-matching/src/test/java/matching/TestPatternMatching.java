@@ -19,6 +19,7 @@
  */
 package matching;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,17 +38,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.*;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TestData;
+
+import static java.util.Arrays.*;
+import static org.junit.Assert.*;
 
 public class TestPatternMatching implements GraphHolder
 {
@@ -765,9 +768,7 @@ public class TestPatternMatching implements GraphHolder
     private void execAndWait( String... args ) throws Exception
     {
         Process process = Runtime.getRuntime().exec( args );
-        ProcessStreamHandler handler = new ProcessStreamHandler( process );
-        handler.launch();
-        process.waitFor();
+        new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     @Test
