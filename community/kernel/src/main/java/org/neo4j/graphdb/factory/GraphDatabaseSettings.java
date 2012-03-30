@@ -36,13 +36,16 @@ public abstract class GraphDatabaseSettings
     @Default( CacheTypeSetting.soft)
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
+    @Default(FALSE)
+    public static final BooleanSetting enable_remote_shell = new BooleanSetting( "enable_remote_shell" );
+
     @Default( TRUE)
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting("load_kernel_extensions");
 
     @Default(FALSE)
     public static final BooleanSetting dump_configuration = new BooleanSetting( "dump_configuration" );
     
-    public static final StringSetting tx_manager_impl = new StringSetting("tx_manager_impl",ANY,"Must be class name of TransactionManager implementation");
+    public static final StringSetting tx_manager_impl = new StringSetting("tx_manager_impl",".*","Must be class name of TransactionManager implementation");
 
     @Description( "Enable this to be able to upgrade a store from 1.4 -> 1.5 or 1.4 -> 1.6" )
     @Default( FALSE )
@@ -61,11 +64,11 @@ public abstract class GraphDatabaseSettings
     public static GraphDatabaseSetting remote_logging_enabled = new BooleanSetting( "remote_logging_enabled" );
 
     @Default("127.0.0.1")
-    public static final StringSetting remote_logging_host = new StringSetting( "remote_logging_host", ANY, "Must be a valid hostname" );
+    public static final StringSetting remote_logging_host = new StringSetting( "remote_logging_host", ".*", "Must be a valid hostname" );
 
     @Description( "Port for remote logging using LogBack SocketAppender" )
     @Default("4560")
-    public static final PortSetting remote_logging_port = new PortSetting( "remote_logging_port" );
+    public static final IntegerSetting remote_logging_port = new IntegerSetting( "remote_logging_port", "Must be a valid port number", 1, 65535 );
 
     // NodeManager settings
     @Default(FALSE)
@@ -92,14 +95,14 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting node_auto_indexing = new BooleanSetting( "node_auto_indexing" );
 
     @Description( "The node property keys to be auto-indexed, if enabled" )
-    public static final StringSetting node_keys_indexable = new StringSetting("node_keys_indexable",ANY,"Must be a comma-separated list of keys to be indexed");
+    public static final StringSetting node_keys_indexable = new StringSetting("node_keys_indexable",".*","Must be a comma-separated list of keys to be indexed");
 
     @Description( "Enable auto-indexing for relationships" )
     @Default(FALSE)
     public static final BooleanSetting relationship_auto_indexing = new BooleanSetting( "relationship_auto_indexing" );
 
     @Description( "The relationship keys to be auto-indexed, if enabled" )
-    public static final StringSetting relationship_keys_indexable = new StringSetting("relationship_keys_indexable",ANY,"Must be a comma-separated list of keys to be indexed");
+    public static final StringSetting relationship_keys_indexable = new StringSetting("relationship_keys_indexable",".*","Must be a comma-separated list of keys to be indexed");
 
     // Adaptive cache settings
     @Default("3000")
@@ -122,7 +125,7 @@ public abstract class GraphDatabaseSettings
     @Default(FALSE)
     public static final BooleanSetting intercept_committing_transactions = new BooleanSetting( "intercept_committing_transactions" );
     
-    public static final StringSetting keep_logical_logs = new StringSetting( "keep_logical_logs", ANY, "No value=don't store,true=store all logs,comma separated list=store logs from listed sources" );
+    public static final StringSetting keep_logical_logs = new StringSetting( "keep_logical_logs", ".*","No value=don't store,true=store all logs,comma separated list=store logs from listed sources" );
 
     @Default(FALSE)
     public static final BooleanSetting online_backup_enabled = new BooleanSetting( "online_backup_enabled" );
@@ -134,25 +137,25 @@ public abstract class GraphDatabaseSettings
     public static final UseMemoryMappedBuffers use_memory_mapped_buffers = new UseMemoryMappedBuffers();
     
     @Default("20M")
-    public static final StringSetting nodestore_mapped_memory = new StringSetting("neostore.nodestore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting nodestore_mapped_memory = new StringSetting("neostore.nodestore.db.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("90M")
-    public static final StringSetting nodestore_propertystore_mapped_memory = new StringSetting("neostore.propertystore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting nodestore_propertystore_mapped_memory = new StringSetting("neostore.propertystore.db.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("1M")
-    public static final StringSetting nodestore_propertystore_index_mapped_memory = new StringSetting("neostore.propertystore.db.index.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting nodestore_propertystore_index_mapped_memory = new StringSetting("neostore.propertystore.db.index.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("1M")
-    public static final StringSetting nodestore_propertystore_index_keys_mapped_memory = new StringSetting("neostore.propertystore.db.index.keys.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting nodestore_propertystore_index_keys_mapped_memory = new StringSetting("neostore.propertystore.db.index.keys.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("130M")
-    public static final StringSetting strings_mapped_memory = new StringSetting("neostore.propertystore.db.strings.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting strings_mapped_memory = new StringSetting("neostore.propertystore.db.strings.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("130M")
-    public static final StringSetting arrays_mapped_memory = new StringSetting("neostore.propertystore.db.arrays.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting arrays_mapped_memory = new StringSetting("neostore.propertystore.db.arrays.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("100M")
-    public static final StringSetting relationshipstore_mapped_memory = new StringSetting("neostore.relationshipstore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final StringSetting relationshipstore_mapped_memory = new StringSetting("neostore.relationshipstore.db.mapped_memory","\\d+[MG]","Invalid value {0}, must be e.g. 20M");
 
     @Default("100")
     public static final IntegerSetting relationship_grab_size = new IntegerSetting( "relationship_grab_size", "Must be a number" );
@@ -168,93 +171,4 @@ public abstract class GraphDatabaseSettings
 
     @Default("120")
     public static final IntegerSetting array_block_size = new IntegerSetting( "array_block_size", "Must be a number", 1, null );
-
-    public static final StringSetting node_cache_size = new StringSetting( "node_cache_size",SIZE,"Must be a valid size" );
-
-    public static final StringSetting relationship_cache_size = new StringSetting( "relationship_cache_size",SIZE,"Must be a valid size" );
-
-    @Default( "1.0" )
-    public static final FloatSetting node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
-
-    @Default( "1.0" )
-    public static final FloatSetting relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
-
-    @Default( "60s" )
-    public static final StringSetting array_cache_min_log_interval = new StringSetting( "array_cache_min_log_interval", DURATION, "Must be a valid interval" );
-
-    @Default( FALSE )
-    public static BooleanSetting execution_guard_enabled = new BooleanSetting( "execution_guard_enabled" );
-
-    @Default( "100ms" )
-    public static StringSetting gc_monitor_wait_time = new StringSetting( "gc_monitor_wait_time", DURATION, "Must be a valid duration" );
-
-    @Default( "200ms" )
-    public static StringSetting gc_monitor_threshold = new StringSetting( "gc_monitor_threshold", DURATION, "Must be a valid duration" );
-
-    // Specialized settings
-    public static class CacheTypeSetting
-        extends OptionsSetting
-    {
-        @Description("Use weak reference cache")
-        public static final String weak = "weak";
-
-        @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
-                     "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.\n" +
-                     "This is the default cache implementation.")
-        public static final String soft = "soft";
-
-        @Description("Don't use caching")
-        public static final String none = "none";
-
-        @Description("Use strong references")
-        public static final String strong = "strong";
-
-        @Description("Array cache")
-        public static final String array = "array";
-
-        public CacheTypeSetting( )
-        {
-            super( "cache_type", weak, soft, none, strong, array);
-        }
-    }
-
-    public static class CypherParserSetting
-        extends OptionsSetting
-    {
-        @Description( "Cypher v1.5 syntax" )
-        public static final String v1_5 = "1.5";
-
-        @Description( "Cypher v1.6 syntax" )
-        public static final String v1_6 = "1.6";
-
-        public CypherParserSetting( )
-        {
-            super( "cypher_parser_version", v1_5, v1_6);
-        }
-    }
-
-    public static class UseMemoryMappedBuffers
-        extends BooleanSetting
-        implements DefaultValue
-    {
-        public UseMemoryMappedBuffers( )
-        {
-            super( "use_memory_mapped_buffers" );
-        }
-
-        @Override
-        public String getDefaultValue()
-        {
-            // if on windows, default no memory mapping
-            if ( osIsWindows() )
-            {
-                return FALSE;
-            }
-            else
-            {
-                // If not on win, default use memory mapping
-                return TRUE;
-            }
-        }
-    }
 }

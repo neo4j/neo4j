@@ -29,8 +29,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 
@@ -52,7 +51,7 @@ public class TestReadOnlyNeo4j
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        GraphDatabaseService readGraphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseService readGraphDb = new EmbeddedReadOnlyGraphDatabase( PATH );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
         Transaction tx = readGraphDb.beginTx();

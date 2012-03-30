@@ -40,7 +40,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -123,7 +122,7 @@ public class TestXa extends AbstractNeo4jTestCase
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, Collections.<String,String>emptyMap(), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, Collections.<String,String>emptyMap() ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
@@ -416,7 +415,7 @@ public class TestXa extends AbstractNeo4jTestCase
         Config config = new Config( StringLogger.DEV_NULL, fileSystem, MapUtil.stringMap(
             "store_dir", path(),
             "neo_store", file( "neo" ),
-            "logical_log", file( "nioneo_logical.log" ) ), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+            "logical_log", file( "nioneo_logical.log" ) ));
 
         StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 

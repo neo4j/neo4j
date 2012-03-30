@@ -19,6 +19,9 @@
  */
 package org.neo4j.test;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * Having trouble with your {@link Process}'s output and error streams?
  * Are they getting filled up and your main thread hangs? Fear no more. Use this
@@ -31,22 +34,35 @@ public class ProcessStreamHandler
 {
     private final Thread out;
     private final Thread err;
-    private Process process;
 
     /**
      * Convenience constructor assuming the local output streams are
      * {@link System.out} and {@link System.err} for the process's OutputStream
      * and ErrorStream respectively.
-     * 
-     * Set quiet to true if you just want to consume the output to avoid locking up the process.
      *
-     * @param process The process whose output to consume.
+     * @param toHandle The process whose output to consume.
      */
-    public ProcessStreamHandler( Process process, boolean quiet )
+    public ProcessStreamHandler( Process toHandle )
     {
-        this.process = process;
-        out = new Thread( new StreamConsumer( process.getInputStream(), System.out, quiet ) );
-        err = new Thread( new StreamConsumer( process.getErrorStream(), System.err, quiet ) );
+        this( toHandle.getInputStream(), toHandle.getErrorStream(), System.out,
+                System.err );
+    }
+
+    /**
+     * Fine grained constructor for redirecting the input streams to the output
+     * streams provided.
+     *
+     * @param processOutput The redirected output stream
+     * @param processError The redirected error stream
+     * @param ourOutput The end output stream
+     * @param ourError The end error stream
+     */
+    public ProcessStreamHandler( InputStream processOutput,
+            InputStream processError, OutputStream ourOutput,
+            OutputStream ourError )
+    {
+        out = new Thread( new StreamConsumer( processOutput, ourOutput ) );
+        err = new Thread( new StreamConsumer( processError, ourError ) );
     }
 
     /**
@@ -61,47 +77,12 @@ public class ProcessStreamHandler
     /**
      * Joins with the consumer Threads. Calls {@link Thread#join()} on the two
      * consumers.
+     *
+     * @throws InterruptedException
      */
-    public void done()
+    public void done() throws InterruptedException
     {
-        try
-        {
-            out.join();
-        }
-        catch( InterruptedException e )
-        {
-            Thread.interrupted();
-            e.printStackTrace();
-        }
-        try
-        {
-            err.join();
-        }
-        catch( InterruptedException e )
-        {
-            Thread.interrupted();
-            e.printStackTrace();
-        }
-    }
-    
-    public int waitForResult()
-    {
-        launch();
-        try
-        {
-            try
-            {
-                return process.waitFor();
-            }
-            catch( InterruptedException e )
-            {
-                Thread.interrupted();
-                return 0;
-            }
-        }
-        finally
-        {
-            done();
-        }
+        out.join();
+        err.join();
     }
 }

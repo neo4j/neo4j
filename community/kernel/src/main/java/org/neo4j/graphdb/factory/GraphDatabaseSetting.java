@@ -20,10 +20,9 @@
 
 package org.neo4j.graphdb.factory;
 
+import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.Formatter;
 import java.util.Locale;
-import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
 /**
@@ -33,15 +32,9 @@ public abstract class GraphDatabaseSetting
 {
     public static final String TRUE = "true";
     public static final String FALSE = "false";
-    
-    // Regular expression that matches any non-empty string
-    public static final String ANY = ".+";
-    
-    // Regular expression that matches a size e.g. 512M or 2G
-    public static final String SIZE = "\\d+[MG]";
 
-    // Regular expression that matches a duration e.g. 10ms or 5s
-    public static final String DURATION = "\\d+(ms|s)";
+    // Regular expression that matches any string
+    public static final String ANY = ".*";
 
     public interface DefaultValue
     {
@@ -62,22 +55,21 @@ public abstract class GraphDatabaseSetting
         extends GraphDatabaseSetting
     {
         private Pattern regex;
+        private String formatMessage;
 
         public StringSetting( String name, String regex, String formatMessage )
         {
-            super( name, formatMessage );
+            super( name );
+            this.formatMessage = formatMessage;
             this.regex = Pattern.compile( regex );
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
         {
-            if (value == null)
-                throw illegalValue( locale, value );
-
             if (!regex.matcher( value ).matches())
             {
-                throw illegalValue( locale, value );
+                throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
         }
     }
@@ -88,14 +80,14 @@ public abstract class GraphDatabaseSetting
         protected T min;
         protected T max;
 
-        protected NumberSetting( String name, String validationMessage )
+        protected NumberSetting( String name )
         {
-            super( name, validationMessage );
+            super( name );
         }
 
-        protected NumberSetting( String name, String validationMessage, T min, T max )
+        protected NumberSetting( String name, T min, T max )
         {
-            super( name, validationMessage );
+            super( name );
             this.min = min;
             this.max = max;
         }
@@ -124,22 +116,23 @@ public abstract class GraphDatabaseSetting
     public static class IntegerSetting
         extends NumberSetting<Integer>
     {
+        private String formatMessage;
+
         public IntegerSetting( String name, String formatMessage )
         {
-            super( name, formatMessage );
+            super( name );
+            this.formatMessage = formatMessage;
         }
 
         public IntegerSetting( String name, String formatMessage, Integer min, Integer max )
         {
-            super( name, formatMessage, min, max );
+            super( name, min, max );
+            this.formatMessage = formatMessage;
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
         {
-            if (value == null)
-                throw illegalValue( locale, value );
-
             int val;
             try
             {
@@ -147,7 +140,7 @@ public abstract class GraphDatabaseSetting
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
             rangeCheck( val );
@@ -157,22 +150,23 @@ public abstract class GraphDatabaseSetting
     public static class LongSetting
         extends NumberSetting<Long>
     {
+        private String formatMessage;
+
         public LongSetting( String name, String formatMessage )
         {
-            super( name, formatMessage );
+            super( name );
+            this.formatMessage = formatMessage;
         }
 
         public LongSetting( String name, String formatMessage, Long min, Long max )
         {
-            super( name, formatMessage, min, max );
+            super( name, min, max );
+            this.formatMessage = formatMessage;
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
         {
-            if (value == null)
-                throw illegalValue( locale, value );
-
             long val;
             try
             {
@@ -180,7 +174,7 @@ public abstract class GraphDatabaseSetting
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
             rangeCheck( val );
@@ -190,22 +184,23 @@ public abstract class GraphDatabaseSetting
     public static class FloatSetting
         extends NumberSetting<Float>
     {
+        private String formatMessage;
+
         public FloatSetting( String name, String formatMessage )
         {
-            super( name, formatMessage );
+            super( name );
+            this.formatMessage = formatMessage;
         }
 
         public FloatSetting( String name, String formatMessage, Float min, Float max )
         {
-            super( name, formatMessage, min, max);
+            super( name, min, max);
+            this.formatMessage = formatMessage;
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
         {
-            if (value == null)
-                throw illegalValue( locale, value );
-
             float val;
             try
             {
@@ -213,7 +208,7 @@ public abstract class GraphDatabaseSetting
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
             rangeCheck( val );
@@ -223,22 +218,23 @@ public abstract class GraphDatabaseSetting
     public static class DoubleSetting
         extends NumberSetting<Double>
     {
+        private String formatMessage;
+
         public DoubleSetting( String name, String formatMessage )
         {
-            super( name, formatMessage );
+            super( name );
+            this.formatMessage = formatMessage;
         }
 
         public DoubleSetting( String name, String formatMessage, Double min, Double max )
         {
-            super( name, formatMessage, min, max );
+            super( name, min, max );
+            this.formatMessage = formatMessage;
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
         {
-            if (value == null)
-                throw illegalValue( locale, value );
-
             double val;
             try
             {
@@ -246,19 +242,10 @@ public abstract class GraphDatabaseSetting
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw new IllegalArgumentException( MessageFormat.format( formatMessage, value ) );
             }
 
             rangeCheck( val );
-        }
-    }
-
-    public static class PortSetting
-        extends IntegerSetting
-    {
-        public PortSetting( String name )
-        {
-            super(name, "Must be a valid port number", 1, 65535);
         }
     }
 
@@ -269,22 +256,22 @@ public abstract class GraphDatabaseSetting
         
         protected OptionsSetting( String name, String... options)
         {
-            super( name, "Value '%s' is not valid. Valid options are:%s");
+            super( name );
             
             this.options  = options;
         }
 
         @Override
-        public void validate( Locale locale, String value )
+        public void validate( String value, Locale locale )
             throws IllegalArgumentException
         {
             for( String option : options() )
             {
-                if (option.equalsIgnoreCase( value ))
+                if (value.equalsIgnoreCase( option ))
                     return;
             }
-            
-            throw illegalValue( locale, value, Arrays.asList( options() ).toString() );
+
+            throw new IllegalArgumentException( "Value '"+value+"' is not valid. Valid options are:"+ Arrays.asList( options() ) );
         }
 
 
@@ -294,13 +281,75 @@ public abstract class GraphDatabaseSetting
         }
     }
 
-    private String name;
-    private String validationMessage;
+    // Specialized settings
+    public static class CacheTypeSetting
+        extends OptionsSetting
+    {
+        @Description("Use weak reference cache")
+        public static final String weak = "weak";
 
-    protected GraphDatabaseSetting( String name, String validationMessage )
+        @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
+                     "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.\n" +
+                     "This is the default cache implementation.")
+        public static final String soft = "soft";
+
+        @Description("Don't use caching")
+        public static final String none = "none";
+
+        @Description("Use strong references")
+        public static final String strong = "strong";
+
+        public CacheTypeSetting( )
+        {
+            super( "cache_type", weak, soft, none, strong);
+        }
+    }
+
+    public static class CypherParserSetting
+        extends OptionsSetting
+    {
+        @Description( "Cypher v1.5 syntax" )
+        public static final String v1_5 = "1.5";
+
+        @Description( "Cypher v1.6 syntax" )
+        public static final String v1_6 = "1.6";
+
+        public CypherParserSetting( )
+        {
+            super( "cypher_parser_version", v1_5, v1_6);
+        }
+    }
+
+    public static class UseMemoryMappedBuffers
+        extends BooleanSetting
+        implements DefaultValue
+    {
+        public UseMemoryMappedBuffers( )
+        {
+            super( "use_memory_mapped_buffers" );
+        }
+
+        @Override
+        public String getDefaultValue()
+        {
+            // if on windows, default no memory mapping
+            if ( osIsWindows() )
+            {
+                return FALSE;
+            }
+            else
+            {
+                // If not on win, default use memory mapping
+                return TRUE;
+            }
+        }
+    }
+
+    private String name;
+
+    protected GraphDatabaseSetting( String name )
     {
         this.name = name;
-        this.validationMessage = validationMessage;
     }
 
     public String name()
@@ -308,43 +357,13 @@ public abstract class GraphDatabaseSetting
         return name;
     }
     
-    public String validationMessage()
-    {
-        return validationMessage;
-    }
-    
     public void validate(String value)
         throws IllegalArgumentException
     {
-        validate( Locale.getDefault(), value );
+        validate( value, Locale.getDefault() );
     }
     
-    public abstract void validate( Locale locale, String value );
-    
-    protected String getMessage(Locale locale, String defaultMessage)
-    {
-        if (locale.getLanguage().equals( Locale.ENGLISH.getLanguage() ))
-            return defaultMessage;
-
-        try
-        {
-            ResourceBundle bundle = ResourceBundle.getBundle( getClass().getName() );
-            return bundle.getString( name() );
-        }
-        catch( Exception e )
-        {
-            return defaultMessage;
-        }
-    }
-
-    protected IllegalArgumentException illegalValue(Locale locale, String... args)
-        throws IllegalArgumentException
-    {
-        String message = getMessage( locale, validationMessage );
-        Formatter formatter = new Formatter(locale);
-        formatter.format( message, args );
-        return new IllegalArgumentException( formatter.toString() );
-    }
+    public abstract void validate(String value, Locale locale);
 
     public static boolean osIsWindows()
     {

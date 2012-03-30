@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -106,7 +104,7 @@ public class StoreUpgrader
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
         upgradeConfig.put( "neo_store", upgradeFileName );
         
-        Config upgradeConfiguration = new Config( msgLog, fileSystemAbstraction, upgradeConfig, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        Config upgradeConfiguration = new Config( msgLog, fileSystemAbstraction, upgradeConfig );
         
         NeoStore neoStore = new StoreFactory(upgradeConfiguration, idGeneratorFactory, fileSystemAbstraction, null, StringLogger.DEV_NULL, null).createNeoStore(upgradeFileName);
         try

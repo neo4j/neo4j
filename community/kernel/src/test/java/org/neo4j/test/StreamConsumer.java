@@ -39,11 +39,9 @@ public class StreamConsumer implements Runnable
     private final Writer out;
 
     private static final int BUFFER_SIZE = 32;
-    private boolean quiet;
 
-    public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
+    public StreamConsumer( InputStream in, OutputStream out )
     {
-        this.quiet = quiet;
         this.in = new InputStreamReader( in );
         this.out = new OutputStreamWriter( out );
     }
@@ -57,8 +55,7 @@ public class StreamConsumer implements Runnable
             int count;
             while ( ( count = in.read( cbuf, 0, BUFFER_SIZE ) ) >= 0 )
             {
-                if (!quiet)
-                    out.write( cbuf, 0, count );
+                out.write( cbuf, 0, count );
             }
             out.flush();
         }

@@ -22,10 +22,8 @@ package org.neo4j.server.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Properties;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -97,7 +95,7 @@ public class PreStartupStoreUpgrader
             }
             
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            Config conf = new Config( StringLogger.SYSTEM, fileSystem, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+            Config conf = new Config( StringLogger.SYSTEM, fileSystem, config );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
                     new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );

@@ -29,6 +29,7 @@ import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Args;
 import org.neo4j.shell.impl.AbstractServer;
@@ -324,7 +325,7 @@ public class StartClient
             String jarfile = new File(
                     getClass().getProtectionDomain().getCodeSource().getLocation().toURI() ).getAbsolutePath();
             Object vm = attachMethod.invoke( null, pid );
-            loadMethod.invoke( vm, jarfile, new ShellBootstrap( Integer.parseInt( port ), name ).serialize() );
+            loadMethod.invoke( vm, jarfile, new ShellBootstrap( port, name ).serialize() );
         }
         catch ( Exception e )
         {

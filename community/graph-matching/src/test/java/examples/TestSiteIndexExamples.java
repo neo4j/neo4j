@@ -25,7 +25,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Set;
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
@@ -40,7 +42,6 @@ import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.graphmatching.ValueMatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.*;
 
@@ -51,9 +52,6 @@ import static org.junit.Assert.*;
  */
 public class TestSiteIndexExamples
 {
-    @ClassRule
-    public static EmbeddedDatabaseRule graphDb = new EmbeddedDatabaseRule();
-
     // START SNIPPET: findNodesWithRelationshipsTo
     public static Iterable<Node> findNodesWithRelationshipsTo(
             RelationshipType type, Node... nodes )
@@ -176,7 +174,7 @@ public class TestSiteIndexExamples
                 return nodes;
             }
         } );
-        Transaction tx = graphDb.getGraphDatabaseService().beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
             assertEquals( 3,
@@ -269,10 +267,10 @@ public class TestSiteIndexExamples
     private <T> T createGraph( GraphDefinition<T> definition )
     {
         final T result;
-        Transaction tx = graphDb.getGraphDatabaseService().beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
-            result = definition.create( graphDb.getGraphDatabaseService() );
+            result = definition.create( graphDb );
             tx.success();
         }
         finally
@@ -280,5 +278,20 @@ public class TestSiteIndexExamples
             tx.finish();
         }
         return result;
+    }
+
+    private static GraphDatabaseService graphDb;
+
+    @BeforeClass
+    public static void startGraphDatabase()
+    {
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/db" );
+    }
+
+    @AfterClass
+    public static void shutdownGraphDatabase()
+    {
+        graphDb.shutdown();
+        graphDb = null;
     }
 }

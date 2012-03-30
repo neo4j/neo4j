@@ -33,8 +33,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -79,7 +79,7 @@ public class Neo4jShell
     private static void startRemoteShellAndWait() throws Exception
     {
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.enable_remote_shell, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
 
         createExampleNodeSpace();

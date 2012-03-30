@@ -63,18 +63,6 @@ public class RestartOnChange
         }, Iterables.iterable( settingsClass.getFields() ) ) ), life);
     }
     
-    public RestartOnChange( final String configurationNamePrefix, Lifecycle life)
-    {
-        this( new Specification<String>()
-        {
-            @Override
-            public boolean satisfiedBy( String item )
-            {
-                return item.startsWith( configurationNamePrefix );
-            }
-        }, life);
-    }
-    
     public RestartOnChange( Specification<String> restartSpecification, Lifecycle life )
     {
         this.restartSpecification = restartSpecification;

@@ -33,9 +33,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class ConfigurationDefaults
 {
     private StringLogger msgLog;
-    private Iterable<Class<?>> settingsClasses;
+    private Class[] settingsClasses;
 
-    public ConfigurationDefaults( StringLogger msgLog, Iterable<Class<?>> settingsClasses )
+    public ConfigurationDefaults( StringLogger msgLog, Class... settingsClasses )
     {
         this.msgLog = msgLog;
         this.settingsClasses = settingsClasses;

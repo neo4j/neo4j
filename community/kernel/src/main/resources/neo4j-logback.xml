@@ -25,7 +25,7 @@
   <logger name="neo4j.diagnostics" level="DEBUG" />
 
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <file>${neo_store}/messages.log</file>
+    <file>${neo_store}/messages2.log</file>
     <encoder>
       <pattern>%date{ISO8601} %-5level [%c]: %message%n</pattern>
     </encoder>

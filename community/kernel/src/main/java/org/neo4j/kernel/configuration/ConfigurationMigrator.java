@@ -20,14 +20,10 @@
 
 package org.neo4j.kernel.configuration;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.configuration.Config.*;
 
 /**
  * Migration of configuration settings. This allows old configurations to be read and converted into the new format.
@@ -79,23 +75,6 @@ public class ConfigurationMigrator
                 continue;
             }
 
-            if (key.equals( "enable_remote_shell" ))
-            {
-                Map<String, Serializable> config = null;
-                boolean enable = false;
-
-                if ( configValueContainsMultipleParameters( value ) )
-                {
-                    migratedConfiguration.put( "remote_shell_enabled", GraphDatabaseSetting.TRUE );
-                    migratedConfiguration.putAll(parseShellConfigParameter( value ));
-                }
-                else
-                {
-                    migratedConfiguration.put( "remote_shell_enabled", Boolean.parseBoolean( value ) ? GraphDatabaseSetting.TRUE : GraphDatabaseSetting.FALSE );
-                }
-                continue;
-            }
-
             // TODO Add migration rules for Community here (e.g. keep_logical_logs needs to be added here)
 
             migratedConfiguration.put( key, value );
@@ -132,14 +111,4 @@ public class ConfigurationMigrator
         return null;
     }
 
-    @SuppressWarnings( "boxing" )
-    private static Map<String, String> parseShellConfigParameter( String shellConfig )
-    {
-        Args parsed = Config.parseMapFromConfigValue( Config.ENABLE_REMOTE_SHELL, shellConfig );
-        Map<String, String> map = new HashMap<String, String>();
-        map.put( "remote_shell_port", parsed.get( "port", "1337" ) );
-        map.put( "remote_shell_name", parsed.get( "name", "shell" ) );
-        map.put( "remote_shell_read_only", parsed.get( "readonly", "false" ) );
-        return map;
-    }
 }

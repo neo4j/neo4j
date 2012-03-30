@@ -17,28 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.cache;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class MonitorGc implements Lifecycle
 {
-    public static class Configuration
+    public interface Configuration
     {
-        public static final GraphDatabaseSetting.StringSetting gc_monitor_wait_time = GraphDatabaseSettings.gc_monitor_wait_time;
-        public static final GraphDatabaseSetting.StringSetting gc_monitor_threshold = GraphDatabaseSettings.gc_monitor_threshold;
+        int gc_monitor_wait_time( int time );
+        int gc_monitor_threshold( int time );
     }
     
-    private final Config config;
+    private final Configuration config;
     private final StringLogger logger;
     private volatile MeasureDoNothing monitorGc;
     
-    public MonitorGc( Config config, StringLogger logger )
+    public MonitorGc( Configuration config, StringLogger logger )
     {
         this.config = config;
         this.logger = logger;
@@ -52,7 +48,7 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.getDuration( Configuration.gc_monitor_wait_time ), config.getDuration( Configuration.gc_monitor_threshold ) );
+        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.gc_monitor_wait_time( 100 ), config.gc_monitor_threshold( 200 ) );
         monitorGc.start();
     }
 

@@ -19,10 +19,18 @@
  */
 package recovery;
 
+import static java.lang.Integer.parseInt;
+import static java.lang.System.exit;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.LogTestUtils.EVERYTHING_BUT_DONE_RECORDS;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
+import static org.neo4j.test.LogTestUtils.filterTxLog;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -30,14 +38,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
-import org.neo4j.test.LogTestUtils;
-import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.LogTestUtils.LogHook;
 import org.neo4j.test.TargetDirectory;
-
-import static java.lang.Integer.*;
-import static java.lang.System.*;
-import static org.junit.Assert.*;
-import static org.neo4j.test.LogTestUtils.*;
 
 @Ignore( "Used from another test case and isn't a test case in itself" )
 public class CreateTransactionsAndDie
@@ -96,17 +98,14 @@ public class CreateTransactionsAndDie
 
     private static int createUncleanDb( String dir, int nrOf2PcTransactionsToRecover ) throws Exception
     {
-        Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ), CreateTransactionsAndDie.class.getName(),
-            dir, "" + nrOf2PcTransactionsToRecover
-        } );
-
-        return new ProcessStreamHandler( process, true ).waitForResult();
+        return Runtime.getRuntime().exec( new String[] {
+                "java", "-cp", System.getProperty( "java.class.path" ), CreateTransactionsAndDie.class.getName(),
+                dir, "" + nrOf2PcTransactionsToRecover } ).waitFor();
     }
 
     private static void remove2PCAndDoneFromLog( String dir ) throws IOException
     {
-        filterNeostoreLogicalLog( dir, new LogTestUtils.LogHook<LogEntry>()
+        filterNeostoreLogicalLog( dir, new LogHook<LogEntry>()
         {
             private final Set<Integer> prune = new HashSet<Integer>();
             

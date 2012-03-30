@@ -51,8 +51,9 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.neo4j.helpers.Predicate;
-import org.neo4j.test.ProcessStreamHandler;
+
 
 @SuppressWarnings( "serial" )
 public abstract class SubProcess<T, P> implements Serializable
@@ -893,7 +894,15 @@ public abstract class SubProcess<T, P> implements Serializable
 
         private static int await( Process process )
         {
-            return new ProcessStreamHandler( process, true ).waitForResult();
+            try
+            {
+                return process.waitFor();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                return 0;
+            }
         }
 
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable

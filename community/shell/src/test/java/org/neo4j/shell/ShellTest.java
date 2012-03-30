@@ -91,18 +91,18 @@ public class ShellTest
     @Test
     public void canConnectAsAgent() throws Exception
     {
-        int port = 1234;
+        Integer port = Integer.valueOf( 1234 );
         String name = "test-shell";
         GraphDatabaseService graphDb = new ImpermanentGraphDatabase();
         try
         {
-            new ShellServerExtension().loadAgent( new ShellBootstrap( port, name ).serialize() );
+            new ShellServerExtension().loadAgent( new ShellBootstrap( port.toString(), name ).serialize() );
         }
         finally
         {
             graphDb.shutdown();
         }
-        ShellLobby.newClient( port, name );
+        ShellLobby.newClient( port.intValue(), name );
     }
 
     @Test

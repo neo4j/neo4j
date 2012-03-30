@@ -53,7 +53,10 @@ public class TestTxEntries
                 new String[] { "java", "-cp",
                         System.getProperty( "java.class.path" ),
                         RollbackUnclean.class.getName(), storeDir } );
-        int exit = new ProcessStreamHandler( process, true ).waitForResult();
+        ProcessStreamHandler streams = new ProcessStreamHandler( process );
+        streams.launch();
+        int exit = process.waitFor();
+        streams.done();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();

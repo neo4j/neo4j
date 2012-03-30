@@ -98,7 +98,7 @@ public class BatchInserterImpl implements BatchInserter
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
         final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params );
         boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();

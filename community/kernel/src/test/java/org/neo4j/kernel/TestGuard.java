@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.sleep;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.Integer.*;
-import static java.lang.System.*;
-import static java.lang.Thread.*;
-import static junit.framework.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestGuard
 {
@@ -41,29 +44,21 @@ public class TestGuard
     @Test
     public void testGuardNotInsertedByDefault()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
         assertNull( db.getGuard() );
-        db.shutdown();
     }
 
     @Test
     public void testGuardInsertedByDefault()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         assertNotNull( db.getGuard() );
-        db.shutdown();
     }
 
     @Test
     public void testGuardOnDifferentGraphOps()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         db.getGuard().startOperationsCount( MAX_VALUE );
@@ -93,16 +88,12 @@ public class TestGuard
         }
         Guard.OperationsCount ops4 = db.getGuard().stop();
         assertEquals( 3, ops4.getOpsCount() );
-        db.shutdown();
     }
 
     @Test
     public void testOpsCountGuardFail()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
         Guard guard = db.getGuard();
 
@@ -117,16 +108,12 @@ public class TestGuard
         {
             // expected
         }
-        db.shutdown();
     }
 
     @Test
     public void testTimeoutGuardFail() throws InterruptedException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         db.getGuard().startTimeout( 50 );
@@ -145,16 +132,12 @@ public class TestGuard
         }
         assertTrue( i > 1 );
         assertTrue( i < 100 );
-        db.shutdown();
     }
 
     @Test
     public void testTimeoutGuardPass()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( stringMap( "enable_execution_guard", "true" ) );
         db.beginTx();
 
         int timeout = 1000;
@@ -162,22 +145,15 @@ public class TestGuard
         long startTime = currentTimeMillis();
         try
         {
-            for( int i = 0; i < 1000; i++ )
-            {
+            for (int i = 0; i < 1000; i++)
                 db.createNode();
-            }
         }
         catch (GuardTimeoutException e )
         {
             // Just extra stability check. If it actually took longer than the threshold
             // that the test was designed to run within it still passes.
-            if( currentTimeMillis() - startTime < timeout )
-            {
+            if ( currentTimeMillis() - startTime < timeout )
                 throw e;
-            }
-        } finally
-        {
-            db.shutdown();
         }
     }
 }

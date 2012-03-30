@@ -17,35 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.cache;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.CACHE_TYPE;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.*;
-import static org.neo4j.kernel.impl.MyRelTypes.*;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestSizeOf
 {
-    private GraphDatabaseAPI db;
+    private ImpermanentGraphDatabase db;
     private Node node;
     
     @Before
     public void doBefore() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.cache_type, GraphDatabaseSettings.CacheTypeSetting.array ).
-            newGraphDatabase();
+        db = new ImpermanentGraphDatabase( stringMap( CACHE_TYPE, "array" ) );
         Transaction tx = db.beginTx();
         try
         {

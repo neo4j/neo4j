@@ -23,8 +23,6 @@ import org.junit.{After, Before}
 import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
 import collection.Map
-import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.graphdb._
 
 class GraphDatabaseTestBase extends JUnitSuite {
   var graph: GraphDatabaseService = null
@@ -33,7 +31,7 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   @Before
   def baseInit() {
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
     refNode = graph.getReferenceNode
   }
 

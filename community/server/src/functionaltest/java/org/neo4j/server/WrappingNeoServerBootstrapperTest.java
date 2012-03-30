@@ -40,7 +40,6 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -91,7 +90,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( GraphDatabaseSettings.enable_remote_shell, GraphDatabaseSetting.TRUE ).newGraphDatabase();
         EmbeddedServerConfigurator config;
         config = new EmbeddedServerConfigurator( graphdb );
         // let the server endpoint be on a custom port

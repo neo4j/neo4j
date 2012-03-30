@@ -62,7 +62,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.CacheTypeSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.CacheTypeSetting.*;
 
 public class ImdbExampleTest
 {
@@ -72,7 +72,7 @@ public class ImdbExampleTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, weak ).newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, CacheTypeSetting.weak ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {

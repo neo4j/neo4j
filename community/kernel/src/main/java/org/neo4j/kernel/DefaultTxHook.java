@@ -21,7 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.kernel.impl.transaction.TxHook;
 
-public class DefaultTxHook implements TxHook
+class DefaultTxHook implements TxHook
 {
     @Override
     public void initializeTransaction( int eventIdentifier )

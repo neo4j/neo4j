@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -27,19 +28,32 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
 
 public class TestTransactionEventDeadlocks
 {
-    @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
-    
+    public TargetDirectory target = TargetDirectory.forTest( getClass() );
+    private GraphDatabaseService graphdb;
+
+    @Before
+    public void startGraphdb()
+    {
+        this.graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getPath() );
+    }
+
+    @After
+    public void stopGraphdb()
+    {
+        if ( graphdb != null ) graphdb.shutdown();
+        graphdb = null;
+    }
+
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
         final Node root = graphdb.getReferenceNode();
         Transaction tx = graphdb.beginTx();
         try

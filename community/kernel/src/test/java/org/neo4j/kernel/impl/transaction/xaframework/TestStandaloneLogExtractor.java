@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -46,12 +45,10 @@ public class TestStandaloneLogExtractor
     private void run( boolean cleanShutdown, int nr ) throws Exception
     {
         String sourceDir = forTest( getClass() ).directory( "source" + nr, true ).getAbsolutePath();
-        Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
-            sourceDir, "" + cleanShutdown
-        } );
-
-        new ProcessStreamHandler( process, true ).waitForResult();
+        Runtime.getRuntime().exec( new String[] {
+                "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
+                sourceDir, "" + cleanShutdown
+        } ).waitFor();
 
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();

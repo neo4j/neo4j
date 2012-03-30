@@ -20,9 +20,7 @@
 package org.neo4j.examples;
 
 import java.util.Date;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Kernel;
@@ -32,13 +30,10 @@ import static org.junit.Assert.*;
 
 public class JmxTest
 {
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
-    
     @Test
     public void readJmxProperties()
     {
-        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabase( temp.getRoot().getAbsolutePath());
+        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabase( "target/jmx-db" );
         try
         {
             Date startTime = getStartTimeFromManagementBean( graphDbService );

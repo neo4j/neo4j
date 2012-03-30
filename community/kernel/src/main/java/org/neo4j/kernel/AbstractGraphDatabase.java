@@ -56,9 +56,6 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationChange;
-import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -113,7 +110,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 
-import static org.neo4j.helpers.Exceptions.*;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -130,7 +126,7 @@ public abstract class AbstractGraphDatabase
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
         public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
         public static final GraphDatabaseSetting.BooleanSetting execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
-        public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
+        public static final GraphDatabaseSetting.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
     }
@@ -140,7 +136,6 @@ public abstract class AbstractGraphDatabase
 
     protected String storeDir;
     protected Map<String, String> params;
-    private Iterable<KernelExtension> kernelExtensions;
     private StoreId storeId;
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
@@ -187,14 +182,13 @@ public abstract class AbstractGraphDatabase
     private final LifeSupport life = new LifeSupport();
 
     protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
-                                    Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+                                    Iterable<IndexProvider> indexProviders)
     {
         this.params = params;
         this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
 
         // SPI - provided services
         this.indexProviders = indexProviders;
-        this.kernelExtensions = kernelExtensions;
     }
 
     protected void run()
@@ -229,18 +223,8 @@ public abstract class AbstractGraphDatabase
 
         fileSystem = life.add(createFileSystemAbstraction());
 
-        // Get the list of settings classes for extensions
-        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
-        settingsClasses.add( GraphDatabaseSettings.class );
-        for( KernelExtension kernelExtension : kernelExtensions )
-        {
-            Class settingsClass = kernelExtension.getSettingsClass();
-            if (settingsClass != null)
-                settingsClasses.add( settingsClass );
-        }
-
         // Setup proper configuration
-        config = new Config( StringLogger.logger(StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger( "neo4j.config" )), fileSystem, params, settingsClasses );
+        config = new Config( StringLogger.logger(StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger( "neo4j.config" )), fileSystem, params );
 
         this.msgLog = createStringLogger();
 
@@ -259,7 +243,7 @@ public abstract class AbstractGraphDatabase
 
         xaDataSourceManager = life.add( new XaDataSourceManager( StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )) ) );
 
-        guard = config.getBoolean( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
+        guard = conf.enable_execution_guard( false ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 
@@ -387,15 +371,14 @@ public abstract class AbstractGraphDatabase
 
         life.add( new StuffToDoAfterRecovery() );
 
-        life.add( new MonitorGc( config, msgLog ) );
+        life.add( new MonitorGc( ConfigProxy.config( params, MonitorGc.Configuration.class ), msgLog ) );
 
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
-
-        // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
+        
         config.addConfigurationChangeListener( new ConfigurationChangeListener()
         {
             Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
@@ -428,6 +411,7 @@ public abstract class AbstractGraphDatabase
 
     private NodeManager createNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
     {
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
         if ( readOnly )
         {
             return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
@@ -442,6 +426,7 @@ public abstract class AbstractGraphDatabase
 
     private NodeManager createGuardedNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
     {
+        final NodeManager.Configuration config = ConfigProxy.config( params, NodeManager.Configuration.class );
         if ( readOnly )
         {
             return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
@@ -1155,7 +1140,7 @@ public abstract class AbstractGraphDatabase
         public void init()
             throws Throwable
         {
-            loaded = extensions.loadExtensionConfigurations( StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )), kernelExtensions );
+            loaded = extensions.loadExtensionConfigurations( StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )) );
             loadIndexImplementations(indexManager, StringLogger.logger(loggerContext.getLogger( "neo4j.index" )));
         }
 

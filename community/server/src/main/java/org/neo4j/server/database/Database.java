@@ -21,7 +21,7 @@ package org.neo4j.server.database;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -31,7 +31,6 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.statistic.StatisticCollector;
-import org.neo4j.shell.ShellSettings;
 import org.rrd4j.core.RrdDb;
 
 public class Database
@@ -74,9 +73,9 @@ public class Database
             databaseProperties = new HashMap<String, String>();
         }
 
-        putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
+        putIfAbsent( databaseProperties, GraphDatabaseSettings.enable_remote_shell.name(), GraphDatabaseSetting.TRUE );
         databaseProperties.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        databaseProperties.put( UdcSettings.udc_source.name(), "server" );
+        databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }

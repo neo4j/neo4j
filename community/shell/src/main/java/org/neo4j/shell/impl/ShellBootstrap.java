@@ -28,32 +28,65 @@ import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
+import java.util.HashMap;
+import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.shell.ShellSettings;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import static org.neo4j.kernel.configuration.Config.*;
 
 public class ShellBootstrap implements Serializable
 {
+    private final Map<String, Serializable> config;
     private final boolean enable;
-    private final int port;
-    private final String name;
-    private final boolean read_only;
 
     ShellBootstrap( KernelData kernel )
     {
-        this.enable = kernel.getConfig().getBoolean( ShellSettings.remote_shell_enabled );
-        this.port = kernel.getConfig().getInteger( ShellSettings.remote_shell_port );
-        this.name = kernel.getConfig().get( ShellSettings.remote_shell_name );
-        this.read_only = kernel.getConfig().getBoolean( ShellSettings.remote_shell_read_only );
+        String shellConfig = (String) kernel.getParam( Config.ENABLE_REMOTE_SHELL );
+        Map<String, Serializable> config = null;
+        boolean enable = false;
+        if ( shellConfig != null )
+        {
+            if ( configValueContainsMultipleParameters( shellConfig ) )
+            {
+                enable = true;
+                config = parseShellConfigParameter( shellConfig );
+            }
+            else if ( Boolean.parseBoolean( shellConfig ) )
+            {
+                enable = true;
+            }
+        }
+        this.enable = enable;
+        this.config = config;
     }
 
-    public ShellBootstrap( int port, String name )
+    public ShellBootstrap( Map<String, Serializable> config )
+    {
+        this.config = config;
+        this.enable = true;
+    }
+
+    public ShellBootstrap( String port, String name )
     {
         enable = true;
-        this.port = port;
-        this.name = name;
-        this.read_only = false;
+        config = new HashMap<String, Serializable>();
+        config.put( StartClient.ARG_PORT, port != null ? Integer.parseInt( port ) : AbstractServer.DEFAULT_PORT );
+        config.put( StartClient.ARG_NAME, name );
+    }
+
+    @SuppressWarnings( "boxing" )
+    private static Map<String, Serializable> parseShellConfigParameter( String shellConfig )
+    {
+        Args parsed = Config.parseMapFromConfigValue( Config.ENABLE_REMOTE_SHELL, shellConfig );
+        Map<String, Serializable> map = new HashMap<String, Serializable>();
+        map.put( StartClient.ARG_PORT, parsed.getNumber( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue() );
+        map.put( StartClient.ARG_READONLY, parsed.getBoolean( StartClient.ARG_READONLY, false, true ) );
+        return map;
     }
 
     public String serialize()
@@ -105,7 +138,8 @@ public class ShellBootstrap implements Serializable
     GraphDatabaseShellServer load( GraphDatabaseService graphDb ) throws RemoteException
     {
         if ( !enable ) return null;
-        return enable( new GraphDatabaseShellServer( graphDb, read_only ) );
+        return enable( new GraphDatabaseShellServer( graphDb, (Boolean) getConfig( StartClient.ARG_READONLY,
+                Boolean.FALSE ) ) );
     }
 
     void visit( GraphDatabaseShellServer state )
@@ -113,8 +147,16 @@ public class ShellBootstrap implements Serializable
         // TODO: use for Registry-less connection
     }
 
+    private Serializable getConfig( String key, Serializable defaultValue )
+    {
+        Serializable result = config != null ? config.get( key ) : null;
+        return result != null ? result : defaultValue;
+    }
+
     public GraphDatabaseShellServer enable( GraphDatabaseShellServer server ) throws RemoteException
     {
+        Integer port = (Integer) getConfig( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT );
+        String name = (String) getConfig( StartClient.ARG_NAME, AbstractServer.DEFAULT_NAME );
         server.makeRemotelyAvailable( port, name );
         return server;
     }

@@ -24,9 +24,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -47,9 +45,6 @@ import static org.junit.Assert.*;
 
 public class PathFindingExamplesTest
 {
-    @ClassRule
-    public static TemporaryFolder temp = new TemporaryFolder();
-
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -61,7 +56,7 @@ public class PathFindingExamplesTest
     @BeforeClass
     public static void startDb()
     {
-        String storeDir = temp.getRoot().getAbsolutePath();
+        String storeDir = "target/var/examples";
         deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
