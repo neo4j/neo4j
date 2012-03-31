@@ -1792,6 +1792,15 @@ RETURN x0.name?
     intercept[MissingIndexException](parseAndExecute("start a=relationship:missingIndex('value') return a").toList)
   }
 
+  @Test def distinct_on_nullable_values() {
+    createNode("name"->"Florescu")
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("start a=node(1,2,3) return distinct a.name?").toList
+    assert(result === List(Map("a.name?" -> "Florescu"), Map("a.name?" -> null)))
+  }
+
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
     val engine = new ExecutionEngine(db)
