@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
+
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
@@ -57,7 +58,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         super( KEY );
     }
 
-    private static Timer timer = new Timer( "Neo4j UDC Timer", /*isDeamon=*/true );
+    private Timer timer;
 
     @Override
     public Class getSettingsClass()
@@ -68,6 +69,10 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
     @Override
     protected UdcTimerTask load( KernelData kernel )
     {
+        if(timer != null) {
+            timer.cancel();
+        }
+        
         Map<String, String> conf = loadSystemProperties();
         conf.putAll( kernel.getConfigParams());
         Config config = new Config( conf );
@@ -86,14 +91,19 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         String version = kernel.version().getRevision();
         if ( version.equals( "" ) ) version = kernel.version().getVersion();
         UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration, formattedMacAddy() );
+        
+        timer = new Timer( "Neo4j UDC Timer", /*isDeamon=*/true );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
+        
         return task;
     }
 
     @Override
     protected void unload( UdcTimerTask task )
     {
-        task.cancel();
+        if(timer != null) {
+            timer.cancel();
+        }
     }
 
     private Map<String,String> loadSystemProperties()
