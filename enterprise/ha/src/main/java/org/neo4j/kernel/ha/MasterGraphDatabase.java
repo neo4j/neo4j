@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * TODO
@@ -45,13 +45,13 @@ public class MasterGraphDatabase
 
     public MasterGraphDatabase( String storeDir, Map<String, String> params,
                                 StoreId storeId, HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
-                                Broker broker, StringLogger logger,
+                                Broker broker, Logging logging,
                                 NodeProxy.NodeLookup nodeLookup,
                                 RelationshipProxy.RelationshipLookups relationshipLookups,
                                 Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions
     )
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders1, kernelExtensions );
+        super( storeDir, params, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups, indexProviders1, kernelExtensions );
         this.storeId = storeId;
 
         run();

@@ -135,7 +135,7 @@ public class ZooClient extends AbstractZooKeeperManager
         if ( host == null )
         {
             throw new IllegalStateException(
-                    "Could not auto configure host name, please supply " + HaConfig.CONFIG_KEY_SERVER );
+                    "Could not auto configure host name, please supply " + HaSettings.server.name() );
         }
         return host.getHostAddress() + ":" + HaConfig.CONFIG_DEFAULT_PORT;
     }

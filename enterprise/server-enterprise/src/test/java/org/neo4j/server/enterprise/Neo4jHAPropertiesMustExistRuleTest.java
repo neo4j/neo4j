@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.fail;
+package org.neo4j.server.enterprise;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
-
 import org.junit.Test;
 import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.configuration.Configurator;
+
+import static org.junit.Assert.*;
 
 public class Neo4jHAPropertiesMustExistRuleTest
 {
@@ -57,8 +58,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaSettings.server_id.name(), "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaSettings.coordinators.name(),
                 "localhost:0000", dbTuningFile );
 
         assertRulePass( rule, serverPropertyFile );
@@ -94,8 +95,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
         ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaSettings.server_id.name(), "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaSettings.coordinators.name(),
                 "localhost:0000", dbTuningFile );
 
         assertRuleFail( rule, serverPropertyFile );
@@ -112,8 +113,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaSettings.server_id.name(), "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaSettings.coordinators.name(),
                 "localhost:0000", dbTuningFile );
         ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_COORDINATORS,
                 "localhost:0000", dbTuningFile );

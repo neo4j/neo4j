@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package slavetest;
 
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 
 public class DumpZooInfo
 {
     public static void main( String[] args )
     {
         Args arguments = new Args( args );
-        ZooKeeperClusterClient clusterManager = new ZooKeeperClusterClient( "localhost", arguments.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME ) );
+        ZooKeeperClusterClient clusterManager = new ZooKeeperClusterClient( "localhost", arguments.get( HaSettings.cluster_name.name(), ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ) ));
         clusterManager.waitForSyncConnected();
         System.out.println( "Master is " + clusterManager.getCachedMaster() );
         System.out.println( "Connected slaves" );

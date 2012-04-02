@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.test.server.ha;
 
 import java.io.File;
@@ -31,11 +32,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -67,14 +67,22 @@ public final class ServerCluster
         catch ( Throwable e )
         {
             // shutdownAndCleanUp( servers );
-            for ( Pair<URI, File> UGLY_CODE_DUE_TO_ISSUES_IN_HA : shutdown(
+            for ( Pair<URI, File> UGLY_CODE_DUE_TO_ISSUES_IN_HA : (Pair<URI, File>[]) shutdown(
                     (Class) Pair.class, servers ) )
             {
-                if ( UGLY_CODE_DUE_TO_ISSUES_IN_HA != null )
+                if( UGLY_CODE_DUE_TO_ISSUES_IN_HA != null )
+                {
                     TargetDirectory.recursiveDelete( UGLY_CODE_DUE_TO_ISSUES_IN_HA.other() );
+                }
             }
-            if ( e instanceof Error ) throw (Error) e;
-            if ( e instanceof RuntimeException ) throw (RuntimeException) e;
+            if( e instanceof Error )
+            {
+                throw (Error) e;
+            }
+            if( e instanceof RuntimeException )
+            {
+                throw (RuntimeException) e;
+            }
             throw new RuntimeException( "Cluster startup failed", e );
         }
         // this.servers = awaitStartup( servers );
@@ -96,7 +104,10 @@ public final class ServerCluster
             {
                 result.append( prefix ).append( server.first() ).append( ": " ).append(
                         server.second() );
-                if ( server.first().isMaster() ) result.append( " is master" );
+                if( server.first().isMaster() )
+                {
+                    result.append( " is master" );
+                }
             }
             prefix = ", ";
         }
@@ -117,10 +128,15 @@ public final class ServerCluster
         List<URI> candidates = new ArrayList<URI>();
         for ( Triplet<ServerManager, URI, File> server : servers )
         {
-            if ( server != null && !excluded.contains( server.second() ) )
+            if( server != null && !excluded.contains( server.second() ) )
+            {
                 candidates.add( server.second() );
+            }
         }
-        if ( candidates.isEmpty() ) throw new IllegalStateException( "No servers available" );
+        if( candidates.isEmpty() )
+        {
+            throw new IllegalStateException( "No servers available" );
+        }
         return candidates.get( random.nextInt( candidates.size() ) );
     }
 
@@ -169,10 +185,10 @@ public final class ServerCluster
 
         // Kernel (and HA) configuration
         config( dbConfig, //
-                Pair.of( HaConfig.CONFIG_KEY_CLUSTER_NAME, name ),//
-                Pair.of( HaConfig.CONFIG_KEY_SERVER, "localhost:" + ports.first() ),//
-                Pair.of( HaConfig.CONFIG_KEY_SERVER_ID, Integer.toString( id ) ),//
-                Pair.of( HaConfig.CONFIG_KEY_COORDINATORS, keeperCluster.getConnectionString() ) );
+                Pair.of( HaSettings.cluster_name.name(), name ),//
+                Pair.of( HaSettings.server.name(), "localhost:" + ports.first() ),//
+                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ),//
+                Pair.of( HaSettings.coordinators.name(), keeperCluster.getConnectionString() ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }
@@ -215,7 +231,10 @@ public final class ServerCluster
     {
         for ( File store : shutdown( File.class, servers ) )
         {
-            if ( store != null ) TargetDirectory.recursiveDelete( store );
+            if( store != null )
+            {
+                TargetDirectory.recursiveDelete( store );
+            }
         }
     }
 
@@ -228,7 +247,10 @@ public final class ServerCluster
             if ( servers[i] != null )
             {
                 SubProcess.stop( servers[i].first() );
-                if ( result != null ) result[i] = servers[i].other();
+                if( result != null )
+                {
+                    result[ i ] = servers[ i ].other();
+                }
             }
         }
         return result;
@@ -285,16 +307,19 @@ public final class ServerCluster
         @Override
         protected void shutdown( boolean normal )
         {
-            if ( this.bootstrap != null ) this.bootstrap.stop();
+            if( this.bootstrap != null )
+            {
+                this.bootstrap.stop();
+            }
             super.shutdown( normal );
         }
 
         private HighAvailability ha()
         {
-            return graphDb().getManagementBean( HighAvailability.class );
+            return graphDb().getSingleManagementBean( HighAvailability.class );
         }
 
-        private AbstractGraphDatabase graphDb()
+        private GraphDatabaseAPI graphDb()
         {
             return this.bootstrap.getServer().getDatabase().graph;
         }
@@ -304,17 +329,23 @@ public final class ServerCluster
         {
             try
             {
-                while ( startupStatus == null )
+                while( startupStatus == null )
+                {
                     Thread.sleep( 10 );
+                }
             }
             catch ( InterruptedException ex )
             {
                 throw new RuntimeException( "Interrupted during startup", ex );
             }
-            if ( startupStatus.equals( Bootstrapper.GRAPH_DATABASE_STARTUP_ERROR_CODE ) )
+            if( startupStatus.equals( Bootstrapper.GRAPH_DATABASE_STARTUP_ERROR_CODE ) )
+            {
                 throw new RuntimeException( "Database startup failure" );
-            if ( startupStatus.equals( Bootstrapper.WEB_SERVER_STARTUP_ERROR_CODE ) )
+            }
+            if( startupStatus.equals( Bootstrapper.WEB_SERVER_STARTUP_ERROR_CODE ) )
+            {
                 throw new RuntimeException( "Server startup failure" );
+            }
             return bootstrap.getServer().baseUri();
         }
 

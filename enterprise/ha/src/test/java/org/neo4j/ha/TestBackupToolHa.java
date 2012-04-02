@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.ha;
 
 import java.io.File;
@@ -40,7 +41,6 @@ import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import static org.junit.Assert.*;
 import static org.neo4j.backup.TestBackupToolEmbedded.*;
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.HaConfig.*;
 
 public class TestBackupToolHa
 {
@@ -65,7 +65,7 @@ public class TestBackupToolHa
                     OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.TRUE,
                     OnlineBackupSettings.online_backup_port.name(), ""+(4444+i) );
             if ( clusterName != null )
-                config.put( CONFIG_KEY_CLUSTER_NAME, clusterName );
+                config.put( HaSettings.cluster_name.name(), clusterName );
             GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ) );
             instances.add( instance );
         }

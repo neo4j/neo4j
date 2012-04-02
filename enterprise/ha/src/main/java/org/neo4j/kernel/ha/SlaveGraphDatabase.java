@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Slave implementation of HA Graph Database
@@ -47,17 +47,17 @@ public class SlaveGraphDatabase
     private FileSystemAbstraction fileSystemAbstraction;
 
     public SlaveGraphDatabase( String storeDir, Map<String, String> params,
-            HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker, StringLogger logger,
+            HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker, Logging logging,
             SlaveDatabaseOperations databaseOperations,
             LastCommittedTxIdSetter lastCommittedTxIdSetter, NodeProxy.NodeLookup nodeLookup,
             RelationshipProxy.RelationshipLookups relationshipLookups,
             FileSystemAbstraction fileSystemAbstraction,
             Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logger, nodeLookup, relationshipLookups, indexProviders, kernelExtensions );
+        super( storeDir, params, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions );
         this.fileSystemAbstraction = fileSystemAbstraction;
 
-        assert broker != null && logger != null && databaseOperations != null  && lastCommittedTxIdSetter != null &&
+        assert broker != null && logging != null && databaseOperations != null  && lastCommittedTxIdSetter != null &&
                nodeLookup != null && relationshipLookups != null;
 
         this.databaseOperations = databaseOperations;

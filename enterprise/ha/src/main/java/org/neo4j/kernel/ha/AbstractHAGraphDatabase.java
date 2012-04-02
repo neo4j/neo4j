@@ -20,7 +20,6 @@
 
 package org.neo4j.kernel.ha;
 
-import ch.qos.logback.classic.LoggerContext;
 import java.util.Map;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -29,8 +28,7 @@ import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.slf4j.impl.StaticLoggerBinder;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * TODO
@@ -39,14 +37,13 @@ public class AbstractHAGraphDatabase
     extends AbstractGraphDatabase
 {
     protected Broker broker;
-    private StringLogger logger;
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
     private HighlyAvailableGraphDatabase highlyAvailableGraphDatabase;
 
     public AbstractHAGraphDatabase( String storeDir, Map<String, String> params,
                                     HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
-                                    Broker broker, StringLogger logger,
+                                    Broker broker, Logging logging,
                                     NodeProxy.NodeLookup nodeLookup,
                                     RelationshipProxy.RelationshipLookups relationshipLookups,
                                     Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions
@@ -55,10 +52,10 @@ public class AbstractHAGraphDatabase
         super( storeDir, params, indexProviders1, kernelExtensions );
         this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
 
-        assert broker != null && logger != null && nodeLookup != null && relationshipLookups != null;
+        assert broker != null && logging != null && nodeLookup != null && relationshipLookups != null;
 
         this.broker = broker;
-        this.logger = logger;
+        this.logging = logging;
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
     }
@@ -82,10 +79,9 @@ public class AbstractHAGraphDatabase
     }
 
     @Override
-    protected StringLogger createStringLogger()
+    protected Logging createStringLogger()
     {
-        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
-        return logger;
+        return logging;
     }
 
     public HighlyAvailableGraphDatabase getHighlyAvailableGraphDatabase()

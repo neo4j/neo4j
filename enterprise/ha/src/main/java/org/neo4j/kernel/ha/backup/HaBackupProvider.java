@@ -17,18 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import org.apache.zookeeper.KeeperException;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 
@@ -53,10 +54,12 @@ public final class HaBackupProvider extends BackupExtensionService
                                 + "' for master" );
             
             // At first HaConfig.CONFIG_KEY_CLUSTER_NAME was used
-            String clusterName = args.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, null );
+            String clusterName = args.get( HaSettings.cluster_name.name(), null );
             // but then later on -cluster was also added because it looks much nicer.
-            if ( clusterName == null )
-                clusterName = args.get( "cluster", HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
+            if( clusterName == null )
+            {
+                clusterName = args.get( "cluster", ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ));
+            }
             master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
                     2 ), clusterName ); // skip the "//" part
             System.out.println( "Found master '" + master + "' in cluster" );

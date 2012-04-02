@@ -59,8 +59,8 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
@@ -103,6 +103,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.neo4j.helpers.Exceptions.*;
@@ -119,6 +124,9 @@ public class HighlyAvailableGraphDatabase
     protected volatile StoreId storeId;
     protected final StoreIdGetter storeIdGetter;
 
+    private LifeSupport life = new LifeSupport();
+
+    protected Logging logging;
     protected Config configuration;
     private String storeDir;
     private Iterable<IndexProvider> indexProviders;
@@ -177,10 +185,27 @@ public class HighlyAvailableGraphDatabase
         this.storeDir = storeDir;
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
-        messageLog = StringLogger.logger( this.storeDir );
-        fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
-        config = new EnterpriseConfigurationMigrator(messageLog).migrateConfiguration( config );
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
+        config.put( AbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
+
+        // Apply defaults to configuration just for logging purposes
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( GraphDatabaseSettings.class );
+
+        // Setup configuration
+        configuration = new Config( configurationDefaults.apply( config ) );
+
+        // Create logger
+        this.logging = createLogging();
+
+        // Migrate settings and then apply defaults again
+        EnterpriseConfigurationMigrator configurationMigrator = new EnterpriseConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
+
+        config = new ConfigurationDefaults( GraphDatabaseSettings.class, HaSettings.class, OnlineBackupSettings.class ).apply( configurationMigrator.migrateConfiguration( config ) );
+        configuration.applyChanges( config );
+
+        messageLog = logging.getLogger( Loggers.NEO4J );
+        fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
         /*
          * TODO
@@ -193,10 +218,6 @@ public class HighlyAvailableGraphDatabase
         this.nodeLookup = new HANodeLookup();
 
         this.relationshipLookups = new HARelationshipLookups();
-
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
-
-        configuration = new Config( messageLog, fileSystemAbstraction, config, Iterables.iterable( HaSettings.class, OnlineBackupSettings.class ));
 
         this.startupTime = System.currentTimeMillis();
         kernelEventHandlers.add( new TxManagerCheckKernelEventHandler() );
@@ -225,6 +246,19 @@ public class HighlyAvailableGraphDatabase
         this.clusterClient = createClusterClient();
 
         start();
+    }
+
+    private Logging createLogging()
+    {
+        try
+        {
+            getClass().getClassLoader().loadClass("ch.qos.logback.classic.LoggerContext");
+            return life.add( new LogbackService( configuration ));
+        }
+        catch( ClassNotFoundException e )
+        {
+            return life.add( new ClassicLoggingService(configuration));
+        }
     }
 
     // GraphDatabaseService implementation
@@ -885,7 +919,7 @@ public class HighlyAvailableGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + storeDir + ", " + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
+        return getClass().getSimpleName() + "[" + storeDir + ", " + HaSettings.server_id.name() + ":" + machineId + "]";
     }
 
     /* Commented out right before the "assembly" branch merged into master where the trickiness
@@ -1060,7 +1094,7 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
-        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, messageLog,
+        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions );
 /*
@@ -1091,7 +1125,7 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
-        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, messageLog, nodeLookup, relationshipLookups, indexProviders, kernelExtensions);
+        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions);
 
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
@@ -1271,7 +1305,9 @@ public class HighlyAvailableGraphDatabase
             this.broker.shutdown();
         }
         internalShutdown( false );
-        messageLog.close();
+
+        life.shutdown();
+
     }
 
     protected synchronized void close()
@@ -1526,6 +1562,9 @@ public class HighlyAvailableGraphDatabase
 
         File[] relevantDbFiles( HighlyAvailableGraphDatabase db )
         {
+            if (!new File( db.getStoreDir() ).exists())
+                return new File[0];
+
             return new File( db.getStoreDir() ).listFiles( new FileFilter()
             {
                 @Override

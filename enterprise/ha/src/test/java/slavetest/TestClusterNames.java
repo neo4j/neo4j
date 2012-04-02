@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
@@ -56,8 +57,8 @@ public class TestClusterNames
     @Test
     public void makeSureStoreIdInStoreMatchesZKData() throws Exception
     {
-        HighlyAvailableGraphDatabase db0 = db( 0, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_PORT );
-        HighlyAvailableGraphDatabase db1 = db( 1, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_PORT );
+        HighlyAvailableGraphDatabase db0 = db( 0, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), HaConfig.CONFIG_DEFAULT_PORT );
+        HighlyAvailableGraphDatabase db1 = db( 1, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), HaConfig.CONFIG_DEFAULT_PORT );
         awaitStarted( db0 );
         awaitStarted( db1 );
         db1.shutdown();
@@ -65,7 +66,7 @@ public class TestClusterNames
 
         ZooKeeperClusterClient cm = new ZooKeeperClusterClient( zoo.getConnectionString() );
         cm.waitForSyncConnected();
-        StoreId zkStoreId = StoreId.deserialize( cm.getZooKeeper( false ).getData( "/" + HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, false, null ) );
+        StoreId zkStoreId = StoreId.deserialize( cm.getZooKeeper( false ).getData( "/" + ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), false, null ) );
         StoreId storeId = new NeoStoreUtil( db0.getStoreDir() ).asStoreId();
         assertEquals( storeId, zkStoreId );
     }
