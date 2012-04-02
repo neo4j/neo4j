@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import static java.util.Collections.synchronizedMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,10 +30,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -55,8 +59,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.util.Collections.*;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -131,7 +133,7 @@ public class MasterImpl implements Master
     {
         return this.graphDb;
     }
-    
+
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -179,7 +181,7 @@ public class MasterImpl implements Master
         return packResponse( context, response, MasterUtil.ALL );
     }
 
-    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
+    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Pair<Integer, Long>> filter )
     {
         return MasterUtil.packResponse( graphDb, context, response, filter );
     }
@@ -279,14 +281,14 @@ public class MasterImpl implements Master
                 finishThisAndResumeOther( otherTx, txId, false );
                 return;
             }
-            
+
             TransactionManager txManager = graphDb.getTxManager();
-            
+
             // update time stamp to current time so that we know that this tx just completed
             // a request and can now again start to be monitored, so that it can be
             // rolled back if it's getting old.
             tx.updateTime();
-            
+
             txManager.suspend();
             if ( otherTx != null )
             {
@@ -392,11 +394,16 @@ public class MasterImpl implements Master
             XaDataSource dataSource = graphDb.getXaDataSourceManager()
                     .getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
-            Predicate<Long> upUntilThisTx = new Predicate<Long>()
+            final int slaveMachineId = context.machineId();
+            Predicate<Pair<Integer, Long>> upUntilThisTx = new Predicate<Pair<Integer, Long>>()
             {
-                public boolean accept( Long item )
+                public boolean accept( Pair<Integer, Long> item )
                 {
-                    return item < txId;
+                    /*
+                     * Skip all transactions that are later than this one and are from
+                     * the same machine.
+                     */
+                    return item.other() < txId && slaveMachineId != item.first();
                 }
             };
             return packResponse( context, txId, upUntilThisTx );
@@ -423,7 +430,7 @@ public class MasterImpl implements Master
             transactions.get( context ).markAsFinishAsap();
             throw e;
         }
-        
+
         finishThisAndResumeOther( otherTx, context, success );
         return packResponse( context, null );
     }
@@ -530,33 +537,33 @@ public class MasterImpl implements Master
         }
         return result;
     }
-    
+
     static class MasterTransaction
     {
         private final Transaction transaction;
         private final AtomicLong timeLastSuspended = new AtomicLong();
         private volatile boolean finishAsap;
-        
+
         MasterTransaction( Transaction transaction )
         {
             this.transaction = transaction;
         }
-        
+
         void updateTime()
         {
             this.timeLastSuspended.set( System.currentTimeMillis() );
         }
-        
+
         void resetTime()
         {
             this.timeLastSuspended.set( 0 );
         }
-        
+
         void markAsFinishAsap()
         {
             this.finishAsap = true;
         }
-        
+
         boolean finishAsap()
         {
             return this.finishAsap;

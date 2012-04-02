@@ -32,9 +32,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
@@ -47,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class MasterUtil
@@ -87,7 +90,7 @@ public class MasterUtil
             return path.substring( 1 );
         return path;
     }
-    
+
     public static Tx[] rotateLogs( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
@@ -158,7 +161,7 @@ public class MasterUtil
         }
         return context;
     }
-    
+
     /**
      * For a given {@link XaDataSource} it extracts the transaction stream from
      * startTxId up to endTxId (inclusive) in the provided {@link List} and
@@ -176,7 +179,7 @@ public class MasterUtil
             final XaDataSource dataSource, final long startTxId,
             final long endTxId,
             final List<Triplet<String, Long, TxExtractor>> stream,
-            Predicate<Long> filter )
+            Predicate<Pair<Integer, Long>> filter )
     {
         LogExtractor logExtractor = null;
         try
@@ -201,11 +204,23 @@ public class MasterUtil
                 throw new RuntimeException( ioe );
             }
             final LogExtractor finalLogExtractor = logExtractor;
+            /*
+             * We may have to skip transactions in the tx stream. This is because
+             * a transaction might be rejected by the predicate but the next ones
+             * should be included. However the only primitive present is extractNext(),
+             * and that is the only way to discover what lays ahead. So instead we keep
+             * a count of how many transactions since the last successful one have been
+             * rejected by the predicate and we just ask the extractor to skip as many.
+             * That counter is reset of course for every successful evaluation of the
+             * predicate.
+             */
+            int skip = 0;
             for ( long txId = startTxId; txId <= endTxId; txId++ )
             {
-                if ( filter.accept( txId ) )
+                if ( filter.accept( Pair.of( dataSource.getMasterForCommittedTx( txId ).first(), txId ) ) )
                 {
                     final long finalTxId = txId;
+                    final int skipFinal = skip;
                     TxExtractor extractor = new TxExtractor()
                     {
                         @Override
@@ -219,26 +234,27 @@ public class MasterUtil
                         @Override
                         public void extract( LogBuffer buffer )
                         {
+                            long extractedTxId = -1;
                             try
                             {
-                                long extractedTxId = finalLogExtractor.extractNext( buffer );
+                                for ( int i = 0; i < skipFinal; i++ )
+                                {
+                                    // skip as many as required, discard them
+                                    finalLogExtractor.extractNext( NullLogBuffer.INSTANCE );
+                                }
+                                // that is the one, extract and make sure.
+                                extractedTxId = finalLogExtractor.extractNext( buffer );
                                 if ( extractedTxId == -1 )
                                 {
-                                    throw new RuntimeException(
-                                            "Transaction "
-                                                    + finalTxId
-                                                    + " is missing and can't be extracted from "
-                                                    + dataSource.getName()
-                                                    + ". Was about to extract "
-                                                    + startTxId + " to "
-                                                    + endTxId );
+                                    throw new RuntimeException( "Transaction " + extractedTxId
+                                                                + " is missing and can't be extracted from "
+                                                                + dataSource.getName() + ". Was about to extract "
+                                                                + startTxId + " to " + endTxId );
                                 }
                                 if ( extractedTxId != finalTxId )
                                 {
-                                    throw new RuntimeException(
-                                            "Expected txId " + finalTxId
-                                                    + ", but was "
-                                                    + extractedTxId );
+                                    throw new RuntimeException( "Expected txId " + finalTxId + ", but was "
+                                                                + extractedTxId );
                                 }
                             }
                             catch ( IOException e )
@@ -247,8 +263,14 @@ public class MasterUtil
                             }
                         }
                     };
-                    stream.add( Triplet.of( dataSource.getName(), txId,
-                            extractor ) );
+                    stream.add( Triplet.of( dataSource.getName(), txId, extractor ) );
+                    // the next one has to be seen to be decided upon.
+                    skip = 0;
+                }
+                else
+                {
+                    // the next TxExtractor has to skip at least this one.
+                    skip++;
                 }
             }
             return logExtractor;
@@ -278,8 +300,8 @@ public class MasterUtil
      *            those that evaluate to true
      * @return The response, packed with the latest transactions
      */
-    public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb,
-            SlaveContext context, T response, Predicate<Long> filter )
+    public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb, SlaveContext context, T response,
+            Predicate<Pair<Integer, Long>> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
@@ -380,10 +402,10 @@ public class MasterUtil
                 ResourceReleaser.NO_OP );
     }
 
-    public static final Predicate<Long> ALL = new Predicate<Long>()
+    public static final Predicate<Pair<Integer, Long>> ALL = new Predicate<Pair<Integer, Long>>()
     {
         @Override
-        public boolean accept( Long item )
+        public boolean accept( Pair<Integer, Long> item )
         {
             return true;
         }
