@@ -49,6 +49,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.test.MultipleFailureException;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
 {
@@ -99,7 +100,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         if (!open.isEmpty())
         {
             if (open.size() == 1) throw (FileStillOpenException) open.get( 0 );
-            throw new org.junit.internal.runners.model.MultipleFailureException( open );
+            throw new MultipleFailureException( open );
         }
     }
 
