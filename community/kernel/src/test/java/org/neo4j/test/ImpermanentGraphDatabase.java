@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.test;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -39,12 +38,11 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -108,16 +106,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
     
     @Override
-    protected StringLogger createStringLogger()
+    protected Logging createStringLogger()
     {
-        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
-
-        loggerContext.getLogger( "neo4j" ).setLevel( Level.WARN );
-        loggerContext.getLogger( "neo4j.diagnostics" ).setLevel( Level.WARN );
-        final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
-        final StringLogger stringLogger = StringLogger.logger( neo4j );
-
-        return stringLogger;
+        return new ClassicLoggingService( config );
     }
 
     private static String path()

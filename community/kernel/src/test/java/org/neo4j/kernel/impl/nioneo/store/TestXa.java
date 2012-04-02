@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
@@ -43,9 +44,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -123,7 +126,7 @@ public class TestXa extends AbstractNeo4jTestCase
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, Collections.<String,String>emptyMap(), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
@@ -413,10 +416,10 @@ public class TestXa extends AbstractNeo4jTestCase
             IOException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( StringLogger.DEV_NULL, fileSystem, MapUtil.stringMap(
-            "store_dir", path(),
-            "neo_store", file( "neo" ),
-            "logical_log", file( "nioneo_logical.log" ) ), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(MapUtil.stringMap(
+            AbstractGraphDatabase.Configuration.store_dir.name(), path(),
+            AbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
+            AbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log"))));
 
         StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 

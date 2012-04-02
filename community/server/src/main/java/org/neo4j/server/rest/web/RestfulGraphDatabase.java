@@ -702,6 +702,9 @@ public class RestfulGraphDatabase
         {
             actions( force ).removeNodeIndex( indexName );
             return output.noContent();
+        } catch(NotFoundException nfe) 
+        {
+            return output.notFound( nfe );
         }
         catch ( UnsupportedOperationException e )
         {
@@ -718,6 +721,9 @@ public class RestfulGraphDatabase
         {
             actions( force ).removeRelationshipIndex( indexName );
             return output.noContent();
+        } catch(NotFoundException nfe) 
+        {
+            return output.notFound( nfe );
         }
         catch ( UnsupportedOperationException e )
         {

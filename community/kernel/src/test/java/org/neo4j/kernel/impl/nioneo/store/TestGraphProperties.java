@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -189,7 +191,7 @@ public class TestGraphProperties
         db.shutdown();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        NeoStore neoStore = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, Collections.<String,String>emptyMap(), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
+        NeoStore neoStore = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(Collections.<String,String>emptyMap())), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();
