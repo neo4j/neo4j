@@ -965,7 +965,8 @@ public class DatabaseActions
                                                                               String value, Long nodeOrNull,
                                                                               Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
     {
-        if(indexName.length() == 0) {
+        if(indexName.length() == 0) 
+        {
             throw new IllegalArgumentException("Index name must not be empty.");
         }
         
@@ -1006,7 +1007,8 @@ public class DatabaseActions
                                                                                       Long startNode, String type, Long endNode,
                                                                                       Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
-        if(indexName.length() == 0) {
+        if(indexName.length() == 0) 
+        {
             throw new IllegalArgumentException("Index name must not be empty.");
         }
         
