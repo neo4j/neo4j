@@ -442,6 +442,7 @@ case "${!OPTIND}" in
     ;;
 
   restart)
+    WAIT=true
     stopit
     startit
     exit 0
@@ -457,6 +458,7 @@ case "${!OPTIND}" in
     exit 0
     ;;
   install)
+    WAIT=true
     installservice
     exit 0
     ;;
