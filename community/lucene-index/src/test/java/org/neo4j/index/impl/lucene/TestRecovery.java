@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.index.impl.lucene;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
@@ -138,7 +139,7 @@ public class TestRecovery
         FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());
-        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(params ));
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
                                                    new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();

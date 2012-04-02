@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
@@ -25,7 +26,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,6 +41,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -161,9 +162,9 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config(StringLogger.SYSTEM, FILE_SYSTEM, MapUtil.stringMap(
+        return new Config(new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
-                "store_dir", path()), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+                "store_dir", path()))  );
     }
 
     @Test

@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
@@ -29,8 +30,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.neo4j.helpers.collection.IteratorUtil.*;
 
@@ -197,7 +196,7 @@ public abstract class StringLogger
 
     public abstract void close();
 
-    abstract void logLine( String line );
+    protected abstract void logLine( String line );
 
     public static final StringLogger DEV_NULL = new StringLogger()
     {
@@ -211,7 +210,7 @@ public abstract class StringLogger
         public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush ) {}
 
         @Override
-        void logLine( String line ) {}
+        protected void logLine( String line ) {}
 
         @Override
         public void flush() {}
@@ -313,7 +312,7 @@ public abstract class StringLogger
         }
 
         @Override
-        void logLine( String line )
+        protected void logLine( String line )
         {
             out.println( "    " + line );
         }
@@ -415,80 +414,6 @@ public abstract class StringLogger
         public void logLine( String line )
         {
             target.logLine( line );
-        }
-    }
-    
-    public static StringLogger logger(Class clazz)
-    {
-        return new Slf4jStringLogger( LoggerFactory.getLogger( clazz.getName() ) );
-    }
-
-    public static StringLogger logger(Logger logger)
-    {
-        return new Slf4jStringLogger( logger );
-    }
-    
-    static class Slf4jStringLogger
-        extends StringLogger
-    {
-        Logger logger;
-
-        Slf4jStringLogger( Logger logger )
-        {
-            this.logger = logger;
-        }
-
-        @Override
-        void logLine( String line )
-        {
-            logger.info( line );
-        }
-
-        @Override
-        public void logLongMessage( final String msg, Visitor<LineLogger> source, final boolean flush )
-        {
-            logMessage( msg, flush );
-            source.visit( new LineLogger()
-            {
-                @Override
-                public void logLine( String line )
-                {
-                    logMessage( line, flush );
-                }
-            } );
-        }
-
-        @Override
-        public void logMessage( String msg, boolean flush )
-        {
-            if (logger.isDebugEnabled())
-                logger.debug( msg );
-            else
-                logger.info( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            logger.error( msg, cause );
-        }
-
-        @Override
-        public void addRotationListener( Runnable listener )
-        {
-            // Ignore
-        }
-
-        @Override
-        public void flush()
-        {
-            // Ignore
-        }
-
-        @Override
-        public void close()
-        {
-            // Ignore
         }
     }
 }

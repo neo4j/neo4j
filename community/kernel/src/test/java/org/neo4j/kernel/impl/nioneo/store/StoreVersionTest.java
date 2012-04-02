@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Ignore;
@@ -31,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -51,7 +52,7 @@ public class StoreVersionTest
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( StringLogger.DEV_NULL, fileSystem, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
+        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
 
         CommonAbstractStore[] stores = {
@@ -82,7 +83,7 @@ public class StoreVersionTest
         FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( StringLogger.SYSTEM, fileSystem, new HashMap<String, String>(  ), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class).apply( new HashMap<String,String>() ));
         
         try {
             new NodeStore( workingFile.getPath(), config, new DefaultIdGeneratorFactory(), fileSystem, StringLogger.SYSTEM );
@@ -106,7 +107,7 @@ public class StoreVersionTest
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config(StringLogger.DEV_NULL, fileSystem, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
+        StoreFactory sf = new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

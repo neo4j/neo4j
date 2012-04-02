@@ -17,15 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.ext.udc.impl;
 
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
-import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
@@ -43,33 +45,9 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
  * intervals. Both times are specified in milliseconds.
  */
 @Service.Implementation( KernelExtension.class )
-public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements UdcProperties
+public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
 {
     static final String KEY = "kernel udc";
-    public static final String UDC_SOURCE_DISTRIBUTION_KEY = "neo4j.ext.udc.host";
-    /**
-     * Millisecond interval for subsequent updates.
-     * <p/>
-     * Defaults to 24 hours.
-     */
-    private static final int DEFAULT_INTERVAL = 1000 * 60 * 60 * 24;
-
-    /**
-     * Delay, in milliseconds, before the first UDC update is sent.
-     * <p/>
-     * Defaults to 10 minutes.
-     */
-    private static final int DEFAULT_DELAY = 10 * 1000 * 60;
-
-    /**
-     * Host address to which UDC updates will be sent.
-     */
-    private static final String DEFAULT_HOST = "udc.neo4j.org";
-
-    /**
-     * Registration unavailable.
-     */
-    private static final String DEFAULT_REGISTRATION = "unreg";
 
     /**
      * No-arg constructor, sets the extension key to "kernel udc".
@@ -90,62 +68,18 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
     @Override
     protected UdcTimerTask load( KernelData kernel )
     {
-        MyConfig configuration = new MyConfig( kernel.getConfig(), loadSystemProperties() );
+        Map<String, String> conf = loadSystemProperties();
+        conf.putAll( kernel.getConfigParams());
+        Config config = new Config( conf );
 
-        try
-        {
-            // break if disabled
-            if ( configuration.getBool( UDC_DISABLE_KEY, "false" ) ) return null;
-        }
-        catch ( Exception e )
-        {
-            // default: not disabled
-        }
-        int firstDelay = DEFAULT_DELAY;
-        int interval = DEFAULT_INTERVAL;
-        String hostAddress = DEFAULT_HOST;
-        String source = null;
-        String registration = DEFAULT_REGISTRATION;
-        try
-        {
-            firstDelay = configuration.getInt( FIRST_DELAY_CONFIG_KEY, Integer.toString( firstDelay ) );
-        }
-        catch ( Exception e )
-        {
-            // fall back to default
-        }
-        try
-        {
-            interval = configuration.getInt( INTERVAL_CONFIG_KEY, Integer.toString( interval ) );
-        }
-        catch ( Exception e )
-        {
-            // fall back to default
-        }
-        try
-        {
-            hostAddress = configuration.getString( UDC_HOST_ADDRESS_KEY, hostAddress );
-        }
-        catch ( Exception e )
-        {
-            // fall back to default
-        }
-        try
-        {
-            source = configuration.getString( UDC_SOURCE_KEY, source );
-        }
-        catch ( Exception e )
-        {
-            // fall back to default
-        }
-        try
-        {
-            registration = configuration.getString( UDC_REGISTRATION_KEY, registration );
-        }
-        catch ( Exception e )
-        {
-            // fall back to default
-        }
+        if ( !config.getBoolean( UdcSettings.udc_enabled )) return null;
+
+        int firstDelay = config.getInteger( UdcSettings.first_delay);
+        int interval = config.getInteger( UdcSettings.interval );
+        String hostAddress = config.get( UdcSettings.udc_host );
+        String source = config.get( UdcSettings.udc_source );
+        String registration = config.get( UdcSettings.udc_registration_key );
+
         NeoStoreXaDataSource ds = kernel.graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
         boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
         String storeId = Long.toHexString( ds.getRandomIdentifier() );
@@ -162,56 +96,27 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         task.cancel();
     }
 
-    private class MyConfig
+    private Map<String,String> loadSystemProperties()
     {
-        private final Config config;
-        private final Properties props;
-
-        private MyConfig( Config config, Properties props )
-        {
-            this.config = config;
-            this.props = props;
-        }
-
-        private String getString( String key, String defaultValue )
-        {
-            String result = config.getParams().get( key );
-            if ( result == null )
-            {
-                result = props.getProperty( key, defaultValue );
-            }
-            return result;
-        }
-
-        private int getInt( String key, String defaultValue )
-        {
-            String result = getString( key, defaultValue );
-            return Integer.parseInt( result );
-        }
-
-        private boolean getBool( String key, String defaultValue )
-        {
-            String result = getString( key, defaultValue );
-            return Boolean.parseBoolean( result );
-        }
-    }
-
-    private Properties loadSystemProperties()
-    {
-        Properties sysProps = System.getProperties();
+        Properties sysProps = new Properties( );
+        HashMap<String, String> stringStringHashMap = new HashMap<String, String>();
         try
         {
             InputStream resource = getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" );
             if ( resource != null )
             {
                 sysProps.load( resource );
+                for( Map.Entry<Object, Object> objectObjectEntry : sysProps.entrySet() )
+                {
+                    stringStringHashMap.put( objectObjectEntry.getKey().toString(), objectObjectEntry.getValue().toString() );
+                }
             }
         }
         catch ( Exception e )
         {
             System.err.println( "failed to load udc.properties, because: " + e );
         }
-        return sysProps;
+        return stringStringHashMap;
     }
 
     private String formattedMacAddy() {
