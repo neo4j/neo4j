@@ -108,6 +108,7 @@ public class GuardingRequestFilter implements Filter
 
     public void destroy()
     {
+        timer.cancel();
     }
 
     private int getTimeLimit( HttpServletRequest request )
