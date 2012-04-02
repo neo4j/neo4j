@@ -19,25 +19,20 @@
  */
 package org.neo4j.shell;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.regex.Pattern;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestApps extends AbstractShellTest
 {
@@ -172,15 +167,6 @@ public class TestApps extends AbstractShellTest
         assertRelationshipDoesntExist( relationships[0] );
         assertNodeExists( otherNode );
     }
-    
-    @Test
-    @Ignore
-    public void correctCypherExecution() throws Exception
-    {
-        executeCommand( "mkrel -ct KNOWS " );
-        executeCommand( "START n = node(1) return n", ".*Node\\[1\\].*" );
-        executeCommand( "START n = node(1) match n--() return n", ".*Node\\[1\\].*" );
-    }
 
     @Test
     public void rmrelCanDeleteStrandedNodes() throws Exception
@@ -297,17 +283,17 @@ public class TestApps extends AbstractShellTest
         finishTx();
         
         executeCommand( "cd -a " + node.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name", nodeOneName );
+        executeCommand( "START n = node({self}) RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
-        executeCommand( "START r = relationship({self}) RETURN r.name", relationshipName );
+        executeCommand( "START r = relationship({self}) RETURN r.name;", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name", nodeTwoName );
+        executeCommand( "START n = node({self}) RETURN n.name;", nodeTwoName );
         
         executeCommand( "cd -a " + strayNode.getId() );
         beginTx();
         strayNode.delete();
         finishTx();
-        executeCommand( "START n = node(" + node.getId() + ") RETURN n.name", nodeOneName );
+        executeCommand( "START n = node(" + node.getId() + ") RETURN n.name;", nodeOneName );
     }
     
     @Test

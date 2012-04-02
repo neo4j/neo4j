@@ -23,9 +23,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 
 @Service.Implementation( App.class )
-public class Cypher extends Start
+public class Create extends Start
 {
-    public Cypher()
+    public Create()
     {
         super();
     }

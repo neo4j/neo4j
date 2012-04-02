@@ -20,7 +20,6 @@
 
 package org.neo4j.shell;
 
-import java.io.PrintWriter;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -30,10 +29,12 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.PrintWriter;
+
 import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.configuration.Config.*;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Config.ENABLE_REMOTE_SHELL;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
 
 public class ShellTest
 {
@@ -116,7 +117,7 @@ public class ShellTest
         Documenter doc = new Documenter("sample session", client);
         doc.add("pwd", "", "where are we?");
         doc.add("set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"");
-        doc.add("start n=node(0) return n", "Jon", "send a cypher query");
+        doc.add("start n=node(0) return n;", "Jon", "send a cypher query");
         doc.add("mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type LIKES, create the end node with the node properties specified.");
         doc.add("ls", "1", "where are we?");
         doc.add("cd 1", "", "change to the newly created node");
