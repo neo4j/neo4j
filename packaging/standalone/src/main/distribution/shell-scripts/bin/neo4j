@@ -388,6 +388,7 @@ case "$1" in
     ;;
 
   restart)
+    WAIT=true
     stopit
     startit
     ;;
@@ -400,6 +401,7 @@ case "$1" in
     showinfo
     ;;
   install)
+    WAIT=true
     installservice
     ;;
   remove)
