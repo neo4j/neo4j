@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -407,6 +408,10 @@ public class DatabaseActions
 
     public void removeNodeIndex( String indexName )
     {
+        if(!graphDb.index().existsForNodes(indexName)) {
+            throw new NotFoundException("No node index named '" + indexName + "'.");
+        }
+        
         Index<Node> index = graphDb.index().forNodes( indexName );
         Transaction tx = beginTx();
         try
@@ -422,6 +427,10 @@ public class DatabaseActions
 
     public void removeRelationshipIndex( String indexName )
     {
+        if(!graphDb.index().existsForRelationships(indexName)) {
+            throw new NotFoundException("No relationship index named '" + indexName + "'.");
+        }
+        
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
         Transaction tx = beginTx();
         try
