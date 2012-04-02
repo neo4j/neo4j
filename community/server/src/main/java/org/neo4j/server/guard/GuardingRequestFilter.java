@@ -49,18 +49,6 @@ public class GuardingRequestFilter implements Filter
     private final int timeout;
     private final Timer timer = new Timer();
 
-    private final TimerTask timerTask = new TimerTask()
-    {
-
-        @Override
-        public void run()
-        {
-            LOG.warn( "request canceled" );
-            LOG.error( "TODO: restarting the server is not proper implemented, request was not canceled" );
-            // TODO current.interrupt(); + restart server
-        }
-    };
-
     public GuardingRequestFilter( final Guard guard, final int timeout )
     {
         this.guard = guard;
@@ -87,6 +75,17 @@ public class GuardingRequestFilter implements Filter
             {
                 final long valid = currentTimeMillis() + timeLimit;
                 guard.startTimeout( valid );
+                final TimerTask timerTask = new TimerTask()
+                {
+
+                    @Override
+                    public void run()
+                    {
+                        LOG.warn( "request canceled" );
+                        LOG.error( "TODO: restarting the server is not proper implemented, request was not canceled" );
+                        // TODO current.interrupt(); + restart server
+                    }
+                };
                 timer.schedule( timerTask, valid + 5000 );
 
                 try
