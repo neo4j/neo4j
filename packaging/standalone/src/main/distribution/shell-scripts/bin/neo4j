@@ -439,6 +439,7 @@ case "${!OPTIND}" in
     ;;
 
   restart)
+    WAIT=true
     stopit
     startit
     ;;
@@ -451,6 +452,7 @@ case "${!OPTIND}" in
     showinfo
     ;;
   install)
+    WAIT=true
     installservice
     ;;
   remove)
