@@ -467,6 +467,47 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
     }
     
+    @Test
+    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/node/Cultures?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("ID")
+                            .key("value").value("fra")
+                            .key("properties")
+                                .object()
+                                    .key("ID").value("fra")
+                                .endObject()
+                        .endObject()
+                    .key("id")      .value(0)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("id")      .value(1)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("{1}/relationships")
+                    .key("body")
+                        .object()
+                            .key("to").value("{0}")
+                            .key("type").value("has")
+                        .endObject()
+                    .key("id")      .value(2)
+                .endObject()
+            .endArray().toString();
+        
+        JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
+
+        assertEquals(200, response.getStatus());
+        
+    }
+    
     private int countNodes()
     {
         int count = 0;
