@@ -372,6 +372,12 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
+        
+        if(indexName.length() == 0) 
+        {
+            throw new IllegalArgumentException("Index name must not be empty.");
+        }
+        
         if ( indexSpecification.containsKey( "config" ) )
         {
 
@@ -391,6 +397,12 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
+        
+        if(indexName.length() == 0) 
+        {
+            throw new IllegalArgumentException("Index name must not be empty.");
+        }
+        
         if ( indexSpecification.containsKey( "config" ) )
         {
 
@@ -953,6 +965,10 @@ public class DatabaseActions
                                                                               String value, Long nodeOrNull,
                                                                               Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
     {
+        if(indexName.length() == 0) {
+            throw new IllegalArgumentException("Index name must not be empty.");
+        }
+        
         Transaction tx = beginTx();
         try
         {
@@ -990,6 +1006,10 @@ public class DatabaseActions
                                                                                       Long startNode, String type, Long endNode,
                                                                                       Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
+        if(indexName.length() == 0) {
+            throw new IllegalArgumentException("Index name must not be empty.");
+        }
+        
         Transaction tx = beginTx();
         try
         {
