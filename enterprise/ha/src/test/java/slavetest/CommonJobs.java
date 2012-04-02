@@ -430,7 +430,7 @@ public abstract class CommonJobs
         }
 
         @Override
-        public Void execute( GraphDatabaseSPI db )
+        public Void execute( GraphDatabaseService db )
         {
             Transaction tx = db.beginTx();
             try
