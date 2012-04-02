@@ -98,7 +98,7 @@ public abstract class AbstractBroker implements Broker
                                                  + " does not support ConnectionInformation" );
     }
 
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( boolean firstTime )
     {
         return storeId;
     }

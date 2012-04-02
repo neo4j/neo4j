@@ -20,6 +20,16 @@
 
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.kernel.ha.HaSettings.allow_init_cluster;
+import static org.neo4j.kernel.ha.HaSettings.cluster_name;
+import static org.neo4j.kernel.ha.HaSettings.lock_read_timeout;
+import static org.neo4j.kernel.ha.HaSettings.max_concurrent_channels_per_slave;
+import static org.neo4j.kernel.ha.HaSettings.read_timeout;
+import static org.neo4j.kernel.ha.HaSettings.server;
+import static org.neo4j.kernel.ha.HaSettings.server_id;
+import static org.neo4j.kernel.ha.HaSettings.slave_coordinator_update_mode;
+import static org.neo4j.kernel.ha.HaSettings.zk_session_timeout;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -27,7 +37,9 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
+
 import javax.management.remote.JMXServiceURL;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -55,8 +67,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.ha.HaSettings.*;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -715,9 +725,9 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
 
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( WaitMode mode )
     {
-        waitForSyncConnected();
+        waitForSyncConnected( mode );
         makeSureRootPathIsFound();
         return storeId;
     }

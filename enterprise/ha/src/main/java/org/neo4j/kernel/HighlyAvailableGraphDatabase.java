@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -34,7 +38,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
@@ -108,10 +114,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.neo4j.helpers.Exceptions.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
 
 public class HighlyAvailableGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI
@@ -552,7 +554,7 @@ public class HighlyAvailableGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        storeId = broker.getClusterStoreId();
+        storeId = broker.getClusterStoreId(true);
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
@@ -1790,7 +1792,7 @@ public class HighlyAvailableGraphDatabase
     {
         return localGraph().getPersistenceSource();
     }
-    
+
     @Override
     public Guard getGuard()
     {
