@@ -20,10 +20,11 @@
 
 package org.neo4j.ext.udc;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 /**
  * Settings to use for the UDC extension. Use this with the GraphDatabaseBuilder
