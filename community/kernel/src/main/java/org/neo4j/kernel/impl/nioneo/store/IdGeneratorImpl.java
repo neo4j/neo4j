@@ -85,7 +85,7 @@ public class IdGeneratorImpl implements IdGenerator
     private final String fileName;
     private FileChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
-    private final LinkedList<Long> defragedIdList = new LinkedList<Long>();
+    private final LinkedList<Long> idsReadFromFile = new LinkedList<Long>();
     // ids freed in this session that havn't been flushed to disk yet
     private final LinkedList<Long> releasedIdList = new LinkedList<Long>();
     
@@ -184,13 +184,13 @@ public class IdGeneratorImpl implements IdGenerator
             }
         }
 
-        if ( !defragedIdList.isEmpty() || canReadMoreIdBatches() )
+        if ( !idsReadFromFile.isEmpty() || canReadMoreIdBatches() )
         {
-            if ( defragedIdList.isEmpty() )
+            if ( idsReadFromFile.isEmpty() )
             {
                 readIdBatch();
             }
-            long id = defragedIdList.removeFirst();
+            long id = idsReadFromFile.removeFirst();
             defraggedIdCount--;
             return id;
         }
@@ -322,11 +322,11 @@ public class IdGeneratorImpl implements IdGenerator
         {
             writeIdBatch( writeBuffer );
         }
-        if ( !defragedIdList.isEmpty() )
+        if ( !idsReadFromFile.isEmpty() )
         {
-            while ( !defragedIdList.isEmpty() )
+            while ( !idsReadFromFile.isEmpty() )
             {
-                releasedIdList.add( defragedIdList.removeFirst() );
+                releasedIdList.add( idsReadFromFile.removeFirst() );
             }
             writeIdBatch( writeBuffer );
         }
@@ -489,9 +489,8 @@ public class IdGeneratorImpl implements IdGenerator
         if ( storageStatus != CLEAN_GENERATOR )
         {
             fileChannel.close();
-            throw new InvalidIdGeneratorException( "Sticky generator[ "
-                + fileName
-                + "] delete this id generator and build a new one" );
+            throw new InvalidIdGeneratorException( "Sticky generator[ " +
+                fileName + "] delete this id file and build a new one" );
         }
         this.highId.set( buffer.getLong() );
     }
@@ -519,7 +518,7 @@ public class IdGeneratorImpl implements IdGenerator
                 long id = readBuffer.getLong();
                 if ( id != INTEGER_MINUS_ONE )
                 {
-                    defragedIdList.add( id );
+                    idsReadFromFile.add( id );
                 }
             }
         }
@@ -582,7 +581,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             readIdBatch();
         }
-        java.util.Iterator<Long> itr = defragedIdList.iterator();
+        java.util.Iterator<Long> itr = idsReadFromFile.iterator();
         while ( itr.hasNext() )
         {
             System.out.print( " " + itr.next() );
@@ -604,7 +603,7 @@ public class IdGeneratorImpl implements IdGenerator
     public void clearFreeIds()
     {
         releasedIdList.clear();
-        defragedIdList.clear();
+        idsReadFromFile.clear();
         defraggedIdCount = -1;
         try
         {
