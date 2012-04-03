@@ -26,6 +26,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -49,9 +50,9 @@ public class AbstractHAGraphDatabase
                                     NodeProxy.NodeLookup nodeLookup,
                                     RelationshipProxy.RelationshipLookups relationshipLookups,
                                     Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
-                                    Caches caches )
+                                    Iterable<CacheProvider> cacheProviders, Caches caches )
     {
-        super( storeDir, params, indexProviders, kernelExtensions );
+        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders );
         this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
         this.caches = caches;
 

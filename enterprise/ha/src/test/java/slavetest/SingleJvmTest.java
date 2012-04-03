@@ -48,6 +48,7 @@ import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterImpl;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.test.BatchTransaction;
 
 @Ignore( "SingleJvmWithNettyTest covers this and more" )
@@ -140,7 +141,7 @@ public class SingleJvmTest extends AbstractHaTest
         cfg.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
         addDefaultReadTimeout( cfg );
         HighlyAvailableGraphDatabase haGraphDb = new HighlyAvailableGraphDatabase(slavePath.getAbsolutePath(), cfg, 
-                                                                                  Service.load( IndexProvider.class ), Service.load( KernelExtension.class ))
+                Service.load( IndexProvider.class ), Service.load( KernelExtension.class ), Service.load( CacheProvider.class ) )
         {
             @Override
             protected Broker createBroker()
@@ -187,7 +188,7 @@ public class SingleJvmTest extends AbstractHaTest
         addDefaultReadTimeout( config );
         String path = dbPath( 0 ).getAbsolutePath();
         HighlyAvailableGraphDatabase haGraphDb = new HighlyAvailableGraphDatabase(
-            path, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ))
+            path, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ), Service.load( CacheProvider.class ) )
         {
             @Override
             protected Broker createBroker()
