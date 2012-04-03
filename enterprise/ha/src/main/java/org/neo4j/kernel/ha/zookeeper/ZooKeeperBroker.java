@@ -26,7 +26,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.Map;
+
 import javax.management.remote.JMXServiceURL;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.shell.ZooClientFactory;
+import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager.WaitMode;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
@@ -122,9 +125,9 @@ public class ZooKeeperBroker extends AbstractBroker
     }
 
     @Override
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( boolean firstTime )
     {
-        return getZooClient().getClusterStoreId();
+        return getZooClient().getClusterStoreId( firstTime ? WaitMode.STARTUP : WaitMode.SESSION );
     }
 
     @Override

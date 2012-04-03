@@ -558,7 +558,7 @@ public class HighlyAvailableGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        storeId = broker.getClusterStoreId();
+        storeId = broker.getClusterStoreId(true);
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }

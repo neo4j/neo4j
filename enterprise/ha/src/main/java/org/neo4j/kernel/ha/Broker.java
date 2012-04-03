@@ -59,7 +59,18 @@ public interface Broker
 
     ConnectionInformation[] getConnectionInformation();
 
-    StoreId getClusterStoreId();
+    /**
+     * Asks the cluster for and returns the storeId currently shared by the
+     * cluster members or a new one if none is there.
+     *
+     * @param firstTime False if it should timeout after a session interval
+     *            passes -
+     *            expected to be true in the same scenarios where
+     *            {@link #bootstrap()} is called instead of
+     *            {@link #getMasterReally(boolean)}
+     * @return The storeId existing in the cluster or a new one if none is found
+     */
+    StoreId getClusterStoreId( boolean firstTime );
 
     void logStatus( StringLogger msgLog );
 
