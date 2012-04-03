@@ -111,6 +111,10 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 
 public class HighlyAvailableGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI
