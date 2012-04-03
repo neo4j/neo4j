@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.batchinsert;
 
 import java.io.File;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -98,7 +100,9 @@ public class BatchInserterImpl implements BatchInserter
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
         final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( StringLogger.DEV_NULL, fileSystem, params, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) );
+
+        params = new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( params );
+        Config config = new Config( params );
         boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();

@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -150,8 +152,8 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, new Config( StringLogger.DEV_NULL, FILE_SYSTEM, MapUtil.stringMap(
-                    "store_dir", "target/var/teststore" ), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
+            super( fileName, new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
+                                "store_dir", "target/var/teststore" ) )), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
         }
 
         public int getRecordSize()
@@ -166,7 +168,7 @@ public class TestStore
 
         public static Store createStore( String fileName) throws IOException
         {
-            new StoreFactory(new Config(StringLogger.DEV_NULL, FILE_SYSTEM, Collections.<String,String>emptyMap(), Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
+            new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
             return new Store( fileName );
         }
 

@@ -41,12 +41,14 @@ public class UdcSettings
      * Configuration key for the first delay, expressed
      * in milliseconds.
      */
+    @Default( ""+10 * 1000 * 60 )
     public static final GraphDatabaseSetting.IntegerSetting first_delay = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.first_delay", "Must be nr of milliseconds to delay", 1, null);
 
     /**
      * Configuration key for the interval for regular updates,
      * expressed in milliseconds.
      */
+    @Default(""+1000 * 60 * 60 * 24)
     public static final GraphDatabaseSetting.IntegerSetting interval = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.interval", "Must be nr of milliseconds of the interval for checking", 1, null);
 
     /**

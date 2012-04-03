@@ -21,7 +21,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -151,7 +151,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
-        factory = new StoreFactory( new Config( StringLogger.SYSTEM, fs, config, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ) ), new DefaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
+        factory = new StoreFactory( new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), fs, null, StringLogger.SYSTEM, null );
     }
 
     @After

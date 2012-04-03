@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.ext.udc.impl;
 
 import java.io.File;
@@ -30,6 +31,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -100,10 +102,11 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" ); // first delay must be long enough to allow class initialization to complete
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1" );
-        GraphDatabaseService graphdb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "should-record-failures").setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphdb = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( "should-record-failures").
+            setConfig( UdcSettings.first_delay, "100" ).
+            setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
+            newGraphDatabase();
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
         destroy( graphdb );
     }
@@ -121,8 +124,8 @@ public class UdcExtensionImplTest
         final String serverAddress = hostname + ":" + server.getServicePort();
 
         Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
+        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.udc_host.name(), serverAddress );
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -143,9 +146,9 @@ public class UdcExtensionImplTest
         final String serverAddress = hostname + ":" + server.getServicePort();
 
         Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-        config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
+        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.udc_host.name(), serverAddress );
+        config.put( UdcSettings.udc_source.name(), "test" );
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -167,10 +170,10 @@ public class UdcExtensionImplTest
         final String serverAddress = hostname + ":" + server.getServicePort();
 
         Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-        config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
-        config.put( UdcExtensionImpl.UDC_REGISTRATION_KEY, "marketoid" );
+        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.udc_host.name(), serverAddress );
+        config.put( UdcSettings.udc_source.name(), "test" );
+        config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -193,8 +196,8 @@ public class UdcExtensionImplTest
         final String serverAddress = hostname + ":" + server.getServicePort();
 
         Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
+        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.udc_host.name(), serverAddress );
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );

@@ -61,6 +61,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
@@ -83,7 +86,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -113,14 +115,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -128,8 +129,6 @@ import ch.qos.logback.core.joran.spi.JoranException;
 public abstract class AbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI
 {
-    protected LoggerContext loggerContext;
-
     public static class Configuration
     {
         public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
@@ -139,6 +138,10 @@ public abstract class AbstractGraphDatabase
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
         public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
+
+        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting logical_log = new GraphDatabaseSetting.StringSetting( "logical_log",".*","TODO" );
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -151,6 +154,7 @@ public abstract class AbstractGraphDatabase
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
+    protected Logging logging;
     protected StringLogger msgLog;
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
@@ -228,10 +232,10 @@ public abstract class AbstractGraphDatabase
         // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
         String separator = System.getProperty( "file.separator" );
         String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
-        params.put( CommonAbstractStore.Configuration.store_dir.name(), this.storeDir );
-        params.put( "neo_store", store );
+        params.put( Configuration.store_dir.name(), this.storeDir );
+        params.put( Configuration.neo_store.name(), store );
         String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-        params.put( "logical_log", logicalLog );
+        params.put( Configuration.logical_log.name(), logicalLog );
         // END SMELL
 
         fileSystem = life.add(createFileSystemAbstraction());
@@ -242,14 +246,43 @@ public abstract class AbstractGraphDatabase
         for( KernelExtension kernelExtension : kernelExtensions )
         {
             Class settingsClass = kernelExtension.getSettingsClass();
-            if (settingsClass != null)
+            if( settingsClass != null )
+            {
                 settingsClasses.add( settingsClass );
+            }
         }
 
-        // Setup proper configuration
-        config = new Config( StringLogger.logger(StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger( "neo4j.config" )), fileSystem, params, settingsClasses );
+        // Apply defaults to configuration just for logging purposes
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( settingsClasses );
 
-        this.msgLog = createStringLogger();
+        // Setup configuration
+        config = new Config( configurationDefaults.apply( params ) );
+
+        // Create logger
+        this.logging = createStringLogger();
+
+        // Collect system properties, migrate settings and then apply defaults again
+        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
+        Map<String,String> configParams = configurationDefaults.apply(configurationMigrator.migrateConfiguration( new SystemPropertiesConfiguration(settingsClasses).apply( params )));
+
+        // Apply autoconfiguration for memory settings
+        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
+                                                                  config.get( NeoStoreXaDataSource.Configuration.store_dir ),
+                                                                  config.getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ),
+                                                                  config.getBoolean( GraphDatabaseSettings.dump_configuration ) );
+        Map<String,String> autoConfiguration = autoConfigurator.configure( );
+        for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
+        {
+            // Don't override explicit settings
+            if( !params.containsKey( autoConfig.getKey() ) )
+            {
+                configParams.put( autoConfig.getKey(), autoConfig.getValue() );
+            }
+        }
+
+        config.applyChanges( configParams );
+
+        this.msgLog = logging.getLogger( Loggers.NEO4J );
 
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.getBoolean( Configuration.read_only );
@@ -258,15 +291,14 @@ public abstract class AbstractGraphDatabase
 
         kernelEventHandlers = new KernelEventHandlers();
 
-        diagnosticsManager = life.add(new DiagnosticsManager( StringLogger.logger(loggerContext.getLogger( "neo4j.diagnostics" )) ));
-        
         caches = createCaches();
+        diagnosticsManager = life.add(new DiagnosticsManager( logging.getLogger( Loggers.DIAGNOSTICS )) );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
         txHook = createTxHook();
 
-        xaDataSourceManager = life.add( new XaDataSourceManager( StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )) ) );
+        xaDataSourceManager = life.add( new XaDataSourceManager( logging.getLogger( Loggers.DATASOURCE )) );
 
         guard = config.getBoolean( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
@@ -281,7 +313,7 @@ public abstract class AbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, StringLogger.logger(loggerContext.getLogger( "neo4j.txmanager" )), fileSystem);
+                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, logging.getLogger( Loggers.TXMANAGER ), fileSystem);
             }
             else {
                 TransactionManagerProvider provider;
@@ -291,7 +323,7 @@ public abstract class AbstractGraphDatabase
                     throw new IllegalStateException( "Unknown transaction manager implementation: "
                             + serviceName );
                 }
-                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, StringLogger.logger(loggerContext.getLogger( "neo4j.txmanager" )), fileSystem);
+                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, logging.getLogger( Loggers.TXMANAGER ), fileSystem);
             }
         }
         life.add( txManager );
@@ -360,8 +392,10 @@ public abstract class AbstractGraphDatabase
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
 
-        if (indexProviders == null)
-        	indexProviders = new LegacyIndexIterable();
+        if( indexProviders == null )
+        {
+            indexProviders = new LegacyIndexIterable();
+        }
         indexManager = new IndexManagerImpl(config, indexStore, xaDataSourceManager, txManager, this);
         nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( config, indexManager, nodeManager));
         relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( config, indexManager, nodeManager));
@@ -374,7 +408,7 @@ public abstract class AbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, StringLogger.logger(loggerContext.getLogger( "neo4j.xafactory" )), recoveryVerifier );
+        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, logging.getLogger( Loggers.XAFACTORY), recoveryVerifier );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
@@ -391,7 +425,7 @@ public abstract class AbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, fileSystem, lockManager, lockReleaser, StringLogger.logger(loggerContext.getLogger( "neo4j.datasource" )), xaFactory, providers, new DependencyResolverImpl());
+                    storeFactory, fileSystem, lockManager, lockReleaser, logging.getLogger( Loggers.DATASOURCE ), xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
         {
@@ -409,34 +443,7 @@ public abstract class AbstractGraphDatabase
         life.add( kernelEventHandlers );
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
-        config.addConfigurationChangeListener( new ConfigurationChangeListener()
-        {
-            Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
-            
-            @Override
-            public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )
-            {
-                executor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        // Restart
-                        try
-                        {
-                            life.stop();
-                            life.start();
-
-                            msgLog.logMessage( "Database restarted with the following configuration changes:"+change );
-                        }
-                        catch( LifecycleException e )
-                        {
-                            msgLog.logMessage( "Could not restart database", e );
-                        }
-                    }
-                });
-            }
-        } );
+        life.add( new ConfigurationChangedRestarter() );
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheType cacheType,
@@ -573,7 +580,7 @@ public abstract class AbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, StringLogger.logger(loggerContext.getLogger( "neo4j.neostore" )), txHook);
+        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, logging.getLogger( Loggers.NEOSTORE ), txHook);
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -698,34 +705,17 @@ public abstract class AbstractGraphDatabase
         return new LockManager(ragManager);
     }
 
-    protected StringLogger createStringLogger()
+    protected Logging createStringLogger()
     {
-        File file = new File( storeDir ).getAbsoluteFile();
-        if (!file.exists())
-            file.mkdirs();
-
-        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
-
-        // Remove Console appender
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext( loggerContext );
-        loggerContext.putProperty( "neo_store", storeDir );
-        loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings.remote_logging_enabled ) );
-        loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings.remote_logging_host ) );
-        loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings.remote_logging_port ) );
         try
         {
-            configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );
+            getClass().getClassLoader().loadClass("ch.qos.logback.classic.LoggerContext");
+            return life.add( new LogbackService( config ));
         }
-        catch( JoranException e )
+        catch( ClassNotFoundException e )
         {
-            throw new IllegalStateException("Failed to configure logging", e );
+            return life.add( new ClassicLoggingService(config));
         }
-
-        final org.slf4j.Logger neo4j = LoggerFactory.getLogger( "neo4j" );
-        final StringLogger stringLogger = StringLogger.logger( neo4j );
-
-        return stringLogger;
     }
 
     public final String getStoreDir()
@@ -801,8 +791,10 @@ public abstract class AbstractGraphDatabase
         if ( beans.hasNext() )
         {
             T bean = beans.next();
-            if ( beans.hasNext() )
+            if( beans.hasNext() )
+            {
                 throw new NotFoundException( "More than one management bean for " + type.getName() );
+            }
             return bean;
         }
         return null;
@@ -957,7 +949,10 @@ public abstract class AbstractGraphDatabase
                 {
                     @SuppressWarnings( "unchecked" ) Collection<T> result =
                             (Collection<T>) getManagementBeans.invoke( state, beanClass );
-                    if ( result == null ) return Collections.emptySet();
+                    if( result == null )
+                    {
+                        return Collections.emptySet();
+                    }
                     return result;
                 }
                 catch ( InvocationTargetException ex )
@@ -1177,15 +1172,15 @@ public abstract class AbstractGraphDatabase
         public void init()
             throws Throwable
         {
-            loaded = extensions.loadExtensionConfigurations( StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )), kernelExtensions );
-            loadIndexImplementations(indexManager, StringLogger.logger(loggerContext.getLogger( "neo4j.index" )));
+            loaded = extensions.loadExtensionConfigurations( logging.getLogger( Loggers.EXTENSION ), kernelExtensions );
+            loadIndexImplementations(indexManager, logging.getLogger( Loggers.INDEX));
         }
 
         @Override
         public void start()
             throws Throwable
         {
-            extensions.loadExtensions( loaded, StringLogger.logger(loggerContext.getLogger( "neo4j.extension" )) );
+            extensions.loadExtensions( loaded, logging.getLogger( Loggers.EXTENSION ) );
         }
 
         @Override
@@ -1211,8 +1206,14 @@ public abstract class AbstractGraphDatabase
                 catch ( Throwable cause )
                 {
                     msgLog.logMessage( "Failed to load index provider " + index.identifier(), cause );
-                    if ( isAnUpgradeProblem( cause ) ) throw launderedException( cause );
-                    else cause.printStackTrace();
+                    if( isAnUpgradeProblem( cause ) )
+                    {
+                        throw launderedException( cause );
+                    }
+                    else
+                    {
+                        cause.printStackTrace();
+                    }
                 }
             }
         }
@@ -1221,7 +1222,10 @@ public abstract class AbstractGraphDatabase
         {
             while ( cause != null )
             {
-                if ( cause instanceof Throwable ) return true;
+                if( cause instanceof Throwable )
+                {
+                    return true;
+                }
                 cause = cause.getCause();
             }
             return false;
@@ -1249,34 +1253,62 @@ public abstract class AbstractGraphDatabase
         @Override
         public <T> T resolveDependency(Class<T> type)
         {
-            if (type.equals( Map.class ))
+            if( type.equals( Map.class ) )
+            {
                 return (T) getConfig().getParams();
-            else if (type.equals( Config.class ))
+            }
+            else if( type.equals( Config.class ) )
+            {
                 return (T) getConfig();
-            else if (GraphDatabaseService.class.isAssignableFrom(type))
+            }
+            else if( GraphDatabaseService.class.isAssignableFrom( type ) )
+            {
                 return (T) AbstractGraphDatabase.this;
-            else if (TransactionManager.class.isAssignableFrom(type))
+            }
+            else if( TransactionManager.class.isAssignableFrom( type ) )
+            {
                 return (T) txManager;
-            else if (LockManager.class.isAssignableFrom(type))
+            }
+            else if( LockManager.class.isAssignableFrom( type ) )
+            {
                 return (T) lockManager;
-            else if (LockReleaser.class.isAssignableFrom(type))
+            }
+            else if( LockReleaser.class.isAssignableFrom( type ) )
+            {
                 return (T) lockReleaser;
-            else if (StoreFactory.class.isAssignableFrom(type))
+            }
+            else if( StoreFactory.class.isAssignableFrom( type ) )
+            {
                 return (T) storeFactory;
-            else if (StringLogger.class.isAssignableFrom(type))
+            }
+            else if( StringLogger.class.isAssignableFrom( type ) )
+            {
                 return (T) msgLog;
-            else if (IndexStore.class.isAssignableFrom(type))
+            }
+            else if( IndexStore.class.isAssignableFrom( type ) )
+            {
                 return (T) indexStore;
-            else if (XaFactory.class.isAssignableFrom(type))
+            }
+            else if( XaFactory.class.isAssignableFrom( type ) )
+            {
                 return (T) xaFactory;
-            else if (XaDataSourceManager.class.isAssignableFrom(type))
+            }
+            else if( XaDataSourceManager.class.isAssignableFrom( type ) )
+            {
                 return (T) xaDataSourceManager;
-            else if (FileSystemAbstraction.class.isAssignableFrom(type))
+            }
+            else if( FileSystemAbstraction.class.isAssignableFrom( type ) )
+            {
                 return (T) fileSystem;
-            else if (Guard.class.isAssignableFrom(type))
+            }
+            else if( Guard.class.isAssignableFrom( type ) )
+            {
                 return (T) guard;
+            }
             else
-                throw new IllegalArgumentException("Could not resolve dependency of type:"+type.getName());
+            {
+                throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+            }
         }
     }
 
@@ -1371,6 +1403,53 @@ public abstract class AbstractGraphDatabase
         @Override
         public void shutdown() throws Throwable
         {
+        }
+    }
+
+    private class ConfigurationChangedRestarter
+        extends LifecycleAdapter
+    {
+        private ConfigurationChangeListener listener = new ConfigurationChangeListener()
+                    {
+                        Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
+
+                        @Override
+                        public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )
+                        {
+                            executor.execute( new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    // Restart
+                                    try
+                                    {
+                                        life.stop();
+                                        life.start();
+
+                                        msgLog.logMessage( "Database restarted with the following configuration changes:" + change );
+                                    }
+                                    catch( LifecycleException e )
+                                    {
+                                        msgLog.logMessage( "Could not restart database", e );
+                                    }
+                                }
+                            } );
+                        }
+                    };
+
+        @Override
+        public void start()
+            throws Throwable
+        {
+            config.addConfigurationChangeListener( listener );
+        }
+
+        @Override
+        public void stop()
+            throws Throwable
+        {
+            config.removeConfigurationChangeListener( listener );
         }
     }
 }

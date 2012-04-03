@@ -109,7 +109,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
             int objectSize = obj.size();
             if ( cache.compareAndSet( pos, oldObj, obj ) )
             {
-                setHighest( obj.getId() );
+                setHighest( pos );
                 int oldObjSize = 0;
                 if ( oldObj != null )
                 {

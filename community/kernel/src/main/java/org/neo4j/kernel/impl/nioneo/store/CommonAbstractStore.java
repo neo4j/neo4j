@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -43,8 +45,8 @@ public abstract class CommonAbstractStore
 {
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
-        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting store_dir = AbstractGraphDatabase.Configuration.store_dir;
+        public static final GraphDatabaseSetting.StringSetting neo_store = AbstractGraphDatabase.Configuration.neo_store;
         
         public static final GraphDatabaseSetting.BooleanSetting grab_file_lock = GraphDatabaseSettings.grab_file_lock;
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;

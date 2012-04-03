@@ -24,18 +24,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.AutoConfigurator;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -274,32 +270,7 @@ public class Config implements DiagnosticsProvider
     
     public Config(Map<String, String> inputParams)
     {
-        this(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), inputParams, Collections.<Class<?>>singletonList( GraphDatabaseSettings.class ));
-    }
-    
-    public Config( StringLogger msgLog,
-                   FileSystemAbstraction fileSystem,
-                   Map<String, String> inputParams,
-                   Iterable<Class<?>> settingsClasses
-    )
-    {
-        // Migrate settings
-        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( msgLog );
-        inputParams = configurationMigrator.migrateConfiguration( inputParams );
-
-        // Apply defaults
-        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( msgLog, settingsClasses );
-        params = configurationDefaults.apply( inputParams );
-
-        // Apply autoconfiguration for memory settings
-        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem, get(NeoStoreXaDataSource.Configuration.store_dir), getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ), getBoolean( GraphDatabaseSettings.dump_configuration ) );
-        Map<String,String> autoConfiguration = autoConfigurator.configure( );
-        for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
-        {
-            // Don't override explicit settings
-            if (!inputParams.containsKey( autoConfig.getKey() ))
-                params.put( autoConfig.getKey(), autoConfig.getValue() );
-        }
+        this.params = inputParams;
     }
 
     public Map<String, String> getParams()
@@ -443,23 +414,32 @@ public class Config implements DiagnosticsProvider
     public synchronized void applyChanges(Map<String,String> newConfiguration)
     {
         // Figure out what changed
-        List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>(  );
-        for( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
+        if (listeners.isEmpty())
         {
-            String oldValue = params.get( stringStringEntry.getKey() );
-            String newValue = stringStringEntry.getValue();
-            if (!(oldValue == null && newValue == null) &&
-                (oldValue == null || newValue == null || !oldValue.equals( newValue )))
-                configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue, newValue ) );
-        }
-
-        // Make the change
-        params.putAll( newConfiguration );
-
-        // Notify listeners
-        for( ConfigurationChangeListener listener : listeners )
+            // Make the change
+            params.clear();
+            params.putAll( newConfiguration );
+        } else
         {
-            listener.notifyConfigurationChanges(configurationChanges);
+            List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>(  );
+            for( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
+            {
+                String oldValue = params.get( stringStringEntry.getKey() );
+                String newValue = stringStringEntry.getValue();
+                if (!(oldValue == null && newValue == null) &&
+                    (oldValue == null || newValue == null || !oldValue.equals( newValue )))
+                    configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue, newValue ) );
+            }
+
+            // Make the change
+            params.clear();
+            params.putAll( newConfiguration );
+
+            // Notify listeners
+            for( ConfigurationChangeListener listener : listeners )
+            {
+                listener.notifyConfigurationChanges(configurationChanges);
+            }
         }
     }
     
@@ -471,5 +451,19 @@ public class Config implements DiagnosticsProvider
     public void removeConfigurationChangeListener(ConfigurationChangeListener listener)
     {
         listeners.remove( listener );
+    }
+
+    @Override
+    public String toString()
+    {
+        List<String> keys = new ArrayList<String>(params.keySet());
+        Collections.sort( keys );
+        LinkedHashMap<String,String> output = new LinkedHashMap<String, String>(  );
+        for( String key : keys )
+        {
+            output.put( key, params.get( key ) );
+        }
+
+        return output.toString();
     }
 }

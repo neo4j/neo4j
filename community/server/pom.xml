@@ -494,7 +494,7 @@
                         <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
                         <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}</webdriver.override.neo-server.baseuri>
                     </systemPropertyVariables>
-                    <argLine>-Xmx1024m</argLine>
+                    <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                     <forkMode>once</forkMode>
                 </configuration>
             </plugin>

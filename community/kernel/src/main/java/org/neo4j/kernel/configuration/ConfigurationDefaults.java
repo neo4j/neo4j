@@ -21,23 +21,64 @@
 package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Provides defaults for database settings.
  */
 public class ConfigurationDefaults
 {
-    private StringLogger msgLog;
+    public static String getDefault(GraphDatabaseSetting realSetting, Class<?> settingsClass)
+    {
+        for( Field field : settingsClass.getFields() )
+        {
+            try
+            {
+                GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
+                if (setting == realSetting)
+                {
+                    if (setting instanceof GraphDatabaseSetting.DefaultValue)
+                    {
+                        return ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
+                    } else
+                    {
+                        return getDefaultValue( field );
+                    }
+                }
+            }
+            catch( IllegalAccessException e )
+            {
+                assert false : "Field "+field.getName()+" is not public";
+            }
+        }
+        throw new IllegalArgumentException( MessageFormat.format("Setting {0} not found in settings-class {1}", realSetting.name(), settingsClass.getName() ));
+    }
+
+    private static String getDefaultValue(Field field)
+    {
+        Default defaultAnnotation = field.getAnnotation( Default.class );
+        if (defaultAnnotation == null)
+        {
+            return null;
+        }
+
+        return defaultAnnotation.value();
+    }
+
     private Iterable<Class<?>> settingsClasses;
 
-    public ConfigurationDefaults( StringLogger msgLog, Iterable<Class<?>> settingsClasses )
+    public ConfigurationDefaults(Class<?>... settingsClasses)
     {
-        this.msgLog = msgLog;
+        this( Iterables.iterable( settingsClasses ));
+    }
+
+    public ConfigurationDefaults( Iterable<Class<?>> settingsClasses )
+    {
         this.settingsClasses = settingsClasses;
     }
 
@@ -70,7 +111,7 @@ public class ConfigurationDefaults
                 }
                 catch( IllegalAccessException e )
                 {
-                    msgLog.logMessage( "Could not apply defaults for" );
+                    assert false : "Field "+field.getName()+" is not public";
                 }
             }
         }
@@ -78,14 +119,4 @@ public class ConfigurationDefaults
         return configuration;
     }
     
-    private String getDefaultValue(Field field)
-    {
-        Default defaultAnnotation = field.getAnnotation( Default.class );
-        if (defaultAnnotation == null)
-        {
-            return null;
-        }
-        
-        return defaultAnnotation.value();
-    }
 }

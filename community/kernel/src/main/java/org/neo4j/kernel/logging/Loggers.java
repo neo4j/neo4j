@@ -17,30 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
 
-class NiceHasher(val original: Seq[Any]) {
-  override def equals(p1: Any): Boolean = {
-    if(p1 == null || !p1.isInstanceOf[NiceHasher])
-      return false
-    
-    val other = p1.asInstanceOf[NiceHasher]
+package org.neo4j.kernel.logging;
 
-    comperableValues.equals(other.comperableValues)
-  }
-  
-  def comperableValues = original.map {
-    case x:Array[_] => x.deep
-    case x => x
-  }
-
-  override def toString = hashCode() + " : " + original.toString
-
-  private lazy val hash = original.map {
-    case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
-    case null => 0
-    case x => x.hashCode()
-  }.foldLeft(0)((a, b) => 31 * a + b)
-
-  override def hashCode() = hash
+/**
+ * List of Logger names
+ */
+public interface Loggers
+{
+    public static final String NEO4J = "neo4j";
+    public static final String CONFIG = "neo4j.config";
+    public static final String DATASOURCE = "neo4j.datasource";
+    public static final String DIAGNOSTICS = "neo4j.diagnostics";
+    public static final String TXMANAGER = "neo4j.txmanager";
+    public static final String XAFACTORY = "neo4j.xafactory";
+    public static final String NEOSTORE = "neo4j.neostore";
+    public static final String EXTENSION = "neo4j.extension";
+    public static final String INDEX = "neo4j.index";
 }
