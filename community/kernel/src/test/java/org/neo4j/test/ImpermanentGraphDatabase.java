@@ -63,7 +63,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            throw new Error( "Couldn't clear directory" );
+            throw new Error( "Couldn't clear directory", e );
         }
     }
 
