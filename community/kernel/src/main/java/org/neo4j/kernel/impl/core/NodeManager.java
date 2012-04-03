@@ -89,7 +89,7 @@ public class NodeManager
         public static final GraphDatabaseSetting.StringSetting relationship_cache_size = GraphDatabaseSettings.relationship_cache_size;
         public static final GraphDatabaseSetting.FloatSetting node_cache_array_fraction = GraphDatabaseSettings.node_cache_array_fraction;
         public static final GraphDatabaseSetting.FloatSetting relationship_cache_array_fraction = GraphDatabaseSettings.relationship_cache_array_fraction;
-        public static final GraphDatabaseSetting.StringSetting array_cache_min_log_interval = GraphDatabaseSettings.array_cache_min_log_interval;
+        public static final GraphDatabaseSetting.StringSetting gcr_cache_min_log_interval = GraphDatabaseSettings.gcr_cache_min_log_interval;
     }
     
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
@@ -1255,7 +1255,7 @@ public class NodeManager
                 long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
                 long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
+                return new GCResistantCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.gcr_cache_min_log_interval ),
                         NODE_CACHE_NAME, logger );
             }
 
@@ -1267,7 +1267,7 @@ public class NodeManager
                 long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
                 long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
                 checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.array_cache_min_log_interval ),
+                return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.gcr_cache_min_log_interval ),
                         RELATIONSHIP_CACHE_NAME, logger );
             }
 

@@ -179,7 +179,7 @@ public abstract class GraphDatabaseSettings
     public static final FloatSetting relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
 
     @Default( "60s" )
-    public static final StringSetting array_cache_min_log_interval = new StringSetting( "array_cache_min_log_interval", DURATION, "Must be a valid interval" );
+    public static final StringSetting gcr_cache_min_log_interval = new StringSetting( "gcr_cache_min_log_interval", DURATION, "Must be a valid interval" );
 
     @Default( FALSE )
     public static BooleanSetting execution_guard_enabled = new BooleanSetting( "execution_guard_enabled" );
