@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -65,7 +66,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            throw new Error( "Couldn't clear directory" );
+            throw new Error( "Couldn't clear directory", e );
         }
     }
 
