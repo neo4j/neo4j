@@ -21,6 +21,7 @@ package org.neo4j.ext.udc.impl;
 
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac)
+    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac, String tags)
     {
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
@@ -47,6 +48,11 @@ public class UdcTimerTask extends TimerTask
         Map<String, String> udcFields = new HashMap<String, String>();
         udcFields.put( "id", storeId );
         udcFields.put( "v", version );
+
+        if (tags!=null && !tags.isEmpty())
+        {
+            udcFields.put( "tags", tags);
+        }
 
         Map<String, String> params = mergeSystemPropertiesWith( udcFields );
         if ( source != null )
