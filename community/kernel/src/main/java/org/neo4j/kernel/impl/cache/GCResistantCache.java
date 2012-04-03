@@ -35,6 +35,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     private final AtomicLong currentSize = new AtomicLong( 0 );
     private final long minLogInterval;
     private final String name;
+    private final AtomicLong highestIdSet = new AtomicLong();
 
     // non thread safe, only ~statistics (atomic update will affect performance)
     private long hitCount = 0;
@@ -42,7 +43,6 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     private long totalPuts = 0;
     private long collisions = 0;
     private long purgeCount = 0;
-    private AtomicLong highestIdSet = new AtomicLong();
 
     private final StringLogger logger;
 
@@ -75,6 +75,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
             throw new IllegalArgumentException( "Max size can not be " + maxSizeInBytes );
         }
 
+        long t = System.currentTimeMillis();
         this.cache = new AtomicReferenceArray<E>( (int) maxElementCount );
         this.maxSize = maxSizeInBytes;
         this.name = name == null ? super.toString() : name;

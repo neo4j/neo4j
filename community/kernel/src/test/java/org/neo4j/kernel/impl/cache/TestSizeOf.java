@@ -23,7 +23,6 @@ package org.neo4j.kernel.impl.cache;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
@@ -48,12 +47,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager.CacheType;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSizeOf
@@ -66,7 +61,10 @@ public class TestSizeOf
     @BeforeClass
     public static void setupDB()
     {
-        db = new ImpermanentGraphDatabase( stringMap( Config.CACHE_TYPE, CacheType.gcr.name() ) );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+              newImpermanentDatabaseBuilder().
+              setConfig( GraphDatabaseSettings.cache_type, GraphDatabaseSettings.CacheTypeSetting.gcr ).
+              newGraphDatabase();
     }
     
     @AfterClass
@@ -88,13 +86,6 @@ public class TestSizeOf
         return (Cache<NodeImpl>) IteratorUtil.first( db.getNodeManager().caches() );
     }
     
-    @SuppressWarnings( "unchecked" )
-    private Cache<RelationshipImpl> getRelationshipCache()
-    {
-        // This is a bit fragile because we depend on the order of caches() returns its caches.
-        return (Cache<RelationshipImpl>) IteratorUtil.last( db.getNodeManager().caches() );
-    }
-    
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes )
     {
         return createNodeAndLoadFresh( properties, nrOfRelationships, nrOfTypes, 0 );
@@ -103,10 +94,6 @@ public class TestSizeOf
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes, int directionStride )
     {
         Node node = null;
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.cache_type, GraphDatabaseSettings.CacheTypeSetting.gcr ).
-            newGraphDatabase();
         Transaction tx = db.beginTx();
         try
         {

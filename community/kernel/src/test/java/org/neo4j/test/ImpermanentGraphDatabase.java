@@ -36,6 +36,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.ClassicLoggingService;
@@ -52,7 +53,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
-
+    
+    private static volatile String lastStoreDir;
+    private static volatile Caches caches;
+    
     static
     {
         try
@@ -86,7 +90,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         return new EphemeralIdGenerator.Factory();
     }
-
+    
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
@@ -109,6 +113,17 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     protected Logging createStringLogger()
     {
         return new ClassicLoggingService( config );
+    }
+    
+    @Override
+    protected Caches createCaches()
+    {
+        if ( caches == null )
+            caches = new Caches( msgLog );
+        else if ( lastStoreDir == null || !lastStoreDir.equals( storeDir ) )
+            caches.invalidate();
+        lastStoreDir = storeDir;
+        return caches;
     }
 
     private static String path()

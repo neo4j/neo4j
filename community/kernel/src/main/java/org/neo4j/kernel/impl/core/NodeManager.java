@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -44,9 +46,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.cache.GCResistantCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.GCResistantCache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
 import org.neo4j.kernel.impl.cache.StrongReferenceCache;
@@ -63,10 +65,9 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class NodeManager
@@ -117,8 +118,6 @@ public class NodeManager
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
-    private boolean useAdaptiveCache;
-
     private static final int INDEX_COUNT = 2500;
 
     private static final int LOCK_STRIPE_COUNT = 32;
@@ -130,8 +129,8 @@ public class NodeManager
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             RelationshipTypeHolder relationshipTypeHolder, CacheType cacheType, PropertyIndexManager propertyIndexManager,
-            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, StringLogger logger, 
-            DiagnosticsManager diagnostics )
+            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, 
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         this.config = config;
         this.graphDbService = graphDb;
@@ -146,8 +145,8 @@ public class NodeManager
         this.relTypeHolder = relationshipTypeHolder;
 
         this.cacheType = cacheType;
-        this.nodeCache = diagnostics.tryAppendProvider( cacheType.node( logger, config ) );
-        this.relCache =  diagnostics.tryAppendProvider( cacheType.relationship( logger, config ) );
+        this.nodeCache = nodeCache;
+        this.relCache = relCache;
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
