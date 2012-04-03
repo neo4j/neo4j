@@ -40,7 +40,7 @@ import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
@@ -113,7 +113,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected Logging createStringLogger()
     {
-        return new ClassicLoggingService( config );
+        return new DevNullLoggingService();
     }
     
     @Override
