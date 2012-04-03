@@ -54,3 +54,5 @@ include::chunking-and-offsetting-in-gremlin.txt[]
 include::modify-the-graph-while-traversing.txt[]
 
 include::flow-algorithms-with-gremlin.txt[]
+
+include::script-execution-errors.txt[]
