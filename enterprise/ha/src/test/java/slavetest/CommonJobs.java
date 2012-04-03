@@ -19,6 +19,12 @@
  */
 package slavetest;
 
+import java.io.Serializable;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -28,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
@@ -37,12 +44,6 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.test.ha.StandaloneDatabase;
-
-import java.io.Serializable;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
 
 public abstract class CommonJobs
 {
@@ -426,12 +427,15 @@ public abstract class CommonJobs
         }
 
         @Override
-        public Void execute( GraphDatabaseSPI db )
+        public Void execute( GraphDatabaseService db )
         {
             Transaction tx = db.beginTx();
             try
             {
-                tx.acquireWriteLock( db.getNodeById( firstId ) );
+                Node node = db.getNodeById( firstId );
+                ( (AbstractGraphDatabase) db ).getConfig().getLockManager().getWriteLock( node );
+                ( (AbstractGraphDatabase) db ).getConfig().getLockReleaser().addLockToTransaction(
+                        node, LockType.WRITE );
                 db.getNodeById( id ).setProperty( key, value );
                 tx.success();
                 return null;
@@ -442,7 +446,7 @@ public abstract class CommonJobs
             }
         }
     }
-    
+
     public static class CreateNodesJob extends TransactionalJob<Long[]>
     {
         private final int count;
