@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -204,7 +205,7 @@ public class GremlinPluginTest
     }
 
     @Test
-    public void testExecuteScriptLongs()
+    public void testExecuteScriptLongs() throws BadInputException
     {
         Assert.assertEquals(
                 "[ 1, 2, 5, 6, 8 ]",
@@ -212,7 +213,7 @@ public class GremlinPluginTest
     }
 
     @Test
-    public void testExecuteScriptNull()
+    public void testExecuteScriptNull() throws BadInputException
     {
         Assert.assertEquals(
                 "\"null\"",
@@ -220,7 +221,7 @@ public class GremlinPluginTest
     }
 
     @Test
-    public void testExecuteScriptParams() throws ParseException
+    public void testExecuteScriptParams() throws ParseException, BadInputException
     {
         Assert.assertEquals(
                 "1",
@@ -228,7 +229,7 @@ public class GremlinPluginTest
     }
     
     @Test
-    public void testExecuteScriptEmptyParams() throws ParseException
+    public void testExecuteScriptEmptyParams() throws ParseException, BadInputException
     {
         Assert.assertEquals(
                 "1",
@@ -236,7 +237,7 @@ public class GremlinPluginTest
     }
 
     @Test
-    public void testMultilineScriptWithLinebreaks()
+    public void testMultilineScriptWithLinebreaks() throws BadInputException
     {
         Assert.assertEquals( "2",
                 json.format( GremlinPluginTest.executeTestScript( "1;\n2", null) ) );
@@ -252,17 +253,25 @@ public class GremlinPluginTest
             {
                 public void run()
                 {
-                    Assert.assertEquals(
-                            x + "",
-                            json.format( GremlinPluginTest.executeTestScript( "x="
-                                                                              + x
-                                                                              + "; x", null) ) );
+                    try
+                    {
+                        Assert.assertEquals(
+                                x + "",
+                                json.format( GremlinPluginTest.executeTestScript( "x="
+                                                                                  + x
+                                                                                  + "; x", null) ) );
+                    }
+                    catch ( BadInputException e )
+                    {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }.start();
         }
     }
 
-    private static Representation executeTestScript(final String script, Map params)
+    private static Representation executeTestScript(final String script, Map params) throws BadInputException
     {
         Transaction tx = null;
         try

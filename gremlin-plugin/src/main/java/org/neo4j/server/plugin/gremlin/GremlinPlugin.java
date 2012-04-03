@@ -24,7 +24,6 @@ import java.util.Map;
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,9 +33,9 @@ import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ObjectToRepresentationConverter;
 import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.ValueRepresentation;
 
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
@@ -72,7 +71,7 @@ public class GremlinPlugin extends ServerPlugin
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
             @Description( "The Gremlin script" ) @Parameter( name = "script", optional = false ) final String script,
-            @Description( "JSON Map of additional parameters for script variables" ) @Parameter( name = "params", optional = true ) final Map params )
+            @Description( "JSON Map of additional parameters for script variables" ) @Parameter( name = "params", optional = true ) final Map params ) throws BadInputException
     {
 
         try
@@ -84,13 +83,9 @@ public class GremlinPlugin extends ServerPlugin
             final Object result = engine().eval( script, bindings );
             return ObjectToRepresentationConverter.convert( result );
         }
-        catch ( final ScriptException e )
+        catch ( final Exception e )
         {
-            return ValueRepresentation.string( e.getMessage() );
-        }
-        catch ( final IllegalStateException e )
-        {
-            return ValueRepresentation.string( e.getMessage() );
+            throw new BadInputException( e.getMessage() );
         }
     }
 

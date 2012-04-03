@@ -630,12 +630,26 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( "I know you" )
     public void testMixedAccessPatterns() throws UnsupportedEncodingException {
         data.get();
-        String response = "";
-        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.clear();g.addVertex([name:'foo']);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
+        String response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.clear();g.addVertex([name:'foo']);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
         response = gen().expectedStatus(OK.getStatusCode()).payload("{\"script\":\"g.clear()\"}").post(ENDPOINT).entity();
         //response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"init()\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
         response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.addVertex([name:'foo'])\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
 
+    }
+    
+    
+    /**
+     * Script errors
+     * will result in an HTTP error response code.
+     */
+    @Test
+    @Documented
+    @Graph( "I know you" )
+    public void script_execution_errors() throws UnsupportedEncodingException {
+        data.get();
+        String response = gen().expectedStatus(Status.BAD_REQUEST.getStatusCode()).
+                payload("{\"script\":\"g.addVertex([name:{}])\"}").post(ENDPOINT).entity();
+        assertTrue( response.contains( "BadInputException" ) );
     }
 
 }
