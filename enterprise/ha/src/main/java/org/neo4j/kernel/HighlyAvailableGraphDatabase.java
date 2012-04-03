@@ -506,6 +506,8 @@ public class HighlyAvailableGraphDatabase
 
     protected void start()
     {
+        life.start();
+
         getMessageLog().logMessage( "Starting up highly available graph database '" + getStoreDir() + "'" );
 
         StoreId storeId = null;
