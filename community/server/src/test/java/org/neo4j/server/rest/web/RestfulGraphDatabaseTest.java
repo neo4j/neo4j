@@ -1032,6 +1032,38 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
+    public void shouldNotBeAbleToCreateAnIndexWithEmptyName() throws Exception
+    {
+        URI node = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
+        
+        Map<String, String> createRel = new HashMap<String, String>();
+        createRel.put( "to", node.toString() );
+        createRel.put( "type", "knows" );
+        URI rel = (URI)service.createRelationship(FORCE, helper.createNode(), JsonHelper.createJsonFrom(createRel)).getMetadata().getFirst("Location");
+        
+        Map<String, String> indexPostBody = new HashMap<String, String>();
+        indexPostBody.put( "key", "mykey" );
+        indexPostBody.put( "value", "myvalue" );
+        
+        indexPostBody.put( "uri", node.toString() );
+        Response response = service.addToNodeIndex( FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        indexPostBody.put( "uri", rel.toString() );
+        response = service.addToRelationshipIndex(FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        Map<String,String> basicIndexCreation = new HashMap<String,String>();
+        basicIndexCreation.put("name", "");
+        
+        response = service.jsonCreateNodeIndex(FORCE, JsonHelper.createJsonFrom(basicIndexCreation));
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        response = service.jsonCreateRelationshipIndex(FORCE, JsonHelper.createJsonFrom(basicIndexCreation));
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+    }
+
+    @Test
     public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
     {
         URI node = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
