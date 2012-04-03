@@ -26,10 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -59,10 +57,10 @@ public class TestZooClient
     {
         final long millisForSessionToExpire = 1000;
         Map<String, String> stringConfig = new HashMap<String, String>();
-        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181" );
-        stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
-        stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( millisForSessionToExpire ) );
-        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.toList( Iterables.iterable( OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ) ));
+        stringConfig.put( HaSettings.coordinators.name(), "127.0.0.1:2181" );
+        stringConfig.put( HaSettings.server_id.name(), "1" );
+        stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( millisForSessionToExpire ) );
+        Config config = new Config(new ConfigurationDefaults(OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ).apply( stringConfig ));
         
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 
@@ -110,10 +108,10 @@ public class TestZooClient
     {
         final long secondsForSessionToExpire = 1;
         Map<String, String> stringConfig = new HashMap<String, String>();
-        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "localhost:2181" );
-        stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
-        stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( secondsForSessionToExpire ) );
-        Config config = new Config(StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), stringConfig, Iterables.iterable( OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ) );
+        stringConfig.put( HaSettings.coordinators.name(), "localhost:2181" );
+        stringConfig.put( HaSettings.server_id.name(), "1" );
+        stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( secondsForSessionToExpire ) );
+        Config config = new Config(new ConfigurationDefaults(OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ).apply( stringConfig ));
 
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 

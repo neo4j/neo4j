@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.ha;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+package org.neo4j.test.ha;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,27 +26,28 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-
 import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static java.lang.management.ManagementFactory.*;
 
 @Ignore
 public final class LocalhostZooKeeperCluster
 {
     private final ZooKeeper[] keeper;
-    private final String connection;
+    private String connection;
 
     public LocalhostZooKeeperCluster( Class<?> owningTest, int... ports )
     {
@@ -71,6 +71,9 @@ public final class LocalhostZooKeeperCluster
             this.connection = connection.toString();
             await( keeper, 15, TimeUnit.SECONDS );
             success = true;
+        } catch (Throwable ex)
+        {
+            ex.printStackTrace(  );
         }
         finally
         {
@@ -92,7 +95,7 @@ public final class LocalhostZooKeeperCluster
             try
             {
                 cm = new ZooKeeperClusterClient( getConnectionString(),
-                        HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
+                                                 ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ));
                 cm.waitForSyncConnected();
                 break;
             }
@@ -215,8 +218,9 @@ public final class LocalhostZooKeeperCluster
         LocalhostZooKeeperCluster cluster = standardZoo( LocalhostZooKeeperCluster.class );
         try
         {
-            System.out.println( "press return to exit" );
+            System.out.println( "Press return to exit" );
             System.in.read();
+            System.out.println( "Shutting down cluster" );
         }
         finally
         {

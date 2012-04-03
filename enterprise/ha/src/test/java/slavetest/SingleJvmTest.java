@@ -34,12 +34,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +48,6 @@ import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterImpl;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.BatchTransaction;
 
 @Ignore( "SingleJvmWithNettyTest covers this and more" )
@@ -176,7 +172,7 @@ public class SingleJvmTest extends AbstractHaTest
     @Override
     protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
-        extraConfig = new ConfigurationDefaults( StringLogger.DEV_NULL, Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class ) ).apply( extraConfig );
+        extraConfig = new ConfigurationDefaults( HaSettings.class  ).apply( extraConfig );
 
         int timeOut = Integer.parseInt(extraConfig.containsKey( HaSettings.lock_read_timeout.name() ) ? extraConfig.get( HaSettings.lock_read_timeout.name() ) : extraConfig.get( HaSettings.read_timeout.name() ));
         HighlyAvailableGraphDatabase db = startUpMasterDb( extraConfig );
@@ -187,7 +183,7 @@ public class SingleJvmTest extends AbstractHaTest
     {
         final int masterId = 0;
         final Map<String, String> config = MapUtil.stringMap( extraConfig,
-                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ) );
+                HaSettings.server_id.name(), String.valueOf( masterId ) );
         addDefaultReadTimeout( config );
         String path = dbPath( 0 ).getAbsolutePath();
         HighlyAvailableGraphDatabase haGraphDb = new HighlyAvailableGraphDatabase(
@@ -210,22 +206,24 @@ public class SingleJvmTest extends AbstractHaTest
 
     private void addDefaultReadTimeout( Map<String, String> config )
     {
-        if (!config.containsKey( HaConfig.CONFIG_KEY_READ_TIMEOUT ))
+        if (!config.containsKey( HaSettings.read_timeout.name() ))
         {
-            config.put( HaConfig.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
+            config.put( HaSettings.read_timeout.name(), String.valueOf( TEST_READ_TIMEOUT ) );
         }
     }
 
     protected Broker makeMasterBroker( int masterId, GraphDatabaseAPI graphDb, Map<String, String> config )
     {
-        Config configuration = new Config( StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), config, Iterables.toList(Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class )));
+        config = new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config );
+        Config configuration = new Config( config );
 
         return new FakeMasterBroker( configuration );
     }
 
     protected Broker makeSlaveBroker( TestMaster master, int masterId, int id, HighlyAvailableGraphDatabase graphDb, Map<String, String> config )
     {
-        Config configuration = new Config( StringLogger.DEV_NULL, new DefaultFileSystemAbstraction(), config, Iterables.toList(Iterables.iterable( GraphDatabaseSettings.class, HaSettings.class )));
+        config = new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config );
+        Config configuration = new Config( config );
         return new FakeSlaveBroker( master, masterId, configuration );
     }
 

@@ -29,12 +29,6 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
 {
     static final String KEY = "online backup";
     
-    public interface Configuration
-    {
-        boolean online_backup_enabled(boolean def);
-        int online_backup_port(int def);
-    }
-
     public OnlineBackupExtension()
     {
         super( KEY );

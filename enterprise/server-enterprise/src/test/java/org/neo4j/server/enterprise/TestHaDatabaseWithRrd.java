@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.enterprise.ServerTestUtils.HA_GRAPH_DATABASE_FACTORY;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
+package org.neo4j.server.enterprise;
 
 import java.io.File;
 import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.JobScheduler;
@@ -43,6 +38,11 @@ import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.rrd4j.core.RrdDb;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.server.enterprise.ServerTestUtils.*;
+import static org.neo4j.test.ha.LocalhostZooKeeperCluster.*;
 
 public class TestHaDatabaseWithRrd
 {
@@ -66,8 +66,8 @@ public class TestHaDatabaseWithRrd
     {
         String dir = TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath();
         Map<String, String> config = stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, "1",
-                HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString() );
+                HaSettings.server_id.name(), "1",
+                HaSettings.coordinators.name(), zoo.getConnectionString() );
         Database db = new Database( HA_GRAPH_DATABASE_FACTORY.createDatabase( dir, config ) );
         Configuration dbConfig = new MapConfiguration( stringMap(
                 Configurator.RRDB_LOCATION_PROPERTY_KEY, new File( dir, "rrd" ).getAbsolutePath() ) );
