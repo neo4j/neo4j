@@ -39,6 +39,7 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager.WaitMode;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
@@ -131,9 +132,9 @@ public class ZooKeeperBroker extends AbstractBroker
     }
 
     @Override
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( boolean firstTime )
     {
-        return zooClient.getClusterStoreId();
+        return zooClient.getClusterStoreId( firstTime ? WaitMode.STARTUP : WaitMode.SESSION );
     }
 
     @Override

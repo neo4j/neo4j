@@ -402,7 +402,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 else
                 {   // I seem to be the master, the broker have created the cluster for me
                     // I'm just going to start up now
-                    storeId = broker.getClusterStoreId();
+                  // storeId = broker.getClusterStoreId();
                     break;
                 }
                 // I am not master, and could not connect to the master:
@@ -414,6 +414,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
+        storeId = broker.getClusterStoreId( true );
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         // the localGraph() below is a blocking call and is there on purpose
         localGraph();
