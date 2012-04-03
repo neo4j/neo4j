@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_cache_min_log_interval;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.gcr_cache_min_log_interval;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_array_fraction;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_array_fraction;
@@ -49,7 +49,7 @@ public class GCResistantCacheProvider extends CacheProvider
         long node = config.isSet( node_cache_size ) ? config.getSize( node_cache_size ) : defaultMem;
         long rel = config.isSet( relationship_cache_size ) ? config.getSize( relationship_cache_size ) : defaultMem;
         checkMemToUse( logger, node, rel, available );
-        return new GCResistantCache<NodeImpl>( node, config.getFloat( node_cache_array_fraction ), config.getDuration( array_cache_min_log_interval ),
+        return new GCResistantCache<NodeImpl>( node, config.getFloat( node_cache_array_fraction ), config.getDuration( gcr_cache_min_log_interval ),
                 NODE_CACHE_NAME, logger );
     }
 
@@ -61,7 +61,7 @@ public class GCResistantCacheProvider extends CacheProvider
         long node = config.isSet( node_cache_size ) ? config.getSize( node_cache_size ) : defaultMem;
         long rel = config.isSet( relationship_cache_size ) ? config.getSize( relationship_cache_size ) : defaultMem;
         checkMemToUse( logger, node, rel, available );
-        return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( relationship_cache_array_fraction ), config.getDuration( array_cache_min_log_interval ),
+        return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( relationship_cache_array_fraction ), config.getDuration( gcr_cache_min_log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger );
     }
 
