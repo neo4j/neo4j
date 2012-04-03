@@ -26,6 +26,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.logging.Logging;
@@ -40,17 +41,19 @@ public class AbstractHAGraphDatabase
     private NodeProxy.NodeLookup nodeLookup;
     private RelationshipProxy.RelationshipLookups relationshipLookups;
     private HighlyAvailableGraphDatabase highlyAvailableGraphDatabase;
+    private final Caches caches;
 
     public AbstractHAGraphDatabase( String storeDir, Map<String, String> params,
                                     HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
                                     Broker broker, Logging logging,
                                     NodeProxy.NodeLookup nodeLookup,
                                     RelationshipProxy.RelationshipLookups relationshipLookups,
-                                    Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions
-    )
+                                    Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
+                                    Caches caches )
     {
-        super( storeDir, params, indexProviders1, kernelExtensions );
+        super( storeDir, params, indexProviders, kernelExtensions );
         this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
+        this.caches = caches;
 
         assert broker != null && logging != null && nodeLookup != null && relationshipLookups != null;
 
@@ -63,7 +66,7 @@ public class AbstractHAGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
-        return new DefaultKernelData(config, this);
+        return new DefaultKernelData( config, this );
     }
 
     @Override
@@ -87,5 +90,11 @@ public class AbstractHAGraphDatabase
     public HighlyAvailableGraphDatabase getHighlyAvailableGraphDatabase()
     {
         return highlyAvailableGraphDatabase;
+    }
+    
+    @Override
+    protected Caches createCaches()
+    {
+        return caches;
     }
 }
