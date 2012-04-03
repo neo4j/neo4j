@@ -43,7 +43,7 @@ public class FakeMasterBroker extends AbstractBroker
     }
 
     @Override
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( boolean firstTime )
     {
         return storeId; // Master will always win
     }

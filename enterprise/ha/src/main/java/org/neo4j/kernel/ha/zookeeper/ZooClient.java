@@ -798,8 +798,10 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
 
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( WaitMode waitMode )
     {
+        waitForSyncConnected( waitMode );
+        makeSureRootPathIsFound();
         return storeId;
     }
 

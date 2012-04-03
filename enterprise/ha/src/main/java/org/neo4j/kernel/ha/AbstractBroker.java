@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class AbstractBroker implements Broker
 {
     private final int myMachineId;
+    private final StoreId storeId = new StoreId();
     private final AbstractGraphDatabase graphDb;
 
     public AbstractBroker( int myMachineId, AbstractGraphDatabase graphDb )
@@ -117,9 +118,9 @@ public abstract class AbstractBroker implements Broker
                                                  + " does not support ConnectionInformation" );
     }
 
-    public StoreId getClusterStoreId()
+    public StoreId getClusterStoreId( boolean firstTime )
     {
-        throw new UnsupportedOperationException( getClass().getName() );
+        return storeId;
     }
 
     @Override
