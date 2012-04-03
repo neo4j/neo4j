@@ -373,10 +373,7 @@ public class DatabaseActions
     {
         final String indexName = (String) indexSpecification.get( "name" );
         
-        if(isEmpty(indexName)) 
-        {
-            throw new IllegalArgumentException("Index name must not be empty.");
-        }
+        assertIsLegalIndexName(indexName);
         
         if ( indexSpecification.containsKey( "config" ) )
         {
@@ -398,10 +395,7 @@ public class DatabaseActions
     {
         final String indexName = (String) indexSpecification.get( "name" );
         
-        if(isEmpty(indexName)) 
-        {
-            throw new IllegalArgumentException("Index name must not be empty.");
-        }
+        assertIsLegalIndexName(indexName);
         
         if ( indexSpecification.containsKey( "config" ) )
         {
@@ -967,10 +961,7 @@ public class DatabaseActions
                                                                               String value, Long nodeOrNull,
                                                                               Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
     {
-        if(isEmpty(indexName)) 
-        {
-            throw new IllegalArgumentException("Index name must not be empty.");
-        }
+        assertIsLegalIndexName(indexName);
         
         Transaction tx = beginTx();
         try
@@ -1009,10 +1000,7 @@ public class DatabaseActions
                                                                                       Long startNode, String type, Long endNode,
                                                                                       Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
-        if(isEmpty(indexName)) 
-        {
-            throw new IllegalArgumentException("Index name must not be empty.");
-        }
+        assertIsLegalIndexName(indexName);
         
         Transaction tx = beginTx();
         try
@@ -1504,11 +1492,6 @@ public class DatabaseActions
         }
         return queryCtx;
     }
-    
-    private boolean isEmpty(String str)
-    {
-        return str != null && str.equals("");
-    }
 
     private interface PathRepresentationCreator<T extends Path>
     {
@@ -1532,4 +1515,12 @@ public class DatabaseActions
             return new WeightedPathRepresentation( path );
         }
     };
+    
+    private void assertIsLegalIndexName(String indexName)
+    {
+        if(indexName == null || indexName.equals("")) 
+        {
+            throw new IllegalArgumentException("Index name must not be empty.");
+        }
+    }
 }
