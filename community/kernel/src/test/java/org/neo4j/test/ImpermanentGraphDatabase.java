@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,7 +37,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
-import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.ClassicLoggingService;
@@ -53,9 +54,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
-    
-    private static volatile String lastStoreDir;
-    private static volatile Caches caches;
     
     static
     {
@@ -74,9 +72,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super( path(), withoutMemmap( params ) );
     }
 
-    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
     {
-        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions );
+        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders );
     }
 
     @Override
@@ -115,17 +114,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return new ClassicLoggingService( config );
     }
     
-    @Override
-    protected Caches createCaches()
-    {
-        if ( caches == null )
-            caches = new Caches( msgLog );
-        else if ( lastStoreDir == null || !lastStoreDir.equals( storeDir ) )
-            caches.invalidate();
-        lastStoreDir = storeDir;
-        return caches;
-    }
-
     private static String path()
     {
         File path = null;

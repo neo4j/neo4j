@@ -17,26 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.cache;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.StringLogger;
 
-/**
- * A class for holding cache objects so that reuse between sessions is possible
- * if the configuration stays the same. This helps when there's a cache which is
- * very expensive to create.
- * 
- * @author Mattias Persson
- */
-public interface Caches
+@Service.Implementation( CacheProvider.class )
+public class NoCacheProvider extends CacheProvider
 {
-    void configure( CacheProvider cacheProvider, Config config );
+    public static final String NAME = "none";
 
-    Cache<NodeImpl> node();
-    
-    Cache<RelationshipImpl> relationship();
-    
-    void invalidate();
+    public NoCacheProvider()
+    {
+        super( NAME, "no cache" );
+    }
+
+    @Override
+    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
+    {
+        return new NoCache<NodeImpl>( NODE_CACHE_NAME );
+    }
+
+    @Override
+    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
+    {
+        return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+    }
 }
