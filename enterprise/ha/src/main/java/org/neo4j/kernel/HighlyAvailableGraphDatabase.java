@@ -751,7 +751,7 @@ public class HighlyAvailableGraphDatabase
 
         try
         {
-            MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
+            MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy(), machineId );
         }
         finally
         {
@@ -1631,7 +1631,7 @@ public class HighlyAvailableGraphDatabase
         {
             try
             {
-                MasterUtil.applyReceivedTransactions( response, HighlyAvailableGraphDatabase.this, MasterUtil.NO_ACTION );
+                MasterUtil.applyReceivedTransactions( response, HighlyAvailableGraphDatabase.this, MasterUtil.NO_ACTION, machineId );
                 updateTime();
                 return response.response();
             }

@@ -32,11 +32,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
@@ -48,8 +46,10 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
-import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class MasterUtil
@@ -90,7 +90,7 @@ public class MasterUtil
             return path.substring( 1 );
         return path;
     }
-
+    
     public static Tx[] rotateLogs( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
@@ -161,7 +161,7 @@ public class MasterUtil
         }
         return context;
     }
-
+    
     /**
      * For a given {@link XaDataSource} it extracts the transaction stream from
      * startTxId up to endTxId (inclusive) in the provided {@link List} and
@@ -178,8 +178,7 @@ public class MasterUtil
     private static LogExtractor getTransactionStreamForDatasource(
             final XaDataSource dataSource, final long startTxId,
             final long endTxId,
-            final List<Triplet<String, Long, TxExtractor>> stream,
-            Predicate<Pair<Integer, Long>> filter )
+            final List<Triplet<String, Long, TxExtractor>> stream )
     {
         LogExtractor logExtractor = null;
         try
@@ -204,74 +203,52 @@ public class MasterUtil
                 throw new RuntimeException( ioe );
             }
             final LogExtractor finalLogExtractor = logExtractor;
-            /*
-             * We may have to skip transactions in the tx stream. This is because
-             * a transaction might be rejected by the predicate but the next ones
-             * should be included. However the only primitive present is extractNext(),
-             * and that is the only way to discover what lays ahead. So instead we keep
-             * a count of how many transactions since the last successful one have been
-             * rejected by the predicate and we just ask the extractor to skip as many.
-             * That counter is reset of course for every successful evaluation of the
-             * predicate.
-             */
-            int skip = 0;
             for ( long txId = startTxId; txId <= endTxId; txId++ )
             {
-                if ( filter.accept( Pair.of( dataSource.getMasterForCommittedTx( txId ).first(), txId ) ) )
+                final long finalTxId = txId;
+                TxExtractor extractor = new TxExtractor()
                 {
-                    final long finalTxId = txId;
-                    final int skipFinal = skip;
-                    TxExtractor extractor = new TxExtractor()
+                    @Override
+                    public ReadableByteChannel extract()
                     {
-                        @Override
-                        public ReadableByteChannel extract()
-                        {
-                            InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-                            extract( buffer );
-                            return buffer;
-                        }
+                        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+                        extract( buffer );
+                        return buffer;
+                    }
 
-                        @Override
-                        public void extract( LogBuffer buffer )
+                    @Override
+                    public void extract( LogBuffer buffer )
+                    {
+                        try
                         {
-                            long extractedTxId = -1;
-                            try
+                            long extractedTxId = finalLogExtractor.extractNext( buffer );
+                            if ( extractedTxId == -1 )
                             {
-                                for ( int i = 0; i < skipFinal; i++ )
-                                {
-                                    // skip as many as required, discard them
-                                    finalLogExtractor.extractNext( NullLogBuffer.INSTANCE );
-                                }
-                                // that is the one, extract and make sure.
-                                extractedTxId = finalLogExtractor.extractNext( buffer );
-                                if ( extractedTxId == -1 )
-                                {
-                                    throw new RuntimeException( "Transaction " + extractedTxId
-                                                                + " is missing and can't be extracted from "
-                                                                + dataSource.getName() + ". Was about to extract "
-                                                                + startTxId + " to " + endTxId );
-                                }
-                                if ( extractedTxId != finalTxId )
-                                {
-                                    throw new RuntimeException( "Expected txId " + finalTxId + ", but was "
-                                                                + extractedTxId );
-                                }
+                                throw new RuntimeException(
+                                        "Transaction "
+                                                + finalTxId
+                                                + " is missing and can't be extracted from "
+                                                + dataSource.getName()
+                                                + ". Was about to extract "
+                                                + startTxId + " to "
+                                                + endTxId );
                             }
-                            catch ( IOException e )
+                            if ( extractedTxId != finalTxId )
                             {
-                                throw new RuntimeException( e );
+                                throw new RuntimeException(
+                                        "Expected txId " + finalTxId
+                                                + ", but was "
+                                                + extractedTxId );
                             }
                         }
-                    };
-                    stream.add( Triplet.of( dataSource.getName(), txId, extractor ) );
-                    // the next one has to be seen to be decided upon.
-                    skip = 0;
-                }
-                else
-                {
-                    // the next TxExtractor has to skip at least this one.
-                    skip++;
-                }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+                };
+                stream.add( Triplet.of( dataSource.getName(), txId,
+                        extractor ) );
             }
             return logExtractor;
         }
@@ -300,8 +277,8 @@ public class MasterUtil
      *            those that evaluate to true
      * @return The response, packed with the latest transactions
      */
-    public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb, SlaveContext context, T response,
-            Predicate<Pair<Integer, Long>> filter )
+    public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb,
+            SlaveContext context, T response, Long endTxOrNull )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
@@ -318,11 +295,11 @@ public class MasterUtil
                     throw new RuntimeException( "No data source '" + resourceName + "' found" );
                 }
                 resourceNames.add( resourceName );
-                final long masterLastTx = dataSource.getLastCommittedTxId();
+                long masterLastTx = dataSource.getLastCommittedTxId();
                 if ( txEntry.getTxId() >= masterLastTx ) continue;
+                long endTx = endTxOrNull == null ? masterLastTx : Math.min( masterLastTx, endTxOrNull.longValue() );
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
-                        dataSource, txEntry.getTxId() + 1, masterLastTx, stream,
-                        filter );
+                        dataSource, txEntry.getTxId() + 1, endTx, stream );
                 logExtractors.add( logExtractor );
             }
             StoreId storeId = dsManager.getNeoStoreDataSource().getStoreId();
@@ -363,7 +340,7 @@ public class MasterUtil
         }
 
         List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
-                getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, MasterUtil.ALL ) ) :
+                getTransactionStreamForDatasource( dataSource, startTx, endTx, stream ) ) :
                 Collections.<LogExtractor>emptyList();
         StoreId storeId = ( (NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ) ).getStoreId();
         return new Response<Void>( null, storeId, createTransactionStream(
@@ -402,17 +379,20 @@ public class MasterUtil
                 ResourceReleaser.NO_OP );
     }
 
-    public static final Predicate<Pair<Integer, Long>> ALL = new Predicate<Pair<Integer, Long>>()
+    public static <T> void applyReceivedTransactions( Response<T> response, GraphDatabaseAPI graphDb, TxHandler txHandler,
+            final Integer machineIdToExcludeOrNull ) throws IOException
     {
-        @Override
-        public boolean accept( Pair<Integer, Long> item )
+        Predicate<Start> filter = machineIdToExcludeOrNull == null ? XaLogicalLog.NO_FILTER : new Predicate<LogEntry.Start>()
         {
-            return true;
-        }
-    };
-
-    public static <T> void applyReceivedTransactions( Response<T> response, GraphDatabaseAPI graphDb, TxHandler txHandler ) throws IOException
-    {
+            private final int machineId = machineIdToExcludeOrNull.intValue();
+            
+            @Override
+            public boolean accept( LogEntry.Start item )
+            {
+                return item.getLocalId() != machineId;
+            }
+        };
+        
         XaDataSourceManager dataSourceManager = graphDb.getXaDataSourceManager();
         try
         {
@@ -424,7 +404,7 @@ public class MasterUtil
                 ReadableByteChannel txStream = tx.third().extract();
                 try
                 {
-                    dataSource.applyCommittedTransaction( tx.second(), txStream );
+                    dataSource.applyCommittedTransaction( tx.second(), txStream, filter );
                 }
                 finally
                 {

@@ -46,7 +46,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
@@ -133,7 +132,7 @@ public class MasterImpl implements Master
     {
         return this.graphDb;
     }
-
+    
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -178,12 +177,12 @@ public class MasterImpl implements Master
 
     private <T> Response<T> packResponse( SlaveContext context, T response )
     {
-        return packResponse( context, response, MasterUtil.ALL );
+        return packResponse( context, response, null );
     }
 
-    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Pair<Integer, Long>> filter )
+    private <T> Response<T> packResponse( SlaveContext context, T response, Long endTxOrNull )
     {
-        return MasterUtil.packResponse( graphDb, context, response, filter );
+        return MasterUtil.packResponse( graphDb, context, response, endTxOrNull );
     }
 
     private Transaction getTx( SlaveContext txId )
@@ -281,14 +280,14 @@ public class MasterImpl implements Master
                 finishThisAndResumeOther( otherTx, txId, false );
                 return;
             }
-
+            
             TransactionManager txManager = graphDb.getTxManager();
-
+            
             // update time stamp to current time so that we know that this tx just completed
             // a request and can now again start to be monitored, so that it can be
             // rolled back if it's getting old.
             tx.updateTime();
-
+            
             txManager.suspend();
             if ( otherTx != null )
             {
@@ -393,31 +392,8 @@ public class MasterImpl implements Master
         {
             XaDataSource dataSource = graphDb.getXaDataSourceManager()
                     .getXaDataSource( resource );
-            final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
-            final int slaveMachineId = context.machineId();
-            Predicate<Pair<Integer, Long>> upUntilThisTx = new Predicate<Pair<Integer, Long>>()
-            {
-                public boolean accept( Pair<Integer, Long> item )
-                {
-                    /*
-                     * Skip all transactions that are later than this one and are from
-                     * the same machine. We have to be strict about where the transaction
-                     * a slave commits comes from. The obvious path is as a response to
-                     * the commit HA request. However, it is possible for a tx A to be
-                     * committed on master but before it returns to be committed to the
-                     * originating slave a later tx B from the same slave can be committed
-                     * on the master and returned to the slave - since the slave context
-                     * for B does not contain A's txid (it is not committed on the slave)
-                     * A's data will be streamed back to the slave with B's response. When
-                     * A returns to the slave it will already have been injected leading
-                     * to dual start entries, making recovery impossible.
-                     * To avoid all that, we skip txs that are of this slave, since it will
-                     * receive them via the normal commit route.
-                     */
-                    return item.other() < txId && slaveMachineId != item.first();
-                }
-            };
-            return packResponse( context, txId, upUntilThisTx );
+            long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
+            return packResponse( context, txId, txId-1 );
         }
         catch ( IOException e )
         {
@@ -441,7 +417,7 @@ public class MasterImpl implements Master
             transactions.get( context ).markAsFinishAsap();
             throw e;
         }
-
+        
         finishThisAndResumeOther( otherTx, context, success );
         return packResponse( context, null );
     }
@@ -548,33 +524,33 @@ public class MasterImpl implements Master
         }
         return result;
     }
-
+    
     static class MasterTransaction
     {
         private final Transaction transaction;
         private final AtomicLong timeLastSuspended = new AtomicLong();
         private volatile boolean finishAsap;
-
+        
         MasterTransaction( Transaction transaction )
         {
             this.transaction = transaction;
         }
-
+        
         void updateTime()
         {
             this.timeLastSuspended.set( System.currentTimeMillis() );
         }
-
+        
         void resetTime()
         {
             this.timeLastSuspended.set( 0 );
         }
-
+        
         void markAsFinishAsap()
         {
             this.finishAsap = true;
         }
-
+        
         boolean finishAsap()
         {
             return this.finishAsap;
