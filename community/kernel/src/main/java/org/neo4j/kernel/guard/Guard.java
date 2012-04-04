@@ -67,7 +67,7 @@ public class Guard
 
     public <T extends GuardInternal> T stop()
     {
-        T guardInternal = currentGuard();
+        T guardInternal = Guard.this.<T>currentGuard();
         if ( guardInternal != null )
         {
             threadLocal.remove();
