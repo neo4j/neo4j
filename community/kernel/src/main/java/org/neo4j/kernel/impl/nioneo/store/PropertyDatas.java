@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.kernel.impl.cache.SizeOfs;
+
 public class PropertyDatas
 {
     private static abstract class PrimitivePropertyData implements PropertyData
@@ -30,6 +32,13 @@ public class PropertyDatas
         {
             this.index = index;
             this.id = id;
+        }
+        
+        public int size()
+        {
+            // all primitives fit in 8 byte value
+            // Object + id(long) + index(int) + value(pad)
+            return 16 + 8 + 8;
         }
         
         @Override
@@ -302,6 +311,11 @@ public class PropertyDatas
             super( index, id );
             this.value = value;
         }
+        
+        public int size()
+        {
+            return super.size() + 8;
+        }
 
         @SuppressWarnings( "boxing" )
         @Override
@@ -338,11 +352,36 @@ public class PropertyDatas
             this.value = value;
         }
 
+        public int size()
+        {
+            return super.size() + 8;
+        }
+        
         @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
             return value;
+        }
+    }
+    
+    private static int sizeOf( Object value )
+    {
+        if ( value == null )
+        {
+            return 0;
+        }
+        if ( value instanceof String )
+        {
+            return SizeOfs.sizeOf( (String) value );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            return SizeOfs.sizeOfArray( value );
+        }
+        else
+        {
+            throw new IllegalStateException( "Unkown type: " + value.getClass() + " [" + value + "]" ); 
         }
     }
     
@@ -357,6 +396,12 @@ public class PropertyDatas
             this.index = index;
             this.id = id;
             this.value = value;
+        }
+        
+        public int size()
+        {
+            // Object + id(long) + value(Object) + index(int)
+            return 16 + 8 + 8 + 4 + sizeOf( value );
         }
 
         @Override

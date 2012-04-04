@@ -49,6 +49,11 @@ class LowRelationshipImpl extends RelationshipImpl
         this.idAndMore = (((long)typeId) << 48) | ((startNodeId&0xF00000000L)<<12) | ((endNodeId&0xF00000000L)<<8) | id;
     }
     
+    public int size()
+    {
+        return super.size() + 16 + 8 + 8;
+    }
+    
     @Override
     public long getId()
     {
@@ -83,5 +88,11 @@ class LowRelationshipImpl extends RelationshipImpl
     {
         return "RelationshipImpl #" + this.getId() + " of type " + getTypeId()
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
+    }
+
+    @Override
+    protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, sizeBefore, sizeAfter );
     }
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 
 import org.junit.BeforeClass;
@@ -33,27 +30,36 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
     private static final String PATH = getStorePath( "cache-db" );
-    
+
     @BeforeClass
     public static void clear()
     {
         deleteFileOrDirectory( new File( PATH ) );
     }
-    
+
     private GraphDatabaseService newDb( String cacheType )
     {
         return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( Config.CACHE_TYPE, cacheType ) );
     }
-    
+
     @Test
     public void testDefaultCache()
     {
         GraphDatabaseService db = newDb( null );
-        assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
-        db.shutdown();
+        try
+        {
+            assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -63,7 +69,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.weak, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
     public void testSoftRefCache()
     {
@@ -87,14 +93,22 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         assertEquals( CacheType.strong, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
-    
+
     @Test
-    public void testOldCache()
+    public void testArrayCache()
     {
-        GraphDatabaseService db = newDb( "old" );
-        assertEquals( CacheType.old, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        GraphDatabaseService db = newDb( "array" );
+        assertEquals( CacheType.array, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
+
+//    @Test
+//    public void testOldCache()
+//    {
+//        GraphDatabaseService db = newDb( "old" );
+//        assertEquals( CacheType.old, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+//        db.shutdown();
+//    }
 
     @Test
     public void testInvalidCache()

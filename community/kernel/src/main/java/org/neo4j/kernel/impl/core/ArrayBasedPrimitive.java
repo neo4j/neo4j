@@ -36,7 +36,23 @@ abstract class ArrayBasedPrimitive extends Primitive
     {
         super( newPrimitive );
     }
-
+    
+    public int size()
+    {
+        // properties(PropertyData[])
+        int size = 8;
+        if ( properties != null )
+        {
+            size += 16;
+            for ( PropertyData data : properties )
+            {
+                size += data.size();
+                size += 8; // array slot
+            }
+        }
+        return size;
+    }
+    
     @Override
     protected void setEmptyProperties()
     {
@@ -60,9 +76,11 @@ abstract class ArrayBasedPrimitive extends Primitive
     }
 
     @Override
-    public void setProperties( ArrayMap<Integer, PropertyData> properties )
+    public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
     {
+        int before = size();
         this.properties = toPropertyArray( properties );
+        updateSize( before, size(), nodeManager );
     }
 
     @Override
@@ -87,7 +105,7 @@ abstract class ArrayBasedPrimitive extends Primitive
     @Override
     protected void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp )
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
     {
         synchronized ( this )
         {
@@ -95,6 +113,7 @@ abstract class ArrayBasedPrimitive extends Primitive
             PropertyData[] newArray = properties;
             if ( newArray == null ) return;
 
+            int before = size();
             /*
              * add map will definitely be added in the properties array - all properties
              * added and later removed in the same tx are removed from there as well.
@@ -162,6 +181,7 @@ abstract class ArrayBasedPrimitive extends Primitive
                 }
             }
 
+            // these size changes are updated from lock releaser
             if ( newArraySize < newArray.length )
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];
@@ -172,6 +192,8 @@ abstract class ArrayBasedPrimitive extends Primitive
             {
                 properties = newArray;
             }
+            int after = size();
+            updateSize( before, after, nodeManager );
         }
     }
 }

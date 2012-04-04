@@ -19,29 +19,31 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Map;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 
 class ReadOnlyNodeManager extends NodeManager
 {
-    ReadOnlyNodeManager( GraphDatabaseService graphDbService,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
+    ReadOnlyNodeManager( GraphDatabaseService graphDbService, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            CacheType cacheType )
+            CacheType cacheType, DiagnosticsManager diagnostics, StringLogger logger, Map<Object,Object> params )
     {
-        super( graphDbService, cacheManager, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator, null, cacheType );
+        super( graphDbService, lockManager, lockReleaser,
+                transactionManager, persistenceManager, idGenerator, null, cacheType, diagnostics, logger, params );
     }
 
     @Override

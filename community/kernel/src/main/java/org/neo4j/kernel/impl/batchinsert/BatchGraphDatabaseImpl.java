@@ -50,7 +50,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     final BatchInserterImpl batchInserter;
 
     private final LruCache<Long,NodeBatchImpl> nodes =
-        new LruCache<Long,NodeBatchImpl>( "NodeCache", 10000, null )
+        new LruCache<Long,NodeBatchImpl>( "NodeCache", 10000 )
         {
             @Override
             public void elementCleaned( NodeBatchImpl node )
@@ -64,7 +64,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         };
 
     private final LruCache<Long,RelationshipBatchImpl> rels =
-        new LruCache<Long,RelationshipBatchImpl>( "RelCache", 10000, null )
+        new LruCache<Long,RelationshipBatchImpl>( "RelCache", 10000 )
         {
             @Override
             public void elementCleaned( RelationshipBatchImpl rel )

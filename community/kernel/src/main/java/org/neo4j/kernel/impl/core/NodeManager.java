@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,12 +41,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.cache.AtomicArrayCache;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
 import org.neo4j.kernel.impl.cache.StrongReferenceCache;
@@ -65,6 +66,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class NodeManager
 {
@@ -73,10 +76,11 @@ public class NodeManager
     private long referenceNodeId = 0;
 
     private final GraphDatabaseService graphDbService;
-    private final Cache<Long,NodeImpl> nodeCache;
-    private final Cache<Long,RelationshipImpl> relCache;
-    private final AdaptiveCacheManager cacheManager;
+    private final Cache<NodeImpl> nodeCache;
+    private final Cache<RelationshipImpl> relCache;
+
     private final CacheType cacheType;
+
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
@@ -100,14 +104,17 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    NodeManager( GraphDatabaseService graphDb,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
+    private final StringLogger logger;
+
+    NodeManager( GraphDatabaseService graphDb, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            RelationshipTypeCreator relTypeCreator, CacheType cacheType )
+            RelationshipTypeCreator relTypeCreator, CacheType cacheType,
+            DiagnosticsManager diagnostics, StringLogger logger,
+            Map<Object,Object> params )
     {
+        this.logger = logger;
         this.graphDbService = graphDb;
-        this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
         this.propertyIndexManager = new PropertyIndexManager(
@@ -121,8 +128,8 @@ public class NodeManager
             persistenceManager, idGenerator, relTypeCreator );
 
         this.cacheType = cacheType;
-        this.nodeCache = cacheType.node( cacheManager );
-        this.relCache = cacheType.relationship( cacheManager );
+        this.nodeCache = diagnostics.tryAppendProvider( cacheType.node( logger, params ) );
+        this.relCache =  diagnostics.tryAppendProvider( cacheType.relationship( logger, params ) );
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
@@ -236,26 +243,36 @@ public class NodeManager
     public void start( Map<Object,Object> params )
     {
         parseParams( params );
-        nodeCache.resize( maxNodeCacheSize );
-        relCache.resize( maxRelCacheSize );
-        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
-        {
-            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
-                minNodeCacheSize );
-            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio,
-                minRelCacheSize );
-            cacheManager.start( params );
-        }
+//        nodeCache.resize( maxNodeCacheSize );
+//        relCache.resize( maxRelCacheSize );
+//        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
+//        {
+//            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
+//                minNodeCacheSize );
+//            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio,
+//                minRelCacheSize );
+//            cacheManager.start( params );
+//        }
     }
 
     public void stop()
     {
-        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
+        if ( nodeCache instanceof AtomicArrayCache )
         {
-            cacheManager.stop();
-            cacheManager.unregisterCache( nodeCache );
-            cacheManager.unregisterCache( relCache );
+            ((AtomicArrayCache<NodeImpl>) nodeCache).printStatistics();
         }
+        if ( relCache instanceof AtomicArrayCache )
+        {
+            ((AtomicArrayCache<RelationshipImpl>) relCache).printStatistics();
+        }
+        nodeCache.clear();
+        relCache.clear();
+//        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
+//        {
+//            cacheManager.stop();
+//            cacheManager.unregisterCache( nodeCache );
+//            cacheManager.unregisterCache( relCache );
+//        }
     }
 
     public Node createNode()
@@ -268,7 +285,8 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
-            nodeCache.put( id, node );
+            // nodeCache.put( id, node );
+            nodeCache.put( node );
             success = true;
             return proxy;
         }
@@ -329,7 +347,8 @@ public class NodeManager
                 startNode.addRelationship( this, type, id, DirectionWrapper.OUTGOING );
                 secondNode.addRelationship( this, type, id, DirectionWrapper.INCOMING );
             }
-            relCache.put( rel.getId(), rel );
+            // relCache.put( rel.getId(), rel );
+            relCache.put( rel );
             success = true;
             return proxy;
         }
@@ -418,7 +437,8 @@ public class NodeManager
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
             node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-            nodeCache.put( nodeId, node );
+//            nodeCache.put( nodeId, node );
+            nodeCache.put( node );
             return new NodeProxy( nodeId, this );
         }
         finally
@@ -485,7 +505,8 @@ public class NodeManager
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
             node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-            nodeCache.put( nodeId, node );
+//            nodeCache.put( nodeId, node );
+            nodeCache.put( node );
             return node;
         }
         finally
@@ -547,7 +568,8 @@ public class NodeManager
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
             relationship = newRelationshipImpl( relId, startNodeId, endNodeId, type, typeId, false );
-            relCache.put( relId, relationship );
+            // relCache.put( relId, relationship );
+            relCache.put( relationship );
             return new RelationshipProxy( relId, this );
         }
         finally
@@ -630,7 +652,8 @@ public class NodeManager
             }
             relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
                     type, typeId, false );
-            relCache.put( relId, relationship );
+            // relCache.put( relId, relationship );
+            relCache.put( relationship );
             return relationship;
         }
         finally
@@ -644,9 +667,9 @@ public class NodeManager
         nodeCache.remove( nodeId );
     }
 
-    public void removeRelationshipFromCache( long id )
+    public void removeRelationshipFromCache( long relId )
     {
-        relCache.remove( id );
+        relCache.remove( relId );
     }
 
     Object loadPropertyValue( PropertyData property )
@@ -659,7 +682,8 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
+    // Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
@@ -667,26 +691,30 @@ public class NodeManager
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
-        Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
+        // Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
+        List<RelationshipImpl> relsList = new ArrayList<RelationshipImpl>( 150 );
 
         Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
         boolean hasLoops = loops != null;
         if ( hasLoops )
         {
-            receiveRelationships( loops, newRelationshipMap, relsMap, DirectionWrapper.BOTH, true );
+            receiveRelationships( loops, newRelationshipMap, relsList, DirectionWrapper.BOTH, true );
         }
         receiveRelationships( rels.first().get( DirectionWrapper.OUTGOING ), newRelationshipMap,
-                relsMap, DirectionWrapper.OUTGOING, hasLoops );
+                relsList, DirectionWrapper.OUTGOING, hasLoops );
         receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
-                relsMap, DirectionWrapper.INCOMING, hasLoops );
+                relsList, DirectionWrapper.INCOMING, hasLoops );
 
         // relCache.putAll( relsMap );
-        return Triplet.of( newRelationshipMap, relsMap, rels.other() );
+        return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
+//    private void receiveRelationships(
+//            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
+//            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
     private void receiveRelationships(
             Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
+            List<RelationshipImpl> relsList, DirectionWrapper dir, boolean hasLoops )
     {
         for ( RelationshipRecord rel : rels )
         {
@@ -699,8 +727,8 @@ public class NodeManager
                 assert type != null;
                 relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
                         rel.getType(), false );
-                relsMap.put( relId, relImpl );
-                // relCache.put( relId, relImpl );
+//                relsMap.put( relId, relImpl );
+                relsList.add( relImpl );
             }
             else
             {
@@ -716,9 +744,14 @@ public class NodeManager
         }
     }
 
-    void putAllInRelCache( Map<Long,RelationshipImpl> map )
+//    void putAllInRelCache( Map<Long,RelationshipImpl> map )
+//    {
+//         relCache.putAll( map );
+//    }
+
+    void putAllInRelCache( Collection<RelationshipImpl> relationships  )
     {
-         relCache.putAll( map );
+         relCache.putAll( relationships );
     }
 
     ArrayMap<Integer, PropertyData> loadGraphProperties( boolean light )
@@ -745,7 +778,7 @@ public class NodeManager
     }
 
     @SuppressWarnings( "unchecked" )
-    public Iterable<? extends Cache<?, ?>> caches()
+    public Iterable<? extends Cache<?>> caches()
     {
         return Arrays.asList( nodeCache, relCache );
     }
@@ -1208,93 +1241,214 @@ public class NodeManager
 
     public static enum CacheType
     {
-        weak( false, "weak reference cache" )
+        weak( "weak reference cache" )
         {
             @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new WeakLruCache<Long,NodeImpl>( NODE_CACHE_NAME );
+                return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new WeakLruCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+                return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        soft( false, "soft reference cache" )
+        soft( "soft reference cache" )
         {
             @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new SoftLruCache<Long,NodeImpl>( NODE_CACHE_NAME );
+                return new SoftLruCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new SoftLruCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+                return new SoftLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        old( true, "lru cache" )
+        none( "no cache" )
         {
             @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new LruCache<Long,NodeImpl>( NODE_CACHE_NAME, 1500, cacheManager );
+                return new NoCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new LruCache<Long,RelationshipImpl>(
-                        RELATIONSHIP_CACHE_NAME, 3500, cacheManager );
+                return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        none( false, "no cache" )
+        strong( "strong reference cache" )
         {
             @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new NoCache<Long, NodeImpl>( NODE_CACHE_NAME );
+                return new StrongReferenceCache<NodeImpl>( NODE_CACHE_NAME );
             }
 
             @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new NoCache<Long, RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+                return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        strong( false, "strong reference cache" )
+        array( "atomic array reference cache" )
         {
             @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new StrongReferenceCache<Long,NodeImpl>( NODE_CACHE_NAME );
+                return new AtomicArrayCache<NodeImpl>( memToUse(logger, params, true),
+                        fraction( params, Config.NODE_ARRAY_CACHE_ARRAY_FRACTION ),
+                        minLogInterval( params ), NODE_CACHE_NAME, logger );
             }
 
             @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new StrongReferenceCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+                return new AtomicArrayCache<RelationshipImpl>( memToUse(logger, params, false),
+                        fraction( params, Config.RELATIONSHIP_ARRAY_CACHE_ARRAY_FRACTION ),
+                        minLogInterval( params ), RELATIONSHIP_CACHE_NAME, logger );
+            }
+
+            private long minLogInterval( Map<Object, Object> params )
+            {
+                String interval = (String) params.get( Config.ARRAY_CACHE_MIN_LOG_INTERVAL );
+                long result = 60000; // Default: a minute
+                try
+                {
+                    if ( interval != null ) result = TimeUtil.parseTimeMillis( interval );
+                }
+                catch ( Exception e )
+                {
+                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
+                                                        + Config.ARRAY_CACHE_MIN_LOG_INTERVAL, e );
+                }
+                if ( result < 0 )
+                {
+                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
+                                                        + Config.ARRAY_CACHE_MIN_LOG_INTERVAL );
+                }
+                return result;
+            }
+
+            @SuppressWarnings( "boxing" )
+            private long memToUse( StringLogger logger, Map<Object, Object> params, boolean isNode )
+            {
+                Long node = memory(params, Config.NODE_ARRAY_CACHE_SIZE);
+                Long rel = memory(params, Config.RELATIONSHIP_ARRAY_CACHE_SIZE);
+                final long available = Runtime.getRuntime().maxMemory(), advicedMax = available / 2;
+                if (node == null && rel == null)
+                {
+                    return advicedMax / 2;
+                }
+                long total = 0;
+                if ( node != null )
+                {
+                    node = Math.max( AtomicArrayCache.MIN_SIZE, node );
+                    total += node;
+                }
+                if ( rel != null )
+                {
+                    rel = Math.max( AtomicArrayCache.MIN_SIZE, rel );
+                    total += rel;
+                }
+                if ( total > available )
+                    throw new IllegalArgumentException(
+                                                        String.format( "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
+                                                                       node, rel, total, available ) );
+                if ( total > advicedMax )
+                    logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
+                                                      node, rel, total, advicedMax ) );
+                if ( node == null )
+                {
+                    node = Math.max( AtomicArrayCache.MIN_SIZE, advicedMax - rel );
+                }
+                if ( rel == null )
+                {
+                    rel = Math.max( AtomicArrayCache.MIN_SIZE, advicedMax - node );
+                }
+                return isNode ? node : rel;
+            }
+
+            private float fraction( Map<Object, Object> params, String param )
+            {
+                String fraction = (String)params.get( Config.NODE_ARRAY_CACHE_ARRAY_FRACTION );
+                float result = 1;
+                try
+                {
+                    if ( fraction != null ) result = Float.parseFloat( fraction );
+                }
+                catch ( NumberFormatException e )
+                {
+                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param,
+                                                        e );
+                }
+                if ( result < 1 || result > 10 )
+                {
+                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param );
+                }
+                return result;
+            }
+
+            @SuppressWarnings( "boxing" )
+            private Long memory( Map<Object, Object> params, String param )
+            {
+                Object config = params.get( param );
+                if ( config != null )
+                {
+                    String mem = config.toString();
+                    mem = mem.trim().toLowerCase();
+                    long multiplier = 1;
+                    if ( mem.endsWith( "m" ) )
+                    {
+                        multiplier = 1024 * 1024;
+                        mem = mem.substring( 0, mem.length() - 1 );
+                    }
+                    else if ( mem.endsWith( "k" ) )
+                    {
+                        multiplier = 1024;
+                        mem = mem.substring( 0, mem.length() - 1 );
+                    }
+                    else if ( mem.endsWith( "g" ) )
+                    {
+                        multiplier = 1024 * 1024 * 1024;
+                        mem = mem.substring( 0, mem.length() - 1 );
+                    }
+                    try
+                    {
+                        return Long.parseLong( mem ) * multiplier;
+                    }
+                    catch ( NumberFormatException e )
+                    {
+                        throw new IllegalArgumentException( "Invalid configuration value [" + mem + "] for " + param, e );
+                    }
+                }
+                else
+                {
+                    return null;
+                }
             }
         };
+
 
         private static final String NODE_CACHE_NAME = "NodeCache";
         private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
 
-        final boolean needsCacheManagerRegistration;
         private final String description;
 
-        private CacheType( boolean needsCacheManagerRegistration, String description )
+        private CacheType( String description )
         {
-            this.needsCacheManagerRegistration = needsCacheManagerRegistration;
             this.description = description;
         }
 
-        abstract Cache<Long,NodeImpl> node( AdaptiveCacheManager cacheManager );
+        abstract Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params );
 
-        abstract Cache<Long,RelationshipImpl> relationship( AdaptiveCacheManager cacheManager );
+        abstract Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params );
 
         public String getDescription()
         {
@@ -1344,5 +1498,15 @@ public class NodeManager
     public void removeGraphPropertiesFromCache()
     {
         graphProperties = instantiateGraphProperties();
+    }
+
+    void updateCacheSize( NodeImpl node, int sizeBefore, int sizeAfter )
+    {
+        nodeCache.updateSize( node, sizeBefore, sizeAfter );
+    }
+
+    void updateCacheSize( RelationshipImpl rel, int sizeBefore, int sizeAfter )
+    {
+        relCache.updateSize( rel, sizeBefore, sizeAfter );
     }
 }

@@ -40,7 +40,7 @@ public class Cache
             map = new HashMap<String, LruCache<String,Collection<Long>>>();
             caching.put( identifier, map );
         }
-        map.put( key, new LruCache<String, Collection<Long>>( key, size, null ) );
+        map.put( key, new LruCache<String, Collection<Long>>( key, size ) );
     }
     
     public LruCache<String, Collection<Long>> get( IndexIdentifier identifier, String key )

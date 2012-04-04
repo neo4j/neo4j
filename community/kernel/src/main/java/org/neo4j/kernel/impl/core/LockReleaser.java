@@ -446,9 +446,9 @@ public class LockReleaser
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap,
-                        nodeElement.relationshipRemoveMap, nodeElement.firstRel );
+                        nodeElement.relationshipRemoveMap, nodeElement.firstRel, nodeManager );
                     node.commitPropertyMaps( nodeElement.propertyAddMap,
-                        nodeElement.propertyRemoveMap, nodeElement.firstProp );
+                        nodeElement.propertyRemoveMap, nodeElement.firstProp, nodeManager );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -469,7 +469,7 @@ public class LockReleaser
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     rel.commitPropertyMaps( relElement.propertyAddMap,
-                        relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue() );
+                        relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue(), nodeManager );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -481,7 +481,7 @@ public class LockReleaser
         if ( element.graph != null && param == Status.STATUS_COMMITTED )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( element.graph.getPropertyAddMap( false ),
-                    element.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue() );
+                    element.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue(), nodeManager );
         }
         cowMap.remove( cowTxId );
     }

@@ -36,12 +36,14 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class GraphDbModule
 {
@@ -54,40 +56,39 @@ public class GraphDbModule
 
     private final GraphDatabaseService graphDbService;
     private final TransactionManager transactionManager;
-    private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
     private final EntityIdGenerator idGenerator;
-    
+
     private NodeManager nodeManager;
-    
+
+    private MeasureDoNothing monitorGc;
+
     private boolean readOnly = false;
 
-    public GraphDbModule( GraphDatabaseService graphDb,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
+    public GraphDbModule( GraphDatabaseService graphDb, LockManager lockManager,
             TransactionManager transactionManager, EntityIdGenerator idGenerator,
             boolean readOnly )
     {
         this.graphDbService = graphDb;
-        this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
         this.idGenerator = idGenerator;
         this.readOnly = readOnly;
     }
-    
+
     public void init()
     {
     }
 
-    public void start( LockReleaser lockReleaser, 
+    public void start( LockReleaser lockReleaser,
         PersistenceManager persistenceManager, RelationshipTypeCreator relTypeCreator,
-        Map<Object,Object> params )
+        DiagnosticsManager diagnostics, Map<Object,Object> params )
     {
         if ( !startIsOk )
         {
             return;
         }
-        
+
         String cacheTypeName = (String) params.get( Config.CACHE_TYPE );
         CacheType cacheType = null;
         try
@@ -100,18 +101,18 @@ public class GraphDbModule
                     Arrays.asList( CacheType.values() ) + " or keep empty for default (" +
                     DEFAULT_CACHE_TYPE + ")", e.getCause() );
         }
-        
+
         if ( !readOnly )
         {
-            nodeManager = new NodeManager( graphDbService, cacheManager,
+            nodeManager = new NodeManager( graphDbService,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, relTypeCreator, cacheType );
+                    persistenceManager, idGenerator, relTypeCreator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService,
-                    cacheManager, lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator, cacheType );
+                    lockManager, lockReleaser,
+                    transactionManager, persistenceManager, idGenerator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
         }
         // load and verify from PS
         NameData[] relTypes = null;
@@ -127,9 +128,45 @@ public class GraphDbModule
             nodeManager.setHasAllpropertyIndexes( true );
         }
         nodeManager.start( params );
+
+        startGCMonitor( params );
+
         startIsOk = false;
     }
-    
+
+    private void startGCMonitor( Map<Object, Object> params )
+    {
+        int monitor_wait_time = 100;
+        try
+        {
+            String value = (String) params.get( Config.GC_MONITOR_WAIT_TIME );
+            if ( value != null )
+            {
+                monitor_wait_time = Integer.parseInt( value );
+            }
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+        int monitor_threshold = 200;
+        try
+        {
+            String value = (String) params.get( Config.GC_MONITOR_THRESHOLD );
+            if ( value != null )
+            {
+                monitor_threshold = Integer.parseInt( value );
+            }
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+        StringLogger logger = (StringLogger) params.get( StringLogger.class );
+        monitorGc = new MeasureDoNothing( logger, monitor_wait_time, monitor_threshold );
+        monitorGc.start();
+    }
+
     private void beginTx()
     {
         try
@@ -138,16 +175,16 @@ public class GraphDbModule
         }
         catch ( NotSupportedException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to begin transaction.", e );
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to begin transaction.", e );
         }
     }
-    
+
     private void commitTx()
     {
         try
@@ -179,7 +216,7 @@ public class GraphDbModule
             throw new TransactionFailureException( "Failed to commit.", e );
         }
     }
-    
+
     public void setReferenceNodeId( Long nodeId )
     {
         nodeManager.setReferenceNodeId( nodeId.longValue() );
@@ -222,6 +259,7 @@ public class GraphDbModule
         nodeManager.clearPropertyIndexes();
         nodeManager.clearCache();
         nodeManager.stop();
+        monitorGc.stopMeasuring();
     }
 
     public void destroy()

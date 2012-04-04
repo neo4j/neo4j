@@ -19,21 +19,9 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.Map;
+import java.util.Collection;
 
-/**
- * Simple cache interface with add, remove, get, clear and size methods. If null
- * is passed as parameter an {@link IllegalArgumentException} is thrown.
- * <p>
- * If the cache cleans it self (for example a LIFO cache with maximum size) the
- * <CODE>elementCleaned</CODE> method is invoked. Override the default
- * implementation (that does nothing) if needed.
- * <p>
- * TODO: Create a pluggable, scalable, configurable, self analyzing/adaptive,
- * statistics/reportable cache architecture. Emil will code that in four hours
- * when he has time.
- */
-public interface Cache<K,V>
+public interface Cache<E extends EntityWithSize>
 {
     /**
      * Returns the name of the cache.
@@ -45,12 +33,10 @@ public interface Cache<K,V>
     /**
      * Adds <CODE>element</CODE> to cache.
      *
-     * @param key
-     *            the key for the element
      * @param element
      *            the element to cache
      */
-    public void put( K key, V value );
+    public void put( E value );
 
     /**
      * Removes the element for <CODE>key</CODE> from cache and returns it. If
@@ -62,7 +48,7 @@ public interface Cache<K,V>
      * @return the removed element or <CODE>null</CODE> if element didn't
      *         exist
      */
-    public V remove( K key );
+    public E remove( long key );
 
     /**
      * Returns the cached element for <CODE>key</CODE>. If the element isn't
@@ -72,7 +58,7 @@ public interface Cache<K,V>
      *            the key for the element
      * @return the cached element or <CODE>null</CODE> if element didn't exist
      */
-    public V get( K key );
+    public E get( long key );
 
     /**
      * Removing all cached elements.
@@ -80,25 +66,27 @@ public interface Cache<K,V>
     public void clear();
 
     /**
-     * Returns the cache size.
+     * Returns the cache size. This number means different depending on cache type.
      *
      * @return cache size
      */
-    public int size();
+    public long size();
 
-    void elementCleaned( V value );
+    // void elementCleaned( V value );
 
-    public int maxSize();
+    // public int maxSize();
 
-    public void resize( int newSize );
+    // public void resize( int newSize );
 
-    public boolean isAdaptive();
+    // public boolean isAdaptive();
 
-    public void setAdaptiveStatus( boolean status );
+    // public void setAdaptiveStatus( boolean status );
 
-    public void putAll( Map<K,V> map );
+    public void putAll( Collection<E> values );
 
     public long hitCount();
 
     public long missCount();
+
+    public void updateSize( E entity, int sizeBefore, int sizeAfter );
 }
