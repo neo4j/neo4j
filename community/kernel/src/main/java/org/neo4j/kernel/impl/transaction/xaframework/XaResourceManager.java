@@ -37,8 +37,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -718,23 +716,18 @@ public class XaResourceManager
         return recoveredTxCount > 0;
     }
 
-    public synchronized boolean applyCommittedTransaction(
-            ReadableByteChannel transaction, long txId, Predicate<Start> filter ) throws IOException
+    public synchronized void applyCommittedTransaction(
+            ReadableByteChannel transaction, long txId ) throws IOException
     {
         long lastCommittedTxId = dataSource.getLastCommittedTxId();
         if ( lastCommittedTxId + 1 == txId )
         {
-            return log.applyTransaction( transaction, filter );
+            log.applyTransaction( transaction );
         }
         else if ( lastCommittedTxId + 1 < txId )
         {
             throw new IOException( "Tried to apply transaction with txId=" + txId +
                     " but last committed txId=" + lastCommittedTxId );
-        }
-        else
-        {
-            // We have already applied this transaction. Don't apply it again.
-            return false;
         }
     }
 

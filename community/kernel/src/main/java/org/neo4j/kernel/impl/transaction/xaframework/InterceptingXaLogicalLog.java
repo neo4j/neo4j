@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +42,12 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
 
     @Override
     protected LogDeserializer getLogDeserializer(
-            ReadableByteChannel byteChannel, int newIdentifier ) throws IOException
+            ReadableByteChannel byteChannel )
     {
         final TransactionInterceptor first = TransactionInterceptorProvider.resolveChain(
                 providers, ds );
 
-        LogDeserializer toReturn = new LogDeserializer( byteChannel, newIdentifier )
+        LogDeserializer toReturn = new LogDeserializer( byteChannel )
         {
             @Override
             protected void intercept( List<LogEntry> entries )
