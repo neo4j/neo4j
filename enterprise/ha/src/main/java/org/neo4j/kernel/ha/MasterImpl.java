@@ -401,18 +401,7 @@ public class MasterImpl implements Master
                 {
                     /*
                      * Skip all transactions that are later than this one and are from
-                     * the same machine. We have to be strict about where the transaction
-                     * a slave commits comes from. The obvious path is as a response to
-                     * the commit HA request. However, it is possible for a tx A to be
-                     * committed on master but before it returns to be committed to the
-                     * originating slave a later tx B from the same slave can be committed
-                     * on the master and returned to the slave - since the slave context
-                     * for B does not contain A's txid (it is not committed on the slave)
-                     * A's data will be streamed back to the slave with B's response. When
-                     * A returns to the slave it will already have been injected leading
-                     * to dual start entries, making recovery impossible.
-                     * To avoid all that, we skip txs that are of this slave, since it will
-                     * receive them via the normal commit route.
+                     * the same machine.
                      */
                     return item.other() < txId && slaveMachineId != item.first();
                 }
