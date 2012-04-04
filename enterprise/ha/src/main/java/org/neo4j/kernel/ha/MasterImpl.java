@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import static java.util.Collections.synchronizedMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,10 +30,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -42,7 +46,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
@@ -55,8 +58,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.util.Collections.*;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -176,12 +177,12 @@ public class MasterImpl implements Master
 
     private <T> Response<T> packResponse( SlaveContext context, T response )
     {
-        return packResponse( context, response, MasterUtil.ALL );
+        return packResponse( context, response, null );
     }
 
-    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
+    private <T> Response<T> packResponse( SlaveContext context, T response, Long endTxOrNull )
     {
-        return MasterUtil.packResponse( graphDb, context, response, filter );
+        return MasterUtil.packResponse( graphDb, context, response, endTxOrNull );
     }
 
     private Transaction getTx( SlaveContext txId )
@@ -391,15 +392,8 @@ public class MasterImpl implements Master
         {
             XaDataSource dataSource = graphDb.getXaDataSourceManager()
                     .getXaDataSource( resource );
-            final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
-            Predicate<Long> upUntilThisTx = new Predicate<Long>()
-            {
-                public boolean accept( Long item )
-                {
-                    return item < txId;
-                }
-            };
-            return packResponse( context, txId, upUntilThisTx );
+            long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
+            return packResponse( context, txId, txId-1 );
         }
         catch ( IOException e )
         {

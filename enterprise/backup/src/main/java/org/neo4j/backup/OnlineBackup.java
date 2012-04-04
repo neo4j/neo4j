@@ -20,6 +20,9 @@
 
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.com.Client;
 import org.neo4j.com.MasterUtil;
@@ -66,9 +70,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.impl.util.StringLogger.*;
 
 public class OnlineBackup
 {
@@ -441,7 +442,7 @@ public class OnlineBackup
     {
         try
         {
-            MasterUtil.applyReceivedTransactions( response, graphDb, txHandler );
+            MasterUtil.applyReceivedTransactions( response, graphDb, txHandler, null );
             getLastCommittedTxs( graphDb );
         }
         catch ( IOException e )
