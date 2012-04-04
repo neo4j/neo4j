@@ -46,7 +46,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.core.NodeManager.CacheType;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
@@ -117,7 +117,7 @@ public class TestConfig
                     newHighlyAvailableDatabaseBuilder( dir.directory( "gcr" + i, true ).getAbsolutePath() ).
                     setConfig( HaSettings.server_id, "" + i ).
                     setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-                    setConfig( GraphDatabaseSettings.cache_type, CacheType.gcr.name() ).
+                    setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).
                     newGraphDatabase();
             dbs.add( db );
         }
