@@ -25,9 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.StringTokenizer;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.ClosableIterable;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
@@ -313,9 +311,9 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
-    public boolean applyCommittedTransaction( long txId, ReadableByteChannel transaction, Predicate<Start> filter ) throws IOException
+    public void applyCommittedTransaction( long txId, ReadableByteChannel transaction ) throws IOException
     {
-        return getXaContainer().getResourceManager().applyCommittedTransaction( transaction, txId, filter );
+        getXaContainer().getResourceManager().applyCommittedTransaction( transaction, txId );
     }
 
     public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
