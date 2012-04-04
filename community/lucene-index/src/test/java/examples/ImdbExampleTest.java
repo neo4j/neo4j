@@ -19,6 +19,11 @@
  */
 package examples;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -26,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.TermQuery;
@@ -56,13 +62,11 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.cache.WeakCacheProvider;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.CacheTypeSetting.*;
 
 public class ImdbExampleTest
 {
@@ -72,7 +76,7 @@ public class ImdbExampleTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, weak ).newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {

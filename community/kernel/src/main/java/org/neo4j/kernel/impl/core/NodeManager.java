@@ -48,11 +48,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.GCResistantCache;
-import org.neo4j.kernel.impl.cache.NoCache;
-import org.neo4j.kernel.impl.cache.SoftLruCache;
-import org.neo4j.kernel.impl.cache.StrongReferenceCache;
-import org.neo4j.kernel.impl.cache.WeakLruCache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -65,7 +61,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -84,12 +79,6 @@ public class NodeManager
         public static final GraphDatabaseSetting.IntegerSetting max_node_cache_size = GraphDatabaseSettings.max_node_cache_size;
 
         public static final GraphDatabaseSetting.IntegerSetting max_relationship_cache_size = GraphDatabaseSettings.max_relationship_cache_size;
-
-        public static final GraphDatabaseSetting.StringSetting node_cache_size = GraphDatabaseSettings.node_cache_size;
-        public static final GraphDatabaseSetting.StringSetting relationship_cache_size = GraphDatabaseSettings.relationship_cache_size;
-        public static final GraphDatabaseSetting.FloatSetting node_cache_array_fraction = GraphDatabaseSettings.node_cache_array_fraction;
-        public static final GraphDatabaseSetting.FloatSetting relationship_cache_array_fraction = GraphDatabaseSettings.relationship_cache_array_fraction;
-        public static final GraphDatabaseSetting.StringSetting gcr_cache_min_log_interval = GraphDatabaseSettings.gcr_cache_min_log_interval;
     }
     
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
@@ -102,7 +91,7 @@ public class NodeManager
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
 
-    private final CacheType cacheType;
+    private final CacheProvider cacheProvider;
 
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
@@ -128,7 +117,7 @@ public class NodeManager
     public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            RelationshipTypeHolder relationshipTypeHolder, CacheType cacheType, PropertyIndexManager propertyIndexManager,
+            RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider, PropertyIndexManager propertyIndexManager,
             NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, 
             Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
@@ -144,7 +133,7 @@ public class NodeManager
         this.relationshipLookups = relationshipLookups;
         this.relTypeHolder = relationshipTypeHolder;
 
-        this.cacheType = cacheType;
+        this.cacheProvider = cacheProvider;
         this.nodeCache = nodeCache;
         this.relCache = relCache;
         for ( int i = 0; i < loadLocks.length; i++ )
@@ -161,9 +150,9 @@ public class NodeManager
         return graphDbService;
     }
 
-    public CacheType getCacheType()
+    public CacheProvider getCacheType()
     {
-        return this.cacheType;
+        return this.cacheProvider;
     }
 
     @Override
@@ -206,14 +195,8 @@ public class NodeManager
     @Override
     public void shutdown()
     {
-        if ( nodeCache instanceof GCResistantCache )
-        {
-            ((GCResistantCache<NodeImpl>) nodeCache).printStatistics();
-        }
-        if ( relCache instanceof GCResistantCache )
-        {
-            ((GCResistantCache<RelationshipImpl>) relCache).printStatistics();
-        }
+        nodeCache.printStatistics();
+        relCache.printStatistics();
         nodeCache.clear();
         relCache.clear();
     }
@@ -1185,130 +1168,6 @@ public class NodeManager
     public RelationshipTypeHolder getRelationshipTypeHolder()
     {
         return this.relTypeHolder;
-    }
-
-    public static enum CacheType
-    {
-        weak( "weak reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Config config )
-            {
-                return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
-            {
-                return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        soft( "soft reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Config config )
-            {
-                return new SoftLruCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
-            {
-                return new SoftLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        none( "no cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Config config )
-            {
-                return new NoCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
-            {
-                return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        strong( "strong reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Config config )
-            {
-                return new StrongReferenceCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
-            {
-                return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        gcr( "GC resistant cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Config config )
-            {
-                long available = Runtime.getRuntime().maxMemory();
-                long defaultMem = ( available / 4);
-                long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
-                long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
-                checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<NodeImpl>( node, config.getFloat( Configuration.node_cache_array_fraction ), config.getDuration( Configuration.gcr_cache_min_log_interval ),
-                        NODE_CACHE_NAME, logger );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Config config )
-            {
-                long available = Runtime.getRuntime().maxMemory();
-                long defaultMem = ( available / 4);
-                long node = config.isSet( Configuration.node_cache_size ) ? config.getSize( Configuration.node_cache_size ) : defaultMem;
-                long rel = config.isSet( Configuration.relationship_cache_size ) ? config.getSize(Configuration.relationship_cache_size) : defaultMem;
-                checkMemToUse( logger, node, rel, available );
-                return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( Configuration.relationship_cache_array_fraction ), config.getDuration( Configuration.gcr_cache_min_log_interval ),
-                        RELATIONSHIP_CACHE_NAME, logger );
-            }
-
-            @SuppressWarnings( "boxing" )
-            private void checkMemToUse( StringLogger logger, long node, long rel, long available )
-            {
-                long advicedMax = available / 2;
-                long total = 0;
-                node = Math.max( GCResistantCache.MIN_SIZE, node );
-                total += node;
-                rel = Math.max( GCResistantCache.MIN_SIZE, rel );
-                total += rel;
-                if ( total > available )
-                    throw new IllegalArgumentException(
-                                                        String.format( "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
-                                                                       node, rel, total, available ) );
-                if ( total > advicedMax )
-                    logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
-                                                      node, rel, total, advicedMax ) );
-            }
-        };
-
-
-        private static final String NODE_CACHE_NAME = "NodeCache";
-        private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
-
-        private final String description;
-
-        private CacheType( String description )
-        {
-            this.description = description;
-        }
-
-        abstract Cache<NodeImpl> node( StringLogger logger, Config config );
-
-        abstract Cache<RelationshipImpl> relationship( StringLogger logger, Config config );
-
-        public String getDescription()
-        {
-            return this.description;
-        }
     }
 
     public void addNodePropertyTracker(
