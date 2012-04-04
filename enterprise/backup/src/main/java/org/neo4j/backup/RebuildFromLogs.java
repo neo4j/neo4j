@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.*;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
@@ -85,7 +84,7 @@ class RebuildFromLogs
 
     public void applyTransaction( long txId, ReadableByteChannel txData ) throws IOException
     {
-        nioneo.applyCommittedTransaction( txId, txData, XaLogicalLog.NO_FILTER );
+        nioneo.applyCommittedTransaction( txId, txData );
     }
 
     private static XaDataSource getDataSource( AbstractGraphDatabase graphdb, String name )

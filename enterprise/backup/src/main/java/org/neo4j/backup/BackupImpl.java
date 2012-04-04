@@ -60,6 +60,6 @@ class BackupImpl implements TheBackupInterface
         {
             MasterUtil.rotateLogs( graphDb );
         }
-        return MasterUtil.packResponse( graphDb, context, null, null );
+        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
     }
 }
