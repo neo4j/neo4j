@@ -196,7 +196,7 @@ public abstract class AbstractGraphDatabase
     protected KernelData extensions;
     protected Caches caches;
 
-    private final LifeSupport life = new LifeSupport();
+    protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
 
     protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
