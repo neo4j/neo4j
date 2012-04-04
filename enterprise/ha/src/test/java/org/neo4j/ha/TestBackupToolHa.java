@@ -35,6 +35,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
@@ -66,7 +67,8 @@ public class TestBackupToolHa
                     OnlineBackupSettings.online_backup_port.name(), ""+(4444+i) );
             if ( clusterName != null )
                 config.put( HaSettings.cluster_name.name(), clusterName );
-            GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ) );
+            GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config,
+                    Service.load( IndexProvider.class ), Service.load( KernelExtension.class ), Service.load( CacheProvider.class ) );
             instances.add( instance );
         }
         

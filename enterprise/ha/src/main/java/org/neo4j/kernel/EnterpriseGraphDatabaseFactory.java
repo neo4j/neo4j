@@ -43,7 +43,7 @@ public class EnterpriseGraphDatabaseFactory
             {
                 config.put( "ephemeral", "false" );
 
-                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions);
+                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders );
             }
         });
     }

@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
 
 /**
  * Settings for high availability mode

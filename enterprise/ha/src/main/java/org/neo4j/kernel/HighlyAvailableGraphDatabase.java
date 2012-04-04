@@ -73,6 +73,7 @@ import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.EnterpriseConfigurationMigrator;
+import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
@@ -86,6 +87,8 @@ import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -134,6 +137,7 @@ public class HighlyAvailableGraphDatabase
     private String storeDir;
     private Iterable<IndexProvider> indexProviders;
     private Iterable<KernelExtension> kernelExtensions;
+    private Iterable<CacheProvider> cacheProviders;
     private final StringLogger messageLog;
     private volatile AbstractGraphDatabase internalGraphDatabase;
     private NodeProxy.NodeLookup nodeLookup;
@@ -178,20 +182,25 @@ public class HighlyAvailableGraphDatabase
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config)
     {
-        this(storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ));
+        this(storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
+                Service.load( CacheProvider.class ) );
     }
 
     /**
      * Create a new instance of HighlyAvailableGraphDatabase
      */
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, 
+            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
     {
         this.storeDir = storeDir;
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
+        this.cacheProviders = cacheProviders;
 
         config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
         config.put( AbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
+        if ( !config.containsKey( GraphDatabaseSettings.cache_type.name() ) )
+            config.put( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME );
 
         // Apply defaults to configuration just for logging purposes
         ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( GraphDatabaseSettings.class );
@@ -211,7 +220,7 @@ public class HighlyAvailableGraphDatabase
         messageLog = logging.getLogger( Loggers.NEO4J );
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
-        caches = new Caches( messageLog );
+        caches = new HaCaches( messageLog );
         
         /*
          * TODO
@@ -1102,7 +1111,7 @@ public class HighlyAvailableGraphDatabase
         this.storeId = storeId;
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
-                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, caches );
+                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, cacheProviders, caches );
 /*
 
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
@@ -1132,7 +1141,7 @@ public class HighlyAvailableGraphDatabase
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
         MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this,
-                broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, caches);
+                broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, cacheProviders, caches);
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
