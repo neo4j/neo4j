@@ -39,6 +39,7 @@ import static java.lang.Math.max;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
@@ -74,6 +75,15 @@ import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogR
  */
 public class XaLogicalLog implements LogLoader
 {
+    public static final Predicate<Start> NO_FILTER = new Predicate<Start>()
+    {
+        @Override
+        public boolean accept( Start item )
+        {
+            return true;
+        }
+    };
+    
     private final Logger log;
 
     private static final char CLEAN = 'C';
@@ -1147,9 +1157,9 @@ public class XaLogicalLog implements LogLoader
         return fileSystem.fileExists( file ) ? fileSystem.deleteFile( file ) : false;
     }
 
-    protected LogDeserializer getLogDeserializer(ReadableByteChannel byteChannel)
+    protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel, int newXidIdentifier ) throws IOException
     {
-        return new LogDeserializer( byteChannel );
+        return new LogDeserializer( byteChannel, newXidIdentifier );
     }
 
     protected class LogDeserializer
@@ -1159,45 +1169,52 @@ public class XaLogicalLog implements LogLoader
         LogEntry.Commit commitEntry;
 
         private final List<LogEntry> logEntries;
+        private final int newXidIdentifier;
 
-        protected LogDeserializer( ReadableByteChannel byteChannel )
+        protected LogDeserializer( ReadableByteChannel byteChannel, int newXidIdentifier ) throws IOException
         {
             this.byteChannel = byteChannel;
-            this.logEntries = new LinkedList<LogEntry>();
+            this.newXidIdentifier = newXidIdentifier;
+            this.logEntries = readEntries();
+            if ( startEntry == null )
+                throw new IOException( "Unable to find start entry" );
         }
 
-        public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
-                throws IOException
+        private List<LogEntry> readEntries() throws IOException
         {
-            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel,
-                    cf );
-            if ( entry == null )
+            List<LogEntry> entries = new LinkedList<LogEntry>();
+            LogEntry entry = null;
+            while ( (entry = LogIoUtils.readEntry( sharedBuffer, byteChannel, cf )) != null )
             {
-                try
+                entry.setIdentifier( newXidIdentifier );
+                entries.add( entry );
+                if ( entry instanceof LogEntry.Commit )
                 {
-                    intercept( logEntries );
-                    apply();
-                    return false;
+                    assert startEntry != null;
+                    commitEntry = (LogEntry.Commit) entry;
                 }
-                catch ( Error e )
+                else if ( entry instanceof LogEntry.Start )
                 {
-                    startEntry = null;
-                    commitEntry = null;
-                    throw e;
+                    startEntry = (LogEntry.Start) entry;
                 }
             }
-            entry.setIdentifier( newXidIdentifier );
-            logEntries.add( entry );
-            if ( entry instanceof LogEntry.Commit )
+            return entries;
+        }
+        
+        public boolean apply() throws IOException
+        {
+            try
             {
-                assert startEntry != null;
-                commitEntry = (LogEntry.Commit) entry;
+                intercept( logEntries );
+                applyEntries();
+                return false;
             }
-            else if ( entry instanceof LogEntry.Start )
+            catch ( Error e )
             {
-                startEntry = (LogEntry.Start) entry;
+                startEntry = null;
+                commitEntry = null;
+                throw e;
             }
-            return true;
         }
 
         protected void intercept( List<LogEntry> logEntries )
@@ -1205,7 +1222,7 @@ public class XaLogicalLog implements LogLoader
             // default do nothing
         }
 
-        private void apply() throws IOException
+        private void applyEntries() throws IOException
         {
             for ( LogEntry entry : logEntries )
             {
@@ -1252,15 +1269,11 @@ public class XaLogicalLog implements LogLoader
         logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
                 ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
 
-        long logEntriesFound = 0;
         scanIsComplete = false;
-        LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
+        LogDeserializer logApplier = getLogDeserializer( byteChannel, xidIdent );
         long startEntryPosition = writeBuffer.getFileChannelPosition();
-        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-        {
-            logEntriesFound++;
-        }
+        logApplier.apply();
         byteChannel.close();
         LogEntry.Start startEntry = logApplier.getStartEntry();
         if ( startEntry == null )
@@ -1302,53 +1315,53 @@ public class XaLogicalLog implements LogLoader
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
 
-    public synchronized void applyTransaction( ReadableByteChannel byteChannel )
+    public synchronized boolean applyTransaction( ReadableByteChannel byteChannel, Predicate<Start> filter )
         throws IOException
     {
-//        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
-        long logEntriesFound = 0;
-        scanIsComplete = false;
-        LogDeserializer logApplier = getLogDeserializer( byteChannel );
-        int xidIdent = getNextIdentifier();
-        long startEntryPosition = writeBuffer.getFileChannelPosition();
-        boolean successfullyApplied = false;
         try
         {
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+            scanIsComplete = false;
+            int xidIdent = getNextIdentifier();
+            LogDeserializer logApplier = getLogDeserializer( byteChannel, xidIdent );
+            LogEntry.Start startEntry = logApplier.getStartEntry();
+            if ( !filter.accept( startEntry ) )
+                return false;
+            
+            long startEntryPosition = writeBuffer.getFileChannelPosition();
+            boolean successfullyApplied = false;
+            try
             {
-                logEntriesFound++;
+                logApplier.apply();
+                successfullyApplied = true;
             }
-            successfullyApplied = true;
+            finally
+            {
+                if ( !successfullyApplied && logApplier.getStartEntry() != null && xidIdentMap.get( xidIdent ) != null )
+                {   // Unmap this identifier if tx not applied correctly
+                    try
+                    {
+                        xaRm.forget( logApplier.getStartEntry().getXid() );
+                    }
+                    catch ( XAException e )
+                    {
+                        throw new IOException( e );
+                    }
+                    finally
+                    {
+                        xidIdentMap.remove( xidIdent );
+                    }
+                }
+            }
+            scanIsComplete = true;
+            startEntry.setStartPosition( startEntryPosition );
+            cacheTxStartPosition( logApplier.getCommitEntry().getTxId(), startEntry );
+            checkLogRotation();
+            return true;
         }
         finally
         {
-            if ( !successfullyApplied && logApplier.getStartEntry() != null && xidIdentMap.get( xidIdent ) != null )
-            {   // Unmap this identifier if tx not applied correctly
-                try
-                {
-                    xaRm.forget( logApplier.getStartEntry().getXid() );
-                }
-                catch ( XAException e )
-                {
-                    throw new IOException( e );
-                }
-                finally
-                {
-                    xidIdentMap.remove( xidIdent );
-                }
-            }
+            byteChannel.close();
         }
-        byteChannel.close();
-        scanIsComplete = true;
-        LogEntry.Start startEntry = logApplier.getStartEntry();
-        if ( startEntry == null )
-        {
-            throw new IOException( "Unable to find start entry" );
-        }
-        startEntry.setStartPosition( startEntryPosition );
-        cacheTxStartPosition( logApplier.getCommitEntry().getTxId(), startEntry );
-//        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
-        checkLogRotation();
     }
 
     private String getLog1FileName()

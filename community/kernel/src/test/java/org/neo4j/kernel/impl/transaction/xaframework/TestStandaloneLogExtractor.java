@@ -70,7 +70,7 @@ public class TestStandaloneLogExtractor
              */
             if ( expectedTxId == 9 ) expectedTxId = -1;
             if ( txId == -1 ) break;
-            ds.applyCommittedTransaction( txId, buffer );
+            ds.applyCommittedTransaction( txId, buffer, XaLogicalLog.NO_FILTER );
         }
         DbRepresentation newRep = DbRepresentation.of( newDb );
         newDb.shutdown();
