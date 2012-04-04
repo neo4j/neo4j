@@ -84,4 +84,10 @@ public class NoCache<E extends EntityWithSize> implements Cache<E>
     {
         // do nothing
     }
+    
+    @Override
+    public void printStatistics()
+    {
+        // do nothing
+    }
 }

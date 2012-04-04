@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -38,7 +39,7 @@ public class ReadOnlyNodeManager extends NodeManager
     public ReadOnlyNodeManager(Config config, GraphDatabaseService graphDb, LockManager lockManager, LockReleaser lockReleaser,
                                TransactionManager transactionManager, PersistenceManager persistenceManager,
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
-                               CacheType cacheType, PropertyIndexManager propertyIndexManager,
+                               CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {

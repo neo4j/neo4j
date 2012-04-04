@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting.*;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.*;
@@ -41,11 +42,13 @@ public class GraphDatabaseFactory
 {
     protected List<IndexProvider> indexProviders;
     protected List<KernelExtension> kernelExtensions;
+    protected List<CacheProvider> cacheProviders;
 
     public GraphDatabaseFactory()
     {
         indexProviders = Iterables.toList(Service.load( IndexProvider.class ));
         kernelExtensions = Iterables.toList( Service.load(KernelExtension.class) );
+        cacheProviders = Iterables.toList( Service.load(CacheProvider.class) );
     }
 
     public GraphDatabaseService newEmbeddedDatabase(String path)
@@ -62,9 +65,9 @@ public class GraphDatabaseFactory
                 config.put( "ephemeral", "false" );
 
                 if ( TRUE.equalsIgnoreCase(config.get( read_only.name() )))
-                    return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders, kernelExtensions);
+                    return new EmbeddedReadOnlyGraphDatabase(path, config, indexProviders, kernelExtensions, cacheProviders);
                 else
-                    return new EmbeddedGraphDatabase(path, config, indexProviders, kernelExtensions);
+                    return new EmbeddedGraphDatabase(path, config, indexProviders, kernelExtensions, cacheProviders);
             }
         });
     }

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -68,13 +69,15 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
-        this( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ));
+        this( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
+                Service.load( CacheProvider.class ));
     }
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
-            Map<String, String> params, Iterable<IndexProvider> indexProviders1, Iterable<KernelExtension> kernelExtensions)
+            Map<String, String> params, Iterable<IndexProvider> indeProviders, Iterable<KernelExtension> kernelExtensions,
+            Iterable<CacheProvider> cacheProviders )
     {
-        super( storeDir, addReadOnly(params), indexProviders1, kernelExtensions );
+        super( storeDir, addReadOnly(params), indeProviders, kernelExtensions, cacheProviders );
         run();
     }
 

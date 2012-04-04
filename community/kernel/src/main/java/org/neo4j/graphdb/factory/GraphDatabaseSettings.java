@@ -22,6 +22,14 @@ package org.neo4j.graphdb.factory;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+
 /**
  * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.
  */
@@ -33,7 +41,8 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting read_only = new BooleanSetting("read_only");
 
     @Description("Select the type of high-level cache to use")
-    @Default( CacheTypeSetting.gcr )
+//    @Default( CacheTypeSetting.gcr )
+    @Default( "soft" )
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
     @Default( TRUE)
@@ -194,28 +203,36 @@ public abstract class GraphDatabaseSettings
     public static class CacheTypeSetting
         extends OptionsSetting
     {
-        @Description("Use weak reference cache")
-        public static final String weak = "weak";
+//        @Description("Use weak reference cache")
+//        public static final String weak = "weak";
+//
+//        @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
+//                     "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache." )
+//        public static final String soft = "soft";
+//
+//        @Description("Don't use caching")
+//        public static final String none = "none";
+//
+//        @Description("Use strong references")
+//        public static final String strong = "strong";
+//
+//        @Description("GC resistant cache. Gets assigned a configurable amount of space in the JVM heap \n" +
+//        		"and will evict objects whenever it grows bigger than that, instead of relying on GC for eviction. \n" +
+//        		"It has got the fastest insert/lookup times and should be optimal for most use cases. \n" +
+//        		"This is the default cache setting." )
+//        public static final String gcr = "gcr";
 
-        @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
-                     "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache." )
-        public static final String soft = "soft";
-
-        @Description("Don't use caching")
-        public static final String none = "none";
-
-        @Description("Use strong references")
-        public static final String strong = "strong";
-
-        @Description("GC resistant cache. Gets assigned a configurable amount of space in the JVM heap \n" +
-        		"and will evict objects whenever it grows bigger than that, instead of relying on GC for eviction. \n" +
-        		"It has got the fastest insert/lookup times and should be optimal for most use cases. \n" +
-        		"This is the default cache setting." )
-        public static final String gcr = "gcr";
-
-        public CacheTypeSetting( )
+        public CacheTypeSetting()
         {
-            super( "cache_type", weak, soft, none, strong, gcr );
+            super( "cache_type", availableCaches() );
+        }
+
+        private static String[] availableCaches()
+        {
+            List<String> list = new ArrayList<String>();
+            for ( CacheProvider provider : Service.load( CacheProvider.class ) )
+                list.add( provider.getName() );
+            return list.toArray( new String[list.size()] );
         }
     }
 
