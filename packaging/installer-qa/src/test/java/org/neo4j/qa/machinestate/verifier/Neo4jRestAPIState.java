@@ -19,17 +19,15 @@
  */
 package org.neo4j.qa.machinestate.verifier;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import org.neo4j.qa.driver.Neo4jDriver;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-
 public class Neo4jRestAPIState implements Verifier {
+
+    private static final int MAX_RETRIES = 3;
 
     private enum AssertState {
         RESPONDS,
@@ -71,7 +69,7 @@ public class Neo4jRestAPIState implements Verifier {
         {
             assertRESTWorks(driver);
             fail("Server is still listening to port 7474, was expecting server to be turned off.");
-        } catch (ClientHandlerException e)
+        } catch (Exception e)
         {
             // no-op
         }
@@ -79,9 +77,20 @@ public class Neo4jRestAPIState implements Verifier {
 
     private void assertRESTWorks(Neo4jDriver driver)
     {
-        String url = "http://"+driver.vm().definition().ip()+":7474/db/data/";
-        JaxRsResponse r = RestRequest.req().get(url);
-        assertThat(url + " responds with HTTP 200 on a HTTP GET request.", r.getStatus(), equalTo(200));
+        try {
+            String url = "http://"+driver.vm().definition().ip()+":7474/db/data/";
+            JaxRsResponse r = null;
+            for(int retries=0;retries<MAX_RETRIES;retries++) {
+                r = RestRequest.req().get(url);
+                if( r.getStatus() == 200 ) {
+                    return;
+                }
+                Thread.sleep(1000 * 1l);
+            }
+            fail("Server should have responded with 200, got " + r.getEntity() + ". Response body was: " + r.getEntity());
+        } catch(InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
     
 }
