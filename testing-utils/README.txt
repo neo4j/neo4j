@@ -1,4 +1,4 @@
-A package of  utilitiy classes useful for testing  projects built with
+A package of  utility classes useful for testing  projects built with
 the Neo4j Graph Database.
 
 This includes the  classes in the org.neo4j.test package  (and the sub
