@@ -83,7 +83,7 @@ public class TestBackupToolHa
     @After
     public void after() throws Exception
     {
-        if(instances != null) 
+        if( instances != null ) 
         {
             for ( GraphDatabaseService instance : instances )
             {
@@ -91,7 +91,7 @@ public class TestBackupToolHa
             }
         }
         
-        if(zk != null) 
+        if( zk != null )
         {
             zk.shutdown();
         }
