@@ -20,10 +20,18 @@
 
 package org.neo4j.ha;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.backup.TestBackupToolEmbedded.BACKUP_PATH;
+import static org.neo4j.backup.TestBackupToolEmbedded.PATH;
+import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
+import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
@@ -38,10 +46,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
-
-import static org.junit.Assert.*;
-import static org.neo4j.backup.TestBackupToolEmbedded.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
 
 public class TestBackupToolHa
 {
@@ -79,11 +83,18 @@ public class TestBackupToolHa
     @After
     public void after() throws Exception
     {
-        for ( GraphDatabaseService instance : instances )
+        if( instances != null ) 
         {
-            instance.shutdown();
+            for ( GraphDatabaseService instance : instances )
+            {
+                instance.shutdown();
+            }
         }
-        zk.shutdown();
+        
+        if( zk != null )
+        {
+            zk.shutdown();
+        }
     }
     
     @Test
@@ -100,7 +111,7 @@ public class TestBackupToolHa
     }
     
     @Test
-    public void makeSureBackupCanBePerformedFromNonExistentCluster() throws Exception
+    public void makeSureBackupCannotBePerformedFromNonExistentCluster() throws Exception
     {
         String clusterName = "local.jvm.cluster";
         startCluster( clusterName );
