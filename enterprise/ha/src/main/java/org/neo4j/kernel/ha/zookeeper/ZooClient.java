@@ -667,6 +667,7 @@ public class ZooClient extends AbstractZooKeeperManager
     @Override
     public void shutdown()
     {
+        msgLog.close();
         this.shutdown = true;
         super.shutdown();
     }
