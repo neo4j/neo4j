@@ -100,7 +100,7 @@ public class TestBackupToolHa
     }
     
     @Test
-    public void makeSureBackupCanBePerformedFromNonExistentCluster() throws Exception
+    public void makeSureBackupCannotBePerformedFromNonExistentCluster() throws Exception
     {
         String clusterName = "local.jvm.cluster";
         startCluster( clusterName );
