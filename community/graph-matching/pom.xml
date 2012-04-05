@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graph-matching</artifactId>
-  <version>1.5.3-SNAPSHOT</version>
+  <version>1.5.3.RC2</version>
   <name>Neo4j - Graph Matching</name>
   <description>A graph pattern matcher for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -103,7 +103,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.5.3-SNAPSHOT</version>
+      <version>1.5.3.RC2</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
