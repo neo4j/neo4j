@@ -24,9 +24,13 @@ import static java.lang.Thread.getAllStackTraces;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DebugUtil
 {
@@ -83,5 +87,82 @@ public class DebugUtil
                 return true;
         }
         return false;
+    }
+    
+    public static class StackTracer
+    {
+        private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<Stack, AtomicInteger>();
+        
+        public void add( Throwable t )
+        {
+            Stack key = new Stack( t );
+            AtomicInteger count = uniqueStackTraces.get( key );
+            if ( count == null )
+            {
+                count = new AtomicInteger();
+                uniqueStackTraces.put( key, count );
+            }
+            count.incrementAndGet();
+        }
+        
+        public void print( PrintStream out )
+        {
+            long total = 0;
+            for ( Map.Entry<Stack, AtomicInteger> entry : uniqueStackTraces.entrySet() )
+            {
+                out.println( entry.getValue() + " times:" );
+                entry.getKey().stackTrace.printStackTrace( out );
+                total += entry.getValue().get();
+            }
+            out.println( "------" );
+            out.println( "Total:" + total );
+        }
+        
+        public StackTracer printAtShutdown( final PrintStream out )
+        {
+            Runtime.getRuntime().addShutdownHook( new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    print( out );
+                }
+            } );
+            return this;
+        }
+    }
+    
+    private static class Stack
+    {
+        private final Throwable stackTrace;
+        private final StackTraceElement[] elements;
+
+        Stack( Throwable stackTrace )
+        {
+            this.stackTrace = stackTrace;
+            this.elements = stackTrace.getStackTrace();
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            int hashCode = stackTrace.getMessage().hashCode();
+            for ( StackTraceElement element : stackTrace.getStackTrace() )
+                hashCode = hashCode * 9 + element.hashCode();
+            return hashCode;
+        }
+        
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( !( obj instanceof Stack) ) return false;
+            
+            Stack o = (Stack) obj;
+            if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) ) return false;
+            if ( elements.length != o.elements.length ) return false;
+            for ( int i = 0; i < elements.length; i++ )
+                if ( !elements[i].equals( o.elements[i] ) ) return false;
+            return true;
+        }
     }
 }

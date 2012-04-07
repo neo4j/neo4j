@@ -212,6 +212,12 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
         }
+        
+        @Override
+        byte[] readDynamicRecordHeader( byte[] recordBytes )
+        {
+            return new byte[0];
+        }
     },
     ARRAY( 10 )
     {
@@ -228,6 +234,24 @@ public enum PropertyType
         {
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
+        }
+        
+        @Override
+        byte[] readDynamicRecordHeader( byte[] recordBytes )
+        {
+            byte itemType = recordBytes[0];
+            if ( itemType == STRING.byteValue() )
+                return headOf( recordBytes, DynamicArrayStore.STRING_HEADER_SIZE );
+            else if ( itemType <= DOUBLE.byteValue() )
+                return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
+            throw new IllegalArgumentException( "Unknown array type " + itemType );
+        }
+
+        private byte[] headOf( byte[] bytes, int length )
+        {
+            byte[] head = new byte[length];
+            System.arraycopy( bytes, 0, head, 0, length );
+            return head;
         }
     },
     SHORT_STRING( 11 )
@@ -373,5 +397,10 @@ public enum PropertyType
     public int calculateNumberOfBlocksUsed( long firstBlock )
     {
         return 1;
+    }
+    
+    byte[] readDynamicRecordHeader( byte[] recordBytes )
+    {
+        throw new UnsupportedOperationException();
     }
 }
