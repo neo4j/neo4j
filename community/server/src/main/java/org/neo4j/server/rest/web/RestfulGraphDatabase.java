@@ -48,17 +48,13 @@ import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.repr.*;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 @Path( "/" )
 public class RestfulGraphDatabase
 {
+
     @SuppressWarnings( "serial" )
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -110,6 +106,12 @@ public class RestfulGraphDatabase
 
     public static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
     protected static final String PATH_AUTO_RELATIONSHIP_INDEX_GET = PATH_AUTO_RELATIONSHIP_INDEX + "/{key}/{value}";
+
+    private static final String PATH_AUTO_INDEXER = "autoIndexer/{type}";
+    private static final String PATH_AUTO_INDEXER_STATUS = PATH_AUTO_INDEXER + "/status";
+    private static final String PATH_AUTO_INDEXER_STATUS_SET = PATH_AUTO_INDEXER_STATUS + "/{status}";
+    private static final String PATH_AUTO_INDEXER_PROPERTIES = PATH_AUTO_INDEXER + "/properties";
+    private static final String PATH_AUTO_INDEXER_PROPERTIES_SET = PATH_AUTO_INDEXER_PROPERTIES + "/{property}";
 
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
@@ -1237,13 +1239,13 @@ public class RestfulGraphDatabase
         {
             ListRepresentation result = actions.pagedTraverse( traverserId, returnType );
 
-            return Response.ok( uriInfo.getRequestUri() )
+            return Response.ok(uriInfo.getRequestUri())
                     .entity( output.format( result ) )
                     .build();
         }
         catch ( NotFoundException e )
         {
-            return output.notFound( e );
+            return output.notFound(e);
         }
     }
 
@@ -1311,7 +1313,7 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
-            return output.ok( actions.findSinglePath( startNode, endNode, description ) );
+            return output.ok( actions.findSinglePath(startNode, endNode, description) );
         }
         catch ( BadInputException e )
         {
@@ -1323,7 +1325,7 @@ public class RestfulGraphDatabase
         }
         catch ( NotFoundException e )
         {
-            return output.notFound( e );
+            return output.notFound(e);
         }
 
     }
@@ -1349,4 +1351,40 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
     }
+
+    @GET
+    @Path( PATH_AUTO_INDEXER_STATUS )
+    public Response isAutoIndexerEnabled(@PathParam("type") String type) {
+        return output.ok(actions.isAutoIndexerEnabled(type));
+    }
+
+    @PUT
+    @Path( PATH_AUTO_INDEXER_STATUS_SET )
+    public Response setAutoIndexerEnabled(@PathParam("type") String type, @PathParam("status") boolean enable) {
+        actions.setAutoIndexerEnabled(type, enable);
+        return output.ok(Representation.emptyRepresentation());
+    }
+
+    @GET
+    @Path( PATH_AUTO_INDEXER_PROPERTIES )
+    public Response getAutoIndexedProperties(@PathParam("type") String type) {
+        return output.ok(actions.getAutoIndexedProperties(type));
+    }
+
+    @PUT
+    @Path( PATH_AUTO_INDEXER_PROPERTIES_SET )
+    public Response startAutoIndexingProperty(@PathParam("type") String type, @PathParam("property") String property) {
+        actions.startAutoIndexingProperty(type, property);
+        return output.ok(Representation.emptyRepresentation());
+
+    }
+
+    @DELETE
+    @Path( PATH_AUTO_INDEXER_PROPERTIES_SET )
+    public Response stopAutoIndexingProperty(@PathParam("type") String type, @PathParam("property") String property) {
+        actions.stopAutoIndexingProperty(type, property);
+        return output.ok(Representation.emptyRepresentation());
+    }
+
+
 }
