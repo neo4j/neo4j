@@ -10,20 +10,24 @@ if not active:
   sys.stdout.write(' ')
 else:
   title = ''
-  db = ''
-  for i in [2, 3]:
-    if len(sys.argv) > i:
-      key,value = sys.argv[i].split('=')
-      if key == 'title':
-        title = value
-      elif key == 'db':
-        db = value
+  if len(sys.argv) > 2:
+    title = sys.argv[2]
+  db = []
+  query = []
+  found_empty_line = False
+  data = sys.stdin.readlines()
+  for line in data:
+    if found_empty_line:
+      query.append(line)
+    else:
+      if len(line.strip()) == 0:
+        found_empty_line = True
+      else:
+        db.append(line)
   if len(db) == 0:
     sys.exit("A database has to be defined.")
-  data = sys.stdin.readlines()
-  if len(data) == 0:
+  if len(query) == 0:
     sys.exit("A query has to be defined.")
-  query = ''.join(data)
   body = []
   if len(title) > 0:
     body.append('<formalpara role="cypherconsole"><title>')
@@ -32,10 +36,10 @@ else:
   else:
     body.append('<simpara role="cypherconsole">')
   body.append('<database>')
-  body.append(db)
+  body.extend(db)
   body.append('</database>')
   body.append('<command>')
-  body.append(query)
+  body.append(' '.join(query))
   body.append('</command>')
   if len(title) > 1:
     body.append('</para></formalpara>')
