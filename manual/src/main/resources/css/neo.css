@@ -491,3 +491,22 @@ div.configsetting table tfoot th
   font-weight: normal;
 }
 
+p.cypherconsole
+{
+  display: none;
+}
+
+button.cypherconsole img
+{
+  vertical-align: bottom;
+  padding-right: .5em;
+}
+
+iframe.console
+{
+  width: 80em;
+  max-width: 95%;
+  height: 23em;
+  display: block;
+}
+

@@ -59,6 +59,10 @@
 
 <script type="text/javascript" src="js/tablestyler.js"></script>
 
+<!-- Cypher Console -->
+
+<script type="text/javascript" src="js/cypherconsole.js"></script>
+
 ]]>
 </xsl:text>
 
