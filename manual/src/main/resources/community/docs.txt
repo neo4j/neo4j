@@ -464,6 +464,39 @@ include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-cha
 
 :leveloffset: 2
 
+== Integrated Live Console ==
+
+A live console can be added and will show up in the online HTML version.
+
+This is how to do it, using Geoff to define the data, with an empty line to separate it from the query:
+
+[source]
+----
+ [cypherconsole]
+ ----
+ (A) {"name" : "Neo"}; 
+ (B) {"name" : "Trinity"};
+ (A)-[:LOVES]->(B)
+
+ start n = node(*)
+ return n
+ ----
+----
+
+And this is the result:
+
+[cypherconsole]
+----
+(A) {"name" : "Neo"};
+(B) {"name" : "Trinity"};
+(A)-[:LOVES]->(B)
+
+start n = node(*)
+return n
+----
+
+
+
 == Toolchain ==
 
 Useful links when configuring the docbook toolchain:
