@@ -7,7 +7,7 @@ The Neo4j Manual v{revnumber}
 
 :lucene-version: 3_5_0
 
-:cypherconsole: 0
+:console: 0
 
 include::preface/preface.txt[]
 
