@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.sleep;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -28,12 +39,6 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.Integer.*;
-import static java.lang.System.*;
-import static java.lang.Thread.*;
-import static junit.framework.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
 
 public class TestGuard
 {
@@ -120,7 +125,7 @@ public class TestGuard
         db.shutdown();
     }
 
-    @Test
+    @Test @Ignore
     public void testTimeoutGuardFail() throws InterruptedException
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
