@@ -466,13 +466,15 @@ include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-cha
 
 == Integrated Live Console ==
 
-A live console can be added and will show up in the online HTML version.
+An interactive console can be added and will show up in the online HTML version.
+An optional title can be added, which will be used for the text of the button.
 
 This is how to do it, using Geoff to define the data, with an empty line to separate it from the query:
 
 [source]
 ----
- [cypherconsole]
+ .Interactive Matrix Example
+ [console]
  ----
  (A) {"name" : "Neo"}; 
  (B) {"name" : "Trinity"};
@@ -485,7 +487,8 @@ This is how to do it, using Geoff to define the data, with an empty line to sepa
 
 And this is the result:
 
-[cypherconsole]
+.Interactive Matrix Example
+[console]
 ----
 (A) {"name" : "Neo"};
 (B) {"name" : "Trinity"};
