@@ -71,12 +71,13 @@ public class TestConfig
     public void testZkSessionTimeout() throws Exception
     {
         long timeout = 80000; // Default is 5000
-        HAGraphDb db = new HAGraphDb( dir.directory( "zkTimeout" ).getAbsolutePath(),
+        HAGraphDb db = new HAGraphDb( dir.directory( "zkTimeout", true ).getAbsolutePath(),
                 MapUtil.stringMap( HaConfig.CONFIG_KEY_SERVER_ID, "1",
                         HaConfig.CONFIG_KEY_COORDINATORS,
                         zoo.getConnectionString(),
                         HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT,
                         timeout + "ms" ) );
+            
         ZooKeeperBroker broker = (ZooKeeperBroker) db.getBroker();
 
         // Test ZooClient
