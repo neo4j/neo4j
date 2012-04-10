@@ -279,7 +279,11 @@ public class TestIdGenerator
             assertEquals( 1l, idGenerator.nextId() );
             assertEquals( 2l, idGenerator.nextId() );
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 30, 1000, false );
+            
+            // Since idGenerator.nextId() (which returns 2) will read ids 2 and 3, then
+            // 3 will be written at the end during the next close. And hence will be returned
+            // after 6.
             assertEquals( 4l, idGenerator.nextId() );
             assertEquals( 5l, idGenerator.nextId() );
             assertEquals( 6l, idGenerator.nextId() );
@@ -683,5 +687,37 @@ public class TestIdGenerator
         idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false );
         assertEquals( id, idGenerator.nextId() );
         idGenerator.close( true );
+    }
+
+    @Test
+    public void testChurnIdBatchAtGrabsize()
+    {
+        IdGenerator idGenerator = null;
+        try
+        {
+            IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
+            final int grabSize = 10, rounds = 10;
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, true );
+
+            for ( int i = 0; i < rounds; i++ )
+            {
+                Set<Long> ids = new HashSet<Long>();
+                for ( int j = 0; j < grabSize; j++ )
+                    ids.add( idGenerator.nextId() );
+                for ( Long id : ids )
+                    idGenerator.freeId( id );
+            }
+            long newId = idGenerator.nextId();
+            assertTrue( "Expected IDs to be reused (" + grabSize + " at a time). high ID was: " + newId,
+                    newId < grabSize*rounds );
+        }
+        finally
+        {
+            if ( idGenerator != null )
+                closeIdGenerator( idGenerator );
+            File file = new File( idGeneratorFile() );
+            if ( file.exists() )
+                assertTrue( file.delete() );
+        }
     }
 }

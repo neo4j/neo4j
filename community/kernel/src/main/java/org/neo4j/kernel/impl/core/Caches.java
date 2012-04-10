@@ -17,21 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.cache;
+package org.neo4j.kernel.impl.core;
 
-public abstract class ReferenceCache<E extends EntityWithSize> implements Cache<E>
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+
+/**
+ * A class for holding cache objects so that reuse between sessions is possible
+ * if the configuration stays the same. This helps when there's a cache which is
+ * very expensive to create.
+ * 
+ * @author Mattias Persson
+ */
+public interface Caches
 {
-    protected abstract void pollClearedValues();
+    void configure( CacheProvider cacheProvider, Config config );
 
-    @Override
-    public void updateSize( E entity, int newSize )
-    {
-        // do nothing
-    }
-
-    @Override
-    public void printStatistics()
-    {
-        // do nothing
-    }
+    Cache<NodeImpl> node();
+    
+    Cache<RelationshipImpl> relationship();
+    
+    void invalidate();
 }

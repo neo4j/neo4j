@@ -1,7 +1,6 @@
-1.7.M02 (2012-03-26)
+<NOT YET RELEASED>
 --------------------
 o Added the possibility to use multiple relationship types on patterns
-o Performance work around pattern matching
 
 1.7.M01 (2012-03-12)
 --------------------
