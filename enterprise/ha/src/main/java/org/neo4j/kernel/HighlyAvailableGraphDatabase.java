@@ -259,8 +259,52 @@ public class HighlyAvailableGraphDatabase
         this.broker = createBroker();
         this.pullUpdates = false;
         this.clusterClient = createClusterClient();
+        
+        migrateBranchedDataDirectoriesToRootDirectory();
 
         start();
+    }
+
+    private void migrateBranchedDataDirectoriesToRootDirectory()
+    {
+        File branchedDir = BranchedDataPolicy.getBranchedDataRootDirectory( storeDir );
+        branchedDir.mkdirs();
+        for ( File oldBranchedDir : new File( storeDir ).listFiles() )
+        {
+            if ( !oldBranchedDir.isDirectory() || !oldBranchedDir.getName().startsWith( "branched-" ) )
+                continue;
+            
+            long timestamp = 0;
+            try
+            {
+                timestamp = Long.parseLong( oldBranchedDir.getName().substring( oldBranchedDir.getName().indexOf( '-' ) + 1 ) );
+            }
+            catch ( NumberFormatException e )
+            {   // OK, it wasn't a branched directory after all.
+                continue;
+            }
+            
+            File targetDir = BranchedDataPolicy.getBranchedDataDirectory( storeDir, timestamp );
+            boolean success = false;
+            try
+            {
+                success = !fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
+            }
+            catch ( IOException e )
+            {   // OK, let's try copying instead.
+            }
+            if ( success )
+                continue;
+            
+            try
+            {
+                fileSystemAbstraction.copyFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Couldn't move branched directories to " + branchedDir, e );
+            }
+        }
     }
 
     private Logging createLogging()
@@ -1492,14 +1536,14 @@ public class HighlyAvailableGraphDatabase
         return localGraph().getKernelPanicGenerator();
     }
 
-    public enum BranchedDataPolicy
+    public static enum BranchedDataPolicy
     {
         keep_all
         {
             @Override
             void handle( HighlyAvailableGraphDatabase db )
             {
-                moveAwayDb( db, branchedDataDir( db ) );
+                moveAwayDb( db, newBranchedDataDir( db ) );
             }
         },
         keep_last
@@ -1507,9 +1551,9 @@ public class HighlyAvailableGraphDatabase
             @Override
             void handle( HighlyAvailableGraphDatabase db )
             {
-                File branchedDataDir = branchedDataDir( db );
+                File branchedDataDir = newBranchedDataDir( db );
                 moveAwayDb( db, branchedDataDir );
-                for ( File file : new File( db.getStoreDir() ).listFiles() )
+                for ( File file : getBranchedDataRootDirectory( db.getStoreDir() ).listFiles() )
                 {
                     if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                     {
@@ -1552,7 +1596,8 @@ public class HighlyAvailableGraphDatabase
             }
         };
 
-        static String BRANCH_PREFIX = "branched-";
+        // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
+        static String BRANCH_SUBDIRECTORY = "branched";
 
         abstract void handle( HighlyAvailableGraphDatabase db );
 
@@ -1568,9 +1613,9 @@ public class HighlyAvailableGraphDatabase
             }
         }
 
-        File branchedDataDir( HighlyAvailableGraphDatabase db )
+        File newBranchedDataDir( HighlyAvailableGraphDatabase db )
         {
-            File result = new File( db.getStoreDir(), BRANCH_PREFIX + System.currentTimeMillis() );
+            File result = getBranchedDataDirectory( db.getStoreDir(), System.currentTimeMillis() );
             result.mkdirs();
             return result;
         }
@@ -1585,14 +1630,50 @@ public class HighlyAvailableGraphDatabase
                 @Override
                 public boolean accept( File file )
                 {
-                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataRootDirectory( file );
                 }
             } );
         }
 
-        boolean isBranchedDataDirectory( File file )
+        public static boolean isBranchedDataRootDirectory( File directory )
         {
-            return file.isDirectory() && file.getName().startsWith( BRANCH_PREFIX );
+            return directory.isDirectory() && directory.getName().equals( BRANCH_SUBDIRECTORY );
+        }
+        
+        public static boolean isBranchedDataDirectory( File directory )
+        {
+            return directory.isDirectory() && directory.getParentFile().getName().equals( BRANCH_SUBDIRECTORY ) &&
+                    isAllDigits( directory.getName() );
+        }
+        
+        private static boolean isAllDigits( String string )
+        {
+            for ( char c : string.toCharArray() )
+                if ( !Character.isDigit( c ) )
+                    return false;
+            return true;
+        }
+
+        public static File getBranchedDataRootDirectory( String dbStoreDir )
+        {
+            return new File( dbStoreDir, BRANCH_SUBDIRECTORY );
+        }
+        
+        public static File getBranchedDataDirectory( String dbStoreDir, long timestamp )
+        {
+            return new File( getBranchedDataRootDirectory( dbStoreDir ), "" + timestamp );
+        }
+        
+        public static File[] listBranchedDataDirectories( String storeDir )
+        {
+            return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
+            {
+                @Override
+                public boolean accept( File directory )
+                {
+                    return isBranchedDataDirectory( directory );
+                }
+            } );
         }
     }
 
