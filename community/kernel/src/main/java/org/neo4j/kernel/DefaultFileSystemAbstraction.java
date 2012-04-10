@@ -76,4 +76,10 @@ public class DefaultFileSystemAbstraction
     {
         return FileUtils.renameFile( new File( from ), new File( to ) );
     }
+    
+    @Override
+    public void copyFile( String from, String to ) throws IOException
+    {
+        FileUtils.copyRecursively( new File( from ), new File( to ) );
+    }
 }

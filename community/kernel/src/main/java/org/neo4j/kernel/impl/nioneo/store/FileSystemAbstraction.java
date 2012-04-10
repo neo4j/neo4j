@@ -37,4 +37,8 @@ public interface FileSystemAbstraction
     boolean deleteFile( String fileName );
     
     boolean renameFile( String from, String to ) throws IOException;
+
+    void copyFile( String from, String to ) throws IOException;
+    
+//    String[] listFiles( String directory );
 }
