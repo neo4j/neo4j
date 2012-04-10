@@ -30,7 +30,6 @@ import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
-
   override def indexProps = List("name")
 
   def section: String = "Start"
@@ -72,6 +71,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def nodes_by_index() {
+    generateConsole = false 
     testQuery(
       title = "Node by index lookup",
       text = "If the start point can be found by index lookups, it can be done like this: node:index-name(key = \"value\"). In this example, there exists a node index named 'nodes'.",
@@ -81,6 +81,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def relationships_by_index() {
+    generateConsole = false 
     db.inTx(()=>{
       val r = db.getRelationshipById(0)
       val property = "property"
@@ -99,6 +100,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def nodes_by_index_query() {
+    generateConsole = false 
     testQuery(
       title = "Node by index query",
       text = "If the start point can be found by index more complex lucene queries: node:index-name(\"query\")." +
