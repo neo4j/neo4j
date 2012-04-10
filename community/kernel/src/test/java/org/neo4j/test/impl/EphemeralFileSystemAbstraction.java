@@ -111,14 +111,34 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         files.put(to, file);
         return true;
     }
+    
+    @Override
+    public void copyFile( String from, String to ) throws IOException
+    {
+        if ( !files.containsKey( from ) )
+            throw new IOException( "'" + from + "' doesn't exist" );
+        if ( files.containsKey( to ) )
+            throw new IOException( "'" + to + "' already exists" );
+        files.put( to, files.get( from ).clone() );
+    }
 
     private static class EphemeralFileChannel extends FileChannel
     {
-        private final DynamicByteBuffer fileAsBuffer = new DynamicByteBuffer();
+        private final DynamicByteBuffer fileAsBuffer;
         private final byte[] scratchPad = new byte[1024];
         private static final byte[] zeroBuffer = new byte[1024];
         private int size;
         private int locked;
+        
+        public EphemeralFileChannel()
+        {
+            fileAsBuffer = new DynamicByteBuffer();
+        }
+        
+        public EphemeralFileChannel( DynamicByteBuffer toClone )
+        {
+            this.fileAsBuffer = toClone.clone();
+        }
 
         @Override
         public int read(ByteBuffer dst)
@@ -291,6 +311,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             if (locked > 0) throw new IOException("Locked");
             return new EphemeralFileLock(this);
         }
+        
+        @Override
+        public EphemeralFileChannel clone()
+        {
+            EphemeralFileChannel copy = new EphemeralFileChannel( fileAsBuffer );
+            copy.size = size;
+            return copy;
+        }
 
         @Override
         protected void implCloseChannel() throws IOException
@@ -346,6 +374,43 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         public DynamicByteBuffer()
         {
             buf = allocate( 0 );
+        }
+        
+        @Override
+        public DynamicByteBuffer clone()
+        {
+            return new DynamicByteBuffer( buf );
+        }
+        
+        private DynamicByteBuffer( ByteBuffer toClone )
+        {
+            int sizeIndex = toClone.capacity() / SIZES[SIZES.length - 1];
+            buf = allocate( sizeIndex );
+            copyByteBufferContents( toClone, buf );
+        }
+
+        private void copyByteBufferContents( ByteBuffer from, ByteBuffer to )
+        {
+            int positionBefore = from.position();
+            int limitBefore = from.limit();
+            byte[] scratchPad = new byte[8096];
+            try
+            {
+                from.position( 0 );
+                while ( from.remaining() > 0 )
+                {
+                    int bytes = Math.min( scratchPad.length, from.remaining() );
+                    from.get( scratchPad, 0, bytes );
+                    to.put( scratchPad, 0, bytes );
+                }
+            }
+            finally
+            {
+                from.limit( limitBefore );
+                from.position( positionBefore );
+                to.limit( limitBefore );
+                to.position( 0 );
+            }
         }
 
         /**
@@ -529,7 +594,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             verifySize(8);
             buf.putLong(l);
         }
-
+        
         /**
          * Checks if more space needs to be allocated.
          */
