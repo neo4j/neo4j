@@ -1772,8 +1772,13 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void addRemoveAutoindexProperties() throws JsonParseException {
+    public void addRemoveAutoindexPropertiesOnNodes() throws JsonParseException {
         addRemoveAutoindexProperties("node");
+    }
+
+    @Test
+    public void addRemoveAutoindexPropertiesOnRelationships() throws JsonParseException {
+        addRemoveAutoindexProperties("relationship");
     }
 
     @Test
