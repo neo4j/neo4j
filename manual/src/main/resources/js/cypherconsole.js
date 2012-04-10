@@ -28,6 +28,11 @@ jQuery( document ).ready(  function()
 
 function createCypherConsoles( $ )
 {
+  var currentButton;
+  var URL_BASE = "http://console.neo4j.org/";
+  var REQUEST_BASE = URL_BASE + "?";
+  var RESOURCE_FILES = ["javascripts/jquery-1.6.4.min.js", "javascripts/d3.min.js", "javascripts/visualization.js", "javascripts/console.js", "img/twitter.jpg", "img/info.png", "img/Link-icon.png", "img/graph.png"];
+
   $('p.cypherconsole').each( function()
   {
     var title = $.trim( $( 'b', this ).eq(0).text() ) || 'Live Cypher Console';
@@ -44,21 +49,32 @@ function createCypherConsoles( $ )
     button.insertAfter( this );
   });
   
+  $( RESOURCE_FILES ).each( function()
+  {
+    var target = URL_BASE + this;
+    // need header on server setup first
+    // $.get( target );
+  });
+  
   function handleCypherClick( button, database, command, title )
   {
     var iframe=$( "#console" );
-  	if ( iframe.length )
+    if ( iframe.length )
     {
-  	  iframe.remove();
-  	}
-    else
-    {
-       var url="http://console.neo4j.org/?";
-       url += "init=" + encodeURIComponent( database );
-       url += "&query=" + encodeURIComponent( command );
-       iframe = $( "<iframe/>" ).attr( "id", "console" ).addClass( "console" ).attr( "src", url );
-       button.after( iframe );
+      iframe.remove();
     }
-  }
+    if ( button === currentButton )
+    {
+      // hitting the same button again -- don't add a new console
+      currentButton = null;
+      return;
+    }
+    var url= REQUEST_BASE;
+    url += "init=" + encodeURIComponent( database );
+    url += "&query=" + encodeURIComponent( command );
+    iframe = $( "<iframe/>" ).attr( "id", "console" ).addClass( "console" ).attr( "src", url );
+    button.after( iframe );
+    currentButton = button;
+  } 
 }
 
