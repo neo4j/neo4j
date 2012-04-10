@@ -19,19 +19,31 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-public abstract class ReferenceCache<E extends EntityWithSize> implements Cache<E>
-{
-    protected abstract void pollClearedValues();
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.StringLogger;
 
-    @Override
-    public void updateSize( E entity, int newSize )
+@Service.Implementation( CacheProvider.class )
+public class WeakCacheProvider extends CacheProvider
+{
+    public static final String NAME = "weak";
+
+    public WeakCacheProvider()
     {
-        // do nothing
+        super( NAME, "weak reference cache" );
     }
 
     @Override
-    public void printStatistics()
+    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        // do nothing
+        return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
+    }
+
+    @Override
+    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
+    {
+        return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
     }
 }

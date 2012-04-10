@@ -21,6 +21,8 @@
 package org.neo4j.ext.udc.impl;
 
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Formatter;
@@ -28,9 +30,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
+import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
@@ -90,12 +94,34 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         String storeId = Long.toHexString( ds.getRandomIdentifier() );
         String version = kernel.version().getRevision();
         if ( version.equals( "" ) ) version = kernel.version().getVersion();
-        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration, formattedMacAddy() );
+        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration, formattedMacAddy(), determineTags() );
         
-        timer = new Timer( "Neo4j UDC Timer", /*isDeamon=*/true );
+        timer = new Timer( "Neo4j UDC Timer", /*isDaemon=*/true );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
         
         return task;
+    }
+
+    private final Map<String,String> jarNamesForTags = MapUtil.stringMap("spring-", "spring", "(javax.ejb|ejb-jar)","ejb", "(weblogic|glassfish|websphere|jboss)","appserver",
+            "openshift","openshift","cloudfoundry","cloudfoundry",
+            "(junit|testng)", "test",
+            "jruby", "ruby","clojure","clojure","jython","python","groovy","groovy",
+            "(tomcat|jetty)","web");
+
+    private String determineTags() {
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        final String classPath = runtime.getClassPath();
+        StringBuilder result=new StringBuilder();
+        for (Map.Entry<String, String> entry : jarNamesForTags.entrySet())
+        {
+            final Pattern pattern = Pattern.compile(entry.getKey());
+            if (pattern.matcher(classPath).find())
+            {
+                result.append(",").append(entry.getValue());
+            }
+        }
+        if (result.length() == 0) return null;
+        return result.substring(1);
     }
 
     @Override
@@ -146,7 +172,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
                 }
             }
         } catch (Throwable t) {
-            ; //
+            //
         }
 
         return formattedMac;
