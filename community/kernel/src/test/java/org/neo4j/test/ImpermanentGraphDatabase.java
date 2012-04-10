@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -37,7 +36,6 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.ClassicLoggingService;
@@ -54,7 +52,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
-    
+
     static
     {
         try
@@ -63,7 +61,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            throw new Error( "Couldn't clear directory", e );
+            throw new Error( "Couldn't clear directory" );
         }
     }
 
@@ -72,10 +70,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super( path(), withoutMemmap( params ) );
     }
 
-    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders,
-            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
     {
-        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders );
+        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions );
     }
 
     @Override
@@ -89,7 +86,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         return new EphemeralIdGenerator.Factory();
     }
-    
+
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
@@ -111,11 +108,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected Logging createStringLogger()
     {
-        ClassicLoggingService logging = new ClassicLoggingService( config );
-        life.add( logging );
-        return logging;
+        return new ClassicLoggingService( config );
     }
-    
+
     private static String path()
     {
         File path = null;

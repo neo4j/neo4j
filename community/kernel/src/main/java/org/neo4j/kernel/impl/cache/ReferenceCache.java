@@ -28,10 +28,4 @@ public abstract class ReferenceCache<E extends EntityWithSize> implements Cache<
     {
         // do nothing
     }
-
-    @Override
-    public void printStatistics()
-    {
-        // do nothing
-    }
 }

@@ -37,7 +37,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac, String tags)
+    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac)
     {
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
@@ -47,11 +47,6 @@ public class UdcTimerTask extends TimerTask
         Map<String, String> udcFields = new HashMap<String, String>();
         udcFields.put( "id", storeId );
         udcFields.put( "v", version );
-
-        if (tags!=null && !tags.isEmpty())
-        {
-            udcFields.put( "tags", tags);
-        }
 
         Map<String, String> params = mergeSystemPropertiesWith( udcFields );
         if ( source != null )

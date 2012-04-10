@@ -24,9 +24,6 @@ To gather good statistics about Neo4j usage, UDC collects this information:
 * Ping count - UDC holds an internal counter which is incremented for every ping, and reset for every restart of the kernel.
 * Source - this is either "neo4j" or "maven". If you downloaded Neo4j from the Neo4j website, it's "neo4j", if you are using Maven to get Neo4j, it will be "maven".
 * Java version - the referrer string shows which version of Java is being used.
-* MAC address to uniquely identify instances behind firewalls
-* Registration id - for registered server instances
-* Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb)
 
 After startup, UDC waits for ten minutes before sending the first ping. It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum. The ping to the UDC servers is done with a HTTP GET.
 

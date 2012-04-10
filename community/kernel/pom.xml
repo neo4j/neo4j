@@ -288,18 +288,26 @@ public class ComponentVersion extends Version
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>
     </dependency>
-    <dependency> 
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_compendium</artifactId>
+    </dependency>
+    <dependency>
     	<groupId>ch.qos.logback</groupId>
     	<artifactId>logback-classic</artifactId>
     	<version>1.0.0</version>
       <optional>true</optional>
     </dependency>
-<!--     <dependency>
+    <dependency>
     	<groupId>janino</groupId>
     	<artifactId>janino</artifactId>
     	<version>2.5.10</version>
       <optional>true</optional>
-    </dependency> -->
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

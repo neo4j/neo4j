@@ -17,18 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.helpers;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.impl.osgi.OSGiActivator;
+import org.neo4j.kernel.impl.osgi.OSGiExtensionLoader;
 
-public class DevNullLoggingService
-    extends LifecycleAdapter
-    implements Logging
+class OSGiServiceLoader extends Service.OSGiLoader
 {
-    @Override
-    public StringLogger getLogger( String name )
+    private final OSGiExtensionLoader loader;
+
+    OSGiServiceLoader()
     {
-        return StringLogger.DEV_NULL;
+        this.loader = OSGiActivator.osgiExtensionLoader;
+    }
+
+    @Override
+    <T> Iterable<T> load( Class<T> type )
+    {
+        return loader != null ? loader.loadExtensionsOfType( type ) : null;
     }
 }

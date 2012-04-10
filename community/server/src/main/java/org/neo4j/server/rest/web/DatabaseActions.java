@@ -372,9 +372,6 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
-        
-        assertIsLegalIndexName(indexName);
-        
         if ( indexSpecification.containsKey( "config" ) )
         {
 
@@ -394,9 +391,6 @@ public class DatabaseActions
             Map<String, Object> indexSpecification )
     {
         final String indexName = (String) indexSpecification.get( "name" );
-        
-        assertIsLegalIndexName(indexName);
-        
         if ( indexSpecification.containsKey( "config" ) )
         {
 
@@ -894,7 +888,6 @@ public class DatabaseActions
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
             throw new NotFoundException();
-        
         Index<Node> index = graphDb.index().forNodes( indexName );
         List<IndexedEntityRepresentation> representations = new ArrayList<IndexedEntityRepresentation>();
 
@@ -930,7 +923,6 @@ public class DatabaseActions
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
             throw new NotFoundException();
-        
         Index<Node> index = graphDb.index().forNodes( indexName );
         List<Representation> representations = new ArrayList<Representation>();
 
@@ -961,8 +953,6 @@ public class DatabaseActions
                                                                               String value, Long nodeOrNull,
                                                                               Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
     {
-        assertIsLegalIndexName(indexName);
-        
         Transaction tx = beginTx();
         try
         {
@@ -1000,8 +990,6 @@ public class DatabaseActions
                                                                                       Long startNode, String type, Long endNode,
                                                                                       Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
     {
-        assertIsLegalIndexName(indexName);
-        
         Transaction tx = beginTx();
         try
         {
@@ -1515,12 +1503,4 @@ public class DatabaseActions
             return new WeightedPathRepresentation( path );
         }
     };
-    
-    private void assertIsLegalIndexName(String indexName)
-    {
-        if(indexName == null || indexName.equals("")) 
-        {
-            throw new IllegalArgumentException("Index name must not be empty.");
-        }
-    }
 }
