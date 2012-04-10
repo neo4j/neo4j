@@ -82,7 +82,6 @@ public class Jetty6WebServer implements WebServer
 
     private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
-    private boolean httpEnabled = true;
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();

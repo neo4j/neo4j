@@ -90,12 +90,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         initWebServer();
 
-        DiagnosticsManager dm = startDatabase();
+        DiagnosticsManager diagnosticsManager = startDatabase();
 
-        StringLogger logger = dm.getTargetLog();
+        StringLogger logger = diagnosticsManager.getTargetLog();
         logger.logMessage("--- SERVER STARTUP START ---");
 
-        dm.register(Configurator.DIAGNOSTICS, configurator);
+        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 
         startExtensionInitialization();
 
