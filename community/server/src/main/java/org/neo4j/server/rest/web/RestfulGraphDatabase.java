@@ -618,6 +618,10 @@ public class RestfulGraphDatabase
         {
             return output.created( actions( force ).createNodeIndex( input.readMap( json ) ) );
         }
+        catch ( IllegalArgumentException e )
+        {
+            return output.badRequest( e );
+        }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -645,6 +649,10 @@ public class RestfulGraphDatabase
             return output.created( actions( force ).createRelationshipIndex( input.readMap( json ) ) );
         }
         catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( IllegalArgumentException e )
         {
             return output.badRequest( e );
         }
@@ -756,6 +764,10 @@ public class RestfulGraphDatabase
         {
             return output.methodNotAllowed( e );
         }
+        catch ( IllegalArgumentException e )
+        {
+            return output.badRequest( e );
+        }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -796,6 +808,10 @@ public class RestfulGraphDatabase
         catch ( UnsupportedOperationException e )
         {
             return output.methodNotAllowed( e );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.badRequest( e );
         }
         catch ( BadInputException e )
         {

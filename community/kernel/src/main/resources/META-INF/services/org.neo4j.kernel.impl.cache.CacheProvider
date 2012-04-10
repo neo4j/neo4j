@@ -1,0 +1,4 @@
+org.neo4j.kernel.impl.cache.SoftCacheProvider
+org.neo4j.kernel.impl.cache.WeakCacheProvider
+org.neo4j.kernel.impl.cache.StrongCacheProvider
+org.neo4j.kernel.impl.cache.NoCacheProvider

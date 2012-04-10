@@ -20,13 +20,24 @@
 
 package org.neo4j.ext.udc.impl;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
@@ -36,9 +47,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -51,6 +59,10 @@ public class UdcExtensionImplTest
 {
 
     Random rnd = new Random();
+    private LocalTestServer server;
+    private PingerHandler handler;
+    private String serverAddress;
+    private Map<String,String> config;
 
     @Before
     public void resetUdcState()
@@ -114,19 +126,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordSuccessesWhenThereIsAServer() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
-
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
-
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcSettings.first_delay.name(), "100" );
-        config.put( UdcSettings.udc_host.name(), serverAddress );
-
+        setupServer();
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertGotFailureWithRetry( IS_ZERO );
@@ -136,43 +136,37 @@ public class UdcExtensionImplTest
     @Test
     public void shouldBeAbleToSpecifySourceWithConfig() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
-
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
-
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcSettings.first_delay.name(), "100" );
-        config.put( UdcSettings.udc_host.name(), serverAddress );
-        config.put( UdcSettings.udc_source.name(), "test" );
+        setupServer();
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test", handler.getQueryMap().get( "source" ) );
+        assertEquals("test", handler.getQueryMap().get("source"));
 
         destroy( graphdb );
+    }
+
+    private void setupServer() throws Exception {
+        // first, set up the test server
+        server = new LocalTestServer( null, null );
+        handler = new PingerHandler();
+        server.register("/*", handler);
+        server.start();
+
+        final String hostname = server.getServiceHostName();
+        serverAddress = hostname + ":" + server.getServicePort();
+
+        config = new HashMap<String, String>();
+        config.put(UdcSettings.first_delay.name(), "100");
+        config.put(UdcSettings.udc_host.name(), serverAddress);
+        config.put(UdcSettings.udc_source.name(), "test");
     }
 
     @Test
     public void shouldBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
 
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
+        setupServer();
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcSettings.first_delay.name(), "100" );
-        config.put( UdcSettings.udc_host.name(), serverAddress );
-        config.put( UdcSettings.udc_source.name(), "test" );
         config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
 
         GraphDatabaseService graphdb = createTempDatabase( config );
@@ -182,22 +176,30 @@ public class UdcExtensionImplTest
         destroy( graphdb );
     }
 
+    @Test
+    public void shouldBeAbleToDetermineTestTagFromClasspath() throws Exception
+    {
+        setupServer();
+
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        final String classPath = runtime.getClassPath();
+        for (String jar : classPath.split(":")) {
+            System.out.println(jar);
+        }
+
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "test", handler.getQueryMap().get( "tags" ) );
+
+
+        destroy( graphdb );
+    }
+
 
     @Test
     public void shouldIncludeMacAddressInConfig() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
-
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
-
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcSettings.first_delay.name(), "100" );
-        config.put( UdcSettings.udc_host.name(), serverAddress );
+        setupServer();
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );

@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,7 +38,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -61,8 +65,12 @@ import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -116,15 +124,12 @@ import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.neo4j.helpers.Exceptions.*;
-
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
  */
 public abstract class AbstractGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI
 {
-
     public static class Configuration
     {
         public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
@@ -189,18 +194,30 @@ public abstract class AbstractGraphDatabase
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
+    protected Caches caches;
 
-    private final LifeSupport life = new LifeSupport();
+    protected final LifeSupport life = new LifeSupport();
+    private final Map<String,CacheProvider> cacheProviders;
 
     protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
-                                    Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+                                    Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
+                                    Iterable<CacheProvider> cacheProviders )
     {
         this.params = params;
+        this.cacheProviders = mapCacheProviders( cacheProviders );
         this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
 
         // SPI - provided services
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
+    }
+
+    private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
+    {
+        Map<String, CacheProvider> map = new HashMap<String, CacheProvider>();
+        for ( CacheProvider provider : cacheProviders )
+            map.put( provider.getName(), provider );
+        return map;
     }
 
     protected void run()
@@ -282,10 +299,14 @@ public abstract class AbstractGraphDatabase
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.getBoolean( Configuration.read_only );
 
-        NodeManager.CacheType cacheType = config.getEnum(NodeManager.CacheType.class, Configuration.cache_type);
+        String cacheTypeName = config.get( Configuration.cache_type );
+        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
+        if ( cacheProvider == null )
+            throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
 
         kernelEventHandlers = new KernelEventHandlers();
 
+        caches = createCaches();
         diagnosticsManager = life.add(new DiagnosticsManager( logging.getLogger( Loggers.DIAGNOSTICS )) );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
@@ -352,9 +373,13 @@ public abstract class AbstractGraphDatabase
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
+        caches.configure( cacheProvider, config );
+        Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
+        Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
+
         nodeManager = guard != null ?
-                createGuardedNodeManager( readOnly, cacheType ) :
-                createNodeManager( readOnly, cacheType );
+                createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
+                createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
 
@@ -436,27 +461,29 @@ public abstract class AbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
-    private NodeManager createNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
+    private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         if ( readOnly )
         {
             return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), msgLog, diagnosticsManager );
+                    createRelationshipLookups(), nodeCache, relCache );
         }
 
         return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), msgLog, diagnosticsManager );
+                createRelationshipLookups(), nodeCache, relCache );
     }
 
-    private NodeManager createGuardedNodeManager( final boolean readOnly, final NodeManager.CacheType cacheType )
+    private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         if ( readOnly )
         {
             return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), msgLog, diagnosticsManager )
+                    createRelationshipLookups(), nodeCache, relCache )
             {
                 @Override
                 protected Node getNodeByIdOrNull( final long nodeId )
@@ -505,7 +532,7 @@ public abstract class AbstractGraphDatabase
 
         return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), msgLog, diagnosticsManager )
+                createRelationshipLookups(), nodeCache, relCache )
         {
             @Override
             protected Node getNodeByIdOrNull( final long nodeId )
@@ -590,7 +617,12 @@ public abstract class AbstractGraphDatabase
     {
         return TxIdGenerator.DEFAULT;
     }
-
+    
+    protected Caches createCaches()
+    {
+        return new DefaultCaches( msgLog );
+    }
+    
     protected RelationshipProxy.RelationshipLookups createRelationshipLookups()
     {
         return new RelationshipProxy.RelationshipLookups()
