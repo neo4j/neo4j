@@ -151,7 +151,7 @@ public abstract class AbstractGraphDatabase
     protected String storeDir;
     protected Map<String, String> params;
     private Iterable<KernelExtension> kernelExtensions;
-    private StoreId storeId;
+    protected StoreId storeId;
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
@@ -1085,7 +1085,7 @@ public abstract class AbstractGraphDatabase
         {
             return true;
         }
-        if( o == null || getClass() != o.getClass() )
+        if ( o == null || !(o instanceof AbstractGraphDatabase) )
         {
             return false;
         }
