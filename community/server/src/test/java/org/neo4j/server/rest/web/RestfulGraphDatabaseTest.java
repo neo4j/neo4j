@@ -1792,7 +1792,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.startAutoIndexingProperty(type, "myAutoIndexedProperty");
         assertEquals(204, response.getStatus());
 
-        response = service.setAutoIndexerEnabled(type, true);
+        response = service.setAutoIndexerEnabled(type, "true");
         assertEquals(204, response.getStatus());
 
         service.createNode( FORCE, "{\"myAutoIndexedProperty\" : \"value\"}" );
@@ -1837,14 +1837,14 @@ public class RestfulGraphDatabaseTest
         assertEquals(200, response.getStatus());
         assertFalse(Boolean.parseBoolean(entityAsString(response)));
 
-        response = service.setAutoIndexerEnabled(type, true);
+        response = service.setAutoIndexerEnabled(type, "true");
         assertEquals(204, response.getStatus());
 
         response = service.isAutoIndexerEnabled(type);
         assertEquals(200, response.getStatus());
         assertTrue(Boolean.parseBoolean(entityAsString(response)));
 
-        response = service.setAutoIndexerEnabled(type, false);
+        response = service.setAutoIndexerEnabled(type, "false");
         assertEquals(204, response.getStatus());
 
         response = service.isAutoIndexerEnabled(type);

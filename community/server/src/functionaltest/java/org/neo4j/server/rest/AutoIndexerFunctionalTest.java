@@ -55,7 +55,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     public void addAutoIndexingPropertyForNodes() {
-        gen.get().expectedStatus(204).put(getDataUri() + "autoIndexer/node/properties/myProperty1");
+        gen.get().expectedStatus(204).payload("myProperty1").post(getDataUri() + "autoindex/node/properties");
     }
 
     /**
@@ -74,7 +74,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     public void removeAutoIndexingPropertyForNodes() {
-        gen.get().expectedStatus(204).delete(getDataUri() + "autoIndexer/node/properties/myProperty1");
+        gen.get().expectedStatus(204).delete(getDataUri() + "autoindex/node/properties/myProperty1");
     }
 
     @Test
@@ -101,15 +101,15 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
 //        List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
 //        assertTrue(properties.isEmpty());
 
-        gen.get().expectedStatus(204).put(getDataUri() + "autoIndexer/" + uriPartForType + "/properties/myProperty1");
-        gen.get().expectedStatus(204).put(getDataUri() + "autoIndexer/" + uriPartForType + "/properties/myProperty2");
+        gen.get().expectedStatus(204).payload("myProperty1").post(getDataUri() + "autoindex/" + uriPartForType + "/properties");
+        gen.get().expectedStatus(204).payload("myProperty2").post(getDataUri() + "autoindex/" + uriPartForType + "/properties");
 
         List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
         assertEquals(2, properties.size());
         assertTrue(properties.contains("myProperty1"));
         assertTrue(properties.contains("myProperty2"));
 
-        gen.get().expectedStatus(204).delete(getDataUri() + "autoIndexer/" + uriPartForType + "/properties/myProperty2");
+        gen.get().expectedStatus(204).payload(null).delete(getDataUri() + "autoindex/" + uriPartForType + "/properties/myProperty2");
 
         properties = getAutoIndexedPropertiesForType(uriPartForType);
         assertEquals(1, properties.size());
@@ -119,7 +119,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     private List<String> getAutoIndexedPropertiesForType(String uriPartForType) throws JsonParseException {
         StringBuilder sb = new StringBuilder();
         sb.append(getDataUri())
-                .append("autoIndexer/")
+                .append("autoindex/")
                 .append(uriPartForType)
                 .append("/properties");
         String result = gen.get().expectedStatus(200).get(sb.toString()).entity();
@@ -136,19 +136,18 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     private void setEnabledAutoIndexingForType(String uriPartForType, boolean enabled) {
         StringBuilder sb = new StringBuilder();
         sb.append(getDataUri())
-                .append("autoIndexer/")
+                .append("autoindex/")
                 .append(uriPartForType)
-                .append("/status/")
-                .append(enabled);
-        gen.get().expectedStatus(204).put(sb.toString());
+                .append("/status");
+        gen.get().expectedStatus(204).payload(Boolean.toString(enabled)).put(sb.toString());
     }
 
     private void checkAndAssertAutoIndexerIsEnabled(String uriPartForType, boolean enabled) {
         StringBuilder sb = new StringBuilder();
         sb.append(getDataUri())
-                .append("autoIndexer/")
+                .append("autoindex/")
                 .append(uriPartForType)
-                .append("/status/");
+                .append("/status");
         String result = gen.get().expectedStatus(200).get(sb.toString()).entity();
         assertEquals(enabled, Boolean.parseBoolean(result));
     }

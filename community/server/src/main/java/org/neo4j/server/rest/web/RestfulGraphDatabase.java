@@ -107,11 +107,10 @@ public class RestfulGraphDatabase
     public static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
     protected static final String PATH_AUTO_RELATIONSHIP_INDEX_GET = PATH_AUTO_RELATIONSHIP_INDEX + "/{key}/{value}";
 
-    private static final String PATH_AUTO_INDEXER = "autoIndexer/{type}";
+    private static final String PATH_AUTO_INDEXER = "autoindex/{type}";
     private static final String PATH_AUTO_INDEXER_STATUS = PATH_AUTO_INDEXER + "/status";
-    private static final String PATH_AUTO_INDEXER_STATUS_SET = PATH_AUTO_INDEXER_STATUS + "/{status}";
     private static final String PATH_AUTO_INDEXER_PROPERTIES = PATH_AUTO_INDEXER + "/properties";
-    private static final String PATH_AUTO_INDEXER_PROPERTIES_SET = PATH_AUTO_INDEXER_PROPERTIES + "/{property}";
+    private static final String PATH_AUTO_INDEXER_PROPERTIES_DELETE = PATH_AUTO_INDEXER_PROPERTIES + "/{property}";
 
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
@@ -1359,9 +1358,9 @@ public class RestfulGraphDatabase
     }
 
     @PUT
-    @Path( PATH_AUTO_INDEXER_STATUS_SET )
-    public Response setAutoIndexerEnabled(@PathParam("type") String type, @PathParam("status") boolean enable) {
-        actions.setAutoIndexerEnabled(type, enable);
+    @Path( PATH_AUTO_INDEXER_STATUS )
+    public Response setAutoIndexerEnabled(@PathParam("type") String type, String enable) {
+        actions.setAutoIndexerEnabled(type, Boolean.parseBoolean(enable));
         return output.ok(Representation.emptyRepresentation());
     }
 
@@ -1371,16 +1370,16 @@ public class RestfulGraphDatabase
         return output.ok(actions.getAutoIndexedProperties(type));
     }
 
-    @PUT
-    @Path( PATH_AUTO_INDEXER_PROPERTIES_SET )
-    public Response startAutoIndexingProperty(@PathParam("type") String type, @PathParam("property") String property) {
+    @POST
+    @Path( PATH_AUTO_INDEXER_PROPERTIES )
+    public Response startAutoIndexingProperty(@PathParam("type") String type, String property) {
         actions.startAutoIndexingProperty(type, property);
         return output.ok(Representation.emptyRepresentation());
 
     }
 
     @DELETE
-    @Path( PATH_AUTO_INDEXER_PROPERTIES_SET )
+    @Path(PATH_AUTO_INDEXER_PROPERTIES_DELETE)
     public Response stopAutoIndexingProperty(@PathParam("type") String type, @PathParam("property") String property) {
         actions.stopAutoIndexingProperty(type, property);
         return output.ok(Representation.emptyRepresentation());
