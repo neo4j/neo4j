@@ -15,7 +15,7 @@
   <properties>
     <short-name>com</short-name>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.7.M03</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
