@@ -64,13 +64,13 @@ class LowRelationshipImpl extends RelationshipImpl
     @Override
     long getStartNodeId()
     {
-        return ((startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
+        return (long)(((long)startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
     }
 
     @Override
     long getEndNodeId()
     {
-        return ((endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
+        return (long)(((long)endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
     }
 
     private int getTypeId()
