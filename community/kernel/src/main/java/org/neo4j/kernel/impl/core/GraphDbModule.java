@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -35,10 +35,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
-import org.neo4j.kernel.impl.core.NodeManager.CacheType;
+import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -48,7 +50,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class GraphDbModule
 {
-    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.soft;
+    private static final String DEFAULT_CACHE_TYPE = SoftCacheProvider.NAME;
     private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
@@ -89,33 +91,34 @@ public class GraphDbModule
             return;
         }
 
+        CacheProvider cacheProvider = null;
+        Map<String, CacheProvider> cacheProviders = new HashMap<String, CacheProvider>();
+        for ( CacheProvider provider : Service.load( CacheProvider.class ) )
+        {
+            cacheProviders.put( provider.getName(), provider );
+        }
         String cacheTypeName = (String) params.get( Config.CACHE_TYPE );
-        CacheType cacheType = null;
-        try
+        if ( cacheTypeName == null )
         {
-            cacheType = cacheTypeName != null ? CacheType.valueOf( cacheTypeName ) : DEFAULT_CACHE_TYPE;
+            cacheTypeName = DEFAULT_CACHE_TYPE;
         }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IllegalArgumentException( "Invalid cache type, please use one of: " +
-                    Arrays.asList( CacheType.values() ) + " or keep empty for default (" +
-                    DEFAULT_CACHE_TYPE + ")", e.getCause() );
-        }
+        cacheProvider = cacheProviders.get( cacheTypeName );
+        if ( cacheProvider == null ) throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
 
-        caches.config( params );
+        caches.configure( cacheProvider, params );
         Cache<NodeImpl> nodeCache = diagnostics.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnostics.tryAppendProvider( caches.relationship() );
 
         if ( !readOnly )
         {
             nodeManager = new NodeManager( graphDbService, lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, relTypeCreator, cacheType, diagnostics, params, nodeCache,
+                    persistenceManager, idGenerator, relTypeCreator, cacheProvider, diagnostics, params, nodeCache,
                     relCache );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService, lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, cacheType, diagnostics, params, nodeCache, relCache );
+                    persistenceManager, idGenerator, cacheProvider, diagnostics, params, nodeCache, relCache );
         }
         // load and verify from PS
         NameData[] relTypes = null;
@@ -281,6 +284,6 @@ public class GraphDbModule
 
     protected Caches createCaches( StringLogger logger )
     {
-        return new Caches( logger );
+        return new DefaultCaches( logger );
     }
 }

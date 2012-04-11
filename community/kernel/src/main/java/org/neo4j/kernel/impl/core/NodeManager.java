@@ -41,17 +41,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.GCResistantCache;
-import org.neo4j.kernel.impl.cache.NoCache;
-import org.neo4j.kernel.impl.cache.SoftLruCache;
-import org.neo4j.kernel.impl.cache.StrongReferenceCache;
-import org.neo4j.kernel.impl.cache.WeakLruCache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -66,7 +60,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
 public class NodeManager
@@ -79,7 +72,7 @@ public class NodeManager
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
 
-    private final CacheType cacheType;
+    private final CacheProvider cacheProvider;
 
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
@@ -104,10 +97,9 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    NodeManager( GraphDatabaseService graphDb, LockManager lockManager,
-            LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            RelationshipTypeCreator relTypeCreator, CacheType cacheType,
+    NodeManager( GraphDatabaseService graphDb, LockManager lockManager, LockReleaser lockReleaser,
+            TransactionManager transactionManager, PersistenceManager persistenceManager,
+            EntityIdGenerator idGenerator, RelationshipTypeCreator relTypeCreator, CacheProvider cacheProvider,
             DiagnosticsManager diagnostics, Map<Object, Object> params, Cache<NodeImpl> nodeCache,
             Cache<RelationshipImpl> relCache )
     {
@@ -124,7 +116,7 @@ public class NodeManager
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator, relTypeCreator );
 
-        this.cacheType = cacheType;
+        this.cacheProvider = cacheProvider;
         this.nodeCache = nodeCache;
         this.relCache = relCache;
         for ( int i = 0; i < loadLocks.length; i++ )
@@ -141,9 +133,9 @@ public class NodeManager
         return graphDbService;
     }
 
-    public CacheType getCacheType()
+    public CacheProvider getCacheType()
     {
-        return this.cacheType;
+        return this.cacheProvider;
     }
 
     private void parseParams( Map<Object,Object> params )
@@ -254,14 +246,8 @@ public class NodeManager
 
     public void stop()
     {
-        if ( nodeCache instanceof GCResistantCache )
-        {
-            ((GCResistantCache<NodeImpl>) nodeCache).printStatistics();
-        }
-        if ( relCache instanceof GCResistantCache )
-        {
-            ((GCResistantCache<RelationshipImpl>) relCache).printStatistics();
-        }
+        nodeCache.printStatistics();
+        relCache.printStatistics();
         nodeCache.clear();
         relCache.clear();
 //        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
@@ -1236,219 +1222,240 @@ public class NodeManager
         return this.relTypeHolder;
     }
 
-    public static enum CacheType
-    {
-        weak( "weak reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
-            {
-                return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
-            {
-                return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        soft( "soft reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
-            {
-                return new SoftLruCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
-            {
-                return new SoftLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        none( "no cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
-            {
-                return new NoCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
-            {
-                return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        strong( "strong reference cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
-            {
-                return new StrongReferenceCache<NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
-            {
-                return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        gcr( "GC resistant cache" )
-        {
-            @Override
-            Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
-            {
-                long mem = memToUse( logger, params, true );
-                return new GCResistantCache<NodeImpl>( mem, fraction( params, Config.NODE_CACHE_ARRAY_FRACTION ),
-                        minLogInterval( params ), NODE_CACHE_NAME, logger );
-            }
-
-            @Override
-            Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
-            {
-                long mem = memToUse( logger, params, false );
-                return new GCResistantCache<RelationshipImpl>( mem, fraction( params,
-                        Config.RELATIONSHIP_CACHE_ARRAY_FRACTION ), minLogInterval( params ),
-                        RELATIONSHIP_CACHE_NAME, logger );
-            }
-
-            private long minLogInterval( Map<Object, Object> params )
-            {
-                String interval = (String) params.get( Config.GCR_CACHE_MIN_LOG_INTERVAL );
-                long result = 60000; // Default: a minute
-                try
-                {
-                    if ( interval != null ) result = TimeUtil.parseTimeMillis( interval );
-                }
-                catch ( Exception e )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL, e );
-                }
-                if ( result < 0 )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL );
-                }
-                return result;
-            }
-
-            @SuppressWarnings( "boxing" )
-            private long memToUse( StringLogger logger, Map<Object, Object> params, boolean isNode )
-            {
-                Long node = memory( params, Config.NODE_CACHE_SIZE );
-                Long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
-                final long available = Runtime.getRuntime().maxMemory(), advicedMax = available / 2, advicedMaxPerCache = advicedMax / 2;
-                if ( (node == null && isNode) || (rel == null && !isNode) )
-                {
-                    return advicedMaxPerCache;
-                }
-                long total = 0;
-                node = node != null ? node : advicedMaxPerCache;
-                rel = rel != null ? rel : advicedMaxPerCache;
-                node = Math.max( GCResistantCache.MIN_SIZE, node );
-                total += node;
-                rel = Math.max( GCResistantCache.MIN_SIZE, rel );
-                total += rel;
-                if ( total > available )
-                    throw new IllegalArgumentException(
-                                                        String.format( "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
-                                                                       node, rel, total, available ) );
-                if ( total > advicedMax )
-                    logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
-                                                      node, rel, total, advicedMax ) );
-                if ( node == null )
-                {
-                    node = Math.max( GCResistantCache.MIN_SIZE, advicedMax - rel );
-                }
-                if ( rel == null )
-                {
-                    rel = Math.max( GCResistantCache.MIN_SIZE, advicedMax - node );
-                }
-                return isNode ? node : rel;
-            }
-
-            private float fraction( Map<Object, Object> params, String param )
-            {
-                String fraction = (String) params.get( Config.NODE_CACHE_ARRAY_FRACTION );
-                float result = 1;
-                try
-                {
-                    if ( fraction != null ) result = Float.parseFloat( fraction );
-                }
-                catch ( NumberFormatException e )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param,
-                                                        e );
-                }
-                if ( result < 1 || result > 10 )
-                {
-                    throw new IllegalArgumentException( "Invalid configuration value [" + fraction + "] for " + param );
-                }
-                return result;
-            }
-
-            @SuppressWarnings( "boxing" )
-            private Long memory( Map<Object, Object> params, String param )
-            {
-                Object config = params.get( param );
-                if ( config != null )
-                {
-                    String mem = config.toString();
-                    mem = mem.trim().toLowerCase();
-                    long multiplier = 1;
-                    if ( mem.endsWith( "m" ) )
-                    {
-                        multiplier = 1024 * 1024;
-                        mem = mem.substring( 0, mem.length() - 1 );
-                    }
-                    else if ( mem.endsWith( "k" ) )
-                    {
-                        multiplier = 1024;
-                        mem = mem.substring( 0, mem.length() - 1 );
-                    }
-                    else if ( mem.endsWith( "g" ) )
-                    {
-                        multiplier = 1024 * 1024 * 1024;
-                        mem = mem.substring( 0, mem.length() - 1 );
-                    }
-                    try
-                    {
-                        return Long.parseLong( mem ) * multiplier;
-                    }
-                    catch ( NumberFormatException e )
-                    {
-                        throw new IllegalArgumentException( "Invalid configuration value [" + mem + "] for " + param, e );
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        };
-
-
-        private static final String NODE_CACHE_NAME = "NodeCache";
-        private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
-
-        private final String description;
-
-        private CacheType( String description )
-        {
-            this.description = description;
-        }
-
-        abstract Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params );
-
-        abstract Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params );
-
-        public String getDescription()
-        {
-            return this.description;
-        }
-    }
+    // public static enum CacheType
+    // {
+    // weak( "weak reference cache" )
+    // {
+    // @Override
+    // Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
+    // {
+    // return new WeakLruCache<NodeImpl>( NODE_CACHE_NAME );
+    // }
+    //
+    // @Override
+    // Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object,
+    // Object> params )
+    // {
+    // return new WeakLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+    // }
+    // },
+    // soft( "soft reference cache" )
+    // {
+    // @Override
+    // Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
+    // {
+    // return new SoftLruCache<NodeImpl>( NODE_CACHE_NAME );
+    // }
+    //
+    // @Override
+    // Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object,
+    // Object> params )
+    // {
+    // return new SoftLruCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+    // }
+    // },
+    // none( "no cache" )
+    // {
+    // @Override
+    // Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
+    // {
+    // return new NoCache<NodeImpl>( NODE_CACHE_NAME );
+    // }
+    //
+    // @Override
+    // Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object,
+    // Object> params )
+    // {
+    // return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+    // }
+    // },
+    // strong( "strong reference cache" )
+    // {
+    // @Override
+    // Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
+    // {
+    // return new StrongReferenceCache<NodeImpl>( NODE_CACHE_NAME );
+    // }
+    //
+    // @Override
+    // Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object,
+    // Object> params )
+    // {
+    // return new StrongReferenceCache<RelationshipImpl>(
+    // RELATIONSHIP_CACHE_NAME );
+    // }
+    // },
+    // gcr( "GC resistant cache" )
+    // {
+    // @Override
+    // Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
+    // {
+    // long mem = memToUse( logger, params, true );
+    // return new GCResistantCache<NodeImpl>( mem, fraction( params,
+    // Config.NODE_CACHE_ARRAY_FRACTION ),
+    // minLogInterval( params ), NODE_CACHE_NAME, logger );
+    // }
+    //
+    // @Override
+    // Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object,
+    // Object> params )
+    // {
+    // long mem = memToUse( logger, params, false );
+    // return new GCResistantCache<RelationshipImpl>( mem, fraction( params,
+    // Config.RELATIONSHIP_CACHE_ARRAY_FRACTION ), minLogInterval( params ),
+    // RELATIONSHIP_CACHE_NAME, logger );
+    // }
+    //
+    // private long minLogInterval( Map<Object, Object> params )
+    // {
+    // String interval = (String) params.get( Config.GCR_CACHE_MIN_LOG_INTERVAL
+    // );
+    // long result = 60000; // Default: a minute
+    // try
+    // {
+    // if ( interval != null ) result = TimeUtil.parseTimeMillis( interval );
+    // }
+    // catch ( Exception e )
+    // {
+    // throw new IllegalArgumentException( "Invalid configuration value [" +
+    // interval + "] for "
+    // + Config.GCR_CACHE_MIN_LOG_INTERVAL, e );
+    // }
+    // if ( result < 0 )
+    // {
+    // throw new IllegalArgumentException( "Invalid configuration value [" +
+    // interval + "] for "
+    // + Config.GCR_CACHE_MIN_LOG_INTERVAL );
+    // }
+    // return result;
+    // }
+    //
+    // @SuppressWarnings( "boxing" )
+    // private long memToUse( StringLogger logger, Map<Object, Object> params,
+    // boolean isNode )
+    // {
+    // Long node = memory( params, Config.NODE_CACHE_SIZE );
+    // Long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
+    // final long available = Runtime.getRuntime().maxMemory(), advicedMax =
+    // available / 2, advicedMaxPerCache = advicedMax / 2;
+    // if ( (node == null && isNode) || (rel == null && !isNode) )
+    // {
+    // return advicedMaxPerCache;
+    // }
+    // long total = 0;
+    // node = node != null ? node : advicedMaxPerCache;
+    // rel = rel != null ? rel : advicedMaxPerCache;
+    // node = Math.max( GCResistantCache.MIN_SIZE, node );
+    // total += node;
+    // rel = Math.max( GCResistantCache.MIN_SIZE, rel );
+    // total += rel;
+    // if ( total > available )
+    // throw new IllegalArgumentException(
+    // String.format(
+    // "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
+    // node, rel, total, available ) );
+    // if ( total > advicedMax )
+    // logger.logMessage( String.format(
+    // "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
+    // node, rel, total, advicedMax ) );
+    // if ( node == null )
+    // {
+    // node = Math.max( GCResistantCache.MIN_SIZE, advicedMax - rel );
+    // }
+    // if ( rel == null )
+    // {
+    // rel = Math.max( GCResistantCache.MIN_SIZE, advicedMax - node );
+    // }
+    // return isNode ? node : rel;
+    // }
+    //
+    // private float fraction( Map<Object, Object> params, String param )
+    // {
+    // String fraction = (String) params.get( Config.NODE_CACHE_ARRAY_FRACTION
+    // );
+    // float result = 1;
+    // try
+    // {
+    // if ( fraction != null ) result = Float.parseFloat( fraction );
+    // }
+    // catch ( NumberFormatException e )
+    // {
+    // throw new IllegalArgumentException( "Invalid configuration value [" +
+    // fraction + "] for " + param,
+    // e );
+    // }
+    // if ( result < 1 || result > 10 )
+    // {
+    // throw new IllegalArgumentException( "Invalid configuration value [" +
+    // fraction + "] for " + param );
+    // }
+    // return result;
+    // }
+    //
+    // @SuppressWarnings( "boxing" )
+    // private Long memory( Map<Object, Object> params, String param )
+    // {
+    // Object config = params.get( param );
+    // if ( config != null )
+    // {
+    // String mem = config.toString();
+    // mem = mem.trim().toLowerCase();
+    // long multiplier = 1;
+    // if ( mem.endsWith( "m" ) )
+    // {
+    // multiplier = 1024 * 1024;
+    // mem = mem.substring( 0, mem.length() - 1 );
+    // }
+    // else if ( mem.endsWith( "k" ) )
+    // {
+    // multiplier = 1024;
+    // mem = mem.substring( 0, mem.length() - 1 );
+    // }
+    // else if ( mem.endsWith( "g" ) )
+    // {
+    // multiplier = 1024 * 1024 * 1024;
+    // mem = mem.substring( 0, mem.length() - 1 );
+    // }
+    // try
+    // {
+    // return Long.parseLong( mem ) * multiplier;
+    // }
+    // catch ( NumberFormatException e )
+    // {
+    // throw new IllegalArgumentException( "Invalid configuration value [" + mem
+    // + "] for " + param, e );
+    // }
+    // }
+    // else
+    // {
+    // return null;
+    // }
+    // }
+    // };
+    //
+    //
+    // private static final String NODE_CACHE_NAME = "NodeCache";
+    // private static final String RELATIONSHIP_CACHE_NAME =
+    // "RelationshipCache";
+    //
+    // private final String description;
+    //
+    // private CacheType( String description )
+    // {
+    // this.description = description;
+    // }
+    //
+    // abstract Cache<NodeImpl> node( StringLogger logger, Map<Object, Object>
+    // params );
+    //
+    // abstract Cache<RelationshipImpl> relationship( StringLogger logger,
+    // Map<Object, Object> params );
+    //
+    // public String getDescription()
+    // {
+    // return this.description;
+    // }
+    // }
 
     public void addNodePropertyTracker(
             PropertyTracker<Node> nodePropertyTracker )

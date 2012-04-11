@@ -26,7 +26,7 @@ public class NoCache<E extends EntityWithSize> implements Cache<E>
 {
     private final String name;
     private volatile long misses;
-    
+
     private static final AtomicLong MISSES = new AtomicLong( 0 );
 
     public NoCache( String name )
@@ -81,6 +81,12 @@ public class NoCache<E extends EntityWithSize> implements Cache<E>
 
     @Override
     public void updateSize( E entity, int newSize )
+    {
+        // do nothing
+    }
+
+    @Override
+    public void printStatistics()
     {
         // do nothing
     }

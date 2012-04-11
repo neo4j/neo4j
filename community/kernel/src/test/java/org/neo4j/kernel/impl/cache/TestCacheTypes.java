@@ -32,7 +32,6 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
@@ -60,8 +59,9 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         GraphDatabaseService db = newDb( null );
         try
         {
-            assertEquals( CacheType.soft,
-                    ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+            assertEquals(
+                    SoftCacheProvider.NAME,
+                    ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType().getName() );
         }
         finally
         {
@@ -73,7 +73,8 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testWeakRefCache()
     {
         GraphDatabaseService db = newDb( "weak" );
-        assertEquals( CacheType.weak, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        assertEquals( WeakCacheProvider.NAME,
+                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType().getName() );
         db.shutdown();
     }
 
@@ -81,7 +82,8 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testSoftRefCache()
     {
         GraphDatabaseService db = newDb( "soft" );
-        assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        assertEquals( SoftCacheProvider.NAME,
+                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType().getName() );
         db.shutdown();
     }
 
@@ -89,7 +91,8 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testNoCache()
     {
         GraphDatabaseService db = newDb( "none" );
-        assertEquals( CacheType.none, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        assertEquals( NoCacheProvider.NAME,
+                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType().getName() );
         db.shutdown();
     }
 
@@ -97,26 +100,8 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testStrongCache()
     {
         GraphDatabaseService db = newDb( "strong" );
-        assertEquals( CacheType.strong, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
-        db.shutdown();
-    }
-
-    @Test
-    public void testGcrCache()
-    {
-        GraphDatabaseService db = newDb( "gcr" );
-        assertEquals( CacheType.gcr,
-                ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
-        db.shutdown();
-    }
-
-    @Test
-    public void testGcrCacheWithNodeSizeConfig()
-    {
-        GraphDatabaseService db = newDb( "gcr", MapUtil.stringMap( Config.NODE_CACHE_SIZE, "100M" ) );
-        assertEquals( CacheType.gcr,
-                ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
-        // TODO how to assert that 100M is actually used
+        assertEquals( StrongCacheProvider.NAME,
+                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType().getName() );
         db.shutdown();
     }
 

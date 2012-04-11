@@ -28,6 +28,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -143,6 +144,6 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService
 
     protected Caches createCaches( StringLogger logger )
     {
-        return new Caches( logger );
+        return new DefaultCaches( logger );
     }
 }

@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.GraphDatabaseTestAccess;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -45,8 +44,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
 {
     private static final File PATH = new File( "target/test-data/impermanent-db" );
-    private static volatile String lastStoreDir;
-    private static volatile Caches caches;
 
     private static final AtomicInteger ID = new AtomicInteger();
     static
@@ -182,15 +179,5 @@ public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
     public void cleanContent()
     {
         cleanContent( false );
-    }
-
-    @Override
-    protected Caches createCaches( StringLogger logger )
-    {
-        if ( caches == null )
-            caches = new Caches( StringLogger.SYSTEM );
-        else if ( lastStoreDir == null || !lastStoreDir.equals( getStoreDir() ) ) caches.invalidate();
-        lastStoreDir = getStoreDir();
-        return caches;
     }
 }

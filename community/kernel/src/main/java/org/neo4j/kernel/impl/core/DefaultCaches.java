@@ -23,21 +23,40 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 
-/**
- * A class for holding cache objects so that reuse between sessions is possible
- * if the configuration stays the same. This helps when there's a cache which is
- * very expensive to create, like {@link CacheType#gcr}.
- *
- * @author Mattias Persson
- */
-public interface Caches
+public class DefaultCaches implements Caches
 {
-    void configure( CacheProvider cacheProvider, Map<Object, Object> config );
+    private CacheProvider provider;
+    private Map<Object, Object> config;
+    private final StringLogger logger;
 
-    Cache<NodeImpl> node();
+    public DefaultCaches( StringLogger logger )
+    {
+        this.logger = logger;
+    }
 
-    Cache<RelationshipImpl> relationship();
+    @Override
+    public void configure( CacheProvider provider, Map<Object, Object> config )
+    {
+        this.provider = provider;
+        this.config = config;
+    }
 
-    void invalidate();
+    @Override
+    public Cache<NodeImpl> node()
+    {
+        return provider.newNodeCache( logger, config );
+    }
+
+    @Override
+    public Cache<RelationshipImpl> relationship()
+    {
+        return provider.newRelationshipCache( logger, config );
+    }
+
+    @Override
+    public void invalidate()
+    {
+    }
 }

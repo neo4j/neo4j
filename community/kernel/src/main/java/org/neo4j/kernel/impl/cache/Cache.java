@@ -89,4 +89,6 @@ public interface Cache<E extends EntityWithSize>
     public long missCount();
 
     public void updateSize( E entity, int newSize );
+
+    public void printStatistics();
 }

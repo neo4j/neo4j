@@ -19,19 +19,32 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-public abstract class ReferenceCache<E extends EntityWithSize> implements Cache<E>
-{
-    protected abstract void pollClearedValues();
+import java.util.Map;
 
-    @Override
-    public void updateSize( E entity, int newSize )
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+@Service.Implementation( CacheProvider.class )
+public class NoCacheProvider extends CacheProvider
+{
+    public static final String NAME = "none";
+
+    public NoCacheProvider()
     {
-        // do nothing
+        super( NAME, "no cache" );
     }
 
     @Override
-    public void printStatistics()
+    public Cache<NodeImpl> newNodeCache( StringLogger logger, Map<Object, Object> config )
     {
-        // do nothing
+        return new NoCache<NodeImpl>( NODE_CACHE_NAME );
+    }
+
+    @Override
+    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Map<Object, Object> config )
+    {
+        return new NoCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
     }
 }
