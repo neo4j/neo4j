@@ -1302,18 +1302,16 @@ public class NodeManager
             @Override
             Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                long node = memory( params, Config.NODE_CACHE_SIZE );
-                memToUse( logger, params, false );
-                return new GCResistantCache<NodeImpl>( node, fraction( params, Config.NODE_CACHE_ARRAY_FRACTION ),
+                long mem = memToUse( logger, params, true );
+                return new GCResistantCache<NodeImpl>( mem, fraction( params, Config.NODE_CACHE_ARRAY_FRACTION ),
                         minLogInterval( params ), NODE_CACHE_NAME, logger );
             }
 
             @Override
             Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
-                memToUse( logger, params, false );
-                return new GCResistantCache<RelationshipImpl>( rel, fraction( params,
+                long mem = memToUse( logger, params, false );
+                return new GCResistantCache<RelationshipImpl>( mem, fraction( params,
                         Config.RELATIONSHIP_CACHE_ARRAY_FRACTION ), minLogInterval( params ),
                         RELATIONSHIP_CACHE_NAME, logger );
             }
@@ -1344,12 +1342,14 @@ public class NodeManager
             {
                 Long node = memory( params, Config.NODE_CACHE_SIZE );
                 Long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
-                final long available = Runtime.getRuntime().maxMemory(), advicedMax = available / 2;
-                if (node == null && rel == null)
+                final long available = Runtime.getRuntime().maxMemory(), advicedMax = available / 2, advicedMaxPerCache = advicedMax / 2;
+                if ( (node == null && isNode) || (rel == null && !isNode) )
                 {
-                    return advicedMax / 2;
+                    return advicedMaxPerCache;
                 }
                 long total = 0;
+                node = node != null ? node : advicedMaxPerCache;
+                rel = rel != null ? rel : advicedMaxPerCache;
                 node = Math.max( GCResistantCache.MIN_SIZE, node );
                 total += node;
                 rel = Math.max( GCResistantCache.MIN_SIZE, rel );
