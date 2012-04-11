@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Map;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.Server;
 import org.neo4j.kernel.ha.AsyncZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Map;
-
-import static java.util.Arrays.asList;
-import static org.neo4j.backup.OnlineBackupExtension.parsePort;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 public class HaConfig
 {
@@ -59,6 +60,43 @@ public class HaConfig
     public static final long CONFIG_DEFAULT_PULL_INTERVAL = -1;
     public static final int CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT = 500;
     public static final long CONFIG_DEFAULT_ZK_SESSION_TIMEOUT = 5000;
+
+    /**
+     * The amount of memory to use for the node cache (when using the 'gcr'
+     * cache).
+     */
+    @Documented
+    public static final String NODE_CACHE_SIZE = "node_cache_size";
+
+    /**
+     * The amount of memory to use for the relationship cache (when using the
+     * 'gcr' cache).
+     */
+    @Documented
+    public static final String RELATIONSHIP_CACHE_SIZE = "relationship_cache_size";
+
+    /**
+     * The fraction of the heap (1%-10%) to use for the base array in the node
+     * cache (when using the 'gcr' cache).
+     */
+    @Documented
+    public static final String NODE_CACHE_ARRAY_FRACTION = "node_cache_array_fraction";
+
+    /**
+     * The fraction of the heap (1%-10%) to use for the base array in the
+     * relationship cache (when using the 'gcr' cache).
+     */
+    @Documented
+    public static final String RELATIONSHIP_CACHE_ARRAY_FRACTION = "relationship_cache_array_fraction";
+
+    /**
+     * The minimal time that must pass in between logging statistics from the
+     * cache (when using the 'gcr' cache).
+     * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit
+     * be seconds, minutes or milliseconds respectively.
+     */
+    @Documented
+    public static final String GCR_CACHE_MIN_LOG_INTERVAL = "gcr_cache_min_log_interval";
 
     public static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
     {
@@ -118,7 +156,7 @@ public class HaConfig
         String value = config.get( HaConfig.CONFIG_KEY_MAX_CONCURRENT_TRANSACTIONS_ON_MASTER );
         return value != null ? Integer.parseInt( value ) : Server.DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
     }
-    
+
     public static String getClusterNameFromConfig( Map<String, String> config )
     {
         String clusterName = config.get( HaConfig.CONFIG_KEY_CLUSTER_NAME );

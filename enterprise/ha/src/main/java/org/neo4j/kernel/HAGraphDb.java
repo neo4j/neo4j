@@ -59,6 +59,7 @@ import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.ClusterClient;
+import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
@@ -76,6 +77,7 @@ import org.neo4j.kernel.ha.zookeeper.NoMasterException;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -162,12 +164,16 @@ public class HAGraphDb extends AbstractGraphDatabase
         this.machineId = HaConfig.getMachineIdFromConfig( config );
         this.branchedDataPolicy = HaConfig.getBranchedDataPolicyFromConfig( config );
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        if ( !config.containsKey( Config.CACHE_TYPE ) )
+        {
+            config.put( Config.CACHE_TYPE, GCResistantCacheProvider.NAME );
+        }
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory();
         this.broker = this.brokerFactory.create( this, config );
         this.clusterClient = clusterClient != null ? clusterClient
                 : defaultClusterClient();
         this.pullUpdates = false;
-        caches = new Caches( getMessageLog() );
+        caches = new HaCaches( getMessageLog() );
         startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
 

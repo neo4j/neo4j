@@ -46,7 +46,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.core.NodeManager.CacheType;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
@@ -114,7 +114,7 @@ public class TestConfig
         {
             Map<String, String> config = MapUtil.stringMap( HaConfig.CONFIG_KEY_SERVER_ID, "" + i,
                     HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString(), Config.CACHE_TYPE,
-                    CacheType.gcr.name() );
+                    GCResistantCacheProvider.NAME );
             HAGraphDb db = new HAGraphDb( dir.directory( "gcr" + i, true ).getAbsolutePath(), config );
             dbs.add( db );
         }
