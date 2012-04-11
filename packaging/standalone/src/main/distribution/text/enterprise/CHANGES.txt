@@ -1,3 +1,25 @@
+1.6.2 (2012-04-11)
+-----------------
+[kernel] Added a Garbage Collection resistant cache and various fixes around that
+[kernel] Moved the GCRC away from community and into enterprise, leaving a Service implementation in place
+[kernel] Improved checksum for transactions leads to better branching detection
+[kernel] Fixed an issue where the master cached the wrong masterId for a transaction
+[kernel] Auto configuration of memory mapped settings works as expected
+[kernel] Cache instances can be reused between restarts, reducing the cost of instantiating expensive ones (like GCRC)
+[kernel] Fixed an issue where aggressive reuse id generator would not read back id batches written out in the same session
+[lucene-index] Fixed an issue where a get on a lucene index wouldn't honor queries on numeric values
+[server] REST index queries accept an optional sort parameter to determine the way results are ordered
+[cypher] Aggregation on array properties now works properly
+[cypher] Patterns with multiple optional and multiple start points now give the correct result
+[shell] dbinfo command now prints array values and returns results as json
+[ha] GCRC is now part of the enterprise package only, enabled by default
+[ha] Broker is now completely shutdown during store copies
+[ha] After a client has received a BlockingReadTimeoutException, finally will not throw 'Transaction already active' exceptions
+[ha] Fix for a race condition getting the storeId from the cluster
+[ha] Caches are now being reused between restarts of the database
+[ha] Fixed issue where the wrong logical log version would be retrieved after a store copy
+[backup] Backups now leave the last transaction they received in a versioned log file, allowing a backup to seed an HA cluster
+
 1.6.1 (2012-02-16)
 ------------------
 o Added config option for ha.zk_session_timeout, defaulting to 5 seconds

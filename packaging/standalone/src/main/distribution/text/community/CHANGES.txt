@@ -1,3 +1,18 @@
+1.6.2 (2012-04-11)
+-----------------
+[kernel] Added a Garbage Collection resistant cache and various fixes around that
+[kernel] Moved the GCRC away from community and into enterprise, leaving a Service implementation in place
+[kernel] Improved checksum for transactions leads to better branching detection
+[kernel] Fixed an issue where the master cached the wrong masterId for a transaction
+[kernel] Auto configuration of memory mapped settings works as expected
+[kernel] Cache instances can be reused between restarts, reducing the cost of instantiating expensive ones (like GCRC)
+[kernel] Fixed an issue where aggressive reuse id generator would not read back id batches written out in the same session
+[lucene-index] Fixed an issue where a get on a lucene index wouldn't honor queries on numeric values
+[server] REST index queries accept an optional sort parameter to determine the way results are ordered
+[cypher] Aggregation on array properties now works properly
+[cypher] Patterns with multiple optional and multiple start points now give the correct result
+[shell] dbinfo command now prints array values and returns results as json
+
 1.6.1.RC2 (2012-02-01)
 ---------------------
 o Many bug fixes around log rotation and transaction handling that led to corruption issues.
