@@ -64,7 +64,7 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
         server = ServerHelper.createServer();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        JaxRsResponse response = new RestRequest().get(functionalTestHelper.getWebadminUri());
+        JaxRsResponse response = new RestRequest().get(functionalTestHelper.webAdminUri());
         assertEquals(200, response.getStatus());
         response.close();
     }

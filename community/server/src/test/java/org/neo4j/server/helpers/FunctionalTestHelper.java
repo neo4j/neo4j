@@ -236,7 +236,7 @@ public final class FunctionalTestHelper
         return server.getDatabase().graph;
     }
 
-    public String getWebadminUri()
+    public String webAdminUri()
     {
         return server.baseUri()
                 .toString() + "webadmin";

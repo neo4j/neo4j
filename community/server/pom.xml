@@ -337,6 +337,11 @@
           <artifactId>bcprov-jdk16</artifactId>
           <version>140</version>
         </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.10</version>
+      </dependency>
     </dependencies>
 
     <build>
