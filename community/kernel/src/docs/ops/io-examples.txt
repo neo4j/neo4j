@@ -69,9 +69,10 @@ neostore.propertystore.db.strings.mapped_memory=100M
 neostore.propertystore.db.arrays.mapped_memory=0M
 ----
 
+[[configuration-batchinsert]]
 == Batch insert example ==
 
-//link to batchinsert
+Read general information on batch insertion in <<batchinsert>>.
 
 The configuration should suit the data set you are about to inject using BatchInsert. Lets say we have a random-like graph with 10M nodes and 100M relationships. Each node (and maybe some relationships) have different properties of string and Java primitive types (but no arrays). The important thing with a random graph will be to give lots of memory to the relationship and node store:
 

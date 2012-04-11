@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.batchinsert;
+package org.neo4j.unsafe.batchinsert;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
- * The batch inserter drops support for transactions and concurrency in favor of
- * insertion speed. When done using the batch inserter {@link #shutdown()} must
- * be invoked and complete successfully for the Neo4j store to be in consistent
- * state.
+ * The batch inserter drops support for transactions and concurrency in favor
+ * of insertion speed. When done using the batch inserter {@link #shutdown()}
+ * must be invoked and complete successfully for the Neo4j store to be in
+ * consistent state.
  * <p>
  * Only one thread at a time may work against the batch inserter, multiple
  * threads performing concurrent access have to employ synchronization.
@@ -37,10 +36,6 @@ import org.neo4j.graphdb.RelationshipType;
  * invoke {@link #shutdown()} before JVM exits the Neo4j store can be considered
  * being in non consistent state and the insertion has to be re-done from
  * scratch.
- * 
- * @deprecated this interface is being replaced by
- *             {@link org.neo4j.ubsafe.batchinsert.BatchInserter} as of Neo4j
- *             1.7
  */
 public interface BatchInserter
 {
@@ -143,13 +138,13 @@ public interface BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId );
 
     /**
-     * Returns an iterable of {@link SimpleRelationship relationships} connected
+     * Returns an iterable of {@link BatchRelationsip relationships} connected
      * to the node with supplied id.
      *
      * @param nodeId the id of the node.
      * @return iterable over the relationships connected to the node.
      */
-    public Iterable<SimpleRelationship> getRelationships( long nodeId );
+    public Iterable<BatchRelationship> getRelationships( long nodeId );
 
     /**
      * Creates a node with supplied id and properties. If a node with the given
@@ -180,7 +175,7 @@ public interface BatchInserter
      * @param relId the relationship id.
      * @return a simple relationship wrapper for the relationship.
      */
-    public SimpleRelationship getRelationshipById( long relId );
+    public BatchRelationship getRelationshipById( long relId );
 
     /**
      * Sets the properties of a relationship. This method will remove any
@@ -241,7 +236,7 @@ public interface BatchInserter
      *
      * @return the path to this Neo4j store.
      */
-    public String getStore();
+    public String getStoreDir();
 
     /**
      * Returns the reference node id or <code>-1</code> if it doesn't exist.
@@ -249,10 +244,4 @@ public interface BatchInserter
      * @return the reference node
      */
     public long getReferenceNode();
-
-    /**
-     *
-     * @return a GraphDatabaseService that does not support deletion and transactions
-     */
-    public GraphDatabaseService getGraphDbService();
 }
