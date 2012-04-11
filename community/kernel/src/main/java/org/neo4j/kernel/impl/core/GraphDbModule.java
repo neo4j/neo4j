@@ -36,6 +36,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -65,9 +66,8 @@ public class GraphDbModule
 
     private boolean readOnly = false;
 
-    public GraphDbModule( GraphDatabaseService graphDb, LockManager lockManager,
-            TransactionManager transactionManager, EntityIdGenerator idGenerator,
-            boolean readOnly )
+    public GraphDbModule( GraphDatabaseService graphDb, LockManager lockManager, TransactionManager transactionManager,
+            EntityIdGenerator idGenerator, boolean readOnly )
     {
         this.graphDbService = graphDb;
         this.lockManager = lockManager;
@@ -80,9 +80,9 @@ public class GraphDbModule
     {
     }
 
-    public void start( LockReleaser lockReleaser,
-        PersistenceManager persistenceManager, RelationshipTypeCreator relTypeCreator,
-        DiagnosticsManager diagnostics, Map<Object,Object> params )
+    public void start( LockReleaser lockReleaser, PersistenceManager persistenceManager,
+            RelationshipTypeCreator relTypeCreator, DiagnosticsManager diagnostics, Map<Object, Object> params,
+            Caches caches )
     {
         if ( !startIsOk )
         {
@@ -102,17 +102,20 @@ public class GraphDbModule
                     DEFAULT_CACHE_TYPE + ")", e.getCause() );
         }
 
+        caches.config( params );
+        Cache<NodeImpl> nodeCache = diagnostics.tryAppendProvider( caches.node() );
+        Cache<RelationshipImpl> relCache = diagnostics.tryAppendProvider( caches.relationship() );
+
         if ( !readOnly )
         {
-            nodeManager = new NodeManager( graphDbService,
-                    lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, relTypeCreator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
+            nodeManager = new NodeManager( graphDbService, lockManager, lockReleaser, transactionManager,
+                    persistenceManager, idGenerator, relTypeCreator, cacheType, diagnostics, params, nodeCache,
+                    relCache );
         }
         else
         {
-            nodeManager = new ReadOnlyNodeManager( graphDbService,
-                    lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator, cacheType, diagnostics, (StringLogger) params.get( StringLogger.class ), params );
+            nodeManager = new ReadOnlyNodeManager( graphDbService, lockManager, lockReleaser, transactionManager,
+                    persistenceManager, idGenerator, cacheType, diagnostics, params, nodeCache, relCache );
         }
         // load and verify from PS
         NameData[] relTypes = null;
@@ -274,5 +277,10 @@ public class GraphDbModule
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return nodeManager.getRelationshipTypes();
+    }
+
+    protected Caches createCaches( StringLogger logger )
+    {
+        return new Caches( logger );
     }
 }

@@ -74,6 +74,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         super( storeDir );
         params.put( Config.READ_ONLY, "true" );
+        caches = createCaches( getMessageLog() );
         this.graphDbImpl = new EmbeddedGraphDbImpl( getStoreDir(), null, params, this,
                 CommonFactories.defaultLockManagerFactory(),
                 CommonFactories.defaultIdGeneratorFactory(),
@@ -81,7 +82,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(),
-                CommonFactories.defaultFileSystemAbstraction() );
+                CommonFactories.defaultFileSystemAbstraction(), caches );
     }
 
     /**
@@ -121,7 +122,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         graphDbImpl.shutdown();
     }
-    
+
     @Override
     public TransactionBuilder tx()
     {
@@ -145,7 +146,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         return graphDbImpl.getManagementBeans( type );
     }
-    
+
     @Override
     public KernelData getKernelData()
     {

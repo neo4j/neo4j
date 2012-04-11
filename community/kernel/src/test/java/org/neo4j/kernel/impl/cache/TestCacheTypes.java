@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +48,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     {
         return newDb( cacheType, MapUtil.stringMap() );
     }
-    
+
     private GraphDatabaseService newDb( String cacheType, Map<String, String> config )
     {
         return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( config, Config.CACHE_TYPE, cacheType ) );
@@ -119,7 +119,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         // TODO how to assert that 100M is actually used
         db.shutdown();
     }
-    
+
 //    @Test
 //    public void testOldCache()
 //    {

@@ -104,16 +104,13 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    private final StringLogger logger;
-
     NodeManager( GraphDatabaseService graphDb, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             RelationshipTypeCreator relTypeCreator, CacheType cacheType,
-            DiagnosticsManager diagnostics, StringLogger logger,
-            Map<Object,Object> params )
+            DiagnosticsManager diagnostics, Map<Object, Object> params, Cache<NodeImpl> nodeCache,
+            Cache<RelationshipImpl> relCache )
     {
-        this.logger = logger;
         this.graphDbService = graphDb;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
@@ -128,8 +125,8 @@ public class NodeManager
             persistenceManager, idGenerator, relTypeCreator );
 
         this.cacheType = cacheType;
-        this.nodeCache = diagnostics.tryAppendProvider( cacheType.node( logger, params ) );
-        this.relCache =  diagnostics.tryAppendProvider( cacheType.relationship( logger, params ) );
+        this.nodeCache = nodeCache;
+        this.relCache = relCache;
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.regex.Pattern.quote;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import javax.transaction.TransactionManager;
-
-import static java.util.regex.Pattern.quote;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -363,6 +363,13 @@ public class Config implements DiagnosticsProvider
         }
         params.put( NODE_AUTO_INDEXING, "false" );
         params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
+
+        // GCRC settings
+        params.put( NODE_CACHE_ARRAY_FRACTION, "1.0" );
+        params.put( RELATIONSHIP_CACHE_ARRAY_FRACTION, "1.0" );
+        params.put( GCR_CACHE_MIN_LOG_INTERVAL, "60s" );
+        params.put( GC_MONITOR_WAIT_TIME, "100" );
+        params.put( GC_MONITOR_THRESHOLD, "200" );
         return params;
     }
 

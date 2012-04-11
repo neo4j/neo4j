@@ -49,7 +49,7 @@ public class GraphDatabaseTestAccess extends AbstractGraphDatabase
                 idGenerators, CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxHook(),
-                CommonFactories.defaultLastCommittedTxIdSetter(), fileSystem );
+                CommonFactories.defaultLastCommittedTxIdSetter(), fileSystem, createCaches( getMessageLog() ) );
         this.fileSystem = fileSystem;
     }
 
@@ -82,7 +82,7 @@ public class GraphDatabaseTestAccess extends AbstractGraphDatabase
     {
         impl.shutdown();
     }
-    
+
     @Override
     public TransactionBuilder tx()
     {
@@ -132,7 +132,7 @@ public class GraphDatabaseTestAccess extends AbstractGraphDatabase
     {
         return impl.getManagementBeans( type );
     }
-    
+
     @Override
     public KernelData getKernelData()
     {

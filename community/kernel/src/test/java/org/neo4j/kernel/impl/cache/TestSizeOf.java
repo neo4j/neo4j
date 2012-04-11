@@ -36,6 +36,7 @@ import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+@Ignore
 public class TestSizeOf
 {
     private static ImpermanentGraphDatabase db;

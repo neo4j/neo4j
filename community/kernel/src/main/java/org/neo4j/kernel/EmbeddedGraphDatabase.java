@@ -74,6 +74,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
         super( storeDir );
+        caches = createCaches( getMessageLog() );
         this.graphDbImpl = new EmbeddedGraphDbImpl( this.getStoreDir(), null, params, this,
                 CommonFactories.defaultLockManagerFactory(),
                 CommonFactories.defaultIdGeneratorFactory(),
@@ -81,7 +82,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(),
-                CommonFactories.defaultFileSystemAbstraction() );
+                CommonFactories.defaultFileSystemAbstraction(), caches );
     }
 
     /**

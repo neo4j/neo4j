@@ -35,6 +35,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     private final AtomicLong currentSize = new AtomicLong( 0 );
     private final long minLogInterval;
     private final String name;
+    private final AtomicLong highestIdSet = new AtomicLong();
 
     // non thread safe, only ~statistics (atomic update will affect performance)
     private long hitCount = 0;
@@ -42,19 +43,19 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     private long totalPuts = 0;
     private long collisions = 0;
     private long purgeCount = 0;
-    private AtomicLong highestIdSet = new AtomicLong();
 
     private final StringLogger logger;
 
     GCResistantCache( AtomicReferenceArray<E> cache )
     {
+        long t = System.currentTimeMillis();
         this.cache = cache;
         this.minLogInterval = Long.MAX_VALUE;
         this.maxSize = 1024l*1024*1024;
         this.name = "test cache";
         this.logger = null;
     }
-    
+
     public GCResistantCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
         this.minLogInterval = minLogInterval;
@@ -213,7 +214,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
             }
             while ( ( pos - index ) >= 0 || ( pos + index ) < cache.length() );
             // current object larger than max size, clear it
-            remove( pos ); 
+            remove( pos );
         }
         finally
         {
@@ -252,7 +253,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
                 registeredSize += obj.getRegisteredSize();
             }
         }
-        logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount:" + elementCount + " and sizes actual:" + getSize( actualSize ) + 
+        logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount:" + elementCount + " and sizes actual:" + getSize( actualSize ) +
                     ", perceived:" + getSize( currentSize.get() ) + " (diff:" + getSize(currentSize.get() - actualSize) + "), registered:" + getSize( registeredSize ), true );
     }
 
@@ -284,7 +285,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     {
         log.logMessage( this.toString(), true );
     }
-    
+
     @Override
     public String toString()
     {
@@ -292,7 +293,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
 
         String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
         String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
-        
+
         return name + " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
                 missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").";
     }

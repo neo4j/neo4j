@@ -45,6 +45,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -104,8 +105,8 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, StoreId storeId, Map<String, String> inputParams,
             AbstractGraphDatabase graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TxIdGeneratorFactory txIdFactory, TxHook txHook,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem )
+            TxIdGeneratorFactory txIdFactory, TxHook txHook, LastCommittedTxIdSetter lastCommittedTxIdSetter,
+            FileSystemAbstraction fileSystem, Caches caches )
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams, txHook, graphDbService.getMessageLog(), fileSystem );
@@ -187,7 +188,7 @@ class EmbeddedGraphDbImpl
                     }
                 };
             }
-            graphDbInstance.start( graphDbService, extensionLoader );
+            graphDbInstance.start( graphDbService, extensionLoader, caches );
             nodeManager = config.getGraphDbModule().getNodeManager();
             /*
              *  IndexManager has to exist before extensions load (so that
@@ -378,7 +379,7 @@ class EmbeddedGraphDbImpl
     {
         return defaultTxBuilder;
     }
-    
+
     Transaction beginTx( ForceMode forceMode )
     {
         if ( graphDbInstance.transactionRunning() )
@@ -404,7 +405,7 @@ class EmbeddedGraphDbImpl
         }
         return result;
     }
-    
+
     /**
      * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.

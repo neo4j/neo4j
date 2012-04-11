@@ -29,6 +29,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -71,7 +72,7 @@ class GraphDbInstance
      * @throws StartupFailedException if unable to start
      */
     public synchronized Map<Object, Object> start( AbstractGraphDatabase graphDb,
-            KernelExtensionLoader kernelExtensionLoader )
+            KernelExtensionLoader kernelExtensionLoader, Caches caches )
     {
         if ( started )
         {
@@ -162,8 +163,8 @@ class GraphDbInstance
             persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
             config.getIdGeneratorModule().start();
             config.getGraphDbModule().start( config.getLockReleaser(),
-                    config.getPersistenceModule().getPersistenceManager(),
-                    config.getRelationshipTypeCreator(), config.getDiagnosticsManager(), params );
+                    config.getPersistenceModule().getPersistenceManager(), config.getRelationshipTypeCreator(),
+                    config.getDiagnosticsManager(), params, caches );
 
             started = true;
 
