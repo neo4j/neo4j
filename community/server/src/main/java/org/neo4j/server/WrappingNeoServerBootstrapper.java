@@ -115,7 +115,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         {
             if ( server != null )
             {
-                server.stopServer();
+                server.stopServerOnly();
                 server.getDatabase()
                         .rrdDb()
                         .close();

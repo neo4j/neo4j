@@ -238,8 +238,9 @@ public final class FunctionalTestHelper
 
     public String webAdminUri()
     {
+        // the trailing slash prevents a 302 redirect
         return server.baseUri()
-                .toString() + "webadmin";
+                .toString() + "webadmin" + "/";
     }
 
     public JaxRsResponse get(String path) {

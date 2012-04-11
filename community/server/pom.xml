@@ -150,6 +150,18 @@
         </dependency>
 
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>0.9.30</version>
+        </dependency>
+        <dependency>
+            <groupId>janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>2.5.10</version>
+
+        </dependency>
+
+        <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
             <version>6.1.25</version>
@@ -248,7 +260,6 @@
             <artifactId>rrd4j</artifactId>
             <version>2.0.7</version>
         </dependency>
-    
 
         <!-- File uploads -->
         <dependency>
@@ -333,15 +344,15 @@
             <artifactId>hamcrest-all</artifactId>
         </dependency>
         <dependency>
-          <groupId>bouncycastle</groupId>
-          <artifactId>bcprov-jdk16</artifactId>
-          <version>140</version>
+            <groupId>bouncycastle</groupId>
+            <artifactId>bcprov-jdk16</artifactId>
+            <version>140</version>
         </dependency>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.10</version>
-      </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.10</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -593,7 +604,7 @@
                     <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
                 </configuration>
             </plugin>
-            
+
           <plugin>
             <groupId>com.github.searls</groupId>
             <artifactId>jasmine-maven-plugin</artifactId>

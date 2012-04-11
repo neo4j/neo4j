@@ -261,11 +261,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 webServer.addExecutionLimitFilter( limit );
             }
 
-            if ( webadminLoggingEnabled( getConfiguration() ) )
+
+            if ( httpLoggingProperlyConfigured() )
             {
-                webServer.startWebadminLogging(
-                    new File( database.graph.getStoreDir() + File.separator + ".." + File.separator + "log" ),
-                    "access.log" );
+                System.out.println( "--> I think it's good to log HTTP!" );
+                webServer.enableHTTPLoggingForWebadmin(
+                    new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ),
+                    new File( getConfiguration().getProperty( Configurator.HTTP_LOG_LOCATION ).toString() ) );
             }
 
             webServer.start();
@@ -283,21 +285,37 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
     }
 
-    private boolean webadminLoggingEnabled( Configuration configuration )
-    {
-        // Julian's algorithm:
-        // log unless org.neo4j.server.webadmin.logging is explicitly not set to "enabled"
-        Object enabled = configuration.getProperty( Configurator.WEBADMIN_LOGGING_ENABLED );
-        System.out.println( "enabled = " + enabled );
 
-//        if ( enabled == null )
-//        {
-//            return true;
-//        }
-//        else
-//        {
-            return "enabled".equals( String.valueOf( enabled ) );
-//        }
+    private boolean httpLoggingProperlyConfigured()
+    {
+        return loggingEnabled() && logLocationSuitable() && configLocated();
+    }
+
+    private boolean configLocated()
+    {
+        final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION );
+        if ( property == null )
+        {
+            return false;
+        }
+
+        return new File( String.valueOf( property ) ).exists();
+    }
+
+    private boolean logLocationSuitable()
+    {
+        final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_LOCATION );
+        if ( property == null )
+        {
+            return false;
+        }
+
+        return new File( String.valueOf( property ) ).mkdirs();
+    }
+
+    private boolean loggingEnabled()
+    {
+        return "true".equals( String.valueOf( getConfiguration().getProperty( Configurator.HTTP_LOGGING ) ) );
     }
 
     protected int getWebServerPort()
@@ -363,7 +381,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         try
         {
-            stopServer();
+            stopServerOnly();
             stopDatabase();
             log.info( "Successfully shutdown database [%s]", getDatabase().getLocation() );
         }
@@ -377,7 +395,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     /**
      * Stops everything but the database.
      */
-    public void stopServer()
+    public void stopServerOnly()
     {
         try
         {

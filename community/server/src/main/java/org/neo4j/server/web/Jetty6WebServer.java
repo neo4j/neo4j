@@ -33,16 +33,25 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import ch.qos.logback.access.joran.JoranConfigurator;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.joran.spi.JoranException;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.NCSARequestLog;
+import org.mortbay.jetty.Request;
+import org.mortbay.jetty.Response;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -66,6 +75,7 @@ import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -213,35 +223,16 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void startWebadminLogging( File logLocation, String logName )
+    public void enableHTTPLoggingForWebadmin( File logbackConfigFile, File logDirectory )
     {
-        String canonicalPath = null;
-        try
-        {
-            canonicalPath = logLocation.getCanonicalPath();
-        }
-        catch ( IOException e )
-        {
-            log.error( e );
-        }
+        final RequestLogImpl requestLog = new RequestLogImpl();
+        requestLog.putProperty("http_log_dir", logDirectory.getAbsolutePath());
+        requestLog.setFileName( logbackConfigFile.getAbsolutePath() );
 
-        logLocation.mkdirs();
-
-
-        NCSARequestLog requestLog = new NCSARequestLog( canonicalPath + File.separator + logName );
-//        requestLog.setRetainDays( 90 );
-//        requestLog.setAppend( true );
-//        requestLog.setExtended( true );
-//        requestLog.setLogTimeZone( "GMT" );
-
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
+        final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
 
         jetty.addHandler( requestLogHandler );
-
-        log.info( "HTTP Request logging for Webadmin started, log file [%s]", requestLog.getFilename() );
-        System.out.println(
-            String.format( "HTTP Request logging for Webadmin started, log file [%s]", requestLog.getFilename() ) );
     }
 
     @Override
@@ -476,5 +467,36 @@ public class Jetty6WebServer implements WebServer
                 }
             }
         } );
+    }
+
+    private class HTTPLoggingFilter implements Filter
+    {
+        private RequestLogImpl requestLog;
+
+        public HTTPLoggingFilter( RequestLogImpl requestLog )
+        {
+            this.requestLog = requestLog;
+        }
+
+        @Override
+        public void init( FilterConfig filterConfig ) throws ServletException
+        {
+            //To change body of implemented methods use File | Settings | File Templates.
+        }
+
+        @Override
+        public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain ) throws IOException, ServletException
+        {
+            System.out.println( "-- name --> " + requestLog.getName() );
+            requestLog.log( (Request) request, (Response) response );
+            chain.doFilter( request, response );
+        }
+
+
+        @Override
+        public void destroy()
+        {
+            //To change body of implemented methods use File | Settings | File Templates.
+        }
     }
 }

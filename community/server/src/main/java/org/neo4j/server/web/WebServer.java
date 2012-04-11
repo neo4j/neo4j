@@ -65,7 +65,7 @@ public interface WebServer
 
     void addExecutionLimitFilter( int timeout );
 
-    void startWebadminLogging( File logLocation, String logName );
+    void enableHTTPLoggingForWebadmin( File logbackConfig, File logDir );
 
     @Deprecated
     Server getJetty();
