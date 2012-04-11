@@ -684,7 +684,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <argLine>-Xmx1024m</argLine>
+                            <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                             <forkMode>always</forkMode>
                         </configuration>
                     </plugin>
