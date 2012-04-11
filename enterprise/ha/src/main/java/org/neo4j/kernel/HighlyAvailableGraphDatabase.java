@@ -288,7 +288,7 @@ public class HighlyAvailableGraphDatabase
             boolean success = false;
             try
             {
-                success = !fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
+                success = fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
             }
             catch ( IOException e )
             {   // OK, let's try copying instead.
