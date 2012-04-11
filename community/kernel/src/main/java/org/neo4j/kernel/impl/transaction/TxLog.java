@@ -255,6 +255,7 @@ public class TxLog
             return seqNr;
         }
 
+        @Override
         public String toString()
         {
             XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0]

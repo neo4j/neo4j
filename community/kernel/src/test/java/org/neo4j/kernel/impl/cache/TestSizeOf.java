@@ -21,68 +21,164 @@ package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.CACHE_TYPE;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
-import org.junit.After;
+import java.util.Map;
+
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeManager.CacheType;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestSizeOf
 {
-    private ImpermanentGraphDatabase db;
-    private Node node;
-    
-    @Before
-    public void doBefore() throws Exception
+    private static ImpermanentGraphDatabase db;
+
+    @BeforeClass
+    public static void setupDB()
     {
-        db = new ImpermanentGraphDatabase( stringMap( CACHE_TYPE, "array" ) );
+        db = new ImpermanentGraphDatabase( stringMap( CACHE_TYPE, CacheType.gcr.name() ) );
+    }
+
+    @AfterClass
+    public static void shutdown() throws Exception
+    {
+        db.shutdown();
+    }
+
+    @Before
+    public void clearCache()
+    {
+        ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Cache<NodeImpl> getNodeCache()
+    {
+        // This is a bit fragile because we depend on the order of caches() returns its caches.
+        return (Cache<NodeImpl>) IteratorUtil.first( ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().caches() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Cache<RelationshipImpl> getRelationshipCache()
+    {
+        // This is a bit fragile because we depend on the order of caches() returns its caches.
+        return (Cache<RelationshipImpl>) IteratorUtil.last( ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().caches() );
+    }
+
+    private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes )
+    {
+        return createNodeAndLoadFresh( properties, nrOfRelationships, nrOfTypes, 0 );
+    }
+
+    private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes, int directionStride )
+    {
+        Node node = null;
         Transaction tx = db.beginTx();
         try
         {
             node = db.createNode();
-            for ( int i = 0; i < 10; i++ )
-                node.createRelationshipTo( db.createNode(), TEST );
+            setProperties( properties, node );
+            for ( int t = 0; t < nrOfTypes; t++ )
+            {
+                RelationshipType type = DynamicRelationshipType.withName( relTypeName( t ) );
+                for ( int i = 0, dir = 0; i < nrOfRelationships; i++, dir = (dir+directionStride)%3 )
+                {
+                    switch ( dir )
+                    {
+                    case 0: node.createRelationshipTo( db.createNode(), type ); break;
+                    case 1: db.createNode().createRelationshipTo( node, type ); break;
+                    case 2: node.createRelationshipTo( node, type ); break;
+                    default: throw new IllegalArgumentException( "Invalid direction " + dir );
+                    }
+                }
+            }
             tx.success();
         }
         finally
         {
             tx.finish();
         }
-        
-        // Clear the cache so that we start from a fresh slate.
-        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+
+        clearCache();
+
+        if ( !properties.isEmpty() )
+            loadProperties( node );
+        if ( nrOfRelationships*nrOfTypes > 0 )
+            count( node.getRelationships() );
+
+        return node;
     }
 
-    @After
-    public void doAfter() throws Exception
+    private void loadProperties( PropertyContainer entity )
     {
-        db.shutdown();
+        for ( String key : entity.getPropertyKeys() )
+            entity.getProperty( key );
     }
-    
-    @SuppressWarnings( "unchecked" )
-    private Cache<NodeImpl> getNodeCache()
+
+    private void setProperties( Map<String, Object> properties, PropertyContainer entity )
     {
-        // This is a bit fragile because we depend on the order of caches() returns its caches.
-        return (Cache<NodeImpl>) db.getConfig().getGraphDbModule().getNodeManager().caches().iterator().next();
+        for ( Map.Entry<String, Object> property : properties.entrySet() )
+            entity.setProperty( property.getKey(), property.getValue() );
+    }
+
+    private Relationship createRelationshipAndLoadFresh( Map<String, Object> properties )
+    {
+        Relationship relationship = null;
+        Transaction tx = db.beginTx();
+        try
+        {
+            relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            setProperties( properties, relationship );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        clearCache();
+
+        if ( !properties.isEmpty() )
+            loadProperties( relationship );
+
+        return relationship;
+    }
+
+    private String relTypeName( int t )
+    {
+        return "mytype" + t;
     }
 
     @Test
     public void cacheSizeCorrelatesWithNodeSizeAfterFullyLoadingRelationships() throws Exception
     {
+        // Create node with a couple of relationships
+        Node node = createNodeAndLoadFresh( map(), 10, 1 );
         Cache<NodeImpl> nodeCache = getNodeCache();
-        
+
         // Just an initial sanity assertion, we start off with a clean cache
+        clearCache();
         assertEquals( 0, nodeCache.size() );
-        
+
         // Fully cache the node and its relationships
         count( node.getRelationships() );
-        
+
         // Now the node cache size should be the same as doing node.size()
         assertEquals( db.getConfig().getGraphDbModule().getNodeManager().getNodeIfCached( node.getId() ).size(), nodeCache.size() );
     }

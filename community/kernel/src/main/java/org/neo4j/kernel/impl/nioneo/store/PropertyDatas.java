@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+
 import org.neo4j.kernel.impl.cache.SizeOfs;
 
 public class PropertyDatas
@@ -38,7 +40,7 @@ public class PropertyDatas
         {
             // all primitives fit in 8 byte value
             // Object + id(long) + index(int) + value(pad)
-            return 16 + 8 + 8;
+            return withObjectOverhead( 8 + 8 );
         }
         
         @Override
@@ -312,6 +314,7 @@ public class PropertyDatas
             this.value = value;
         }
         
+        @Override
         public int size()
         {
             return super.size() + 8;
@@ -352,6 +355,7 @@ public class PropertyDatas
             this.value = value;
         }
 
+        @Override
         public int size()
         {
             return super.size() + 8;
@@ -400,8 +404,8 @@ public class PropertyDatas
         
         public int size()
         {
-            // Object + id(long) + value(Object) + index(int)
-            return 16 + 8 + 8 + 4 + sizeOf( value );
+            return withObjectOverhead( 8 /*id*/ + 8 /*value reference*/ + 4 /*index*/ + sizeOf( value ) );
+            // TODO with padding the 'int index' will probably amount to 8 bytes.
         }
 
         @Override

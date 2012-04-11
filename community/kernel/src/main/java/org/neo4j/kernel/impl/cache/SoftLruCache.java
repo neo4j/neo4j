@@ -127,10 +127,4 @@ public class SoftLruCache<E extends EntityWithSize> extends ReferenceCache<E>
     {
         return counter.getMissCount();
     }
-
-    @Override
-    public void updateSize( E entity, int sizeBefore, int sizeAfter )
-    {
-        // do nothing
-    }
 }

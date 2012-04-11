@@ -127,10 +127,4 @@ public class WeakLruCache<E extends EntityWithSize> extends ReferenceCache<E>
     {
         return name;
     }
-
-    @Override
-    public void updateSize( E entity, int sizeBefore, int sizeAfter )
-    {
-        // do nothing
-    }
 }

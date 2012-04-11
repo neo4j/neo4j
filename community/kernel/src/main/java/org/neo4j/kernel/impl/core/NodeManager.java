@@ -46,8 +46,8 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.cache.AtomicArrayCache;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.GCResistantCache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
 import org.neo4j.kernel.impl.cache.StrongReferenceCache;
@@ -257,13 +257,13 @@ public class NodeManager
 
     public void stop()
     {
-        if ( nodeCache instanceof AtomicArrayCache )
+        if ( nodeCache instanceof GCResistantCache )
         {
-            ((AtomicArrayCache<NodeImpl>) nodeCache).printStatistics();
+            ((GCResistantCache<NodeImpl>) nodeCache).printStatistics();
         }
-        if ( relCache instanceof AtomicArrayCache )
+        if ( relCache instanceof GCResistantCache )
         {
-            ((AtomicArrayCache<RelationshipImpl>) relCache).printStatistics();
+            ((GCResistantCache<RelationshipImpl>) relCache).printStatistics();
         }
         nodeCache.clear();
         relCache.clear();
@@ -1297,27 +1297,30 @@ public class NodeManager
                 return new StrongReferenceCache<RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         },
-        array( "atomic array reference cache" )
+        gcr( "GC resistant cache" )
         {
             @Override
             Cache<NodeImpl> node( StringLogger logger, Map<Object, Object> params )
             {
-                return new AtomicArrayCache<NodeImpl>( memToUse(logger, params, true),
-                        fraction( params, Config.NODE_ARRAY_CACHE_ARRAY_FRACTION ),
+                long node = memory( params, Config.NODE_CACHE_SIZE );
+                memToUse( logger, params, false );
+                return new GCResistantCache<NodeImpl>( node, fraction( params, Config.NODE_CACHE_ARRAY_FRACTION ),
                         minLogInterval( params ), NODE_CACHE_NAME, logger );
             }
 
             @Override
             Cache<RelationshipImpl> relationship( StringLogger logger, Map<Object, Object> params )
             {
-                return new AtomicArrayCache<RelationshipImpl>( memToUse(logger, params, false),
-                        fraction( params, Config.RELATIONSHIP_ARRAY_CACHE_ARRAY_FRACTION ),
-                        minLogInterval( params ), RELATIONSHIP_CACHE_NAME, logger );
+                long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
+                memToUse( logger, params, false );
+                return new GCResistantCache<RelationshipImpl>( rel, fraction( params,
+                        Config.RELATIONSHIP_CACHE_ARRAY_FRACTION ), minLogInterval( params ),
+                        RELATIONSHIP_CACHE_NAME, logger );
             }
 
             private long minLogInterval( Map<Object, Object> params )
             {
-                String interval = (String) params.get( Config.ARRAY_CACHE_MIN_LOG_INTERVAL );
+                String interval = (String) params.get( Config.GCR_CACHE_MIN_LOG_INTERVAL );
                 long result = 60000; // Default: a minute
                 try
                 {
@@ -1326,12 +1329,12 @@ public class NodeManager
                 catch ( Exception e )
                 {
                     throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.ARRAY_CACHE_MIN_LOG_INTERVAL, e );
+                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL, e );
                 }
                 if ( result < 0 )
                 {
                     throw new IllegalArgumentException( "Invalid configuration value [" + interval + "] for "
-                                                        + Config.ARRAY_CACHE_MIN_LOG_INTERVAL );
+                                                        + Config.GCR_CACHE_MIN_LOG_INTERVAL );
                 }
                 return result;
             }
@@ -1339,24 +1342,18 @@ public class NodeManager
             @SuppressWarnings( "boxing" )
             private long memToUse( StringLogger logger, Map<Object, Object> params, boolean isNode )
             {
-                Long node = memory(params, Config.NODE_ARRAY_CACHE_SIZE);
-                Long rel = memory(params, Config.RELATIONSHIP_ARRAY_CACHE_SIZE);
+                Long node = memory( params, Config.NODE_CACHE_SIZE );
+                Long rel = memory( params, Config.RELATIONSHIP_CACHE_SIZE );
                 final long available = Runtime.getRuntime().maxMemory(), advicedMax = available / 2;
                 if (node == null && rel == null)
                 {
                     return advicedMax / 2;
                 }
                 long total = 0;
-                if ( node != null )
-                {
-                    node = Math.max( AtomicArrayCache.MIN_SIZE, node );
-                    total += node;
-                }
-                if ( rel != null )
-                {
-                    rel = Math.max( AtomicArrayCache.MIN_SIZE, rel );
-                    total += rel;
-                }
+                node = Math.max( GCResistantCache.MIN_SIZE, node );
+                total += node;
+                rel = Math.max( GCResistantCache.MIN_SIZE, rel );
+                total += rel;
                 if ( total > available )
                     throw new IllegalArgumentException(
                                                         String.format( "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
@@ -1366,18 +1363,18 @@ public class NodeManager
                                                       node, rel, total, advicedMax ) );
                 if ( node == null )
                 {
-                    node = Math.max( AtomicArrayCache.MIN_SIZE, advicedMax - rel );
+                    node = Math.max( GCResistantCache.MIN_SIZE, advicedMax - rel );
                 }
                 if ( rel == null )
                 {
-                    rel = Math.max( AtomicArrayCache.MIN_SIZE, advicedMax - node );
+                    rel = Math.max( GCResistantCache.MIN_SIZE, advicedMax - node );
                 }
                 return isNode ? node : rel;
             }
 
             private float fraction( Map<Object, Object> params, String param )
             {
-                String fraction = (String)params.get( Config.NODE_ARRAY_CACHE_ARRAY_FRACTION );
+                String fraction = (String) params.get( Config.NODE_CACHE_ARRAY_FRACTION );
                 float result = 1;
                 try
                 {
@@ -1500,13 +1497,13 @@ public class NodeManager
         graphProperties = instantiateGraphProperties();
     }
 
-    void updateCacheSize( NodeImpl node, int sizeBefore, int sizeAfter )
+    void updateCacheSize( NodeImpl node, int newSize )
     {
-        nodeCache.updateSize( node, sizeBefore, sizeAfter );
+        nodeCache.updateSize( node, newSize );
     }
 
-    void updateCacheSize( RelationshipImpl rel, int sizeBefore, int sizeAfter )
+    void updateCacheSize( RelationshipImpl rel, int newSize )
     {
-        relCache.updateSize( rel, sizeBefore, sizeAfter );
+        relCache.updateSize( rel, newSize );
     }
 }

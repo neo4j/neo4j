@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
-public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, DiagnosticsProvider
+public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, DiagnosticsProvider
 {
     public static final long MIN_SIZE = 1;
     private final AtomicReferenceArray<E> cache;
@@ -42,10 +42,11 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
     private long totalPuts = 0;
     private long collisions = 0;
     private long purgeCount = 0;
+    private AtomicLong highestIdSet = new AtomicLong();
 
     private final StringLogger logger;
 
-    AtomicArrayCache( AtomicReferenceArray<E> cache )
+    GCResistantCache( AtomicReferenceArray<E> cache )
     {
         this.cache = cache;
         this.minLogInterval = Long.MAX_VALUE;
@@ -54,14 +55,14 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         this.logger = null;
     }
     
-    public AtomicArrayCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
+    public GCResistantCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
     {
         this.minLogInterval = minLogInterval;
         if ( arrayHeapFraction < 1 || arrayHeapFraction > 10 )
         {
             throw new IllegalArgumentException(
-                                                "The heap fraction used by an array cache must be between 1% and 10%, not "
-                                                        + arrayHeapFraction + "%" );
+                    "The heap fraction used by a GC resistant cache must be between 1% and 10%, not "
+                            + arrayHeapFraction + "%" );
         }
         long memToUse = (long)(((double)arrayHeapFraction) * Runtime.getRuntime().maxMemory() / 100);
         long maxElementCount = (int) ( memToUse / 8 );
@@ -107,12 +108,14 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
             int objectSize = obj.size();
             if ( cache.compareAndSet( pos, oldObj, obj ) )
             {
+                setHighest( obj.getId() );
                 int oldObjSize = 0;
                 if ( oldObj != null )
                 {
-                    oldObjSize = oldObj.size();
+                    oldObjSize = oldObj.getRegisteredSize();
                 }
                 long size = currentSize.addAndGet( objectSize - oldObjSize );
+                obj.setRegisteredSize( objectSize );
                 if ( oldObj != null )
                 {
                     collisions++;
@@ -126,6 +129,26 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         }
     }
 
+    /**
+     * Updates the highest set id if the given id is higher than any previously registered id.
+     * Helps {@link #clear()} performance wise so that only the used part of the array is cleared.
+     * @param id the id just put into the cache.
+     */
+    private void setHighest( long id )
+    {
+        while ( true )
+        {
+            long highest = highestIdSet.get();
+            if ( id > highest )
+            {
+                if ( highestIdSet.compareAndSet( highest, id ) )
+                    break;
+            }
+            else
+                break;
+        }
+    }
+
     public E remove( long id )
     {
         int pos = getPosition( id );
@@ -134,8 +157,7 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
         {
             if ( cache.compareAndSet( pos, obj, null ) )
             {
-                int objSize = obj.size();
-                currentSize.addAndGet( objSize * -1 );
+                currentSize.addAndGet( obj.getRegisteredSize() * -1 );
             }
         }
         return obj;
@@ -209,27 +231,35 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
 
                 logger.logMessage( name + " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
-                        ") " + missPercentage + " misses, " + colPercentage + " collisions.", true );
-                int elementCount = 0;
-                long size = 0;
-                for ( int i = 0; i < cache.length(); i++ )
-                {
-                    EntityWithSize obj = cache.get( i );
-                    if ( obj != null )
-                    {
-                        elementCount++;
-                        size += obj.size();
-                    }
-                }
-                logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount now=" + elementCount + " and size=" + getSize(size) + 
-                            " (" + getSize( currentSize.get() ) + ") [" + getSize(currentSize.get() - size ) + "]", true );
+                        ") " + missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").", true );
+                printAccurateStatistics();
              }
         }
+    }
+
+    private void printAccurateStatistics()
+    {
+        int elementCount = 0;
+        long actualSize = 0;
+        long registeredSize = 0;
+        for ( int i = 0; i < cache.length(); i++ )
+        {
+            EntityWithSize obj = cache.get( i );
+            if ( obj != null )
+            {
+                elementCount++;
+                actualSize += obj.size();
+                registeredSize += obj.getRegisteredSize();
+            }
+        }
+        logger.logMessage( name + " purge (nr " + purgeCount + "): elementCount:" + elementCount + " and sizes actual:" + getSize( actualSize ) + 
+                    ", perceived:" + getSize( currentSize.get() ) + " (diff:" + getSize(currentSize.get() - actualSize) + "), registered:" + getSize( registeredSize ), true );
     }
 
     public void printStatistics()
     {
         logStatistics( logger );
+//        printAccurateStatistics();
     }
 
     @Override
@@ -252,13 +282,19 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private void logStatistics( StringLogger log )
     {
+        log.logMessage( this.toString(), true );
+    }
+    
+    @Override
+    public String toString()
+    {
         String currentSizeStr = getSize( currentSize.get() );
 
         String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
         String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
-
-        log.logMessage( name + " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
-                missPercentage + " misses, " + colPercentage + " collisions.", true );
+        
+        return name + " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
+                missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").";
     }
 
     private String getSize( long size )
@@ -283,11 +319,12 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     public void clear()
     {
-        for ( int i = 0; i < cache.length(); i++ )
+        for ( int i = 0; i <= highestIdSet.get() /*cache.length()*/; i++ )
         {
             cache.set( i, null );
         }
         currentSize.set( 0 );
+        highestIdSet.set( 0 );
     }
 
     public void putAll( Collection<E> objects )
@@ -323,15 +360,16 @@ public class AtomicArrayCache<E extends EntityWithSize> implements Cache<E>, Dia
     }
 
     @Override
-    public void updateSize( E obj, int sizeBefore, int sizeAfter )
+    public void updateSize( E obj, int newSize )
     {
         int pos = getPosition( obj );
-        E oldObj = cache.get(pos);
-        if ( oldObj != obj )
+        E existingObj = cache.get( pos );
+        if ( existingObj != obj )
         {
             return;
         }
-        long size = currentSize.addAndGet( (sizeAfter - sizeBefore) );
+        long size = currentSize.addAndGet( (newSize - existingObj.getRegisteredSize()) );
+        obj.setRegisteredSize( newSize );
         if ( size > maxSize )
         {
             purgeFrom( pos );

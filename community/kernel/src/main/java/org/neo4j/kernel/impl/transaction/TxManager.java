@@ -620,6 +620,7 @@ public class TxManager extends AbstractTransactionManager
         begin( ForceMode.forced );
     }
     
+    @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         if ( blocked )

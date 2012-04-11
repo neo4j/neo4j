@@ -33,7 +33,7 @@ class LowRelationshipImpl extends RelationshipImpl
      * But also the high order bits for the start node (s) and end node (e) as well
      * as the relationship type. This allows for a more compressed memory
      * representation.
-     * 
+     *
      *    2 bytes type      start/end high                   5 bytes of id
      * [tttt,tttt][tttt,tttt][ssss,eeee][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
      */
@@ -48,12 +48,13 @@ class LowRelationshipImpl extends RelationshipImpl
         this.endNodeId = (int) endNodeId;
         this.idAndMore = (((long)typeId) << 48) | ((startNodeId&0xF00000000L)<<12) | ((endNodeId&0xF00000000L)<<8) | id;
     }
-    
+
+    @Override
     public int size()
     {
         return super.size() + 16 + 8 + 8;
     }
-    
+
     @Override
     public long getId()
     {
@@ -63,20 +64,20 @@ class LowRelationshipImpl extends RelationshipImpl
     @Override
     long getStartNodeId()
     {
-        return (long)(((long)startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
+        return ((startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
     }
 
     @Override
     long getEndNodeId()
     {
-        return (long)(((long)endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
+        return ((endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
     }
-    
+
     private int getTypeId()
     {
         return (int)((idAndMore&0xFFFF000000000000L)>>48);
     }
-    
+
     @Override
     public RelationshipType getType( NodeManager nodeManager )
     {
@@ -91,8 +92,8 @@ class LowRelationshipImpl extends RelationshipImpl
     }
 
     @Override
-    protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager )
+    protected void updateSize( NodeManager nodeManager )
     {
-        nodeManager.updateCacheSize( this, sizeBefore, sizeAfter );
+        nodeManager.updateCacheSize( this, size() );
     }
 }

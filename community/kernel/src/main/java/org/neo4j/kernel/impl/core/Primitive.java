@@ -617,5 +617,5 @@ abstract class Primitive implements EntityWithSize
     
     abstract PropertyContainer asProxy( NodeManager nm );
 
-    abstract protected void updateSize( int sizeBefore, int sizeAfter, NodeManager nodeManager );
+    abstract protected void updateSize( NodeManager nodeManager );
 }

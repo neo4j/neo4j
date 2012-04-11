@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
@@ -54,7 +54,8 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         GraphDatabaseService db = newDb( null );
         try
         {
-            assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+            assertEquals( CacheType.gcr,
+                    ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         }
         finally
         {
@@ -95,10 +96,11 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testArrayCache()
+    public void testGcrCache()
     {
-        GraphDatabaseService db = newDb( "array" );
-        assertEquals( CacheType.array, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        GraphDatabaseService db = newDb( "gcr" );
+        assertEquals( CacheType.gcr,
+                ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
 
@@ -113,11 +115,10 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     @Test
     public void testInvalidCache()
     {
-        try
-        {
-            newDb( "whatever" );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalArgumentException e ) { /* Good */ }
+        // invalid cache type should use default and print a warning
+        GraphDatabaseService db = newDb( "whatever" );
+        assertEquals( CacheType.gcr,
+                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        db.shutdown();
     }
 }

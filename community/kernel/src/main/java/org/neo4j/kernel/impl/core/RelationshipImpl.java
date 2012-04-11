@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class RelationshipImpl extends ArrayBasedPrimitive
+public abstract class RelationshipImpl extends ArrayBasedPrimitive
 {
     RelationshipImpl( long startNodeId, long endNodeId, boolean newRel )
     {
@@ -65,6 +65,12 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
     protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
+    }
+
+    @Override
+    public int size()
+    {
+        return super.size() + 8 + 8;
     }
 
     @Override
@@ -232,16 +238,22 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
         return "RelationshipImpl #" + this.getId() + " of type " + getType( null )
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
     }
-    
+
     @Override
     public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
     {
         return element.relationshipElement( getId(), create );
     }
-    
+
     @Override
     PropertyContainer asProxy( NodeManager nm )
     {
         return new RelationshipProxy( getId(), nm );
+    }
+
+    @Override
+    protected void updateSize( NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, size() );
     }
 }
