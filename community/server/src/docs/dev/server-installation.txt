@@ -177,6 +177,14 @@ Differentiate the instance from the development instance by modifying +test/conf
 wrapper.name=neo4j-test
 ----
 
+On Windows, you even need to change the name of the service in +bin/neo4j.bat+ to be able to run it together with the first instance.
+
+[source,shell]
+----
+set serviceName=Neo4j-Server-test
+set serviceDisplayName=Neo4j-Server-test
+----
+
 Start the instance:
 
 `test/bin/neo4j start`
