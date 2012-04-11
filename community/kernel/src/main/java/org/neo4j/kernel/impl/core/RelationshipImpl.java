@@ -68,12 +68,6 @@ public abstract class RelationshipImpl extends ArrayBasedPrimitive
     }
 
     @Override
-    public int size()
-    {
-        return super.size() + 8 + 8;
-    }
-
-    @Override
     protected void removeProperty( NodeManager nodeManager,
             PropertyData property )
     {

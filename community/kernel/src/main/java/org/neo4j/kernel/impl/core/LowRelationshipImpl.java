@@ -52,7 +52,7 @@ class LowRelationshipImpl extends RelationshipImpl
     @Override
     public int size()
     {
-        return super.size() + 16 + 8 + 8;
+        return super.size() + 8 + 8;
     }
 
     @Override

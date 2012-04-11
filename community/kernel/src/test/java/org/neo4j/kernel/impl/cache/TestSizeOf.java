@@ -30,6 +30,7 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -46,8 +47,10 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestSizeOf
@@ -188,22 +191,24 @@ public class TestSizeOf
         assertEquals( db.getConfig().getGraphDbModule().getNodeManager().getNodeIfCached( node.getId() ).size(), nodeCache.size() );
     }
 
-    private int sizeOfNode( Node node )
+    private int sizeOfNode( Node node ) throws Exception
     {
-        /*
-        return ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getNodeForProxy(
-                node.getId(), null ).size();
-         */
-        return 0;
+        NodeManager nm = ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager();
+        Class<?> nodeProxyClass = Class.forName( "org.neo4j.kernel.impl.core.NodeProxy" );
+        Method getNodeForProxy = nm.getClass().getDeclaredMethod( "getNodeForProxy", nodeProxyClass, LockType.class );
+        getNodeForProxy.setAccessible( true );
+        NodeImpl nodeImpl = (NodeImpl) getNodeForProxy.invoke( nm, node, null );
+        return nodeImpl.size();
     }
 
-    private int sizeOfRelationship( Relationship relationship )
+    private int sizeOfRelationship( Relationship relationship ) throws Exception
     {
-        /*
-        return ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getRelationshipForProxy(
-                relationship.getId(), null ).size();
-         */
-        return 0;
+        NodeManager nm = ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager();
+        Class<?> relationshipProxyClass = Class.forName( "org.neo4j.kernel.impl.core.RelationshipProxy" );
+        Method getRelForProxy = nm.getClass().getDeclaredMethod( "getRelForProxy", relationshipProxyClass, LockType.class );
+        getRelForProxy.setAccessible( true );
+        RelationshipImpl relImpl = (RelationshipImpl) getRelForProxy.invoke( nm, relationship, null );
+        return relImpl.size();
     }
 
     private int withNodeOverhead( int size )
