@@ -76,6 +76,7 @@ import org.neo4j.kernel.ha.zookeeper.NoMasterException;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -111,6 +112,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private final BranchedDataPolicy branchedDataPolicy;
     private final HaConfig.SlaveUpdateMode slaveUpdateMode;
+    private final Caches caches;
     private final int readTimeout;
     /*
      *  True iff it is ok to pull updates. Used to control the
@@ -165,6 +167,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         this.clusterClient = clusterClient != null ? clusterClient
                 : defaultClusterClient();
         this.pullUpdates = false;
+        caches = new Caches( getMessageLog() );
         startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
 
@@ -817,7 +820,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxHook( broker, this ),
                 slaveUpdateMode.createUpdater( broker ),
-                CommonFactories.defaultFileSystemAbstraction() );
+                CommonFactories.defaultFileSystemAbstraction(), caches );
         // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
         // reevaluateMyself(), after the local db has been assigned
         logHaInfo( "Started as slave" );
@@ -835,7 +838,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 new MasterTxIdGeneratorFactory( broker ),
                 new MasterTxHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
-                CommonFactories.defaultFileSystemAbstraction() );
+                CommonFactories.defaultFileSystemAbstraction(), caches );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         logHaInfo( "Started as master" );
         this.startupTime = System.currentTimeMillis();
