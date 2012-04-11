@@ -185,7 +185,8 @@ public class HAGraphDb extends AbstractGraphDatabase
         // TODO Shouldn't just use the default file system here.
         FileSystemAbstraction fileSystemAbstraction = CommonFactories.defaultFileSystemAbstraction();
         File branchedDir = BranchedDataPolicy.getBranchedDataRootDirectory( getStoreDir() );
-        branchedDir.mkdirs();
+        boolean mk = branchedDir.mkdirs();
+        System.out.println( "Created dir " + branchedDir.getAbsolutePath() + " " + mk );
         for ( File oldBranchedDir : new File( getStoreDir() ).listFiles() )
         {
             if ( !oldBranchedDir.isDirectory() || !oldBranchedDir.getName().startsWith( "branched-" ) )
@@ -205,7 +206,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             boolean success = false;
             try
             {
-                success = !fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
+                success = fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
             }
             catch ( IOException e )
             {   // OK, let's try copying instead.
@@ -1388,7 +1389,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 @Override
                 public boolean accept( File file )
                 {
-                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataRootDirectory( file );
                 }
             } );
         }
@@ -1424,6 +1425,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
         public static File[] listBranchedDataDirectories( String storeDir )
         {
+            System.out.println( "listing:" + getBranchedDataRootDirectory( storeDir ) );
             return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
             {
                 @Override
