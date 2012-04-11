@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,7 +46,12 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
 
     private GraphDatabaseService newDb( String cacheType )
     {
-        return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( Config.CACHE_TYPE, cacheType ) );
+        return newDb( cacheType, MapUtil.stringMap() );
+    }
+    
+    private GraphDatabaseService newDb( String cacheType, Map<String, String> config )
+    {
+        return new EmbeddedGraphDatabase( PATH, MapUtil.stringMap( config, Config.CACHE_TYPE, cacheType ) );
     }
 
     @Test
@@ -54,7 +60,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         GraphDatabaseService db = newDb( null );
         try
         {
-            assertEquals( CacheType.gcr,
+            assertEquals( CacheType.soft,
                     ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         }
         finally
@@ -104,6 +110,16 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
         db.shutdown();
     }
 
+    @Test
+    public void testGcrCacheWithNodeSizeConfig()
+    {
+        GraphDatabaseService db = newDb( "gcr", MapUtil.stringMap( Config.NODE_CACHE_SIZE, "100M" ) );
+        assertEquals( CacheType.gcr,
+                ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        // TODO how to assert that 100M is actually used
+        db.shutdown();
+    }
+    
 //    @Test
 //    public void testOldCache()
 //    {
@@ -112,13 +128,10 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
 //        db.shutdown();
 //    }
 
-    @Test
+    @Test( expected = IllegalArgumentException.class )
     public void testInvalidCache()
     {
         // invalid cache type should use default and print a warning
-        GraphDatabaseService db = newDb( "whatever" );
-        assertEquals( CacheType.gcr,
-                ( (EmbeddedGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
-        db.shutdown();
+        newDb( "whatever" );
     }
 }
