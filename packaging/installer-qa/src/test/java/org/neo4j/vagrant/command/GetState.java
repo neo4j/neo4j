@@ -28,7 +28,7 @@ public class GetState implements VagrantCommand<VirtualMachineState> {
     private static final String STATUS = "status";
 
     public enum VirtualMachineState {
-        POWEROFF, RUNNING, NOT_CREATED
+        POWEROFF, RUNNING, NOT_CREATED, SAVED
     }
 
     @Override
@@ -46,6 +46,9 @@ public class GetState implements VagrantCommand<VirtualMachineState> {
         } else if (output.contains("not created\n"))
         {
             return VirtualMachineState.NOT_CREATED;
+        } else if (output.contains("saved\n"))
+        {
+            return VirtualMachineState.SAVED;
         }
 
         throw new VagrantCommandException(getClass().getName(), statusResult,
