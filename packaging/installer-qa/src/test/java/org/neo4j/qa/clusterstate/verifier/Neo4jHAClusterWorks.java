@@ -59,7 +59,7 @@ public class Neo4jHAClusterWorks implements ClusterVerifier {
                     break;
                 }
             } catch(Exception e) {
-                throw new RuntimeException("Ensuring HA cluster works failed while executing request on server " 
+                throw new HAClusterDoesNotWorkException("Ensuring HA cluster works failed while executing request on server " 
                                            + machine.getVMDefinition().ip() + ". Was at stage "+i+" in loop, nodeId was "+nodeId+". See nested exception.", e);
             }
         }

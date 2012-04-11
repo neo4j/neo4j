@@ -48,6 +48,7 @@ import org.neo4j.qa.clusterstate.MachineClusterModel;
 import org.neo4j.qa.clusterstate.modifier.DownloadClusterLogs;
 import org.neo4j.qa.clusterstate.modifier.RecreateAllMachines;
 import org.neo4j.qa.clusterstate.modifier.RollbackAllMachines;
+import org.neo4j.qa.clusterstate.verifier.HAClusterDoesNotWorkException;
 import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
 import org.neo4j.qa.driver.UbuntuTarGzEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
@@ -57,14 +58,16 @@ import org.neo4j.vagrant.VirtualMachine;
 public class ClusterQualityAssurance extends Suite {
 
     VagrantIssueIdentifier vagrantIssue = new VagrantIssueIdentifier();
-    
+
     private class QualityAssuranceTestClassRunner extends
             BlockJUnit4ClassRunner {
 
+        private static final int MAX_HA_FAILS = 3;
         private ClusterTestPermutation testPermutation;
 
         QualityAssuranceTestClassRunner(Class<?> type,
-                ClusterTestPermutation testPermutation) throws InitializationError
+                ClusterTestPermutation testPermutation)
+                throws InitializationError
         {
             super(type);
             this.testPermutation = testPermutation;
@@ -76,50 +79,82 @@ public class ClusterQualityAssurance extends Suite {
             return getTestClass().getOnlyConstructor().newInstance(
                     testPermutation.getConstructorArgs());
         }
-        
+
         @Override
-        protected void runChild(final FrameworkMethod method, RunNotifier notifier) {
-            Description description= describeChild(method);
-            if (method.getAnnotation(Ignore.class) != null) {
+        protected void runChild(final FrameworkMethod method,
+                RunNotifier notifier)
+        {
+            Description description = describeChild(method);
+            if (method.getAnnotation(Ignore.class) != null)
+            {
                 notifier.fireTestIgnored(description);
-            } else {
-                overriddenRunLeaf(methodBlock(method), description, notifier, testName(method));
+            } else
+            {
+                Statement statement = methodBlock(method);
+
+                EachTestNotifier eachNotifier = new EachTestNotifier(notifier,
+                        description);
+                eachNotifier.fireTestStarted();
+                try
+                {
+                    try
+                    {
+                        runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
+                    } catch (AssumptionViolatedException e)
+                    {
+                        throw e;
+                    } catch (Throwable e)
+                    {
+                        if (vagrantIssue.potentiallyAVagrantIssue(e))
+                        {
+                            // Destroy vms and retry
+                            testPermutation.getMachineClusterModel()
+                                    .forceApply(new RecreateAllMachines());
+                            runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
+                        } else
+                        {
+                            throw e;
+                        }
+                    }
+
+                } catch (AssumptionViolatedException e)
+                {
+                    eachNotifier.addFailedAssumption(e);
+                } catch (Throwable e)
+                {
+                    eachNotifier.addFailure(e);
+                } finally
+                {
+
+                    try
+                    {
+                        testPermutation.getMachineClusterModel().forceApply(
+                                new DownloadClusterLogs(
+                                        SharedConstants.TEST_LOGS_DIR
+                                                + testName(method)));
+                    } catch (Throwable e)
+                    {
+
+                    }
+
+                    eachNotifier.fireTestFinished();
+                }
+
             }
         }
         
-        protected void overriddenRunLeaf(Statement statement, Description description,
-                RunNotifier notifier, String testName) {
-            EachTestNotifier eachNotifier= new EachTestNotifier(notifier, description);
-            eachNotifier.fireTestStarted();
-            try {
-                try {
-                    testPermutation.getMachineClusterModel().forceApply(new RollbackAllMachines());
-                    statement.evaluate();
-                } catch (AssumptionViolatedException e) {
+        private void runTestCase(Statement statement, MachineClusterModel machineClusterModel, int retryNumber) throws Throwable {
+            try
+            {
+                machineClusterModel.forceApply(
+                        new RollbackAllMachines());
+                statement.evaluate();
+            } catch(HAClusterDoesNotWorkException e) {
+                if(retryNumber < MAX_HA_FAILS) {
+                    runTestCase(statement, machineClusterModel, ++retryNumber);
+                } else {
                     throw e;
-                } catch(Throwable e) {
-                    if(vagrantIssue.potentiallyAVagrantIssue(e)) {
-                        // Destroy vms and retry
-                        testPermutation.getMachineClusterModel().forceApply(new RecreateAllMachines());
-                        statement.evaluate();
-                    } else {
-                        throw e;
-                    }
                 }
-                
-            } catch (AssumptionViolatedException e) {
-                eachNotifier.addFailedAssumption(e);
-            } catch (Throwable e) {
-                eachNotifier.addFailure(e);
-            } finally {
-                
-                try {
-                    testPermutation.getMachineClusterModel().forceApply(new DownloadClusterLogs(SharedConstants.TEST_LOGS_DIR + testName));
-                } catch(Throwable e) {
-                    
-                }
-                
-                eachNotifier.fireTestFinished();
             }
         }
 
@@ -168,10 +203,11 @@ public class ClusterQualityAssurance extends Suite {
 
         public Object[] getConstructorArgs()
         {
-            return new Object[]{model};
+            return new Object[] { model };
         }
-        
-        public MachineClusterModel getMachineClusterModel() {
+
+        public MachineClusterModel getMachineClusterModel()
+        {
             return model;
         }
 
@@ -205,52 +241,54 @@ public class ClusterQualityAssurance extends Suite {
             throws Throwable
     {
         Map<String, ClusterTestPermutation> platforms = new HashMap<String, ClusterTestPermutation>();
-                
+
         VirtualMachine win1 = vm(Neo4jVM.WIN_1);
         VirtualMachine win2 = vm(Neo4jVM.WIN_2);
         VirtualMachine win3 = vm(Neo4jVM.WIN_3);
-        
+
         VirtualMachine ubuntu1 = vm(Neo4jVM.UBUNTU_1);
         VirtualMachine ubuntu2 = vm(Neo4jVM.UBUNTU_2);
         VirtualMachine ubuntu3 = vm(Neo4jVM.UBUNTU_3);
-        
+
         // Windows
-        platforms.put(Platforms.WINDOWS, 
-                new ClusterTestPermutation(
-                    WindowsEnterpriseDriver.class.getSimpleName(),
-                    new DefaultMachineClusterModel(
-                        new DefaultMachineModelImpl(new WindowsEnterpriseDriver( win1 )),
-                        new DefaultMachineModelImpl(new WindowsEnterpriseDriver( win2 )),
-                        new DefaultMachineModelImpl(new WindowsEnterpriseDriver( win3 )) 
-                    )));
-        
+        platforms.put(Platforms.WINDOWS, new ClusterTestPermutation(
+                WindowsEnterpriseDriver.class.getSimpleName(),
+                new DefaultMachineClusterModel(new DefaultMachineModelImpl(
+                        new WindowsEnterpriseDriver(win1)),
+                        new DefaultMachineModelImpl(
+                                new WindowsEnterpriseDriver(win2)),
+                        new DefaultMachineModelImpl(
+                                new WindowsEnterpriseDriver(win3)))));
+
         // Ubuntu, with debian installer
-        platforms.put(Platforms.UBUNTU_DEB, 
-                new ClusterTestPermutation(
-                    UbuntuDebEnterpriseDriver.class.getSimpleName(),
-                    new DefaultMachineClusterModel(
-                        new DefaultMachineModelImpl(new UbuntuDebEnterpriseDriver( ubuntu1 )),
-                        new DefaultMachineModelImpl(new UbuntuDebEnterpriseDriver( ubuntu2 )),
-                        new DefaultMachineModelImpl(new UbuntuDebEnterpriseDriver( ubuntu3 )) 
-                    )));
-        
+        platforms.put(Platforms.UBUNTU_DEB, new ClusterTestPermutation(
+                UbuntuDebEnterpriseDriver.class.getSimpleName(),
+                new DefaultMachineClusterModel(new DefaultMachineModelImpl(
+                        new UbuntuDebEnterpriseDriver(ubuntu1)),
+                        new DefaultMachineModelImpl(
+                                new UbuntuDebEnterpriseDriver(ubuntu2)),
+                        new DefaultMachineModelImpl(
+                                new UbuntuDebEnterpriseDriver(ubuntu3)))));
+
         // Ubuntu, with tarball packages
-        platforms.put(Platforms.UBUNTU_TAR_GZ,
-                new ClusterTestPermutation(
-                    UbuntuTarGzEnterpriseDriver.class.getSimpleName(),
-                    new DefaultMachineClusterModel(
-                        new DefaultMachineModelImpl(new UbuntuTarGzEnterpriseDriver( ubuntu1 )),
-                        new DefaultMachineModelImpl(new UbuntuTarGzEnterpriseDriver( ubuntu2 )),
-                        new DefaultMachineModelImpl(new UbuntuTarGzEnterpriseDriver( ubuntu3 )) 
-                    )));
-        
+        platforms.put(Platforms.UBUNTU_TAR_GZ, new ClusterTestPermutation(
+                UbuntuTarGzEnterpriseDriver.class.getSimpleName(),
+                new DefaultMachineClusterModel(new DefaultMachineModelImpl(
+                        new UbuntuTarGzEnterpriseDriver(ubuntu1)),
+                        new DefaultMachineModelImpl(
+                                new UbuntuTarGzEnterpriseDriver(ubuntu2)),
+                        new DefaultMachineModelImpl(
+                                new UbuntuTarGzEnterpriseDriver(ubuntu3)))));
+
         List<ClusterTestPermutation> permutations = new ArrayList<ClusterTestPermutation>();
-        for(String platformKey : Platforms.selectedPlatforms()) {
-            if(platforms.containsKey(platformKey)) {
+        for (String platformKey : Platforms.selectedPlatforms())
+        {
+            if (platforms.containsKey(platformKey))
+            {
                 permutations.add(platforms.get(platformKey));
             }
         }
-        
+
         return permutations;
     }
 
