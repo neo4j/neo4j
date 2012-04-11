@@ -1109,7 +1109,7 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
-        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, logging,
+        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, cacheProviders, caches );
 /*

@@ -54,7 +54,7 @@ public class MasterGraphDatabase
                                 Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
                                 Iterable<CacheProvider> cacheProviders, Caches caches )
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups,
+        super( storeDir, params, storeId, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups,
                 indexProviders, kernelExtensions, cacheProviders, caches );
         this.storeId = storeId;
 

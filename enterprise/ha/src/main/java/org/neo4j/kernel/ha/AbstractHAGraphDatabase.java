@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -45,7 +46,7 @@ public class AbstractHAGraphDatabase
     private final Caches caches;
 
     public AbstractHAGraphDatabase( String storeDir, Map<String, String> params,
-                                    HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
+                                    StoreId storeId, HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
                                     Broker broker, Logging logging,
                                     NodeProxy.NodeLookup nodeLookup,
                                     RelationshipProxy.RelationshipLookups relationshipLookups,
@@ -55,6 +56,7 @@ public class AbstractHAGraphDatabase
         super( storeDir, params, indexProviders, kernelExtensions, cacheProviders );
         this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
         this.caches = caches;
+        this.storeId = storeId;
 
         assert broker != null && logging != null && nodeLookup != null && relationshipLookups != null;
 
@@ -91,6 +93,12 @@ public class AbstractHAGraphDatabase
     public HighlyAvailableGraphDatabase getHighlyAvailableGraphDatabase()
     {
         return highlyAvailableGraphDatabase;
+    }
+    
+    @Override
+    public StoreId getStoreId()
+    {
+        return storeId;
     }
     
     @Override

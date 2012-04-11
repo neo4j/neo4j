@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -50,15 +51,15 @@ public class SlaveGraphDatabase
     private FileSystemAbstraction fileSystemAbstraction;
 
     public SlaveGraphDatabase( String storeDir, Map<String, String> params,
-            HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker, Logging logging,
-            SlaveDatabaseOperations databaseOperations,
+            StoreId storeId, HighlyAvailableGraphDatabase highlyAvailableGraphDatabase, Broker broker,
+            Logging logging, SlaveDatabaseOperations databaseOperations,
             LastCommittedTxIdSetter lastCommittedTxIdSetter, NodeProxy.NodeLookup nodeLookup,
             RelationshipProxy.RelationshipLookups relationshipLookups,
             FileSystemAbstraction fileSystemAbstraction,
             Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
             Iterable<CacheProvider> cacheProviders, Caches caches )
     {
-        super( storeDir, params, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups,
+        super( storeDir, params, storeId, highlyAvailableGraphDatabase, broker, logging, nodeLookup, relationshipLookups,
                 indexProviders, kernelExtensions, cacheProviders, caches );
         this.fileSystemAbstraction = fileSystemAbstraction;
 
