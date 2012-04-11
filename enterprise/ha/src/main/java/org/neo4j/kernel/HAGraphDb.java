@@ -498,7 +498,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         String temp = getClearedTempDir().getAbsolutePath();
         Response<Void> response = master.first().copyStore( emptyContext(),
                 new ToFileStoreWriter( temp ) );
-        long highestLogVersion = highestLogVersion();
+        long highestLogVersion = highestLogVersion( temp );
         if ( highestLogVersion > -1 )
             NeoStore.setVersion( temp, highestLogVersion + 1 );
         EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( temp,
@@ -566,9 +566,9 @@ public class HAGraphDb extends AbstractGraphDatabase
         newLog.close();
     }
 
-    private long highestLogVersion()
+    private long highestLogVersion( String targetStoreDir )
     {
-        return XaLogicalLog.getHighestHistoryLogVersion( new File( getStoreDir() ), LOGICAL_LOG_DEFAULT_NAME );
+        return XaLogicalLog.getHighestHistoryLogVersion( new File( targetStoreDir ), LOGICAL_LOG_DEFAULT_NAME );
     }
 
     private EmbeddedGraphDbImpl localGraph()
