@@ -24,6 +24,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.CACHE_TYPE;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
 
 import java.util.Map;
 
@@ -181,5 +186,152 @@ public class TestSizeOf
 
         // Now the node cache size should be the same as doing node.size()
         assertEquals( db.getConfig().getGraphDbModule().getNodeManager().getNodeIfCached( node.getId() ).size(), nodeCache.size() );
+    }
+
+    private int sizeOfNode( Node node )
+    {
+        /*
+        return ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getNodeForProxy(
+                node.getId(), null ).size();
+         */
+        return 0;
+    }
+
+    private int sizeOfRelationship( Relationship relationship )
+    {
+        /*
+        return ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().getRelationshipForProxy(
+                relationship.getId(), null ).size();
+         */
+        return 0;
+    }
+
+    private int withNodeOverhead( int size )
+    {
+        return withObjectOverhead( 8+8+8+8+8 + size );
+    }
+
+    private int withRelationshipOverhead( int size )
+    {
+        return withObjectOverhead( 8+8+8+8 + size );
+    }
+
+    private int sizeOfRelIdArray( String type, int nrOut, int nrIn, int nrLoop )
+    {
+        int size =
+                8+8+8 + // references in RelIdArray
+                sizeOf( type );
+        for ( int rels : new int[] { nrOut, nrIn, nrLoop } )
+        {
+            if ( rels > 0 )
+                size += withObjectOverhead( withReference( withArrayOverhead( 4*(rels+1) ) ) );
+        }
+        if ( nrLoop > 0 )
+            size += 8; // RelIdArrayWithLoops is used for for those with loops in
+        return withObjectOverhead( size );
+    }
+
+    @Test
+    public void sizeOfEmptyNode() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map(), 0, 0 );
+        assertEquals( withNodeOverhead( 0 ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithOneProperty() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map( "age", 5 ), 0, 0 );
+        assertEquals( withNodeOverhead( withArrayOverhead( withObjectOverhead( 8+8 ), 1 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithSomeProperties() throws Exception
+    {
+        String name = "Mattias";
+        Node node = createNodeAndLoadFresh( map( "age", 5, "name", name ), 0, 0 );
+        assertEquals( withNodeOverhead( withArrayOverhead(
+                withObjectOverhead( 8+8 ) + // age
+                withObjectOverhead( 8+8+4+sizeOf( name ) ), // name
+                2 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithOneRelationship() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map(), 1, 1 );
+        assertEquals( withNodeOverhead( withArrayOverhead(
+                sizeOfRelIdArray( relTypeName( 0 ), 1, 0, 0 ), 1 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithSomeRelationshipsOfSameType() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map(), 10, 1 );
+        assertEquals( withNodeOverhead( withArrayOverhead(
+                sizeOfRelIdArray( relTypeName( 0 ), 10, 0, 0 ), 1 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithSomeRelationshipOfDifferentTypes() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map(), 3, 3 );
+        assertEquals( withNodeOverhead( withArrayOverhead(
+                sizeOfRelIdArray( relTypeName( 0 ), 3, 0, 0 ) +
+                sizeOfRelIdArray( relTypeName( 1 ), 3, 0, 0 ) +
+                sizeOfRelIdArray( relTypeName( 2 ), 3, 0, 0 ),
+                3 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithSomeRelationshipOfDifferentTypesAndDirections() throws Exception
+    {
+        Node node = createNodeAndLoadFresh( map(), 9, 3, 1 );
+        assertEquals( withNodeOverhead( withArrayOverhead(
+                sizeOfRelIdArray( relTypeName( 0 ), 3, 3, 3 ) +
+                sizeOfRelIdArray( relTypeName( 1 ), 3, 3, 3 ) +
+                sizeOfRelIdArray( relTypeName( 2 ), 3, 3, 3 ),
+                3 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfNodeWithRelationshipsAndProperties() throws Exception
+    {
+        int[] array = new int[] { 10, 11, 12, 13 };
+        Node node = createNodeAndLoadFresh( map( "age", 10, "array", array ), 9, 3, 1 );
+        assertEquals( withNodeOverhead(
+                withArrayOverhead(
+                        sizeOfRelIdArray( relTypeName( 0 ), 3, 3, 3 ) +
+                        sizeOfRelIdArray( relTypeName( 1 ), 3, 3, 3 ) +
+                        sizeOfRelIdArray( relTypeName( 2 ), 3, 3, 3 ),
+                3 ) + withArrayOverhead(
+                        withObjectOverhead( 8+8 ) +
+                        withObjectOverhead( 8+8+4+sizeOfArray( array ) ),
+                2 ) ), sizeOfNode( node ) );
+    }
+
+    @Test
+    public void sizeOfEmptyRelationship() throws Exception
+    {
+        Relationship relationship = createRelationshipAndLoadFresh( map() );
+        assertEquals( withRelationshipOverhead( 0 ), sizeOfRelationship( relationship ) );
+    }
+
+    @Test
+    public void sizeOfRelationshipWithOneProperty() throws Exception
+    {
+        Relationship relationship = createRelationshipAndLoadFresh( map( "age", 5 ) );
+        assertEquals( withRelationshipOverhead( withArrayOverhead( withObjectOverhead( 8+8 ), 1 ) ), sizeOfRelationship( relationship ) );
+    }
+
+    @Test
+    public void sizeOfRelationshipWithSomeProperties() throws Exception
+    {
+        String name = "Mattias";
+        Relationship relationship = createRelationshipAndLoadFresh( map( "age", 5, "name", name ) );
+        assertEquals( withRelationshipOverhead( withArrayOverhead(
+                withObjectOverhead( 8+8 ) + // age
+                withObjectOverhead( 8+8+4+sizeOf( name ) ), // name
+                2 ) ), sizeOfRelationship( relationship ) );
     }
 }
