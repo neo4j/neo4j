@@ -85,7 +85,8 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     new FilterBuilder,
     new NamedPathBuilder,
     new ExtractBuilder,
-    new SortedAggregationBuilder,
+    //TODO: Reintroduce this when the problems with SlicePipe are solved.
+    //new SortedAggregationBuilder,
     new MatchBuilder,
     new SortBuilder,
     new ColumnFilterBuilder,
