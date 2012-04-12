@@ -169,7 +169,7 @@ public final class LocalhostZooKeeperCluster
                 conf.println( "tickTime=2000" );
                 conf.println( "initLimit=10" );
                 conf.println( "syncLimit=5" );
-                conf.println( "maxClientCnxns=30" );
+                conf.println( "maxClientCnxns=50" );
 
                 // On Windows the backslashes will have to be escaped for
                 // ZooKeeper to interpret them correctly.
