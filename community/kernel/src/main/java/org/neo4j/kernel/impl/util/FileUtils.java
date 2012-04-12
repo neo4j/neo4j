@@ -117,40 +117,65 @@ public class FileUtils
         }
         return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
+    
+    /**
+     * Utility method that moves a file from its current location to the
+     * new target location. If rename fails (for example if the target is
+     * another disk) a copy/delete will be performed instead. This is not a rename,
+     * use {@link #renameFile(File, File)} instead.
+     * 
+     * @param toMove The File object to move.
+     * @param target Target file to move to.
+     * @return the new file, null iff the move was unsuccessful
+     * @throws IOException 
+     */
+    public static void moveFile( File toMove, File target ) throws IOException
+    {
+        if ( !toMove.exists() )
+            throw new NotFoundException( "Source file[" + toMove.getName()
+                    + "] not found" );
+        if ( target.exists() )
+            throw new NotFoundException( "Target file[" + target.getName()
+                    + "] already exists" );
+        
+        if ( toMove.renameTo( target ) )
+            return;
+        
+        if ( toMove.isDirectory() )
+        {
+            target.mkdirs();
+            copyRecursively( toMove, target );
+            deleteRecursively( toMove );
+        }
+        else
+        {
+            copyFile( toMove, target );
+            deleteFile( toMove );
+        }
+    }
 
     /**
      * Utility method that moves a file from its current location to the
-     * provided target directory. This is not a rename,
-     * use {@link #renameFile(File, File)} instead. The reason this exists is
-     * for convenience and error checking.
+     * provided target directory. If rename fails (for example if the target is
+     * another disk) a copy/delete will be performed instead. This is not a rename,
+     * use {@link #renameFile(File, File)} instead.
      * 
      * @param toMove The File object to move.
      * @param targetDirectory
      * @return the new file, null iff the move was unsuccessful
+     * @throws IOException 
      */
-    public static File moveFile( File toMove, File targetDirectory )
+    public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
     {
         if ( !targetDirectory.isDirectory() )
         {
             throw new IllegalArgumentException(
                     "Move target must be a directory, not " + targetDirectory );
         }
-        String oldName = toMove.getName();
-        File endFile = new File( targetDirectory, oldName );
-        return renameFile( toMove, endFile ) ? toMove : null;
-    }
-
-    public static void moveFiles( File fromDirectory, File toDirectory )
-    {
-        if ( !fromDirectory.isDirectory() )
-        {
-            throw new IllegalArgumentException(
-                    "Move target must be a directory, not " + fromDirectory );
-        }
-        for ( File memberOf : fromDirectory.listFiles() )
-        {
-            moveFile( memberOf, toDirectory );
-        }
+        
+        File target = new File( targetDirectory, toMove.getName() );
+        moveFile( toMove, target );
+        return target;
     }
 
     public static boolean renameFile( File srcFile, File renameToFile )
