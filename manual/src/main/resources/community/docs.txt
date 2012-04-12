@@ -2,6 +2,67 @@
 Writing Neo4j Documentation
 ===========================
 
+[queryresult]
+----
++------------------------------------------------------------+
+| count(distinct friend_of_friend) | count(friend_of_friend) |
++------------------------------------------------------------+
++------------------------------------------------------------+
+0 row, 0 ms
+
+----
+
+[queryresult]
+----
++-------------------+
+| No data returned. |
++-------------------+
+Nodes created: 1
+0 ms
+
+----
+
+[queryresult]
+----
++-------------------+
+| No data returned. |
++-------------------+
+Nodes created: 1
+Properties set: 2
+
+1 ms
+
+----
+
+[queryresult]
+----
++-------------------+
+| p                                                       |
++---------------------------------------------------------+
+| (1)--[KNOWS,2]-->(3)--[KNOWS,0]-->(4)--[KNOWS,3]-->(2)  |
+| (1)--[KNOWS,2]-->(3)--[KNOWS,0]-->(4)--[BLOCKS,5]-->(1) |
+| (1)--[KNOWS,2]-->(3)--[BLOCKS,1]-->(5)--[KNOWS,4]-->(2) |
++-------------------+
+Nodes deleted: 1
+Relationships deleted: 2
+3 rows, 1 ms
+
+----
+
+[queryresult]
+----
++---------------------------------------------------------+
+| p                                                       |
++---------------------------------------------------------+
+| (1)--[KNOWS,2]-->(3)--[KNOWS,0]-->(4)--[KNOWS,3]-->(2)  |
+| (1)--[KNOWS,2]-->(3)--[KNOWS,0]-->(4)--[BLOCKS,5]-->(1) |
+| (1)--[KNOWS,2]-->(3)--[BLOCKS,1]-->(5)--[KNOWS,4]-->(2) |
++---------------------------------------------------------+
+3 rows, 1 ms
+
+----
+
+
 NOTE: Other than writing documentation, you can help out by providing comments - head over to the http://docs.neo4j.org/chunked/snapshot/[online HTML version] to do that!
 
 For how to build the manual see:
