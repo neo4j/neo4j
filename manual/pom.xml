@@ -54,6 +54,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>test-sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -272,7 +279,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-python-embedded,neo4j-lucene-index,neo4j-backup</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-python-embedded,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
             </configuration>
           </execution>
           <execution>
