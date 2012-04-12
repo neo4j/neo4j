@@ -186,7 +186,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         FileSystemAbstraction fileSystemAbstraction = CommonFactories.defaultFileSystemAbstraction();
         File branchedDir = BranchedDataPolicy.getBranchedDataRootDirectory( getStoreDir() );
         boolean mk = branchedDir.mkdirs();
-        System.out.println( "Created dir " + branchedDir.getAbsolutePath() + " " + mk );
         for ( File oldBranchedDir : new File( getStoreDir() ).listFiles() )
         {
             if ( !oldBranchedDir.isDirectory() || !oldBranchedDir.getName().startsWith( "branched-" ) )
@@ -1425,7 +1424,6 @@ public class HAGraphDb extends AbstractGraphDatabase
 
         public static File[] listBranchedDataDirectories( String storeDir )
         {
-            System.out.println( "listing:" + getBranchedDataRootDirectory( storeDir ) );
             return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
             {
                 @Override
