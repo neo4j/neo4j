@@ -32,7 +32,7 @@ public class RelationshipAutoIndexRepresentation extends IndexRepresentation {
 	@Override
     protected String path()
     {
-        return RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX + "/";
+	    return RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) + "/";
     }
 	
 	@Override

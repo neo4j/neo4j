@@ -32,7 +32,7 @@ public class NodeAutoIndexRepresentation extends IndexRepresentation {
 	@Override
     protected String path()
     {
-        return RestfulGraphDatabase.PATH_AUTO_NODE_INDEX + "/";
+        return RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) + "/";
     }
 	
 	@Override

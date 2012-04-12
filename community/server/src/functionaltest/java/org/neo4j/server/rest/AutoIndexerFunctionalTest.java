@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
 public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -55,7 +56,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     public void addAutoIndexingPropertyForNodes() {
-        gen.get().expectedStatus(204).payload("myProperty1").post(getDataUri() + "autoindex/node/properties");
+        gen.get().expectedStatus(204).payload("myProperty1").post(autoIndexURI("node") + "/properties");
     }
 
     /**
@@ -79,7 +80,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     public void removeAutoIndexingPropertyForNodes() {
-        gen.get().expectedStatus(204).delete(getDataUri() + "autoindex/node/properties/myProperty1");
+        gen.get().expectedStatus(204).delete(autoIndexURI("node") + "/properties/myProperty1");
     }
 
     @Test
@@ -106,15 +107,15 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
 //        List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
 //        assertTrue(properties.isEmpty());
 
-        gen.get().expectedStatus(204).payload("myProperty1").post(getDataUri() + "autoindex/" + uriPartForType + "/properties");
-        gen.get().expectedStatus(204).payload("myProperty2").post(getDataUri() + "autoindex/" + uriPartForType + "/properties");
+        gen.get().expectedStatus(204).payload("myProperty1").post(autoIndexURI(uriPartForType) + "/properties");
+        gen.get().expectedStatus(204).payload("myProperty2").post(autoIndexURI(uriPartForType) + "/properties");
 
         List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
         assertEquals(2, properties.size());
         assertTrue(properties.contains("myProperty1"));
         assertTrue(properties.contains("myProperty2"));
 
-        gen.get().expectedStatus(204).payload(null).delete(getDataUri() + "autoindex/" + uriPartForType + "/properties/myProperty2");
+        gen.get().expectedStatus(204).payload(null).delete(autoIndexURI(uriPartForType) + "/properties/myProperty2");
 
         properties = getAutoIndexedPropertiesForType(uriPartForType);
         assertEquals(1, properties.size());
@@ -122,12 +123,7 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     }
 
     private List<String> getAutoIndexedPropertiesForType(String uriPartForType) throws JsonParseException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getDataUri())
-                .append("autoindex/")
-                .append(uriPartForType)
-                .append("/properties");
-        String result = gen.get().expectedStatus(200).get(sb.toString()).entity();
+        String result = gen.get().expectedStatus(200).get(autoIndexURI(uriPartForType) + "/properties").entity();
         return (List<String>) JsonHelper.readJson(result);
     }
 
@@ -139,22 +135,16 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     }
 
     private void setEnabledAutoIndexingForType(String uriPartForType, boolean enabled) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getDataUri())
-                .append("autoindex/")
-                .append(uriPartForType)
-                .append("/status");
-        gen.get().expectedStatus(204).payload(Boolean.toString(enabled)).put(sb.toString());
+        gen.get().expectedStatus(204).payload(Boolean.toString(enabled)).put(autoIndexURI(uriPartForType) + "/status");
     }
 
     private void checkAndAssertAutoIndexerIsEnabled(String uriPartForType, boolean enabled) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getDataUri())
-                .append("autoindex/")
-                .append(uriPartForType)
-                .append("/status");
-        String result = gen.get().expectedStatus(200).get(sb.toString()).entity();
+        String result = gen.get().expectedStatus(200).get(autoIndexURI(uriPartForType) + "/status").entity();
         assertEquals(enabled, Boolean.parseBoolean(result));
+    }
+    
+    private String autoIndexURI(String type) {
+        return getDataUri() + RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", type);
     }
 
 }

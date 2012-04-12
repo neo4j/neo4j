@@ -19,11 +19,13 @@
  */
 package org.neo4j.server.helpers;
 
-import com.sun.jersey.api.client.Client;
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_INDEX;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -32,8 +34,9 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.*;
+import com.sun.jersey.api.client.Client;
 
 public final class FunctionalTestHelper
 {
@@ -276,7 +279,9 @@ public final class FunctionalTestHelper
         {
             Map<?, ?> innerMap = (Map<?,?>) entry.getValue();
             String template = innerMap.get( "template" ).toString();
-            if ( !template.contains( PATH_AUTO_NODE_INDEX ) && !template.contains( PATH_AUTO_RELATIONSHIP_INDEX ) && !template.contains( "_auto_" ) )
+            if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) && 
+                 !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) && 
+                 !template.contains( "_auto_" ) )
                 result.put( entry.getKey(), entry.getValue() );
         }
         return result;
