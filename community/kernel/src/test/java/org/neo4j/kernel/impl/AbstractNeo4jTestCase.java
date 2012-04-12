@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
@@ -82,6 +84,17 @@ public abstract class AbstractNeo4jTestCase
     private static void setupGraphDatabase( boolean requiresPersistentGraphDatabase )
     {
         AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
+        if ( requiresPersistentGraphDatabase )
+        {
+            try
+            {
+                FileUtils.deleteRecursively( new File( getStorePath( "neo-test" ) ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
         graphDb = requiresPersistentGraphDatabase ? new EmbeddedGraphDatabase( getStorePath( "neo-test" ) ) : new ImpermanentGraphDatabase();
     }
 
