@@ -17,7 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.batchinsert;
+package org.neo4j.unsafe.batchinsert;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.util.Arrays;
@@ -27,6 +33,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,14 +42,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
 
 public class TestBatchInsert
 {
@@ -91,6 +95,11 @@ public class TestBatchInsert
         return newBatchInserter( true );
     }
 
+    private GraphDatabaseService newBatchGraphDatabase()
+    {
+        return newBatchGraphDatabase( true );
+    }
+
     private BatchInserter newBatchInserter( boolean eraseOld )
     {
         String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch" );
@@ -98,7 +107,17 @@ public class TestBatchInsert
         {
             AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
         }
-        return new BatchInserterImpl( storePath );
+        return BatchInserters.inserter( storePath );
+    }
+
+    private GraphDatabaseService newBatchGraphDatabase( boolean eraseOld )
+    {
+        String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch-db" );
+        if ( eraseOld )
+        {
+            AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
+        }
+        return BatchInserters.batchDatabase( storePath );
     }
 
     @Test
@@ -109,7 +128,7 @@ public class TestBatchInsert
         long node2 = graphDb.createNode( null );
         long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
             null );
-        SimpleRelationship rel = graphDb.getRelationshipById( rel1 );
+        BatchRelationship rel = graphDb.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
@@ -119,9 +138,7 @@ public class TestBatchInsert
     @Test
     public void testPropertySetFromGraphDbIsPersisted()
     {
-        BatchInserter inserter = newBatchInserter();
-
-        GraphDatabaseService gds = inserter.getGraphDbService();
+        GraphDatabaseService gds = newBatchGraphDatabase();
 
         Node from = gds.createNode();
         long fromId = from.getId();
@@ -137,10 +154,9 @@ public class TestBatchInsert
         to.setProperty( "2", "two" );
         rel.setProperty( "3", "three" );
 
-        // inserter.shutdown();
         gds.shutdown();
 
-        GraphDatabaseService db = newBatchInserter( false /*delete old dir*/).getGraphDbService();
+        GraphDatabaseService db = newBatchGraphDatabase( false /*delete old dir*/);
         from = db.getNodeById( fromId );
         assertEquals( "one", from.getProperty( "1" ) );
         to = db.getNodeById( toId );
@@ -327,7 +343,7 @@ public class TestBatchInsert
             rels.add( graphDb.createRelationship( startNode, endNodes[i],
                 relTypeArray[i % 5], properties ) );
         }
-        for ( SimpleRelationship rel : graphDb.getRelationships( startNode ) )
+        for ( BatchRelationship rel : graphDb.getRelationships( startNode ) )
         {
             assertTrue( rels.contains( rel.getId() ) );
             assertEquals( rel.getStartNode(), startNode );
@@ -340,13 +356,14 @@ public class TestBatchInsert
     public void testPropSetAndReset()
     {
         BatchInserter graphDb = newBatchInserter();
+        BatchGraphDatabaseImpl gds = new BatchGraphDatabaseImpl( graphDb );
         long startNode = graphDb.createNode( properties );
-        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
+        assertProperties( gds.getNodeById( startNode ) );
         graphDb.setNodeProperties( startNode, properties );
-        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
+        assertProperties( gds.getNodeById( startNode ) );
         graphDb.setNodeProperties( startNode, properties );
-        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
-        graphDb.shutdown();
+        assertProperties( gds.getNodeById( startNode ) );
+        gds.shutdown();
     }
 
     @Test
@@ -359,7 +376,7 @@ public class TestBatchInsert
                 relTypeArray[0], properties );
         long relationship = graphDb.createRelationship( startNode, otherNode,
                 relTypeArray[0], properties );
-        for ( SimpleRelationship rel : graphDb.getRelationships( startNode ) )
+        for ( BatchRelationship rel : graphDb.getRelationships( startNode ) )
         {
             if ( rel.getId() == selfRelationship )
             {
@@ -376,10 +393,10 @@ public class TestBatchInsert
                 fail( "Unexpected relationship " + rel.getId() );
             }
         }
-        String storeDir = ((BatchInserterImpl)graphDb).getStore();
+        String storeDir = ( (BatchInserterImpl) graphDb ).getStoreDir();
         graphDb.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
         Node realStartNode = db.getNodeById( startNode );
         Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
         Relationship realRelationship = db.getRelationshipById( relationship );
@@ -519,8 +536,7 @@ public class TestBatchInsert
     @Test
     public void testWithGraphDbService()
     {
-        BatchInserter batchInserter = newBatchInserter();
-        GraphDatabaseService graphDb = batchInserter.getGraphDbService();
+        GraphDatabaseService graphDb = newBatchGraphDatabase();
         Node startNode = graphDb.createNode();
         setProperties( startNode );
         Node endNodes[] = new Node[25];
@@ -546,8 +562,7 @@ public class TestBatchInsert
     @Test
     public void testGraphDbServiceGetRelationships()
     {
-        BatchInserter batchInserter = newBatchInserter();
-        GraphDatabaseService graphDb = batchInserter.getGraphDbService();
+        GraphDatabaseService graphDb = newBatchGraphDatabase();
         Node startNode = graphDb.createNode();
         for ( int i = 0; i < 5; i++ )
         {
@@ -585,7 +600,7 @@ public class TestBatchInsert
          */
 
         BatchInserter inserter = newBatchInserter();
-        String storeDir = ( (BatchInserterImpl) inserter ).getStore();
+        String storeDir = ( (BatchInserterImpl) inserter ).getStoreDir();
         long nodeId = inserter.createNode( null );
         inserter.createRelationship( nodeId, inserter.createNode( null ),
                 RelTypes.BATCH_TEST, null );
@@ -594,7 +609,7 @@ public class TestBatchInsert
         inserter.shutdown();
 
         // Delete node and all its relationships
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.getNodeById( nodeId );
         for ( Relationship relationship : node.getRelationships() )
@@ -611,7 +626,7 @@ public class TestBatchInsert
     public void messagesLogGetsClosed() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
-        String storeDir = inserter.getStore();
+        String storeDir = inserter.getStoreDir();
         inserter.shutdown();
         assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
     }
@@ -665,4 +680,3 @@ public class TestBatchInsert
         return array;
     }
 }
-

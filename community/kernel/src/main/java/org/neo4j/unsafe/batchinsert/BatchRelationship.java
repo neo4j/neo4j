@@ -17,31 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.batchinsert;
+package org.neo4j.unsafe.batchinsert;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 /**
- * Simple relationship wrapping start node id, end node id and relationship
- * type.
- * 
- * @deprecated this class has been moved to {@link BatchRelationship}
+ * Simple relationship wrapping start node id, end node id and relationship 
+ * type. 
  */
-public class SimpleRelationship
+public final class BatchRelationship
 {
     private final long id;
     private final long startNodeId;
     private final long endNodeId;
     private final RelationshipType type;
 
-    /**
-     * This constructor is for internal use only, but made public while phasing
-     * it out.
-     * 
-     * @deprecated don't add any use of this constructor.
-     */
-    public SimpleRelationship( long id, long startNodeId, long endNodeId,
+    BatchRelationship( long id, long startNodeId, long endNodeId,
         RelationshipType type )
     {
         this.id = id;

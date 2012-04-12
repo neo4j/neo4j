@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.unsafe.batchinsert;
 
 import java.util.Map;
 
@@ -32,10 +32,7 @@ import org.neo4j.kernel.impl.batchinsert.BatchInserter;
  * accessed through {@link GraphDatabaseService#index()}.
  * 
  * @author Mattias Persson
- * 
- * @deprecated this interface has been moved to
- *             {@link org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider.java}
- *             as of version 1.7.
+ *
  */
 public interface BatchInserterIndexProvider
 {
