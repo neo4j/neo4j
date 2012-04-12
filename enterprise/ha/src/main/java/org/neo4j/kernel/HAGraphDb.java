@@ -202,20 +202,9 @@ public class HAGraphDb extends AbstractGraphDatabase
             }
             
             File targetDir = BranchedDataPolicy.getBranchedDataDirectory( getStoreDir(), timestamp );
-            boolean success = false;
             try
             {
-                success = fileSystemAbstraction.renameFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
-            }
-            catch ( IOException e )
-            {   // OK, let's try copying instead.
-            }
-            if ( success )
-                continue;
-            
-            try
-            {
-                fileSystemAbstraction.copyFile( oldBranchedDir.getAbsolutePath(), targetDir.getAbsolutePath() );
+                FileUtils.moveFile( oldBranchedDir, targetDir );
             }
             catch ( IOException e )
             {
@@ -329,8 +318,9 @@ public class HAGraphDb extends AbstractGraphDatabase
      * Moves all files from the temp directory to the current working directory.
      * Assumes the target files do not exist and skips over the messages.log
      * file the temp db creates.
+     * @throws IOException if move wasn't successful.
      */
-    private void moveCopiedStoreIntoWorkingDir()
+    private void moveCopiedStoreIntoWorkingDir() throws IOException
     {
         File storeDir = new File( getStoreDir() );
         for ( File candidate : getTempDir().listFiles( new FileFilter()
@@ -342,7 +332,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             }
         } ) )
         {
-            FileUtils.moveFile( candidate, storeDir );
+            FileUtils.moveFileToDirectory( candidate, storeDir );
         }
     }
 
@@ -1369,8 +1359,14 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             for ( File file : relevantDbFiles( db ) )
             {
-                File dest = new File( branchedDataDir, file.getName() );
-                if ( !file.renameTo( dest ) ) db.getMessageLog().logMessage( "Couldn't move " + file.getPath() );
+                try
+                {
+                    FileUtils.moveFileToDirectory( file, branchedDataDir );
+                }
+                catch ( IOException e )
+                {
+                    db.getMessageLog().logMessage( "Couldn't move " + file.getPath() );
+                }
             }
         }
 
