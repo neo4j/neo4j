@@ -5,6 +5,7 @@ target
 .project
 .classpath
 .settings
+.externalToolBuilders/
 .scala_dependencies
 .factorypath
 *.iws
