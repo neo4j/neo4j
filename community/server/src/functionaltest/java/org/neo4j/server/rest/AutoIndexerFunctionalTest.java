@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -64,8 +64,13 @@ public class AutoIndexerFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     public void listAutoIndexingPropertiesForNodes() throws JsonParseException {
+        String propName = "some-property";
+        server().getDatabase().graph.index().getNodeAutoIndexer().startAutoIndexingProperty(propName);
+        
         List<String> properties = getAutoIndexedPropertiesForType("node");
+        
         assertEquals(1, properties.size());
+        assertEquals(propName, properties.get(0));
     }
 
     /**
