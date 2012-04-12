@@ -72,7 +72,7 @@ public class TestConfig
     {
         long timeout = 80000; // Default is 5000
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( dir.directory( "zkTimeout" ).getAbsolutePath() ).
+            newHighlyAvailableDatabaseBuilder( dir.directory( "zkTimeout", true ).getAbsolutePath() ).
             setConfig( HaSettings.server_id, "1" ).
             setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
             setConfig( HaSettings.zk_session_timeout, ""+timeout ).
