@@ -1317,7 +1317,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             {
                 File branchedDataDir = newBranchedDataDir( db );
                 moveAwayDb( db, branchedDataDir );
-                for ( File file : new File( db.getStoreDir() ).listFiles() )
+                for ( File file : getBranchedDataRootDirectory( db.getStoreDir() ).listFiles() )
                 {
                     if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                     {
