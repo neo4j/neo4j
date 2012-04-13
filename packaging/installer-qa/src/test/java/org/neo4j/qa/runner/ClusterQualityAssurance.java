@@ -105,16 +105,10 @@ public class ClusterQualityAssurance extends Suite {
                         throw e;
                     } catch (Throwable e)
                     {
-                        if (vagrantIssue.potentiallyAVagrantIssue(e))
-                        {
-                            // Destroy vms and retry
-                            testPermutation.getMachineClusterModel()
-                                    .forceApply(new RecreateAllMachines());
-                            runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
-                        } else
-                        {
-                            throw e;
-                        }
+                        // Destroy vms and retry
+                        testPermutation.getMachineClusterModel()
+                                .forceApply(new RecreateAllMachines());
+                        runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
                     }
 
                 } catch (AssumptionViolatedException e)

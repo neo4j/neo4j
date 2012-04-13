@@ -104,15 +104,10 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
                 } catch (AssumptionViolatedException e) {
                     throw e;
                 } catch(Throwable e) {
-                    if(vagrantIssue.potentiallyAVagrantIssue(e)) {
-                        // Destroy vm and retry
-                        testPermutation.getMachineModel().forceApply(new RecreateMachine());
-                        statement.evaluate();
-                    } else {
-                        throw e;
-                    }
+                    // Destroy vm and retry
+                    testPermutation.getMachineModel().forceApply(new RecreateMachine());
+                    statement.evaluate();
                 }
-                
             } catch (AssumptionViolatedException e) {
                 eachNotifier.addFailedAssumption(e);
             } catch (Throwable e) {
