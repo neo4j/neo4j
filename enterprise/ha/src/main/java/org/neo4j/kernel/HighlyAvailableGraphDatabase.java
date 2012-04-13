@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -34,7 +38,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
@@ -67,6 +73,7 @@ import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.EnterpriseConfigurationMigrator;
+import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
@@ -80,6 +87,9 @@ import org.neo4j.kernel.ha.zookeeper.ZooClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -109,10 +119,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
-import static java.util.concurrent.TimeUnit.*;
-import static org.neo4j.helpers.Exceptions.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
-
 public class HighlyAvailableGraphDatabase
         implements GraphDatabaseService, GraphDatabaseAPI
 {
@@ -131,6 +137,7 @@ public class HighlyAvailableGraphDatabase
     private String storeDir;
     private Iterable<IndexProvider> indexProviders;
     private Iterable<KernelExtension> kernelExtensions;
+    private Iterable<CacheProvider> cacheProviders;
     private final StringLogger messageLog;
     private volatile AbstractGraphDatabase internalGraphDatabase;
     private NodeProxy.NodeLookup nodeLookup;
@@ -147,6 +154,7 @@ public class HighlyAvailableGraphDatabase
     private long startupTime;
     private BranchedDataPolicy branchedDataPolicy;
     private final SlaveUpdateMode slaveUpdateMode;
+    private final Caches caches;
 
     // This lock is used to safeguard access to internal database
     // Users will acquire readlock, and upon master/slave switch
@@ -174,20 +182,25 @@ public class HighlyAvailableGraphDatabase
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config)
     {
-        this(storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ));
+        this(storeDir, config, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
+                Service.load( CacheProvider.class ) );
     }
 
     /**
      * Create a new instance of HighlyAvailableGraphDatabase
      */
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions)
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, 
+            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
     {
         this.storeDir = storeDir;
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
+        this.cacheProviders = cacheProviders;
 
         config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
         config.put( AbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
+        if ( !config.containsKey( GraphDatabaseSettings.cache_type.name() ) )
+            config.put( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME );
 
         // Apply defaults to configuration just for logging purposes
         ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( GraphDatabaseSettings.class );
@@ -207,6 +220,8 @@ public class HighlyAvailableGraphDatabase
         messageLog = logging.getLogger( Loggers.NEO4J );
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
+        caches = new HaCaches( messageLog );
+        
         /*
          * TODO
          * lame, i know, but better than before.
@@ -244,8 +259,41 @@ public class HighlyAvailableGraphDatabase
         this.broker = createBroker();
         this.pullUpdates = false;
         this.clusterClient = createClusterClient();
+        
+        migrateBranchedDataDirectoriesToRootDirectory();
 
         start();
+    }
+
+    private void migrateBranchedDataDirectoriesToRootDirectory()
+    {
+        File branchedDir = BranchedDataPolicy.getBranchedDataRootDirectory( storeDir );
+        branchedDir.mkdirs();
+        for ( File oldBranchedDir : new File( storeDir ).listFiles() )
+        {
+            if ( !oldBranchedDir.isDirectory() || !oldBranchedDir.getName().startsWith( "branched-" ) )
+                continue;
+            
+            long timestamp = 0;
+            try
+            {
+                timestamp = Long.parseLong( oldBranchedDir.getName().substring( oldBranchedDir.getName().indexOf( '-' ) + 1 ) );
+            }
+            catch ( NumberFormatException e )
+            {   // OK, it wasn't a branched directory after all.
+                continue;
+            }
+            
+            File targetDir = BranchedDataPolicy.getBranchedDataDirectory( storeDir, timestamp );
+            try
+            {
+                FileUtils.moveFile( oldBranchedDir, targetDir );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Couldn't move branched directories to " + branchedDir, e );
+            }
+        }
     }
 
     private Logging createLogging()
@@ -461,8 +509,9 @@ public class HighlyAvailableGraphDatabase
      * Moves all files from the temp directory to the current working directory.
      * Assumes the target files do not exist and skips over the messages.log
      * file the temp db creates.
+     * @throws IOException if move wasn't successful.
      */
-    private void moveCopiedStoreIntoWorkingDir()
+    private void moveCopiedStoreIntoWorkingDir() throws IOException
     {
         File storeDir = new File( getStoreDir() );
         for ( File candidate : getTempDir().listFiles( new FileFilter()
@@ -474,7 +523,7 @@ public class HighlyAvailableGraphDatabase
             }
         } ) )
         {
-            FileUtils.moveFile( candidate, storeDir );
+            FileUtils.moveFileToDirectory( candidate, storeDir );
         }
     }
 
@@ -554,7 +603,7 @@ public class HighlyAvailableGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        storeId = broker.getClusterStoreId();
+        storeId = broker.getClusterStoreId(true);
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
@@ -726,7 +775,7 @@ public class HighlyAvailableGraphDatabase
         String temp = getClearedTempDir().getAbsolutePath();
         Response<Void> response = master.first().copyStore( emptyContext(),
                 new ToFileStoreWriter( temp ) );
-        long highestLogVersion = highestLogVersion();
+        long highestLogVersion = highestLogVersion( temp );
         if( highestLogVersion > -1 )
         {
             NeoStore.setVersion( temp, highestLogVersion + 1 );
@@ -753,9 +802,9 @@ public class HighlyAvailableGraphDatabase
         return new SlaveContext( 0, machineId, 0, new Tx[0], 0, 0 );
     }
 
-    private long highestLogVersion()
+    private long highestLogVersion( String targetStoreDir )
     {
-        return XaLogicalLog.getHighestHistoryLogVersion( new File( storeDir ), LOGICAL_LOG_DEFAULT_NAME );
+        return XaLogicalLog.getHighestHistoryLogVersion( new File( targetStoreDir ), LOGICAL_LOG_DEFAULT_NAME );
     }
 
     /**
@@ -1096,9 +1145,9 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
         this.storeId = storeId;
-        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), this, broker, logging,
+        SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
-                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions );
+                relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, cacheProviders, caches );
 /*
 
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
@@ -1127,8 +1176,8 @@ public class HighlyAvailableGraphDatabase
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
-        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions);
-
+        MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this,
+                broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, cacheProviders, caches);
 /*
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
@@ -1479,14 +1528,14 @@ public class HighlyAvailableGraphDatabase
         return localGraph().getKernelPanicGenerator();
     }
 
-    public enum BranchedDataPolicy
+    public static enum BranchedDataPolicy
     {
         keep_all
         {
             @Override
             void handle( HighlyAvailableGraphDatabase db )
             {
-                moveAwayDb( db, branchedDataDir( db ) );
+                moveAwayDb( db, newBranchedDataDir( db ) );
             }
         },
         keep_last
@@ -1494,9 +1543,9 @@ public class HighlyAvailableGraphDatabase
             @Override
             void handle( HighlyAvailableGraphDatabase db )
             {
-                File branchedDataDir = branchedDataDir( db );
+                File branchedDataDir = newBranchedDataDir( db );
                 moveAwayDb( db, branchedDataDir );
-                for ( File file : new File( db.getStoreDir() ).listFiles() )
+                for ( File file : getBranchedDataRootDirectory( db.getStoreDir() ).listFiles() )
                 {
                     if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                     {
@@ -1539,7 +1588,8 @@ public class HighlyAvailableGraphDatabase
             }
         };
 
-        static String BRANCH_PREFIX = "branched-";
+        // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
+        static String BRANCH_SUBDIRECTORY = "branched";
 
         abstract void handle( HighlyAvailableGraphDatabase db );
 
@@ -1547,17 +1597,20 @@ public class HighlyAvailableGraphDatabase
         {
             for ( File file : relevantDbFiles( db ) )
             {
-                File dest = new File( branchedDataDir, file.getName() );
-                if( !file.renameTo( dest ) )
+                try
+                {
+                    FileUtils.moveFileToDirectory( file, branchedDataDir );
+                }
+                catch ( IOException e )
                 {
                     db.messageLog.logMessage( "Couldn't move " + file.getPath() );
                 }
             }
         }
 
-        File branchedDataDir( HighlyAvailableGraphDatabase db )
+        File newBranchedDataDir( HighlyAvailableGraphDatabase db )
         {
-            File result = new File( db.getStoreDir(), BRANCH_PREFIX + System.currentTimeMillis() );
+            File result = getBranchedDataDirectory( db.getStoreDir(), System.currentTimeMillis() );
             result.mkdirs();
             return result;
         }
@@ -1572,14 +1625,50 @@ public class HighlyAvailableGraphDatabase
                 @Override
                 public boolean accept( File file )
                 {
-                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataRootDirectory( file );
                 }
             } );
         }
 
-        boolean isBranchedDataDirectory( File file )
+        public static boolean isBranchedDataRootDirectory( File directory )
         {
-            return file.isDirectory() && file.getName().startsWith( BRANCH_PREFIX );
+            return directory.isDirectory() && directory.getName().equals( BRANCH_SUBDIRECTORY );
+        }
+        
+        public static boolean isBranchedDataDirectory( File directory )
+        {
+            return directory.isDirectory() && directory.getParentFile().getName().equals( BRANCH_SUBDIRECTORY ) &&
+                    isAllDigits( directory.getName() );
+        }
+        
+        private static boolean isAllDigits( String string )
+        {
+            for ( char c : string.toCharArray() )
+                if ( !Character.isDigit( c ) )
+                    return false;
+            return true;
+        }
+
+        public static File getBranchedDataRootDirectory( String dbStoreDir )
+        {
+            return new File( dbStoreDir, BRANCH_SUBDIRECTORY );
+        }
+        
+        public static File getBranchedDataDirectory( String dbStoreDir, long timestamp )
+        {
+            return new File( getBranchedDataRootDirectory( dbStoreDir ), "" + timestamp );
+        }
+        
+        public static File[] listBranchedDataDirectories( String storeDir )
+        {
+            return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
+            {
+                @Override
+                public boolean accept( File directory )
+                {
+                    return isBranchedDataDirectory( directory );
+                }
+            } );
         }
     }
 
@@ -1792,7 +1881,7 @@ public class HighlyAvailableGraphDatabase
     {
         return localGraph().getPersistenceSource();
     }
-    
+
     @Override
     public Guard getGuard()
     {
