@@ -32,23 +32,19 @@ define(
       initialize : (opts) =>
         @primitives = opts.primitives
         @diskUsage = opts.diskUsage
-        @cacheUsage = opts.cacheUsage
         
         @primitives.bind("change",@render)
         @diskUsage.bind("change",@render)
-        @cacheUsage.bind("change",@render)
 
       render : =>
         $(@el).html @template
           primitives  : @primitives
           diskUsage   : @diskUsage
-          cacheUsage  : @cacheUsage
           fancyNumber : NumberFormatter.fancy
         return this
 
       remove : =>
         @primitives.unbind("change",@render)
         @diskUsage.unbind("change",@render)
-        @cacheUsage.unbind("change",@render)
         super()
 )

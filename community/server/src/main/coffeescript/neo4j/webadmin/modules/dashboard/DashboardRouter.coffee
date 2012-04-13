@@ -47,7 +47,6 @@ define(
           dashboardState : @getDashboardState()
           primitives : @getServerPrimitives()
           diskUsage  : @getDiskUsage()
-          cacheUsage : @getCacheUsage()
           statistics : @getServerStatistics()
           kernelBean : @getKernelBean()
 
@@ -59,9 +58,6 @@ define(
 
       getDiskUsage : =>
         @diskUsage ?= new DiskUsage( server : @appState.getServer(), pollingInterval : 5000 )
-
-      getCacheUsage : =>
-        @cacheUsage ?= new CacheUsage( server : @appState.getServer(), pollingInterval : 5000 )
       
       getServerStatistics : =>
         @serverStatistics ?= new ServerStatistics( server : @appState.getServer() )
