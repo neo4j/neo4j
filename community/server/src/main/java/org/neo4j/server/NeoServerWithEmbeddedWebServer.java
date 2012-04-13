@@ -264,7 +264,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
             if ( httpLoggingProperlyConfigured() )
             {
-                System.out.println( "--> I think it's good to log HTTP!" );
                 webServer.enableHTTPLoggingForWebadmin(
                     new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ),
                     new File( getConfiguration().getProperty( Configurator.HTTP_LOG_LOCATION ).toString() ) );
@@ -383,12 +382,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         {
             stopServerOnly();
             stopDatabase();
-            log.info( "Successfully shutdown database [%s]", getDatabase().getLocation() );
+            log.info( "Successfully shutdown database." );
         }
         catch ( Exception e )
         {
-            log.warn( "Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
-                e.getMessage() );
+            log.warn( "Failed to cleanly shutdown database." );
         }
     }
 
@@ -402,13 +400,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             stopWebServer();
             stopModules();
             stopExtensionInitializers();
-            log.info( "Successfully shutdown Neo Server on port [%d]", getWebServerPort(),
-                getDatabase().getLocation() );
+            log.info( "Successfully shutdown Neo4j Server." );
         }
         catch ( Exception e )
         {
-            log.warn( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
-                getWebServerPort(), getDatabase().getLocation(), e.getMessage() );
+            log.warn( "Failed to cleanly shutdown Neo4j Server." );
         }
     }
 

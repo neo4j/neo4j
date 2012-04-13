@@ -69,8 +69,7 @@ public class ServerBuilder
     private String webAdminDataUri = "/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
-    private HashMap<String, String> arbitraryProperties = new HashMap<String, String>();
-    ;
+    private Properties arbitraryProperties = new Properties();
 
     private static enum WhatToDo
     {
@@ -78,8 +77,6 @@ public class ServerBuilder
         CREATE_DANGLING_TUNING_FILE_PROPERTY,
         CREATE_CORRUPT_TUNING_FILE
     }
-
-    ;
 
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
@@ -203,9 +200,9 @@ public class ServerBuilder
             }
         }
 
-        for ( String key : arbitraryProperties.keySet() )
+        for ( Object key : arbitraryProperties.keySet() )
         {
-            properties.put( key, arbitraryProperties.get( key ) );
+            properties.put( String.valueOf( key ), String.valueOf( arbitraryProperties.get( key ) ) );
         }
 
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
@@ -429,6 +426,12 @@ public class ServerBuilder
     public ServerBuilder withProperty( String key, String value )
     {
         arbitraryProperties.put( key, value );
+        return this;
+    }
+
+    public ServerBuilder withStartupHealthCheckRules( StartupHealthCheckRule... rules )
+    {
+        this.startupHealthCheck = new StartupHealthCheck( arbitraryProperties, rules );
         return this;
     }
 }

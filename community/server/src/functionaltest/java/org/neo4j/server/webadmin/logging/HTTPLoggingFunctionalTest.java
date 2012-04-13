@@ -2,7 +2,10 @@ package org.neo4j.server.webadmin.logging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,6 +24,8 @@ import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
@@ -99,6 +104,32 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         assertTrue( occursIn( query, new File( logDirectory + File.separator + "http.log" ) ) );
     }
 
+    @Test
+    public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
+    {
+        // given
+        server = ServerBuilder.server().withDefaultDatabaseTuning()
+            .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
+            .withProperty( Configurator.HTTP_LOGGING, "true" )
+            .withProperty( Configurator.HTTP_LOG_LOCATION, "/not/writable" )
+            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
+                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
+            .build();
+
+        // when
+        try
+        {
+            server.start();
+            fail( "should have thrown exception" );
+        }
+        catch ( StartupHealthCheckFailedException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( "HTTP log directory [/not/writable] cannot be created" ) );
+        }
+
+    }
+
     private boolean occursIn( String lookFor, File file ) throws FileNotFoundException
     {
         if ( !file.exists() )
@@ -120,34 +151,4 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
 
         return result;
     }
-
-
-//    private String today()
-//    {
-//        int year = Calendar.getInstance().get( Calendar.YEAR );
-//        int month = Calendar.getInstance().get( Calendar.MONTH );
-//        int day = Calendar.getInstance().get( Calendar.DAY_OF_MONTH );
-//
-//        return String.valueOf( year ) + ensureDoubleDigitString( month ) + ensureDoubleDigitString( day );
-//    }
-//
-//    private String ensureDoubleDigitString( int number )
-//    {
-//        if ( number > 31 )
-//        {
-//            throw new RuntimeException( "No day or month can be greater than 31" );
-//        }
-//
-//        String result = "";
-//        if ( number < 10 )
-//        {
-//            result = "0" + String.valueOf( number );
-//        }
-//        else
-//        {
-//            result = String.valueOf( number );
-//        }
-//
-//        return result;
-//    }
 }

@@ -487,7 +487,6 @@ public class Jetty6WebServer implements WebServer
         @Override
         public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain ) throws IOException, ServletException
         {
-            System.out.println( "-- name --> " + requestLog.getName() );
             requestLog.log( (Request) request, (Response) response );
             chain.doFilter( request, response );
         }
