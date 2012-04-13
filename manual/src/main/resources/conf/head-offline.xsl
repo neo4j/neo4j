@@ -59,6 +59,14 @@
 
 <script type="text/javascript" src="js/tablestyler.js"></script>
 
+<!-- Version -->
+
+<script type="text/javascript" src="js/version.js"></script>
+
+<!-- Offline Sidebar -->
+
+<script type="text/javascript" src="js/sidebar.js"></script>
+
 ]]>
 </xsl:text>
 
