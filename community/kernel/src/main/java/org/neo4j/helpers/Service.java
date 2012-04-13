@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterable;
@@ -323,14 +324,23 @@ public abstract class Service
         }
     }
 
-    private static <T> Iterable<T> java6Loader( Class<T> type )
+    @SuppressWarnings("unchecked")
+	private static <T> Iterable<T> java6Loader( Class<T> type )
     {
         try
         {
-            @SuppressWarnings( "unchecked" ) Iterable<T> result = (Iterable<T>)
-                    Class.forName( "java.util.ServiceLoader" )
+            Class<?> serviceLoaderClass = Class.forName( "java.util.ServiceLoader" );
+			Iterable<T> contextClassLoaderServices = (Iterable<T>)
+                    serviceLoaderClass
                     .getMethod( "load", Class.class )
                     .invoke( null, type );
+			// Jboss 7 does not export content of META-INF/services to context class loader,
+			// so this call adds implementations defined in Neo4j libraries from the same module.
+			Iterable<T> currentClassLoaderServices = (Iterable<T>)
+                    serviceLoaderClass
+                    .getMethod( "load", Class.class, ClassLoader.class )
+                    .invoke( null, type, Service.class.getClassLoader() );
+            Iterable<T> result = new CombiningIterable<T>(Arrays.asList(contextClassLoaderServices,currentClassLoaderServices));
             return filterExceptions( result );
         }
         catch ( Exception e )
