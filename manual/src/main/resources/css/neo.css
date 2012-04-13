@@ -1,3 +1,8 @@
+div.section, div.chapter, div.part, div.book, div.titlepage
+{
+  max-width: 50em;
+}
+
 span.remark {
   background: yellow;
 }
@@ -39,7 +44,7 @@ html body
   padding-top: 14px;
 }
 
-body, div.navheader th, div.navheader td, div.navfooter td
+body, div.navheader th, div.navheader td, div.navfooter td, #sidebar
 {
   font-family: "Lucida Bright", Cambria, serif;
 }
@@ -103,6 +108,38 @@ div.navheader
   width: 4em;
   text-align: right;
   z-index: 10;
+}
+
+.left-column
+{
+  margin-right: 160px;
+}
+
+#sidebar
+{
+  position: absolute;
+  right: 0;
+  top: 160px;
+  width: 154px;
+  text-align: right;
+  font-size: 0.9375em;
+  border-top: 1px solid #DDDDDD;
+  border-left: 1px solid #DDDDDD;
+}
+
+#sidebar > div
+{
+  padding: 4px 12px 4px 4px;
+}
+
+#sidebar > div p
+{
+  margin-bottom: 0.33em;
+}
+
+#sidebar > div
+{
+  border-bottom: 1px solid #DDDDDD;
 }
 
 div.navheader hr

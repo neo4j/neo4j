@@ -222,6 +222,7 @@
         <filtering>true</filtering>
         <includes>
           <include>version</include>
+          <include>js/version.js</include>
         </includes>
       </resource>
       <resource>
@@ -229,6 +230,7 @@
         <filtering>false</filtering>
         <excludes>
           <exclude>version</exclude>
+          <exclude>js/version.js</exclude>
         </excludes>
       </resource>
     </resources>

@@ -59,6 +59,10 @@
 
 <script type="text/javascript" src="js/tablestyler.js"></script>
 
+<!-- Version -->
+
+<script type="text/javascript" src="js/version.js"></script>
+
 <!-- Version Switcher -->
 
 <script type="text/javascript" src="js/versionswitcher.js"></script>
@@ -66,6 +70,10 @@
 <!-- Cypher Console -->
 
 <script type="text/javascript" src="js/cypherconsole.js"></script>
+
+<!-- Online Sidebar -->
+
+<script type="text/javascript" src="../sidebar.js"></script>
 
 ]]>
   </xsl:text>
