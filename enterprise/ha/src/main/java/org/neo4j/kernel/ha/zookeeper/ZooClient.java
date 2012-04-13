@@ -361,7 +361,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw new ZooKeeperException( "Got interrupted", e );
             }
         } while ( rootData == null );
-        throw new IllegalStateException();
+        throw new IllegalStateException( "Root path couldn't be found" );
     }
 
     private void makeSureRootPathIsFound()
@@ -503,8 +503,10 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             catch ( KeeperException ee )
             {
-                ee.printStackTrace();
-                // ok
+                if ( ee.code() != KeeperException.Code.NONODE )
+                {
+                    msgLog.logMessage( "Unable to delete " + machinePath, ee );
+                }
             }
             finally
             {
@@ -834,10 +836,13 @@ public class ZooClient extends AbstractZooKeeperManager
                     }
                 }
             }
+            catch ( BrokerShutDownException e )
+            {
+                // It's OK. We're in a state where we cannot accept incoming events.
+            }
             catch ( Exception e )
             {
                 msgLog.logMessage( "Error in ZooClient.process", e, true );
-                e.printStackTrace();
                 throw Exceptions.launderedException( e );
             }
             finally
