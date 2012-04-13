@@ -351,6 +351,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 PropertyRecord first = getPropertyStore().getRecord(
                         primitive.getNextProp() );
+                thatFits.setInUse( true );
                 thatFits.setNextProp( first.getId() );
                 first.setPrevProp( thatFits.getId() );
                 getPropertyStore().updateRecord( first );
