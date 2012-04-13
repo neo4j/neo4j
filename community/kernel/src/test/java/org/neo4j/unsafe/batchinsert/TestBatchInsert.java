@@ -167,6 +167,22 @@ public class TestBatchInsert
     }
 
     @Test
+    public void testSetAndAddNodeProperties()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        long tehNode = inserter.createNode( MapUtil.map( "one", "one" ,"two","two","three","three") );
+        inserter.setNodeProperty( tehNode, "four", "four" );
+        inserter.setNodeProperty( tehNode, "five", "five" );
+        Map<String, Object> props = inserter.getNodeProperties( tehNode );
+        assertEquals( 5, props.size() );
+        assertEquals( "one", props.get( "one" ) );
+        assertEquals( "five", props.get( "five" ) );
+
+        inserter.shutdown();
+    }
+
+    @Test
     public void testSetAndKeepNodeProperty()
     {
         BatchInserter inserter = newBatchInserter();
