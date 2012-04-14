@@ -7,10 +7,11 @@
     </rollingPolicy>
 
     <encoder>
-      <pattern>%h %l %u %user [%date] "%r" %s %b</pattern>
+      <!-- Note the deliberate misspelling of "referer" in accordance with RFC1616 -->
+      <pattern>%h %l %user [%t{dd}/%t{MMM}/%t{YY}:hh:mm:ss Z}] "%r" %s %b %i{Referer} %i{User-Agent}</pattern>
     </encoder>
+
   </appender>
 
   <appender-ref ref="FILE"/>
 </configuration>
-
