@@ -8,7 +8,7 @@
 
     <encoder>
       <!-- Note the deliberate misspelling of "referer" in accordance with RFC1616 -->
-      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b %i{Referer} %i{User-Agent}</pattern>
+      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}"</pattern>
     </encoder>
   </appender>
 
