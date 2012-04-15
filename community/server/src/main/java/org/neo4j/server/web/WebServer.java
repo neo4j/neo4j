@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -40,11 +41,11 @@ public interface WebServer
     void setPort( int portNo );
 
     void setAddress( String addr );
-    
+
     void setEnableHttps( boolean enable );
-    
+
     void setHttpsPort( int portNo );
-    
+
     void setHttpsCertificateInformation( KeyStoreInformation config );
 
     void start();
@@ -58,13 +59,14 @@ public interface WebServer
     void addStaticContent( String contentLocation, String serverMountPoint );
 
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException;
-    
-    void addSecurityRules(SecurityRule ... rules);
+        throws IOException, ServletException;
+
+    void addSecurityRules( SecurityRule... rules );
 
     void addExecutionLimitFilter( int timeout );
 
+    void startWebadminLogging( File logLocation, String logName );
+
     @Deprecated
     Server getJetty();
-    
 }

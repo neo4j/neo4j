@@ -1,52 +1,61 @@
 package org.neo4j.server.webadmin.logging;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerBootstrapper;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.WrappingNeoServerBootstrapper;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class WebAdminLoggingFunctionalTest extends AbstractRestFunctionalTestBase
 {
-    private static FunctionalTestHelper functionalTestHelper;
-    private RestRequest req;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        NeoServer server = server();
-        functionalTestHelper = new FunctionalTestHelper( server );
-    }
+    private FunctionalTestHelper functionalTestHelper;
 
     @Before
     public void cleanTheDatabase()
     {
         cleanDatabase();
-        req = RestRequest.req();
+        functionalTestHelper = new FunctionalTestHelper(server());
     }
 
     @Test
-    public void givenNoServerLoggingConfigurationShouldLogAllAccessesToWebadmin()
+    public void givenNoServerLoggingConfigurationShouldLogAllAccessesToWebadmin() throws Exception
     {
         // given
-        GraphDatabaseAPI graph = server().getDatabase().graph;
-        String storeDir = graph.getStoreDir();
+
+        GraphDatabaseAPI database = functionalTestHelper.getDatabase();
+        ServerConfigurator conf = new ServerConfigurator( database );
+        conf.configuration().addProperty( Configurator.WEBADMIN_LOGGING_ENABLED, "enabled" );
 
         // when
-        req.get( functionalTestHelper.webAdminUri() );
-        gen.get().expectedStatus( 200 );
+        JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() );
+        assertEquals( 200, response.getStatus() );
+        response.close();
 
         // then
-        File webadminHttpLogs = new File( storeDir + File.separator + "access.log" );
+        File webadminHttpLogs = new File(
+            new File( database.getStoreDir() + File.separator + ".." + File.separator + "log" ).getCanonicalPath() + File.separator + "access.log" );
+
+        System.out.println("==> " + webadminHttpLogs.getCanonicalPath());
+
         assertTrue( webadminHttpLogs.exists() );
 
     }
@@ -58,7 +67,6 @@ public class WebAdminLoggingFunctionalTest extends AbstractRestFunctionalTestBas
         int day = Calendar.getInstance().get( Calendar.DAY_OF_MONTH );
 
         return String.valueOf( year ) + ensureDoubleDigitString( month ) + ensureDoubleDigitString( day );
-
     }
 
     private String ensureDoubleDigitString( int number )

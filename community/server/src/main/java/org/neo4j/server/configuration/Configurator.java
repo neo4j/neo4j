@@ -77,6 +77,8 @@ public interface Configurator
     String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.key.location";
     String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = "neo4j-home/ssl/snakeoil.key";
 
+    String WEBADMIN_LOGGING_ENABLED = "org.neo4j.server.webadmin.logging";
+
     Configuration configuration();
 
     Map<String, String> getDatabaseTuningProperties();

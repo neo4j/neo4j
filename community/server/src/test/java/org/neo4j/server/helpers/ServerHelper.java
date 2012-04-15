@@ -113,13 +113,18 @@ public class ServerHelper
             }
         } ).execute();
     }
-    
-    public static NeoServer createServer() throws IOException
+
+    public static NeoServer createNonPersistentServer() throws IOException
     {
         return createServer( false );
     }
-    
-    public static NeoServer createServer( boolean persistent ) throws IOException
+
+    public static NeoServer createPersistentServer() throws IOException
+    {
+        return createServer( true );
+    }
+
+    private static NeoServer createServer( boolean persistent ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
         configureHostname( builder );

@@ -21,6 +21,7 @@ package org.neo4j.server.web;
 
 import static java.lang.String.format;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,12 +37,16 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
+import org.mortbay.jetty.NCSARequestLog;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
+import org.mortbay.jetty.handler.RequestLogHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
@@ -51,8 +56,8 @@ import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
-import org.neo4j.server.NeoServer;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
@@ -61,9 +66,6 @@ import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
-
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -99,12 +101,17 @@ public class Jetty6WebServer implements WebServer
 
             jetty.addConnector( connector );
 
-            if(httpsEnabled) {
-               if(httpsCertificateInformation != null) {
-                   jetty.addConnector( sslSocketFactory.createConnector(httpsCertificateInformation, jettyAddr, jettyHttpsPort) );
-               } else {
-                   throw new RuntimeException("HTTPS set to enabled, but no HTTPS configuration provided.");
-               }
+            if ( httpsEnabled )
+            {
+                if ( httpsCertificateInformation != null )
+                {
+                    jetty.addConnector(
+                        sslSocketFactory.createConnector( httpsCertificateInformation, jettyAddr, jettyHttpsPort ) );
+                }
+                else
+                {
+                    throw new RuntimeException( "HTTPS set to enabled, but no HTTPS configuration provided." );
+                }
             }
 
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
@@ -154,9 +161,10 @@ public class Jetty6WebServer implements WebServer
         ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( true ) );
-        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
+        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages",
+            toCommaSeparatedList( packageNames ) );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
-                AllowAjaxFilter.class.getName() );
+            AllowAjaxFilter.class.getName() );
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
 
         jaxRSPackages.put( mountPoint, servletHolder );
@@ -192,7 +200,7 @@ public class Jetty6WebServer implements WebServer
 
     @Override
     public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException
+        throws IOException, ServletException
     {
         jetty.handle( targetPath, request, response, Handler.REQUEST );
     }
@@ -205,17 +213,52 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void setEnableHttps( boolean enable ) {
+    public void startWebadminLogging( File logLocation, String logName )
+    {
+        String canonicalPath = null;
+        try
+        {
+            canonicalPath = logLocation.getCanonicalPath();
+        }
+        catch ( IOException e )
+        {
+            log.error( e );
+        }
+
+        logLocation.mkdirs();
+
+
+        NCSARequestLog requestLog = new NCSARequestLog( canonicalPath + File.separator + logName );
+//        requestLog.setRetainDays( 90 );
+//        requestLog.setAppend( true );
+//        requestLog.setExtended( true );
+//        requestLog.setLogTimeZone( "GMT" );
+
+        RequestLogHandler requestLogHandler = new RequestLogHandler();
+        requestLogHandler.setRequestLog( requestLog );
+
+        jetty.addHandler( requestLogHandler );
+
+        log.info( "HTTP Request logging for Webadmin started, log file [%s]", requestLog.getFilename() );
+        System.out.println(
+            String.format( "HTTP Request logging for Webadmin started, log file [%s]", requestLog.getFilename() ) );
+    }
+
+    @Override
+    public void setEnableHttps( boolean enable )
+    {
         httpsEnabled = enable;
     }
 
     @Override
-    public void setHttpsPort( int portNo )  {
+    public void setHttpsPort( int portNo )
+    {
         jettyHttpsPort = portNo;
     }
 
     @Override
-    public void setHttpsCertificateInformation( KeyStoreInformation config ) {
+    public void setHttpsCertificateInformation( KeyStoreInformation config )
+    {
         httpsCertificateInformation = config;
     }
 
@@ -235,7 +278,7 @@ public class Jetty6WebServer implements WebServer
     private int tenThreadsPerProcessor()
     {
         return 10 * Runtime.getRuntime()
-                .availableProcessors();
+            .availableProcessors();
     }
 
     private void loadAllMounts()
@@ -261,7 +304,8 @@ public class Jetty6WebServer implements WebServer
 
             if ( isStatic && isJaxrs )
             {
-                throw new RuntimeException( format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
+                throw new RuntimeException(
+                    format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
             }
             else if ( isStatic )
             {
@@ -308,7 +352,8 @@ public class Jetty6WebServer implements WebServer
         }
         catch ( URISyntaxException e )
         {
-            log.debug( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint );
+            log.debug( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)",
+                mountPoint );
             return mountPoint;
         }
     }
@@ -323,23 +368,25 @@ public class Jetty6WebServer implements WebServer
             staticContext.setServer( getJetty() );
             staticContext.setContextPath( mountPoint );
             URL resourceLoc = getClass().getClassLoader()
-                    .getResource( contentLocation );
+                .getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 log.debug( "Found [%s]", resourceLoc );
                 URL url = resourceLoc.toURI()
-                        .toURL();
+                    .toURL();
                 final Resource resource = Resource.newResource( url );
                 staticContext.setBaseResource( resource );
                 log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
                 jetty.addHandler( staticContext );
-            } else
+            }
+            else
             {
                 log.error(
-                        "No static content available for Neo Server at port [%d], management console may not be available.",
-                        jettyHttpPort );
+                    "No static content available for Neo Server at port [%d], management console may not be available.",
+                    jettyHttpPort );
             }
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             log.error( e );
             e.printStackTrace();
@@ -386,12 +433,14 @@ public class Jetty6WebServer implements WebServer
                         final Context context = (Context) handler;
                         for ( SecurityRule rule : rules )
                         {
-                            if(new UriPathWildcardMatcher(rule.forUriPath()).matches(context.getContextPath()))
+                            if ( new UriPathWildcardMatcher( rule.forUriPath() ).matches( context.getContextPath() ) )
                             {
                                 final Filter jettyFilter = new SecurityFilter( rule );
                                 context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );
-                                log.info( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() );
-                                System.out.println( String.format("Security rule [%s] installed on server", rule.getClass().getCanonicalName() )) ;
+                                log.info( "Security rule [%s] installed on server",
+                                    rule.getClass().getCanonicalName() );
+                                System.out.println( String.format( "Security rule [%s] installed on server",
+                                    rule.getClass().getCanonicalName() ) );
                             }
                         }
                     }
