@@ -25,6 +25,17 @@ import org.neo4j.cypher.SyntaxException
 
 
 trait Expressions extends Base {
+  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
+    case head ~ rest => {
+      var result = head
+      rest.foreach {
+        case "+" ~ f => result = Add(result, f)
+        case "-" ~ f => result = Subtract(result, f)
+      }
+
+      result
+    }
+  }
 
   def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor | "%" ~ factor | "^" ~ factor) ^^ {
     case head ~ rest => {
@@ -34,18 +45,6 @@ trait Expressions extends Base {
         case "/" ~ f => result = Divide(result,f)
         case "%" ~ f => result = Modulo(result,f)
         case "^" ~ f => result = Pow(result,f)
-      }
-
-      result
-    }
-  }
-
-  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
-    case head ~ rest => {
-      var result = head
-      rest.foreach {
-        case "+" ~ f => result = Add(result, f)
-        case "-" ~ f => result = Subtract(result, f)
       }
 
       result
@@ -158,7 +157,15 @@ trait Expressions extends Base {
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 
-  def predicate: Parser[Predicate] = (
+  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( ignoreCase("or") ~> predicateLvl1 ) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
+  }
+
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( ignoreCase("and") ~> predicateLvl2 ) ^^{
+    case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
+  }
+
+  def predicateLvl2: Parser[Predicate] = (
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
@@ -169,19 +176,12 @@ trait Expressions extends Base {
       | hasRelationshipTo
       | hasRelationship
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
-    ) * (
-    ignoreCase("and") ^^^ {
-      (a: Predicate, b: Predicate) => And(a, b)
-    } |
-      ignoreCase("or") ^^^ {
-        (a: Predicate, b: Predicate) => Or(a, b)
-      }
     )
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)  }
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas) }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
