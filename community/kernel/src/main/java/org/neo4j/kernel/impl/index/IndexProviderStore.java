@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -49,6 +50,8 @@ public class IndexProviderStore
     public IndexProviderStore( File file, FileSystemAbstraction fileSystem, long expectedVersion, boolean allowUpgrade )
     {
         this.file = file;
+        FileChannel channel = null;
+        boolean success = false;
         try
         {
             // Create it if it doesn't exist
@@ -56,15 +59,14 @@ public class IndexProviderStore
                 create( file, fileSystem, expectedVersion );
             
             // Read all the records in the file
-            fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
-            Long[] records = readRecordsWithNullDefaults( fileChannel, RECORD_COUNT, allowUpgrade ?
-                    RECORD_COUNT-1 : // 1.6 introduced indexVersion record. This (-1 expectation) isn't a generic solution though
-                    RECORD_COUNT );
+            channel = fileSystem.open( file.getAbsolutePath(), "rw" );
+            Long[] records = readRecordsWithNullDefaults( channel, RECORD_COUNT, allowUpgrade );
             creationTime = records[0].longValue();
             randomIdentifier = records[1].longValue();
             version = records[2].longValue();
             lastCommittedTx = records[3].longValue();
             Long readIndexVersion = records[4];
+            fileChannel = channel;
             
             // Compare version and throw exception if there's a mismatch, also considering "allow upgrade"
             boolean versionDiffers = compareExpectedVersionWithStoreVersion( expectedVersion, allowUpgrade, readIndexVersion );
@@ -74,10 +76,24 @@ public class IndexProviderStore
             if ( versionDiffers )
                 // We have upgraded the version, let's write it
                 writeOut();
+            success = true;
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            if ( !success && channel != null )
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch ( IOException e )
+                {   // What to do?
+                }
+            }
         }
     }
 
@@ -106,14 +122,15 @@ public class IndexProviderStore
         return versionDiffers;
     }
     
-    private Long[] readRecordsWithNullDefaults( FileChannel fileChannel, int count, int expectAtLeastCount ) throws IOException
+    private Long[] readRecordsWithNullDefaults( FileChannel fileChannel, int count, boolean allowUpgrade ) throws IOException
     {
         buf.clear();
         int bytesRead = fileChannel.read( buf );
         int wholeRecordsRead = bytesRead/RECORD_SIZE;
-        if ( wholeRecordsRead < expectAtLeastCount )
-            throw new RuntimeException( "Expected to read at least " + expectAtLeastCount + " records, but could only read " +
-                    wholeRecordsRead + " (" + bytesRead + "b)" );
+        if ( wholeRecordsRead < RECORD_COUNT && !allowUpgrade )
+            throw new UpgradeNotAllowedByConfigurationException( "Index version (managed by " + file + ") has changed " +
+            		"and cannot be upgraded unless " + GraphDatabaseSettings.allow_store_upgrade.name() +
+            		"=true is supplied in the configuration" );
         
         buf.flip();
         Long[] result = new Long[count];
