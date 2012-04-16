@@ -22,7 +22,7 @@ package org.neo4j.backup;
 import java.util.Map;
 import org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider;
 import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
@@ -67,7 +67,7 @@ enum VerificationLevel implements ConfigParam
 
     private void configure( Map<String, String> config, String value )
     {
-        config.put( Config.INTERCEPT_DESERIALIZED_TRANSACTIONS, "true" );
+        config.put( GraphDatabaseSettings.intercept_deserialized_transactions.name(), "true" );
         config.put( TransactionInterceptorProvider.class.getSimpleName() + "." + interceptorName, value );
     }
 }

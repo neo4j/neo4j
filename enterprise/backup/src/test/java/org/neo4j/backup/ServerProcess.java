@@ -23,7 +23,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.subprocess.SubProcess;
 
 public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
@@ -41,7 +40,8 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
         }
         else
         {
-            this.db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( Config.ENABLE_ONLINE_BACKUP, backupConfigValue ).newGraphDatabase();
+            // TODO This is using the old config style - is this class even used anywhere!?
+            this.db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( "enable_online_backup", backupConfigValue ).newGraphDatabase();
         }
     }
 

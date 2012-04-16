@@ -46,6 +46,7 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
@@ -281,14 +282,22 @@ public class OnlineBackup
 
     static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        if (params != null && params.length > 0) {
-            Map<String,String> config = new HashMap<String, String>();
-            for ( ConfigParam param : params )
-                if ( param != null ) param.configure( config );
+        if( params != null && params.length > 0 )
+        {
+            Map<String, String> config = new HashMap<String, String>();
+            for( ConfigParam param : params )
+            {
+                if( param != null )
+                {
+                    param.configure( config );
+                }
+            }
             return new EmbeddedGraphDatabase( targetDirectory, config );
         }
         else
+        {
             return new EmbeddedGraphDatabase( targetDirectory );
+        }
     }
 
     public OnlineBackup incremental( String targetDirectory )
@@ -309,7 +318,7 @@ public class OnlineBackup
             @Override
             public void configure( Map<String, String> config )
             {
-                config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+                config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
             }
         };
 

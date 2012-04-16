@@ -311,7 +311,7 @@ public class TestBackup
             throw new RuntimeException( e );
         }
         */
-        ServerInterface server = new EmbeddedServer( path, "true" );
+        ServerInterface server = new EmbeddedServer( path );
         server.awaitStarted();
         return server;
     }

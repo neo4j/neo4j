@@ -255,7 +255,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     @Test
     public void slaveWriteThatOnlyModifyRelationshipRecordsCanUpdateCachedNodeOnMaster() throws Exception
     {
-        initializeDbs( 1, MapUtil.stringMap( Config.CACHE_TYPE, "strong" ) );
+        initializeDbs( 1, MapUtil.stringMap( GraphDatabaseSettings.cache_type.name(), GraphDatabaseSettings.CacheTypeSetting.strong ) );
         HighlyAvailableGraphDatabase sDb = (HighlyAvailableGraphDatabase) getSlave( 0 );
         HighlyAvailableGraphDatabase mDb = getMasterHaDb();
 
