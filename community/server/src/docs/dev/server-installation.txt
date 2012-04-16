@@ -177,7 +177,7 @@ Differentiate the instance from the development instance by modifying +test/conf
 wrapper.name=neo4j-test
 ----
 
-On Windows, you even need to change the name of the service in +bin/neo4j.bat+ to be able to run it together with the first instance.
+On Windows, you even need to change the name of the service in 'bin/neo4j.bat' to be able to run it together with the first instance.
 
 [source,shell]
 ----
