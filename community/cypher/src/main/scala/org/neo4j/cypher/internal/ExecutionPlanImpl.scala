@@ -259,8 +259,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 
-  private def canUseOrderedAggregation(sortColumns: Seq[String], keyColumns: Seq[String]): Boolean = keyColumns.take(sortColumns.size) == sortColumns
-
+  private def canUseOrderedAggregation(sortColumns: Seq[String], keyColumns: Seq[String]): Boolean = false
   private def makeNodes[T](data: Any, name: String, getElement: Long => T): Seq[T] = {
     def castElement(x: Any): T = x match {
       case i: Int => getElement(i)
