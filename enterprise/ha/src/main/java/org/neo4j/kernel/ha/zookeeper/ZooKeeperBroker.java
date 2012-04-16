@@ -252,8 +252,7 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         if ( zooClient == null )
         {
-            throw new IllegalStateException(
-                    "This ZooKeeperBroker has been shutdown - no operations are possible until started up again. Maybe the database is restarting?" );
+            throw new BrokerShutDownException();
         }
         return zooClient;
     }

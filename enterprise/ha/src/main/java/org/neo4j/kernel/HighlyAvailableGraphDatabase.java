@@ -604,7 +604,7 @@ public class HighlyAvailableGraphDatabase
             }
         }
         storeId = broker.getClusterStoreId(true);
-        newMaster( storeId, new Exception( "Starting up for the first time" ) );
+        newMaster( storeId, new InformativeStackTrace( "Starting up for the first time" ) );
         localGraph();
     }
 
@@ -1302,7 +1302,7 @@ public class HighlyAvailableGraphDatabase
 
     public synchronized void internalShutdown( boolean rotateLogs )
     {
-        messageLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
+        messageLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new InformativeStackTrace( "Internal shutdown" ), true );
         pullUpdates = false;
         if ( this.updatePuller != null )
         {
@@ -1790,7 +1790,7 @@ public class HighlyAvailableGraphDatabase
             {
                 messageLog.logMessage( "TxManager not ok, doing internal restart" );
                 internalShutdown( true );
-                newMaster( storeId, new Exception( "Tx manager not ok" ) );
+                newMaster( storeId, new InformativeStackTrace( "Tx manager not ok" ) );
             }
         }
 
