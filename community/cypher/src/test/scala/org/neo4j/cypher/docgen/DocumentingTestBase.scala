@@ -70,7 +70,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println()
     if(generateConsole) {
-      writer.println(".Test this query live")
+      writer.println(".Try this query live")
       writer.println("[console]")
       writer.println("----\n"+new GeoffService(db).toGeoff()+"\n"+query+"\n----")
       writer.println()
