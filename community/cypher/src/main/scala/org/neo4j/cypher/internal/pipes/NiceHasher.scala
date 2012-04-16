@@ -36,8 +36,11 @@ class NiceHasher(val original: Seq[Any]) {
 
   override def toString = hashCode() + " : " + original.toString
 
-  override def hashCode() = original.map {
+  private lazy val hash = original.map {
     case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
+    case null => 0
     case x => x.hashCode()
   }.foldLeft(0)((a, b) => 31 * a + b)
+
+  override def hashCode() = hash
 }
