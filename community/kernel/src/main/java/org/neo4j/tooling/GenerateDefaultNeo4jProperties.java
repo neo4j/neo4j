@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.Set;
 import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
+import org.neo4j.graphdb.factory.SettingsResourceBundle;
 
 /**
  * Generates the default neo4j.properties file by using the {@link GraphDatabaseSettingsResourceBundle}
@@ -31,49 +32,63 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
 public class GenerateDefaultNeo4jProperties
 {
     public static void main( String[] args )
+        throws ClassNotFoundException
     {
-        ResourceBundle bundle = ResourceBundle.getBundle( GraphDatabaseSettingsResourceBundle.class.getName() );
-
-        Set<String> keys = bundle.keySet();
-        for( String property : keys )
+        for( String settingsClassName : args )
         {
-            if (property.endsWith( ".description" ))
+            Class settingsClass = GenerateDefaultNeo4jProperties.class.getClassLoader().loadClass( settingsClassName );
+
+            ResourceBundle bundle = new SettingsResourceBundle(settingsClass);
+
+            if (bundle.containsKey( "description" ))
             {
-                // Output description
-                String name = property.substring( 0, property.lastIndexOf( "." ) );
-                System.out.println( "# "+bundle.getString( property ) );
-                
-                // Output optional options
-                String optionsKey = name+".options";
-                if (bundle.containsKey( optionsKey ))
+                System.out.println( "# " );
+                System.out.println( "# "+bundle.getString( "description" ) );
+                System.out.println( "# " );
+                System.out.println( );
+            }
+
+            Set<String> keys = bundle.keySet();
+            for( String property : keys )
+            {
+                if (property.endsWith( ".description" ))
                 {
-                    String[] options = bundle.getString( optionsKey ).split( "," );
-                    if (bundle.containsKey( name+".option."+options[0] ))
+                    // Output description
+                    String name = property.substring( 0, property.lastIndexOf( "." ) );
+                    System.out.println( "# "+bundle.getString( property ) );
+
+                    // Output optional options
+                    String optionsKey = name+".options";
+                    if (bundle.containsKey( optionsKey ))
                     {
-                        System.out.println("# Valid settings:");
-                        for( String option : options )
+                        String[] options = bundle.getString( optionsKey ).split( "," );
+                        if (bundle.containsKey( name+".option."+options[0] ))
                         {
-                            String description = bundle.getString( name + ".option." + option );
-                            char[] spaces = new char[ option.length() + 3 ];
-                            Arrays.fill( spaces,' ' );
-                            description = description.replace( "\n", "\n#"+ new String( spaces ) );
-                            System.out.println("# "+option+": "+ description );
+                            System.out.println("# Valid settings:");
+                            for( String option : options )
+                            {
+                                String description = bundle.getString( name + ".option." + option );
+                                char[] spaces = new char[ option.length() + 3 ];
+                                Arrays.fill( spaces,' ' );
+                                description = description.replace( "\n", "\n#"+ new String( spaces ) );
+                                System.out.println("# "+option+": "+ description );
+                            }
+                        } else
+                        {
+                            System.out.println("# Valid settings:"+bundle.getString( optionsKey ));
                         }
+                    }
+
+                    String defaultKey = name + ".default";
+                    if (bundle.containsKey( defaultKey ))
+                    {
+                        System.out.println( name+"="+bundle.getString( defaultKey ) );
                     } else
                     {
-                        System.out.println("# Valid settings:"+bundle.getString( optionsKey ));
+                        System.out.println( "# "+name+"=" );
                     }
+                    System.out.println( );
                 }
-                
-                String defaultKey = name + ".default";
-                if (bundle.containsKey( defaultKey ))
-                {
-                    System.out.println( name+"="+bundle.getString( defaultKey ) );
-                } else
-                {
-                    System.out.println( "# "+name+"=" );
-                }
-                System.out.println( );
             }
         }
     }
