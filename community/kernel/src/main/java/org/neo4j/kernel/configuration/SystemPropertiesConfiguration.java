@@ -58,7 +58,10 @@ public class SystemPropertiesConfiguration
                     {
                         GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
                         if (setting.name().equals( key ))
+                        {
+                            setting.validate( (String) prop.getValue() );
                             systemProperties.put( key, (String) prop.getValue() );
+                        }
                     }
                     catch( Throwable e )
                     {

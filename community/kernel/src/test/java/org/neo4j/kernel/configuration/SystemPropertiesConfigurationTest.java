@@ -43,6 +43,11 @@ public class SystemPropertiesConfigurationTest
 
             Assert.assertEquals( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE ),
                                  new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
+
+            System.setProperty( GraphDatabaseSettings.read_only.name(), "foo" );
+
+            Assert.assertEquals( MapUtil.stringMap( ),
+                                 new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
         }
         finally
         {
