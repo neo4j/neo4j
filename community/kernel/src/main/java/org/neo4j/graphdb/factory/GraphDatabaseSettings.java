@@ -21,6 +21,7 @@
 package org.neo4j.graphdb.factory;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 /**
  * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.
