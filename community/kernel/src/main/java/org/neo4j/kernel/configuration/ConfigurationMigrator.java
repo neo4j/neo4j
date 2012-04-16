@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.kernel.configuration.Config.*;
+import static java.util.regex.Pattern.*;
 
 /**
  * Migration of configuration settings. This allows old configurations to be read and converted into the new format.
@@ -51,7 +51,7 @@ public class ConfigurationMigrator
             String key = configEntry.getKey();
             String value = configEntry.getValue();
 
-            if ( key.equals( Config.ENABLE_ONLINE_BACKUP ))
+            if ( key.equals( "enable_online_backup" ))
             {
                 // Online backup
                 Integer port = parseBackupPort( value );
@@ -119,9 +119,9 @@ public class ConfigurationMigrator
     {
         if ( backupConfigValue != null )
         {   // Backup is configured
-            if ( Config.configValueContainsMultipleParameters( backupConfigValue ) )
+            if ( configValueContainsMultipleParameters( backupConfigValue ) )
             {   // Multi-value config, which means we have to parse the port
-                Args args = Config.parseMapFromConfigValue( Config.ENABLE_ONLINE_BACKUP, backupConfigValue );
+                Args args = parseMapFromConfigValue( "enable_online_backup", backupConfigValue );
                 return args.getNumber( "port", 6362 ).intValue();
             }
             else if ( Boolean.parseBoolean( backupConfigValue ) )
@@ -135,11 +135,34 @@ public class ConfigurationMigrator
     @SuppressWarnings( "boxing" )
     private static Map<String, String> parseShellConfigParameter( String shellConfig )
     {
-        Args parsed = Config.parseMapFromConfigValue( Config.ENABLE_REMOTE_SHELL, shellConfig );
+        Args parsed = parseMapFromConfigValue( "enable_remote_shell", shellConfig );
         Map<String, String> map = new HashMap<String, String>();
         map.put( "remote_shell_port", parsed.get( "port", "1337" ) );
         map.put( "remote_shell_name", parsed.get( "name", "shell" ) );
         map.put( "remote_shell_read_only", parsed.get( "readonly", "false" ) );
         return map;
+    }
+
+    @Deprecated
+    public static boolean configValueContainsMultipleParameters( String configValue )
+    {
+        return configValue != null && configValue.contains( "=" );
+    }
+
+    @Deprecated
+    public static Args parseMapFromConfigValue( String name, String configValue )
+    {
+        Map<String, String> result = new HashMap<String, String>();
+        for ( String part : configValue.split( quote( "," ) ) )
+        {
+            String[] tokens = part.split( quote( "=" ) );
+            if ( tokens.length != 2 )
+            {
+                throw new RuntimeException( "Invalid configuration value '" + configValue +
+                        "' for " + name + ". The format is [true/false] or [key1=value1,key2=value2...]" );
+            }
+            result.put( tokens[0], tokens[1] );
+        }
+        return new Args( result );
     }
 }

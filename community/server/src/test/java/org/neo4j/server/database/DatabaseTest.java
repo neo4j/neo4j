@@ -25,14 +25,15 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
+import org.neo4j.shell.ShellSettings;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.configuration.Config.*;
 import static org.neo4j.server.ServerTestUtils.*;
 
 public class DatabaseTest
@@ -110,7 +111,8 @@ public class DatabaseTest
         int customPort = findFreeShellPortToUse( 8881 );
         File tempDir = createTempDir();
         Database otherDb = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, tempDir.getAbsolutePath(), stringMap(
-                ENABLE_REMOTE_SHELL, "port=" + customPort ) );
+            ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
+            ShellSettings.remote_shell_port.name(), ""+customPort ) );
         otherDb.startup();
 
         // Try to connect with a shell client to that custom port.

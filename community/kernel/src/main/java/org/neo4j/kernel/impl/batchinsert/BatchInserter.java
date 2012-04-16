@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -39,7 +38,7 @@ import org.neo4j.graphdb.RelationshipType;
  * scratch.
  * 
  * @deprecated this interface is being replaced by
- *             {@link org.neo4j.ubsafe.batchinsert.BatchInserter} as of Neo4j
+ *             {@link org.neo4j.unsafe.batchinsert.BatchInserter} as of Neo4j
  *             1.7
  */
 public interface BatchInserter

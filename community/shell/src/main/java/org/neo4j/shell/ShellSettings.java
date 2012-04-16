@@ -21,6 +21,7 @@
 package org.neo4j.shell;
 
 import org.neo4j.graphdb.factory.Default;
+import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
@@ -28,8 +29,10 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 /**
  * Settings for the shell extension
  */
+@Description( "Settings for the remote shell extension" )
 public class ShellSettings
 {
+    @Description("Enable a remote shell server which shell clients can log in to")
     @Default( FALSE )
     public static final GraphDatabaseSetting.BooleanSetting remote_shell_enabled = new GraphDatabaseSetting.BooleanSetting( "remote_shell_enabled" );
 

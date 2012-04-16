@@ -19,9 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -70,6 +66,9 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.Boolean.*;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.*;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -939,11 +938,6 @@ public class BatchInserterImpl implements BatchInserter
     public String getStoreDir()
     {
         return storeDir;
-    }
-
-    public static Map<String,String> loadProperties( String file )
-    {
-        return EmbeddedGraphDatabase.loadConfigurations( file );
     }
 
     @Override

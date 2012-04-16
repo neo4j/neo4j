@@ -31,7 +31,6 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         // TODO This config should be split into a boolean and a string (keep_logical_logs vs kept_logical_logs)
         public static final GraphDatabaseSetting.StringSetting keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
-        public static final GraphDatabaseSetting.BooleanSetting online_backup_enabled = GraphDatabaseSettings.online_backup_enabled;
     }
 
     private XaLogicalLog logicalLog;

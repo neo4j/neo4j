@@ -21,10 +21,8 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -174,11 +172,6 @@ public class BatchInserterImpl implements BatchInserter
     public String getStore()
     {
         return batchInserter.getStoreDir();
-    }
-
-    public static Map<String,String> loadProperties( String file )
-    {
-        return EmbeddedGraphDatabase.loadConfigurations( file );
     }
 
     @Override

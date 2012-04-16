@@ -21,13 +21,16 @@ package org.neo4j.shell;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 public class StartDbWithShell
 {
     public static void main( String[] args ) throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/test-data/shell-db").setConfig( Config.ENABLE_REMOTE_SHELL, "true" ).newGraphDatabase();
+        GraphDatabaseService db = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( "target/test-data/shell-db" ).
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE).
+            newGraphDatabase();
         System.out.println( "ENTER to quit" );
         System.in.read();
         db.shutdown();

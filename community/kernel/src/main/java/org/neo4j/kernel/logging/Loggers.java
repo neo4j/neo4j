@@ -21,7 +21,7 @@
 package org.neo4j.kernel.logging;
 
 /**
- * List of Logger names
+ * List of standard Logger names
  */
 public interface Loggers
 {

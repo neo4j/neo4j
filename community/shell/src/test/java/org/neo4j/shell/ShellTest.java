@@ -23,6 +23,7 @@ package org.neo4j.shell;
 import java.io.PrintWriter;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
@@ -31,8 +32,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.configuration.Config.*;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class ShellTest
@@ -70,7 +69,11 @@ public class ShellTest
     public void testEnableRemoteShell() throws Exception
     {
         int port = 8085;
-        GraphDatabaseService graphDb = new ImpermanentGraphDatabase( stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().
+            newImpermanentDatabaseBuilder().
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( ShellSettings.remote_shell_port, ""+port ).
+            newGraphDatabase();
         ShellLobby.newClient( port );
         graphDb.shutdown();
     }
@@ -78,7 +81,9 @@ public class ShellTest
     @Test
     public void testEnableServerOnDefaultPort() throws Exception
     {
-        GraphDatabaseService graphDb = new ImpermanentGraphDatabase( stringMap( ENABLE_REMOTE_SHELL, "true" ) );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase();
         try
         {
             ShellLobby.newClient();

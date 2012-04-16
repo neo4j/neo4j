@@ -22,21 +22,17 @@ package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.helpers.Args;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
-
-import static java.util.regex.Pattern.*;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
@@ -303,12 +299,12 @@ public class Config implements DiagnosticsProvider
 
     public long getLong(GraphDatabaseSetting.LongSetting setting)
     {
-        return Long.parseLong(get( setting ));
+        return Long.parseLong( get( setting ) );
     }
 
     public double getDouble(GraphDatabaseSetting.DoubleSetting setting)
     {
-        return Double.parseDouble(get( setting ));
+        return Double.parseDouble( get( setting ) );
     }
 
     public float getFloat(GraphDatabaseSetting.FloatSetting setting)
@@ -348,28 +344,6 @@ public class Config implements DiagnosticsProvider
                                           GraphDatabaseSetting.OptionsSetting graphDatabaseSetting)
     {
         return Enum.valueOf( enumType, get( graphDatabaseSetting ) );
-    }
-    
-    
-    public static boolean configValueContainsMultipleParameters( String configValue )
-    {
-        return configValue != null && configValue.contains( "=" );
-    }
-
-    public static Args parseMapFromConfigValue( String name, String configValue )
-    {
-        Map<String, String> result = new HashMap<String, String>();
-        for ( String part : configValue.split( quote( "," ) ) )
-        {
-            String[] tokens = part.split( quote( "=" ) );
-            if ( tokens.length != 2 )
-            {
-                throw new RuntimeException( "Invalid configuration value '" + configValue +
-                        "' for " + name + ". The format is [true/false] or [key1=value1,key2=value2...]" );
-            }
-            result.put( tokens[0], tokens[1] );
-        }
-        return new Args( result );
     }
 
     @Override

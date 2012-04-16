@@ -20,10 +20,7 @@
 
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,13 +31,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -123,6 +116,8 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.neo4j.helpers.Exceptions.*;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -268,7 +263,7 @@ public abstract class AbstractGraphDatabase
         ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( settingsClasses );
 
         // Setup configuration
-        config = new Config( configurationDefaults.apply( params ) );
+        config = new Config( configurationDefaults.apply( new SystemPropertiesConfiguration(settingsClasses).apply( params ) ) );
 
         // Create logger
         this.logging = createStringLogger();
@@ -860,45 +855,6 @@ public abstract class AbstractGraphDatabase
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.unregisterTransactionEventHandler( handler );
-    }
-
-    /**
-     * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most
-     * likely be removed in future releases.
-     *
-     * @param file the property file to load
-     * @return a map containing the properties from the file
-     * @throws IllegalArgumentException if file does not exist
-     */
-    public static Map<String,String> loadConfigurations( String file )
-    {
-        Properties props = new Properties();
-        try
-        {
-            FileInputStream stream = new FileInputStream( new File( file ) );
-            try
-            {
-                props.load( stream );
-            }
-            finally
-            {
-                stream.close();
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalArgumentException( "Unable to load " + file, e );
-        }
-        Set<Map.Entry<Object,Object>> entries = props.entrySet();
-        Map<String,String> stringProps = new HashMap<String,String>();
-        for ( Map.Entry<Object,Object> entry : entries )
-        {
-            String key = (String) entry.getKey();
-            String value = (String) entry.getValue();
-            stringProps.put( key, value );
-        }
-        return stringProps;
     }
 
     public Node createNode()
