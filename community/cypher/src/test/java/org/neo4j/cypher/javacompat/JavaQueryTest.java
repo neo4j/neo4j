@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import static org.junit.Assert.assertTrue;
 
 public class JavaQueryTest
 {
@@ -35,7 +35,7 @@ public class JavaQueryTest
         JavaQuery jq = new JavaQuery();
         jq.run();
         assertTrue(jq.columnsString.contains( "n" ));
-        assertTrue(jq.resultString.contains( "Node[0]{}" ));
+        assertTrue(jq.resultString.contains( "Node[0]{" ));
         assertTrue(jq.resultString.contains( "1 rows" ));
         assertTrue(jq.resultNode.getId() == 0L);
 
