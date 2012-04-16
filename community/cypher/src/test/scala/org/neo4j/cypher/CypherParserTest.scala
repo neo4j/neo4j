@@ -1353,6 +1353,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def binary_precedence() {
+    testAll("""start n=node(0) where n.a = 'x' and n.b = 'x' or n.c = 'x' return n""",
+      Query.
+        start(NodeById("n", 0)).
+        where(
+        Or(
+          And(
+            Equals(Property("n", "a"), Literal("x")),
+            Equals(Property("n", "b"), Literal("x"))
+          ),
+          Equals(Property("n", "c"), Literal("x"))
+        )
+      ).returns (ReturnItem(Entity("n"), "n"))
+    )
+  }
+
   def test_1_5(query: String, expectedQuery: Query) {
     testQuery(Some("1.5 "), query, expectedQuery)
   }
