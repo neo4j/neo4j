@@ -81,6 +81,13 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   def relate(n1: Node, n2: Node, relType: String, name: String): Relationship = relate(n1, n2, relType, Map("name" -> name))
 
+  def relate(a: Node, b: Node, c: Node*) {
+    (Seq(a, b) ++ c).reduce((n1, n2) => {
+      relate(n1, n2)
+      n2
+    })
+  }
+
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {
       val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
