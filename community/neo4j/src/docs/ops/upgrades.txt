@@ -52,8 +52,8 @@ There are no store format changes between these versions, which means there is n
 In an HA environment these steps need to be performed:
 
 . shut down all the databases in the cluster
-. shut down the zoo keeper cluster and clear the +version-2+ directories on all the zoo keeper instances
-. start the zoo keeper cluster again
+. shut down the ZooKeeper cluster and clear the +version-2+ directories on all the ZooKeeper instances
+. start the ZooKeeper cluster again
 . remove the databases except the master and start the master database with 1.7
 . start up the other databases so that they get a copy from the master
 
@@ -65,8 +65,8 @@ This upgrade changes lucene version from 3.1 to 3.5. The upgrade itself is done 
 In an HA environment these steps need to be performed:
 
 . shut down all the databases in the cluster
-. shut down the zoo keeper cluster and clear the +version-2+ directories on all the zoo keeper instances
-. start the zoo keeper cluster again
+. shut down the ZooKeeper cluster and clear the +version-2+ directories on all the ZooKeeper instances
+. start the ZooKeeper cluster again
 . start up the other databases so that they get a copy from the master
 
 [[deployment-upgrading-one-five]]
