@@ -1,3 +1,14 @@
+1.7 (2012-04-18)
+----------------
+o Added scored index results to REST API
+o Improvements to installation docs for the server
+o Fixed issue with cache hits showing up as "undefined" in webadmin.
+o Added auto index management API to REST, fixing #399
+o Fixed unicode issues in batch operations API in windows and OS X
+o Server now disallows creating indexes with empty names. Closes #311
+o Attempting to delete a non-existing index now returns 404, closes #349
+
+
 1.7.M01 (2012-03-12)
 --------------------
 o Fixed issues #116
