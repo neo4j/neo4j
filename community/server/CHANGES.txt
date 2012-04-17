@@ -8,7 +8,6 @@ o Fixed unicode issues in batch operations API in windows and OS X
 o Server now disallows creating indexes with empty names. Closes #311
 o Attempting to delete a non-existing index now returns 404, closes #349
 
-
 1.7.M01 (2012-03-12)
 --------------------
 o Fixed issues #116
