@@ -23,6 +23,7 @@ From Version,To Version,Upgrade Type
 1.3,1.4,Automatic
 1.4,1.5,Explicit
 1.5,1.6,Explicit
+1.6,1.7,Automatic
 |====
 
 == Automatic Upgrade ==
@@ -43,12 +44,18 @@ To perform a special upgrade (for significant changes to the database store):
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "allow_store_upgrade=true" configuration parameter should be removed, set to "false" or commented out
 
-[[deployment-upgrading-one-five]]
-== Upgrade 1.4 -> 1.5 ==
+[[deployment-upgrading-one-seven]]
+== Upgrade 1.6 -> 1.7 ==
 
-This upgrade includes a significant change to the layout of property store files, which reduces their size on disk,
-and improves IO performance.  To achieve this layout change, the upgrade process takes some time to process the
-whole of the existing database.  You should budget for several minutes per gigabyte of data as part of your upgrade planning.
+There are no store format changes between these versions, which means there is no particular procedure you need to upgrade a single instance.
+
+In an HA environment these steps need to be performed:
+
+. shut down all the databases in the cluster
+. shut down the zoo keeper cluster and clear the +version-2+ directories on all the zoo keeper instances
+. start the zoo keeper cluster again
+. remove the databases except the master and start the master database with 1.7
+. start up the other databases so that they get a copy from the master
 
 [[deployment-upgrading-one-six]]
 == Upgrade 1.5 -> 1.6 ==
@@ -60,8 +67,14 @@ In an HA environment these steps need to be performed:
 . shut down all the databases in the cluster
 . shut down the zoo keeper cluster and clear the +version-2+ directories on all the zoo keeper instances
 . start the zoo keeper cluster again
-. remove the databases except the master and start the master database with 1.5, where migration will happen
 . start up the other databases so that they get a copy from the master
+
+[[deployment-upgrading-one-five]]
+== Upgrade 1.4 -> 1.5 ==
+
+This upgrade includes a significant change to the layout of property store files, which reduces their size on disk,
+and improves IO performance.  To achieve this layout change, the upgrade process takes some time to process the
+whole of the existing database.  You should budget for several minutes per gigabyte of data as part of your upgrade planning.
 
 [WARNING]
 The upgrade process for this upgrade temporarily requires additional disk space, for the period while the
