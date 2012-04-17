@@ -1,3 +1,7 @@
+1.7 (2012-04-18)
+----------------
+o Now contains management information for the new Garbage Resistant Cache
+
 1.7.M01 (2012-03-12)
 --------------------
 o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
