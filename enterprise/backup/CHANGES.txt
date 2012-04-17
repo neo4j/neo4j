@@ -1,3 +1,7 @@
+1.7 (2012-04-18)
+----------------
+o Improvements to shell script messages and documentation
+
 1.7.M01 (2012-03-12)
 --------------------
 o Added the ability to log diffs of all transactions seen by a VerifyingTransactionInterceptor.
