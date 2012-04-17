@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -114,11 +113,5 @@ public class SlaveGraphDatabase
     public void forgetIdAllocationsFromMaster()
     {
         slaveIdGeneratorFactory.forgetIdAllocationsFromMaster();
-    }
-    
-    @Override
-    protected RelationshipTypeCreator createRelationshipTypeCreator()
-    {
-        return new SlaveRelationshipTypeCreator( broker, databaseOperations );
     }
 }
