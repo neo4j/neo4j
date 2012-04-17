@@ -97,6 +97,7 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-server</artifactId>
       <type>test-jar</type>
       <version>${neo4j.version}</version>
+      <scope>test</scope>
     </dependency>
     
     <dependency>
@@ -104,6 +105,7 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-kernel</artifactId>
       <type>test-jar</type>
       <version>${neo4j.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
