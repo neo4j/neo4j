@@ -347,7 +347,7 @@ public abstract class AbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        relationshipTypeCreator = new DefaultRelationshipTypeCreator();
+        relationshipTypeCreator = createRelationshipTypeCreator();
 
         lastCommittedTxIdSetter = createLastCommittedTxIdSetter();
 
@@ -454,6 +454,11 @@ public abstract class AbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    {
+        return new DefaultRelationshipTypeCreator();
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
