@@ -363,7 +363,7 @@ installservice() {
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
           update-rc.d ${SERVICE_NAME} defaults
-          chown -R $proposed_user: "$NEO4J_HOME/data"
+          chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
