@@ -137,7 +137,8 @@ public class TestBatchInsert
         to.setProperty( "2", "two" );
         rel.setProperty( "3", "three" );
 
-        inserter.shutdown();
+        // inserter.shutdown();
+        gds.shutdown();
 
         GraphDatabaseService db = newBatchInserter( false /*delete old dir*/).getGraphDbService();
         from = db.getNodeById( fromId );
@@ -664,3 +665,4 @@ public class TestBatchInsert
         return array;
     }
 }
+

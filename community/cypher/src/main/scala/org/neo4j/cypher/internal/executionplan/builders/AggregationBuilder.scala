@@ -21,43 +21,48 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, EagerAggregationPipe, Pipe}
-import org.neo4j.cypher.internal.commands.{Entity, AggregationExpression}
+import org.neo4j.cypher.internal.commands.{Entity, Expression, AggregationExpression}
 
 class AggregationBuilder extends PlanBuilder {
   def apply(p: Pipe, q: PartiallySolvedQuery) = {
     val keyExpressionsToExtract = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
-    val (extractor,newPsq) = ExtractBuilder.extractIfNecessary(q,p, keyExpressionsToExtract)
-    val keyExpressions = newPsq.returns.map(_.token.expression).filterNot(_.containsAggregate)
-    val aggregationExpressions = newPsq.aggregation.map(_.token)
+    val (extractor, psq) = ExtractBuilder.extractIfNecessary(q, p, keyExpressionsToExtract)
+    val keyExpressions = psq.returns.map(_.token.expression).filterNot(_.containsAggregate)
+    val aggregationExpressions: Seq[AggregationExpression] = getAggregationExpressions(psq)
     val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
 
-    val notKeyAndNotAggregate = newPsq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
+    val notKeyAndNotAggregate = psq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
 
     val resultPipe = if (notKeyAndNotAggregate.isEmpty) {
       aggregator
     } else {
 
       val rewritten = notKeyAndNotAggregate.map(e => {
-        e.rewrite {
-          case x: AggregationExpression => Entity(x.identifier.name)
-          case x => x
-        }
+        e.rewrite(removeAggregates)
       })
 
-        new ExtractPipe(aggregator, rewritten)
-      }
+      new ExtractPipe(aggregator, rewritten)
+    }
 
-      (resultPipe, newPsq.copy(
-        aggregation = newPsq.aggregation.map(_.solve),
-        aggregateQuery = newPsq.aggregateQuery.solve,
-        extracted = true
-      ))
-
-    (resultPipe, q.copy(
-      aggregation = q.aggregation.map(_.solve),
-      aggregateQuery = q.aggregateQuery.solve,
+    val resultQ = psq.copy(
+      aggregation = psq.aggregation.map(_.solve),
+      aggregateQuery = psq.aggregateQuery.solve,
       extracted = true
-    ))
+    ).rewrite(removeAggregates)
+
+    (resultPipe, resultQ)
+  }
+
+  private def removeAggregates(e:Expression) = e match {
+    case e:AggregationExpression => Entity(e.identifier.name)
+    case x => x
+  }
+
+  private def getAggregationExpressions(psq: PartiallySolvedQuery): Seq[AggregationExpression] = {
+    val eventualSortAggregation = psq.sort.filter(_.token.expression.isInstanceOf[AggregationExpression]).map(_.token.expression.asInstanceOf[AggregationExpression])
+    val aggregations = psq.aggregation.map(_.token)
+    val aggregationExpressions = (aggregations ++ eventualSortAggregation).distinct
+    aggregationExpressions
   }
 
   def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) =

@@ -29,9 +29,11 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
   def apply(m: Map[String, Any]) {
     val data = value(m)
 
-    if (data == null && !seenNull) {
-      seenNull = true
-      inner(m)
+    if (data == null) {
+      if (!seenNull) {
+        seenNull = true
+        inner(m)
+      }
     } else if (!seen.contains(data)) {
       seen += data
       inner(m)

@@ -19,7 +19,13 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
+
 import java.io.File;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -27,9 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.*;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestIndexProviderStore
 {
@@ -114,5 +118,25 @@ public class TestIndexProviderStore
             assertTrue( e.getMessage().contains( olderVersion ) );
             throw e;
         }
+    }
+    
+    @Test
+    public void upgradeForMissingVersionRecord() throws Exception
+    {
+        // This was before 1.6.M02
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
+        store.close();
+        FileUtils.truncateFile( file, 4*8 );
+        try
+        {
+            store = new IndexProviderStore( file, fileSystem, 0, false );
+            fail( "Should have thrown upgrade exception" );
+        }
+        catch ( UpgradeNotAllowedByConfigurationException e )
+        {   // Good
+        }
+        
+        store = new IndexProviderStore( file, fileSystem, 0, true );
+        store.close();
     }
 }

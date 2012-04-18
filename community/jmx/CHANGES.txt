@@ -1,3 +1,7 @@
+1.7 (2011-04-18)
+----------------
+o Configuration can now be changed via JMX
+
 1.5.M02 (2011-10-10)
 --------------------
 o Made it possible for a ManagementBeanProvider to return null in order to not load a bean.

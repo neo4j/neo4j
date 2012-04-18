@@ -1,6 +1,7 @@
-<NOT YET RELEASED>
---------------------
+1.7 (2012-04-18)
+----------------
 o Added the possibility to use multiple relationship types on patterns
+o Fixed bug when aggregation is used in order by and not listed in the RETURN clause
 
 1.7.M01 (2012-03-12)
 --------------------

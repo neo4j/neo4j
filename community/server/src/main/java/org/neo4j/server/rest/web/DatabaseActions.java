@@ -45,8 +45,10 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -85,6 +87,9 @@ import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
+import org.neo4j.server.rest.repr.ScoredNodeRepresentation;
+import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 
 public class DatabaseActions
@@ -498,6 +503,42 @@ public class DatabaseActions
             if ( possibleMatch.equals( expectedElement ) ) return true;
         }
         return false;
+    }
+
+    public Representation isAutoIndexerEnabled(String type) {
+        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType(type);
+        return ValueRepresentation.bool(index.isEnabled());
+    }
+
+    public void setAutoIndexerEnabled(String type, boolean enable) {
+        AutoIndexer<? extends PropertyContainer> index = getAutoIndexerForType(type);
+        index.setEnabled(enable);
+    }
+
+    private AutoIndexer<? extends PropertyContainer> getAutoIndexerForType(String type) {
+        final IndexManager indexManager = graphDb.index();
+        if ("node".equals(type)) {
+            return indexManager.getNodeAutoIndexer();
+        } else if ("relationship".equals(type)) {
+            return indexManager.getRelationshipAutoIndexer();
+        } else {
+            throw new IllegalArgumentException("invalid type " + type);
+        }
+    }
+
+    public Representation getAutoIndexedProperties(String type) {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
+        return ListRepresentation.string(indexer.getAutoIndexedProperties());
+    }
+
+    public void startAutoIndexingProperty(String type, String property) {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
+        indexer.startAutoIndexingProperty(property);
+    }
+
+    public void stopAutoIndexingProperty(String type, String property) {
+        AutoIndexer<? extends PropertyContainer> indexer = getAutoIndexerForType(type);
+        indexer.stopAutoIndexingProperty(property);
     }
 
     // Relationships
@@ -934,8 +975,10 @@ public class DatabaseActions
         Index<Node> index = graphDb.index().forNodes( indexName );
         List<Representation> representations = new ArrayList<Representation>();
 
-        QueryContext queryCtx = new QueryContext( query );
-        queryCtx = setOrdering( queryCtx, sort );
+        IndexResultOrder order = getOrdering( sort );
+        QueryContext queryCtx = order.updateQueryContext( new QueryContext(
+                query ) );
+
         Transaction tx = beginTx();
         try
         {
@@ -944,7 +987,9 @@ public class DatabaseActions
                 IndexHits<Node> result = index.query( key, queryCtx );
                 for ( Node node : result)
                 {
-                    representations.add( new NodeRepresentation( node ) );
+                    representations.add( order.getRepresentationFor(
+                            new NodeRepresentation( node ),
+                            result.currentScore() ) );
                 }
             }
             tx.success();
@@ -1181,26 +1226,19 @@ public class DatabaseActions
         List<Representation> representations = new ArrayList<Representation>();
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
 
-        QueryContext queryCtx = new QueryContext( query );
-        if ( "indexOrder".equalsIgnoreCase( sort ) )
-        {
-            queryCtx = queryCtx.sort( Sort.INDEXORDER );
-        }
-        else if ( "relevance".equalsIgnoreCase( sort ) )
-        {
-            queryCtx = queryCtx.sort( Sort.RELEVANCE );
-        }
-        else if ( "score".equalsIgnoreCase( sort ) )
-        {
-            queryCtx = queryCtx.sortByScore();
-        }
+        IndexResultOrder order = getOrdering( sort );
+        QueryContext queryCtx = order.updateQueryContext( new QueryContext(
+                query ) );
 
         Transaction tx = beginTx();
         try
         {
-            for ( Relationship rel : index.query( key, queryCtx ) )
+            IndexHits<Relationship> hits = index.query( key, queryCtx );
+            for ( Relationship rel : hits )
             {
-                representations.add( new RelationshipRepresentation( rel ) );
+                representations.add( order.getRepresentationFor(
+                        new RelationshipRepresentation( rel ),
+                        hits.currentScore() ) );
             }
             tx.success();
             return new ListRepresentation( RepresentationType.RELATIONSHIP,
@@ -1476,21 +1514,91 @@ public class DatabaseActions
         }
     }
 
-    private final QueryContext setOrdering( QueryContext queryCtx, String order )
+    /*
+     * This enum binds the parameter-string-to-result-order mapping and
+     * the kind of results returned. This is not correct in general but
+     * at the time of writing it is the way things are done and is
+     * quite handy. Feel free to rip out if requirements change.
+     */
+    private enum IndexResultOrder
+    {
+        INDEX_ORDER
+        {
+            @Override
+            QueryContext updateQueryContext( QueryContext original )
+            {
+                return original.sort( Sort.INDEXORDER );
+            }
+        }
+        ,RELEVANCE_ORDER
+        {
+            @Override
+            QueryContext updateQueryContext( QueryContext original )
+            {
+                return original.sort( Sort.RELEVANCE );
+            }
+        },
+        SCORE_ORDER
+        {
+            @Override
+            QueryContext updateQueryContext( QueryContext original )
+            {
+                return original.sortByScore();
+            }
+        },
+        NONE
+        {
+            @Override
+            Representation getRepresentationFor( Representation delegate,
+                    float score )
+            {
+                return delegate;
+            }
+
+            @Override
+            QueryContext updateQueryContext( QueryContext original )
+            {
+                return original;
+            }
+        };
+
+        Representation getRepresentationFor( Representation delegate,
+                float score )
+        {
+            if ( delegate instanceof NodeRepresentation )
+            {
+                return new ScoredNodeRepresentation(
+                        (NodeRepresentation) delegate, score );
+            }
+            if ( delegate instanceof RelationshipRepresentation )
+            {
+                return new ScoredRelationshipRepresentation(
+                        (RelationshipRepresentation) delegate, score );
+            }
+            return delegate;
+        }
+
+        abstract QueryContext updateQueryContext( QueryContext original );
+    }
+
+    private final IndexResultOrder getOrdering( String order )
     {
         if ( INDEX_ORDER.equalsIgnoreCase( order ) )
         {
-            return queryCtx.sort( Sort.INDEXORDER );
+            return IndexResultOrder.INDEX_ORDER;
         }
         else if ( RELEVANCE_ORDER.equalsIgnoreCase( order ) )
         {
-            return queryCtx.sort( Sort.RELEVANCE );
+            return IndexResultOrder.RELEVANCE_ORDER;
         }
         else if ( SCORE_ORDER.equalsIgnoreCase( order ) )
         {
-            return queryCtx.sortByScore();
+            return IndexResultOrder.SCORE_ORDER;
         }
-        return queryCtx;
+        else
+        {
+            return IndexResultOrder.NONE;
+        }
     }
 
     private interface PathRepresentationCreator<T extends Path>

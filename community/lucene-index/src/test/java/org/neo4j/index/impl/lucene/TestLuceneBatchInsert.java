@@ -76,7 +76,7 @@ public class TestLuceneBatchInsert
         // causing _0.cfs file to stay open 
         String path = new File( PATH, "1" ).getAbsolutePath();
         BatchInserter inserter = new BatchInserterImpl( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         String indexName = "users";
         BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
@@ -130,7 +130,7 @@ public class TestLuceneBatchInsert
     {
         String path = new File( PATH, "2" ).getAbsolutePath();
         BatchInserter inserter = new BatchInserterImpl( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         String name = "users";
         BatchInserterIndex index = provider.nodeIndex( name,
@@ -169,7 +169,7 @@ public class TestLuceneBatchInsert
     public void testCanIndexRelationships()
     {
         BatchInserter inserter = new BatchInserterImpl( new File( PATH, "5" ).getAbsolutePath() );
-        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
                 "edgeIndex", stringMap( IndexManager.PROVIDER, "lucene", "type", "exact" ) );
@@ -195,7 +195,7 @@ public class TestLuceneBatchInsert
     public void triggerNPEAfterFlush()
     {
         BatchInserter inserter = new BatchInserterImpl( new File( PATH, "6" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "Node-exact", EXACT_CONFIG );
         
         Map<String, Object> map = map( "name", "Something" );
@@ -213,7 +213,7 @@ public class TestLuceneBatchInsert
     {
         String path = new File( PATH, "7" ).getAbsolutePath();
         BatchInserter inserter = new BatchInserterImpl( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
         
@@ -240,7 +240,7 @@ public class TestLuceneBatchInsert
     {
         String path = new File( PATH, "8" ).getAbsolutePath();
         BatchInserter inserter = new BatchInserterImpl( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         BatchInserterIndex batchIndex = provider.nodeIndex( "mine", EXACT_CONFIG );
 
@@ -296,7 +296,7 @@ public class TestLuceneBatchInsert
     public void indexNumbers() throws Exception
     {
         BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
         
@@ -317,7 +317,7 @@ public class TestLuceneBatchInsert
     public void addOrUpdateFlushBehaviour() throws Exception
     {
         BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "update", EXACT_CONFIG );
         
@@ -358,7 +358,7 @@ public class TestLuceneBatchInsert
     public void useStandardAnalyzer() throws Exception
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl( inserter );
         BatchInserterIndex index = provider.nodeIndex( "myindex", stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
         index.add( 0, map( "name", "Mattias" ) );
         provider.shutdown();

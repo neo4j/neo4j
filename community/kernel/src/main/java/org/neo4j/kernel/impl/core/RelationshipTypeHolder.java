@@ -175,7 +175,7 @@ public class RelationshipTypeHolder
         return relTypes.get( name );
     }
 
-    RelationshipType getRelationshipType( int id )
+    public RelationshipType getRelationshipType( int id )
     {
         return relTranslation.get( id );
     }

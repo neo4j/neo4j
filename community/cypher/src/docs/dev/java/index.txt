@@ -20,7 +20,7 @@ Which will output:
 
 include::java-cypher-queries-result.txt[]
 
-NOTE: The classes used here are from the +org.neo4j.cypher.javacompat+ package, see link to the Java API below.
+CAUTION: The classes used here are from the +org.neo4j.cypher.javacompat+ package, _not_ +org.neo4j.cypher+, see link to the Java API below.
 
 You can get a list of the columns in the result:
 

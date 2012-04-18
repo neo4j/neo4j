@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,8 +37,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -68,19 +64,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class NodeManager
     implements Lifecycle
 {
-    public static class Configuration
-    {
-        public static final GraphDatabaseSetting.BooleanSetting use_adaptive_cache = GraphDatabaseSettings.use_adaptive_cache;
-        public static final GraphDatabaseSetting.FloatSetting adaptive_cache_heap_ratio = GraphDatabaseSettings.adaptive_cache_heap_ratio;
-        public static final GraphDatabaseSetting.IntegerSetting min_node_cache_size = GraphDatabaseSettings.min_node_cache_size;
-
-        public static final GraphDatabaseSetting.IntegerSetting min_relationship_cache_size = GraphDatabaseSettings.min_relationship_cache_size;
-
-        public static final GraphDatabaseSetting.IntegerSetting max_node_cache_size = GraphDatabaseSettings.max_node_cache_size;
-
-        public static final GraphDatabaseSetting.IntegerSetting max_relationship_cache_size = GraphDatabaseSettings.max_relationship_cache_size;
-    }
-    
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private long referenceNodeId = 0;

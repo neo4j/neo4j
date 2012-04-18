@@ -40,7 +40,7 @@ class StartTest extends DocumentingTestBase {
       title = "Node by id",
       text = "Binding a node as a start point is done with the node(*) function .",
       queryText = "start n=node(%A%) return n",
-      returns = "The reference node is returned",
+      returns = "The corresponding node is returned",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
   }
 

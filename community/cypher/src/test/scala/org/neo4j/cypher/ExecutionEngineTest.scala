@@ -1815,4 +1815,29 @@ RETURN x0.name?
       db.shutdown()
     }
   }
+
+  @Test def different_results_on_ordered_aggregation_with_limit() {
+    val root = createNode()
+    val n1 = createNode("x" -> 1)
+    val n2 = createNode("x" -> 2)
+    val m1 = createNode()
+    val m2 = createNode()
+
+    relate(root, n1, m1)
+    relate(root, n2, m2)
+
+    val q = "start a=node(1) match a-->n-->m return n.x, count(*) order by n.x"
+
+    val resultWithoutLimit = parseAndExecute(q)
+    val resultWithLimit = parseAndExecute(q + " limit 1000")
+
+    assert(resultWithLimit.toList === resultWithoutLimit.toList)
+  }
+
+  @Test def should_be_able_to_figure_out_that_aggregations_in_order_by() {
+    val q = "start user=node({0}) return user, avg(user.age) order by avg(user.age) desc, count(*) desc"
+
+    parseAndExecute(q)
+  }
+
 }

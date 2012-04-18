@@ -54,11 +54,13 @@ import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 @Path( "/" )
 public class RestfulGraphDatabase
 {
+
     @SuppressWarnings( "serial" )
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -105,11 +107,14 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
 
-    public static final String PATH_AUTO_NODE_INDEX = "index/auto/node";
-    protected static final String PATH_AUTO_NODE_INDEX_GET = PATH_AUTO_NODE_INDEX + "/{key}/{value}";
+    public static final String PATH_AUTO_INDEX = "index/auto/{type}";
+    protected static final String PATH_AUTO_INDEX_STATUS = PATH_AUTO_INDEX + "/status";
+    protected static final String PATH_AUTO_INDEXED_PROPERTIES = PATH_AUTO_INDEX + "/properties";
+    protected static final String PATH_AUTO_INDEX_PROPERTY_DELETE = PATH_AUTO_INDEXED_PROPERTIES + "/{property}";
+    protected static final String PATH_AUTO_INDEX_GET = PATH_AUTO_INDEX + "/{key}/{value}";
 
-    public static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
-    protected static final String PATH_AUTO_RELATIONSHIP_INDEX_GET = PATH_AUTO_RELATIONSHIP_INDEX + "/{key}/{value}";
+    public static final String NODE_AUTO_INDEX_TYPE = "node";
+    public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
 
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
@@ -684,12 +689,21 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path( PATH_AUTO_NODE_INDEX )
-    public Response getAutoIndexedNodesByQuery( @QueryParam( "query" ) String query )
+    @Path( PATH_AUTO_INDEX )
+    public Response getAutoIndexedNodesByQuery( @PathParam("type") String type, @QueryParam( "query" ) String query )
     {
         try
         {
-            return output.ok( actions.getAutoIndexedNodesByQuery( query ) );
+            if(type.equals(NODE_AUTO_INDEX_TYPE)) 
+            {
+                return output.ok( actions.getAutoIndexedNodesByQuery( query ) );
+            } else if(type.equals(RELATIONSHIP_AUTO_INDEX_TYPE)) 
+            {
+                return output.ok( actions.getAutoIndexedRelationshipsByQuery( query ) );
+            } else 
+            {
+                return output.badRequest(new RuntimeException("Unrecognized auto-index type, expected '"+NODE_AUTO_INDEX_TYPE+"' or '"+RELATIONSHIP_AUTO_INDEX_TYPE+"'"));
+            }
         }
         catch ( NotFoundException nfe )
         {
@@ -906,12 +920,21 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path( PATH_AUTO_NODE_INDEX_GET )
-    public Response getIndexedNodes( @PathParam( "key" ) String key, @PathParam( "value" ) String value )
+    @Path( PATH_AUTO_INDEX_GET )
+    public Response getAutoIndexedNodes( @PathParam("type") String type, @PathParam( "key" ) String key, @PathParam( "value" ) String value )
     {
         try
         {
-            return output.ok( actions.getAutoIndexedNodes( key, value ) );
+            if(type.equals(NODE_AUTO_INDEX_TYPE)) 
+            {
+                return output.ok( actions.getAutoIndexedNodes( key, value ) );
+            } else if(type.equals(RELATIONSHIP_AUTO_INDEX_TYPE)) 
+            {
+                return output.ok( actions.getAutoIndexedRelationships( key, value ) );
+            } else 
+            {
+                return output.badRequest(new RuntimeException("Unrecognized auto-index type, expected '"+NODE_AUTO_INDEX_TYPE+"' or '"+RELATIONSHIP_AUTO_INDEX_TYPE+"'"));
+            }
         }
         catch ( NotFoundException nfe )
         {
@@ -966,39 +989,37 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path( PATH_AUTO_RELATIONSHIP_INDEX_GET )
-    public Response getIndexedRelationships( @PathParam( "key" ) String key, @PathParam( "value" ) String value )
-    {
-        try
-        {
-            return output.ok( actions.getAutoIndexedRelationships( key, value ) );
-        }
-        catch ( NotFoundException nfe )
-        {
-            return output.notFound( nfe );
-        }
-        catch ( Exception e )
-        {
-            return output.serverError( e );
-        }
+    @Path( PATH_AUTO_INDEX_STATUS )
+    public Response isAutoIndexerEnabled(@PathParam("type") String type) {
+        return output.ok(actions.isAutoIndexerEnabled(type));
+    }
+
+    @PUT
+    @Path( PATH_AUTO_INDEX_STATUS )
+    public Response setAutoIndexerEnabled(@PathParam("type") String type, String enable) {
+        actions.setAutoIndexerEnabled(type, Boolean.parseBoolean(enable));
+        return output.ok(Representation.emptyRepresentation());
     }
 
     @GET
-    @Path( PATH_AUTO_RELATIONSHIP_INDEX )
-    public Response getAutoIndexedRelationshipsByQuery( @QueryParam( "query" ) String query )
-    {
-        try
-        {
-            return output.ok( actions.getAutoIndexedRelationshipsByQuery( query ) );
-        }
-        catch ( NotFoundException nfe )
-        {
-            return output.notFound( nfe );
-        }
-        catch ( Exception e )
-        {
-            return output.serverError( e );
-        }
+    @Path( PATH_AUTO_INDEXED_PROPERTIES )
+    public Response getAutoIndexedProperties(@PathParam("type") String type) {
+        return output.ok(actions.getAutoIndexedProperties(type));
+    }
+
+    @POST
+    @Path( PATH_AUTO_INDEXED_PROPERTIES )
+    public Response startAutoIndexingProperty(@PathParam("type") String type, String property) {
+        actions.startAutoIndexingProperty(type, property);
+        return output.ok(Representation.emptyRepresentation());
+
+    }
+
+    @DELETE
+    @Path(PATH_AUTO_INDEX_PROPERTY_DELETE)
+    public Response stopAutoIndexingProperty(@PathParam("type") String type, @PathParam("property") String property) {
+        actions.stopAutoIndexingProperty(type, property);
+        return output.ok(Representation.emptyRepresentation());
     }
 
     @GET
@@ -1237,13 +1258,13 @@ public class RestfulGraphDatabase
         {
             ListRepresentation result = actions.pagedTraverse( traverserId, returnType );
 
-            return Response.ok( uriInfo.getRequestUri() )
+            return Response.ok(uriInfo.getRequestUri())
                     .entity( output.format( result ) )
                     .build();
         }
         catch ( NotFoundException e )
         {
-            return output.notFound( e );
+            return output.notFound(e);
         }
     }
 
@@ -1311,7 +1332,7 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
-            return output.ok( actions.findSinglePath( startNode, endNode, description ) );
+            return output.ok( actions.findSinglePath(startNode, endNode, description) );
         }
         catch ( BadInputException e )
         {
@@ -1323,7 +1344,7 @@ public class RestfulGraphDatabase
         }
         catch ( NotFoundException e )
         {
-            return output.notFound( e );
+            return output.notFound(e);
         }
 
     }
@@ -1349,4 +1370,6 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
     }
+
+
 }

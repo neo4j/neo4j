@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * Used to add description of settings in {@link GraphDatabaseSettings}. These can then be accessed through the {@link GraphDatabaseSettingsResourceBundle}.
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
+@Target( {ElementType.TYPE, ElementType.FIELD} )
 public @interface Description
 {
     String value();

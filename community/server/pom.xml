@@ -16,7 +16,7 @@
   GNU Affero General Public License for more details.
 
   You should have received a copy of the GNU Affero General Public License
-  along with this program. If not, see <http://www.gnu.org/licenses/>.
+  along with this program. If not, see <http://www.gnu.org/licenses />.
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -131,23 +131,25 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.6.1</version>
         </dependency>
-<!--
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
             <version>1.6.1</version>
         </dependency>
--->
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <version>1.6.1</version>
         </dependency>
+<!--
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
             <version>1.6.1</version>
         </dependency>
+-->
 
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
@@ -494,7 +496,7 @@
                         <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
                         <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}</webdriver.override.neo-server.baseuri>
                     </systemPropertyVariables>
-                    <argLine>-Xmx1024m</argLine>
+                    <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                     <forkMode>once</forkMode>
                 </configuration>
             </plugin>
@@ -684,7 +686,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <argLine>-Xmx1024m</argLine>
+                            <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                             <forkMode>always</forkMode>
                         </configuration>
                     </plugin>

@@ -27,7 +27,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
- * Collect settings from System.getProperties()
+ * Collect settings from System.getProperties(). For the given settings classes, using the GraphDatabaseSetting pattern,
+ * check if the individual settings are available as system properties, and if so, add them to the given map.
  */
 public class SystemPropertiesConfiguration
 {
@@ -57,7 +58,10 @@ public class SystemPropertiesConfiguration
                     {
                         GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
                         if (setting.name().equals( key ))
+                        {
+                            setting.validate( (String) prop.getValue() );
                             systemProperties.put( key, (String) prop.getValue() );
+                        }
                     }
                     catch( Throwable e )
                     {

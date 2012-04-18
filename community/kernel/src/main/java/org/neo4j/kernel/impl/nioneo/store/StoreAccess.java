@@ -197,18 +197,17 @@ public class StoreAccess
     private static Map<String, String> defaultParams()
     {
         Map<String, String> params = new HashMap<String, String>();
-        params.put( Config.NODE_STORE_MMAP_SIZE, "20M" );
-        params.put( Config.PROPERTY_STORE_MMAP_SIZE, "90M" );
-        params.put( Config.PROPERTY_INDEX_STORE_MMAP_SIZE, "1M" );
-        params.put( Config.PROPERTY_INDEX_KEY_STORE_MMAP_SIZE, "1M" );
-        params.put( Config.STRING_PROPERTY_STORE_MMAP_SIZE, "130M" );
-        params.put( Config.ARRAY_PROPERTY_STORE_MMAP_SIZE, "130M" );
-        params.put( Config.RELATIONSHIP_STORE_MMAP_SIZE, "100M" );
+        params.put( GraphDatabaseSettings.nodestore_mapped_memory.name(), "20M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory.name(), "90M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
+        params.put( GraphDatabaseSettings.strings_mapped_memory.name(), "130M" );
+        params.put( GraphDatabaseSettings.arrays_mapped_memory.name(), "130M" );
+        params.put( GraphDatabaseSettings.relationshipstore_mapped_memory.name(), "100M" );
         // if on windows, default no memory mapping
-        String nameOs = System.getProperty( "os.name" );
-        if ( nameOs.startsWith( "Windows" ) )
+        if ( GraphDatabaseSetting.osIsWindows() )
         {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+            params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), "false" );
         }
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
         return params;

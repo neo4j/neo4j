@@ -302,6 +302,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         // Finally, node4 is removed because the property was removed.
         assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
         // END SNIPPET: Mutations
+        graphDb.shutdown();
     }
 
     @Test

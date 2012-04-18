@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -74,8 +75,9 @@ public class ServerHelper
 
             private void deleteAllIndexes( final NeoServer server )
             {
-                for ( String indexName : server.getDatabase().graph.index()
-                        .nodeIndexNames() )
+                IndexManager indexManager = server.getDatabase().graph.index();
+                
+                for ( String indexName : indexManager.nodeIndexNames() )
                 {
                 	try{
 	                    server.getDatabase().graph.index()
@@ -86,8 +88,7 @@ public class ServerHelper
                 	}
                 }
 
-                for ( String indexName : server.getDatabase().graph.index()
-                        .relationshipIndexNames() )
+                for ( String indexName : indexManager.relationshipIndexNames() )
                 {
                 	try {
 	                    server.getDatabase().graph.index()
@@ -97,6 +98,18 @@ public class ServerHelper
                 		// Encountered a read-only index.
                 	}
                 }
+                
+                for(String k : indexManager.getNodeAutoIndexer().getAutoIndexedProperties()) 
+                {
+                    indexManager.getNodeAutoIndexer().stopAutoIndexingProperty(k);
+                }
+                indexManager.getNodeAutoIndexer().setEnabled(false);
+                
+                for(String k : indexManager.getRelationshipAutoIndexer().getAutoIndexedProperties()) 
+                {
+                    indexManager.getRelationshipAutoIndexer().stopAutoIndexingProperty(k);
+                }
+                indexManager.getRelationshipAutoIndexer().setEnabled(false);
             }
         } ).execute();
     }

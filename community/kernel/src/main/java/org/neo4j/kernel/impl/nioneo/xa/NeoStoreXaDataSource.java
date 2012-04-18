@@ -248,7 +248,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.getPropertyStore() );
             this.idGenerators.put( PropertyIndex.class,
                 neoStore.getPropertyStore().getIndexStore() );
-            setKeepLogicalLogsIfSpecified( conf.getBoolean( Configuration.online_backup_enabled ) ? "true" : conf.get( Configuration.keep_logical_logs ), Config.DEFAULT_DATA_SOURCE_NAME );
+            setKeepLogicalLogsIfSpecified( conf.getBoolean( new GraphDatabaseSetting.BooleanSetting( "online_backup_enabled")) ? "true" : conf.get( Configuration.keep_logical_logs ), Config.DEFAULT_DATA_SOURCE_NAME );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
         catch ( Throwable e )

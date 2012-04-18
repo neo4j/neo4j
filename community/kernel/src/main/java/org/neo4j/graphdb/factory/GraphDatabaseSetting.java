@@ -38,10 +38,10 @@ public abstract class GraphDatabaseSetting
     public static final String ANY = ".+";
     
     // Regular expression that matches a size e.g. 512M or 2G
-    public static final String SIZE = "\\d+[MG]";
+    public static final String SIZE = "\\d+[kmgKMG]";
 
     // Regular expression that matches a duration e.g. 10ms or 5s
-    public static final String DURATION = "\\d+(ms|s)";
+    public static final String DURATION = "\\d+(ms|s|m)";
 
     public interface DefaultValue
     {

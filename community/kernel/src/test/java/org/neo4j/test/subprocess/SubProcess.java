@@ -142,8 +142,8 @@ public abstract class SubProcess<T, P> implements Serializable
                         SubProcess.class.getName(), serialize( callback ) );
             }
             pid = getPid( process );
-            pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
-            pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), System.out );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
             if ( debugger != null )
             {
                 debugDispatch = debugger.connect( toString() + ":" + pid );
@@ -154,6 +154,16 @@ public abstract class SubProcess<T, P> implements Serializable
         Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">", debugDispatch );
         if ( debugDispatch != null ) debugDispatch.handler = handler;
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
+    }
+    
+    protected PrintStream errorStreamTarget()
+    {
+        return System.err;
+    }
+    
+    protected PrintStream inputStreamTarget()
+    {
+        return System.out;
     }
 
     private String classPath( String parentClasspath )
