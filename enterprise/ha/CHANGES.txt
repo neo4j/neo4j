@@ -1,3 +1,19 @@
+1.7 (2012-04-19)
+----------------
+o Changed so branched data directories end up in a sub-directory.
+o Changed so informative log messages are not logged as errors.
+o Fixed issue with relationship types not being created via master if performed on a slave.
+
+1.7.M03 (2012-04-11)
+--------------------
+o Fixed problem with "Transaction already active" getting logged because of lock timeout.
+o Added GCR cache.
+o GCR cache arrays are now reused between restarts HA restarts.
+
+1.7.M02 (2012-03-26)
+--------------------
+o Fixed issue with message log not getting closed properly.
+
 1.7.M01 (2012-03-12)
 --------------------
 o Optimization where if a transaction is attempted to be killed, but isn't successful due to it being active (for example awaiting a lock)
