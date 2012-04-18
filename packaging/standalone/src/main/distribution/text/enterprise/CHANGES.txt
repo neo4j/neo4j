@@ -1,3 +1,10 @@
+1.7 (2012-04-18)
+----------------
+o HA: Changed so branched data directories end up in a sub-directory.
+o HA: Changed so informative log messages are not logged as errors.
+o HA: Fixed issue with relationship types not being created via master if performed on a slave.
+o Improvements to shell script messages and documentation
+
 1.6 (2012-01-19)
 ----------------
 o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
