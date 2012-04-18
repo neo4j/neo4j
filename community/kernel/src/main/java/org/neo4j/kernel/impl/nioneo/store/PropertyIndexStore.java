@@ -234,7 +234,7 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
         {
             return new PropertyIndexRecord( (int)id );
         }
-        
+
         try
         {
             return getRecord( (int) id, window, true );
@@ -244,7 +244,7 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public PropertyIndexRecord forceGetRaw( long id )
     {
@@ -389,8 +389,8 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
                 records = propRecord.getKeyRecords().iterator();
             }
         }
-        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                propRecord.getKeyBlockId(), relevantRecords, keyPropertyStore ) );
+        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray( propRecord.getKeyBlockId(),
+                relevantRecords, keyPropertyStore, PropertyType.STRING ).other() );
     }
 
     @Override

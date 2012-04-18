@@ -43,7 +43,7 @@ public class Bits
     private final int numberOfBytes;
     private int writePosition;
     private int readPosition;
-    
+
     /*
      * Calculate all the right overflow masks
      */
@@ -59,28 +59,31 @@ public class Bits
             mask |= 0x1L;
         }
     }
-    
+
     public static Bits bits( int numberOfBytes )
     {
         int requiredLongs = (numberOfBytes-1)/8+1;
         return new Bits( new long[requiredLongs], numberOfBytes );
     }
-    
+
     public static Bits bitsFromLongs( long[] longs )
     {
         return new Bits( longs, longs.length*8 );
     }
-    
+
     public static Bits bitsFromBytes( byte[] bytes )
     {
-        Bits bits = bits( bytes.length );
-        for ( byte value : bytes )
-        {
-            bits.put( value );
-        }
+        return bitsFromBytes( bytes, 0 );
+    }
+
+    public static Bits bitsFromBytes( byte[] bytes, int startIndex )
+    {
+        Bits bits = bits( bytes.length - startIndex );
+        for ( int i = startIndex; i < bytes.length; i++ )
+            bits.put( bytes[i] );
         return bits;
     }
-    
+
     private Bits( long[] longs, int numberOfBytes )
     {
         this.longs = longs;
@@ -103,7 +106,7 @@ public class Bits
         }
         return mask;
     }
-    
+
     /**
      * A mask which has the {@code steps} least significant bits set to 1, all others 0.
      * It's used to carry bits over between carriers (longs) when shifting right.
@@ -114,7 +117,7 @@ public class Bits
     {
         return RIGHT_OVERFLOW_MASKS[steps-1];
     }
-    
+
     /**
      * Returns the underlying long values that has got all the bits applied.
      * The first item in the array has got the most significant bits.
@@ -124,7 +127,7 @@ public class Bits
     {
         return longs;
     }
-    
+
     public byte[] asBytes()
     {
         int readPositionBefore = readPosition;
@@ -143,7 +146,7 @@ public class Bits
             readPosition = readPositionBefore;
         }
     }
-    
+
     /**
      * Writes all bits to {@code buffer}.
      * @param buffer the {@link Buffer} to write to.
@@ -168,7 +171,7 @@ public class Bits
             readPosition = readPositionBefore;
         }
     }
-    
+
     /**
      * Reads from {@code buffer} and fills up all the bits.
      * @param buffer the {@link Buffer} to read from.
@@ -205,7 +208,7 @@ public class Bits
         }
         return builder.toString();
     }
-    
+
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
         builder.append( "[" );
@@ -218,56 +221,56 @@ public class Bits
         builder.append( "]" );
         return builder;
     }
-    
+
     public static String numbersToBitString( byte[] values )
     {
         StringBuilder builder = new StringBuilder();
         for ( byte value : values ) numberToString( builder, value, 1 );
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( short[] values )
     {
         StringBuilder builder = new StringBuilder();
         for ( short value : values ) numberToString( builder, value, 2 );
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( int[] values )
     {
         StringBuilder builder = new StringBuilder();
         for ( int value : values ) numberToString( builder, value, 4 );
         return builder.toString();
     }
-    
+
     public static String numbersToBitString( long[] values )
     {
         StringBuilder builder = new StringBuilder();
         for ( long value : values ) numberToString( builder, value, 8 );
         return builder.toString();
     }
-    
+
     @Override
     public Bits clone()
     {
         return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
     }
-    
+
     public Bits put( byte value )
     {
         return put( value, Byte.SIZE );
     }
-    
+
     public Bits put( byte value, int steps )
     {
         return put( (long)value, steps );
     }
-    
+
     public Bits put( short value )
     {
         return put( value, Short.SIZE );
     }
-    
+
     public Bits put( short value, int steps )
     {
         return put( (long)value, steps );
@@ -277,7 +280,7 @@ public class Bits
     {
         return put( value, Integer.SIZE );
     }
-    
+
     public Bits put( int value, int steps )
     {
         return put( (long)value, steps );
@@ -287,43 +290,43 @@ public class Bits
     {
         return put( value, Long.SIZE );
     }
-    
+
     public Bits put( long value, int steps )
     {
         int lowLongIndex = writePosition >> 6; // /64
         int lowBitInLong = writePosition%64;
         int lowBitsAvailable = 64-lowBitInLong;
         long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
-        longs[lowLongIndex] |= ((((long)value)&lowValueMask) << lowBitInLong);
+        longs[lowLongIndex] |= (((value)&lowValueMask) << lowBitInLong);
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highValueMask = rightOverflowMask( steps-lowBitsAvailable );
-            longs[lowLongIndex+1] |= (((long)value) >>> lowBitsAvailable)&highValueMask;
+            longs[lowLongIndex+1] |= ((value) >>> lowBitsAvailable)&highValueMask;
         }
         writePosition += steps;
         return this;
     }
-    
+
     public boolean available()
     {
         return readPosition < writePosition;
     }
-    
+
     public byte getByte()
     {
         return getByte( Byte.SIZE );
     }
-    
+
     public byte getByte( int steps )
     {
         return (byte) getLong( steps );
     }
-    
+
     public short getShort()
     {
         return getShort( Short.SIZE );
     }
-    
+
     public short getShort( int steps )
     {
         return (short) getLong( steps );
@@ -333,7 +336,7 @@ public class Bits
     {
         return getInt( Integer.SIZE );
     }
-    
+
     public int getInt( int steps )
     {
         return (int) getLong( steps );
@@ -343,12 +346,12 @@ public class Bits
     {
         return getInt( Integer.SIZE ) & 0xFFFFFFFFL;
     }
-    
+
     public long getLong()
     {
         return getLong( Long.SIZE );
     }
-    
+
     public long getLong( int steps )
     {
         int lowLongIndex = readPosition >> 6; // 64
