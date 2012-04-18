@@ -14,7 +14,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.7</version>
+  <version>1.8-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
