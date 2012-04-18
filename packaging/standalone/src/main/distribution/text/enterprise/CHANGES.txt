@@ -1,34 +1,99 @@
 1.7 (2012-04-18)
 ----------------
-o HA: Changed so branched data directories end up in a sub-directory.
-o HA: Changed so informative log messages are not logged as errors.
-o HA: Fixed issue with relationship types not being created via master if performed on a slave.
-o Improvements to shell script messages and documentation
+o Moved BatchInserter to a different package.
+o Fixed 'Record Not In Use' issue with creating and setting Node properties with the BatchInserter.
+Cypher:
+  o Added the possibility to use multiple relationship types on patterns
+  o Fixed bug when aggregation is used in ORDER BY and not listed in the RETURN clause
+Server:
+  o Added scored index results to REST API
+  o Improvements to installation docs for the server
+  o Added auto index management API to REST, fixing #399
+  o Fixed unicode issues in batch operations API in windows and OS X
+  o Server now disallows creating indexes with empty names. Closes #311
+  o Attempting to delete a non-existing index now returns 404, closes #349
+High Availability and Backup:
+  o Changed so branched data directories end up in a sub-directory.
+  o Changed so informative log messages are not logged as errors.
+  o Fixed issue with relationship types not being created via master if performed on a slave.
+  o Improvements to shell script messages and documentation
+Management:
+o Now contains management information for the new Garbage Collection Resistant Cache
+UDC:
+  o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279
+  o UDC now sends the machines MAC adress to Neo Technology, to separate between instances behind firewalls
+  o UDC now sends database registration ID to Neo Technology, if one is available
+  o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language, web-container, app-container, spring, ejb
 
 1.7.M03 (2012-04-11)
 --------------------
-o Fixed problem with "Transaction already active" getting logged because of lock timeout.
-o Added GCR cache.
-o GCR cache arrays are now reused between restarts HA restarts.
+o Removed old OSGi support in favor of the new and better one.
+o Added possibility to use logback for logging.
+o Renamed array cache to GC resistant cache (GCR) and moved it to enterprise.
+o Fixed problem with GCR cache that could cause it to calculate incorrect size.
+o Fixed problem with closing of messages.log on windows
+High Availablity and Backup:
+  o Fixed problem with "Transaction already active" getting logged because of lock timeout.
+  o Added GCR cache.
+  o GCR cache arrays are now reused between restarts HA restarts.
 
 1.7.M02 (2012-03-26)
 --------------------
-o Fixed issue with message log not getting closed properly.
+o Added lock free atomic array cache that avoids triggering full GCs.
+o Added GC monitor that will keep track on how much the JVM blocks application threads.
+o Fix for an issue where upgrading indices with an unclean shutdown.
+High Availablity and Backup:
+  o Fixed issue with message log not getting closed properly.
 
 1.7.M01 (2012-03-12)
 --------------------
-o Added config option for ha.max_concurrent_transactions_on_master. There was already
-  an equivalent for clients, so those two go hand in hand.
-o Failure to rotate logical log is treated as a kernel panic event (just as expected in this case).
-o While copying a store from the master the broker is shut down to cancel out any noisy events from it during copy.
-o Added Broker#restart and implemented in ZooKeeperBroker to handle ZK session expirations.
-o Made ZK session timeout configurable.
-o Removed a retry/wait which held a monitor on HighlyAvailableGraphDatabase which could delay a master switch by 'read timeout' seconds.
-o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
-  added proper life cycle support for services and lots and lots of other cleanups. This also removes the need for wrapping
-  an entire HA graphdb in a wrapper to have the entities survive an internal restart.
-o Now full and incremental backup fetches and writes to disk the latest transaction if not present,
-  allowing for an HA cluster to bootstrap itself.
+o Fixed bug in PropertyStore that during recovery would throw exception if the last record was incomplete.
+o Fixes to transaction log start position caching which mitigates a performance issue and fixes a caching issue during rotation.
+o Fixed a couple of issue around copying incomplete transaction to new log during a log rotation.
+o Fixed a property cache poisoning bug and some stale references leaking.
+o Fixed a data race issue between threads removing the same property while the node is evicted from cache.
+o Fixed an issue where a property record in the logical log was missing its owner.
+o Log messages in messages.log are now printed in UTC time zone so that it's the same across servers.
+o Fix for an issue where a full rebuild of an id generator (rebuild_idgenerators_fast=false) could result
+  in exception when adding free ids.
+o Fix for issue which would close an id generator as clean if a startup failed at the wrong time, which would make
+  the id generator diverge from the store it held ids for and possible truncate that store file the next clean shutdown.
+Indexing:
+  o Added LowerCaseKeywordAnalyzer and a clear test for it which shows how to configure a case-insensitive exact index.
+Cypher:
+  o Added literal collections and the IN predicate
+  o Added HEAD, TAIL, LAST and FILTER
+  o Added ! so that missing property can evaluate to false
+  o BREAKING CHANGE: To check whether a property exists on a node, use the HAS(...) function
+  o Arithmetic & string concatenation
+  o An identifier can now be assigned all the nodes/rels in the graph - START a=node(*)
+  o Predicates can be specified inside of a pattern relationship description
+Server:
+  o Fixed a NPE in guarded database for the result of Index#putIfAbsent.
+  o Added SSL support in the server.
+  o SecurityRule implementations can now use simple wildcards to allow whole sub paths of URIs to be covered by the rule.
+  o Added an "order" parameter to index REST queries to control result ordering.
+Shell:
+  o dbinfo command now able to print simple values as well as arrays and compound values as JSON output.
+  o A shell server which isn't remotely avaiable doesn't touch RMI, neither does a client which connects
+    to a server within the same JVM. This makes for less RMI garbage when forgetting to call shutdown().
+  o Fixes problem with eval command in that it couldn't execute a single-line command, which made it impossible
+    to do ./shell -c 'eval ...' from outside
+UDC:
+  o Added MAC address to pings.
+High Availablity and Backup:
+  o Added config option for ha.max_concurrent_transactions_on_master. There was already
+    an equivalent for clients, so those two go hand in hand.
+  o Failure to rotate logical log is treated as a kernel panic event (just as expected in this case).
+  o While copying a store from the master the broker is shut down to cancel out any noisy events from it during copy.
+  o Added Broker#restart and implemented in ZooKeeperBroker to handle ZK session expirations.
+  o Made ZK session timeout configurable.
+  o Removed a retry/wait which held a monitor on HighlyAvailableGraphDatabase which could delay a master switch by 'read timeout' seconds.
+  o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+    added proper life cycle support for services and lots and lots of other cleanups. This also removes the need for wrapping
+    an entire HA graphdb in a wrapper to have the entities survive an internal restart.
+  o Now full and incremental backup fetches and writes to disk the latest transaction if not present,
+    allowing for an HA cluster to bootstrap itself.
 
 1.6 (2012-01-19)
 ----------------
