@@ -5,6 +5,31 @@ o HA: Changed so informative log messages are not logged as errors.
 o HA: Fixed issue with relationship types not being created via master if performed on a slave.
 o Improvements to shell script messages and documentation
 
+1.7.M03 (2012-04-11)
+--------------------
+o Fixed problem with "Transaction already active" getting logged because of lock timeout.
+o Added GCR cache.
+o GCR cache arrays are now reused between restarts HA restarts.
+
+1.7.M02 (2012-03-26)
+--------------------
+o Fixed issue with message log not getting closed properly.
+
+1.7.M01 (2012-03-12)
+--------------------
+o Added config option for ha.max_concurrent_transactions_on_master. There was already
+  an equivalent for clients, so those two go hand in hand.
+o Failure to rotate logical log is treated as a kernel panic event (just as expected in this case).
+o While copying a store from the master the broker is shut down to cancel out any noisy events from it during copy.
+o Added Broker#restart and implemented in ZooKeeperBroker to handle ZK session expirations.
+o Made ZK session timeout configurable.
+o Removed a retry/wait which held a monitor on HighlyAvailableGraphDatabase which could delay a master switch by 'read timeout' seconds.
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups. This also removes the need for wrapping
+  an entire HA graphdb in a wrapper to have the entities survive an internal restart.
+o Now full and incremental backup fetches and writes to disk the latest transaction if not present,
+  allowing for an HA cluster to bootstrap itself.
+
 1.6 (2012-01-19)
 ----------------
 o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
