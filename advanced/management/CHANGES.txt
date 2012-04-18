@@ -1,6 +1,6 @@
 1.7 (2012-04-18)
 ----------------
-o Now contains management information for the new Garbage Resistant Cache
+o Now contains management information for the new Garbage Collection Resistant Cache
 
 1.7.M01 (2012-03-12)
 --------------------
