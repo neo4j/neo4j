@@ -19,25 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import java.io.OutputStream;
 
-import java.net.URI;
-
-import org.junit.Test;
-
-
-public class SerializerTest
-{
-    
-    @Test 
-    public void shouldPrependBaseUriToRelativePaths() {
-        String baseUrl = "http://baseurl/";
-        Serializer serializer = new Serializer(URI.create( baseUrl ), null){};
-        
-        String aRelativeUrl = "/path/path/path";
-        assertThat(serializer.relativeUri( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
-        assertThat(serializer.relativeTemplate( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
-    }
-    
+public interface StreamingFormat {
+    RepresentationFormat writeTo(OutputStream output);
 }

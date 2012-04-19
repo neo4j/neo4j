@@ -19,14 +19,18 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.StreamingOutput;
 
 public class OutputFormat
 {
@@ -97,7 +101,29 @@ public class OutputFormat
 
     protected Response response( ResponseBuilder response, Representation representation )
     {
-        String entity = format( representation );
+        return formatRepresentation(response, representation)
+                .header(HttpHeaders.CONTENT_ENCODING, UTF8)
+                .type( getMediaType() )
+                .build();
+    }
+
+    private ResponseBuilder formatRepresentation(ResponseBuilder response, final Representation representation) {
+        if (format instanceof StreamingFormat) {
+            return response.entity(stream(representation,(StreamingFormat)format));
+        } else {
+            return response.entity(toBytes(format( representation )));
+        }
+    }
+
+    private StreamingOutput stream(final Representation representation, final StreamingFormat streamingFormat) {
+        return new StreamingOutput() {
+                    public void write(OutputStream output) throws IOException, WebApplicationException {
+                        representation.serialize(streamingFormat.writeTo(output), baseUri, extensions);
+                    }
+                };
+    }
+
+    private byte[] toBytes(String entity) {
         byte[] entityAsBytes;
         try
         {
@@ -107,10 +133,7 @@ public class OutputFormat
         {
             throw new RuntimeException( "Could not encode string as UTF-8", e );
         }
-        return response.entity( entityAsBytes )
-                .header( HttpHeaders.CONTENT_ENCODING, UTF8 )
-                .type( getMediaType() )
-                .build();
+        return entityAsBytes;
     }
 
     public MediaType getMediaType()

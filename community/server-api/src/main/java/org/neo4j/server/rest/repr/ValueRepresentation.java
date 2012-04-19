@@ -38,7 +38,9 @@ public class ValueRepresentation extends Representation
     @Override
     String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
     {
-        return format.serializeValue( type, value );
+        final String result = format.serializeValue(type, value);
+        format.complete();
+        return result;
     }
 
     @Override
@@ -219,7 +221,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchByteArrayProperty( PropertyArray<byte[], Byte> array,
                 Void param )
         {
-            return new ListRepresentation( RepresentationType.BYTE, dispatch( array ) );
+            return toListRepresentation(RepresentationType.BYTE, array);
         }
 
         @Override
@@ -227,7 +229,11 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchShortArrayProperty( PropertyArray<short[], Short> array,
                 Void param )
         {
-            return new ListRepresentation( RepresentationType.SHORT, dispatch( array ) );
+            return toListRepresentation(RepresentationType.SHORT, array);
+        }
+
+        private ListRepresentation toListRepresentation(RepresentationType type, PropertyArray<?, ?> array) {
+            return new ListRepresentation(type, dispatch(array) );
         }
 
         @Override
@@ -235,7 +241,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchCharacterArrayProperty(
                 PropertyArray<char[], Character> array, Void param )
         {
-            return new ListRepresentation( RepresentationType.CHAR, dispatch( array ) );
+            return toListRepresentation(RepresentationType.CHAR, array);
         }
 
         @Override
@@ -243,7 +249,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array,
                 Void param )
         {
-            return new ListRepresentation( RepresentationType.INTEGER, dispatch( array ) );
+            return toListRepresentation(RepresentationType.INTEGER, array);
         }
 
         @Override
@@ -251,7 +257,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchLongArrayProperty( PropertyArray<long[], Long> array,
                 Void param )
         {
-            return new ListRepresentation( RepresentationType.LONG, dispatch( array ) );
+            return toListRepresentation(RepresentationType.LONG, array);
         }
 
         @Override
@@ -259,7 +265,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchFloatArrayProperty( PropertyArray<float[], Float> array,
                 Void param )
         {
-            return new ListRepresentation( RepresentationType.FLOAT, dispatch( array ) );
+            return toListRepresentation(RepresentationType.FLOAT, array);
         }
 
         @Override
@@ -267,7 +273,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchDoubleArrayProperty(
                 PropertyArray<double[], Double> array, Void param )
         {
-            return new ListRepresentation( RepresentationType.DOUBLE, dispatch( array ) );
+            return toListRepresentation(RepresentationType.DOUBLE, array);
         }
 
         @Override
@@ -275,7 +281,7 @@ public class ValueRepresentation extends Representation
         protected Representation dispatchBooleanArrayProperty(
                 PropertyArray<boolean[], Boolean> array, Void param )
         {
-            return new ListRepresentation( RepresentationType.BOOLEAN, dispatch( array ) );
+            return toListRepresentation(RepresentationType.BOOLEAN, array);
         }
     };
 }

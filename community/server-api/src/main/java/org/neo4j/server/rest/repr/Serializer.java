@@ -63,7 +63,9 @@ abstract class Serializer
                         extension.writeValue( RepresentationType.URI, method, joinBaseWithRelativePath( baseUri,
                                 path.toString() ) );
                     }
+                    extension.done();
                 }
+                extensions.done();
             }
         }
     }
@@ -74,9 +76,9 @@ abstract class Serializer
         list.done();
     }
 
-    final URI relativeUri( String path )
+    final String relativeUri(String path)
     {
-        return URI.create( joinBaseWithRelativePath( baseUri, path ) );
+        return joinBaseWithRelativePath(baseUri, path);
     }
 
     final String relativeTemplate( String path )

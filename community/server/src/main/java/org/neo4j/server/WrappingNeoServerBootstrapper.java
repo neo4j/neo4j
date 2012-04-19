@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.commons.configuration.Configuration;
@@ -70,6 +71,22 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     private final Configurator configurator;
     private static Logger log = Logger.getLogger( WrappingNeoServerBootstrapper.class );
 
+
+    public static void main(String[] args) {
+        WrappingNeoServerBootstrapper server = null;
+        EmbeddedGraphDatabase db = null;
+        try {
+            db = new EmbeddedGraphDatabase("target/test.db");
+            server = new WrappingNeoServerBootstrapper(db);
+            server.start();
+            System.in.read();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (server!=null) server.stop();
+            if (db!=null) db.shutdown();
+        }
+    }
     /**
      * Create an instance with default settings.
      * 
