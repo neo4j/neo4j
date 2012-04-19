@@ -812,7 +812,7 @@ public class RelIdArray implements SizeOf
             }
             if ( add != null )
             {
-                src.addAll( add );
+                src = src.addAll( add );
                 return src.downgradeIfPossible();
             }
             return src;
