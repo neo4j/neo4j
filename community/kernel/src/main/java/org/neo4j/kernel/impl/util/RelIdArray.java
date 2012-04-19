@@ -441,7 +441,7 @@ public class RelIdArray implements SizeOf
             int newLength = length+delta;
             if ( newLength >= ids.length-1 )
             {
-                int calculatedLength = ids.length*3;
+                int calculatedLength = ids.length*2;
                 if ( newLength > calculatedLength )
                 {
                     calculatedLength = newLength*2;
@@ -812,10 +812,8 @@ public class RelIdArray implements SizeOf
             }
             if ( add != null )
             {
-                RelIdArray newArray = src.newSimilarInstance();
-                newArray.addAll( src );
-                newArray = newArray.addAll( add );
-                return newArray;
+                src.addAll( add );
+                return src.downgradeIfPossible();
             }
             return src;
         }
@@ -848,7 +846,7 @@ public class RelIdArray implements SizeOf
                     }
                 }
             }
-            return newArray.shrink();
+            return newArray;
         }
     }
 
