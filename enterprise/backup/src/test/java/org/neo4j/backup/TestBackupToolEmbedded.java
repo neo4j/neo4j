@@ -20,14 +20,10 @@
 
 package org.neo4j.backup;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -40,6 +36,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
 public class TestBackupToolEmbedded
 {
@@ -168,6 +167,6 @@ public class TestBackupToolEmbedded
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
-        return new ProcessStreamHandler( process, false ).waitForResult( 30 );
+        return new ProcessStreamHandler( process, false ).waitForResult();
     }
 }
