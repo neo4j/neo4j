@@ -253,7 +253,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         {
             return new RelationshipTypeRecord( (int)id );
         }
-        
+
         try
         {
             return getRecord( (int) id, window, true );
@@ -446,8 +446,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
                 records = relTypeRecord.getTypeRecords().iterator();
             }
         }
-        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                relTypeRecord.getTypeBlock(), relevantRecords, typeNameStore ) );
+        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray( relTypeRecord.getTypeBlock(),
+                relevantRecords, typeNameStore, PropertyType.STRING ).other() );
     }
 
     @Override

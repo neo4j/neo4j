@@ -51,7 +51,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( (byte) block.getSingleValueByte() );
+            return Byte.valueOf( block.getSingleValueByte() );
         }
 
         @Override
@@ -121,7 +121,7 @@ public enum PropertyType
         {
             return Long.valueOf( getLongValue( block ) );
         }
-        
+
         private long getLongValue( PropertyBlock block )
         {
             long firstBlock = block.getSingleValueBlock();
@@ -135,7 +135,7 @@ public enum PropertyType
         {
             return PropertyDatas.forLong( block.getKeyIndexId(), propertyId, getLongValue( block ) );
         }
-        
+
         private boolean valueIsInlined( long firstBlock )
         {
             // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
@@ -158,7 +158,7 @@ public enum PropertyType
 
         private float getValue( int propBlock )
         {
-            return Float.intBitsToFloat( (int) propBlock );
+            return Float.intBitsToFloat( propBlock );
         }
 
         @Override
@@ -212,6 +212,12 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
         }
+
+        @Override
+        byte[] readDynamicRecordHeader( byte[] recordBytes )
+        {
+            return new byte[0];
+        }
     },
     ARRAY( 10 )
     {
@@ -228,6 +234,24 @@ public enum PropertyType
         {
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, extractedValue );
+        }
+
+        @Override
+        byte[] readDynamicRecordHeader( byte[] recordBytes )
+        {
+            byte itemType = recordBytes[0];
+            if ( itemType == STRING.byteValue() )
+                return headOf( recordBytes, DynamicArrayStore.STRING_HEADER_SIZE );
+            else if ( itemType <= DOUBLE.byteValue() )
+                return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
+            throw new IllegalArgumentException( "Unknown array type " + itemType );
+        }
+
+        private byte[] headOf( byte[] bytes, int length )
+        {
+            byte[] head = new byte[length];
+            System.arraycopy( bytes, 0, head, 0, length );
+            return head;
         }
     },
     SHORT_STRING( 11 )
@@ -267,7 +291,7 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, getValue( block, null ) );
         }
-        
+
         @Override
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
@@ -347,7 +371,7 @@ public enum PropertyType
                                               + type );
         }
     }
-    
+
     // TODO In wait of a better place
     public static int getPayloadSize()
     {
@@ -373,5 +397,10 @@ public enum PropertyType
     public int calculateNumberOfBlocksUsed( long firstBlock )
     {
         return 1;
+    }
+
+    byte[] readDynamicRecordHeader( byte[] recordBytes )
+    {
+        throw new UnsupportedOperationException();
     }
 }
