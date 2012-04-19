@@ -44,7 +44,7 @@
 		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
 		<build.number>0</build.number>
 
-		<neo4j.version>1.5.3-SNAPSHOT</neo4j.version>
+		<neo4j.version>1.5.3.RC3</neo4j.version>
 		<gremlin.version>1.2</gremlin.version>
 	</properties>
 
