@@ -780,7 +780,7 @@ public class RelIdArray
             }
             if ( add != null )
             {
-                src.addAll( add );
+                src = src.addAll( add );
                 return src.downgradeIfPossible();
             }
             return src;
