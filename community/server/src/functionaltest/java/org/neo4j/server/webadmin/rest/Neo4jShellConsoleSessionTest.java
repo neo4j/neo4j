@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
@@ -76,7 +77,7 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     public void doesntMangleNewlines() throws Exception
     {
         Response response = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"start n=node(0) return n\", \"engine\":\"shell\" }" );
+                "{ \"command\" : \"start n=node(0) return n;\", \"engine\":\"shell\" }" );
 
      
         assertEquals( 200, response.getStatus() );

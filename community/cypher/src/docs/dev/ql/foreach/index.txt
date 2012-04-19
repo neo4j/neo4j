@@ -1,0 +1,9 @@
+[[query-foreach]]
+Foreach
+=======
+Collections and paths are key concepts in Cypher. To use them for updating data, you can use the FOREACH construct.
+It allows you to do updating commands on elements in a collection - a path, or a collection created by aggregation.
+
+:leveloffset: 2
+
+include::mark-all-nodes-along-a-path.txt[]

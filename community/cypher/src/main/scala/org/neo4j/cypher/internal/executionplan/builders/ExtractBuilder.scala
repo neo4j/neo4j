@@ -20,13 +20,19 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
 
 class ExtractBuilder extends PlanBuilder {
-  def apply(p: Pipe, q: PartiallySolvedQuery) = ExtractBuilder.extractIfNecessary(q, p, q.returns.map(_.token.expression))
+  def apply(plan: ExecutionPlanInProgress) = {
+    val (p, q) = ExtractBuilder.extractIfNecessary(plan.query, plan.pipe, plan.query.returns.map(_.token.expression))
+    plan.copy(pipe = p, query = q)
+  }
 
-  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery)= !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+  def canWorkWith(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    !q.extracted && q.readyToAggregate && q.aggregateQuery.solved
+  }
 
   def priority: Int = PlanBuilder.Extraction
 }

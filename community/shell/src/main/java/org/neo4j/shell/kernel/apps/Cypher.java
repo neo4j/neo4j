@@ -22,10 +22,6 @@ package org.neo4j.shell.kernel.apps;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 
-/**
- * Mimics the POSIX application with the same name, i.e. renames a property. It
- * could also (regarding POSIX) move nodes, but it doesn't).
- */
 @Service.Implementation( App.class )
 public class Cypher extends Start
 {

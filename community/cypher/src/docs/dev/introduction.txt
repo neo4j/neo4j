@@ -16,11 +16,11 @@ established practices for expressive querying. Most of the keywords like
 Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
 Regular expression matching is implemented using the http://www.scala-lang.org/[Scala programming language].
 
-Cypher is a declarative language. It focuses on the clarity of expressing _what_
+Being a declarative language, Cypher focuses on the clarity of expressing _what_
 to retrieve from a graph, not _how_ to do it, in contrast to imperative languages like Java,
 and scripting languages like http://gremlin.tinkerpop.com[Gremlin] (supported via the <<gremlin-plugin>>) 
 and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern of how to optimize
-queries in implementation detail not exposed to the user.
+queries an implementation detail not exposed to the user.
 
 The query language is comprised of several distinct parts.
 

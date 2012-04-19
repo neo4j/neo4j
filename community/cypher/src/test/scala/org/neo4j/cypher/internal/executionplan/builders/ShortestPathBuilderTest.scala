@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
 
-class ShortestPathBuilderTest extends PipeBuilder {
+class ShortestPathBuilderTest extends BuilderTest {
 
   val builder = new ShortestPathBuilder
 
@@ -36,8 +36,8 @@ class ShortestPathBuilderTest extends PipeBuilder {
       patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
 
     val p = createPipe(nodes = Seq("l"))
-    
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test
@@ -48,7 +48,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test
@@ -59,13 +59,13 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
-    
-    val (_,resultQ) = builder(p,q)
+    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
 
-    assert( resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))) )
+    val resultQ = builder(plan(p, q)).query
+
+    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
   }
-  
+
   @Test
   def should_not_accept_work_id_predicates_depend_on_something_not_solved() {
     val q = PartiallySolvedQuery().
@@ -74,7 +74,7 @@ class ShortestPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
 }

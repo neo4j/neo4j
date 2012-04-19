@@ -24,23 +24,25 @@ import GetGraphElements.getElements
 import org.neo4j.cypher.internal.executionplan._
 import org.neo4j.cypher.internal.commands.{RelationshipById, StartItem}
 import org.neo4j.graphdb.{Relationship, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.RelationshipStartPipe
 
 class RelationshipByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def priority = PlanBuilder.RelationshipById
 
-  def apply(inPipe: Pipe, inQ: PartiallySolvedQuery) = {
-      val startItemToken = interestingStartItems(inQ).head
-      val Unsolved(RelationshipById(key, expression)) = startItemToken
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
+    val startItemToken = interestingStartItems(q).head
+    val Unsolved(RelationshipById(key, expression)) = startItemToken
 
-      val pipe = new RelationshipStartPipe(inPipe, key, m => getElements[Relationship](expression(m), key, graph.getRelationshipById))
+    val pipe = new RelationshipStartPipe(p, key, m => getElements[Relationship](expression(m), key, graph.getRelationshipById))
 
-      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) :+ startItemToken.solve
+    val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 
-      (pipe, inQ.copy(start = remainingQ))
+    plan.copy(pipe = pipe, query = q.copy(start = remainingQ))
   }
 
-  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = interestingStartItems(q).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress) = interestingStartItems(plan.query).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(RelationshipById(_, expression)) => true

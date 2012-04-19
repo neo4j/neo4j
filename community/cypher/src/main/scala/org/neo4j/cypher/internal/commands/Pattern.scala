@@ -24,6 +24,7 @@ import java.lang.String
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{PathType, RelationshipType, NodeType, Identifier}
 
+
 abstract class Pattern {
   def optional: Boolean
   def predicate: Predicate
@@ -35,6 +36,7 @@ abstract class Pattern {
   protected def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
+  def equalOrUnnamed(name1: String, name2: String) = name1 == name2 || (name1.startsWith("  UNNAMED") && name2.startsWith("  UNNAMED"))
 }
 
 object RelatedTo {
@@ -46,7 +48,7 @@ case class RelatedTo(left: String, right: String, relName: String, relTypes: Seq
   override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
 
   private def relInfo: String = {
-    var info = if (relName.startsWith("  UNNAMED")) "" else relName
+    var info = relName
     if (optional) info = info + "?"
     if (relTypes.nonEmpty) info = info + ":" + relTypes.mkString("|")
     if (info == "") "" else "[" + info + "]"
@@ -55,6 +57,18 @@ case class RelatedTo(left: String, right: String, relName: String, relTypes: Seq
   val possibleStartPoints: Seq[Identifier] = Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(relName, RelationshipType()))
 
   def rewrite(f: (Expression) => Expression) = new RelatedTo(left,right,relName,relTypes,direction,optional,predicate.rewrite(f))
+  override def equals(p1: Any): Boolean = p1 match {
+    case null => false
+    case other: RelatedTo =>
+      equalOrUnnamed(other.left, left) &&
+        equalOrUnnamed(other.right, right) &&
+        equalOrUnnamed(other.relName, relName) &&
+        other.relTypes  == relTypes &&
+        other.direction == direction &&
+        other.optional == optional &&
+        other.predicate == predicate
+    case _ => false
+  }
 }
 
 abstract class PathPattern extends Pattern {
@@ -105,9 +119,24 @@ case class VarLengthRelatedTo(pathName: String,
     if (info == "") "" else "[" + info + "]"
   }
 
-  lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()), Identifier(pathName, PathType()) )
-
   def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,start,end, minHops,maxHops,relTypes,direction,relIterator,optional,predicate.rewrite(f))
+  lazy val possibleStartPoints: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType()), Identifier(pathName, PathType()))
+
+  override def equals(p1: Any): Boolean = p1 match {
+    case null => false
+    case other: VarLengthRelatedTo =>
+      equalOrUnnamed(other.pathName, pathName) &&
+        equalOrUnnamed(other.start, start) &&
+        equalOrUnnamed(other.end, end) &&
+        other.minHops == minHops &&
+        other.maxHops == maxHops &&
+        other.relTypes == relTypes &&
+        other.direction == direction &&
+        other.relIterator == relIterator &&
+        other.optional == optional &&
+        other.predicate == predicate
+    case _ => false
+  }
 }
 
 case class ShortestPath(pathName: String,
@@ -124,8 +153,8 @@ case class ShortestPath(pathName: String,
   override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
 
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
-  
-  def dependencies: Seq[Identifier] = Seq(Identifier(start, NodeType()),Identifier(end, NodeType())) ++ predicate.dependencies
+
+  def dependencies: Seq[Identifier] = Seq(Identifier(start, NodeType()), Identifier(end, NodeType())) ++ predicate.dependencies
 
   def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relTypes, dir, maxDepth, optional, single, None)
 

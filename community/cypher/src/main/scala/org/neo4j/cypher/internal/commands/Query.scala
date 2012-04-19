@@ -22,16 +22,19 @@ package org.neo4j.cypher.internal.commands
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
+  def updates(cmds:UpdateCommand*) = new QueryBuilder(Seq()).updates(cmds:_*)
 }
 
 case class Query(returns: Return,
                  start: Start,
+                 updatedCommands:Seq[UpdateCommand],
                  matching: Option[Match],
                  where: Option[Predicate],
                  aggregation: Option[Aggregation],
                  sort: Option[Sort],
                  slice: Option[Slice],
                  namedPaths: Option[NamedPaths],
+                 tail:Option[Query] = None,
                  queryString: String = "") {
   override def equals(p1: Any): Boolean =
     if (p1 == null)
@@ -42,12 +45,14 @@ case class Query(returns: Return,
       val other = p1.asInstanceOf[Query]
       returns == other.returns &&
         start == other.start &&
+        updatedCommands == other.updatedCommands &&
         matching == other.matching &&
         where == other.where &&
         aggregation == other.aggregation &&
         sort == other.sort &&
         slice == other.slice &&
-        namedPaths == other.namedPaths
+        namedPaths == other.namedPaths &&
+        tail == other.tail
     }
 }
 

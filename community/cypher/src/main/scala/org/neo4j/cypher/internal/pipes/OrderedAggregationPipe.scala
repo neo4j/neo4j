@@ -45,41 +45,44 @@ class OrderedAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], 
     keySymbols.add(aggregateIdentifiers: _*)
   }
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = new OrderedAggregator(source.createResults(params), keyExpressions, aggregations)
+  def createResults(state: QueryState): Traversable[ExecutionContext] = new OrderedAggregator(source.createResults(state), keyExpressions, aggregations)
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + keyExpressions.map(_.identifier.name).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
 }
 
-private class OrderedAggregator(source: Traversable[Map[String, Any]],
+private class OrderedAggregator(source: Traversable[ExecutionContext],
                                 returnItems: Seq[Expression],
-                                aggregations: Seq[AggregationExpression]) extends Traversable[Map[String, Any]] {
+                                aggregations: Seq[AggregationExpression]) extends Traversable[ExecutionContext] {
   var currentKey: Option[Seq[Any]] = None
   var aggregationSpool: Seq[AggregationFunction] = null
+  var currentCtx: Option[ExecutionContext] = null
   val keyColumns = returnItems.map(_.identifier.name)
   val aggregateColumns = aggregations.map(_.identifier.name)
 
-  def getIntermediateResults[U]: Map[String, Any] = {
-    (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).foldLeft(Map[String,Any]())( _ += _ )
+  def getIntermediateResults[U](ctx: ExecutionContext) = {
+    ctx.copy(m = (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).foldLeft(Map[String, Any]())(_ += _))
   }
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(m => {
-      val key = Some(returnItems.map(_.apply(m)))
+  def foreach[U](f: ExecutionContext => U) {
+    source.foreach(ctx => {
+      val key = Some(returnItems.map(_.apply(ctx)))
       if (currentKey.isEmpty) {
         aggregationSpool = aggregations.map(_.createAggregationFunction)
         currentKey = key
+        currentCtx = Some(ctx)
       } else if (key != currentKey) {
-        f(getIntermediateResults)
+        f(getIntermediateResults(currentCtx.get))
 
         aggregationSpool = aggregations.map(_.createAggregationFunction)
         currentKey = key
+        currentCtx = Some(ctx)
       }
 
-      aggregationSpool.foreach(func => func(m))
+      aggregationSpool.foreach(func => func(ctx))
     })
 
     if (currentKey.nonEmpty) {
-      f(getIntermediateResults)
+      f(getIntermediateResults(currentCtx.get))
     }
   }
 }
