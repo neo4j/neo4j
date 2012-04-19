@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-advanced</artifactId>
-  <version>1.5.3.RC3</version>
+  <version>1.5.3-SNAPSHOT</version>
   <name>Neo4j Advanced</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -39,7 +39,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.5.3.RC3</version>
+      <version>1.5.3-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
