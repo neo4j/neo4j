@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -36,8 +39,6 @@ import java.util.regex.Pattern;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import static java.lang.Math.max;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
@@ -49,8 +50,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -1178,8 +1177,8 @@ public class XaLogicalLog implements LogLoader
             for ( LogEntry entry : logEntries )
             {
                 if ( entry instanceof Start ) ((Start)entry).setStartPosition( writeBuffer.getFileChannelPosition() );
-                LogIoUtils.writeLogEntry( entry, writeBuffer );
                 applyEntry( entry );
+                LogIoUtils.writeLogEntry( entry, writeBuffer );
             }
         }
 
@@ -1639,7 +1638,7 @@ public class XaLogicalLog implements LogLoader
         }
         return highest;
     }
-    
+
     public boolean wasNonClean()
     {
         return nonCleanShutdown;
