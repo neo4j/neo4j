@@ -225,6 +225,17 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             newTransaction();
         }
     }
+    
+    @Test
+    public void getNewlyCreatedLoopRelationshipFromCache() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        node.createRelationshipTo( getGraphDb().createNode(), TEST );
+        newTransaction();
+        Relationship relationship = node.createRelationshipTo( node, TEST );
+        newTransaction();
+        assertEquals( relationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+    }
 
     private void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
     {
