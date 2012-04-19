@@ -123,7 +123,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
-        
+
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
         newTransaction();
@@ -158,14 +158,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
-        
+
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
         newTransaction();
         clearCache();
         assertEquals( 123L, node1.getProperty( "other" ) );
     }
-    
+
     @Test
     public void testByteType()
     {
@@ -281,7 +281,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
     }
-    
+
     @Test
     public void testIntArray()
     {
@@ -606,15 +606,6 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
-    @Test
-    public void testLargeProperties()
-    {
-        byte[] bytes = new byte[10*1024*1024];
-        node1.setProperty( "large_array", bytes );
-        node1.setProperty( "large_string", new String( bytes ) );
-        newTransaction();
-    }
-    
     @Test
     public void testEmptyString() throws Exception
     {
