@@ -20,9 +20,6 @@
 
 package org.neo4j.test;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 /**
  * Having trouble with your {@link Process}'s output and error streams?
  * Are they getting filled up and your main thread hangs? Fear no more. Use this
@@ -109,40 +106,6 @@ public class ProcessStreamHandler
                 Thread.interrupted();
                 return 0;
             }
-        }
-        finally
-        {
-            done();
-        }
-    }
-
-    public int waitForResult( int maxSeconds )
-    {
-        launch();
-        try
-        {
-            long endTime = currentTimeMillis() + SECONDS.toMillis( maxSeconds );
-            while ( currentTimeMillis() < endTime )
-            {
-                try
-                {
-                    return process.exitValue();
-                }
-                catch ( IllegalThreadStateException e )
-                {
-                    // Not beautiful, but we'd like to get away from p.waitFor() (blocking forever).
-                    try
-                    {
-                        Thread.sleep( 100 );
-                    }
-                    catch ( InterruptedException ie )
-                    {
-                        throw new RuntimeException( ie );
-                    }
-                }
-            }
-            process.destroy();
-            throw new RuntimeException( "Process " + process + " didn't exit by itself within " + maxSeconds + " seconds so I killed it" );
         }
         finally
         {
