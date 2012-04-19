@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_7
 
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.SyntaxException
 
 
 trait ReturnClause extends Base with Expressions {
@@ -42,7 +43,8 @@ trait ReturnClause extends Base with Expressions {
     case col ~ None => col
   }
 
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
+
+  def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.columnName).toList
 
@@ -64,4 +66,22 @@ trait ReturnClause extends Base with Expressions {
       (Return(columnName, returnItems: _*), aggregation)
     }
   }
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> columnList
+
+
+  def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
+
+  def WITH: Parser[(Return, Option[Aggregation])] = withSyntax ^^ (columns => {
+
+    val problemColumns = columns._1.returnItems.flatMap {
+      case ReturnItem(_, _, true) => None
+      case ReturnItem(Entity(_), _, _) => None
+      case ri => Some(ri.name)
+    }
+    if (problemColumns.nonEmpty) {
+      throw new SyntaxException("These columns can't be listen in the WITH statement without renaming: " + problemColumns.mkString(","))
+    }
+
+    columns
+  })
 }

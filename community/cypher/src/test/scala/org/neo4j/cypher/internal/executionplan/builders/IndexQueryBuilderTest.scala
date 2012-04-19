@@ -23,7 +23,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.scalatest.Assertions
 import org.junit.Assert._
 import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
@@ -32,7 +32,7 @@ import org.neo4j.graphdb._
 import index._
 import java.util.Map
 
-class IndexQueryBuilderTest extends Assertions {
+class IndexQueryBuilderTest extends BuilderTest {
 
   val builder = new IndexQueryBuilder(new Fake_Database_That_Has_All_Indexes)
 
@@ -41,7 +41,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
@@ -51,7 +51,7 @@ class IndexQueryBuilderTest extends Assertions {
         Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))),
         Unsolved(NodeByIndexQuery("x", "idx", Literal("foo")))))
 
-    val (_, remaining) = builder(new NullPipe(), q)
+    val remaining = builder(plan(q)).query
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -63,7 +63,7 @@ class IndexQueryBuilderTest extends Assertions {
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1))))
 
 
-    val (_, result) = builder(new NullPipe(), q)
+    val result = builder(plan(q)).query
 
     val expected = Set(Solved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1)))
 
@@ -75,7 +75,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
+    assertFalse("Should not build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
@@ -83,7 +83,7 @@ class IndexQueryBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    val (_, remainingQ) = builder(new NullPipe(), q)
+    val remainingQ = builder(plan(q)).query
 
     assert(remainingQ.start === Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
   }

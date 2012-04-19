@@ -22,20 +22,21 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.scalatest.Assertions
 import org.junit.Assert._
 import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
 import org.junit.{Ignore, Test}
-import org.neo4j.cypher.internal.commands.{AllNodes, RelationshipById, Parameter, NodeById}
+import org.neo4j.cypher.internal.commands.{AllNodes, RelationshipById, ParameterExpression, NodeById}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 
 class GraphGlobalStartBuilderTest extends Assertions {
 
   val builder = new GraphGlobalStartBuilder(null)
+  private def build(q:PartiallySolvedQuery)=ExecutionPlanInProgress(q, new NullPipe())
 
   @Test
   def says_yes_to_node_by_id_queries() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s"))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt(new NullPipe(), q))
+    assertTrue("Should be able to build on this", builder.canWorkWith(build(q)))
   }
 
   @Test
@@ -43,7 +44,9 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(AllNodes("x"))))
 
-    val (_, remaining) = builder(new NullPipe(), q)
+    val result = builder(build(q))
+
+    val remaining = result.query
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -54,12 +57,12 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(RelationshipById("x", 1))))
 
-
-    val (_, result) = builder(new NullPipe(), q)
+    val result = builder(build(q))
+    val remaining = result.query
 
     val expected = Set(Solved(AllNodes("s")), Unsolved(RelationshipById("x", 1)))
 
-    assert(result.start.toSet === expected)
+    assert(remaining.start.toSet === expected)
   }
 
   @Test
@@ -67,16 +70,16 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("s", 0))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
+    assertFalse("Should not build on this", builder.canWorkWith(build(q)))
   }
 
   @Test
   @Ignore("revisit when we consider this")
   def say_no_id_param_is_needed() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(NodeById("s", Parameter("x")))))
+      copy(start = Seq(Unsolved(NodeById("s", ParameterExpression("x")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt(new NullPipe(), q))
+    assertFalse("Should not build on this", builder.canWorkWith(build(q)))
   }
 
   @Test
@@ -84,7 +87,7 @@ class GraphGlobalStartBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(AllNodes("s"))))
 
-    val (_, remainingQ) = builder(new NullPipe(), q)
+    val remainingQ = builder(build(q)).query
 
     assert(remainingQ.start === Seq(Solved(AllNodes("s"))))
   }

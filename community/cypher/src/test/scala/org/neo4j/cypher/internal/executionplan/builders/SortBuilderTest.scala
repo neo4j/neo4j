@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.{CachedExpression, Property, SortItem}
 import org.neo4j.cypher.internal.symbols.{ScalarType, Identifier}
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
-class SortBuilderTest extends PipeBuilder with Assertions {
+class SortBuilderTest extends BuilderTest {
 
   val builder = new SortBuilder
 
@@ -40,9 +39,9 @@ class SortBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
+    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
 
-    val (_, resultQ) = builder(p, q)
+    val resultQ = builder(plan(p, q)).query
 
     assert(resultQ.sort === expected)
   }
@@ -55,7 +54,6 @@ class SortBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should accept this", builder.canWorkWith(plan(p, q)))
   }
-
 }

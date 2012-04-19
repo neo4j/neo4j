@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, Solved, Unsolved}
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{NamedPath, NodeById, RelatedTo, True}
-import org.neo4j.cypher.internal.symbols.{RelationshipType, SymbolTable, Identifier, NodeType}
-import collection.mutable.Map
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
-class NamedPathBuilderTest extends PipeBuilder {
+
+class NamedPathBuilderTest extends BuilderTest {
   val builder = new NamedPathBuilder
+
 
   @Test
   def should_not_accept_if_pattern_is_not_yet_solved() {
@@ -41,7 +40,7 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test
@@ -54,13 +53,13 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
 
-    assertTrue("Builder should not accept this", builder.isDefinedAt(p, q))
-    
-    val (_, resultQ) = builder(p,q)
-    
-    assert(resultQ.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True())))))
+    assertTrue("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+
+    val resultPlan = builder(plan(p, q))
+
+    assert(resultPlan.query.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True())))))
   }
-  
+
   @Test
   def should_not_accept_unless_all_parts_of_the_named_path_are_solved() {
     val q = PartiallySolvedQuery().
@@ -76,14 +75,6 @@ class NamedPathBuilderTest extends PipeBuilder {
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
-  }
-}
-
-trait PipeBuilder {
-  def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()) = {
-    val nodeIdentifiers = nodes.map(x => Identifier(x, NodeType()))
-    val relIdentifiers = relationships.map(x => Identifier(x, RelationshipType()))
-    new FakePipe(Seq(Map()), new SymbolTable(nodeIdentifiers ++ relIdentifiers: _*))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 }

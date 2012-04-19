@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 import scala.util.parsing.combinator._
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.{Expression, Literal, Parameter}
+import org.neo4j.cypher.internal.commands.{Expression, Literal, ParameterExpression}
 
 trait Tokens extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
@@ -63,7 +63,7 @@ trait Tokens extends JavaTokenParsers {
 
   def regularLiteral = ( "/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "/" ).r ^^ ( x => Literal(stripQuotes(x)) )
 
-  def parameter: Parser[ Expression ] = curly(identity | wholeNumber) ^^ ( x => Parameter(x) )
+  def parameter: Parser[ Expression ] = curly(identity | wholeNumber) ^^ ( x => ParameterExpression(x) )
 }
 
 

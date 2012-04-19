@@ -50,7 +50,7 @@ with ActualParser
         case None => (None,None)
       }
 
-      Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths)
+      Query(returns._1, start, Seq(), pattern, where, returns._2, order, slice, namedPaths)
     }
   }
 

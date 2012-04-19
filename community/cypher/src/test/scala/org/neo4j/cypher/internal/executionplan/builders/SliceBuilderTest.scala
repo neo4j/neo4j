@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.{Unsolved, PartiallySolvedQuery}
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands.{Literal, Slice, SortItem}
 
-class SliceBuilderTest extends PipeBuilder with Assertions {
+class SliceBuilderTest extends BuilderTest {
 
   val builder = new SliceBuilder
 
@@ -38,11 +37,11 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
+    assertTrue("Builder should accept this", builder.canWorkWith(plan(p,q)))
 
-    val (_, resultQ) = builder(p, q)
+    val resultPlan = builder(plan(p, q))
 
-    assert(resultQ.slice === q.slice.map(_.solve))
+    assert(resultPlan.query.slice === q.slice.map(_.solve))
   }
 
   @Test def should_not_accept_if_not_yet_sorted() {
@@ -54,7 +53,7 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test def should_not_accept_if_no_slice_in_the_query() {
@@ -64,7 +63,7 @@ class SliceBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
 }

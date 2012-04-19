@@ -23,19 +23,20 @@ import org.neo4j.graphalgo.GraphAlgoFactory
 import java.lang.String
 import org.neo4j.graphdb.{Expander, Node}
 import org.neo4j.cypher.internal.commands.ShortestPath
-import collection.mutable.Map
 
 class SingleShortestPathPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source,ast) {
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "SingleShortestPath(" + ast + ")"
 
-  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]): Traversable[Map[String, Any]] = {
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, ctx: ExecutionContext): Traversable[ExecutionContext] = {
     val finder = GraphAlgoFactory.shortestPath(expander, depth)
     val findSinglePath = finder.findSinglePath(start, end)
 
     (findSinglePath, optional) match {
-      case (null, true) => Seq(m += pathName -> null)
+      case (null, true) => ctx.put(pathName,null)
+      Seq(ctx)
       case (null, false) => Seq()
-      case (path, _) => Seq(m += pathName -> path)
+      case (path, _) => ctx.put(pathName, path)
+      Seq(ctx)
     }
   }
 
