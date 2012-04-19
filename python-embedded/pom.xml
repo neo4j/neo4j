@@ -21,7 +21,7 @@
 	<groupId>org.neo4j.drivers</groupId>
 	<artifactId>neo4j-python-embedded</artifactId>
 	<!-- "RV" is for the release.py script -->
-	<version><!--RV:-->1.5.3.RC3</version>
+	<version><!--RV:-->1.5.3-SNAPSHOT</version>
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
 	<description>
