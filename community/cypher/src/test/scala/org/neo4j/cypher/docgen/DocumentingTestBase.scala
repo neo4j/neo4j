@@ -32,7 +32,8 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription, GeoffService}
+import org.neo4j.test.GeoffService
 
 abstract class DocumentingTestBase extends JUnitSuite {
 
@@ -43,6 +44,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
   var nodeIndex: Index[Node] = null
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
+  var generateConsole: Boolean = true
 
   def section: String
 
@@ -75,6 +77,12 @@ abstract class DocumentingTestBase extends JUnitSuite {
     }
     writer.println()
     writer.println()
+    if(generateConsole) {
+      writer.println(".Try this query live")
+      writer.println("[console]")
+      writer.println("----\n"+new GeoffService(db).toGeoff()+"\n"+query+"\n----")
+      writer.println()
+    }
     writer.flush()
     writer.close()
   }
