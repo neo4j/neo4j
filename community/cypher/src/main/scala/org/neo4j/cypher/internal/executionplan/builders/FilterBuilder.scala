@@ -21,17 +21,35 @@ package org.neo4j.cypher.internal.executionplan.builders
  */
 
 import org.neo4j.cypher.internal.commands.Predicate
-import org.neo4j.cypher.internal.executionplan.{QueryToken, Unsolved, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{FilterPipe, Pipe}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class FilterBuilder extends PlanBuilder {
-  def apply(p: Pipe, q: PartiallySolvedQuery) = {
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
+
     val item = q.where.filter(pred => yesOrNo(pred, p))
     val pred: Predicate = item.map(_.token).reduce(_ ++ _)
     val newPipe = new FilterPipe(p, pred)
     val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)
 
-    (newPipe, q.copy(where = newQuery))
+    plan.copy(
+      query = q.copy(where = newQuery),
+      pipe = newPipe
+    )
+  }
+
+
+  override def missingDependencies(plan: ExecutionPlanInProgress) = {
+    val querySoFar = plan.query
+    val pipe = plan.pipe
+
+    val unsolvedPredicates = querySoFar.where.filter(_.unsolved).map(_.token)
+
+    unsolvedPredicates.
+      flatMap(pred => pipe.symbols.missingDependencies(pred.dependencies)).
+      map(_.name).distinct
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
@@ -39,7 +57,7 @@ class FilterBuilder extends PlanBuilder {
     case _ => false
   }
 
-  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.where.exists(pred => yesOrNo(pred, p))
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
 
   def priority: Int = PlanBuilder.Filter
 }

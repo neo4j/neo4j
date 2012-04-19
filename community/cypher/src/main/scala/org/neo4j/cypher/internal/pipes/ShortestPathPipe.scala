@@ -42,12 +42,12 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
   def pathName = ast.pathName
   def returnItems: Seq[ReturnItem] = Seq()
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
-    val (start, end) = getStartAndEnd(m)
+  def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
+    val (start, end) = getStartAndEnd(ctx)
     val expander = createExpander
     val depth = maxDepth.getOrElse(15)
 
-    findResult(expander, start, end,  depth, m)
+    findResult(expander, start, end, depth, ctx)
   })
 
   private def getStartAndEnd[U](m: Map[String, Any]): (Node, Node) = {
@@ -66,7 +66,7 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 
-  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]):Traversable[Map[String, Any]]
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: ExecutionContext): Traversable[ExecutionContext]
 
   val symbols = source.symbols.add(Identifier(pathName, PathType()))
 

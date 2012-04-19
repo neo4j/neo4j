@@ -28,8 +28,8 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
   val symbols = source.symbols
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val sourceTraversable = source.createResults(params)
+  def createResults(state: QueryState): Traversable[ExecutionContext] = {
+    val sourceTraversable = source.createResults(state)
 
     if(sourceTraversable.isEmpty)
       return Seq()

@@ -22,20 +22,44 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.internal.commands._
 
 
-trait StartClause extends Base {
-  def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("expected 'START'")
+trait StartClause extends Base with Expressions {
+  def start: Parser[Start] = createStart | readStart
+
+  def readStart = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*))
+
+  def createStart = ignoreCase("create") ~> comaList(createNode | createRel) ^^ (x => Start(x: _*))
+
+  def properties =
+    expression ^^ (x => Map[String,Expression]("*" -> x)) |
+      opt("{" ~> repsep(propertyAssignment, ",") <~ "}") ^^ {
+        case None => Map[String,Expression]()
+        case Some(x) => x.toMap
+      }
+
+  def createdNodeName = opt(identity <~ "=") ^^ (x => namer.name(x))
+
+  def createNode: Parser[StartItem] = ignoreCase("node") ~> createdNodeName ~ properties ^^ {
+    case id ~ props => CreateNodeStartItem(id, props)
+  }
+
+  def createRel: Parser[StartItem] = rels ~> expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ properties ~ "]" ~ "->" ~ expression ^^ {
+    case from ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "->" ~ to =>  CreateRelationshipStartItem(namer.name(id), from, to, relType, props)
+  }
+  
+  def propertyAssignment:Parser[(String, Expression)] = identity ~ ":" ~ expression ^^ {
+    case id ~ ":" ~ exp => (id,exp)
+  }
 
   def startBit =
-    (identity ~ "=" ~ lookup ^^ {      case id ~ "=" ~ l => l(id)    }
+    (identity ~ "=" ~ lookup ^^ { case id ~ "=" ~ l => l(id) }
       | identity ~> "=" ~> opt("(") ~> failure("expected either node or relationship here")
       | identity ~> failure("expected identifier assignment"))
 
   def nodes = ignoreCase("node")
 
-  def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^ (x => "rel")
+  def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^^ "rel"
 
   def typ = nodes | rels | failure("expected either node or relationship here")
-
 
   def lookup: Parser[String => StartItem] =
     nodes ~> parens(parameter) ^^ (p => (column: String) => NodeById(column, p)) |
@@ -76,7 +100,7 @@ trait StartClause extends Base {
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
 
-  private def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
+//  private def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
 
   def andQuery: Parser[String] = idxQuery ~ ignoreCase("and") ~ idxQueries ^^ {
     case q ~ and ~ qs => q + " AND " + qs

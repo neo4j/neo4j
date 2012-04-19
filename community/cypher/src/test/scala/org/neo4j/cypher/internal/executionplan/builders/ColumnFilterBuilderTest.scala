@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.{Unsolved, PartiallySolvedQuery}
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, Literal, SortItem}
 
-class ColumnFilterBuilderTest extends PipeBuilder with Assertions {
+class ColumnFilterBuilderTest extends BuilderTest {
 
   val builder = new ColumnFilterBuilder
 
@@ -38,9 +37,9 @@ class ColumnFilterBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
+    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
 
-    val (_, resultQ) = builder(p, q)
+    val resultQ = builder(plan(p, q)).query
 
     assert(resultQ.returns === q.returns.map(_.solve))
   }
@@ -53,7 +52,7 @@ class ColumnFilterBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test def should_not_accept_if_not_sorted() {
@@ -65,7 +64,7 @@ class ColumnFilterBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
   @Test def should_not_accept_if_not_sliced() {
@@ -77,7 +76,7 @@ class ColumnFilterBuilderTest extends PipeBuilder with Assertions {
 
     val p = createPipe(nodes = Seq("x"))
 
-    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
+    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
   }
 
 }

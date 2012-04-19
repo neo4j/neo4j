@@ -50,7 +50,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
     val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
 
-    assert(pipe.createResults(Map()) === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> p)))
+    assert(pipe.createResults(QueryState()) === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> p)))
   }
 
   @Test def pathsAreTurnedRightSideAround() {
@@ -59,6 +59,6 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
     val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
 
-    assert(pipe.createResults(Map()) === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> PathImpl(a, r1, b, r2, c))))
+    assert(pipe.createResults(QueryState()) === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> PathImpl(a, r1, b, r2, c))))
   }
 }

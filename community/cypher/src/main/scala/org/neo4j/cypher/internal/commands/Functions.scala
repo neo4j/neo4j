@@ -257,7 +257,7 @@ case class FilterFunction(collection: Expression, symbol: String, predicate: Pre
 
   val identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection.identifier.name, predicate), collection.identifier.typ)
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = (collection.dependencies(PathType()) ++ predicate.dependencies).filterNot(_.name == symbol)
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = (collection.dependencies(AnyIterableType()) ++ predicate.dependencies).filterNot(_.name == symbol)
 
   def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), symbol, predicate.rewrite(f)))
 

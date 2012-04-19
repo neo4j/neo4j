@@ -23,17 +23,17 @@ import org.junit.{After, Before}
 import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
 import collection.Map
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.graphdb._
+import org.neo4j.test.ImpermanentGraphDatabase
 
 class GraphDatabaseTestBase extends JUnitSuite {
-  var graph: GraphDatabaseService = null
+  var graph: GraphDatabaseService with Snitch = null
   var refNode: Node = null
   var nodes: List[Node] = null
 
   @Before
   def baseInit() {
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graph = new ImpermanentGraphDatabase() with Snitch
     refNode = graph.getReferenceNode
   }
 
@@ -45,6 +45,7 @@ class GraphDatabaseTestBase extends JUnitSuite {
   def indexNode(n: Node, idxName: String, key: String, value: String) {
     inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value))
   }
+
   def indexRel(r: Relationship, idxName: String, key: String, value: String) {
     inTx(() => r.getGraphDatabase.index.forRelationships(idxName).add(r, key, value))
   }
@@ -136,5 +137,15 @@ class GraphDatabaseTestBase extends JUnitSuite {
     relate(a, c)
     relate(c, d)
     (a, b, c, d)
+  }
+}
+
+trait Snitch extends GraphDatabaseService {
+  val createdNodes = collection.mutable.Queue[Node]()
+
+  abstract override def createNode(): Node = {
+    val n = super.createNode()
+    createdNodes.enqueue(n)
+    n
   }
 }
