@@ -30,7 +30,6 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.symbols._
 import collection.mutable.Map
-import java.lang.{Iterable=>JIterable}
 
 class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
   @Test def shouldReturnColumnsFromReturnItems() {
@@ -65,13 +64,11 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val grouping = List(CountStar())
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
-    assertThat(getResults(aggregationPipe), hasItems(
+    assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
       Map("name" -> "Andres", "count(*)" -> 1),
       Map("name" -> "Michael", "count(*)" -> 2),
       Map("name" -> "Peter", "count(*)" -> 1)))
   }
-
-  private def getResults(p:Pipe):JIterable[Map[String, Any]] = p.createResults(QueryState()).map(_.m).toIterable.asJava
 
   @Test def shouldCountNonNullValues() {
     val source = new FakePipe(List(
@@ -83,7 +80,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val grouping = List(Count(Entity("age")))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
-    assertThat(getResults(aggregationPipe), hasItems(
+    assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
       Map("name" -> "Andres", "count(age)" -> 1),
       Map("name" -> "Michael", "count(age)" -> 0),
       Map("name" -> "Peter", "count(age)" -> 1)))

@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.executionplan.Unsolved
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
 
-class SortedAggregationBuilderTest extends BuilderTest {
+class SortedAggregationBuilderTest extends PipeBuilder with Assertions {
 
   val builder = new SortedAggregationBuilder
 
@@ -37,9 +39,9 @@ class SortedAggregationBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("n"))
 
-    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
+    assertTrue("Builder should accept this", builder.isDefinedAt(p, q))
 
-    val resultQ = builder(plan(p, q)).query
+    val (_, resultQ) = builder(p, q)
 
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
@@ -59,7 +61,7 @@ class SortedAggregationBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("a", "b"))
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 
   @Test def should_not_accept_if_there_are_still_other_things_to_do_in_the_query() {
@@ -73,6 +75,6 @@ class SortedAggregationBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq())
 
-    assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+    assertFalse("Builder should not accept this", builder.isDefinedAt(p, q))
   }
 }

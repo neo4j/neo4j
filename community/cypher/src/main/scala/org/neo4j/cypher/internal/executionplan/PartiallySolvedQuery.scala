@@ -19,24 +19,21 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
-import builders.{QueryToken, Solved, Unsolved}
 import org.neo4j.cypher.internal.commands._
 import collection.Seq
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.Pipe
 
 
 object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
-  def apply(q: Query): PartiallySolvedQuery = {
+  def apply(q: Query) = {
     val patterns = q.matching.toSeq.flatMap(_.patterns.map(Unsolved(_))) ++
       q.namedPaths.toSeq.flatMap(_.paths.flatMap(_.pathPattern.map(Unsolved(_))))
 
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
       start = q.start.startItems.map(Unsolved(_)),
-      updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
       where = q.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
       aggregation = q.aggregation.toSeq.flatMap(_.aggregationItems.map(Unsolved(_))),
@@ -47,8 +44,7 @@ object PartiallySolvedQuery {
         Unsolved(true)
       else
         Solved(false),
-      extracted = false,
-      tail = q.tail.map(q => PartiallySolvedQuery(q))
+      extracted = false
     )
   }
 
@@ -56,7 +52,6 @@ object PartiallySolvedQuery {
   def apply() = new PartiallySolvedQuery(
     returns = Seq(),
     start = Seq(),
-    updates = Seq(),
     patterns = Seq(),
     where = Seq(),
     aggregation = Seq(),
@@ -64,8 +59,7 @@ object PartiallySolvedQuery {
     slice = Seq(),
     namedPaths = Seq(),
     aggregateQuery = Solved(false),
-    extracted = false,
-    tail = None
+    extracted = false
   )
 }
 
@@ -75,7 +69,6 @@ solved, and which parts are not yet finished.
  */
 case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
                                 start: Seq[QueryToken[StartItem]],
-                                updates: Seq[QueryToken[UpdateCommand]],
                                 patterns: Seq[QueryToken[Pattern]],
                                 where: Seq[QueryToken[Predicate]],
                                 aggregation: Seq[QueryToken[AggregationExpression]],
@@ -83,18 +76,16 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
                                 slice: Seq[QueryToken[Slice]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateQuery: QueryToken[Boolean],
-                                extracted: Boolean,
-                                tail: Option[PartiallySolvedQuery]) {
+                                extracted: Boolean) {
 
-  def isSolved = returns.forall(_.solved) &&
-    start.forall(_.solved) &&
-    updates.forall(_.solved) &&
-    patterns.forall(_.solved) &&
-    where.forall(_.solved) &&
-    aggregation.forall(_.solved) &&
-    sort.forall(_.solved) &&
-    slice.forall(_.solved) &&
-    namedPaths.forall(_.solved)
+  def isSolved = returns.filterNot(_.solved).isEmpty &&
+    start.filterNot(_.solved).isEmpty &&
+    patterns.filterNot(_.solved).isEmpty &&
+    where.filterNot(_.solved).isEmpty &&
+    aggregation.filterNot(_.solved).isEmpty &&
+    sort.filterNot(_.solved).isEmpty &&
+    slice.filterNot(_.solved).isEmpty &&
+    namedPaths.filterNot(_.solved).isEmpty
 
   def readyToAggregate = !(start.exists(_.unsolved) ||
     patterns.exists(_.unsolved) ||
@@ -104,15 +95,11 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
   def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
     this.copy(
       returns = returns.map {
-        case Unsolved(ReturnItem(expression, name, renamed)) => Unsolved(ReturnItem(expression.rewrite(f), name, renamed))
+        case Unsolved(ReturnItem(expression, name)) => Unsolved(ReturnItem(expression.rewrite(f), name))
         case x => x
       },
       where = where.map {
         case Unsolved(pred) => Unsolved(pred.rewrite(f))
-        case x => x
-      },
-      updates = updates.map {
-        case Unsolved(cmd)  => Unsolved(cmd.rewrite(f))
         case x => x
       },
       sort = sort.map {
@@ -139,7 +126,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
 
   def unsolvedExpressions = {
     val rExpressions = returns.flatMap {
-      case Unsolved(ReturnItem(expression, _, _)) => expression.filter( e=>true )
+      case Unsolved(ReturnItem(expression, _)) => expression.filter( e=>true )
       case _ => None
     }
 
@@ -153,13 +140,22 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
       case _ => Seq()
     }
 
-    val updateExpressions = updates.flatMap {
-      case Unsolved(cmd)  => cmd.filter(e=>true)
-      case _ => Seq()
-    }
-
-   rExpressions ++ wExpressions ++ aExpressions ++ updateExpressions
+   rExpressions ++ wExpressions ++ aExpressions
   }
 }
 
-case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, containsTransaction: Boolean=false)
+abstract class QueryToken[T](val token: T) {
+  def solved: Boolean
+
+  def unsolved = !solved
+
+  def solve: QueryToken[T] = Solved(token)
+}
+
+case class Solved[T](t: T) extends QueryToken[T](t) {
+  val solved = true
+}
+
+case class Unsolved[T](t: T) extends QueryToken[T](t) {
+  val solved = false
+}

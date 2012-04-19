@@ -24,19 +24,20 @@ import java.lang.String
 import org.neo4j.graphalgo.GraphAlgoFactory
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.ShortestPath
+import collection.mutable.Map
 
 class AllShortestPathsPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source, ast) {
 
-  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, ctx: ExecutionContext): Traversable[ExecutionContext] = {
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]): Traversable[Map[String, Any]] = {
     val finder = GraphAlgoFactory.shortestPath(expander, depth)
     val foundPaths = finder.findAllPaths(start, end).asScala.toList
 
     (foundPaths, optional) match {
-      case (List(), true) => Seq(ctx += pathName -> null)
+      case (List(), true) => Seq(m += pathName -> null)
       case (List(), false) => Seq()
       case (paths, _) => paths.map(path => {
-        val result = ctx.m.clone()
-        ctx.copy(m = result += pathName -> path)
+        val newMap: Map[String, Any] = m.clone()
+        newMap += pathName -> path
       })
     }
   }

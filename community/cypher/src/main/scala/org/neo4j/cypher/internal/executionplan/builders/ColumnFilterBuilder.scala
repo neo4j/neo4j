@@ -19,36 +19,21 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.ColumnFilterPipe
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{ColumnFilterPipe, Pipe}
 
 class ColumnFilterBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val p = plan.pipe
-    val isLastPipe = q.tail.isEmpty
+  def apply(p: Pipe, q: PartiallySolvedQuery)=    {
+      val resultPipe = new ColumnFilterPipe(p, q.returns.map(_.token))
+      val resultQ = q.copy(returns = q.returns.map(_.solve))
 
-    val filterPipe = new ColumnFilterPipe(p, q.returns.map(_.token), isLastPipe)
-
-    val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
-      filterPipe
-    } else {
-      p
+      (resultPipe, resultQ)
     }
 
-    val resultQ = q.copy(returns = q.returns.map(_.solve))
-
-    plan.copy(pipe = resultPipe, query = resultQ)
-  }
-
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-
-    q.extracted &&
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.extracted &&
       !q.sort.exists(_.unsolved) &&
       !q.slice.exists(_.unsolved) &&
       q.returns.exists(_.unsolved)
-  }
 
   def priority = PlanBuilder.ColumnFilter
 }

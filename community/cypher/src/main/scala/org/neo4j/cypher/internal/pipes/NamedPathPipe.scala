@@ -37,19 +37,17 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     firstNode
   }
 
-  def createResults(state: QueryState) = source.createResults(state).map(ctx => {
-    def get(x: String): PropertyContainer = ctx(x).asInstanceOf[PropertyContainer]
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).map(m => {
+    def get(x: String): PropertyContainer = m(x).asInstanceOf[PropertyContainer]
 
     val firstNode: String = getFirstNode
 
     val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
       case RelatedTo(_, right, relName, _, _, _, _) => soFar ++ Seq(get(relName), get(right))
-      case path:PathPattern => getPath(ctx, path.pathName, soFar)
+      case path:PathPattern => getPath(m, path.pathName, soFar)
     })
 
-    ctx.put(path.pathName, buildPath(p))
-
-    ctx
+    m += (path.pathName -> buildPath(p))
   })
 
 

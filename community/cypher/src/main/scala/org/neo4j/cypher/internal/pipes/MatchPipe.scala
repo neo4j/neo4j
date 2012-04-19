@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.pipes
 import matching.MatchingContext
 import java.lang.String
 import org.neo4j.cypher.internal.commands.{Predicate, Pattern}
+import collection.mutable.Map
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
   val symbols = matchingContext.symbols
 
-  def createResults(state: QueryState) =
-    source.createResults(state).flatMap(ctx => {
-      matchingContext.getMatches(ctx.toMap).map(pm => ctx.copy(m = ctx.m ++ pm) )
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
+    source.createResults(params).flatMap(sourcePipeRow => {
+      matchingContext.getMatches(sourcePipeRow.toMap).map( patternMatch => {
+        sourcePipeRow ++ patternMatch
+      })
     })
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"

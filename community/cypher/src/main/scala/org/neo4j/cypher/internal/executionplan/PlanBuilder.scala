@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
+import org.neo4j.cypher.internal.pipes.Pipe
+
 /*
 PlanBuilders take a unsolved query, and solves another piece of it.
 */
 trait PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress
-
-  def canWorkWith(plan: ExecutionPlanInProgress): Boolean
-
-  def missingDependencies(plan: ExecutionPlanInProgress):Seq[String] = Seq()
+  def apply(p: Pipe, q: PartiallySolvedQuery) : (Pipe, PartiallySolvedQuery)
+  def isDefinedAt(p: Pipe, q:PartiallySolvedQuery) : Boolean
 
   // Lower priority wins
-  def priority: Int
+  def priority:Int
 }
 
 // The priorities are all here, to make it easy to change and compare
@@ -39,7 +38,6 @@ object PlanBuilder extends Enumeration {
   val CachedExpressions = -100
   val Filter = -10
   val NamedPath = -9
-  val Mutation = -1
   val NodeById = -1
   val RelationshipById = -1
   val IndexQuery = 0

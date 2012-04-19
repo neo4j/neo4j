@@ -108,10 +108,4 @@ class SymbolTable(val identifiers: Identifier*) {
       names.foreach(n => if (identifiers.filter(_.name == n).size > 1) throw new SyntaxException("Identifier " + n + " defined multiple times"))
     }
   }
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null => false
-    case x:SymbolTable => this.identifiers == x.identifiers
-    case _ => false
-  }
 }

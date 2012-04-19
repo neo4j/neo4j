@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.{ExtractPipe, EagerAggregationPipe}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{ExtractPipe, EagerAggregationPipe, Pipe}
 import org.neo4j.cypher.internal.commands.{Entity, Expression, AggregationExpression}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
 
 class AggregationBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val p = plan.pipe
-
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
     val keyExpressionsToExtract = q.returns.map(_.token.expression).filterNot(_.containsAggregate)
-
     val (extractor, psq) = ExtractBuilder.extractIfNecessary(q, p, keyExpressionsToExtract)
     val keyExpressions = psq.returns.map(_.token.expression).filterNot(_.containsAggregate)
     val aggregationExpressions: Seq[AggregationExpression] = getAggregationExpressions(psq)
-
     val aggregator = new EagerAggregationPipe(extractor, keyExpressions, aggregationExpressions)
 
     val notKeyAndNotAggregate = psq.returns.map(_.token.expression).filterNot(keyExpressions.contains)
@@ -55,28 +50,25 @@ class AggregationBuilder extends PlanBuilder {
       extracted = true
     ).rewrite(removeAggregates)
 
-    plan.copy(query = resultQ, pipe = resultPipe)
+    (resultPipe, resultQ)
   }
 
-  private def removeAggregates(e: Expression) = e match {
-    case e: AggregationExpression => Entity(e.identifier.name)
+  private def removeAggregates(e:Expression) = e match {
+    case e:AggregationExpression => Entity(e.identifier.name)
     case x => x
   }
 
   private def getAggregationExpressions(psq: PartiallySolvedQuery): Seq[AggregationExpression] = {
     val eventualSortAggregation = psq.sort.filter(_.token.expression.isInstanceOf[AggregationExpression]).map(_.token.expression.asInstanceOf[AggregationExpression])
     val aggregations = psq.aggregation.map(_.token)
-    (aggregations ++ eventualSortAggregation).distinct
+    val aggregationExpressions = (aggregations ++ eventualSortAggregation).distinct
+    aggregationExpressions
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) =
     q.aggregateQuery.token &&
       q.aggregateQuery.unsolved &&
       q.readyToAggregate
-
-  }
 
   def priority: Int = PlanBuilder.Aggregation
 }

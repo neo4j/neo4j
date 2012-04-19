@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.{OrderedAggregationPipe, SortPipe, ExtractPipe}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{OrderedAggregationPipe, SortPipe, ExtractPipe, Pipe}
 import org.neo4j.cypher.internal.commands.{AggregationExpression, SortItem, Expression}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class SortedAggregationBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val p = plan.pipe
-
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
     val sortExpressions = q.sort.filter(_.unsolved).map(_.token.expression)
     val sortItems = q.sort.filter(_.unsolved).map(_.token)
     val keyExpressions = q.returns.filter(_.unsolved).map(_.token.expression).filterNot(_.containsAggregate)
@@ -46,26 +43,20 @@ class SortedAggregationBuilder extends PlanBuilder {
     val sortPipe = new SortPipe(extractPipe, (sortItems ++ keyColumnsNotAlreadySorted).toList)
     val aggregationPipe = new OrderedAggregationPipe(sortPipe, keyExpressions, aggregationExpressions)
 
-    val resultQ = q.copy(
+    (aggregationPipe, q.copy(
       aggregation = q.aggregation.map(_.solve),
       aggregateQuery = q.aggregateQuery.solve,
       sort = q.sort.map(_.solve),
       extracted = true
-    )
-
-    plan.copy(query = resultQ, pipe = aggregationPipe)
+    ))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-
-    if (!q.readyToAggregate || q.aggregation.isEmpty)
-      false //If other things are still to do, let's deny
-    else {
-      val sortExpressions = q.sort.filter(_.unsolved).map(_.token.expression)
-      val keyExpressions = q.returns.filter(_.unsolved).map(_.token.expression).filterNot(_.containsAggregate)
-      sortExpressions.nonEmpty && canUseOrderedAggregation(sortExpressions, keyExpressions)
-    }
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = if (!q.readyToAggregate || q.aggregation.isEmpty)
+    false //If other things are still to do, let's deny
+  else {
+    val sortExpressions = q.sort.filter(_.unsolved).map(_.token.expression)
+    val keyExpressions = q.returns.filter(_.unsolved).map(_.token.expression).filterNot(_.containsAggregate)
+    sortExpressions.nonEmpty && canUseOrderedAggregation(sortExpressions, keyExpressions)
   }
 
   private def canUseOrderedAggregation(sortExpressions: Seq[Expression], keyExpressions: Seq[Expression]): Boolean = keyExpressions.take(sortExpressions.size) == sortExpressions

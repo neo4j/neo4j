@@ -37,8 +37,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "expected node identifier")
   }
 
-  //TODO Fix this
-  @Ignore("Revisit when all start tokens are finished")
   @Test def badStart() {
     expectError(
       "starta = node(0) return a",
@@ -60,7 +58,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def aggregateFunctionInWhere() {
     expectError(
       "START a = node(0) WHERE count(a) > 10 RETURN a",
-      "Can't use aggregate functions in the WHERE clause.")
+      "Can't use aggregate functions in the WHERE clause. Move it to the HAVING clause.")
   }
 
 
@@ -200,12 +198,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "START a=node(0) where return a",
       "reserved keyword",
       29)
-  }
-
-  @Test def functions_and_stuff_have_to_be_renamed_when_sent_through_with() {
-    expectError(
-      "START a=node(0) with a, count(*) return a",
-      "These columns can't be listen in the WITH statement without renaming: count(*)")
   }
 
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {

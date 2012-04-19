@@ -33,39 +33,5 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def javaIterator: java.util.Iterator[java.util.Map[String, Any]]
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
-  def queryStatistics():QueryStatistics
-}
-
-
-object QueryStatistics {
-  def empty = new QueryStatistics(0,0,0,0,0)
-}
-
-case class QueryStatistics(nodesCreated: Long,
-                           relationshipsCreated: Long,
-                           propertiesSet: Long,
-                           deletedNodes: Long,
-                           deletedRelationships: Long) {
-  def containsUpdates = nodesCreated > 0 ||
-  relationshipsCreated > 0 ||
-  propertiesSet > 0 ||
-  deletedNodes > 0 ||
-  deletedRelationships > 0
-
-  override def toString = {
-    val builder = new StringBuilder
-
-    includeIfNonZero(builder, "Nodes created: ", nodesCreated)
-    includeIfNonZero(builder, "Relationships created: ", relationshipsCreated)
-    includeIfNonZero(builder, "Properties set: ", propertiesSet)
-    includeIfNonZero(builder, "Nodes deleted: ", deletedNodes)
-    includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
-
-    builder.toString()
-  }
-
-  private def includeIfNonZero(builder:StringBuilder, message: String, count:Long) = if(count>0) {
-    builder.append(message + count.toString + "\n")
-  }
 }
 

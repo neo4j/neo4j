@@ -292,7 +292,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, "Andres")
 
     val query = Query.
-      start(NodeByIndex("n", idxName, Literal(key), ParameterExpression("value"))).
+      start(NodeByIndex("n", idxName, Literal(key), Parameter("value"))).
       returns(ReturnItem(Entity("n"), "n"))
 
     val result = execute(query, "value" -> "Andres")
@@ -915,11 +915,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(
-      NodeById("pA", ParameterExpression("a")),
-      NodeById("pB", ParameterExpression("b")),
-      NodeById("pC", ParameterExpression("c")),
-      NodeById("pD", ParameterExpression("0")),
-      NodeById("pE", ParameterExpression("1"))).
+      NodeById("pA", Parameter("a")),
+      NodeById("pB", Parameter("b")),
+      NodeById("pC", Parameter("c")),
+      NodeById("pD", Parameter("0")),
+      NodeById("pE", Parameter("1"))).
       returns(
       ReturnItem(Entity("pA"), "pA"),
       ReturnItem(Entity("pB"), "pB"),
@@ -942,7 +942,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A")
 
     val query = Query.
-      start(NodeById("pA", ParameterExpression("a"))).
+      start(NodeById("pA", Parameter("a"))).
       returns(ReturnItem(Entity("pA"), "pA"))
 
     execute(query, "a" -> "Andres").toList
@@ -962,7 +962,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1)).
-      where(Equals(Property("a", "name"), ParameterExpression("name")))
+      where(Equals(Property("a", "name"), Parameter("name")))
       .returns(ReturnItem(Entity("a"), "a"))
 
     assert(0 === execute(query, "name" -> "Tobias").toList.size)
@@ -1109,7 +1109,7 @@ return foaf""")
 
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
     val query = Query.
-      start(NodeById("pA", ParameterExpression("a"))).
+      start(NodeById("pA", Parameter("a"))).
       returns(ReturnItem(Entity("pA"), "pA"))
 
     execute(query).toList
@@ -1773,45 +1773,6 @@ RETURN x0.name?
     val result = parseAndExecute("start a=node(1), b=node(2) match a-[r?*]-b where r is null and a <> b return b").toList
 
     assert(List(Map("b" -> b)) === result)
-  }
-
-  @Test def first_piped_query_woot() {
-    val a = createNode("foo"->42)
-    createNode("foo"->49)
-
-    // START x = node(1) WITH x WHERE x.foo = 42 RETURN x
-    val secondQ = Query.
-      start().
-      where(Equals(Property("x", "foo"), Literal(42))).
-      returns(ReturnItem(Entity("x"), "x"))
-
-    val q = Query.
-      start(NodeById("x", 1, 2)).
-      tail(secondQ).
-      returns(ReturnItem(Entity("x"), "x"))
-
-    val result = execute(q, "wut?"->"wOOt!")
-
-    
-    assert(List(Map("x"->a)) === result.toList)
-  }
-
-  @Test def second_piped_query_woot() {
-    // START x = node(1) WITH count(*) as apa WHERE apa = 1 RETURN x
-    val secondQ = Query.
-      start().
-      where(Equals(Entity("apa"), Literal(1))).
-      returns(ReturnItem(Entity("apa"), "apa"))
-
-    val q = Query.
-      start(NodeById("x", 0)).
-      tail(secondQ).
-      aggregation(CountStar()).
-      returns(ReturnItem(CountStar(), "apa"))
-
-    val result = execute(q, "wut?"->"wOOt!")
-
-    assert(List(Map("apa"->1)) === result.toList)
   }
 
   @Test def listing_rel_types_multiple_times_should_not_give_multiple_returns() {

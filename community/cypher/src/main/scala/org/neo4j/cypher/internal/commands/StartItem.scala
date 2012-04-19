@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.symbols.{Identifier, AnyType}
 
 
-abstract sealed class StartItem(val identifierName:String) {
-  def mutating = false
-}
+abstract sealed class StartItem(val variable:String)
 
-abstract class RelationshipStartItem(id:String) extends StartItem(id)
-abstract class NodeStartItem(id:String) extends StartItem(id)
+abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
+abstract class NodeStartItem(varName:String) extends StartItem(varName)
 
 case class RelationshipById(varName:String, expression: Expression) extends RelationshipStartItem(varName)
 case class RelationshipByIndex(varName:String, idxName: String, key:Expression, expression: Expression) extends RelationshipStartItem(varName)
 case class RelationshipByIndexQuery(varName:String, idxName: String, query: Expression) extends RelationshipStartItem(varName)
+
 
 case class NodeByIndex(varName:String, idxName: String, key:Expression, expression: Expression) extends NodeStartItem(varName)
 case class NodeByIndexQuery(varName:String, idxName: String, query: Expression) extends NodeStartItem(varName)
@@ -40,42 +38,6 @@ case class NodeById(varName:String, expression:Expression) extends NodeStartItem
 case class AllNodes(columnName:String) extends NodeStartItem(columnName)
 case class AllRelationships(columnName:String) extends RelationshipStartItem(columnName)
 
-case class CreateNodeStartItem(varName: String, properties: Map[String, Expression])
-  extends NodeStartItem(varName)
-  with Mutator
-  with UpdateCommand {
-  def dependencies: Seq[Identifier] = properties.values.flatMap(_.dependencies(AnyType())).toSeq
-
-  def filter(f: (Expression) => Boolean) = properties.values.filter(f).toSeq
-
-  def rewrite(f: (Expression) => Expression) = CreateNodeStartItem(varName, properties.map(mapRewrite(f)))
-}
-
-case class CreateRelationshipStartItem(varName: String, from: Expression, to: Expression, typ: String, properties: Map[String, Expression])
-  extends NodeStartItem(varName)
-  with Mutator
-  with UpdateCommand {
-  def dependencies: Seq[Identifier] = properties.values.flatMap(_.dependencies(AnyType())).toSeq ++
-    from.dependencies(AnyType()) ++
-    to.dependencies(AnyType())
-
-  def filter(f: (Expression) => Boolean) =  {
-    val fromSeq = if (f(from)) Seq(from) else Seq()
-    val toSeq = if (f(to)) Seq(to) else Seq()
-
-    val values: Iterable[Expression] = properties.values
-    fromSeq ++ toSeq ++ values.filter(f).toSet
-  }
-
-  def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(varName, f(from), f(to), typ, properties.map(mapRewrite(f)))
-}
-
-trait Mutator extends StartItem {
-  override def mutating = true
-
-  def mapRewrite(f: (Expression) => Expression)(kv:(String, Expression)):(String,Expression) = kv match { case (k,v) => (k, f(v)) }
-}
-
 object NodeById {
   def apply(varName:String, id: Long*) = new NodeById(varName, Literal(id))
 }
@@ -83,4 +45,3 @@ object NodeById {
 object RelationshipById {
   def apply(varName:String, id: Long*) = new RelationshipById(varName, Literal(id))
 }
-

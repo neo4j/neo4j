@@ -27,7 +27,7 @@ abstract class CypherException(message: String, cause: Throwable) extends Runtim
 
 class EntityNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause)
 
-class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause)
+class CypherTypeException(message:String) extends CypherException(message,null)
 
 class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
   def this(message:String) = this(message, null)
@@ -44,6 +44,6 @@ class ParameterWrongTypeException(message:String, cause:Throwable) extends Cyphe
 
 class PatternException(message:String) extends CypherException(message, null)
 
-class InternalException(message:String, inner:Exception=null) extends CypherException(message, inner)
+class InternalException(message:String) extends CypherException(message, null)
 
 class MissingIndexException(indexName:String) extends CypherException("Index `" + indexName + "` does not exist")

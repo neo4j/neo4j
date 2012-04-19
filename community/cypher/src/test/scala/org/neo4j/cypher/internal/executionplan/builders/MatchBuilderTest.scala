@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.junit.Assert._
+import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.commands.{ShortestPath, NodeById, True, RelatedTo}
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
 
-class MatchBuilderTest extends BuilderTest {
+class MatchBuilderTest extends Assertions with PipeBuilder {
 
   val builder = new MatchBuilder
 
@@ -38,7 +39,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertTrue(builder.canWorkWith(plan(p, q)))
+    assertTrue(builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -49,7 +50,7 @@ class MatchBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("l"))
 
-    assertFalse("Should not accept this query", builder.canWorkWith(plan(p, q)))
+    assertFalse("Should not accept this query", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -59,8 +60,8 @@ class MatchBuilderTest extends BuilderTest {
       patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
 
     val inP = createPipe(nodes = Seq("l"))
-
-    val q = builder(plan(inP, inQ)).query
+    
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns === Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
   }
@@ -72,9 +73,9 @@ class MatchBuilderTest extends BuilderTest {
       patterns = Seq(Unsolved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
         Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
 
-    val inP = createPipe(nodes = Seq("a"))
-
-    val q = builder(plan(inP, inQ)).query
+    val inP  = createPipe(nodes = Seq("a"))
+    
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
       Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
@@ -87,9 +88,9 @@ class MatchBuilderTest extends BuilderTest {
       patterns = Seq(Unsolved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
         Unsolved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
 
-    val inP = createPipe(nodes = Seq("a", "b"))
+    val inP = createPipe(nodes = Seq("a","b"))
 
-    val q = builder(plan(inP, inQ)).query
+    val (_, q) = builder(inP, inQ)
 
     assert(q.patterns.toSet === Set(Solved(RelatedTo("a", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
       Solved(RelatedTo("b", "r2", "rel2", Seq(), Direction.OUTGOING, false, True()))))
@@ -103,6 +104,6 @@ class MatchBuilderTest extends BuilderTest {
 
     val inP = createPipe(nodes = Seq("l"))
 
-    assertFalse(builder.canWorkWith(plan(inP, inQ)))
+    assertFalse(builder.isDefinedAt(inP,inQ))
   }
 }

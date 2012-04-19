@@ -9,7 +9,7 @@
 
     <properties>
         <bundle.namespace>org.neo4j.cypher</bundle.namespace>
-        <scala.version>2.9.1-1</scala.version>
+        <scala.version>2.9.0-1</scala.version>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     </properties>
@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.9.1</artifactId>
+            <artifactId>scalatest_2.9.0</artifactId>
             <version>1.6.1</version>
             <scope>test</scope>
         </dependency>

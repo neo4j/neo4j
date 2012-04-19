@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.executionplan.{Unsolved, PartiallySolvedQuery}
+import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.{ReturnItem, Literal}
 
-class ExtractBuilderTest extends BuilderTest {
+class ExtractBuilderTest extends Assertions with PipeBuilder {
 
   val builder = new ExtractBuilder
 
@@ -37,9 +38,9 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(p, q)))
+    assertTrue("This query should be accepted", builder.isDefinedAt(p, q))
 
-    val result = builder(plan(p, q)).query
+    val (_, result) = builder(p, q)
 
     assertTrue("the builder did not mark the query as extracted", result.extracted)
   }
@@ -54,7 +55,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+    assertFalse("This query should not be accepted", builder.isDefinedAt(p, q))
   }
 
   @Test
@@ -67,6 +68,6 @@ class ExtractBuilderTest extends BuilderTest {
 
     val p = createPipe(nodes = Seq("s"))
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+    assertFalse("This query should not be accepted", builder.isDefinedAt(p, q))
   }
 }

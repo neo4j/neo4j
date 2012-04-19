@@ -19,27 +19,22 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+import org.neo4j.cypher.internal.executionplan.{QueryToken, Unsolved, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
 import collection.JavaConverters._
-import java.lang.{Iterable => JIterable}
+import java.lang.{Iterable=>JIterable}
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val p = plan.pipe
-
+  def apply(pipe: Pipe, q: PartiallySolvedQuery) = {
     val item = q.start.filter(filter).head
 
-    val newPipe = createStartPipe(p, item.token)
+    val newPipe = createStartPipe(pipe, item.token)
 
-    plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
+    (newPipe, q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
-
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(filter)
 
   private def filter(q: QueryToken[_]): Boolean = q match {
     case Unsolved(NodeByIndexQuery(_, _, _)) => true
@@ -49,11 +44,10 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case _ => false
   }
 
-  private def checkNodeIndex(idxName: String) {
+  private def checkNodeIndex(idxName:String) {
     if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
   }
-
-  private def checkRelIndex(idxName: String) {
+  private def checkRelIndex(idxName:String) {
     if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
   }
 
@@ -93,6 +87,8 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       })
   }
 
+
+  def isDefinedAt(pipe: Pipe, q: PartiallySolvedQuery): Boolean = q.start.exists(filter)
 
   def priority: Int = PlanBuilder.IndexQuery
 }

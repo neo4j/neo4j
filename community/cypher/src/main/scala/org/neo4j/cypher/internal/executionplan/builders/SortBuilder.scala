@@ -19,25 +19,22 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.SortPipe
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.pipes.{SortPipe, Pipe}
 
 class SortBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
+  def apply(p: Pipe, q: PartiallySolvedQuery) = {
     val sortExpressionsToExtract = q.sort.map(_.token).map(_.expression)
 
-    val (pipe, newPsq) = ExtractBuilder.extractIfNecessary(q, plan.pipe, sortExpressionsToExtract)
+    val (pipe, newPsq) = ExtractBuilder.extractIfNecessary(q,p, sortExpressionsToExtract)
 
     val sortItems = newPsq.sort.map(_.token)
     val resultPipe = new SortPipe(pipe, sortItems.toList)
 
-    val resultQ = newPsq.copy(sort = newPsq.sort.map(_.solve))
-
-    plan.copy(pipe = resultPipe, query = resultQ)
+    (resultPipe, newPsq.copy(sort = newPsq.sort.map(_.solve)))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.extracted && plan.query.sort.filter(_.unsolved).nonEmpty
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.extracted && q.sort.filter(_.unsolved).nonEmpty
 
   def priority: Int = PlanBuilder.Sort
 }

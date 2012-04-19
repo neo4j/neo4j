@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import internal.pipes.QueryState
 import internal.StringExtras
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
@@ -28,6 +27,7 @@ import java.lang.String
 import internal.symbols.SymbolTable
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
+import java.text.DecimalFormat
 
 class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
   extends ExecutionResult
@@ -69,9 +69,9 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     columnSizes.toMap
   }
 
-  protected def createTimedResults = {
+  private def createTimedResults = {
     val start = System.currentTimeMillis()
-    val eagerResult = immutableResult.toList
+    val eagerResult = r.toList
     val ms = System.currentTimeMillis() - start
 
     (eagerResult, ms.toString)
@@ -82,34 +82,22 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
-    if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
-      val headerLine: String = createString(columns, columnSizes, headers)
-      val lineWidth: Int = headerLine.length - 2
-      val --- = "+" + repeat("-", lineWidth) + "+"
+    val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
+    val headerLine: String = createString(columns, columnSizes, headers)
+    val lineWidth: Int = headerLine.length - 2
+    val --- = "+" + repeat("-", lineWidth) + "+"
+    
+    val row = if(eagerResult.size>1) "rows" else "row"
+    val footer = "%d %s, %s ms".format(eagerResult.size, row, timeTaken)
 
-      val row = if (eagerResult.size > 1) "rows" else "row"
-      val footer = "%d %s".format(eagerResult.size, row)
+    writer.println(---)
+    writer.println(headerLine)
+    writer.println(---)
 
-      writer.println(---)
-      writer.println(headerLine)
-      writer.println(---)
+    eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
 
-      eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
-
-      writer.println(---)
-      writer.println(footer)
-    } else {
-      writer.println("+-------------------+")
-      writer.println("| No data returned. |")
-      writer.println("+-------------------+")
-    }
-
-    if (queryStatistics.containsUpdates) {
-      writer.println(queryStatistics.toString)
-    }
-
-    writer.println("%s ms".format(timeTaken))
+    writer.println(---)
+    writer.println(footer)
   }
 
   def dumpToString(): String = {
@@ -152,25 +140,5 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
   def hasNext: Boolean = iterator.hasNext
 
   def next(): ImmutableMap[String, Any] = iterator.next()
-
-  lazy val queryStatistics = QueryStatistics.empty
 }
 
-class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]], symbols: SymbolTable, columns: List[String], state: QueryState)
-  extends PipeExecutionResult(r, symbols, columns) {
-
-  override lazy val queryStatistics = QueryStatistics(
-    nodesCreated = state.createdNodes.count,
-    relationshipsCreated = state.createdRelationships.count,
-    propertiesSet = state.propertySet.count,
-    deletedNodes = state.deletedNodes.count,
-    deletedRelationships = state.deletedRelationships.count)
-
-  override val createTimedResults = {
-    val start = System.currentTimeMillis()
-    val eagerResult = immutableResult.toList
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
-  }
-}

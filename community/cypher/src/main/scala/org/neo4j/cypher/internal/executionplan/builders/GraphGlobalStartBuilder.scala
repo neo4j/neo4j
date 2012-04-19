@@ -19,26 +19,20 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
+import org.neo4j.cypher.internal.executionplan.{QueryToken, Unsolved, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
 import org.neo4j.graphdb.GraphDatabaseService
 import collection.JavaConverters._
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
 
 class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val p = plan.pipe
+  def apply(pipe: Pipe, q: PartiallySolvedQuery) = {
     val item = q.start.filter(filter).head
 
-    val newPipe = createStartPipe(p, item.token)
+    val newPipe = createStartPipe(pipe, item.token)
 
-
-
-    val newQ: PartiallySolvedQuery = q.copy(start = q.start.filterNot(_ == item) :+ item.solve)
-
-    plan.copy(pipe = newPipe, query = newQ)
+    (newPipe, q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
   private def filter(q: QueryToken[_]) = q match {
@@ -52,7 +46,7 @@ class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(filter)
+  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = q.start.exists(filter)
 
   def priority = PlanBuilder.GlobalStart
 }

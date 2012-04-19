@@ -52,9 +52,8 @@ trait Expressions extends Base {
   }
 
   def factor: Parser[Expression] =
-    ( ignoreCase("true")    ^^^ Literal(true)
-      | ignoreCase("false") ^^^ Literal(false)
-      | ignoreCase("null")  ^^^ Literal(null)
+    ( ignoreCase("true") ^^ (x => Literal(true))
+      | ignoreCase("false") ^^ (x => Literal(false))
       | extract
       | function
       | aggregateExpression

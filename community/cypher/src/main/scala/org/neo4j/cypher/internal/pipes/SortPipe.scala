@@ -30,7 +30,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with 
 
   assertDependenciesAreMet()
 
-  def createResults(state:QueryState) = source.createResults(state).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
 
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false

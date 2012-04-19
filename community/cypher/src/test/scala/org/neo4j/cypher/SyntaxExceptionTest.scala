@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
@@ -69,11 +69,9 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def shouldRaiseErrorWhenMissingReturn() {
     expectError(
       "start s = node(0)",
-      "Non-mutating queries must return data")
+      "expected return clause")
   }
 
-  //TODO Fix this
-  @Ignore("Revisit when all start tokens are finished")
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",
@@ -179,19 +177,6 @@ class SyntaxExceptionTest extends JUnitSuite {
   }
 
   @Test def handlesMultilineQueries() {
-    expectError("""start
-    a=node(0),
-    b=node(0),
-    c=node(0),
-    d=node(0),
-    e=node(0),
-    f=node(0),
-    g=node(0),
-    s=node:index(key = value) return s""",
-      "string literal or parameter expected")
-  }
-
-  @Test def createNodeWithout() {
     expectError("""start
     a=node(0),
     b=node(0),

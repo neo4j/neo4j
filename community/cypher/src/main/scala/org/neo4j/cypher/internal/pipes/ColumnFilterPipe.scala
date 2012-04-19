@@ -19,38 +19,29 @@
  */
 package org.neo4j.cypher.internal.pipes
 
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.mutable.Map
-import org.neo4j.cypher.internal.commands.{ParameterValue, ReturnItem}
-import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 
-class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe: Boolean)
+class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   extends PipeWithSource(source) {
   val returnItemNames = returnItems.map(_.columnName)
-  val symbols = new SymbolTable(identifiers: _*)
+  val symbols = new SymbolTable(identifiers:_*)
 
   private lazy val identifiers = source.symbols.identifiers.flatMap {
     // Yay! My first monad!
-    case id => returnItems.
-      find(ri => ri.expression.identifier.name == id.name).
-      map(x => Identifier(x.columnName, id.typ))
+    case id => returnItems.find(ri=>ri.expression.identifier.name == id.name).map( x => id )
   }
-
-  def createResults(state: QueryState) = {
-    source.createResults(state).map(ctx => {
-      val newMap = Map[String, Any]()
-
-      ctx.foreach {
-        case (k, p) => if (p.isInstanceOf[ParameterValue] && !lastPipe) {
-          newMap.put(k, p)
-        } else {
-          val ri = returnItems.find(_.expression.identifier.name == k)
-          if (ri.nonEmpty) {
-            newMap.put(ri.get.columnName, p)
-          }
-        }
+    
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
+    source.createResults(params).map(m => {
+      val newMap = Map[String,Any]()
+      for (ri <- returnItems) {
+        val name = ri.expression.identifier.name
+        val keys= m.keys.toSeq
+        newMap += (ri.columnName -> m(name))
       }
-
-      ctx.copy(m = newMap)
+      newMap
     })
   }
 
