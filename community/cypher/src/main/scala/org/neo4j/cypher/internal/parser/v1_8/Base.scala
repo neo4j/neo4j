@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v1_8
 
 import scala.util.parsing.combinator._
+import org.neo4j.cypher.internal.commands.{Literal, ParameterExpression, Expression}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.{ParameterExpression, Literal, Expression}
 
 abstract class Base extends JavaTokenParsers {
+  var namer = new NodeNamer
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
 
   def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
@@ -96,4 +97,15 @@ abstract class Base extends JavaTokenParsers {
   def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => ParameterExpression(x))
 
   override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
+}
+class NodeNamer {
+  var lastNodeNumber = 0
+
+  def name(s: Option[String]): String = s match {
+    case None => {
+      lastNodeNumber += 1
+      "  UNNAMED" + lastNodeNumber
+    }
+    case Some(x) => x
+  }
 }

@@ -17,35 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_5
+package org.neo4j.cypher.internal.parser.v1_8
+
+import org.neo4j.cypher.internal.commands.{Sort, SortItem}
 
 
-import org.neo4j.cypher._
-import internal.commands.{Sort, Entity, ReturnItem, SortItem}
-import scala.util.parsing.combinator._
-trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
-  def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
+trait OrderByClause extends Base with Expressions  {
+  def desc:Parser[String] = ignoreCases("descending", "desc")
 
-  def asc:Parser[String] = ignoreCase("ascending") | ignoreCase("asc")
+  def asc:Parser[String] = ignoreCases("ascending", "asc")
 
   def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
     case None => true
     case Some(txt) => txt.toLowerCase.startsWith("a")
   }
 
-  def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ {
-    case returnItem ~ reverse => {
-      returnItem match {
-        case ReturnItem(Entity(_), _, _) => throw new SyntaxException("Cannot ORDER BY on nodes or relationships")
-        case _ => SortItem(returnItem.expression, reverse)
-      }
-    }
-  }
+  def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
 
-  def order: Parser[Sort] = ignoreCase("order by")  ~> rep1sep(sortItem, ",") ^^
-    {
-      case items => Sort(items:_*)
-    }
+  def order: Parser[Sort] = 
+    (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }
+      | ignoreCase("order") ~> failure("expected by"))
 }
 
 

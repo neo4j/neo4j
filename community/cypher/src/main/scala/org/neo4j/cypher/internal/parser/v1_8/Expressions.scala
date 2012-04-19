@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
@@ -52,8 +52,9 @@ trait Expressions extends Base {
   }
 
   def factor: Parser[Expression] =
-    ( ignoreCase("true") ^^ (x => Literal(true))
-      | ignoreCase("false") ^^ (x => Literal(false))
+    ( ignoreCase("true")    ^^^ Literal(true)
+      | ignoreCase("false") ^^^ Literal(false)
+      | ignoreCase("null")  ^^^ Literal(null)
       | extract
       | function
       | aggregateExpression

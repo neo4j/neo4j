@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_5
+package org.neo4j.cypher.internal.parser.v1_8
 
+import org.neo4j.cypher.internal.commands.Nullable
 import org.neo4j.cypher.internal.parser.ActualParser
-import org.neo4j.cypher.internal.commands.{Nullable, Property, Expression}
 
-trait ConsoleMode extends ReturnItems {
-  override def returnValues: Parser[Expression] = (nullableProperty | value | entityValue) ^^ {
-    case Property(v,p) => Nullable(Property(v,p))
-    case x => x
-  }
-}
-
-class ConsoleCypherParser extends CypherParserImpl with ConsoleMode with ActualParser {
-
+class ConsoleCypherParser extends CypherParserImpl with ActualParser {
+  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
 }

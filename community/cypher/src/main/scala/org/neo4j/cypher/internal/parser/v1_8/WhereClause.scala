@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_5
+package org.neo4j.cypher.internal.parser.v1_8
+
+import org.neo4j.cypher.internal.commands.Predicate
 
 
-import scala.util.parsing.combinator._
-import org.neo4j.cypher.internal.commands.{ParameterExpression, Literal, Expression}
-
-trait SkipLimitClause extends JavaTokenParsers with Tokens {
-  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
-
-  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
-
-  private def numberOrParam: Parser[Expression] = (parameter|positiveNumber) ^^ {
-    case x:ParameterExpression => x
-    case x:String => Literal(x.toInt)
-  }
+trait WhereClause extends Base with Expressions {
+  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
 }
+
+
+
+
+
+
 
 
 

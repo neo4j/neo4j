@@ -22,13 +22,13 @@ package org.neo4j.cypher
 import internal.commands.Query
 
 class CypherParser(version: String) {
-  def this() = this ("1.7")
+  def this() = this ("1.8")
 
   val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 
-  val v15 = new internal.parser.v1_5.CypherParserImpl
   val v16 = new internal.parser.v1_6.CypherParserImpl
   val v17 = new internal.parser.v1_7.CypherParserImpl
+  val v18 = new internal.parser.v1_8.CypherParserImpl
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = {
@@ -39,11 +39,10 @@ class CypherParser(version: String) {
     }
 
     v match {
-      case "1.5" => v15.parse(q)
       case "1.6" => v16.parse(q)
       case "1.7" => v17.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.5, 1.6 and 1.7")
+      case "1.8" => v18.parse(q)
+      case _ => throw new SyntaxException("Versions supported are 1.6, 1.7 and 1.8")
     }
-
   }
 }

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
 
 trait MatchClause extends Base with Expressions {
-  val namer = new NodeNamer
+
 
   def matching: Parser[(Match, NamedPaths)] = 
     correctMatch |
@@ -113,18 +113,6 @@ trait MatchClause extends Base with Expressions {
       case (false, true) => Direction.OUTGOING
       case _ => Direction.BOTH
     }
-
-  class NodeNamer {
-    var lastNodeNumber = 0
-
-    def name(s: Option[String]): String = s match {
-      case None => {
-        lastNodeNumber += 1
-        "  UNNAMED" + lastNodeNumber
-      }
-      case Some(x) => x
-    }
-  }
 
   def node: Parser[Option[String]] =
     (parensNode
