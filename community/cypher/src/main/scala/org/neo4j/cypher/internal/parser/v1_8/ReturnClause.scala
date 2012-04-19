@@ -17,15 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_5
+package org.neo4j.cypher.internal.parser.v1_8
 
-
-import scala.util.parsing.combinator._
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.SyntaxException
 
-trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ rep1sep((aggregate | returnItem), ",") ^^ {
+trait ReturnClause extends Base with Expressions {
+  def column = expressionColumn
+
+  def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
+    case (expression, name) => ReturnItem(expression, name.replace("`", ""))
+  }
+
+  def returns =
+    (returnsClause
+      | ignoreCase("return") ~> failure("return column list expected")
+      | failure("expected return clause"))
+
+
+  def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
+
+  def expressionColumn: Parser[ReturnItem] = returnItem ~ alias ^^ {
+    case col ~ Some(newName) => col.rename(newName)
+    case col ~ None => col
+  }
+
+
+  def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.columnName).toList
 
@@ -47,9 +66,22 @@ trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
       (Return(columnName, returnItems: _*), aggregation)
     }
   }
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> columnList
+
+
+  def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
+
+  def WITH: Parser[(Return, Option[Aggregation])] = withSyntax ^^ (columns => {
+
+    val problemColumns = columns._1.returnItems.flatMap {
+      case ReturnItem(_, _, true) => None
+      case ReturnItem(Entity(_), _, _) => None
+      case ri => Some(ri.name)
+    }
+    if (problemColumns.nonEmpty) {
+      throw new SyntaxException("These columns can't be listen in the WITH statement without renaming: " + problemColumns.mkString(","))
+    }
+
+    columns
+  })
 }
-
-
-
-
-
