@@ -20,7 +20,7 @@
 package org.neo4j.metatest;
 
 import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -42,6 +42,6 @@ public class TestProcessStreamHandler
         catch ( Exception e )
         {   // Good
         }
-        assertEquals( "Process should have been destroyed by now with exit code 1", 1, process.exitValue() );
+        assertTrue( "Process should have been destroyed by now", process.exitValue() != 0 );
     }
 }
