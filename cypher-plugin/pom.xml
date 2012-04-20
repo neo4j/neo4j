@@ -10,7 +10,7 @@
   <groupId>org.neo4j.server.plugin</groupId>
   <artifactId>neo4j-cypher-plugin</artifactId>
   <packaging>jar</packaging>
-  <version>1.5.3-SNAPSHOT</version>
+  <version>1.5.3.RC4</version>
   <name>neo4j-cypher-plugin</name>
 
   <properties>
