@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
-  <version>1.5.3.RC4</version>
+  <version>1.5.3-SNAPSHOT</version>
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
 
