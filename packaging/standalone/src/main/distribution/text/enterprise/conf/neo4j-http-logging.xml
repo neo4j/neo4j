@@ -1,0 +1,16 @@
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${http_log_dir}/http.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${http_log_dir}/http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+
+    <encoder>
+      <!-- Note the deliberate misspelling of "referer" in accordance with RFC1616 -->
+      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}"</pattern>
+    </encoder>
+  </appender>
+
+  <appender-ref ref="FILE"/>
+</configuration>
