@@ -105,13 +105,7 @@ public class HTTPLoggingPreparednessRuleTest
 
     private File badDirectory() throws Exception
     {
-<<<<<<< Updated upstream
-        File f = new File( "/does-not-exist?:" );
-
-=======
-        File f = new File( File.createTempFile("anywhere","") + "/does/not/exist" );
-        System.err.println(f.getAbsolutePath());
->>>>>>> Stashed changes
+        File f = new File( File.createTempFile( "anywhere","" ) + "/does/not/exist" );
         if ( f.exists() || f.canWrite() )
         {
             throw new RuntimeException(
