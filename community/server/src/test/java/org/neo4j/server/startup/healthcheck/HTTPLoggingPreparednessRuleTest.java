@@ -104,7 +104,7 @@ public class HTTPLoggingPreparednessRuleTest
 
     private File badDirectory() throws Exception
     {
-        File f = new File( "/does-not-exist" );
+        File f = new File( "/does-not-exist?:" );
 
         if ( f.exists() || f.canWrite() )
         {
