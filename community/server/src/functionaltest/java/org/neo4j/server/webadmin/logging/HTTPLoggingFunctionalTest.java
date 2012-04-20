@@ -1,22 +1,3 @@
-/**
- * Copyright (c) 2002-2012 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.neo4j.server.webadmin.logging;
 
 import static org.junit.Assert.assertEquals;
@@ -45,6 +26,7 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
@@ -127,11 +109,11 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // given
-        File file = new File( File.createTempFile( "somewhere","" ), "not/writable" );
+        final String unwritableLogDir = createUnwritableDirectory().getAbsolutePath();
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_LOCATION, file.getAbsolutePath() )
+            .withProperty( Configurator.HTTP_LOG_LOCATION, unwritableLogDir )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
                 getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
             .build();
@@ -145,10 +127,23 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         catch ( StartupHealthCheckFailedException e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "HTTP log directory [" ) );
-            assertThat( e.getMessage(), containsString( file.getAbsolutePath() + "] cannot be created" ) );
+            assertThat( e.getMessage(),
+                containsString( String.format( "HTTP log directory [%s] is not writable", unwritableLogDir ) ) );
         }
 
+    }
+
+    private File createUnwritableDirectory()
+    {
+        TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
+
+        final File file = targetDirectory.directory( "unwritable" );
+        file.setWritable( false, false );
+
+        System.out.println( "file = " + file );
+
+
+        return file;
     }
 
     private boolean occursIn( String lookFor, File file ) throws FileNotFoundException
