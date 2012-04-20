@@ -54,7 +54,7 @@ final class ServerHolder extends Thread
 
     private static NeoServer startServer() throws IOException
     {
-        NeoServer server = ServerHelper.createServer();
+        NeoServer server = ServerHelper.createNonPersistentServer();
         return server;
     }
 

@@ -29,20 +29,22 @@ import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
+import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription, GeoffService}
+import org.neo4j.test.GeoffService
 
 abstract class DocumentingTestBase extends JUnitSuite {
 
   var db: GraphDatabaseService = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
-  var nodes: Map[String, Node] = null
+  var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
+  var generateConsole: Boolean = true
 
   def section: String
 
@@ -63,10 +65,24 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println(returns)
     writer.println()
-    writer.println(".Result")
-    writer.println(AsciidocHelper.createQueryResultSnippet(result.dumpToString()))
+
+    val resultText = result.dumpToString()
+    if (resultText.contains("No data returned")) {
+      writer.println("----")
+      writer.println(resultText)
+      writer.println("----")
+    } else {
+      writer.println(".Result")
+      writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
+    }
     writer.println()
     writer.println()
+    if(generateConsole) {
+      writer.println(".Try this query live")
+      writer.println("[console]")
+      writer.println("----\n"+new GeoffService(db).toGeoff()+"\n"+query+"\n----")
+      writer.println()
+    }
     writer.flush()
     writer.close()
   }
@@ -105,8 +121,7 @@ _Graph_
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val q = parser.parse(query)
-    val result = engine.execute(q)
+    val result = engine.execute(query)
     assertions.foreach(_.apply(result))
 
     val dir = new File(path + nicefy(section))
@@ -131,7 +146,7 @@ _Graph_
     })
   }
 
-  def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
+  def node(name: String): Node = db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name)))
 
   def rel(id: Long): Relationship = db.getRelationshipById(id)
 
@@ -153,7 +168,9 @@ _Graph_
       val g = new GraphImpl(graphDescription.toArray[String])
       val description = GraphDescription.create(g)
 
-      nodes = description.create(db).asScala.toMap
+      nodes = description.create(db).asScala.map {
+        case (name, node) => name -> node.getId
+      }.toMap
 
       db.getAllNodes.asScala.foreach((n) => {
         indexProperties(n, nodeIndex)

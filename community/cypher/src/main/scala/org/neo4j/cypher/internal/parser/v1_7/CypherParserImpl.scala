@@ -52,7 +52,7 @@ with ActualParser {
         case Some(w) => if(w.exists(_.isInstanceOf[AggregationExpression])) throw new SyntaxException("Can't use aggregate functions in the WHERE clause. Move it to the HAVING clause.")
         case _ =>
       }
-      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
+      (queryText: String) => Query(returns._1, start, Seq(), pattern, where, returns._2, order, slice, namedPaths, None, queryText)
     }
   }
 

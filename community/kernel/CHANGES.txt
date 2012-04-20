@@ -1,3 +1,25 @@
+1.7 (2012-04-19)
+----------------
+o Moved BatchInserter to a different package.
+o Fixed 'Record Not In Use' issue with creating and setting Node properties with the BatchInserter.
+o Cleanup of configuration refactoring.
+
+1.7.M03 (2012-04-11)
+--------------------
+o Refactoring of configuration and object instantiation.
+o Removed old OSGi support in favor of the new and better one.
+o Added possibility to use logback for logging.
+o Renamed array cache to GC resistant cache (GCR) and moved it to enterprise.
+o Fixed problem with GCR cache that could cause it to calculate incorrect size.
+o Fixed problem with closing of messages.log on windows
+
+1.7.M02 (2012-03-26)
+--------------------
+o Added lock free atomic array cache that avoids triggering full GCs.
+o Added GC monitor that will keep track on how much the JVM blocks application threads.
+o Fix for an issue where upgrading indices with an unclean shutdown.
+o Replaced ArrayMap in TxManager with CHM.
+
 1.7.M01 (2012-03-12)
 --------------------
 o Fixed bug in PropertyStore that during recovery would throw exception if the last record was incomplete.

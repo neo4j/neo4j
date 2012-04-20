@@ -23,7 +23,6 @@ import java.lang.String
 import collection.Seq
 import org.neo4j.cypher.internal.commands.{Expression, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable, Identifier}
-import collection.mutable.Map
 
 //This class will extract properties and other stuff to make the maps
 //easy to work with for other pipes
@@ -34,9 +33,9 @@ class ExtractPipe(source: Pipe, val expressions: Seq[Expression]) extends PipeWi
 
   val symbols: SymbolTable = source.symbols.add(expressions.map(_.identifier):_*)
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    source.createResults(params).map(row => {
-      expressions.foreach( exp =>  row += exp.identifier.name -> exp(row) )
+  def createResults(state: QueryState) = {
+    source.createResults(state).map(row => {
+      expressions.foreach( exp => row += exp.identifier.name -> exp(row) )
       row
     })
   }

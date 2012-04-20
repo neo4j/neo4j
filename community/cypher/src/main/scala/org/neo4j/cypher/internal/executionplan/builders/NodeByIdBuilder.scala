@@ -29,18 +29,23 @@ import org.neo4j.cypher.internal.executionplan._
 class NodeByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def priority: Int = PlanBuilder.NodeById
 
-  def apply(inPipe: Pipe, inQ: PartiallySolvedQuery): (Pipe, PartiallySolvedQuery) = {
-      val startItemToken = interestingStartItems(inQ).head
-      val Unsolved(NodeById(key, expression)) = startItemToken
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
 
-      val pipe = new NodeStartPipe(inPipe, key, m => getElements[Node](expression(m), key, graph.getNodeById))
+    val startItemToken = interestingStartItems(q).head
+    val Unsolved(NodeById(key, expression)) = startItemToken
 
-      val remainingQ:Seq[QueryToken[StartItem]] = inQ.start.filterNot(_ == startItemToken) :+ startItemToken.solve
+    val resultP = new NodeStartPipe(p, key, m => getElements[Node](expression(m), key, graph.getNodeById))
 
-      (pipe, inQ.copy(start = remainingQ))
-    }
+    val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 
-  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery): Boolean = interestingStartItems(q).nonEmpty
+    val resultQ = q.copy(start = remainingQ)
+
+    plan.copy(pipe = resultP, query = resultQ)
+  }
+
+  def canWorkWith(plan: ExecutionPlanInProgress) = interestingStartItems(plan.query).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(NodeById(_, expression)) => true

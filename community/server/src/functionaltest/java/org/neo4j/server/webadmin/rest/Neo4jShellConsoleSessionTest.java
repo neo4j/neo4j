@@ -76,7 +76,7 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     public void doesntMangleNewlines() throws Exception
     {
         Response response = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"start n=node(0) return n\", \"engine\":\"shell\" }" );
+                "{ \"command\" : \"start n=node(0) return n;\", \"engine\":\"shell\" }" );
 
      
         assertEquals( 200, response.getStatus() );

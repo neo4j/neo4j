@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.executionplan
 
 import collection.Seq
-import org.neo4j.cypher.internal.pipes.Pipe
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{Entity, ReturnItem, NodeById, Query}
@@ -37,7 +36,7 @@ class ExecutionPlanImplTest extends Assertions with Timed {
       val epi = new FakeEPI(q, null)
       epi.execute(Map())
     })
-    
+
     assertTrue(exception.getCause.isInstanceOf[InternalException])
   }
 }
@@ -49,8 +48,10 @@ class FakeEPI(q: Query, gds: GraphDatabaseService) extends ExecutionPlanImpl(q, 
 // This is a builder that accepts everything, but changes nothing
 // It's a never ending loop waiting to happen
 class BadBuilder extends PlanBuilder {
-  def apply(p: Pipe, q: PartiallySolvedQuery) = (p,q)
-  def isDefinedAt(p: Pipe, q: PartiallySolvedQuery) = true
+  def apply(plan: ExecutionPlanInProgress) = plan
+
+  def canWorkWith(plan: ExecutionPlanInProgress) = true
+
   def priority = 0
 }
 
