@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.startup.healthcheck;
 
-import static java.io.File.separator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;

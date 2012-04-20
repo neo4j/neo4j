@@ -127,10 +127,11 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // given
+        File file = new File( File.createTempFile( "somewhere","" ), "not/writable" );
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_LOCATION, File.createTempFile( "somewhere","" ) + "/not/writable" )
+            .withProperty( Configurator.HTTP_LOG_LOCATION, file.getAbsolutePath() )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
                 getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
             .build();
@@ -145,7 +146,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(), containsString( "HTTP log directory [" ) );
-            assertThat( e.getMessage(), containsString( "/not/writable] cannot be created" ) );
+            assertThat( e.getMessage(), containsString( file.getAbsolutePath() + "] cannot be created" ) );
         }
 
     }
