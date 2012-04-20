@@ -22,6 +22,11 @@ package org.neo4j.helpers.collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+/**
+ * Wraps the given iterator but keeps the first item to allow later
+ * access to it, like CachingIterator but with less memory overhead.
+ * @param <T>
+ */
 public class FirstItemIterable<T> implements Iterable<T> {
     private final T first;
     private final Iterator<T> iterator;
