@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
-  <version>1.5.3.RC4</version>
+  <version>1.5.3-SNAPSHOT</version>
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
