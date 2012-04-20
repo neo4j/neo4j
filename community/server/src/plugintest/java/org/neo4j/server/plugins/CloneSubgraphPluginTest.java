@@ -63,7 +63,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
+        server = ServerHelper.createNonPersistentServer();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
     

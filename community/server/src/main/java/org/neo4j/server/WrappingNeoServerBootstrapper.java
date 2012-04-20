@@ -25,7 +25,7 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.EmbeddedServerConfigurator;
+import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.DiscoveryModule;
@@ -62,7 +62,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  * 
  * If you want to change configuration, pass in the optional Configurator arg to
  * the constructor. You can write your own implementation or use
- * {@link EmbeddedServerConfigurator}.
+ * {@link org.neo4j.server.configuration.ServerConfigurator}.
  */
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
@@ -77,12 +77,12 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      */
     public WrappingNeoServerBootstrapper( GraphDatabaseAPI db )
     {
-        this( db, new EmbeddedServerConfigurator( db ) );
+        this( db, new ServerConfigurator( db ) );
     }
 
     /**
      * Create an instance with custom documentation.
-     * {@link EmbeddedServerConfigurator} is written to fit well here, see its'
+     * {@link org.neo4j.server.configuration.ServerConfigurator} is written to fit well here, see its'
      * documentation.
      * 
      * @param db
@@ -115,7 +115,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         {
             if ( server != null )
             {
-                server.stopServer();
+                server.stopServerOnly();
                 server.getDatabase()
                         .rrdDb()
                         .close();

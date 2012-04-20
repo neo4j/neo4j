@@ -63,7 +63,7 @@ public class NeoServerFunctionalTest extends AbstractRestFunctionalTestBase
 
     @Test
     public void serverShouldProvideAWelcomePage() throws Exception {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.getWebadminUri());
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.webAdminUri());
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
