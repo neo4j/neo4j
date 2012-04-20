@@ -197,7 +197,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     {
         TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
 
-        final File file = targetDirectory.directory( "unwritable" );
+        final File file = targetDirectory.file( "unwritable" );
         file.setWritable( false, false );
 
         System.out.println( "file = " + file );
