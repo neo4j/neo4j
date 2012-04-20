@@ -24,7 +24,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -127,6 +129,10 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     @Test
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
+        // Apparently you cannot create an unwritable directory in Windows with
+        // neither File#setWritable nor creating a directory in the root.
+        assumeTrue( !osIsWindows() );
+        
         // given
         final String unwritableLogDir = createUnwritableDirectory().getAbsolutePath();
         server = ServerBuilder.server().withDefaultDatabaseTuning()
@@ -152,6 +158,41 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
 
     }
 
+    @Test
+    public void givenConfigurationWithInvalidLogDirectoryShouldFailToStartServer() throws Exception
+    {
+        // given
+        final String invalidLogDir = createInvalidDirectory().getAbsolutePath();
+        server = ServerBuilder.server().withDefaultDatabaseTuning()
+            .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
+            .withProperty( Configurator.HTTP_LOGGING, "true" )
+            .withProperty( Configurator.HTTP_LOG_LOCATION, invalidLogDir )
+            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
+                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
+            .build();
+
+        // when
+        try
+        {
+            server.start();
+            fail( "should have thrown exception" );
+        }
+        catch ( StartupHealthCheckFailedException e )
+        {
+            // then
+            assertThat( e.getMessage(),
+                containsString( String.format( "HTTP log directory [%s] cannot be created", invalidLogDir ) ) );
+        }
+    }
+    
+    private File createInvalidDirectory() throws IOException
+    {
+        File directory = TargetDirectory.forTest( this.getClass() ).directory( "invalid" );
+        File file = new File( directory, "file" );
+        file.createNewFile();
+        return new File( file, "subdirectory" );
+    }
+    
     private File createUnwritableDirectory()
     {
         TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
