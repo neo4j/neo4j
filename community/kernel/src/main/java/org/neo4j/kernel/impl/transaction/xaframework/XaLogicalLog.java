@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,8 +38,6 @@ import java.util.regex.Pattern;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import static java.lang.Math.max;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -49,8 +50,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -311,7 +310,7 @@ public class XaLogicalLog implements LogLoader
                                     + e ), e );
         }
     }
-    
+
     synchronized Start getStartEntry( int identifier )
     {
         Start start = xidIdentMap.get( identifier );
@@ -1209,9 +1208,33 @@ public class XaLogicalLog implements LogLoader
         {
             for ( LogEntry entry : logEntries )
             {
-                if ( entry instanceof Start ) ((Start)entry).setStartPosition( writeBuffer.getFileChannelPosition() );
-                LogIoUtils.writeLogEntry( entry, writeBuffer );
-                applyEntry( entry );
+                /*
+                 * You are wondering what is going on here. Let me take you on a journey
+                 * A transaction, call it A starts, prepares locally, goes to the master and commits there
+                 *  but doesn't quite make it back here, meaning its application is pending, with only the
+                 *  start, command  and possibly prepare entries but not the commit, the Xid in xidmap
+                 * Another transaction, B, does an operation that requires going to master and pull updates - does
+                 *  that, gets all transactions not present locally (hence, A as well) and injects it.
+                 *  The Start entry is the first one extracted - if we try to apply it it will throw a Start
+                 *  entry already injected exception, since the Xid will match an ongoing transaction. If we
+                 *  had written that to the log recovery would be impossible, constantly throwing the same
+                 *  exception. So first apply, then write to log.
+                 * However we cannot do that for every entry - commit must always be written to log first, then
+                 *  applied because a crash in the mean time could cause partially applied transactions.
+                 *  The start entry does not have this problem because if it fails nothing will ever be applied -
+                 *  the same goes for commands but we don't care about those.
+                 */
+                if ( entry instanceof Start )
+                {
+                    ( (Start) entry ).setStartPosition( writeBuffer.getFileChannelPosition() );
+                    applyEntry( entry );
+                    LogIoUtils.writeLogEntry( entry, writeBuffer );
+                }
+                else
+                {
+                    LogIoUtils.writeLogEntry( entry, writeBuffer );
+                    applyEntry( entry );
+                }
             }
         }
 
