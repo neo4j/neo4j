@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.startup.healthcheck;
 
+import static java.io.File.separator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -104,8 +105,13 @@ public class HTTPLoggingPreparednessRuleTest
 
     private File badDirectory() throws Exception
     {
+<<<<<<< Updated upstream
         File f = new File( "/does-not-exist?:" );
 
+=======
+        File f = new File( File.createTempFile("anywhere","") + "/does/not/exist" );
+        System.err.println(f.getAbsolutePath());
+>>>>>>> Stashed changes
         if ( f.exists() || f.canWrite() )
         {
             throw new RuntimeException(
