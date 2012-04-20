@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.helpers;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -114,34 +112,14 @@ public class ServerHelper
                 indexManager.getRelationshipAutoIndexer().setEnabled(false);
             }
         } ).execute();
-
-        removeLogs( server );
     }
-
-    private static void removeLogs( NeoServer server )
-    {
-        File logDir = new File( server.getDatabase().getLocation() + File.separator + ".." + File.separator + "log" );
-        try
-        {
-            FileUtils.deleteDirectory( logDir );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public static NeoServer createNonPersistentServer() throws IOException
+    
+    public static NeoServer createServer() throws IOException
     {
         return createServer( false );
     }
-
-    public static NeoServer createPersistentServer() throws IOException
-    {
-        return createServer( true );
-    }
-
-    private static NeoServer createServer( boolean persistent ) throws IOException
+    
+    public static NeoServer createServer( boolean persistent ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
         configureHostname( builder );

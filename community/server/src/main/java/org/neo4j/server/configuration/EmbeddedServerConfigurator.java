@@ -45,13 +45,13 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
  * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the static strings in {@link Configurator}.
  */
-public class ServerConfigurator implements Configurator
+public class EmbeddedServerConfigurator implements Configurator
 {
 
     private MapBasedConfiguration config = new MapBasedConfiguration();
     private Set<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
 
-    public ServerConfigurator( GraphDatabaseAPI db )
+    public EmbeddedServerConfigurator( GraphDatabaseAPI db )
     {
         config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
     }

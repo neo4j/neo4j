@@ -90,12 +90,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         initWebServer();
 
-        DiagnosticsManager diagnosticsManager = startDatabase();
+        DiagnosticsManager dm = startDatabase();
 
-        StringLogger logger = diagnosticsManager.getTargetLog();
+        StringLogger logger = dm.getTargetLog();
         logger.logMessage("--- SERVER STARTUP START ---");
 
-        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
+        dm.register(Configurator.DIAGNOSTICS, configurator);
 
         startExtensionInitialization();
 
@@ -257,16 +257,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 webServer.addExecutionLimitFilter( limit );
             }
 
-
-            if ( httpLoggingProperlyConfigured() )
-            {
-                webServer.enableHTTPLoggingForWebadmin(
-                    new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ),
-                    new File( getConfiguration().getProperty( Configurator.HTTP_LOG_LOCATION ).toString() ) );
-            }
-
             webServer.start();
-
             if (logger != null)
             {
                 logger.logMessage("Server started on: " + baseUri());
@@ -277,39 +268,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             e.printStackTrace();
             log.error("Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage());
         }
-    }
-
-
-    private boolean httpLoggingProperlyConfigured()
-    {
-        return loggingEnabled() && logLocationSuitable() && configLocated();
-    }
-
-    private boolean configLocated()
-    {
-        final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION );
-        if ( property == null )
-        {
-            return false;
-        }
-
-        return new File( String.valueOf( property ) ).exists();
-    }
-
-    private boolean logLocationSuitable()
-    {
-        final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_LOCATION );
-        if ( property == null )
-        {
-            return false;
-        }
-
-        return new File( String.valueOf( property ) ).mkdirs();
-    }
-
-    private boolean loggingEnabled()
-    {
-        return "true".equals( String.valueOf( getConfiguration().getProperty( Configurator.HTTP_LOGGING ) ) );
     }
 
     protected int getWebServerPort()
@@ -373,29 +331,31 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         try
         {
-            stopServerOnly();
+            stopServer();
             stopDatabase();
-            log.info( "Successfully shutdown database." );
+            log.info("Successfully shutdown database [%s]", getDatabase().getLocation());
         } catch (Exception e)
         {
-            log.warn( "Failed to cleanly shutdown database." );
+            log.warn("Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
+                     e.getMessage());
         }
     }
 
     /**
      * Stops everything but the database.
      */
-    public void stopServerOnly()
+    public void stopServer()
     {
         try
         {
             stopWebServer();
             stopModules();
             stopExtensionInitializers();
-            log.info( "Successfully shutdown Neo4j Server." );
+            log.info("Successfully shutdown Neo Server on port [%d]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e)
         {
-            log.warn( "Failed to cleanly shutdown Neo4j Server." );
+            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
+                     getWebServerPort(), getDatabase().getLocation(), e.getMessage());
         }
     }
 

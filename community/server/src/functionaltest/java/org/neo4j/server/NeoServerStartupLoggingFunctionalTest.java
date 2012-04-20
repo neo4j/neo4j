@@ -47,7 +47,7 @@ public class NeoServerStartupLoggingFunctionalTest extends ExclusiveServerTestBa
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createNonPersistentServer();
+        server = ServerHelper.createServer();
     }
 
     @Before

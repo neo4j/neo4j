@@ -69,14 +69,13 @@ public class ServerBuilder
     private String webAdminDataUri = "/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
-    private Properties arbitraryProperties = new Properties();
 
     private static enum WhatToDo
     {
         CREATE_GOOD_TUNING_FILE,
         CREATE_DANGLING_TUNING_FILE_PROPERTY,
         CREATE_CORRUPT_TUNING_FILE
-    }
+    };
 
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
@@ -92,8 +91,8 @@ public class ServerBuilder
     {
         return new ServerBuilder();
     }
-
-    @SuppressWarnings("unchecked")
+    
+    @SuppressWarnings( "unchecked" )
     public NeoServerWithEmbeddedWebServer build() throws IOException
     {
         if ( dbDir == null )
@@ -105,7 +104,7 @@ public class ServerBuilder
         if ( serverModules == null )
         {
             withSpecificServerModulesOnly( RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class,
-                ThirdPartyJAXRSModule.class, DiscoveryModule.class );
+                    ThirdPartyJAXRSModule.class, DiscoveryModule.class );
         }
 
         if ( startupHealthCheck == null )
@@ -125,8 +124,8 @@ public class ServerBuilder
         }
 
         return new NeoServerWithEmbeddedWebServer( createBootstrapper(), startupHealthCheck,
-            new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
-            new Jetty6WebServer(), serverModules );
+                new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
+                new Jetty6WebServer(), serverModules );
     }
 
     protected Bootstrapper createBootstrapper()
@@ -147,9 +146,9 @@ public class ServerBuilder
     private void createPropertiesFile( File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
-            Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
-            Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
-            Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
+                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
+                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
         if ( portNo != null )
         {
             properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
@@ -187,24 +186,15 @@ public class ServerBuilder
             String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
             properties.put( Configurator.SECURITY_RULES_KEY, propertyKeys );
         }
-
-        if ( httpsEnabled != null )
-        {
-            if ( httpsEnabled )
-            {
+        
+        if(httpsEnabled != null) {
+            if(httpsEnabled) {
                 properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true" );
-            }
-            else
-            {
+            } else {
                 properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "false" );
             }
         }
-
-        for ( Object key : arbitraryProperties.keySet() )
-        {
-            properties.put( String.valueOf( key ), String.valueOf( arbitraryProperties.get( key ) ) );
-        }
-
+        
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
     }
 
@@ -213,26 +203,26 @@ public class ServerBuilder
         if ( action == WhatToDo.CREATE_GOOD_TUNING_FILE )
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
-            Map<String, String> properties = MapUtil.stringMap(
-                "neostore.nodestore.db.mapped_memory", "25M",
-                "neostore.relationshipstore.db.mapped_memory", "50M",
-                "neostore.propertystore.db.mapped_memory", "90M",
-                "neostore.propertystore.db.strings.mapped_memory", "130M",
-                "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+            Map<String, String> properties = MapUtil.stringMap( 
+                    "neostore.nodestore.db.mapped_memory", "25M",
+                    "neostore.relationshipstore.db.mapped_memory", "50M",
+                    "neostore.propertystore.db.mapped_memory", "90M",
+                    "neostore.propertystore.db.strings.mapped_memory", "130M",
+                    "neostore.propertystore.db.arrays.mapped_memory", "130M" );
             writePropertiesToFile( properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
-                databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
+                    databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
         {
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(),
-                temporaryConfigFile );
+                    temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
         {
             File corruptTuningFile = trashFile();
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(),
-                temporaryConfigFile );
+                    temporaryConfigFile );
         }
     }
 
@@ -261,7 +251,7 @@ public class ServerBuilder
         this.persistent = true;
         return this;
     }
-
+    
     public ServerBuilder onPort( int portNo )
     {
         this.portNo = String.valueOf( portNo );
@@ -336,9 +326,7 @@ public class ServerBuilder
             {
                 return false;
             }
-
-            public StartupHealthCheckRule failedRule()
-            {
+            public StartupHealthCheckRule failedRule() {
                 return new StartupHealthCheckRule()
                 {
 
@@ -351,7 +339,7 @@ public class ServerBuilder
                     {
                         return false;
                     }
-                };
+                };           
             }
         };
         return this;
@@ -416,22 +404,10 @@ public class ServerBuilder
         this.securityRuleClassNames = securityRuleClassNames;
         return this;
     }
-
+    
     public ServerBuilder withHttpsEnabled()
     {
-        httpsEnabled = true;
-        return this;
-    }
-
-    public ServerBuilder withProperty( String key, String value )
-    {
-        arbitraryProperties.put( key, value );
-        return this;
-    }
-
-    public ServerBuilder withStartupHealthCheckRules( StartupHealthCheckRule... rules )
-    {
-        this.startupHealthCheck = new StartupHealthCheck( arbitraryProperties, rules );
+        httpsEnabled  = true;
         return this;
     }
 }

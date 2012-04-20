@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import com.sun.jersey.api.client.Client;
@@ -91,7 +91,7 @@ public class ExecutionTimeLimitTest
             }
         };
 
-        ServerConfigurator config = new ServerConfigurator( db );
+        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator( db );
         config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7476 );
         config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 1000 );
         testBootstrapper = new WrappingNeoServerBootstrapper( db, config );

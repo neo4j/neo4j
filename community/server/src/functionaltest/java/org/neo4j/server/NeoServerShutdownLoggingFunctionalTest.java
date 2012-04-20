@@ -38,7 +38,7 @@ public class NeoServerShutdownLoggingFunctionalTest extends ExclusiveServerTestB
     @Before
     public void setupServer() throws IOException
     {
-        server = ServerHelper.createPersistentServer();
+        server = ServerHelper.createServer( true );
         ServerHelper.cleanTheDatabase( server );
     }
 
@@ -56,6 +56,6 @@ public class NeoServerShutdownLoggingFunctionalTest extends ExclusiveServerTestB
     {
         InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
         server.stop();
-        assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database." ) );
+        assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database [" ) );
     }
 }

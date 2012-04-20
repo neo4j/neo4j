@@ -21,7 +21,6 @@ package org.neo4j.server.web;
 
 import static java.lang.String.format;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,14 +36,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
-import org.mortbay.jetty.handler.RequestLogHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
@@ -85,6 +82,7 @@ public class Jetty6WebServer implements WebServer
 
     private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
+    private boolean httpEnabled = true;
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
@@ -205,19 +203,6 @@ public class Jetty6WebServer implements WebServer
     public Server getJetty()
     {
         return jetty;
-    }
-
-    @Override
-    public void enableHTTPLoggingForWebadmin( File logbackConfigFile, File logDirectory )
-    {
-        final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.putProperty("http_log_dir", logDirectory.getAbsolutePath());
-        requestLog.setFileName( logbackConfigFile.getAbsolutePath() );
-
-        final RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog( requestLog );
-
-        jetty.addHandler( requestLogHandler );
     }
 
     @Override

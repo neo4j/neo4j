@@ -37,7 +37,7 @@ import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
@@ -95,8 +95,8 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).newGraphDatabase();
-        ServerConfigurator config;
-        config = new ServerConfigurator( graphdb );
+        EmbeddedServerConfigurator config;
+        config = new EmbeddedServerConfigurator( graphdb );
         // let the server endpoint be on a custom port
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
@@ -132,7 +132,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
 
-        ServerConfigurator config = new ServerConfigurator(
+        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(
                 myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(

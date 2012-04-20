@@ -8,7 +8,6 @@ Server Configuration
 * The 'conf/log4j.properties' file contains the default server logging configuration
 * Low-level performance tuning parameters are found in 'conf/neo4j.properties'
 * Configuraion of the deamonizing wrapper are found in 'conf/neo4j-wrapper.properties'
-* HTTP logging configuration is found in 'conf/neo4j-http-logging.xml'
 ***********
 
 == Important server configurations parameters ==
@@ -91,11 +90,9 @@ when performance tuning a server, including general server load, memory and file
 and even garbage collection penalties on the JVM, though such considerations are beyond the scope
 of this configuration document.
 
-== Server logging configuration ==
+== Logging configuration ==
 
-Application events within Neo4j server are processed with
- +http://download.oracle.com/javase/6/docs/technotes/guides/logging/overview.html[java.util.logging]+ and
- configured in the file 'conf/logging.properties'.
+The logging framework in use by the Neo4j server is +http://download.oracle.com/javase/6/docs/technotes/guides/logging/overview.html[java.util.logging]+ and is configured in 'conf/logging.properties'.
 
 By default it is setup to print +INFO+ level messages both on screen and in a rolling file in 'data/log'.
 Most deployments will choose to use their own configuration here to meet local standards.
@@ -124,36 +121,6 @@ through various frameworks.
 
 Zookeeper is hardwired to use the log4j logging framework. The bundled 'conf/log4j.properties' applies for this use only and uses a rolling appender and outputs logs by default to the
 'data/log' directory.
-
-== HTTP logging configuration ==
-
-As well as logging events happening within the Neo4j server, it is possible to log the HTTP requests and responses
-that the server consumes and produces. Configuring HTTP logging requires operators to enable and configure the
-logger and where it will log; and then to optionally configure the log format.
-
-[WARNING]
-By default the HTTP logger uses +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+
-meaning that most Web server tooling can automtically consume such logs. In general users should only enable HTTP logging,
-select an output directory, and if necessary alter the rollover and retention policies.
-
-To enable HTTP logging, edit the 'conf/neo4j-server.properties' file resemble the following:
-
- [source]
- ----
- org.neo4j.server.http.log.enabled=true
- org.neo4j.server.http.log.location=data/log/
- org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml
- ----
-
-'org.neo4j.server.http.log.enabled=true' tells the server that HTTP logging is enabled. HTTP logging can be totally
-disabled by setting this property to 'false'.
-'org.neo4j.server.http.log.location=data/log/' tells the server to log in the 'data/log' directory, using a file called
-http.log by default (which will be rotated as we shall see). Note that failure to specify a writable directory
-here will prevent the Neo4j server startup health check from passing, and thus prevent server startup.
-'org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml' specifies the logging format and rollover policy file
-that governs how HTTP log output is presented and archived. The defaults provided with Neo4j server uses an hourly log
-rotation and +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+.
-
 
 == Other configuration options ==
 

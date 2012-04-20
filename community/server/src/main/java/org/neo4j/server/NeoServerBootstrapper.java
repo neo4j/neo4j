@@ -32,7 +32,6 @@ import org.neo4j.server.modules.StatisticModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
-import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
@@ -41,8 +40,7 @@ public class NeoServerBootstrapper extends Bootstrapper
     @Override
     public Iterable<StartupHealthCheckRule> getHealthCheckRules()
     {
-        return Arrays.asList( new ConfigFileMustBePresentRule(), new Neo4jPropertiesMustExistRule(),
-            new HTTPLoggingPreparednessRule() );
+        return Arrays.asList( new ConfigFileMustBePresentRule(), new Neo4jPropertiesMustExistRule() );
     }
 
     @Override

@@ -30,17 +30,10 @@ public class StartupHealthCheck
     private final StartupHealthCheckRule[] rules;
 
     private StartupHealthCheckRule failedRule = null;
-    private Properties properties;
-
-    public StartupHealthCheck( Properties properties , StartupHealthCheckRule... rules)
-    {
-        this.rules = rules;
-        this.properties = properties;
-    }
 
     public StartupHealthCheck( StartupHealthCheckRule... rules )
     {
-        this(System.getProperties(), rules);
+        this.rules = rules;
     }
 
     public boolean run()
@@ -50,6 +43,7 @@ public class StartupHealthCheck
             return true;
         }
 
+        Properties properties = System.getProperties();
         for ( StartupHealthCheckRule r : rules )
         {
             if ( !r.execute( properties ) )

@@ -61,10 +61,10 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
 
     @Test
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
-        server = ServerHelper.createNonPersistentServer();
+        server = ServerHelper.createServer();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        JaxRsResponse response = new RestRequest().get(functionalTestHelper.webAdminUri());
+        JaxRsResponse response = new RestRequest().get(functionalTestHelper.getWebadminUri());
         assertEquals(200, response.getStatus());
         response.close();
     }
