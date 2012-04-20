@@ -569,7 +569,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         } );
         
         DoubleLatch latch = latchFetcher.fetch();
-        latch.countDownFirst();
+        latch.awaitFirst(); // Wait for lockHolder to grab the lock
         try
         {
             executeJob( new CommonJobs.SetNodePropertyWithThrowJob( otherNodeId.longValue(),
