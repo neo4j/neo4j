@@ -38,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -127,6 +128,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     }
 
     @Test
+    @Ignore("too much dependent on context of operating system and user")
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // Apparently you cannot create an unwritable directory in Windows with
