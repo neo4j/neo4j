@@ -26,6 +26,7 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
 public class CypherResultRepresentation extends ObjectRepresentation
@@ -55,20 +56,20 @@ public class CypherResultRepresentation extends ObjectRepresentation
     }
 
     private Representation createResultRepresentation(ExecutionResult executionResult) {
-        // rows
-        List<Representation> rows = new ArrayList<Representation>();
-        for ( Map<String, Object> row : executionResult)
-        {
-            List<Representation> fields = new ArrayList<Representation>();
-            // columns
-            for ( String column : executionResult.columns() )
-            {
-                Representation rowRep = getRepresentation( row.get( column ) );
-                fields.add( rowRep );
+        final List<String> columns = executionResult.columns();
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(executionResult) {
+            @Override
+            protected Representation underlyingObjectToObject(final Map<String, Object> row) {
+                return new ListRepresentation("row",
+                 new IterableWrapper<Representation,String>(columns) {
+
+                     @Override
+                     protected Representation underlyingObjectToObject(String column) {
+                         return getRepresentation( row.get( column ) );
+                     }
+                 });
             }
-            rows.add( new ListRepresentation( "row", fields ) );
-        }
-        return new ListRepresentation( "data", rows );
+        });
     }
 
     Representation getRepresentation( Object r )

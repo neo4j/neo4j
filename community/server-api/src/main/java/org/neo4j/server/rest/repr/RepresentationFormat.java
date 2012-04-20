@@ -507,4 +507,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
         throw new BadInputException( "Could not convert!" );
     }
+
+    public void complete() {
+    }
 }

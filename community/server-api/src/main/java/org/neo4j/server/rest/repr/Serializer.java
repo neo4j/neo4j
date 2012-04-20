@@ -63,7 +63,9 @@ abstract class Serializer
                         extension.writeValue( RepresentationType.URI, method, joinBaseWithRelativePath( baseUri,
                                 path.toString() ) );
                     }
+                    extension.done();
                 }
+                extensions.done();
             }
         }
     }
@@ -74,9 +76,9 @@ abstract class Serializer
         list.done();
     }
 
-    final URI relativeUri( String path )
+    final String relativeUri(String path)
     {
-        return URI.create( joinBaseWithRelativePath( baseUri, path ) );
+        return joinBaseWithRelativePath(baseUri, path);
     }
 
     final String relativeTemplate( String path )
@@ -87,18 +89,19 @@ abstract class Serializer
     static String joinBaseWithRelativePath( URI baseUri, String path )
     {
         String base = baseUri.toString();
+        final StringBuilder result = new StringBuilder(base.length() + path.length() +1).append(base);
         if ( base.endsWith( "/" ) )
         {
             if ( path.startsWith( "/" ) )
             {
-                return base + path.substring( 1 );
+                return result.append(path.substring(1)).toString();
             }
         }
         else if ( !path.startsWith( "/" ) )
         {
-            return base + "/" + path;
+            return result.append('/').append(path).toString();
         }
-        return base + path;
+        return result.append(path).toString();
     }
 
     protected void checkThatItIsBuiltInType( Object value )
