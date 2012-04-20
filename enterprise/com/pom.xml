@@ -15,7 +15,7 @@
   <properties>
     <short-name>com</short-name>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <neo4j.version>1.5.3.RC4</neo4j.version>
+    <neo4j.version>1.5.3-SNAPSHOT</neo4j.version>
     <licensesVersion>7</licensesVersion>    
     <currentYear>2012</currentYear>
   </properties>

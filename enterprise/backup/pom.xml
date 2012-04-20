@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <neo4j.version>1.5.3.RC4</neo4j.version>
+    <neo4j.version>1.5.3-SNAPSHOT</neo4j.version>
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
     <licensesVersion>7</licensesVersion>    
