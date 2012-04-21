@@ -57,7 +57,9 @@ public class CypherResultRepresentation extends ObjectRepresentation
 
     private Representation createResultRepresentation(ExecutionResult executionResult) {
         final List<String> columns = executionResult.columns();
-        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(executionResult) {
+        final Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<Map<String,Object>>(executionResult);
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {
+
             @Override
             protected Representation underlyingObjectToObject(final Map<String, Object> row) {
                 return new ListRepresentation("row",
@@ -121,4 +123,5 @@ public class CypherResultRepresentation extends ObjectRepresentation
             return RepresentationType.STRING;
         return representations.get( 0 ).getRepresentationType();
     }
+
 }
