@@ -1,0 +1,25 @@
+[[tutorials-java-embedded-osgi]]
+OSGi setup
+==========
+
+In http://www.osgi.org/[OSGi] - related contexts like a number like Application Servers (e.g. http://glassfish.java.net/[Glassfish] )
+and http://www.eclipse.org[Eclipse] - based systems, Neo4j can be setup up explicitly instead of discovering services via the Java Service Loader
+mechanism.
+
+
+== Simple OSGi Activator scenario ==
+
+As seen in the following example, instead of relying on the Classloading of the Neo4j kernal, the Neo4j bundles are treated as library bundles,
+and the services like the IndexProviders and CacheProviders are explicitly instantiated, configured and registered. Just make the necessary jars available
+as wrapped library bundles , so all needed classes are exported and seen by the bundle containing the Activator.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/osgi/Neo4jActivator.java
+classifier=test-sources
+tag=setup
+----
+
+[TIP]
+The source code of the example above is found https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/osgi/[here].
