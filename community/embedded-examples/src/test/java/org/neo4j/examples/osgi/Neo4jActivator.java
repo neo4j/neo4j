@@ -37,6 +37,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
+// START SNIPPET: setup
 public class Neo4jActivator implements BundleActivator
 {
 
@@ -47,61 +48,64 @@ public class Neo4jActivator implements BundleActivator
     @Override
     public void start( BundleContext context ) throws Exception
     {
-        System.out.print("Opening database in embedded mode: ");
+        //the cache providers
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
         cacheList.add( new SoftCacheProvider() );
+        
+        //the index providers
         IndexProvider lucene = new LuceneIndexProvider();
         ArrayList<IndexProvider> provs = new ArrayList<IndexProvider>();
         provs.add( lucene );
         ListIndexIterable providers = new ListIndexIterable();
         providers.setIndexProviders( provs );
+        
+        //the database setup
         GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
         gdbf.setIndexProviders( providers );
         gdbf.setCacheProviders( cacheList );
-        db = gdbf.newEmbeddedDatabase( "target/db");
-              System.out.println("created database, db="+db);
-        serviceRegistration = context.registerService( GraphDatabaseService.class.getName(), db, new Properties() );
-        System.out.println("registered " + serviceRegistration.getReference());
-        indexServiceRegistration = context.registerService( Index.class.getName(), db.index().forNodes( "nodes" ), new Properties() );
-        System.out.println("registered " + indexServiceRegistration.getReference());
+        db = gdbf.newEmbeddedDatabase( "target/db" );
+        
+        //the OSGi registration
+        serviceRegistration = context.registerService(
+                GraphDatabaseService.class.getName(), db, new Properties() );
+        System.out.println( "registered " + serviceRegistration.getReference() );
+        indexServiceRegistration = context.registerService(
+                Index.class.getName(), db.index().forNodes( "nodes" ),
+                new Properties() );
         Transaction tx = db.beginTx();
-        try {
-            System.out.print("Populating it ... ");
+        try
+        {
             Node firstNode = db.createNode();
             Node secondNode = db.createNode();
-            Relationship relationship = firstNode.createRelationshipTo( secondNode, DynamicRelationshipType.withName( "KNOWS" ) );
+            Relationship relationship = firstNode.createRelationshipTo(
+                    secondNode, DynamicRelationshipType.withName( "KNOWS" ) );
 
             firstNode.setProperty( "message", "Hello, " );
             secondNode.setProperty( "message", "world!" );
             relationship.setProperty( "message", "brave Neo4j " );
             db.index().forNodes( "nodes" ).add( firstNode, "message", "Hello" );
-            System.out.println("OK, db="+db);
-
-            System.out.print( firstNode.getProperty( "message" ) );
-            System.out.print( relationship.getProperty( "message" ) );
-            System.out.println( secondNode.getProperty( "message" ) );
-
             tx.success();
-        } 
-        catch (Exception e) {
-            System.out.println("KO: " + e.getMessage());
-        } 
-        finally {
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+        finally
+        {
             tx.finish();
         }
 
- 
     }
 
     @Override
     public void stop( BundleContext context ) throws Exception
     {
-        System.out.print("Closing database: ");
         serviceRegistration.unregister();
         indexServiceRegistration.unregister();
         db.shutdown();
-        System.out.println("OK");
 
     }
 
 }
+// END SNIPPET: setup
