@@ -20,9 +20,9 @@
 package slavetest;
 
 import java.io.File;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,16 +52,9 @@ public class TestStoreCopy
     private long nodeId;
 
     @BeforeClass
-    public static void startZoo()
+    public static void startZoo() throws Exception
     {
-        zoo = new LocalhostZooKeeperCluster( TestStoreCopy.class, new int[] {
-                3181, 3182, 3183 } );
-    }
-
-    @AfterClass
-    public static void stopZoo()
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     /**

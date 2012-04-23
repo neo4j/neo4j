@@ -67,7 +67,7 @@ public class PerformanceTest
         final boolean singleJvm = doTest( "SINGLE_JVM" );
         if ( noHa || singleJvm )
         {
-            SingleJvmTest single = new SingleJvmTest();
+            AbstractHaTest single = new SingleJvmTest();
             if ( noHa )
             {
                 single.initializeDbs( 1 );
@@ -96,7 +96,6 @@ public class PerformanceTest
             multiZoo.initializeDbs( 1 );
             time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
             multiZoo.shutdownDbs();
-            multiZoo.shutdownZooKeeperCluster();
         }
     }
 

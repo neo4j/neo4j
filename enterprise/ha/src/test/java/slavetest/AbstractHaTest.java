@@ -20,6 +20,12 @@
 
 package slavetest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -29,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -53,9 +60,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
 
 public abstract class AbstractHaTest
 {
@@ -813,5 +817,11 @@ public abstract class AbstractHaTest
             Thread.interrupted();
             throw new RuntimeException( e );
         }
+    }
+
+    protected void addDefaultConfig( Map<String, String> config )
+    {
+        if ( !config.containsKey( HaSettings.read_timeout.name() ) )
+            config.put( HaSettings.read_timeout.name(), String.valueOf( TEST_READ_TIMEOUT ) );
     }
 }

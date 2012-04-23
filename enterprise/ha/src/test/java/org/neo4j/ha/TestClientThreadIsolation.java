@@ -19,8 +19,11 @@
  */
 package org.neo4j.ha;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
-import org.junit.AfterClass;
+
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,8 +45,6 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
-import static org.junit.Assert.*;
-
 @ForeignBreakpoints( { @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.Client", method = "makeSureNextTransactionIsFullyFetched", on = Event.ENTRY ),
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.DechunkingChannelBuffer", method = "readNextChunk", on = Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
@@ -54,17 +55,9 @@ public class TestClientThreadIsolation
     private static LocalhostZooKeeperCluster zoo;
 
     @BeforeClass
-    public static void startZoo()
+    public static void startZoo() throws Exception
     {
-        zoo = new LocalhostZooKeeperCluster( TestClientThreadIsolation.class,
-                new int[] {
-                3181, 3182, 3183 } );
-    }
-
-    @AfterClass
-    public static void stopZoo()
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Test
