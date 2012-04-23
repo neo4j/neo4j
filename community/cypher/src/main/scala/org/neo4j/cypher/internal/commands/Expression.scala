@@ -46,7 +46,7 @@ abstract class Expression extends (Map[String, Any] => Any) {
   override def toString() = identifier.name
 }
 
-case class CachedExpression(key:String, identifier:Identifier) extends Expression {
+case class CachedExpression(key:String, identifier:Identifier) extends CastableExpression {
   override def apply(m: Map[String, Any]) = m(key)
   protected def compute(v1: Map[String, Any]) = null
   def declareDependencies(extectedType: AnyType) = Seq()

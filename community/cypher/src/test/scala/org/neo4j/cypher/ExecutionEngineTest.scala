@@ -1840,4 +1840,13 @@ RETURN x0.name?
     parseAndExecute(q)
   }
 
+  @Test def issue_432() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    val q = "start n=node(1) match p = n-[*1..]->m return p, last(p) order by length(p) asc"
+
+    assert(parseAndExecute(q).size === 1)
+  }
 }
