@@ -141,18 +141,17 @@ To enable HTTP logging, edit the 'conf/neo4j-server.properties' file resemble th
  [source]
  ----
  org.neo4j.server.http.log.enabled=true
- org.neo4j.server.http.log.location=data/log/
  org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml
  ----
 
 'org.neo4j.server.http.log.enabled=true' tells the server that HTTP logging is enabled. HTTP logging can be totally
 disabled by setting this property to 'false'.
-'org.neo4j.server.http.log.location=data/log/' tells the server to log in the 'data/log' directory, using a file called
-http.log by default (which will be rotated as we shall see). Note that failure to specify a writable directory
-here will prevent the Neo4j server startup health check from passing, and thus prevent server startup.
 'org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml' specifies the logging format and rollover policy file
 that governs how HTTP log output is presented and archived. The defaults provided with Neo4j server uses an hourly log
 rotation and +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+.
+
+If logging is set up to use log files then the server will check that the log file directory exists and is writable. If
+this check fails, then the server will not startup and wil report the failure another available channel like standard out.
 
 
 == Other configuration options ==
