@@ -59,7 +59,7 @@ public class TestHaBean
     }
 
     @AfterClass
-    public static void stopDb()
+    public static void stopDb() throws Exception
     {
         if ( db != null ) db.shutdown();
         db = null;
