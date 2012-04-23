@@ -7,6 +7,10 @@ NOTE: The following example uses the new experimental traversal API.
 Social networks (know as social graphs out on the web) are natural to model with a graph.
 This example shows a very simple social model that connects friends and keeps track of status updates.
 
+[TIP]
+The source code of the example is found here:
+https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet[socnet]
+
 == Simple social model ==
 
 image::socnet-model.png[title="Social network data model", scaledwidth="60%"]
@@ -77,6 +81,4 @@ classifier=sources
 tag=getActivityStream
 ----
 	
-Full source code:
-https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet[socnet]
 

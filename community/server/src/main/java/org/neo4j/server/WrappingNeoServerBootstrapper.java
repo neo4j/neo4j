@@ -23,10 +23,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.EmbeddedServerConfigurator;
+import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.DiscoveryModule;
@@ -39,7 +39,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
- * {@link AbstractGraphDatabase}, and optional configuration, and launches a
+ * {@link org.neo4j.kernel.GraphDatabaseAPI}, and optional configuration, and launches a
  * server using that database.
  * <p>
  * Use this to start up a full Neo4j server from within an application that
@@ -63,12 +63,11 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  * 
  * If you want to change configuration, pass in the optional Configurator arg to
  * the constructor. You can write your own implementation or use
- * {@link EmbeddedServerConfigurator}.
+ * {@link org.neo4j.server.configuration.ServerConfigurator}.
  */
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
-
-    private final AbstractGraphDatabase db;
+    private final GraphDatabaseAPI db;
     private final Configurator configurator;
     private static Logger log = Logger.getLogger( WrappingNeoServerBootstrapper.class );
 
@@ -77,20 +76,20 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      * 
      * @param db
      */
-    public WrappingNeoServerBootstrapper( AbstractGraphDatabase db )
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db )
     {
-        this( db, new EmbeddedServerConfigurator( db ) );
+        this( db, new ServerConfigurator( db ) );
     }
 
     /**
      * Create an instance with custom documentation.
-     * {@link EmbeddedServerConfigurator} is written to fit well here, see its'
+     * {@link org.neo4j.server.configuration.ServerConfigurator} is written to fit well here, see its'
      * documentation.
      * 
      * @param db
      * @param configurator
      */
-    public WrappingNeoServerBootstrapper( AbstractGraphDatabase db, Configurator configurator )
+    public WrappingNeoServerBootstrapper( GraphDatabaseAPI db, Configurator configurator )
     {
         this.db = db;
         this.configurator = configurator;
@@ -117,7 +116,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         {
             if ( server != null )
             {
-                server.stopServer();
+                server.stopServerOnly();
                 server.getDatabase()
                         .rrdDb()
                         .close();
@@ -144,13 +143,12 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         return new GraphDatabaseFactory()
         {
             @Override
-            public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
                 return db;
             }
         };
-
     }
 
     @Override

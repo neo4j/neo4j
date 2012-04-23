@@ -38,7 +38,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         String value();
     }
 
-    private static Map<Class<?>, Map<String, PropertyGetter>> serializations = new ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>>();
+    private final static ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations = new ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>>();
 
     private final Map<String, PropertyGetter> serialization = serialization( getClass() );
 
@@ -71,6 +71,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
                             serialization.put( property.value(), getter( method ) );
                         }
                     }
+                    serializations.put(type, serialization);
                 }
             }
         }

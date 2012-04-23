@@ -96,4 +96,13 @@ like this:""",
       returns = """Returns the age property of a node, but renames the column.""",
       assertions = (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
   }
+
+  @Test def return_all_identifiers() {
+    testQuery(
+      title = "Return all elements",
+      text = """When you want to return all nodes, relationships and paths found in a query, you can use the `*` symbol.""",
+      queryText = """start a=node(%A%) match p=a-[r]->b return *""",
+      returns = """Returns the two nodes, the relationship and the path used in the query""",
+      assertions = (p) => assertEquals(p.toList.head.keys, Set("a", "b", "r", "p")))
+  }
 }

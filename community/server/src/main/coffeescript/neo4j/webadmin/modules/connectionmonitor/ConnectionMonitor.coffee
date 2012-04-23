@@ -19,8 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define( 
-  ['./connection_lost'], 
-  (template) ->
+  ['./connection_lost'
+   'lib/amd/jQuery'], 
+  (template, $) ->
     
     CONNECTION_LOST_EVENT = "web.connection_lost"
 

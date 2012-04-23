@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,21 +26,22 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import javax.transaction.TransactionManager;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
+
+import static org.junit.Assert.*;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -443,7 +440,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "1" );
         String storePath = getStorePath( "neo2" );
         deleteFileOrDirectory( storePath );
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( storePath, config );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storePath ).setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -540,7 +537,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "2" );
         String storePath = getStorePath( "neo2" );
         deleteFileOrDirectory( storePath );
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( storePath, config );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storePath ).setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();

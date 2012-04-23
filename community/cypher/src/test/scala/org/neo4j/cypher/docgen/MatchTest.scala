@@ -22,8 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Assert._
 import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
-import org.junit.{Ignore, Test}
-
+import org.junit.Test
 
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
@@ -78,6 +77,16 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start n=node(%A%) match (n)-[:BLOCKS]->(x) return x""",
       returns = """All nodes that are BLOCKed by A.""",
       assertions = (p) => assertEquals(List(node("C")), p.columnAs[Node]("x").toList)
+    )
+  }
+
+  @Test def relatedNodesByMultipleRelationshipTypes() {
+    testQuery(
+      title = "Match by multiple relationship types",
+      text = "If multiple types are acceptable, you can specify this by chaining them with the pipe symbol |",
+      queryText = """start n=node(%A%) match (n)-[:BLOCKS|KNOWS]->(x) return x""",
+      returns = """All nodes with a +BLOCK+ or +KNOWS+ relationship to A.""",
+      assertions = (p) => assertEquals(List(node("C"), node("B")), p.columnAs[Node]("x").toList)
     )
   }
 

@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 /**
 * Default implementation of LastCommittedTxIdSetter that does nothing
 */
-class DefaultLastCommittedTxIdSetter implements LastCommittedTxIdSetter
+public class DefaultLastCommittedTxIdSetter implements LastCommittedTxIdSetter
 {
     public void setLastCommittedTxId( long txId )
     {

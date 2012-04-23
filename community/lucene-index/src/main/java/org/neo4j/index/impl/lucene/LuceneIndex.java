@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -45,7 +44,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -147,7 +146,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public T putIfAbsent( T entity, String key, Object value )
     {
         // TODO This should not be in NodeManager. Make a separate service that does this, which can be passed into index implementations
-        return ((AbstractGraphDatabase)service.graphDb()).getNodeManager().indexPutIfAbsent( this, entity, key, value );
+        return ((GraphDatabaseAPI)service.graphDb()).getNodeManager().indexPutIfAbsent( this, entity, key, value );
     }
 
     private void assertValidKey( String key )

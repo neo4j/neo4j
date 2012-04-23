@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
+define ["neo4j/webadmin/utils/ItemUrlResolver"], (ItemUrlResolver) ->
 
   class CypherSearcher
 
@@ -26,9 +26,7 @@ define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver
       @server = server
       @urlResolver = new ItemUrlResolver(server)
       @pattern = /// ^ 
-                    (start|cypher) # Start with "start" or "cypher"
-                    (.+)  # followed by anything
-                    return # Return statement is required
+                    (start|cypher|create) # Start with "start", "cypher" or "create"
                     (.+)  # followed by anything
                     $
                  ///i

@@ -130,7 +130,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     
     protected String startGraph( String name )
     {
-        return AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), name);
+        return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph",
+                                                        graphdb(), name );
     }
 
     @Override

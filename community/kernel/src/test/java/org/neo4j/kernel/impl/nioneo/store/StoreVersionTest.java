@@ -17,27 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.internal.matchers.StringContains.containsString;
+package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
+import static org.junit.internal.matchers.StringContains.*;
 
 public class StoreVersionTest
 {
@@ -51,7 +51,8 @@ public class StoreVersionTest
 
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
-        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.SYSTEM, null);
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
 
         CommonAbstractStore[] stores = {
@@ -81,10 +82,11 @@ public class StoreVersionTest
         File workingFile = new File( outputDir, "neostore.nodestore.db" );
         FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
 
-        Map<String,String> config = new HashMap<String,String>();
-
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class).apply( new HashMap<String,String>() ));
+        
         try {
-            new NodeStore( workingFile.getPath(), ConfigProxy.config(config, NodeStore.Configuration.class), CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.SYSTEM );
+            new NodeStore( workingFile.getPath(), config, new DefaultIdGeneratorFactory(), fileSystem, StringLogger.SYSTEM );
             fail( "Should have thrown exception" );
         } catch ( NotCurrentStoreVersionException e ) {
             //expected
@@ -104,13 +106,14 @@ public class StoreVersionTest
 
         Map<String,String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
-        StoreFactory sf = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.SYSTEM, null);
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        StoreFactory sf = new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
         NeoStore neoStore = sf.createNeoStore(storeFileName);
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
-                NeoStore.versionLongToString( NeoStore.getStoreVersion( storeFileName ) ) );
+                NeoStore.versionLongToString( NeoStore.getStoreVersion( fileSystem, storeFileName ) ) );
     }
 
     @Test

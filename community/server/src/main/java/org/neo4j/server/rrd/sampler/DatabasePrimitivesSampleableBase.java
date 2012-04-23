@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.rrd.Sampleable;
 import org.rrd4j.DsType;
@@ -28,7 +28,7 @@ public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
     private final NodeManager nodeManager;
 
-    public DatabasePrimitivesSampleableBase( GraphDatabaseSPI db )
+    public DatabasePrimitivesSampleableBase( GraphDatabaseAPI db )
     {
         nodeManager = db.getNodeManager();
     }

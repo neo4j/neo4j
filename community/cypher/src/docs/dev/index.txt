@@ -8,13 +8,15 @@ include::introduction.txt[]
 
 include::operators.txt[]
 
-include::expressions.txt
+include::expressions.txt[]
 
 include::parameters.txt[]
 
 include::identifiers.txt[]
 
 include::comments.txt[]
+
+include::transactions.txt[]
 
 :leveloffset: 2
 
@@ -47,6 +49,26 @@ include::ql/skip/index.txt[]
 :leveloffset: 2
 
 include::ql/limit/index.txt[]
+
+:leveloffset: 2
+
+include::ql/with/index.txt[]
+
+:leveloffset: 2
+
+include::ql/create/index.txt[]
+
+:leveloffset: 2
+
+include::ql/delete/index.txt[]
+
+:leveloffset: 2
+
+include::ql/set/index.txt[]
+
+:leveloffset: 2
+
+include::ql/foreach/index.txt[]
 
 :leveloffset: 2
 

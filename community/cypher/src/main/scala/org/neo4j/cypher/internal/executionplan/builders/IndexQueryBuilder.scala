@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{QueryToken, Unsolved, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
 import collection.JavaConverters._
-import java.lang.{Iterable=>JIterable}
+import java.lang.{Iterable => JIterable}
+import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = {
-    val (pipe, q) = v1
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
+
     val item = q.start.filter(filter).head
 
-    val newPipe = createStartPipe(pipe, item.token)
+    val newPipe = createStartPipe(p, item.token)
 
-    (newPipe, q.copy(start = q.start.filterNot(_ == item) ++ Seq(item.solve)))
+    plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
+
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(filter)
 
   private def filter(q: QueryToken[_]): Boolean = q match {
     case Unsolved(NodeByIndexQuery(_, _, _)) => true
@@ -44,8 +49,17 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case _ => false
   }
 
+  private def checkNodeIndex(idxName: String) {
+    if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
+  }
+
+  private def checkRelIndex(idxName: String) {
+    if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
+  }
+
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
     case NodeByIndex(varName, idxName, key, value) =>
+      checkNodeIndex(idxName)
       new NodeStartPipe(lastPipe, varName, m => {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -54,6 +68,7 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       })
 
     case RelationshipByIndex(varName, idxName, key, value) =>
+      checkRelIndex(idxName)
       new RelationshipStartPipe(lastPipe, varName, m => {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -62,6 +77,7 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       })
 
     case NodeByIndexQuery(varName, idxName, query) =>
+      checkNodeIndex(idxName)
       new NodeStartPipe(lastPipe, varName, m => {
         val queryText = query(m)
         val indexHits: JIterable[Node] = graph.index.forNodes(idxName).query(queryText)
@@ -69,6 +85,7 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       })
 
     case RelationshipByIndexQuery(varName, idxName, query) =>
+      checkRelIndex(idxName)
       new RelationshipStartPipe(lastPipe, varName, m => {
         val queryText = query(m)
         val indexHits: JIterable[Relationship] = graph.index.forRelationships(idxName).query(queryText)
@@ -76,11 +93,6 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       })
   }
 
-
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = {
-    val (_, q) = x
-    q.start.exists(filter)
-  }
 
   def priority: Int = PlanBuilder.IndexQuery
 }

@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./VisualizationProfile', 'ribcage/LocalCollection'], 
+  ['./VisualizationProfile'
+   'ribcage/LocalCollection'], 
   (VisualizationProfile, LocalCollection) ->
     class VisualizationProfiles extends LocalCollection
       

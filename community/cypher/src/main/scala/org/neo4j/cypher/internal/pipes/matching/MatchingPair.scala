@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{NotFoundException, Relationship, Node, PropertyContainer}
+import collection.Map
 
 case class MatchingPair(patternElement: PatternElement, entity: Any) {
   def matches(x: Any) = x == entity || x == patternElement || entity == x || patternElement == x

@@ -50,7 +50,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
         super( false );
         this.nodeManager = nodeManager;
     }
-
+    
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
@@ -137,7 +137,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     
     @Override
     protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager )
     {
         if ( cowPropertyAddMap != null ) for ( Map.Entry<Integer, PropertyData> property : cowPropertyAddMap.entrySet() )
         {
@@ -169,7 +169,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     }
 
     @Override
-    protected void setProperties( ArrayMap<Integer, PropertyData> loadedProperties )
+    protected void setProperties( ArrayMap<Integer, PropertyData> loadedProperties, NodeManager nodeManager )
     {
         if ( loadedProperties != null && loadedProperties.size() > 0 )
         {

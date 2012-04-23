@@ -23,4 +23,6 @@ case class NamedPath(pathName: String, pathPattern: Pattern*) extends Traversabl
   def foreach[U](f: (Pattern) => U) {
     pathPattern.foreach(f)
   }
+
+  def rewrite( f: Expression => Expression ) = NamedPath(pathName,pathPattern.map( _.rewrite(f)):_*)
 }

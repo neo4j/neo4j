@@ -51,9 +51,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.neo4j.helpers.Predicate;
-
+import org.neo4j.test.ProcessStreamHandler;
 
 @SuppressWarnings( "serial" )
 public abstract class SubProcess<T, P> implements Serializable
@@ -143,8 +142,8 @@ public abstract class SubProcess<T, P> implements Serializable
                         SubProcess.class.getName(), serialize( callback ) );
             }
             pid = getPid( process );
-            pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
-            pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), System.out );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
             if ( debugger != null )
             {
                 debugDispatch = debugger.connect( toString() + ":" + pid );
@@ -155,6 +154,16 @@ public abstract class SubProcess<T, P> implements Serializable
         Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">", debugDispatch );
         if ( debugDispatch != null ) debugDispatch.handler = handler;
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
+    }
+    
+    protected PrintStream errorStreamTarget()
+    {
+        return System.err;
+    }
+    
+    protected PrintStream inputStreamTarget()
+    {
+        return System.out;
     }
 
     private String classPath( String parentClasspath )
@@ -894,15 +903,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
         private static int await( Process process )
         {
-            try
-            {
-                return process.waitFor();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                return 0;
-            }
+            return new ProcessStreamHandler( process, true ).waitForResult();
         }
 
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable

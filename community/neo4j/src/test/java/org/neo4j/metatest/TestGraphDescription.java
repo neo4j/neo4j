@@ -19,16 +19,10 @@
  */
 package org.neo4j.metatest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -38,21 +32,22 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class TestGraphDescription implements GraphHolder
 {
     private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
-    private static AbstractGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
@@ -167,7 +162,7 @@ public class TestGraphDescription implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterClass

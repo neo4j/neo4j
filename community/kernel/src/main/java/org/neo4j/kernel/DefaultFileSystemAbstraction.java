@@ -37,6 +37,7 @@ public class DefaultFileSystemAbstraction
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
+        // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         return new RandomAccessFile( fileName, mode ).getChannel();
     }
 
@@ -74,5 +75,11 @@ public class DefaultFileSystemAbstraction
     public boolean renameFile( String from, String to ) throws IOException
     {
         return FileUtils.renameFile( new File( from ), new File( to ) );
+    }
+    
+    @Override
+    public void copyFile( String from, String to ) throws IOException
+    {
+        FileUtils.copyRecursively( new File( from ), new File( to ) );
     }
 }

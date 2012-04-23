@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./models/ServerInfo'
    './views/ServerInfoView'
-   'ribcage/Router'
-   'lib/backbone'],
+   'ribcage/Router'],
   (ServerInfo, ServerInfoView, Router) ->
     
     class ServerInfoRouter extends Router

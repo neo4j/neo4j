@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commands
 
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{Identifier, AnyIterableType}
+import collection.Map
 
 abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
@@ -38,16 +39,12 @@ abstract class InIterable(expression: Expression, symbol: String, closure: Predi
   }
 
   def dependencies: Seq[Identifier] = expression.dependencies(AnyIterableType()) ++ closure.dependencies.filterNot(_.name == symbol)
-
   def atoms: Seq[Predicate] = Seq(this)
-
   def exists(f: (Expression) => Boolean) = expression.exists(f)||closure.exists(f)
-
   def name:String
-                   //all(x in a.array where x = 0)
   override def toString = name + "(" + symbol + " in " + expression + " where " + closure + ")"
-
   def containsIsNull = closure.containsIsNull
+  def filter(f: (Expression) => Boolean): Seq[Expression] = expression.filter(f) ++ closure.filter(f)
 }
 
 case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {

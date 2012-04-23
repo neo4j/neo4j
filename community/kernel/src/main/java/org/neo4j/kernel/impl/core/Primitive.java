@@ -59,11 +59,11 @@ abstract class Primitive
 
     protected abstract PropertyData getPropertyForIndex( int keyId );
     
-    protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties );
+    protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager );
     
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp );
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager );
     
     @Override
     public int hashCode()
@@ -566,7 +566,7 @@ abstract class Primitive
         // double checked locking
         if ( allProperties() == null ) synchronized ( this )
         {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ) );
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ), nodeManager );
         }
     }
 
@@ -575,7 +575,7 @@ abstract class Primitive
         // double checked locking
         if ( allProperties() == null ) synchronized ( this )
         {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ) );
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ), nodeManager );
         }
     }
 

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
+define ["neo4j/webadmin/utils/ItemUrlResolver"], (ItemUrlResolver) ->
 
   class RelationshipSearcher
 

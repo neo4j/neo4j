@@ -3,13 +3,13 @@
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-central</artifactId>
-        <version>31</version>
+        <version>33</version>
         <relativePath />
     </parent>
 
     <properties>
         <bundle.namespace>org.neo4j.cypher</bundle.namespace>
-        <scala.version>2.9.0-1</scala.version>
+        <scala.version>2.9.1-1</scala.version>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     </properties>
@@ -18,7 +18,7 @@
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j-cypher</artifactId>
     <packaging>jar</packaging>
-    <version>1.7-SNAPSHOT</version>
+    <version>1.8-SNAPSHOT</version>
     <name>Neo4j - Cypher</name>
     <description>Neo4j query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -55,41 +55,52 @@
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.9.0</artifactId>
+            <artifactId>scalatest_2.9.1</artifactId>
             <version>1.6.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-lucene-index</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-graph-matching</artifactId>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-algo</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
@@ -112,35 +123,6 @@
                             <goal>testCompile</goal>
                         </goals>
                         <phase>process-test-resources</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-docs</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>docs</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <attach>true</attach>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

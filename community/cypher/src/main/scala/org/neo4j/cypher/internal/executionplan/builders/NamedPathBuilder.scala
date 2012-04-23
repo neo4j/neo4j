@@ -20,24 +20,24 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.executionplan.{Unsolved, QueryToken, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{NamedPathPipe, Pipe}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class NamedPathBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p,q) => {
-      val item = q.namedPaths.filter( yesOrNo(_, p) ).head
-      val namedPaths = item.token
+  def apply(plan: ExecutionPlanInProgress) = {
+    val p = plan.pipe
 
-      val pipe = new NamedPathPipe(p, namedPaths)
+    val q = plan.query
+    val item = q.namedPaths.filter(np => yesOrNo(np, p)).head
+    val namedPaths = item.token
 
-      (pipe, q.copy(namedPaths = q.namedPaths.filterNot(_ == item) ++ Seq(item.solve)))
-    }
+    val pipe = new NamedPathPipe(p, namedPaths)
+
+    val newQ = q.copy(namedPaths = q.namedPaths.filterNot(_ == item) :+ item.solve)
+    plan.copy(query = newQ, pipe = pipe)
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.namedPaths.exists(yesOrNo(_, p))
-  }
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.namedPaths.exists(yesOrNo(_, plan.pipe))
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
     case Unsolved(np: NamedPath) => {

@@ -36,7 +36,7 @@ public class SerializerTest
         Serializer serializer = new Serializer(URI.create( baseUrl ), null){};
         
         String aRelativeUrl = "/path/path/path";
-        assertThat(serializer.relativeUri( aRelativeUrl ), is(URI.create( baseUrl + aRelativeUrl.substring( 1 ) )));
+        assertThat(serializer.relativeUri( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
         assertThat(serializer.relativeTemplate( aRelativeUrl ), is( baseUrl + aRelativeUrl.substring( 1 ) ));
     }
     

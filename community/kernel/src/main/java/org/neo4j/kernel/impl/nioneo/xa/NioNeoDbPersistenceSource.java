@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
@@ -27,6 +26,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as

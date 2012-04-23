@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{AnyType, NodeType, RelationshipType, Identifier}
+import collection.mutable.Map
+import collection.{Traversable, Iterable}
 
-abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[T]) extends Pipe {
+abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: ExecutionContext => Iterable[T]) extends Pipe {
   def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, m => sourceIterable)
 
   def identifierType: AnyType
@@ -31,10 +33,15 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
   val symbols = inner.symbols.add(Identifier(name, identifierType))
 
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    inner.createResults(params).flatMap(sourceMap => {
-      createSource(sourceMap).map(x=> sourceMap ++ Map(name -> x))
+  def createResults(state: QueryState): Traversable[ExecutionContext] = {
+    val map = inner.createResults(state).flatMap(ctx => {
+      val source: Iterable[T] = createSource(ctx)
+      source.map(x => {
+        val newMap = ctx.m.clone().asInstanceOf[Map[String, Any]]
+        ctx.copy(m = newMap += name -> x)
+      })
     })
+    map
   }
 
   def visibleName: String
@@ -42,16 +49,16 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
   override def executionPlan(): String = inner.executionPlan() + "\r\n" + visibleName + "(" + name + ")"
 }
 
-class NodeStartPipe(inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[Node])
+class NodeStartPipe(inner: Pipe, name: String, createSource: ExecutionContext => Iterable[Node])
   extends StartPipe[Node](inner, name, createSource) {
   def identifierType = NodeType()
 
-  def visibleName: String = "Nodes"
+  def visibleName = "Nodes"
 }
 
-class RelationshipStartPipe(inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[Relationship])
+class RelationshipStartPipe(inner: Pipe, name: String, createSource: ExecutionContext => Iterable[Relationship])
   extends StartPipe[Relationship](inner, name, createSource) {
   def identifierType = RelationshipType()
 
-  def visibleName: String = "Rels"
+  def visibleName = "Rels"
 }

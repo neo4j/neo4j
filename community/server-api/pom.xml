@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>server-api</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Neo4j Server API</name>
   <description>Interfaces and baseclasses needed to create your own extensions.</description>
@@ -21,6 +21,7 @@
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server-extending.html</docs.url>
+    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>
@@ -51,7 +52,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.7-SNAPSHOT</version>
+      <version>1.8-SNAPSHOT</version>
     </dependency>
 
     <dependency>

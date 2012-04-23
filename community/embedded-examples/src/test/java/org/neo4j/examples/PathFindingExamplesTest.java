@@ -18,16 +18,15 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.util.Iterator;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -41,11 +40,16 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.Traversal;
+
+import static org.junit.Assert.*;
 
 public class PathFindingExamplesTest
 {
+    @ClassRule
+    public static TemporaryFolder temp = new TemporaryFolder();
+
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -57,9 +61,9 @@ public class PathFindingExamplesTest
     @BeforeClass
     public static void startDb()
     {
-        String storeDir = "target/var/examples";
+        String storeDir = temp.getRoot().getAbsolutePath();
         deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @Before

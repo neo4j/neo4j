@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <name>Neo4j Community Build</name>
   <packaging>pom</packaging>
   <description>Project that builds the Neo4j Community distribution.</description>
@@ -19,6 +19,7 @@
   <properties>
     <short-name>community-build</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
+    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>

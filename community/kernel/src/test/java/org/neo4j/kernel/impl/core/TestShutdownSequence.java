@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
-
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.FileUtils;
 
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
+
 public class TestShutdownSequence
 {
-    private EmbeddedGraphDatabase graphDb;
+    private GraphDatabaseService graphDb;
     
     @BeforeClass
     public static void deleteDb() throws Exception
@@ -47,7 +47,7 @@ public class TestShutdownSequence
     public @Before
     void createGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( getStorePath( "shutdown" ) );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "shutdown" ) );
     }
 
     public @Test

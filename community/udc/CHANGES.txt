@@ -1,3 +1,16 @@
+1.7 (2012-04-18)
+----------------
+o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279
+o UDC now sends the machines MAC adress to Neo Technology, to separate between instances behind firewalls
+o UDC now sends database registration ID to Neo Technology, if one is available
+o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language, web-container, app-container, spring, ejb
+o UDC now uses new configuration API
+
+1.7.M01 (2012-03-12)
+--------------------
+o Added possibility to interpret and store registration ID with a ping.
+o Added MAC address to pings.
+
 1.4.M03 (2011-05-26)
 --------------------
 o No changes.

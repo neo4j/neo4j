@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
-    source.createResults(params).filter(predicate isMatch)
+  def createResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx))
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
 

@@ -20,9 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['ribcage/ui/LineChart'
-   'ribcage/View',
-   './charts','lib/backbone'], 
-  (LineChart, View, template) ->
+   'ribcage/View'
+   './charts'
+   'lib/amd/jQuery'], 
+  (LineChart, View, template, $) ->
   
     class DashboardChartsView extends View
       

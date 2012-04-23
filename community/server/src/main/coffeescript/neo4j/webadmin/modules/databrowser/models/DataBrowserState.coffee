@@ -19,12 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./NodeProxy', './NodeList',
+  ['./NodeProxy'
+   './NodeList'
    './RelationshipProxy'
-   './RelationshipList', 'lib/backbone'], 
-  (NodeProxy, NodeList, RelationshipProxy, RelationshipList) ->
+   './RelationshipList'
+   'ribcage/Model'], 
+  (NodeProxy, NodeList, RelationshipProxy, RelationshipList, Model) ->
   
-    class DataBrowserState extends Backbone.Model
+    class DataBrowserState extends Model
       
       defaults :
         type : null

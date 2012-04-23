@@ -19,33 +19,35 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.LifecycleException;
+import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import org.neo4j.kernel.lifecycle.LifecycleException;
+
+import static java.nio.ByteBuffer.*;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.*;
+import static recovery.CreateTransactionsAndDie.*;
 
 public class TestRecoveryVerification
 {
@@ -55,7 +57,8 @@ public class TestRecoveryVerification
 
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
-            super( dir, stringMap() );
+            super( dir, stringMap(), Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
+                    Service.load( CacheProvider.class ) );
             this.verifier = recoveryVerifier;
             run();
         }
@@ -108,7 +111,7 @@ public class TestRecoveryVerification
         int count = 10;
         String dir = produceNonCleanDbWhichWillRecover2PCsOnStartup( "order", count );
         // Just make it recover
-        new EmbeddedGraphDatabase( dir, stringMap( KEEP_LOGICAL_LOGS, "true" ) ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase().shutdown();
         verifyOrderedRecords( dir, count );
     }
 

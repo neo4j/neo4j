@@ -30,30 +30,29 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class ServerTestUtils
 {
     public static final GraphDatabaseFactory EMBEDDED_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+            return (GraphDatabaseAPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseStoreDirectory ).setConfig( databaseProperties ).newGraphDatabase();
         }
     };
 
     public static final GraphDatabaseFactory EPHEMERAL_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
     {
         @Override
-        public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return new ImpermanentGraphDatabase( databaseProperties );
+            return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( databaseProperties ).newGraphDatabase();
         }
     };
     

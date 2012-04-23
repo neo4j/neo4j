@@ -1,0 +1,8 @@
+[[query-set]]
+Set
+===
+Updating properties on nodes and relationships is done with the +SET+ clause.
+
+:leveloffset: 2
+
+include::set-a-property.txt[]

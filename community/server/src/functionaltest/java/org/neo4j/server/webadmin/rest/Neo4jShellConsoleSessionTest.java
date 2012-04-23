@@ -20,32 +20,31 @@
 package org.neo4j.server.webadmin.rest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.shell.ShellSettings;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class Neo4jShellConsoleSessionTest implements SessionFactory
 {
-    
     private static final String LN = System.getProperty("line.separator");
     private ConsoleService consoleService;
     private Database database;
@@ -54,9 +53,10 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     @Before
     public void setUp() throws Exception
     {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put(Config.ENABLE_REMOTE_SHELL, "true");
-        this.database = new Database( new ImpermanentGraphDatabase(params) );
+        this.database = new Database( (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+            newImpermanentDatabaseBuilder().
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+            newGraphDatabase() );
         this.consoleService = new ConsoleService( this, database, new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
@@ -76,26 +76,20 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     public void doesntMangleNewlines() throws Exception
     {
         Response response = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"start n=node(0) return n\", \"engine\":\"shell\" }" );
+                "{ \"command\" : \"start n=node(0) return n;\", \"engine\":\"shell\" }" );
 
      
         assertEquals( 200, response.getStatus() );
         String result = decode( response ).get(0);
 
-        // Awful hack: Result contains a timestamp for how
-        // long the query took, remove that timestamp to get 
-        // a deterministic test.
-        result = result.replaceAll("\\d+ ms", "");
-        
         String expected = "+-----------+"+LN
                          +"| n         |"+LN
                          +"+-----------+"+LN
                          +"| Node[0]{} |"+LN
                          +"+-----------+"+LN
-                         +"1 rows, "+LN
-                         +""+LN;
+                         +"1 row";
         
-        assertThat( result, is(expected) );
+        assertThat( result, containsString( expected ) );
     }
     
     private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException

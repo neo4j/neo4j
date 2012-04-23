@@ -22,8 +22,9 @@ define(
   ['lib/DateFormat'
    'ribcage/ui/Tooltip'
    'ribcage/security/HtmlEscaper'
-   'lib/jquery.flot','lib/backbone']
-  (DateFormat, Tooltip,HtmlEscaper) ->
+   'lib/amd/Flot'
+   'lib/amd/Underscore']
+  (DateFormat, Tooltip, HtmlEscaper, Flot, _ ) ->
 
     class LineChart
       

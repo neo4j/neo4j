@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 
 import java.util.Arrays;
@@ -26,7 +27,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -35,6 +35,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -77,6 +78,19 @@ public class NodeImpl extends ArrayBasedPrimitive
         return id;
     }
 
+    @Override
+    public int size()
+    {
+        int size = super.size() + SizeOfs.REFERENCE_SIZE/*relationships reference*/ + 8/*relChainPosition*/ + 8/*id*/;
+        if ( relationships != null )
+        {
+            size = withArrayOverheadIncludingReferences( size, relationships.length );
+            for ( RelIdArray array : relationships )
+                size += array.size();
+        }
+        return size;
+    }
+    
     @Override
     public int hashCode()
     {
@@ -327,7 +341,8 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        Triplet<ArrayMap<String, RelIdArray>, Map<Long, RelationshipImpl>, Long> rels = null;
+        // Triplet<ArrayMap<String, RelIdArray>, Map<Long, RelationshipImpl>, Long> rels = null;
+        Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> rels = null;
         synchronized ( this )
         {
             if ( relationships == null )
@@ -340,12 +355,19 @@ public class NodeImpl extends ArrayBasedPrimitive
                 {
                     setRelChainPosition( rels.third() );
                 }
+                updateSize( nodeManager );
             }
         }
         if ( rels != null )
         {
             nodeManager.putAllInRelCache( rels.second() );
         }
+    }
+
+    @Override
+    protected void updateSize( NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, size() );
     }
 
     private RelIdArray[] toRelIdArray( ArrayMap<String, RelIdArray> tmpRelMap )
@@ -364,15 +386,19 @@ public class NodeImpl extends ArrayBasedPrimitive
         return result;
     }
 
-    private Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships(
+//    private Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships(
+//            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
+    private Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
             NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels =
-            nodeManager.getMoreRelationships( this );
+//        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels =
+//            nodeManager.getMoreRelationships( this );
+        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels =
+                nodeManager.getMoreRelationships( this );
         ArrayMap<String,RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
@@ -407,7 +433,8 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     boolean getMoreRelationships( NodeManager nodeManager )
     {
-        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels;
+//        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels;
+        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
             return false;
@@ -418,7 +445,6 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 return false;
             }
-
             rels = nodeManager.getMoreRelationships( this );
             ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
@@ -444,8 +470,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
-
             setRelChainPosition( rels.third() );
+            updateSize( nodeManager );
         }
         nodeManager.putAllInRelCache( rels.second() );
         return true;
@@ -468,6 +494,9 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private void putRelIdArray( RelIdArray addRels )
     {
+        // we don't do size update here, instead performed in lockRelaser 
+        // when calling commitRelationshipMaps and in getMoreRelationships
+        
         // precondition: called under synchronization
 
         // make a local reference to the array to avoid multiple read barrier hits
@@ -551,7 +580,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel )
+        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
     {
         if ( relationships == null )
         {
@@ -592,6 +621,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                     }
                 }
             }
+            updateSize( nodeManager );
         }
     }
 

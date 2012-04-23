@@ -20,17 +20,16 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.File;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 public class DoSomeTransactionsThenWait
 {
     public static void main( String[] args ) throws Exception
     {
         String storeDir = args[0];
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         int count = Integer.parseInt( args[1] );
         for ( int i = 0; i < count; i++ )
         {

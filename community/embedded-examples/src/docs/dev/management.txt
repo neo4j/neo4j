@@ -9,6 +9,10 @@ to get instances of Neo4j management beans.
 The common JMX service can be used as well, but from your code you probably rather
 want to use the approach outlined here.
 
+[TIP]
+The source code of the example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/JmxTest.java[JmxTest.java]
+
 This example shows how to get the start time of a database:
 	
 [snippet,java]
@@ -27,6 +31,4 @@ http://components.neo4j.org/neo4j-jmx/{neo4j-version}/apidocs/org/neo4j/jmx/pack
 http://components.neo4j.org/neo4j-management/{neo4j-version}/apidocs/org/neo4j/management/package-summary.html[org.neo4j.management]
   package as well.
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/JmxTest.java[JmxTest.java]
 

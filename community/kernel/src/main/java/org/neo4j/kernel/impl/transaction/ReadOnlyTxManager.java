@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
@@ -31,12 +30,11 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
-
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class ReadOnlyTxManager extends AbstractTransactionManager
     implements Lifecycle

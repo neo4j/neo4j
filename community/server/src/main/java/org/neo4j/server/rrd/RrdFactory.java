@@ -37,7 +37,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -67,9 +67,9 @@ public class RrdFactory
     {
         Sampleable[] primitives = {
 //                new MemoryUsedSampleable(),
-                new NodeIdsInUseSampleable( (AbstractGraphDatabase) db.graph ),
-                new PropertyCountSampleable( (AbstractGraphDatabase) db.graph ),
-                new RelationshipCountSampleable( (AbstractGraphDatabase) db.graph )
+                new NodeIdsInUseSampleable( (GraphDatabaseAPI) db.graph ),
+                new PropertyCountSampleable( (GraphDatabaseAPI) db.graph ),
+                new RelationshipCountSampleable( (GraphDatabaseAPI) db.graph )
         };
 
         Sampleable[] usage = {
@@ -82,7 +82,7 @@ public class RrdFactory
         };
 
         final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
-                getDefaultDirectory( (AbstractGraphDatabase) db.graph ) );
+                getDefaultDirectory( (GraphDatabaseAPI) db.graph ) );
         final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(
@@ -119,7 +119,7 @@ public class RrdFactory
         return result.toArray( new Sampleable[result.size()] );
     }
 
-    private String getDefaultDirectory( AbstractGraphDatabase db )
+    private String getDefaultDirectory( GraphDatabaseAPI db )
     {
         return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
     }

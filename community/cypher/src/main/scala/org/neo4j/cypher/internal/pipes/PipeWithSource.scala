@@ -23,7 +23,7 @@ import collection.Seq
 import org.neo4j.cypher.internal.symbols.Identifier
 
 
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
+abstract class PipeWithSource(val source: Pipe) extends Pipe with Dependant {
   dependencies.foreach(source.symbols.assertHas(_))
   def dependencies: Seq[Identifier]
 }

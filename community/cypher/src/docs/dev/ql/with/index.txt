@@ -1,0 +1,13 @@
+[[query-with]]
+With
+====
+The ability to chain queries together allows for powerful constructs. In Cypher, the +WITH+ clause is
+used to pipe the result from one query to the next.
+
++WITH+ is also used to separate reading from updating of the graph. Every sub-query of a query must either be
+a read-only or a write-only.
+
+include::cypher-with-graph.txt[]
+
+include::filter-on-aggregate-function-results.txt[]
+include::alternative-syntax-of-with.txt[]

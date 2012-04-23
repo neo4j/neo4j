@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Settings'
-   'lib/backbone'], 
-  (Settings) ->
+   'ribcage/Model'], 
+  (Settings,Model) ->
   
-    class ApplicationState extends Backbone.Model
+    class ApplicationState extends Model
       
       getServer : ->
         @get "server"

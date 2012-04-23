@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
@@ -27,10 +28,12 @@ import java.io.File;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestIndexProviderStore
 {
@@ -41,7 +44,7 @@ public class TestIndexProviderStore
     public void createStore()
     {
         file = new File( "target/test-data/index-provider-store" );
-        fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        fileSystem = new DefaultFileSystemAbstraction();
         file.mkdirs();
         file.delete();
     }
@@ -76,6 +79,64 @@ public class TestIndexProviderStore
         }
         store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), true );
         assertEquals( "3.5", NeoStore.versionLongToString( store.getIndexVersion() ) );
+        store.close();
+    }
+    
+    @Test( expected = NotCurrentStoreVersionException.class )
+    public void shouldFailToGoBackToOlderVersion() throws Exception
+    {
+        String newerVersion = "3.5";
+        String olderVersion = "3.1";
+        try
+        {
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+            store.close();
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), false );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            assertTrue( e.getMessage().contains( newerVersion ) );
+            assertTrue( e.getMessage().contains( olderVersion ) );
+            throw e;
+        }
+    }
+
+    @Test( expected = NotCurrentStoreVersionException.class )
+    public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade() throws Exception
+    {
+        String newerVersion = "3.5";
+        String olderVersion = "3.1";
+        try
+        {
+            IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+            store.close();
+            store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), true );
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            assertTrue( e.getMessage().contains( newerVersion ) );
+            assertTrue( e.getMessage().contains( olderVersion ) );
+            throw e;
+        }
+    }
+    
+    @Test
+    public void upgradeForMissingVersionRecord() throws Exception
+    {
+        // This was before 1.6.M02
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
+        store.close();
+        FileUtils.truncateFile( file, 4*8 );
+        try
+        {
+            store = new IndexProviderStore( file, fileSystem, 0, false );
+            fail( "Should have thrown upgrade exception" );
+        }
+        catch ( UpgradeNotAllowedByConfigurationException e )
+        {   // Good
+        }
+        
+        store = new IndexProviderStore( file, fileSystem, 0, true );
         store.close();
     }
 }

@@ -20,15 +20,14 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
- * The batch inserter drops support for transactions and concurrency in favor
- * of insertion speed. When done using the batch inserter {@link #shutdown()}
- * must be invoked and complete successfully for the Neo4j store to be in
- * consistent state.
+ * The batch inserter drops support for transactions and concurrency in favor of
+ * insertion speed. When done using the batch inserter {@link #shutdown()} must
+ * be invoked and complete successfully for the Neo4j store to be in consistent
+ * state.
  * <p>
  * Only one thread at a time may work against the batch inserter, multiple
  * threads performing concurrent access have to employ synchronization.
@@ -37,6 +36,10 @@ import org.neo4j.graphdb.RelationshipType;
  * invoke {@link #shutdown()} before JVM exits the Neo4j store can be considered
  * being in non consistent state and the insertion has to be re-done from
  * scratch.
+ * 
+ * @deprecated this interface is being replaced by
+ *             {@link org.neo4j.unsafe.batchinsert.BatchInserter} as of Neo4j
+ *             1.7
  */
 public interface BatchInserter
 {

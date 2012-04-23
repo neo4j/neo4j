@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 
 public interface IdGeneratorFactory
 {
-    IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup );
-    
-    void create( String fileName );
-    
+    IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup );
+
+    void create( FileSystemAbstraction fs, String fileName );
+
     IdGenerator get( IdType idType );
 }

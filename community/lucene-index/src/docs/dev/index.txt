@@ -23,6 +23,8 @@ For Maven users, the +neo4j-lucene-index+ component has the coordinates +org.neo
 Different versions of the index and kernel components are not compatible in the general case.
 Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact which makes it simple to keep the versions in sync.
 
+For initial import of data using indexes, see <<indexing-batchinsert>>.
+
 .Transactions
 NOTE: All modifying index operations must be performed inside a transaction, as with any mutating operation in Neo4j.
 
@@ -423,36 +425,6 @@ tag=cache
 
 CAUTION: This setting is not persisted after shutting down the database.
   This means: set this value after each startup of the database if you want to keep it.
-
-[[indexing-batchinsert]]
-== Batch insertion ==
-
-Neo4j has a batch insertion mode intended for initial imports, which must run in a single thread and bypasses transactions and other checks in favor of performance.
-Indexing during batch insertion is done using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html[BatchInserterIndex] which are provided via http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndexProvider.html[BatchInserterIndexProvider].
-An example:
-
-[snippet,java]
-----
-component=neo4j-lucene-index
-source=examples/ImdbExampleTest.java
-tag=batchInsert
-----
-
-The configuration parameters are the same as mentioned in <<indexing-create-advanced>>.
-
-[[indexing-batchinsert-best-practices]]
-=== Best practices ===
-
-Here are some pointers to get the most performance out of +BatchInserterIndex+:
-
-* Try to avoid http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#flush%28%29[flushing] too often because each flush will result in all additions (since last flush) to be visible to the querying methods, and publishing those changes can be a performance penalty.
-* Have (as big as possible) phases where one phase is either only writes or only reads, and don't forget to flush after a write phase so that those changes becomes visible to the querying methods.
-* Enable http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#setCacheCapacity%28java.lang.String,%20int%29[caching] for keys you know you're going to do lookups for later on to increase performance significantly (though insertion performance may degrade slightly).
-
-[NOTE]
-Changes to the index are available for reading first after they are flushed to disk. 
-Thus, for optimal performance, read and lookup operations should be kept to a minimum during batchinsertion since they
-involve IO and impact speed negatively.
 
 [[auto-indexing]]
 == Automatic Indexing ==

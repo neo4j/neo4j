@@ -65,12 +65,17 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldComplainAboutUnknownIdentifier() {
     expectedError("start s = node(1) where s.name = Name and s.age = 10 return s",
-      "Unknown identifier `Name`.")
+      "Unknown identifier `Name`")
   }
 
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
-      "To find a shortest path, both ends of the path need to be provided. Couldn't find `b`")
+      "Unknown identifier `b`")
+  }
+
+  @Test def create_relationships_missing_end_nodes() {
+    expectedError("create rel a-[r:REL]->b return r",
+      "Unknown identifier `a`\nUnknown identifier `b`")
   }
 
   def expectedError(query: String, message: String) {

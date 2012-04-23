@@ -92,4 +92,18 @@ public class PatternElement
     {
         return prevRel;
     }
+    
+    public int hashCode()
+    {
+        return pNode.hashCode();
+    }
+    
+    public boolean equals( Object o )
+    {
+        if ( o instanceof PatternElement )
+        {
+            return pNode.equals( ( (PatternElement) o ).pNode );
+        }
+        return false;
+    }
 }

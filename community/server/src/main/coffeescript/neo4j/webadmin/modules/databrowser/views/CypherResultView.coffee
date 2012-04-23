@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['./cypherResult',
    'ribcage/View',
-   'lib/backbone'], 
-  (template, View) ->
+   'lib/amd/jQuery'], 
+  (template, View, $) ->
   
     class CypherResultView extends View
 

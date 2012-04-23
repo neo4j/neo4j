@@ -46,35 +46,37 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.BatchInserterIndex;
-import org.neo4j.graphdb.index.BatchInserterIndexProvider;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProvider;
 import org.neo4j.index.impl.lucene.LuceneIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.cache.WeakCacheProvider;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
+import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class ImdbExampleTest
 {
-    private static EmbeddedGraphDatabase graphDb;
+    private static GraphDatabaseService graphDb;
     private Transaction tx;
 
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -185,7 +187,7 @@ public class ImdbExampleTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() );
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -599,8 +601,9 @@ public class ImdbExampleTest
         Neo4jTestCase.deleteFileOrDirectory( new File(
                 "target/neo4jdb-batchinsert" ) );
         // START SNIPPET: batchInsert
-        BatchInserter inserter = new BatchInserterImpl( "target/neo4jdb-batchinsert" );
-        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
+        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
+                inserter );
         BatchInserterIndex actors = indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
         actors.setCacheCapacity( "name", 100000 );
 
@@ -611,13 +614,12 @@ public class ImdbExampleTest
         //make the changes visible for reading, use this sparsely, requires IO!
         actors.flush();
         
-        // Make sure to shut down the index provider
+        // Make sure to shut down the index provider as well
         indexProvider.shutdown();
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase(
-                "target/neo4jdb-batchinsert" );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
         Index<Node> index = db.index()
                 .forNodes( "actors" );
         Node reeves = index.get( "name", "Keanu Reeves" )
@@ -626,3 +628,4 @@ public class ImdbExampleTest
         db.shutdown();
     }
 }
+

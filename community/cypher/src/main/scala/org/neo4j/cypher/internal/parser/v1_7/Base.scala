@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.parser.v1_7
 
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.internal.commands.{Literal, Parameter, Expression}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.commands.{ParameterExpression, Literal, Expression}
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
@@ -93,7 +93,7 @@ abstract class Base extends JavaTokenParsers {
 
   def regularLiteral = ("/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*?""" + "/").r ^^ (x => Literal(stripQuotes(x)))
 
-  def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => Parameter(x))
+  def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => ParameterExpression(x))
 
   override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
 }

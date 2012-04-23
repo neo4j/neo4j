@@ -19,7 +19,6 @@
 package org.neo4j.examples;
 
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,6 +32,7 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class AbstractJavaDocTestbase implements GraphHolder
 {
@@ -40,13 +40,13 @@ public class AbstractJavaDocTestbase implements GraphHolder
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
-    protected static ImpermanentGraphDatabase db;
+    protected static GraphDatabaseService db;
     protected ExecutionEngine engine;
 
     @BeforeClass
     public static void init()
     {
-        db = new ImpermanentGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
     
     @AfterClass
@@ -65,7 +65,7 @@ public class AbstractJavaDocTestbase implements GraphHolder
     @Before
     public void setUp()
     {
-        db.cleanContent();
+        ((ImpermanentGraphDatabase)db).cleanContent();
         gen.get().setGraph( db );
         engine = new ExecutionEngine( db );
     }

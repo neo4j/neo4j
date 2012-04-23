@@ -19,11 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,19 +29,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
+
+import static org.junit.Assert.*;
 
 public class TestMigration
 {
@@ -55,11 +52,11 @@ public class TestMigration
     {
         String path = "target/var/old-index-store";
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         db.shutdown();
         InputStream stream = getClass().getClassLoader().getResourceAsStream( "old-index.db" );
         writeFile( stream, new File( path, "index.db" ) );
-        db = new EmbeddedGraphDatabase( path );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         assertTrue( db.index().existsForNodes( "indexOne" ) );
         Index<Node> indexOne = db.index().forNodes( "indexOne" );
         verifyConfiguration( db, indexOne, LuceneIndexImplementation.EXACT_CONFIG );
@@ -107,7 +104,7 @@ public class TestMigration
             bos.flush();
             bos.close();
         }
-        return new EmbeddedGraphDatabase( path.getAbsolutePath() );
+        return new GraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
     }
 
     private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )
@@ -134,7 +131,7 @@ public class TestMigration
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
         File storeDir = new File( "target/var/index" );
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
@@ -144,7 +141,7 @@ public class TestMigration
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
-        graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
         // Getting the index w/o exception means that the provider has been reinstated
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
@@ -155,7 +152,7 @@ public class TestMigration
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
-        graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
         // Getting the index w/o exception means that the provider has been reinstated
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider" ) ) );
@@ -168,7 +165,7 @@ public class TestMigration
 
     private void removeProvidersFromIndexDbFile( File storeDir )
     {
-        IndexStore indexStore = new IndexStore( storeDir.getPath(), defaultFileSystemAbstraction() );
+        IndexStore indexStore = new IndexStore( storeDir.getPath(), new DefaultFileSystemAbstraction() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

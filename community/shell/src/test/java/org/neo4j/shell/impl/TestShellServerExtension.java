@@ -20,10 +20,9 @@
 package org.neo4j.shell.impl;
 
 import java.util.Map;
-
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.KernelExtensionContractTest;
-import org.neo4j.shell.StartClient;
+import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestShellServerExtension extends
@@ -40,7 +39,8 @@ public class TestShellServerExtension extends
         Map<String, String> configuration = super.configuration( shouldLoad, instance );
         if ( shouldLoad )
         {
-            configuration.put( Config.ENABLE_REMOTE_SHELL, StartClient.ARG_NAME + "=neo4j-shell-" + instance );
+            configuration.put( ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
+            configuration.put(  ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
         }
         return configuration;
     }

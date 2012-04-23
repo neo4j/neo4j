@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
+import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.cache.SizeOf;
+import org.neo4j.kernel.impl.cache.SizeOfs;
 
-public class RelIdArray
+public class RelIdArray implements SizeOf
 {
     private static final DirectionWrapper[] DIRECTIONS_FOR_OUTGOING =
             new DirectionWrapper[] { DirectionWrapper.OUTGOING, DirectionWrapper.BOTH };
@@ -87,6 +94,16 @@ public class RelIdArray
         this.type = type;
     }
     
+    public int size()
+    {
+        return withObjectOverhead( withReference( sizeOf( type ) ) + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
+    }
+    
+    static int sizeOfBlockWithReference( IdBlock block )
+    {
+        return withReference( block != null ? block.size() : 0 );
+    }
+
     public String getType()
     {
         return type;
@@ -359,7 +376,7 @@ public class RelIdArray
         }
     }
     
-    public static abstract class IdBlock
+    public static abstract class IdBlock implements SizeOf
     {
         // First element is the actual length w/o the slack
         private int[] ids = new int[3];
@@ -375,6 +392,11 @@ public class RelIdArray
             copy.ids = new int[length+1];
             System.arraycopy( ids, 0, copy.ids, 0, length+1 );
             return copy;
+        }
+        
+        public int size()
+        {
+            return withObjectOverhead( withReference( withArrayOverhead( 4*ids.length ) ) );
         }
         
         /**
@@ -419,7 +441,7 @@ public class RelIdArray
             int newLength = length+delta;
             if ( newLength >= ids.length-1 )
             {
-                int calculatedLength = ids.length*3;
+                int calculatedLength = ids.length*2;
                 if ( newLength > calculatedLength )
                 {
                     calculatedLength = newLength*2;
@@ -499,6 +521,16 @@ public class RelIdArray
         HighIdBlock( long highBits )
         {
             this.highBits = highBits;
+        }
+        
+        public int size()
+        {
+            int size = super.size() + 8 + SizeOfs.REFERENCE_SIZE;
+            if ( prev != null )
+            {
+                size += prev.size();
+            }
+            return size;
         }
         
         @Override
@@ -780,10 +812,8 @@ public class RelIdArray
             }
             if ( add != null )
             {
-                RelIdArray newArray = src.newSimilarInstance();
-                newArray.addAll( src );
-                newArray = newArray.addAll( add );
-                return newArray;
+                src = src.addAll( add );
+                return src.downgradeIfPossible();
             }
             return src;
         }
@@ -816,7 +846,7 @@ public class RelIdArray
                     }
                 }
             }
-            return newArray.shrink();
+            return newArray;
         }
     }
 

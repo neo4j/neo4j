@@ -27,103 +27,95 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
 public class CypherResultRepresentation extends ObjectRepresentation
 {
+    private final Representation resultRepresentation;
+    private final ListRepresentation columns;
 
-    private final ExecutionResult queryResult;
 
     public CypherResultRepresentation( ExecutionResult result )
     {
         super( RepresentationType.STRING );
-        this.queryResult = result;
+        resultRepresentation = createResultRepresentation(result);
+        columns = ListRepresentation.string( result.columns() );
     }
 
     @Mapping( "columns" )
     public Representation columns()
     {
-
-        return ListRepresentation.string( queryResult.columns() );
+        return columns;
     }
 
     @Mapping( "data" )
     public Representation data()
     {
-        // rows
-        List<Representation> rows = new ArrayList<Representation>();
-        for ( Map<String, Object> row : queryResult )
-        {
-            List<Representation> fields = new ArrayList<Representation>();
-            // columns
-            for ( String column : queryResult.columns() )
-            {
-                Representation rowRep = getRepresentation( row.get( column ) );
-                fields.add( rowRep );
+        return resultRepresentation;
 
-            }
-            rows.add( new ListRepresentation( "row", fields ) );
-        }
-        return new ListRepresentation( "data", rows );
     }
 
-    private Representation getRepresentation( Object r )
+    private Representation createResultRepresentation(ExecutionResult executionResult) {
+        final List<String> columns = executionResult.columns();
+        final Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<Map<String,Object>>(executionResult);
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {
+
+            @Override
+            protected Representation underlyingObjectToObject(final Map<String, Object> row) {
+                return new ListRepresentation("row",
+                 new IterableWrapper<Representation,String>(columns) {
+
+                     @Override
+                     protected Representation underlyingObjectToObject(String column) {
+                         return getRepresentation( row.get( column ) );
+                     }
+                 });
+            }
+        });
+    }
+
+    Representation getRepresentation( Object r )
     {
-        if(r == null ) {
+        if( r == null )
+        {
             return ValueRepresentation.string( null );
         }
-        if ( r instanceof Node )
-        {
-            return new NodeRepresentation( (Node) r );
-        }
-        if ( r instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) r );
-        }
-        else if ( r instanceof Double || r instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) r ).doubleValue() );
-        }
-        else if ( r instanceof Long || r instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Number) r ).longValue() );
-        }
-        else if ( r instanceof Path )
+
+        if ( r instanceof Path )
         {
             return new PathRepresentation<Path>((Path) r );
         }
-        else if ( r instanceof Iterable )
+
+        if(r instanceof Iterable)
         {
-            return getListRepresentation( (Iterable) r );
+            return handleIterable( (Iterable) r );
         }
-        else
+
+        if ( r instanceof Node)
         {
-            return ValueRepresentation.string( r.toString() );
+            return new NodeRepresentation( (Node) r );
         }
+
+        if ( r instanceof Relationship)
+        {
+            return new RelationshipRepresentation( (Relationship) r );
+        }
+
+        JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
+        return representationDispatcher.dispatch( r, "" );
     }
 
-    Representation getListRepresentation( Iterable data )
-    {
-        final List<Representation> results = convertValuesToRepresentations( data );
-        return new ListRepresentation( getType( results ), results );
-    }
-
-    List<Representation> convertValuesToRepresentations( Iterable data )
-    {
+    Representation handleIterable( Iterable data ) {
         final List<Representation> results = new ArrayList<Representation>();
         for ( final Object value : data )
         {
-            if ( value instanceof Iterable )
-            {
-                List<Representation> nested = new ArrayList<Representation>();
-                nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
-                results.add( new ListRepresentation( getType( nested ), nested ) );
-            }
-            else
-            {
-                results.add( getSingleRepresentation( value ) );
-            }
+            Representation rep = getRepresentation(value);
+            results.add(rep);
         }
-        return results;
+
+        RepresentationType representationType = getType(results);
+        return new ListRepresentation( representationType, results );
     }
 
     RepresentationType getType( List<Representation> representations )
@@ -133,33 +125,4 @@ public class CypherResultRepresentation extends ObjectRepresentation
         return representations.get( 0 ).getRepresentationType();
     }
 
-    Representation getSingleRepresentation( Object result )
-    {
-        if ( result == null )
-            return ValueRepresentation.string( "null" );
-        else if ( result instanceof Node )
-        {
-            return new NodeRepresentation( (Node) result );
-        }
-        else if ( result instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) result );
-        }
-        else if ( result instanceof Double || result instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
-        }
-        else if ( result instanceof Long )
-        {
-            return ValueRepresentation.number( ( (Long) result ).longValue() );
-        }
-        else if ( result instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Integer) result ).intValue() );
-        }
-        else
-        {
-            return ValueRepresentation.string( result.toString() );
-        }
-    }
 }

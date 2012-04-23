@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{Property, Equals, Literal}
-import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 
-class FilterBuilderTest extends Assertions with PipeBuilder {
+class FilterBuilderTest extends BuilderTest {
 
   val builder = new FilterBuilder
 
@@ -35,7 +33,7 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
     val q = PartiallySolvedQuery().
       copy(where = Seq(Unsolved(Equals(Property("s", "foo"), Literal("bar")))))
 
-    assertFalse("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
@@ -45,7 +43,7 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((pipe, q)))
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(pipe, q)))
   }
 
   @Test
@@ -58,9 +56,9 @@ class FilterBuilderTest extends Assertions with PipeBuilder {
 
     val pipe = createPipe(nodes = Seq("s"))
 
-    val (_, result) = builder((pipe, q))
+    val resultPlan = builder(plan(pipe, q))
 
-    assert(result.where.toSet === Set(
+    assert(resultPlan.query.where.toSet === Set(
       Solved(Equals(Property("s", "foo"), Literal("bar"))),
       Unsolved(Equals(Property("x", "foo"), Literal("bar")))))
   }

@@ -19,17 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,6 +31,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.*;
 
 public class TestNode extends AbstractNeo4jTestCase
 {
@@ -389,7 +385,7 @@ public class TestNode extends AbstractNeo4jTestCase
                 Transaction tx = getGraphDb().beginTx();
                 try
                 {
-                    getGraphDb().getLockManager().getWriteLock( entity );
+                    getEmbeddedGraphDb().getLockManager().getWriteLock( entity );
                     gotTheLock.set( true );
                     tx.success();
                 }

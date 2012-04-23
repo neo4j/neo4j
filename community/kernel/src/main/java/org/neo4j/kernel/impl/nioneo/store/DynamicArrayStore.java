@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.System.arraycopy;
+
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -35,17 +39,19 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class DynamicArrayStore extends AbstractDynamicStore
 {
-    public interface Configuration
+    static final int NUMBER_HEADER_SIZE = 3;
+    static final int STRING_HEADER_SIZE = 5;
+    
+    public static abstract class Configuration
         extends AbstractDynamicStore.Configuration
     {
-        
     }
     
     // store version, each store ends with this string (byte encoded)
     public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
-    public DynamicArrayStore(String fileName, Configuration configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public DynamicArrayStore(String fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
@@ -64,36 +70,51 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )
     {
+        Class<?> componentType = array.getClass().getComponentType();
+        boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
+        boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
+        byte[] bytes = null;
         ShortArray type = ShortArray.typeOf( array );
-        if (type == null)
-        {
-            throw new IllegalArgumentException( array
-                                                + " not a valid array type." );
-        }
+        if ( type == null ) throw new IllegalArgumentException( array + " not a valid array type." );
+        
         int arrayLength = Array.getLength( array );
-        int requiredBits = type.calculateRequiredBitsForArray( array );
+        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array );
         int totalBits = requiredBits*arrayLength;
-        int bytes = (totalBits-1)/8+1;
+        int numberOfBytes = (totalBits-1)/8+1;
         int bitsUsedInLastByte = totalBits%8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
-        bytes += 3; // type + rest + requiredBits header. TODO no need to use full bytes
-        Bits bits = Bits.bits( bytes );
-        bits.put( (byte)type.intValue() );
-        bits.put( (byte)bitsUsedInLastByte );
-        bits.put( (byte)requiredBits );
+        numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
         int length = arrayLength;
-        for ( int i = 0; i < length; i++ )
+        if ( isByteArray )
         {
-            type.put( Array.get( array, i ), bits, requiredBits );
+            bytes = new byte[NUMBER_HEADER_SIZE+length];
+            bytes[0] = (byte) type.intValue();
+            bytes[1] = (byte) bitsUsedInLastByte;
+            bytes[2] = (byte) requiredBits;
+            if ( isPrimitiveByteArray ) arraycopy( (byte[]) array, 0, bytes, NUMBER_HEADER_SIZE, length );
+            else
+            {
+                Byte[] source = (Byte[]) array;
+                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i].byteValue();
+            }
         }
-        return allocateRecords( startBlock, bits.asBytes() );
+        else
+        {
+            Bits bits = Bits.bits( numberOfBytes );
+            bits.put( (byte)type.intValue() );
+            bits.put( (byte)bitsUsedInLastByte );
+            bits.put( (byte)requiredBits );
+            for ( int i = 0; i < length; i++ ) type.put( Array.get( array, i ), bits, requiredBits );
+            bytes = bits.asBytes();
+        }
+        return allocateRecords( startBlock, bytes );
     }
 
     private Collection<DynamicRecord> allocateFromString( long startBlock,
         String[] array )
     {
         List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
-        int totalBytesRequired = 1+4; // 1b type + 3b array length
+        int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
         for ( String string : array )
         {
             byte[] bytes = PropertyStore.encodeString( string );
@@ -130,20 +151,23 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public Object getRightArray( byte[] bArray )
+    public Object getRightArray( Pair<byte[],byte[]> data )
     {
-        byte typeId = bArray[0];
+        byte[] header = data.first();
+        byte[] bArray = data.other();
+        byte typeId = header[0];
         if ( typeId == PropertyType.STRING.intValue() )
         {
-            ByteBuffer buf = ByteBuffer.wrap( bArray );
-            buf.get(); // Get rid of the type byte that we've already read
-            int arrayLength = buf.getInt();
+            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length-1 );
+            int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
+            
+            ByteBuffer dataBuffer = ByteBuffer.wrap( bArray );
             for ( int i = 0; i < arrayLength; i++ )
             {
-                int byteLength = buf.getInt();
+                int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
-                buf.get( stringByteArray );
+                dataBuffer.get( stringByteArray );
                 result[i] = (String) PropertyStore.getStringFor( stringByteArray );
             }
             return result;
@@ -151,16 +175,21 @@ public class DynamicArrayStore extends AbstractDynamicStore
         else
         {
             ShortArray type = ShortArray.typeOf( typeId );
-            Bits bits = Bits.bitsFromBytes( bArray );
-            bits.getByte(); // type, we already got it
-            int bitsUsedInLastByte = bits.getByte();
-            int requiredBits = bits.getByte();
-            if ( requiredBits == 0 ) return type.createArray( 0 );
-            int length = ((bArray.length-3)*8-(8-bitsUsedInLastByte))/requiredBits;
-            Object result = type.createArray( length );
-            for ( int i = 0; i < length; i++ )
-            {
-                type.get( result, i, bits, requiredBits );
+            int bitsUsedInLastByte = header[1];
+            int requiredBits = header[2];
+            if ( requiredBits == 0 )
+                return type.createArray( 0 );
+            Object result = null;
+            if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
+            {   // Optimization for byte arrays (probably large ones)
+                result = bArray;
+            }
+            else
+            {   // Fallback to the generic approach, which is a slower
+                Bits bits = Bits.bitsFromBytes( bArray );
+                int length = (bArray.length*8-(8-bitsUsedInLastByte))/requiredBits;
+                result = type.createArray( length );
+                for ( int i = 0; i < length; i++ ) type.get( result, i, bits, requiredBits );
             }
             return result;
         }

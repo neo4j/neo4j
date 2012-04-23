@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, PathType}
 import org.neo4j.cypher.internal.commands.{ReturnItem, ShortestPath}
-
+import collection.mutable.Map
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  *
@@ -35,19 +35,19 @@ import org.neo4j.cypher.internal.commands.{ReturnItem, ShortestPath}
 abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
   def startName = ast.start
   def endName = ast.end
-  def relType = ast.relType
+  def relType = ast.relTypes
   def dir = ast.dir
   def maxDepth = ast.maxDepth
   def optional = ast.optional
   def pathName = ast.pathName
   def returnItems: Seq[ReturnItem] = Seq()
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
-    val (start, end) = getStartAndEnd(m)
-    val expander: Expander = createExpander()
-    val depth: Int = maxDepth.getOrElse(15)
+  def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
+    val (start, end) = getStartAndEnd(ctx)
+    val expander = createExpander
+    val depth = maxDepth.getOrElse(15)
 
-    findResult(expander, start, end,  depth, m)
+    findResult(expander, start, end, depth, ctx)
   })
 
   private def getStartAndEnd[U](m: Map[String, Any]): (Node, Node) = {
@@ -58,14 +58,15 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
     (start, end)
   }
 
-  private def createExpander[U](): Expander = relType match {
-      case None => Traversal.expanderForAllTypes(dir)
-      case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
-    }
+  private lazy val createExpander: Expander = if (relType.isEmpty) {
+    Traversal.expanderForAllTypes(dir)
+  } else {
+    relType.foldLeft(Traversal.emptyExpander()){case(e,t)=>e.add(DynamicRelationshipType.withName(t), dir)}
+  }
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 
-  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]):Traversable[Map[String, Any]]
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: ExecutionContext): Traversable[ExecutionContext]
 
   val symbols = source.symbols.add(Identifier(pathName, PathType()))
 

@@ -71,6 +71,12 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return nodeManager.relAddProperty( this, index, value );
     }
+    
+    @Override
+    public int size()
+    {
+        return super.size() + 8/*idAndMore*/ + 8/*startNodeId and endNodeId*/;
+    }
 
     @Override
     protected void removeProperty( NodeManager nodeManager,
@@ -227,5 +233,11 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     PropertyContainer asProxy( NodeManager nm )
     {
         return nm.newRelationshipProxyById( getId() );
+    }
+
+    @Override
+    protected void updateSize( NodeManager nodeManager )
+    {
+        nodeManager.updateCacheSize( this, size() );
     }
 }

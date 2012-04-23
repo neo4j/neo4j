@@ -1,16 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2002-2012 "Neo Technology,"
+  Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+  This file is part of Neo4j.
+
+  Neo4j is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses />.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to
@@ -268,17 +288,27 @@ public class ComponentVersion extends Version
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_core</artifactId>
+    <dependency> 
+    	<groupId>ch.qos.logback</groupId>
+    	<artifactId>logback-classic</artifactId>
+    	<version>1.0.0</version>
+      <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_compendium</artifactId>
-    </dependency>
+<!--     <dependency>
+    	<groupId>janino</groupId>
+    	<artifactId>janino</artifactId>
+    	<version>2.5.10</version>
+      <optional>true</optional>
+    </dependency> -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.1</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

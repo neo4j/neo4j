@@ -12,6 +12,10 @@ This is the first node space we want to traverse into:
     
 image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
+
 .Friends and friends of friends
 [snippet,java]
 ----
@@ -58,8 +62,6 @@ Now we know who coded the Matrix:
 
 include::matrix-traversal-java-hackers.txt[]
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
 
 == New traversal framework ==
 
@@ -72,11 +74,16 @@ However, expect the new API to evolve and thus undergo changes.
 
 The traversals from the Matrix example above, this time using the new traversal API:
 
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/NewMatrix.java[NewMatrix.java]
+
 .Friends and friends of friends
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=get-friends
 ----
 
@@ -85,15 +92,21 @@ Let's perform the actual traversal and print the results:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=friends-usage
 ----
+
+Which will give us the following output:
+
+include::matrix-traversal-java-new-friends.txt[]
 
 .Who coded the Matrix?
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=find-hackers
 ----
 
@@ -102,23 +115,30 @@ Print out the result:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/MatrixNewTravTest.java
+classifier=sources
+source=org/neo4j/examples/NewMatrix.java
 tag=find--hackers-usage
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
+Now we know who coded the Matrix:
+
+include::matrix-traversal-java-new-hackers.txt[]
 
 
 === Walking an ordered path ===
 
 This example shows how to use a path context holding a representation of a path.
 
+[TIP]
+The source code of this example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/orderedpath/OrderedPath.java[OrderedPath.java]
+
 .Create a toy graph
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
 tag=createGraph
 ----
 
@@ -130,19 +150,46 @@ B -> C [label="REL2" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 C -> D [label="REL3" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 ----
 
-// generate graphviz dot from code ?
+// include when we have reltype colors
+// include::ordered-path-java-graph.txt[]
+// then, also include the property setting in the code.
 
 Now, the order of relationships (+REL1+ -> +REL2+ -> +REL3+) is stored in an +ArrayList+.
 Upon traversal, the +Evaluator+ can check against it to ensure that only paths are included and returned that have the predefined order of relationships:
 
-.Walk the path
+.Define how to walk the path
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
 tag=walkOrderedPath
 ----
 
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java[OrderedPathTest.java]
+.Perform the traversal and print the result
+[snippet,java]
+----
+component=neo4j-examples
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
+tag=printPath
+----
+
+Which will output:
+
+include::ordered-path-java-output.txt[]
+
+In this case we use a custom class to format the path output.
+This is how it's done:
+
+[snippet,java]
+----
+component=neo4j-examples
+classifier=sources
+source=org/neo4j/examples/orderedpath/OrderedPath.java
+tag=pathPrinter
+----
+
+For options regarding output of a +Path+, see the 
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html[Traversal] class.
 

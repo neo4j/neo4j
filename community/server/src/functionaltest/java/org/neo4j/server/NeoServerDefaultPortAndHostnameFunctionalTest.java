@@ -34,7 +34,7 @@ public class NeoServerDefaultPortAndHostnameFunctionalTest extends AbstractRestF
 
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server());
 
-        JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.getWebadminUri());
+        JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.webAdminUri());
 
         assertThat(response.getStatus(), is(200));
     }

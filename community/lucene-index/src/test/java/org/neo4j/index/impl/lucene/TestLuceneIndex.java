@@ -672,6 +672,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
         assertThat( indexResult4, isEmpty() );
+
+        IndexHits<Node> indexResult5 = index.query( "number", numericRange( "number", null, 98, true, true ) );
+        assertContains( indexResult5, node1, node2 );
+
+        IndexHits<Node> indexResult6 = index.query( "number", numericRange( "number", 47, null, true, true ) );
+        assertContains( indexResult6, node1, node2 );
     }
 
     @Test
@@ -1663,5 +1669,29 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Node> index = nodeIndex( testname.getMethodName(), stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
         Node node = graphDb.createNode();
         index.add( node, "name", "Mattias" );
+    }
+    
+    @Test
+    public void numericValueForGetInExactIndex() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        numericValueForGet( index );
+    }
+
+    @Test
+    public void numericValueForGetInFulltextIndex() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.FULLTEXT_CONFIG );
+        numericValueForGet( index );
+    }
+    
+    private void numericValueForGet( Index<Node> index )
+    {
+        Node node = graphDb.createNode();
+        long id = 100L;
+        index.add( node, "name", ValueContext.numeric( id ) );
+        assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
+        restartTx();
+        assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
     }
 }

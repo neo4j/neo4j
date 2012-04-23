@@ -33,6 +33,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.TestData.Title;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
 
@@ -41,8 +42,14 @@ public class CreateRelationshipFunctionalTest extends
 {
     private static String RELATIONSHIP_URI_PATTERN;
 
+    /**
+     * Upon successful creation of a relationship, the new relationship is
+     * returned.
+     */
     @Test
     @Graph( "Joe knows Sara" )
+    @Documented
+    @Title( "Create a relationship with properties" )
     public void create_a_relationship_with_properties() throws Exception
     {
         String jsonString = "{\"to\" : \""
@@ -58,8 +65,13 @@ public class CreateRelationshipFunctionalTest extends
         assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
     }
 
-    @Documented
+    /**
+     * Upon successful creation of a relationship, the new relationship is
+     * returned.
+     */
     @Test
+    @Documented
+    @Title( "Create relationship" )
     @Graph( "Joe knows Sara" )
     public void create_relationship() throws Exception
     {
@@ -67,7 +79,7 @@ public class CreateRelationshipFunctionalTest extends
                             + getDataUri()
                             + "node/"
                             + getNode( "Sara" ).getId()
-                            + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
+                            + "\", \"type\" : \"LOVES\"}";
         Node i = getNode( "Joe" );
         String entity = gen.get().expectedStatus(
                 Status.CREATED.getStatusCode() ).payload( jsonString ).post(

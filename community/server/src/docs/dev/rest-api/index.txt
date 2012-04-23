@@ -83,6 +83,8 @@ include::property-values-can-not-be-nested.txt[]
 
 include::delete-all-properties-from-node.txt[]
 
+include::delete-a-named-property-from-a-node.txt[]
+
 [[rest-api-relationship-properties]]
 == Relationship properties ==
 
@@ -152,6 +154,8 @@ include::add-a-relationship-to-an-index-unless-a-relationship-already-exists-for
 [[rest-api-auto-indexes]]
 == Automatic Indexes ==
 
+To enable automatic indexes in neo4j, set up the database for that, see <<auto-indexing-config>>. With this feature enabled, you can then index and query nodes in these indexes.
+
 include::find-node-by-exact-match-from-an-automatic-index.txt[]
 
 include::find-node-by-query-from-an-automatic-index.txt[]
@@ -192,6 +196,18 @@ In case you're curious how this works, on the server side it triggers the creati
 
 [CAUTION]
 You have to do this early in your server lifecycle, before any normal auto indexes are created.
+
+There are a few REST calls providing a REST interface to the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/AutoIndexer.html[AutoIndexer] component. The following REST calls work both, for `node` and `relationship` by simply changing the respective part of the URL.
+
+include::get-current-status-for-autoindexing-on-nodes.txt[]
+
+include::enable-node-autoindexing.txt[]
+
+include::lookup-list-of-properties-being-autoindexed.txt[]
+
+include::add-a-property-for-autoindexing-on-nodes.txt[]
+
+include::remove-a-property-for-autoindexing-on-nodes.txt[]
 
 [[rest-api-traverse]]
 == Traversals ==

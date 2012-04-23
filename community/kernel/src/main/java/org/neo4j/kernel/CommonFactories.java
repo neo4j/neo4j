@@ -19,68 +19,42 @@
  */
 package org.neo4j.kernel;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 
+@Deprecated
 public class CommonFactories
 {
-    public static class DefaultIdGeneratorFactory implements IdGeneratorFactory
-    {
-        private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
-        
-        public IdGenerator open( String fileName, int grabSize, IdType idType,
-                long highestIdInUse, boolean startup )
-        {
-            IdGenerator generator = new IdGeneratorImpl( fileName, grabSize, idType.getMaxValue(), idType.allowAggressiveReuse() );
-            generators.put( idType, generator );
-            return generator;
-        }
-        
-        public IdGenerator get( IdType idType )
-        {
-            return generators.get( idType );
-        }
-        
-        public void create( String fileName )
-        {
-            IdGeneratorImpl.createGenerator( fileName );
-        }
-    }
-    
+
     public static IdGeneratorFactory defaultIdGeneratorFactory()
     {
         return new DefaultIdGeneratorFactory();
     }
-    
+
     public static FileSystemAbstraction defaultFileSystemAbstraction()
     {
         return new DefaultFileSystemAbstraction();
     }
-    
+
     public static LogBufferFactory defaultLogBufferFactory()
     {
         return new DefaultLogBufferFactory();
     }
-    
+
     public static LastCommittedTxIdSetter defaultLastCommittedTxIdSetter()
     {
         return new DefaultLastCommittedTxIdSetter();
     }
-    
+
     public static TxHook defaultTxHook()
     {
         return new DefaultTxHook();
     }
-    
+
     public static RecoveryVerifier defaultRecoveryVerifier()
     {
         return RecoveryVerifier.ALWAYS_VALID;

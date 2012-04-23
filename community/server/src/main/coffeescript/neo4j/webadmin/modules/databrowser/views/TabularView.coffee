@@ -19,15 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./NodeView',
-   './RelationshipView',
-   './RelationshipListView',
-   './NodeListView',
-   './CypherResultView',
-   'ribcage/View',
-   './notfound',
-   'lib/backbone'], 
-  (NodeView, RelationshipView, RelationshipListView, NodeListView, CypherResultView, View, notFoundTemplate) ->
+  ['./NodeView'
+   './RelationshipView'
+   './RelationshipListView'
+   './NodeListView'
+   './CypherResultView'
+   'ribcage/View'
+   './notfound'
+   'lib/amd/jQuery'], 
+  (NodeView, RelationshipView, RelationshipListView, NodeListView, CypherResultView, View, notFoundTemplate, $) ->
   
     class SimpleView extends View
 

@@ -19,23 +19,19 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -45,6 +41,8 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
+
+import static java.lang.management.ManagementFactory.*;
 
 public class Dbinfo extends ReadOnlyGraphDatabaseApp
 {
@@ -92,11 +90,11 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
     {
         GraphDatabaseService graphDb = getServer().getDb();
         Kernel kernel = null;
-        if ( graphDb instanceof AbstractGraphDatabase )
+        if ( graphDb instanceof GraphDatabaseAPI )
         {
             try
             {
-                kernel = ( (AbstractGraphDatabase) graphDb ).getManagementBean( Kernel.class );
+                kernel = ( (GraphDatabaseAPI) graphDb ).getSingleManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {

@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./nodeList',
-   'ribcage/View',
-   'lib/backbone'], 
-  (template, View) ->
+  ['./nodeList'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (template, View, $) ->
   
     class NodeListView extends View
 

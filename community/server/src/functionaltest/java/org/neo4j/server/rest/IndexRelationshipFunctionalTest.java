@@ -168,6 +168,15 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
     }
 
     @Test
+    public void shouldGet404WhenDeletingNonExtistentIndex() throws DatabaseBlockedException
+    {
+        String indexName = "nosuchindex";
+        String indexUri = functionalTestHelper.relationshipIndexUri() + indexName;
+        JaxRsResponse response = request.delete(indexUri);
+        assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+    }
+
+    @Test
     public void shouldGet200AndArrayOfRelationshipRepsWhenGettingFromIndex() throws PropertyValueException
     {
         final long startNode = helper.createNode();

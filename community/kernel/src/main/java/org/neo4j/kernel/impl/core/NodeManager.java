@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -43,15 +41,10 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.cache.NoCache;
-import org.neo4j.kernel.impl.cache.SoftLruCache;
-import org.neo4j.kernel.impl.cache.StrongReferenceCache;
-import org.neo4j.kernel.impl.cache.WeakLruCache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -66,33 +59,23 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class NodeManager
     implements Lifecycle
 {
-    public interface Configuration
-    {
-        boolean use_adaptive_cache(boolean def);
-        float adaptive_cache_heap_ratio(float def, float min, float max);
-        int min_node_cache_size(int def);
-
-        int min_relationship_cache_size(int def);
-
-        int max_node_cache_size(int def);
-
-        int max_relationship_cache_size(int def);
-    }
-    
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private long referenceNodeId = 0;
 
-    private Configuration config;
+    private Config config;
+
     private final GraphDatabaseService graphDbService;
-    private final Cache<Long,NodeImpl> nodeCache;
-    private final Cache<Long,RelationshipImpl> relCache;
-    private final AdaptiveCacheManager cacheManager;
-    private final CacheType cacheType;
+    private final Cache<NodeImpl> nodeCache;
+    private final Cache<RelationshipImpl> relCache;
+
+    private final CacheProvider cacheProvider;
+
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
@@ -107,8 +90,6 @@ public class NodeManager
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
-    private boolean useAdaptiveCache;
-
     private static final int INDEX_COUNT = 2500;
 
     private static final int LOCK_STRIPE_COUNT = 32;
@@ -116,16 +97,15 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
-    public NodeManager( Configuration config, GraphDatabaseService graphDb,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
+    public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            RelationshipTypeHolder relationshipTypeHolder, CacheType cacheType, PropertyIndexManager propertyIndexManager,
-            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups)
+            RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider, PropertyIndexManager propertyIndexManager,
+            NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, 
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
         this.config = config;
         this.graphDbService = graphDb;
-        this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -136,9 +116,9 @@ public class NodeManager
         this.relationshipLookups = relationshipLookups;
         this.relTypeHolder = relationshipTypeHolder;
 
-        this.cacheType = cacheType;
-        this.nodeCache = cacheType.node( cacheManager );
-        this.relCache = cacheType.relationship( cacheManager );
+        this.cacheProvider = cacheProvider;
+        this.nodeCache = nodeCache;
+        this.relCache = relCache;
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
@@ -153,9 +133,9 @@ public class NodeManager
         return graphDbService;
     }
 
-    public CacheType getCacheType()
+    public CacheProvider getCacheType()
     {
-        return this.cacheType;
+        return this.cacheProvider;
     }
 
     @Override
@@ -180,39 +160,28 @@ public class NodeManager
             setHasAllpropertyIndexes( true );
         }
 
-        useAdaptiveCache = config.use_adaptive_cache(false);
-        float adaptiveCacheHeapRatio = config.adaptive_cache_heap_ratio( 0.77f, 0.1f, 0.95f );
-        int minNodeCacheSize = config.min_node_cache_size( 0 );
-        int minRelCacheSize = config.min_relationship_cache_size( 0 );
-        int maxNodeCacheSize = config.max_node_cache_size( 1500 );
-        int maxRelCacheSize = config.max_relationship_cache_size( 3500 );
+//        useAdaptiveCache = config.use_adaptive_cache(false);
+//        float adaptiveCacheHeapRatio = config.adaptive_cache_heap_ratio( 0.77f, 0.1f, 0.95f );
+//        int minNodeCacheSize = config.min_node_cache_size( 0 );
+//        int minRelCacheSize = config.min_relationship_cache_size( 0 );
+//        int maxNodeCacheSize = config.max_node_cache_size( 1500 );
+//        int maxRelCacheSize = config.max_relationship_cache_size( 3500 );
 
-        nodeCache.resize( maxNodeCacheSize );
-        relCache.resize( maxRelCacheSize );
-        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
-        {
-            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
-                                        minNodeCacheSize );
-            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio,
-                                        minRelCacheSize );
-        }
     }
 
     @Override
     public void stop()
     {
         clearCache();
-
-        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
-        {
-            cacheManager.unregisterCache( nodeCache );
-            cacheManager.unregisterCache( relCache );
-        }
     }
 
     @Override
     public void shutdown()
     {
+        nodeCache.printStatistics();
+        relCache.printStatistics();
+        nodeCache.clear();
+        relCache.clear();
     }
 
     public Node createNode()
@@ -225,7 +194,8 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
-            nodeCache.put( id, node );
+            // nodeCache.put( id, node );
+            nodeCache.put( node );
             success = true;
             return proxy;
         }
@@ -291,7 +261,8 @@ public class NodeManager
                 startNode.addRelationship( this, type, id, DirectionWrapper.OUTGOING );
                 secondNode.addRelationship( this, type, id, DirectionWrapper.INCOMING );
             }
-            relCache.put( rel.getId(), rel );
+            // relCache.put( rel.getId(), rel );
+            relCache.put( rel );
             success = true;
             return proxy;
         }
@@ -363,7 +334,7 @@ public class NodeManager
         return lock;
     }
 
-    private Node getNodeByIdOrNull( long nodeId )
+    protected Node getNodeByIdOrNull( long nodeId )
     {
         NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
@@ -380,7 +351,7 @@ public class NodeManager
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
             node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-            nodeCache.put( nodeId, node );
+            nodeCache.put( node );
             return new NodeProxy( nodeId, nodeLookup );
         }
         finally
@@ -453,7 +424,8 @@ public class NodeManager
             NodeRecord record = persistenceManager.loadLightNode( nodeId );
             if ( record == null ) return null;
             node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-            nodeCache.put( nodeId, node );
+//            nodeCache.put( nodeId, node );
+            nodeCache.put( node );
             return node;
         }
         finally
@@ -485,7 +457,7 @@ public class NodeManager
         this.referenceNodeId = nodeId;
     }
 
-    private Relationship getRelationshipByIdOrNull( long relId )
+    protected Relationship getRelationshipByIdOrNull( long relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
@@ -516,7 +488,7 @@ public class NodeManager
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
             relationship = newRelationshipImpl( relId, startNodeId, endNodeId, type, typeId, false );
-            relCache.put( relId, relationship );
+            relCache.put( relationship );
             return new RelationshipProxy( relId, relationshipLookups );
         }
         finally
@@ -599,7 +571,8 @@ public class NodeManager
             }
             relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
                     type, typeId, false );
-            relCache.put( relId, relationship );
+            // relCache.put( relId, relationship );
+            relCache.put( relationship );
             return relationship;
         }
         finally
@@ -613,9 +586,9 @@ public class NodeManager
         nodeCache.remove( nodeId );
     }
 
-    public void removeRelationshipFromCache( long id )
+    public void removeRelationshipFromCache( long relId )
     {
-        relCache.remove( id );
+        relCache.remove( relId );
     }
 
     Object loadPropertyValue( PropertyData property )
@@ -628,7 +601,8 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
+    // Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
@@ -636,26 +610,30 @@ public class NodeManager
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
-        Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
+        // Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
+        List<RelationshipImpl> relsList = new ArrayList<RelationshipImpl>( 150 );
 
         Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
         boolean hasLoops = loops != null;
         if ( hasLoops )
         {
-            receiveRelationships( loops, newRelationshipMap, relsMap, DirectionWrapper.BOTH, true );
+            receiveRelationships( loops, newRelationshipMap, relsList, DirectionWrapper.BOTH, true );
         }
         receiveRelationships( rels.first().get( DirectionWrapper.OUTGOING ), newRelationshipMap,
-                relsMap, DirectionWrapper.OUTGOING, hasLoops );
+                relsList, DirectionWrapper.OUTGOING, hasLoops );
         receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
-                relsMap, DirectionWrapper.INCOMING, hasLoops );
+                relsList, DirectionWrapper.INCOMING, hasLoops );
 
         // relCache.putAll( relsMap );
-        return Triplet.of( newRelationshipMap, relsMap, rels.other() );
+        return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
+//    private void receiveRelationships(
+//            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
+//            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
     private void receiveRelationships(
             Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
+            List<RelationshipImpl> relsList, DirectionWrapper dir, boolean hasLoops )
     {
         for ( RelationshipRecord rel : rels )
         {
@@ -668,8 +646,8 @@ public class NodeManager
                 assert type != null;
                 relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
                         rel.getType(), false );
-                relsMap.put( relId, relImpl );
-                // relCache.put( relId, relImpl );
+//                relsMap.put( relId, relImpl );
+                relsList.add( relImpl );
             }
             else
             {
@@ -685,9 +663,14 @@ public class NodeManager
         }
     }
 
-    void putAllInRelCache( Map<Long,RelationshipImpl> map )
+//    void putAllInRelCache( Map<Long,RelationshipImpl> map )
+//    {
+//         relCache.putAll( map );
+//    }
+
+    void putAllInRelCache( Collection<RelationshipImpl> relationships  )
     {
-         relCache.putAll( map );
+         relCache.putAll( relationships );
     }
     
     ArrayMap<Integer, PropertyData> loadGraphProperties( boolean light )
@@ -714,7 +697,7 @@ public class NodeManager
     }
 
     @SuppressWarnings( "unchecked" )
-    public Iterable<? extends Cache<?, ?>> caches()
+    public Iterable<? extends Cache<?>> caches()
     {
         return Arrays.asList( nodeCache, relCache );
     }
@@ -968,7 +951,7 @@ public class NodeManager
             }
         }
         return persistenceManager.nodeChangeProperty( node.getId(), property,
-                value );
+                                                      value );
     }
 
     void nodeRemoveProperty( NodeImpl node, PropertyData property )
@@ -1037,7 +1020,7 @@ public class NodeManager
             }
         }
         return persistenceManager.relChangeProperty( rel.getId(), property,
-                value );
+                                                     value );
     }
 
     void relRemoveProperty( RelationshipImpl rel, PropertyData property )
@@ -1170,102 +1153,6 @@ public class NodeManager
         return this.relTypeHolder;
     }
 
-    public static enum CacheType
-    {
-        weak( false, "weak reference cache" )
-        {
-            @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
-            {
-                return new WeakLruCache<Long,NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
-            {
-                return new WeakLruCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        soft( false, "soft reference cache" )
-        {
-            @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
-            {
-                return new SoftLruCache<Long,NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
-            {
-                return new SoftLruCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        old( true, "lru cache" )
-        {
-            @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
-            {
-                return new LruCache<Long,NodeImpl>( NODE_CACHE_NAME, 1500, cacheManager );
-            }
-
-            @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
-            {
-                return new LruCache<Long,RelationshipImpl>(
-                        RELATIONSHIP_CACHE_NAME, 3500, cacheManager );
-            }
-        },
-        none( false, "no cache" )
-        {
-            @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
-            {
-                return new NoCache<Long, NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
-            {
-                return new NoCache<Long, RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        },
-        strong( false, "strong reference cache" )
-        {
-            @Override
-            Cache<Long, NodeImpl> node( AdaptiveCacheManager cacheManager )
-            {
-                return new StrongReferenceCache<Long,NodeImpl>( NODE_CACHE_NAME );
-            }
-
-            @Override
-            Cache<Long, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
-            {
-                return new StrongReferenceCache<Long,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
-            }
-        };
-
-        private static final String NODE_CACHE_NAME = "NodeCache";
-        private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
-
-        final boolean needsCacheManagerRegistration;
-        private final String description;
-
-        private CacheType( boolean needsCacheManagerRegistration, String description )
-        {
-            this.needsCacheManagerRegistration = needsCacheManagerRegistration;
-            this.description = description;
-        }
-
-        abstract Cache<Long,NodeImpl> node( AdaptiveCacheManager cacheManager );
-
-        abstract Cache<Long,RelationshipImpl> relationship( AdaptiveCacheManager cacheManager );
-
-        public String getDescription()
-        {
-            return this.description;
-        }
-    }
-
     public void addNodePropertyTracker(
             PropertyTracker<Node> nodePropertyTracker )
     {
@@ -1308,5 +1195,15 @@ public class NodeManager
     public void removeGraphPropertiesFromCache()
     {
         graphProperties = instantiateGraphProperties();
+    }
+
+    void updateCacheSize( NodeImpl node, int newSize )
+    {
+        nodeCache.updateSize( node, newSize );
+    }
+
+    void updateCacheSize( RelationshipImpl rel, int newSize )
+    {
+        relCache.updateSize( rel, newSize );
     }
 }

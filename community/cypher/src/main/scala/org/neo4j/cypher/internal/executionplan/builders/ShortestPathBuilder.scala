@@ -19,30 +19,28 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{Unsolved, QueryToken, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.pipes.{SingleShortestPathPipe, AllShortestPathsPipe, Pipe}
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import collection.Seq
 
 class ShortestPathBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val items = q.patterns.filter(yesOrNo(p, _))
-      val shortestPaths = items.map(_.token.asInstanceOf[ShortestPath])
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
 
-      var pipe = p
-      shortestPaths.foreach(p => {
-        if (p.single)
-          pipe = new SingleShortestPathPipe(pipe, p)
-        else
-          pipe = new AllShortestPathsPipe(pipe, p)
-      })
+    val item = q.patterns.filter(yesOrNo(p, _)).head
+    val shortestPath = item.token.asInstanceOf[ShortestPath]
 
-      (pipe, q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)))
-    }
+    val pipe = if (shortestPath.single)
+      new SingleShortestPathPipe(p, shortestPath)
+    else
+      new AllShortestPathsPipe(p, shortestPath)
+
+    plan.copy(pipe = pipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x._2.patterns.filter(yesOrNo(x._1, _)).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.patterns.exists(yesOrNo(plan.pipe, _))
 
   private def yesOrNo(p: Pipe, token: QueryToken[_]): Boolean = token match {
     case Unsolved(sp: ShortestPath) => p.symbols.satisfies(sp.dependencies)
@@ -51,18 +49,17 @@ class ShortestPathBuilder extends PlanBuilder {
 
   def priority: Int = PlanBuilder.ShortestPath
 
-  def checkForUnsolvedShortestPaths(querySoFar: PartiallySolvedQuery, pipe: Pipe) {
-    val unsolvedShortestPaths = querySoFar.patterns.
-      filterNot(_.solved).
-      filter(_.token.isInstanceOf[ShortestPath]).
-      map(_.token.asInstanceOf[ShortestPath])
 
-    if (unsolvedShortestPaths.nonEmpty) {
-      unsolvedShortestPaths.foreach(qt => {
-        val missing = pipe.symbols.missingDependencies(qt.dependencies).map(_.name).mkString("`", "`,`", "`")
-        throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find " + missing)
-      })
-    }
+  override def missingDependencies(plan: ExecutionPlanInProgress) = {
+    val querySoFar = plan.query
+    val symbols = plan.pipe.symbols
+
+    val unsolvedShortestPaths: Seq[ShortestPath] = querySoFar.patterns.
+      filter(sp => !sp.solved && sp.token.isInstanceOf[ShortestPath]).map(_.token.asInstanceOf[ShortestPath])
+
+
+    val missingDependencies = unsolvedShortestPaths.flatMap(sp => symbols.missingDependencies(sp.dependencies)).distinct
+
+    missingDependencies.map(_.name)
   }
-
 }

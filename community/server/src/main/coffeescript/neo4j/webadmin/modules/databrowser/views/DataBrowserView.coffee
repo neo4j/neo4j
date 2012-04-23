@@ -19,13 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/utils/ItemUrlResolver',
-   './TabularView',
-   './VisualizedView',
-   './CreateRelationshipDialog',
-   'ribcage/View',
-   './base','lib/backbone'], 
-  (ItemUrlResolver, TabularView, VisualizedView, CreateRelationshipDialog, View, template) ->
+  ['neo4j/webadmin/utils/ItemUrlResolver'
+   './TabularView'
+   './VisualizedView'
+   './CreateRelationshipDialog'
+   'ribcage/View'
+   './base'
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, TabularView, VisualizedView, CreateRelationshipDialog, View, template, $) ->
 
     class DataBrowserView extends View
       

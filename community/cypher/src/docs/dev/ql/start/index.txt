@@ -3,9 +3,10 @@ Start
 =====
 
 Every query describes a pattern, and in that pattern one can have multiple
-bound points. A bound point is a relationship or a node that form the starting
-points for a pattern match. You can either bind points by id, or by
-index lookups.
+start points. A start point is a relationship or a node that form the starting
+points for a pattern match. You can either introduce start points by id, or by
+index lookups. Note that trying to use an index that doesn't exist will throw
+an exception.
 
 include::cypher-start-graph.txt[]
 

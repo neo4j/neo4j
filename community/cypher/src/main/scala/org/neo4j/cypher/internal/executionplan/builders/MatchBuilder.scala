@@ -19,32 +19,38 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{Unsolved, QueryToken, PartiallySolvedQuery, PlanBuilder}
 import org.neo4j.cypher.internal.pipes.{MatchPipe, Pipe}
 import org.neo4j.cypher.internal.commands.{ShortestPath, StartItem, Pattern}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class MatchBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
-      val items = q.patterns.filter(yesOrNo(_, p, q.start))
-      val patterns = items.map(_.token)
-      val predicates = q.where.filter(!_.solved).map(_.token)
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
 
-      val newPipe = new MatchPipe(p, patterns, predicates)
 
-      (newPipe, q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)))
-    }
+    val items = q.patterns.filter(yesOrNo(_, p, q.start))
+    val patterns = items.map(_.token)
+    val predicates = q.where.filter(!_.solved).map(_.token)
+
+    val newPipe = new MatchPipe(p, patterns, predicates)
+
+    plan.copy(
+      query = q.copy(patterns = q.patterns.filterNot(items.contains) ++ items.map(_.solve)),
+      pipe = newPipe
+    )
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.patterns.filter(yesOrNo(_, p, q.start)).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    q.patterns.filter(yesOrNo(_, plan.pipe, q.start)).nonEmpty
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe, start: Seq[QueryToken[StartItem]]) = q match {
     case Unsolved(x: ShortestPath) => false
     case Unsolved(x: Pattern) => {
 
-      val resolvedStartPoints = start.map(si => x.possibleStartPoints.find(_.name == si.token.variable) match {
+      val resolvedStartPoints = start.map(si => x.possibleStartPoints.find(_.name == si.token.identifierName) match {
         case Some(_) => si.solved
         case None => true
       }).reduce(_ && _)
@@ -56,5 +62,5 @@ class MatchBuilder extends PlanBuilder {
     case _ => false
   }
 
-  def priority: Int = PlanBuilder.Match
+  def priority = PlanBuilder.Match
 }

@@ -18,9 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
+define ['ribcage/Model'], (Model) ->
   
-  class JmxBackedModel extends Backbone.Model
+  class JmxBackedModel extends Model
     
     initialize : (options) =>
       @server = options.server

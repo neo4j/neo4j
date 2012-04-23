@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
@@ -62,10 +62,10 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
 
     @Test
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
-        server = ServerHelper.createServer();
+        server = ServerHelper.createNonPersistentServer();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        JaxRsResponse response = new RestRequest().get(functionalTestHelper.getWebadminUri());
+        JaxRsResponse response = new RestRequest().get(functionalTestHelper.webAdminUri());
         assertEquals(200, response.getStatus());
         response.close();
     }
@@ -94,7 +94,7 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
         assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
     }
     
-    private int createSimpleDatabase( final GraphDatabaseSPI graph )
+    private int createSimpleDatabase( final GraphDatabaseAPI graph )
     {
         final int numberOfNodes = 10;
         new Transactor( graph, new UnitOfWork()

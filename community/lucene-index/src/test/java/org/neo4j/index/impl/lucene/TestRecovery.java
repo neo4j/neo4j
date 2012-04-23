@@ -17,31 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
+package org.neo4j.index.impl.lucene;
 
 import java.io.File;
 import java.util.Map;
-
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.ConfigProxy;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.ProcessStreamHandler;
+
+import static org.junit.Assert.*;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -57,7 +62,7 @@ public class TestRecovery
     {
         String path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        return new EmbeddedGraphDatabase( path );
+        return new GraphDatabaseFactory().newEmbeddedDatabase( path );
     }
     
     @Test
@@ -79,7 +84,7 @@ public class TestRecovery
         graphDb.shutdown();
         
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
+        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() );
         newGraphDb.shutdown();
     }
     
@@ -94,7 +99,7 @@ public class TestRecovery
         db.shutdown();
         
         // This doesn't seem to trigger recovery... it really should
-        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
     }
     
     @Test
@@ -103,11 +108,14 @@ public class TestRecovery
         GraphDatabaseService db = newGraphDbService();
         db.index().forNodes( "index" );
         db.shutdown();
+
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-cp", System.getProperty( "java.class.path" ),
+            AddDeleteQuit.class.getName(), getDbPath()
+        } );
+        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
         
-        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                AddDeleteQuit.class.getName(), getDbPath() } ).waitFor() );
-        
-        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
         db.shutdown();
     }
 
@@ -116,18 +124,24 @@ public class TestRecovery
     {
         String path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-Xdebug","-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp", System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), getDbPath() } ).waitFor() );
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp", System.getProperty( "java.class.path" ),
+            AddRelToIndex.class.getName(), getDbPath()
+        } );
+        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
         
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
         // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
         
         // Instead I have to do this
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
                 "store_dir", getDbPath());
-        LuceneDataSource ds = new LuceneDataSource(ConfigProxy.config(params, LuceneDataSource.Configuration.class), new IndexStore( getDbPath(), fileSystem ), fileSystem, new XaFactory(params, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier()));
+        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(params ));
+        LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
+                                                   new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();
     }
 }

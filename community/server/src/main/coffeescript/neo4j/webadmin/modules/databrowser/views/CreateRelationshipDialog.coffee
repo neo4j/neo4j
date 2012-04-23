@@ -23,8 +23,8 @@ define(
    './createRelationship',
    'ribcage/View',
    'neo4j/webadmin/utils/FormHelper',
-   'lib/backbone'], 
-  (ItemUrlResolver, template, View, FormHelper) ->
+   'lib/amd/jQuery'], 
+  (ItemUrlResolver, template, View, FormHelper, $) ->
   
     class CreateRelationshipDialog extends View
 

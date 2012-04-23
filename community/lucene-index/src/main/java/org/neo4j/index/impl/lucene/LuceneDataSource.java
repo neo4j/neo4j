@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -35,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -64,16 +60,21 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -85,26 +86,26 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.*;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.*;
+
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
  * This class is public because the XA framework requires it.
  */
 public class LuceneDataSource extends LogBackedXaDataSource
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends LogBackedXaDataSource.Configuration
     {
-        int lucene_searcher_cache_size(int def);
-
-        int lucene_writer_cache_size(int def);
-
-        boolean ephemeral(boolean def);
-
-        boolean read_only(boolean def);
-
-        String store_dir();
-
-        boolean allow_store_upgrade( boolean def );
+        public static final GraphDatabaseSetting.IntegerSetting lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
+        public static final GraphDatabaseSetting.IntegerSetting lucene_writer_cache_size = GraphDatabaseSettings.lucene_writer_cache_size;
+        
+        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final GraphDatabaseSetting.BooleanSetting allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
+        
+        public static final GraphDatabaseSetting.BooleanSetting ephemeral = AbstractGraphDatabase.Configuration.ephemeral;
+        public static final GraphDatabaseSetting.StringSetting store_dir = NeoStoreXaDataSource.Configuration.store_dir;
     }
     
     public static final Version LUCENE_VERSION = Version.LUCENE_35;
@@ -171,21 +172,21 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * @throws InstantiationException if the data source couldn't be
      * instantiated
      */
-    public LuceneDataSource( Configuration config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction, XaFactory xaFactory)
+    public LuceneDataSource( Config config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction, XaFactory xaFactory)
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
-        indexSearchers = new IndexSearcherLruCache( config.lucene_searcher_cache_size(Integer.MAX_VALUE) );
-        indexWriters = new IndexWriterLruCache( config.lucene_writer_cache_size(Integer.MAX_VALUE) );
+        indexSearchers = new IndexSearcherLruCache( config.getInteger( Configuration.lucene_searcher_cache_size ));
+        indexWriters = new IndexWriterLruCache( config.getInteger( Configuration.lucene_writer_cache_size ));
         caching = new Cache();
-        String storeDir = config.store_dir();
+        String storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
         this.indexStore = indexStore;
-        boolean allowUpgrade = config.allow_store_upgrade(false);
+        boolean allowUpgrade = config.getBoolean( Configuration.allow_store_upgrade );
         this.providerStore = newIndexStore( storeDir, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
-        boolean isReadOnly = config.read_only(false);
-        this.directoryGetter = config.ephemeral(false) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
+        boolean isReadOnly = config.getBoolean( Configuration.read_only );
+        this.directoryGetter = config.getBoolean( Configuration.ephemeral ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
 
         nodeEntityType = new EntityType()
         {
@@ -220,7 +221,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         XaCommandFactory cf = new LuceneCommandFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
-        xaContainer = xaFactory.newXaContainer(this, this.baseStorePath + File.separator + "lucene.log", cf, tf, null);
+        xaContainer = xaFactory.newXaContainer(this, this.baseStorePath + File.separator + "lucene.log", cf, tf, null, null );
 
         if ( !isReadOnly )
         {
@@ -234,7 +235,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                         this.baseStorePath, e );
             }
 
-            setKeepLogicalLogsIfSpecified( config.online_backup_enabled(false) ? "true" : config.keep_logical_logs(null), DEFAULT_NAME );
+            setKeepLogicalLogsIfSpecified( config.getBoolean( new GraphDatabaseSetting.BooleanSetting( "online_backup_enabled") ) ? "true" : config.get( Configuration.keep_logical_logs ), DEFAULT_NAME );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
     }

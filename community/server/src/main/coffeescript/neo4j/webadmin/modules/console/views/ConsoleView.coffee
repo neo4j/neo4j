@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./gremlin',
-   './console',
-   'ribcage/View',
-   'lib/backbone',
-   'lib/jquery.putCursorAtEnd'], 
-  (baseTemplate, consoleTemplate, View) ->
+  ['./gremlin'
+   './console'
+   'ribcage/View'
+   'lib/amd/jQuery'
+   'lib/amd/jQuery.putCursorAtEnd'], 
+  (baseTemplate, consoleTemplate, View, $ ) ->
 
     class ConsoleView extends View
       
