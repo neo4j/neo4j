@@ -22,6 +22,7 @@ package org.neo4j.server.plugins;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 

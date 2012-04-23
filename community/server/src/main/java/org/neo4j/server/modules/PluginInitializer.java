@@ -21,6 +21,7 @@ package org.neo4j.server.modules;
 
 import java.util.Collection;
 import java.util.HashSet;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;

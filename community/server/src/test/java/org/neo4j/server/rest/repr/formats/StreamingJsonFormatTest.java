@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -30,14 +38,6 @@ import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import java.io.ByteArrayOutputStream;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class StreamingJsonFormatTest
 {

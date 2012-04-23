@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.storemigration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -26,14 +31,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.Properties;
+
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
-
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 public class PreStartupStoreUpgraderTest
 {

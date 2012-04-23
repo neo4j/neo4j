@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.util.Arrays;
 import java.util.Map;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.GraphDatabaseFactory;

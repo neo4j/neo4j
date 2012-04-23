@@ -20,6 +20,7 @@
 package org.neo4j.server.database;
 
 import java.util.Map;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 
 public interface GraphDatabaseFactory

@@ -19,8 +19,15 @@
  */
 package org.neo4j.server.database;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+
 import java.io.File;
 import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -30,11 +37,6 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.server.ServerTestUtils.*;
 
 public class DatabaseTest
 {

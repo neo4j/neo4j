@@ -20,9 +20,9 @@
 
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.helpers.collection.ExceptionHandlingIterable;
-
 import java.util.Iterator;
+
+import org.neo4j.helpers.collection.ExceptionHandlingIterable;
 
 public class RepresentationExceptionHandlingIterable<T> extends ExceptionHandlingIterable<T> {
     public RepresentationExceptionHandlingIterable(Iterable<T> source) {
