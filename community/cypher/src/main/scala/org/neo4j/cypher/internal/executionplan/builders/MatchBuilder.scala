@@ -53,7 +53,7 @@ class MatchBuilder extends PlanBuilder {
       val resolvedStartPoints = start.map(si => x.possibleStartPoints.find(_.name == si.token.identifierName) match {
         case Some(_) => si.solved
         case None => true
-      }).reduce(_ && _)
+      }).foldLeft(true)(_ && _)
 
       lazy val pipeSatisfied = p.symbols.satisfies(x.predicate.dependencies)
 
