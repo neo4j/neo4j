@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 
 class SortBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
-    val q = plan.query
-    val sortExpressionsToExtract = q.sort.map(_.token).map(_.expression)
+    val sortExpressionsToExtract = plan.query.sort.map(_.token).map(_.expression)
 
-    val (pipe, newPsq) = ExtractBuilder.extractIfNecessary(q, plan.pipe, sortExpressionsToExtract)
+    val newPlan = ExtractBuilder.extractIfNecessary(plan, sortExpressionsToExtract)
 
-    val sortItems = newPsq.sort.map(_.token)
-    val resultPipe = new SortPipe(pipe, sortItems.toList)
+    val q = newPlan.query
+    val sortItems = q.sort.map(_.token)
+    val resultPipe = new SortPipe(newPlan.pipe, sortItems.toList)
 
-    val resultQ = newPsq.copy(sort = newPsq.sort.map(_.solve))
+    val resultQ = q.copy(sort = q.sort.map(_.solve))
 
     plan.copy(pipe = resultPipe, query = resultQ)
   }

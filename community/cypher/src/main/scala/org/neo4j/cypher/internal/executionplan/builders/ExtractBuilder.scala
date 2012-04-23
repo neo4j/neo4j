@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.pipes.{ExtractPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.ExtractPipe
 import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class ExtractBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
-    val (p, q) = ExtractBuilder.extractIfNecessary(plan.query, plan.pipe, plan.query.returns.map(_.token.expression))
-    plan.copy(pipe = p, query = q)
-  }
+  def apply(plan: ExecutionPlanInProgress) = ExtractBuilder.extractIfNecessary(plan, plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)))
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
@@ -39,19 +36,24 @@ class ExtractBuilder extends PlanBuilder {
 
 object ExtractBuilder {
 
-  def extractIfNecessary(psq: PartiallySolvedQuery, p: Pipe, expressions: Seq[Expression]): (Pipe, PartiallySolvedQuery) = {
-    val missing = p.symbols.missingExpressions(expressions)
+  def extractIfNecessary(plan: ExecutionPlanInProgress, expressions: Seq[Expression]): (ExecutionPlanInProgress) = {
+    val missing = plan.pipe.symbols.missingExpressions(expressions)
+    val query = plan.query
+    val pipe = plan.pipe
 
     if (missing.nonEmpty) {
-      val newPsq = expressions.foldLeft(psq)((psq, exp) => psq.rewrite(fromQueryExpression =>
+      val newPsq = expressions.foldLeft(query)((psq, exp) => psq.rewrite(fromQueryExpression =>
         if (exp == fromQueryExpression)
           CachedExpression(fromQueryExpression.identifier.name, fromQueryExpression.identifier)
         else
           fromQueryExpression
       ))
-      (new ExtractPipe(p, expressions), newPsq.copy(extracted = true))
+
+      val resultPipe = new ExtractPipe(pipe, expressions)
+      val resultQuery = newPsq.copy(extracted = true)
+      plan.copy(pipe = resultPipe, query = resultQuery)
     } else {
-      (p, psq.copy(extracted = true))
+      plan.copy(query = query.copy(extracted = true))
     }
   }
 }

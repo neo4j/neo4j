@@ -29,7 +29,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   var limit: Option[Expression] = None
   var namedPaths: Option[NamedPaths] = None
   var tail: Option[Query] = None
-  var columns: Seq[ReturnItem] => List[String] = (returnItems) => returnItems.map(_.identifier.name).toList
+  var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
 
   def matches(patterns: Pattern*): QueryBuilder = store {
     matching = Some(Match(patterns: _*))
@@ -89,6 +89,6 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     this
   }
 
-  def returns(returnItems: ReturnItem*): Query =
+  def returns(returnItems: ReturnColumn*): Query =
     Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), updates, matching, where, aggregation, orderBy, slice, namedPaths, tail)
 }
