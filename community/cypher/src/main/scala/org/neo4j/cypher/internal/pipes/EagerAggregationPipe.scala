@@ -33,7 +33,8 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
   def dependencies: Seq[Identifier] = keyExpressions.flatMap(_.dependencies(AnyType())) ++ aggregations.flatMap(_.dependencies(AnyType()))
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(keyExpressions.map(_.identifier.name): _*)
+    val map = keyExpressions.map(_.identifier.name)
+    val keySymbols = source.symbols.filter(map: _*)
     val aggregatedColumns = aggregations.map(_.identifier)
 
     keySymbols.add(aggregatedColumns: _*)

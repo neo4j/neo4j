@@ -56,7 +56,7 @@ case class Query(returns: Return,
     }
 }
 
-case class Return(columns: List[String], returnItems: ReturnItem*)
+case class Return(columns: List[String], returnItems: ReturnColumn*)
 
 case class Start(startItems: StartItem*)
 

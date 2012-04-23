@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TargetDirectory
 {
@@ -179,8 +180,9 @@ public class TargetDirectory
         return directory( "graph-db", clean );
     }
 
-    public void cleanup()
+    public void cleanup() throws IOException
     {
+        FileUtils.deleteRecursively( base );
     }
 
     /*

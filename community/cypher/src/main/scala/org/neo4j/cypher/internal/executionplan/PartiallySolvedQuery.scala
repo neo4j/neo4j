@@ -73,7 +73,7 @@ object PartiallySolvedQuery {
 PSQ is used to keep count of which parts of the query that have already been
 solved, and which parts are not yet finished.
  */
-case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
+case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 start: Seq[QueryToken[StartItem]],
                                 updates: Seq[QueryToken[UpdateCommand]],
                                 patterns: Seq[QueryToken[Pattern]],
@@ -104,7 +104,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnItem]],
   def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
     this.copy(
       returns = returns.map {
-        case Unsolved(ReturnItem(expression, name, renamed)) => Unsolved(ReturnItem(expression.rewrite(f), name, renamed))
+        case Unsolved(ReturnItem(expression, name, renamed)) => Unsolved[ReturnColumn](ReturnItem(expression.rewrite(f), name, renamed))
         case x => x
       },
       where = where.map {

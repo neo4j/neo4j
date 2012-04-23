@@ -24,7 +24,10 @@ import org.neo4j.cypher.SyntaxException
 
 
 trait ReturnClause extends Base with Expressions {
-  def column = expressionColumn
+  def column : Parser[ReturnColumn] = returnItem ~ alias ^^ {
+    case col ~ Some(newName) => col.rename(newName)
+    case col ~ None => col
+  } | "*" ^^^ AllIdentifiers()
 
   def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
     case (expression, name) => ReturnItem(expression, name.replace("`", ""))
@@ -35,25 +38,20 @@ trait ReturnClause extends Base with Expressions {
       | ignoreCase("return") ~> failure("return column list expected")
       | failure("expected return clause"))
 
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> columnList
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-  def expressionColumn: Parser[ReturnItem] = returnItem ~ alias ^^ {
-    case col ~ Some(newName) => col.rename(newName)
-    case col ~ None => col
-  }
-
-
   def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
-      val columnName = returnItems.map(_.columnName).toList
+      val columnName = returnItems.map(_.name).toList
 
       val none: Option[Aggregation] = distinct match {
         case Some(x) => Some(Aggregation())
         case None => None
       }
 
-      val aggregationExpressions = returnItems.
+      val aggregationExpressions = returnItems.filter(_.isInstanceOf[ReturnItem]).map(_.asInstanceOf[ReturnItem]).
         flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
         map(_.asInstanceOf[AggregationExpression])
 
@@ -62,12 +60,9 @@ trait ReturnClause extends Base with Expressions {
         case _ => Some(Aggregation(aggregationExpressions: _*))
       }
 
-
       (Return(columnName, returnItems: _*), aggregation)
     }
   }
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> columnList
-
 
   def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
 

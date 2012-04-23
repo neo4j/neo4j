@@ -1576,6 +1576,12 @@ create rel a-[r:REL]->b
     testFrom_1_8("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
+  @Test def returnAll() {
+    testFrom_1_8("start s = NODE(1) return *",
+      Query.
+        start(NodeById("s", 1)).
+        returns(AllIdentifiers()))
+  }
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)

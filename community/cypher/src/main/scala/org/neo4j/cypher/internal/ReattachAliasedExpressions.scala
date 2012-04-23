@@ -35,13 +35,14 @@ object ReattachAliasedExpressions {
     q.copy(sort = newSort)
   }
 
-  private def rewrite(returnItems: Seq[ReturnItem])(in: SortItem): SortItem = {
+  private def rewrite(returnItems: Seq[ReturnColumn])(in: SortItem): SortItem = {
     SortItem(in.expression.rewrite(expressionRewriter(returnItems)), in.ascending)
   }
 
-  private def expressionRewriter(returnItems: Seq[ReturnItem])(expression: Expression): Expression = expression match {
+  private def expressionRewriter(returnColumns: Seq[ReturnColumn])(expression: Expression): Expression = expression match {
     case e: Entity => {
-      val found = returnItems.find(_.columnName == e.entityName)
+      val returnItems = keepReturnItems(returnColumns)
+      val found = returnItems.find(_.name == e.entityName)
 
       found match {
         case None => e
@@ -50,4 +51,8 @@ object ReattachAliasedExpressions {
     }
     case somethingElse => somethingElse
   }
+
+  private def keepReturnItems(returnColumns: Seq[ReturnColumn]):Seq[ReturnItem] = returnColumns.
+    filter(_.isInstanceOf[ReturnItem]).
+    map(_.asInstanceOf[ReturnItem])
 }
