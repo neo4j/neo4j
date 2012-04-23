@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
 import collection.mutable.{Map => MutableMap}
+import internal.symbols.SymbolTable
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
@@ -61,7 +62,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       }
     }
 
-    val columns = getQueryResultColumns(inputQuery)
+    val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
     val (pipe, func) = if (planInProgress.containsTransaction) {
       val p = new CommitPipe(planInProgress.pipe, graph)
       (p, getEagerReadWriteQuery(p, columns))
@@ -74,13 +75,18 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     (func, executionPlan)
   }
 
-  private def getQueryResultColumns(q: Query) = {
+  private def getQueryResultColumns(q: Query, currentSymbols:SymbolTable) = {
     var query = q
     while (query.tail.isDefined) {
       query = query.tail.get
     }
 
-    query.returns.columns
+    val columns = query.returns.columns.flatMap {
+      case "*" => currentSymbols.identifiers.map(_.name).toList
+      case x => Seq(x)
+    }
+
+    columns
   }
 
   private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {

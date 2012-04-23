@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ColumnFilterPipe
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
 
 class ColumnFilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -28,7 +30,8 @@ class ColumnFilterBuilder extends PlanBuilder {
     val p = plan.pipe
     val isLastPipe = q.tail.isEmpty
 
-    val filterPipe = new ColumnFilterPipe(p, q.returns.map(_.token), isLastPipe)
+    val returnItems = getReturnItems(q.returns, p.symbols)
+    val filterPipe = new ColumnFilterPipe(p, returnItems, isLastPipe)
 
     val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
       filterPipe
@@ -51,4 +54,9 @@ class ColumnFilterBuilder extends PlanBuilder {
   }
 
   def priority = PlanBuilder.ColumnFilter
+
+  private def getReturnItems(q: Seq[QueryToken[ReturnColumn]], symbols: SymbolTable): Seq[ReturnItem] = q.map(_.token).flatMap {
+    case x: ReturnItem => Seq(x)
+    case x: AllIdentifiers => x.expressions(symbols).map(e => ReturnItem(e, e.identifier.name))
+  }
 }

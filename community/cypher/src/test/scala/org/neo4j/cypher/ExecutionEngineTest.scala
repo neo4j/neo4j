@@ -571,7 +571,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       orderBy(
       SortItem(CountStar(), false),
       SortItem(Property("n", "division"), true)).
-      returns(ReturnItem(Property("n", "division"), "n.division"),ReturnItem(CountStar(), "count(*)"))
+      returns(ReturnItem(Property("n", "division"), "n.division"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -620,7 +620,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
       aggregation(CountStar()).
-      returns(ReturnItem(Property("node", "x"), "node.x"),ReturnItem(CountStar(), "count(*)"))
+      returns(ReturnItem(Property("node", "x"), "node.x"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -1708,14 +1708,14 @@ RETURN x0.name?
     createNode()
 
     val result = parseAndExecute("start a=node(1) return length(collect(a))").toList
-    assert(List(Map("length(collect(a))"->1)) === result)
+    assert(List(Map("length(collect(a))" -> 1)) === result)
   }
 
   @Test def aggregates_should_be_possible_to_use_with_arithmetics() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) return count(*) * 10").toList
-    assert(List(Map("count(*) * 10"->10)) === result)
+    assert(List(Map("count(*) * 10" -> 10)) === result)
   }
 
   @Test def aggregates_should_be_possible_to_order_by_arithmetics() {
@@ -1724,7 +1724,7 @@ RETURN x0.name?
     createNode()
 
     val result = parseAndExecute("start a=node(1),b=node(2,3) return count(a) * 10 + count(b) * 5 as X order by X").toList
-    assert(List(Map("X"->30)) === result)
+    assert(List(Map("X" -> 30)) === result)
   }
 
   @Test def tests_that_filterfunction_works_as_expected() {
@@ -1738,28 +1738,28 @@ RETURN x0.name?
 
     assert(List(r) == resultingCollection)
   }
-  
+
   @Test def expose_problem_with_aliasing() {
     createNode("nisse")
     parseAndExecute("start n=node(1) return n.name, count(*) as foo order by n.name")
-  }   
-  
+  }
+
   @Test def start_with_node_and_relationship() {
     val a = createNode()
     val b = createNode()
-    val r = relate(a,b)
+    val r = relate(a, b)
     val result = parseAndExecute("start a=node(1), r=relationship(0) return a,r").toList
 
-    assert(List(Map("a"->a, "r"->r)) === result)
-  }   
-  
+    assert(List(Map("a" -> a, "r" -> r)) === result)
+  }
+
   @Test def relationship_predicate_with_multiple_rel_types() {
     val a = createNode()
     val b = createNode()
     val x = createNode()
-    
-    relate(a,x,"A")
-    relate(b,x,"B")
+
+    relate(a, x, "A")
+    relate(b, x, "B")
 
     val result = parseAndExecute("start a=node(1,2) where a-[:A|B]->() return a").toList
 
@@ -1776,8 +1776,8 @@ RETURN x0.name?
   }
 
   @Test def first_piped_query_woot() {
-    val a = createNode("foo"->42)
-    createNode("foo"->49)
+    val a = createNode("foo" -> 42)
+    createNode("foo" -> 49)
 
     // START x = node(1) WITH x WHERE x.foo = 42 RETURN x
     val secondQ = Query.
@@ -1790,10 +1790,10 @@ RETURN x0.name?
       tail(secondQ).
       returns(ReturnItem(Entity("x"), "x"))
 
-    val result = execute(q, "wut?"->"wOOt!")
+    val result = execute(q, "wut?" -> "wOOt!")
 
-    
-    assert(List(Map("x"->a)) === result.toList)
+
+    assert(List(Map("x" -> a)) === result.toList)
   }
 
   @Test def second_piped_query_woot() {
@@ -1809,21 +1809,21 @@ RETURN x0.name?
       aggregation(CountStar()).
       returns(ReturnItem(CountStar(), "apa"))
 
-    val result = execute(q, "wut?"->"wOOt!")
+    val result = execute(q, "wut?" -> "wOOt!")
 
-    assert(List(Map("apa"->1)) === result.toList)
+    assert(List(Map("apa" -> 1)) === result.toList)
   }
 
   @Test def listing_rel_types_multiple_times_should_not_give_multiple_returns() {
     val a = createNode()
     val b = createNode()
-    relate(a,b, "REL")
+    relate(a, b, "REL")
 
     val result = parseAndExecute("start a=node(1) match a-[:REL|REL]-b return b").toList
 
     assert(List(Map("b" -> b)) === result)
   }
-  
+
   @Test def should_throw_on_missing_indexes() {
     intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex(key='value') return a").toList)
     intercept[MissingIndexException](parseAndExecute("start a=node:missingIndex('value') return a").toList)
@@ -1832,7 +1832,7 @@ RETURN x0.name?
   }
 
   @Test def distinct_on_nullable_values() {
-    createNode("name"->"Florescu")
+    createNode("name" -> "Florescu")
     createNode()
     createNode()
 
@@ -1879,4 +1879,16 @@ RETURN x0.name?
     parseAndExecute(q)
   }
 
+  @Test def return_all_identifiers() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b)
+
+    val q = "start a=node(1) match p=a-->b return *"
+
+    val result = parseAndExecute(q).toList
+    val first = result.head
+    assert(first.keys === Set("a", "b", "p"))
+    assert(first("p").asInstanceOf[Path] == PathImpl(a, r, b))
+  }
 }
