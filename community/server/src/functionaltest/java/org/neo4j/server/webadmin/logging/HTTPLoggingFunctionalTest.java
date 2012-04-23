@@ -24,12 +24,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
@@ -37,7 +37,6 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -54,10 +53,10 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
 {
     private NeoServer server;
-    private static final String logDirectory = "target/test-data/impermanent-db/log";
+    private static File logDirectory = null;
 
     @Before
-    public void cleanUp() throws IOException
+    public void setUp() throws IOException
     {
         ServerHelper.cleanTheDatabase( server );
         removeHttpLogs();
@@ -65,10 +64,9 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
 
     private void removeHttpLogs() throws IOException
     {
-        File logDir = new File( logDirectory );
-        if ( logDir.exists() )
+        if ( logDirectory != null && logDirectory.exists() )
         {
-            FileUtils.deleteDirectory( logDir );
+            FileUtils.deleteDirectory( logDirectory );
         }
     }
 
@@ -87,8 +85,6 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         // given
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "false" )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
             .build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
@@ -107,11 +103,16 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
+        logDirectory = TargetDirectory.forTest( this.getClass() ).directory( "logdir" );
+        FileUtils.forceMkdir( logDirectory );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confdir" );
+        FileUtils.forceMkdir( confDir );
+
+        final File configFile = createConfigFile( createLogbackConfigFile( logDirectory ), confDir );
+
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_LOCATION, logDirectory )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
+            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
             .build();
         server.start();
 
@@ -124,24 +125,24 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         response.close();
 
         // then
-        assertTrue( occursIn( query, new File( logDirectory + File.separator + "http.log" ) ) );
+        final File outputLog = new File( logDirectory + File.separator + "http.log" );
+        assertTrue( occursIn( query, outputLog ) );
     }
 
     @Test
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
-        // Apparently you cannot create an unwritable directory in Windows with
-        // neither File#setWritable nor creating a directory in the root.
-        assumeTrue( !osIsWindows() );
-
         // given
-        final String unwritableLogDir = createUnwritableDirectory().getAbsolutePath();
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confdir" );
+        FileUtils.forceMkdir( confDir );
+        final File unwritableLogDir = createUnwritableDirectory();
+
+        final File configFile = createConfigFile( createLogbackConfigFile( unwritableLogDir ), confDir );
+
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_LOCATION, unwritableLogDir )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
+            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
             .build();
 
         // when
@@ -154,44 +155,9 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log directory [%s] is not writable", unwritableLogDir ) ) );
+                containsString( String.format( "HTTP log file [%s] does not exist", unwritableLogDir.getAbsolutePath() + File.separator + "http.log" ) ) );
         }
 
-    }
-
-    @Test
-    public void givenConfigurationWithInvalidLogDirectoryShouldFailToStartServer() throws Exception
-    {
-        // given
-        final String invalidLogDir = createInvalidDirectory().getAbsolutePath();
-        server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
-            .withProperty( Configurator.HTTP_LOGGING, "true" )
-            .withProperty( Configurator.HTTP_LOG_LOCATION, invalidLogDir )
-            .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
-                getClass().getResource( "/neo4j-server-test-logback.xml" ).getFile() )
-            .build();
-
-        // when
-        try
-        {
-            server.start();
-            fail( "should have thrown exception" );
-        }
-        catch ( StartupHealthCheckFailedException e )
-        {
-            // then
-            assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log directory [%s] cannot be created", invalidLogDir ) ) );
-        }
-    }
-
-    private File createInvalidDirectory() throws IOException
-    {
-        File directory = TargetDirectory.forTest( this.getClass() ).directory( "invalid" );
-        File file = new File( directory, "file" );
-        file.createNewFile();
-        return new File( file, "subdirectory" );
     }
 
     private File createUnwritableDirectory()
@@ -233,5 +199,37 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         scanner.close();
 
         return result;
+    }
+
+    private File createConfigFile( String configXml, File location ) throws IOException
+    {
+        final File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
+
+        FileOutputStream fos = new FileOutputStream( configFile );
+        fos.write( configXml.getBytes() );
+        fos.close();
+
+        return configFile;
+    }
+
+
+    private String createLogbackConfigFile( File logDirectory )
+    {
+        return "<configuration>\n" +
+            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
+            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
+            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
+            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
+            "      <maxHistory>30</maxHistory>\n" +
+            "    </rollingPolicy>\n" +
+            "\n" +
+            "    <encoder>\n" +
+            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
+            "    </encoder>\n" +
+            "  </appender>\n" +
+            "\n" +
+            "  <appender-ref ref=\"FILE\" />\n" +
+            "</configuration>";
     }
 }

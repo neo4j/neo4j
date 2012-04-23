@@ -21,17 +21,19 @@ package org.neo4j.server.startup.healthcheck;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.test.TargetDirectory;
 
 public class HTTPLoggingPreparednessRuleTest
 {
@@ -67,13 +69,18 @@ public class HTTPLoggingPreparednessRuleTest
     }
 
     @Test
-    public void shouldPassWhenEnabledWithGoodLoggingLocation() throws Exception
+    public void shouldPassWhenEnabledWithGoodConfigSpecified() throws Exception
     {
         // given
+        final File logDir = TargetDirectory.forTest( this.getClass() ).directory( "logDir" );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
+
+
         HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
         final Properties properties = new Properties();
         properties.put( Configurator.HTTP_LOGGING, "true" );
-        properties.put( Configurator.HTTP_LOG_LOCATION, temporaryDirectory().getAbsolutePath() );
+        properties.put( Configurator.HTTP_LOG_CONFIG_LOCATION,
+            createConfigFile( createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() );
 
         // when
         boolean result = rule.execute( properties );
@@ -83,53 +90,76 @@ public class HTTPLoggingPreparednessRuleTest
         assertEquals( StringUtils.EMPTY, rule.getFailureMessage() );
     }
 
-
     @Test
-    public void shouldFailWhenEnabledWithBadLoggingLocation() throws Exception
+    public void shouldFailWhenEnabledWithUnwritableLogDirSpecifiedInConfig() throws Exception
     {
         // given
+        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
+
+
         HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
         final Properties properties = new Properties();
         properties.put( Configurator.HTTP_LOGGING, "true" );
-        properties.put( Configurator.HTTP_LOG_LOCATION, badDirectory().getAbsolutePath() );
+        final File unwritableDirectory = createUnwritableDirectory();
+        properties.put( Configurator.HTTP_LOG_CONFIG_LOCATION,
+            createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath());
 
         // when
         boolean result = rule.execute( properties );
 
         // then
         assertFalse( result );
-        assertThat( rule.getFailureMessage(), containsString( "HTTP log directory [" ) );
-        assertThat( rule.getFailureMessage(), containsString( "] cannot be created" ) );
+        assertEquals( String.format("HTTP log file [%s] does not exist", unwritableDirectory + File.separator + "http.log"), rule.getFailureMessage() );
     }
 
-    private File badDirectory() throws Exception
+    private File createUnwritableDirectory()
     {
-        File f = new File( File.createTempFile( "anywhere","" ) + "/does/not/exist" );
-        if ( f.exists() || f.canWrite() )
+        File file;
+        if ( osIsWindows() )
         {
-            throw new RuntimeException(
-                String.format( "File [%s] should not exist or be writable for this test", f.getAbsolutePath() ) );
+            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
+        }
+        else
+        {
+            TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
+
+            file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
+            file.mkdirs();
+            file.setWritable( false, false );
         }
 
-        return f;
+        return file;
     }
 
-    private File temporaryDirectory() throws IOException
+    private File createConfigFile( String configXml, File location ) throws IOException
     {
-        final File temp;
+        final File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
 
-        temp = File.createTempFile( "temp", "dir" );
+        FileOutputStream fos = new FileOutputStream( configFile );
+        fos.write( configXml.getBytes() );
+        fos.close();
 
-        if ( !(temp.delete()) )
-        {
-            throw new IOException( "Could not delete temp file: " + temp.getAbsolutePath() );
-        }
+        return configFile;
+    }
 
-        if ( !(temp.mkdir()) )
-        {
-            throw new IOException( "Could not create temp directory: " + temp.getAbsolutePath() );
-        }
+    private String createLogbackConfigXml( File logDirectory )
+    {
 
-        return temp;
+        return "<configuration>\n" +
+            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
+            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
+            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
+            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
+            "      <maxHistory>30</maxHistory>\n" +
+            "    </rollingPolicy>\n" +
+            "\n" +
+            "    <encoder>\n" +
+            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
+            "    </encoder>\n" +
+            "  </appender>\n" +
+            "\n" +
+            "  <appender-ref ref=\"FILE\" />\n" +
+            "</configuration>";
     }
 }

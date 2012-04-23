@@ -209,10 +209,9 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void enableHTTPLoggingForWebadmin( File logbackConfigFile, File logDirectory )
+    public void enableHTTPLoggingForWebadmin( File logbackConfigFile )
     {
         final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.putProperty("http_log_dir", logDirectory.getAbsolutePath());
         requestLog.setFileName( logbackConfigFile.getAbsolutePath() );
 
         final RequestLogHandler requestLogHandler = new RequestLogHandler();

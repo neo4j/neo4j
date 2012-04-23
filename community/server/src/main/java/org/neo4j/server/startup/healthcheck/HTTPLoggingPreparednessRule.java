@@ -23,8 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.apache.commons.io.FileUtils;
 import org.neo4j.server.configuration.Configurator;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 public class HTTPLoggingPreparednessRule implements StartupHealthCheckRule
 {
@@ -33,51 +38,86 @@ public class HTTPLoggingPreparednessRule implements StartupHealthCheckRule
     @Override
     public boolean execute( Properties properties )
     {
-        boolean enabled = new Boolean(
-            String.valueOf( properties.getProperty( Configurator.HTTP_LOGGING ) ) ).booleanValue();
+        boolean enabled = new Boolean( String.valueOf( properties.getProperty( Configurator.HTTP_LOGGING ) ) )
+            .booleanValue();
 
         if ( !enabled )
         {
             return true;
         }
 
-        File logLocation = new File( String.valueOf( properties.getProperty( Configurator.HTTP_LOG_LOCATION ) ) );
+        File logLocation = extractLogLocationFromConfig(
+            String.valueOf( properties.get( Configurator.HTTP_LOG_CONFIG_LOCATION ) ) );
 
-        boolean logLocationSuitable = true;
+
+        if ( logLocation != null )
+        {
+            if ( validateFileBasedLoggingConfig( logLocation ) )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            // File logging is not configured, no other logging can be easily checked here
+            return true;
+        }
+    }
+
+
+    private boolean validateFileBasedLoggingConfig( File logLocation )
+    {
 
         try
         {
-            FileUtils.forceMkdir(logLocation);
+            FileUtils.forceMkdir( logLocation );
         }
         catch ( IOException e )
         {
-            logLocationSuitable = false;
-        }
-
-        if ( !logLocation.exists() )
-        {
-            failureMessage = String.format( "HTTP log directory [%s] cannot be created",
+            failureMessage = String.format( "HTTP log file [%s] does not exist",
                 logLocation.getAbsolutePath() );
             return false;
         }
 
-        if ( !logLocationSuitable )
+        if ( !logLocation.exists() )
         {
-            failureMessage = String.format( "HTTP log directory [%s] does not exist", logLocation.getAbsolutePath() );
+            failureMessage = String.format( "HTTP log [%s] cannot be created",
+                logLocation.getAbsolutePath() );
             return false;
         }
-        else
-        {
-            logLocationSuitable = logLocation.canWrite();
-        }
 
-        if ( !logLocationSuitable )
+        if ( !logLocation.canWrite() )
         {
-            failureMessage = String.format( "HTTP log directory [%s] is not writable", logLocation.getAbsolutePath() );
+            failureMessage = String.format( "HTTP log [%s] is not writable",
+                logLocation.getAbsolutePath() );
             return false;
         }
 
         return true;
+    }
+
+    private File extractLogLocationFromConfig( String configLocation )
+    {
+        DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+        try
+        {
+            final File file = new File( configLocation );
+
+            DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+            Document doc = docBuilder.parse( file );
+
+            final Node node = doc.getElementsByTagName( "file" ).item( 0 );
+
+            return new File( node.getTextContent() );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
     }
 
     @Override
