@@ -20,6 +20,16 @@
 
 package slavetest;
 
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -34,6 +44,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -72,11 +83,6 @@ import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static java.util.Arrays.*;
-import static java.util.concurrent.Executors.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
     private volatile Pair<Master, Machine> cachedMasterOverride;
@@ -95,7 +101,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 "Slave Broker is not a client",
                 ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getBroker().getMaster().first() instanceof MasterClient );
     }
-
+    
     @Override
     protected Broker makeSlaveBroker( TestMaster master, int masterId, int id, HighlyAvailableGraphDatabase db, Map<String, String> config )
     {
@@ -148,7 +154,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         String value = config.get( key );
         return value != null ? Integer.parseInt( value ) : defaultValue;
     }
-
+    
     @Test
     public void makeSureLogMessagesIsWrittenEvenAfterInternalRestart() throws Exception
     {
@@ -252,11 +258,6 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         {
             tx.finish();
         }
-    }
-
-    private HighlyAvailableGraphDatabase getMasterHaDb()
-    {
-        return (HighlyAvailableGraphDatabase) getMaster().getGraphDb();
     }
 
     @Test
@@ -384,10 +385,9 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         long slaveNodeId = slave.createNode().getId();
 
         // Restart the master
-        getMasterHaDb().shutdown();
+        shutdownMaster();
         HighlyAvailableGraphDatabase newMaster = startUpMasterDb( MapUtil.stringMap() );
         getMaster().setGraphDb( newMaster );
-        
 
         // Try to commit the tx from the slave and make sure it cannot do that
         slaveTx.success();

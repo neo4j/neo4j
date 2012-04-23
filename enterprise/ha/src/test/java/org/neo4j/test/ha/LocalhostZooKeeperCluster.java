@@ -20,34 +20,57 @@
 
 package org.neo4j.test.ha;
 
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
-import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
-
-import static java.lang.management.ManagementFactory.*;
 
 @Ignore
 public final class LocalhostZooKeeperCluster
 {
-    private final ZooKeeper[] keeper;
-    private String connection;
+    private static LocalhostZooKeeperCluster SINGLETON;
+    
+    public static synchronized LocalhostZooKeeperCluster singleton()
+    {
+        if ( SINGLETON == null )
+        {
+            SINGLETON = new LocalhostZooKeeperCluster( LocalhostZooKeeperCluster.class, 2181 );
+            Runtime.getRuntime().addShutdownHook( new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    SINGLETON.shutdown();
+                }
+            } );
+        }
+        return SINGLETON;
+    }
+    
+    private final String connection;
+    private volatile ZooKeeperMember[] keeper;
+    private final int[] ports;
+    private final TargetDirectory target;
 
     public LocalhostZooKeeperCluster( Class<?> owningTest, int... ports )
     {
@@ -56,29 +79,96 @@ public final class LocalhostZooKeeperCluster
 
     public LocalhostZooKeeperCluster( TargetDirectory target, int... ports )
     {
-        keeper = new ZooKeeper[ports.length];
+        this.target = target;
+        this.ports = ports;
+        connection = formConnectionString( ports );
+        instantiateQuorumWithRetry();
+    }
+
+    private void instantiateQuorumWithRetry()
+    {
+        Exception error = null;
+        for ( int i = 0; i < 3; i++ )
+        {
+            try
+            {
+                instantiateQuorum();
+                return;
+            }
+            catch ( Exception e )
+            {
+                System.out.println( "ZK connection couldn't be verified, retrying..." );
+                error = e;
+            }
+        }
+        throw new RuntimeException( "Couldn't form a ZK quorum even after a couple of retries", error );
+    }
+
+    private String formConnectionString( int... ports )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ports.length; i++ )
+            builder.append( i > 0 ? "," : "" ).append( "localhost:" + ports[i] );
+        return builder.toString();
+    }
+
+    private void instantiateQuorum()
+    {
+        keeper = new ZooKeeperMember[ports.length];
         boolean success = false;
         try
         {
             ZooKeeperProcess subprocess = new ZooKeeperProcess( null );
-            StringBuilder connection = new StringBuilder();
             for ( int i = 0; i < keeper.length; i++ )
-            {
                 keeper[i] = subprocess.start( new String[] { config( target, i + 1, ports[i] ) } );
-                if ( connection.length() > 0 ) connection.append( "," );
-                connection.append( "localhost:" + ports[i] );
-            }
-            this.connection = connection.toString();
-            await( keeper, 15, TimeUnit.SECONDS );
+            verify( null );
             success = true;
-        } catch (Throwable ex)
+        }
+        catch ( Exception e )
         {
-            ex.printStackTrace(  );
+            throw Exceptions.launderedException( e );
         }
         finally
         {
-            if ( !success ) shutdown();
+            if ( !success )
+                shutdown();
         }
+    }
+    
+    public LocalhostZooKeeperCluster clearDataAndVerifyConnection() throws Exception
+    {
+        try
+        {
+            verify( new ZooKeeperJob()
+            {
+                @Override
+                public void run( ZooKeeper client ) throws Exception
+                {
+                    for ( String child : client.getChildren( "/", false ) )
+                    {
+                        if ( child.equals( "zookeeper" ) )
+                            continue;
+                        deleteRecursively( client, "/" + child );
+                    }
+                }
+
+                private void deleteRecursively( ZooKeeper client, String path ) throws Exception
+                {
+                    List<String> children = client.getChildren( path, false );
+                    if ( children != null && !children.isEmpty() )
+                        for ( String child : children )
+                            deleteRecursively( client, path + "/" + child );
+                    client.delete( path, -1 );
+                }
+            } );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            shutdown();
+            instantiateQuorumWithRetry();
+        }
+        return this;
     }
 
     public static LocalhostZooKeeperCluster standardZoo( Class<?> owningTest)
@@ -86,52 +176,68 @@ public final class LocalhostZooKeeperCluster
         return new LocalhostZooKeeperCluster( owningTest, 2181, 2182, 2183 );
     }
 
-    private void await( ZooKeeper[] keepers, long timeout, TimeUnit unit )
+    private void verify( ZooKeeperJob job ) throws Exception
     {
-        timeout = System.currentTimeMillis() + unit.toMillis( timeout );
-        do
+        ZooKeeperAccess verifier = new ZooKeeperAccess( job );
+        try
         {
-            ZooKeeperClusterClient cm = null;
-            try
+            verifier.awaitSyncConnected( 15000 );
+        }
+        finally
+        {
+            verifier.close();
+        }
+    }
+    
+    private class ZooKeeperAccess implements Watcher
+    {
+        private final ZooKeeper keeper;
+        private volatile boolean connected;
+        private final ZooKeeperJob executeOnSyncConnected;
+        
+        ZooKeeperAccess( ZooKeeperJob executeOnSyncConnected ) throws IOException
+        {
+            this.executeOnSyncConnected = executeOnSyncConnected;
+            this.keeper = new ZooKeeper( connection, 5000, this );
+        }
+        
+        @Override
+        public synchronized void process( WatchedEvent event )
+        {
+            switch ( event.getState() )
             {
-                cm = new ZooKeeperClusterClient( getConnectionString(),
-                                                 ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ));
-                cm.waitForSyncConnected();
+            case SyncConnected:
+                connected = true;
+                notify();
                 break;
-            }
-            catch ( Exception e )
-            {
-                e.printStackTrace();
-                // ok retry
-            }
-            finally
-            {
-                if ( cm != null )
-                {
-                    try
-                    {
-                        cm.shutdown();
-                    }
-                    catch ( Throwable t )
-                    {
-                        t.printStackTrace();
-                    }
-                }
-            }
-            if ( System.currentTimeMillis() > timeout )
-            {
-                throw new TimeoutException( "waiting for ZooKeeper cluster to start" );
-            }
-            try
-            {
-                Thread.sleep( 2000 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
+            default: connected = false;
             }
         }
-        while ( true );
+
+        public void close() throws Exception
+        {
+            keeper.close();
+        }
+
+        public synchronized void awaitSyncConnected( long timeout ) throws Exception
+        {
+            if ( !connected )
+            {
+                wait( timeout );
+                if ( connected && executeOnSyncConnected != null )
+                {
+                    keeper.sync( "/", null, null );
+                    executeOnSyncConnected.run( keeper );
+                }
+            }
+            if ( !connected )
+                throw new RuntimeException( "Connection not valid" );
+        }
+    }
+    
+    private interface ZooKeeperJob
+    {
+        void run( ZooKeeper client ) throws Exception;
     }
 
     @Override
@@ -149,7 +255,7 @@ public final class LocalhostZooKeeperCluster
     {
         StringBuilder result = new StringBuilder();
         String prefix = "";
-        for ( ZooKeeper zk : keeper )
+        for ( ZooKeeperMember zk : keeper )
         {
             result.append( prefix ).append( zk ).append( ": " ).append( zk.getStatus() );
             prefix = "; ";
@@ -205,11 +311,36 @@ public final class LocalhostZooKeeperCluster
 
     public synchronized void shutdown()
     {
-        if ( keeper.length > 0 && keeper[0] == null ) return;
-        for ( ZooKeeper zk : keeper )
+        if ( keeper.length > 0 && keeper[0] == null )
+            return;
+        Thread[] stopperThreads = new Thread[keeper.length];
+        for ( int i = 0; i < keeper.length; i++ )
         {
-            if ( zk != null ) SubProcess.stop( zk );
+            final ZooKeeperMember member = keeper[i];
+            stopperThreads[i] = new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    if ( member != null )
+                        SubProcess.stop( member );
+                }
+            };
+            stopperThreads[i].start();
         }
+        
+        for ( Thread thread : stopperThreads )
+        {
+            try
+            {
+                thread.join();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
+        
         Arrays.fill( keeper, null );
     }
 
@@ -228,15 +359,14 @@ public final class LocalhostZooKeeperCluster
         }
     }
 
-    public interface ZooKeeper
+    public interface ZooKeeperMember
     {
         int getQuorumSize();
 
         String getStatus();
     }
 
-    private static class ZooKeeperProcess extends SubProcess<ZooKeeper, String[]> implements
-            ZooKeeper
+    private static class ZooKeeperProcess extends SubProcess<ZooKeeperMember, String[]> implements ZooKeeperMember
     {
         private final String name;
 

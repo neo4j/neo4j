@@ -58,7 +58,7 @@ public class TestBackupToolHa
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
 
-        zk = LocalhostZooKeeperCluster.standardZoo( getClass() );
+        zk = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
         instances = new ArrayList<GraphDatabaseService>();
         for ( int i = 0; i < 3; i++ )
         {
@@ -89,11 +89,6 @@ public class TestBackupToolHa
             {
                 instance.shutdown();
             }
-        }
-        
-        if( zk != null )
-        {
-            zk.shutdown();
         }
     }
     
@@ -127,7 +122,7 @@ public class TestBackupToolHa
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
         DbRepresentation newRepresentation = createSomeData( instances.get( 2 ) );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( false, "ha://localhost:2182", BACKUP_PATH, clusterName ) ) );
+                backupArguments( false, "ha://localhost:2181", BACKUP_PATH, clusterName ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
     
