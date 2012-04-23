@@ -73,11 +73,13 @@ public class Bits
     
     public static Bits bitsFromBytes( byte[] bytes )
     {
-        Bits bits = bits( bytes.length );
-        for ( byte value : bytes )
-        {
-            bits.put( value );
-        }
+        return bitsFromBytes( bytes, 0 );
+    }
+    
+    public static Bits bitsFromBytes( byte[] bytes, int startIndex )
+    {
+        Bits bits = bits( bytes.length-startIndex );
+        for ( int i = startIndex; i < bytes.length; i++ ) bits.put( bytes[i] );
         return bits;
     }
     

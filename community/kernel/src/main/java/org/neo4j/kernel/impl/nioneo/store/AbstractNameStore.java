@@ -371,7 +371,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
             }
         }
         return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                nameRecord.getNameId(), relevantRecords, nameStore ) );
+                nameRecord.getNameId(), relevantRecords, nameStore, PropertyType.STRING ).other() );
     }
 
     @Override
