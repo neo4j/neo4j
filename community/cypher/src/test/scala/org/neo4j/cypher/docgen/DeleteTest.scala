@@ -44,7 +44,7 @@ class DeleteTest extends DocumentingTestBase {
     testQuery(
       title = "Delete single node",
       text = "To remove a node from the graph, you can delete it with the +DELETE+ clause.",
-      queryText = "start n = node("+id+") with n delete n",
+      queryText = "start n = node("+id+") delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {
         intercept[NotFoundException](db.getNodeById(id))
@@ -55,7 +55,7 @@ class DeleteTest extends DocumentingTestBase {
     testQuery(
       title = "Remove a node and connected relationships",
       text = "If you are trying to remove a node with relationships on it, you have to remove these as well.",
-      queryText = "start n = node(%Andres%) match n-[r]-() with n,r delete n, r",
+      queryText = "start n = node(%Andres%) match n-[r]-() delete n, r",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {
         intercept[NotFoundException](node("Andres"))
@@ -67,7 +67,7 @@ class DeleteTest extends DocumentingTestBase {
       title = "Remove a property",
       text = "Neo4j doesn't allow storing null in properties. Instead, if no value exists, the property is" +
         "just not there. So, to remove a property value on a node or a relationship, is also done with +DELETE+.",
-      queryText = "start andres = node(%Andres%) with andres delete andres.age return andres",
+      queryText = "start andres = node(%Andres%) delete andres.age return andres",
       returns = "The node is returned, and no property 'age' exists on it.",
       assertions = (p) => {
         assertFalse("Property was not removed as expected.", node("Andres").hasProperty("age"))
