@@ -128,13 +128,12 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
     }
 
     @Test
-    @Ignore("too much dependent on context of operating system and user")
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // Apparently you cannot create an unwritable directory in Windows with
         // neither File#setWritable nor creating a directory in the root.
         assumeTrue( !osIsWindows() );
-        
+
         // given
         final String unwritableLogDir = createUnwritableDirectory().getAbsolutePath();
         server = ServerBuilder.server().withDefaultDatabaseTuning()
@@ -186,7 +185,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
                 containsString( String.format( "HTTP log directory [%s] cannot be created", invalidLogDir ) ) );
         }
     }
-    
+
     private File createInvalidDirectory() throws IOException
     {
         File directory = TargetDirectory.forTest( this.getClass() ).directory( "invalid" );
@@ -194,16 +193,22 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         file.createNewFile();
         return new File( file, "subdirectory" );
     }
-    
+
     private File createUnwritableDirectory()
     {
-        TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
+        File file;
+        if ( osIsWindows() )
+        {
+            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
+        }
+        else
+        {
+            TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
 
-        final File file = targetDirectory.file( "unwritable" );
-        file.setWritable( false, false );
-
-        System.out.println( "file = " + file );
-
+            file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
+            file.mkdirs();
+            file.setWritable( false, false );
+        }
 
         return file;
     }
