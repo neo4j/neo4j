@@ -1897,12 +1897,22 @@ RETURN x0.name?
     val b = createNode()
     val c = createNode()
     val d = createNode()
-    relate(a,b, "age"->24)
-    relate(a,c, "age"->38)
-    relate(a,d, "age"->12)
+    relate(a, b, "age" -> 24)
+    relate(a, c, "age" -> 38)
+    relate(a, d, "age" -> 12)
 
     val q = "start n=node(1) match n-[f]->() with n, max(f.age) as age match n-[f]->m where f.age = age return m"
 
-    assert( parseAndExecute(q).toList === List(Map("m"->c)))
+    assert(parseAndExecute(q).toList === List(Map("m" -> c)))
+  }
+
+  @Test def issue_432() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    val q = "start n=node(1) match p = n-[*1..]->m return p, last(p) order by length(p) asc"
+
+    assert(parseAndExecute(q).size === 1)
   }
 }
