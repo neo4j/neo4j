@@ -63,6 +63,28 @@ include::find-people-based-on-similar-favorites.txt[]
 
 :leveloffset: 1
 
+[[cypher-cookbook-mutual-friends-and-groups]]
+== Find people based on mutual friends and groups ==
+
+:leveloffset: 2
+
+include::cypher-mutualfriendsandgroups-graph.txt[]
+
+include::find-mutual-friends-and-groups.txt[]
+
+:leveloffset: 1
+
+[[cypher-cookbook-similar-tags]]
+== Find friends based on similar tagging ==
+
+:leveloffset: 2
+
+include::cypher-peoplesimilaritytags-graph.txt[]
+
+include::find-people-based-on-similar-tagged-favorties.txt[]
+
+:leveloffset: 1
+
 [[cypher-cookbook-multirelational-social-network]]
 == Multirelational (social) graphs ==
 

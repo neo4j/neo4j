@@ -37,20 +37,21 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
 
   def section = "cookbook"
 
-  @Test @Ignore def peopleSimilarityTags() {
+  @Test def peopleSimilarityTags() {
     testQuery(
-      title = "Find people based on tagged favorties",
-      text = """To find out people similar to me based on taggings, an approach could be:
-              1. Determine the tags associated with what I favorite.
-              2. What else is tagged with those tags?
-              3. Who favorites items tagged with the same tags.
-              4. Sort the result by how many of the same things these people like.""",
-      queryText = "START me=node:node_auto_index(name = \"Joe\") " +
-      		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-(theirFavorites)<-[:favorite]-people " +
-      		"RETURN me.name, people.name, tag.name, count(*) " +
-      		"ORDER BY count(*) DESC",
+      title = "Find people based on similar tagged favorties",
+      text = """To find out people similar to me based on taggings of their favorited items, an approach could be:
+* Determine the tags associated with what I favorite.
+* What else is tagged with those tags?
+* Who favorites items tagged with the same tags.
+* Sort the result by how many of the same things these people like.""",
+      queryText = "START me=node(%Joe%) " +
+      		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-theirFavorites<-[:favorite]-people " +
+      		"WHERE NOT(me=people) " +
+      		"RETURN people.name as name, count(*) as similar_favs " +
+      		"ORDER BY similar_favs DESC",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
-      (p) => assertEquals(List(Map("person.name" -> "Sara", "count(stuff)" -> 2),
-          Map("person.name" -> "Derrick", "count(stuff)" -> 1)), p.toList))
+      (p) => assertEquals(List(Map("name" -> "Sara", "similar_favs" -> 2),
+          Map("name" -> "Derrick", "similar_favs" -> 1)), p.toList))
   } 
 }
