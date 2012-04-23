@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.test.TargetDirectory.forTest;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,13 +56,7 @@ public class TestConfig
     @Before
     public void doBefore() throws Exception
     {
-        zoo = standardZoo( getClass() );
-    }
-
-    @After
-    public void doAfter() throws Exception
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Test

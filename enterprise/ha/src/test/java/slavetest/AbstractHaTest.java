@@ -57,6 +57,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
@@ -604,7 +605,7 @@ public abstract class AbstractHaTest
                 new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
         pullUpdates();
     }
-    
+
     @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void testLargeTransaction() throws Exception
@@ -678,7 +679,7 @@ public abstract class AbstractHaTest
         int slaveId = addDb( MapUtil.stringMap(), true );
         awaitAllStarted();
         shutdownDb( slaveId );
-        
+
         // Assert that there are all neostore logical logs in the copy.
         File slavePath = dbPath( slaveId );
         EmbeddedGraphDatabase slaveDb = new EmbeddedGraphDatabase( slavePath.getAbsolutePath() );
@@ -692,10 +693,10 @@ public abstract class AbstractHaTest
         }
         extractor.close();
         slaveDb.shutdown();
-        
+
         startDb( slaveId, MapUtil.stringMap(), true );
     }
-    
+
     @Test
     public void makeSurePullIntervalWorks() throws Exception
     {
@@ -711,7 +712,7 @@ public abstract class AbstractHaTest
         }
         assertTrue( found );
     }
-    
+
     @Test
     public void testChannelResourcePool() throws Exception
     {
@@ -762,34 +763,18 @@ public abstract class AbstractHaTest
         jobShouldNotBlock.finish();
         jobShouldNotBlock.join();
     }
-    
-    @Ignore( "Exposes a weakness in HA protocol where locks cannot be released individually," +
-    		"but instead are always released when the transaction finishes" )
-    @Test
-    public void manuallyAcquireThenReleaseLocks() throws Exception
-    {
-        initializeDbs( 2 );
-        long node = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
-        pullUpdates();
-        Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
-        executeJob( new CommonJobs.AcquireNodeLockAndReleaseManually( node, latchFetcher ), 0 );
-        // This should be able to complete
-        executeJob( new CommonJobs.SetNodePropertyJob( node, "key", "value" ), 1 );
-        latchFetcher.fetch().countDownFirst();
-        pullUpdates();
-    }
-    
+
     static class WorkerThread extends Thread
     {
         private final AbstractHaTest testCase;
         private volatile boolean keepRunning = true;
         private volatile boolean nodeCreatedOnTx = false;
-        
+
         WorkerThread( AbstractHaTest testCase )
         {
             this.testCase = testCase;
         }
-        
+
         @Override
         public void run()
         {
@@ -820,18 +805,18 @@ public abstract class AbstractHaTest
             }
             job.rollback();
         }
-        
+
         void finish()
         {
             keepRunning = false;
         }
-        
+
         boolean nodeHasBeenCreatedOnTx()
         {
             return nodeCreatedOnTx;
         }
     }
-    
+
     protected void disableVerificationAfterTest()
     {
         doVerificationAfterTest = false;
@@ -848,5 +833,11 @@ public abstract class AbstractHaTest
             Thread.interrupted();
             throw new RuntimeException( e );
         }
+    }
+
+    protected void addDefaultConfig( Map<String, String> config )
+    {
+        if ( !config.containsKey( HaConfig.CONFIG_KEY_READ_TIMEOUT ) )
+            config.put( HaConfig.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
     }
 }

@@ -24,7 +24,6 @@ import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
 
 import org.junit.After;
 import org.junit.Before;
@@ -46,8 +45,9 @@ public class TestPullUpdates
     @Before
     public void doBefore() throws Exception
     {
-        zoo = standardZoo( getClass() );
-        for ( int i = 0; i < dbs.length; i++ ) dbs[i] = newDb( i );
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
+        for ( int i = 0; i < dbs.length; i++ )
+            dbs[i] = newDb( i );
     }
 
     private HighlyAvailableGraphDatabase newDb( int i )
@@ -62,8 +62,9 @@ public class TestPullUpdates
     @After
     public void doAfter() throws Exception
     {
-        for ( HighlyAvailableGraphDatabase db : dbs ) if ( db != null ) db.shutdown();
-        zoo.shutdown();
+        for ( HighlyAvailableGraphDatabase db : dbs )
+            if ( db != null )
+                db.shutdown();
     }
     
     @Test

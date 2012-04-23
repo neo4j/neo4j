@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -59,17 +58,9 @@ public class TestClientThreadIsolation
     private static LocalhostZooKeeperCluster zoo;
 
     @BeforeClass
-    public static void startZoo()
+    public static void startZoo() throws Exception
     {
-        zoo = new LocalhostZooKeeperCluster( TestClientThreadIsolation.class,
-                new int[] {
-                3181, 3182, 3183 } );
-    }
-
-    @AfterClass
-    public static void stopZoo()
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Test

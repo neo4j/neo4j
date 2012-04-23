@@ -79,7 +79,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
-    private final M realMaster;
+    private M realMaster;
     private final ChannelGroup channelGroup;
     private final Map<Channel, Pair<SlaveContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
             new HashMap<Channel, Pair<SlaveContext,AtomicLong>>();
@@ -563,6 +563,11 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
         msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
+        
+        // Set this to null since bootstrap/channelFactory.releaseExternalResources
+        // cannot be called and holds a reference to this Server instance.
+        realMaster = null;
+        
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
     }

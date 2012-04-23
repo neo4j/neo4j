@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
@@ -46,7 +45,7 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     public void startZooKeeperCluster() throws Exception
     {
         FileUtils.deleteDirectory( BASE_ZOO_KEEPER_DATA_DIR );
-        zooKeeperCluster = new LocalhostZooKeeperCluster( getClass(), /*ports:*/2181, 2182, 2183 );
+        zooKeeperCluster = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Override
@@ -80,17 +79,5 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 //        zooKeeperMasterFetcher.waitForSyncConnected();
 //        int masterMachineId = zooKeeperMasterFetcher.getCachedMaster().other().getMachineId();
         return jvmByMachineId.get( 1 ).executeJob( job );
-    }
-
-    @After
-    public void shutdownZooKeeperCluster()
-    {
-        zooKeeperCluster.shutdown();
-    }
-    
-    @Override
-    public void slaveCreateNode() throws Exception
-    {
-        super.slaveCreateNode();
     }
 }
