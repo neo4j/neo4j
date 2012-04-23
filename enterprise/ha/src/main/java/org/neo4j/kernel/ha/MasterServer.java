@@ -66,8 +66,8 @@ public class MasterServer extends Server<Master, Void>
     @Override
     public void shutdown()
     {
-        super.shutdown();
         getMaster().shutdown();
+        super.shutdown();
     }
     
     @Override

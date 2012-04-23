@@ -50,6 +50,7 @@ public class MultiJvmTest extends AbstractHaTest
     protected void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception
     {
         File slavePath = dbPath( machineId );
+        addDefaultConfig( config );
         StandaloneDatabase slaveJvm = spawnJvm( slavePath, machineId, buildExtraArgs( config ) );
         if ( awaitStarted )
         {

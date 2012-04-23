@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,15 +42,9 @@ public class TestClusterNames
     private LocalhostZooKeeperCluster zoo;
 
     @Before
-    public void up()
+    public void up() throws Exception
     {
-        zoo = LocalhostZooKeeperCluster.standardZoo( TestClusterNames.class );
-    }
-
-    @After
-    public void down()
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Test
@@ -74,72 +67,108 @@ public class TestClusterNames
     @Test
     public void makeSureMultipleHaClustersCanLiveInTheSameZKCluster() throws Exception
     {
-        // Here's one cluster
-        String cluster1Name = "cluster_1";
-        HAGraphDb db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
-        HAGraphDb db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
-        awaitStarted( db0Cluster1 );
-        awaitStarted( db1Cluster1 );
+        HAGraphDb db0Cluster1 = null,
+                                     db1Cluster1 = null,
+                                     db0Cluster2 = null,
+                                     db1Cluster2 = null;
 
-        // Here's another cluster
-        String cluster2Name = "cluster.2";
-        HAGraphDb db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+2 );
-        HAGraphDb db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
-        awaitStarted( db0Cluster2 );
-        awaitStarted( db1Cluster2 );
+        try
+        {
+            // Here's one cluster
+            String cluster1Name = "cluster_1";
+            db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+            db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+            awaitStarted( db0Cluster1 );
+            awaitStarted( db1Cluster1 );
 
-        // Set property in one cluster, make sure it only affects that cluster
-        String cluster1PropertyName = "c1";
-        setRefNodeName( db1Cluster1, cluster1PropertyName );
-        pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
-        assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertNull( db0Cluster2.getReferenceNode().getProperty( "name", null ) );
-        assertNull( db1Cluster2.getReferenceNode().getProperty( "name", null ) );
+            // Here's another cluster
+            String cluster2Name = "cluster.2";
+            db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
+            db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
+            awaitStarted( db0Cluster2 );
+            awaitStarted( db1Cluster2 );
 
-        // Set property in the other cluster, make sure it only affects that cluster
-        String cluster2PropertyName = "c2";
-        setRefNodeName( db1Cluster2, cluster2PropertyName );
-        pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
-        assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
+            // Set property in one cluster, make sure it only affects that cluster
+            String cluster1PropertyName = "c1";
+            setRefNodeName( db1Cluster1, cluster1PropertyName );
+            pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
+            assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertNull( db0Cluster2.getReferenceNode().getProperty( "name", null ) );
+            assertNull( db1Cluster2.getReferenceNode().getProperty( "name", null ) );
 
-        // Restart an instance and make sure it rejoins the correct cluster again
-        db0Cluster1.shutdown();
-        db1Cluster1.newMaster( new Exception() );
-        assertTrue( db1Cluster1.isMaster() );
-        pullUpdates( db1Cluster1 );
-        db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
-        pullUpdates( db0Cluster1, db1Cluster1 );
-        db1Cluster2.shutdown();
-        pullUpdates( db0Cluster2 );
-        db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
-        pullUpdates( db0Cluster2, db1Cluster2 );
+            // Set property in the other cluster, make sure it only affects that cluster
+            String cluster2PropertyName = "c2";
+            setRefNodeName( db1Cluster2, cluster2PropertyName );
+            pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
+            assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
 
-        // Change property in the first cluster, make sure it only affects that cluster
-        cluster1PropertyName = "new c1";
-        setRefNodeName( db1Cluster1, cluster1PropertyName );
-        pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
-        assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
+            // Restart an instance and make sure it rejoins the correct cluster again
+            db0Cluster1.shutdown();
 
-        // Set property in the other cluster, make sure it only affects that cluster
-        cluster2PropertyName = "new new c2";
-        setRefNodeName( db1Cluster2, cluster2PropertyName );
-        pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
-        assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
-        assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
+            pullUpdates( db1Cluster1 );
+            setRefNodeName( db1Cluster1, cluster1PropertyName );
+            assertTrue( db1Cluster1.isMaster() );
+            db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+            pullUpdates( db0Cluster1, db1Cluster1 );
+            db1Cluster2.shutdown();
+            pullUpdates( db0Cluster2 );
+            db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
+            pullUpdates( db0Cluster2, db1Cluster2 );
 
-        db0Cluster1.shutdown();
-        db1Cluster1.shutdown();
-        db0Cluster2.shutdown();
-        db1Cluster2.shutdown();
+            // Change property in the first cluster, make sure it only affects that cluster
+            cluster1PropertyName = "new c1";
+            setRefNodeName( db1Cluster1, cluster1PropertyName );
+            pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
+            assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
+
+            // Set property in the other cluster, make sure it only affects that cluster
+            cluster2PropertyName = "new new c2";
+            setRefNodeName( db1Cluster2, cluster2PropertyName );
+            pullUpdates( db0Cluster1, db1Cluster1, db0Cluster2, db1Cluster2 );
+            assertEquals( cluster1PropertyName, db0Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
+            assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
+
+            db0Cluster1.shutdown();
+            db0Cluster1 = null;
+            db1Cluster1.shutdown();
+            db1Cluster1 = null;
+
+            db0Cluster2.shutdown();
+            db0Cluster2 = null;
+            db1Cluster2.shutdown();
+            db1Cluster2 = null;
+
+        }
+        finally
+        {
+            // Make sure we don't leak databases, even if we failed.
+            safelyShutdownDbs( db0Cluster1, db1Cluster1, db1Cluster1, db1Cluster2 );
+        }
+    }
+
+    private void safelyShutdownDbs( HAGraphDb... dbs )
+    {
+        for ( HAGraphDb db : dbs )
+        {
+            try
+            {
+                if ( db != null )
+                    db.shutdown();
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void pullUpdates( HAGraphDb... dbs )

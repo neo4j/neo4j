@@ -192,6 +192,7 @@ public class SingleJvmTest extends AbstractHaTest
                 db.shutdown();
             }
         }
+        shutdownMaster();
     }
 
     @Override
@@ -232,7 +233,7 @@ public class SingleJvmTest extends AbstractHaTest
         {
             public void doShutdown()
             {
-                master.getGraphDb().shutdown();
+                shutdownMaster();
             }
         };
     }
@@ -290,5 +291,16 @@ public class SingleJvmTest extends AbstractHaTest
             {
             }
         };
+    }
+
+    protected void shutdownMaster()
+    {
+        getMasterHaDb().shutdown();
+        getMaster().shutdown();
+    }
+
+    protected HighlyAvailableGraphDatabase getMasterHaDb()
+    {
+        return (HighlyAvailableGraphDatabase) getMaster().getGraphDb();
     }
 }

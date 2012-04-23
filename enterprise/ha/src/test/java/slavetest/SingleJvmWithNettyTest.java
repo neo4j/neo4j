@@ -244,7 +244,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         }
     }
 
-    private HighlyAvailableGraphDatabase getMasterHaDb()
+    @Override
+    protected HighlyAvailableGraphDatabase getMasterHaDb()
     {
         PlaceHolderGraphDatabaseService db = (PlaceHolderGraphDatabaseService) getMaster().getGraphDb();
         return (HighlyAvailableGraphDatabase) db.getDb();
@@ -376,8 +377,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
         // Restart the master
         getMasterHaDb().shutdown();
-        ((PlaceHolderGraphDatabaseService)getMaster().getGraphDb()).setDb(
-                startUpMasterDb( MapUtil.stringMap() ).getDb() );
+        ( (PlaceHolderGraphDatabaseService) getMaster().getGraphDb() ).setDb( startUpMasterDb( MapUtil.stringMap() ).getDb() );
 
         // Try to commit the tx from the slave and make sure it cannot do that
         slaveTx.success();
@@ -535,7 +535,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
         executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
     }
-    
+
     @Test
     public void lockWaitTimeoutShouldHaveSilentTxFinishRollingBackToNotHideOriginalException() throws Exception
     {
@@ -554,7 +554,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return null;
             }
         } );
-        
+
         DoubleLatch latch = latchFetcher.fetch();
         latch.countDownFirst();
         try

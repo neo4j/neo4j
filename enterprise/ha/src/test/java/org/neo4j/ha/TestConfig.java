@@ -20,12 +20,10 @@
 package org.neo4j.ha;
 
 import static org.neo4j.test.TargetDirectory.forTest;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,13 +44,7 @@ public class TestConfig
     @Before
     public void doBefore() throws Exception
     {
-        zoo = standardZoo( getClass() );
-    }
-
-    @After
-    public void doAfter() throws Exception
-    {
-        zoo.shutdown();
+        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
     }
 
     @Test

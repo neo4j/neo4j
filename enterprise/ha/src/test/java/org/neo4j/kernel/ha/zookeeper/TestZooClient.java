@@ -77,7 +77,7 @@ public class TestZooClient
     {
         final long millisForSessionToExpire = 1000;
         Map<String, String> stringConfig = new HashMap<String, String>();
-        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:2181" );
+        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "127.0.0.1:3181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( millisForSessionToExpire ) );
 
@@ -93,7 +93,7 @@ public class TestZooClient
                 try
                 {
                     Thread.sleep( ( millisForSessionToExpire ) * 2 /*twice the session timeout*/);
-                    cluster = new LocalhostZooKeeperCluster( getClass(), 2181 );
+                    cluster = new LocalhostZooKeeperCluster( getClass(), 3181 );
                     while ( !stop.get() )
                     {
                         Thread.sleep( 150 );
@@ -127,7 +127,7 @@ public class TestZooClient
     {
         final long secondsForSessionToExpire = 1;
         Map<String, String> stringConfig = new HashMap<String, String>();
-        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "localhost:2181" );
+        stringConfig.put( HaConfig.CONFIG_KEY_COORDINATORS, "localhost:4181" );
         stringConfig.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
         stringConfig.put( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT, Long.toString( secondsForSessionToExpire ) );
 

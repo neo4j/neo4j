@@ -50,7 +50,7 @@ public class TestHaBean
     @BeforeClass
     public static void startDb() throws Exception
     {
-        zk = new LocalhostZooKeeperCluster( dir,/*ports:*/2181, 2182 );
+        zk = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
         File storeDir = dir.graphDbDir( /*clean=*/true );
         CreateEmptyDb.at( storeDir );
         db = Neo4jHaCluster.single( zk, storeDir, /*HA port:*/3377, //
@@ -62,8 +62,6 @@ public class TestHaBean
     {
         if ( db != null ) db.shutdown();
         db = null;
-        if ( zk != null ) zk.shutdown();
-        zk = null;
         dir.cleanup();
     }
 

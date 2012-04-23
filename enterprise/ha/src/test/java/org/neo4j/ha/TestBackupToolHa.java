@@ -27,8 +27,8 @@ import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmT
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.HaConfig.CONFIG_KEY_COORDINATORS;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
 import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -49,14 +49,14 @@ public class TestBackupToolHa
     private LocalhostZooKeeperCluster zk;
     private List<GraphDatabaseService> instances;
     private DbRepresentation representation;
-    
+
     @Before
     public void before() throws Exception
     {
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
 
-        zk = new LocalhostZooKeeperCluster( TestBackupToolHa.class, 2181, 2182, 2183 );
+        zk = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
         instances = new ArrayList<GraphDatabaseService>();
         for ( int i = 0; i < 3; i++ )
         {
@@ -69,11 +69,11 @@ public class TestBackupToolHa
             GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config );
             instances.add( instance );
         }
-        
+
         // Really doesn't matter which instance
         representation = createSomeData( instances.get( 1 ) );
     }
-    
+
     @After
     public void after() throws Exception
     {
@@ -81,22 +81,20 @@ public class TestBackupToolHa
         {
             instance.shutdown();
         }
-        zk.shutdown();
     }
-    
+
     @Test
     public void makeSureBackupCanBePerformedFromCluster() throws Exception
     {
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "ha://localhost:2181", "-to", BACKUP_PATH ) );
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "ha://localhost:2181", "-to", BACKUP_PATH ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
         DbRepresentation newRepresentation = createSomeData( instances.get( 2 ) );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", "ha://localhost:2182", "-to", BACKUP_PATH ) );
+                runBackupToolFromOtherJvmToGetExitCode( "-incremental", "-from", "ha://localhost:2181", "-to",
+                        BACKUP_PATH ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
 }
