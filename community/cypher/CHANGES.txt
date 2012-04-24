@@ -1,3 +1,8 @@
+<NOT YET RELEASED>
+----------------
+o Added the possibility to return all graph elements using RETURN *
+o Added CREATE, SET, DELETE, FOREACH 
+
 1.7 (2012-04-18)
 ----------------
 o Added the possibility to use multiple relationship types on patterns

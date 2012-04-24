@@ -1401,7 +1401,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
           ),
           Equals(Property("n", "c"), Literal("x"))
         )
-      ).returns (ReturnItem(Entity("n"), "n"))
+      ).returns(ReturnItem(Entity("n"), "n"))
     )
   }
 
@@ -1576,6 +1576,103 @@ create rel a-[r:REL]->b
     testFrom_1_8("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
+  @Test def simple_read_first_and_update_next() {
+    val secondQ = Query.
+      start(CreateNodeStartItem("b", Map("age" -> Multiply(Property("a", "age"), Literal(2.0))))).
+      returns(ReturnItem(Entity("b"), "b"))
+
+    val q = Query.
+      start(NodeById("a", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+
+    testFrom_1_8("start a = node(1) create node b = {age : a.age * 2} return b", q)
+  }
+
+  @Test def simple_start_with_two_nodes_and_create_relationship() {
+    val secondQ = Query.
+      start(CreateRelationshipStartItem("r", Entity("a"), Entity("b"), "REL", Map())).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0), NodeById("b", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+
+    testFrom_1_8("start a=node(0), b=node(1) create rel a-[r:REL]->b", q)
+  }
+
+  @Test def simple_create_relationship_with_properties() {
+    val secondQ = Query.
+      start(CreateRelationshipStartItem("r", Entity("a"), Entity("b"), "REL",
+      Map("why" -> Literal(42), "foo" -> Literal("bar"))
+    )).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0), NodeById("b", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+
+    testFrom_1_8("start a=node(0), b=node(1) create rel a-[r:REL {why : 42, foo : 'bar'}]->b", q)
+  }
+
+  @Test def simple_delete_node() {
+    val secondQ = Query.
+      updates(DeleteEntityCommand(Entity("a"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    testFrom_1_8("start a=node(0) delete a", q)
+  }
+
+  @Test def simple_set_property_on_node() {
+    val secondQ = Query.
+      updates(SetProperty(Property("a", "hello"), Literal("world"))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    testFrom_1_8("start a=node(0) set a.hello = 'world'", q)
+  }
+
+  @Test def simple_update_property_with_expression() {
+    val secondQ = Query.
+      updates(SetProperty(Property("a", "salary"), Multiply(Property("a", "salary"), Literal(2.0)))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    testFrom_1_8("start a=node(0) set a.salary = a.salary * 2 ", q)
+  }
+
+  @Test def simple_foreach_on_path() {
+    val secondQ = Query.
+      updates(Foreach(NodesFunction(Entity("p")), "n", Seq(SetProperty(Property("n", "touched"), Literal(true))))).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "r", "REL", Direction.OUTGOING))).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+    testFrom_1_8("start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) : set n.touched = true ) ", q)
+  }
+
   @Test def returnAll() {
     testFrom_1_8("start s = NODE(1) return *",
       Query.
@@ -1611,8 +1708,8 @@ create rel a-[r:REL]->b
   }
 
   def testOlderParsers(queryText: String, queryAst: Query) {
-    test_1_6(queryText,queryAst)
-    test_1_7(queryText,queryAst)
+    test_1_6(queryText, queryAst)
+    test_1_7(queryText, queryAst)
   }
 
   def testQuery(version: Option[String], query: String, expectedQuery: Query) {

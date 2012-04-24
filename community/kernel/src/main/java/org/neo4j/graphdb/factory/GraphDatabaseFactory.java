@@ -106,4 +106,12 @@ public class GraphDatabaseFactory
             kernelExtensions.add( newKernelExtension );
         }
     }
+    public void setCacheProviders(Iterable<CacheProvider> newCacheProviders)
+    {
+        cacheProviders.clear();
+        for( CacheProvider newCacheProvider : newCacheProviders )
+        {
+            cacheProviders.add( newCacheProvider );
+        }
+    }
 }
