@@ -102,7 +102,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private final byte applicationProtocolVersion;
     private final int oldChannelThresholdMillis;
-    private final TxChecksumVerifier txVerifier;
+    private TxChecksumVerifier txVerifier;
     
     public Server( M realMaster, final int port, String storeDir, int frameLength, byte applicationProtocolVersion,
             int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier )
@@ -567,6 +567,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         // Set this to null since bootstrap/channelFactory.releaseExternalResources
         // cannot be called and holds a reference to this Server instance.
         realMaster = null;
+        txVerifier = null;
         
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
