@@ -65,7 +65,16 @@ Thank you, the Neo4j Team.""")
     }
   }
 
-  def body = bodyWith | bodyReturn | noBody
+  def body = bodyWith | simpleUpdate | bodyReturn | noBody
+
+  def simpleUpdate: Parser[Body] = opt(matching) ~ opt(where) ~ atLeastOneUpdateCommand ~ body ^^ {
+    case matching ~ where ~ updates ~ nextQ => {
+      val (pattern, namedPaths) = extractMatches(matching)
+
+      val returns = Return(List("*"), AllIdentifiers())
+      BodyWith(updates._1, pattern, namedPaths, where, returns, None, updates._2, nextQ)
+    }
+  }
 
   def bodyWith: Parser[Body] = opt(matching) ~ opt(where) ~ WITH ~ opt(start) ~ updates ~ body ^^ {
     case matching ~ where ~ returns ~ start ~ updates ~ nextQ => {
@@ -147,6 +156,23 @@ Thank you, the Neo4j Team.""")
     case Some((Match(), nP)) => (None, Some(nP))
     case Some((p, nP)) => (Some(p), Some(nP))
     case None => (None, None)
+  }
+
+  private def updateCommands:Parser[(Seq[UpdateCommand], Seq[StartItem])] = opt(createStart) ~ updates ^^ {
+    case starts ~ updates => {
+
+      val createCommands = starts.map( _.startItems).flatten.toSeq
+      (updates,  createCommands)
+    }
+  }
+
+  private def atLeastOneUpdateCommand:Parser[(Seq[UpdateCommand], Seq[StartItem])] = Parser {
+    case in => {
+      updateCommands(in) match {
+        case Success((changes, starts), rest) if (starts.size + changes.size) == 0 => Failure("", rest)
+        case x => x
+      }
+    }
   }
 }
 

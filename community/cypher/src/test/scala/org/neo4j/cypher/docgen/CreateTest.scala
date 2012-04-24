@@ -70,11 +70,9 @@ class CreateTest extends DocumentingTestBase {
 
     testQuery(
       title = "Create a relationship between two nodes",
-      text = "To create a relationship between two nodes, we need to use the +WITH+ " +
-        "clause to separate the reading of the graph, and the writing to it. The " +
-        "first part creates the context needed to be able to create a relationship. " +
-        "The second part creates the relationship and returns it.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") with a,b create rel a-[r:REL]->b return r",
+      text = "To create a relationship between two nodes, we first get the two nodes. " +
+        "Once the nodes are loaded, we simply create a relationship between them.",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create rel a-[r:REL]->b return r",
       returns = "The created relationship is returned.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -121,7 +119,7 @@ for this to work.""",
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes." +
         "Note that the values can be any expression.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") with a,b create rel a-[r:REL {name : a.name + '<->' + b.name }]->b return r",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create rel a-[r:REL {name : a.name + '<->' + b.name }]->b return r",
       returns = "The newly created relationship is returned.",
       assertions = (p) => {
         val result = p.toList
