@@ -33,7 +33,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def create_a_single_node() {
     val before = graph.getAllNodes.asScala.size
 
-    val result = parseAndExecute("create node a = {}")
+    val result = parseAndExecute("create a = {}")
 
     assert(result.queryStatistics() === stats.copy(
       nodesCreated = 1
@@ -45,7 +45,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def create_a_single_node_with_props_and_return_it() {
     val before = graph.getAllNodes.asScala.size
 
-    val result = parseAndExecute("create node a = {name : 'Andres'} return a")
+    val result = parseAndExecute("create a = {name : 'Andres'} return a")
 
     assert(result.queryStatistics() === stats.copy(
       nodesCreated = 1,
@@ -65,7 +65,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def start_with_a_node_and_create_a_new_node_with_the_same_properties() {
     createNode("age" -> 15)
 
-    val result = parseAndExecute("start a = node(1) with a create node b = {age : a.age * 2} return b")
+    val result = parseAndExecute("start a = node(1) with a create b = {age : a.age * 2} return b")
 
     assert(result.queryStatistics() === stats.copy(
       nodesCreated = 1,
@@ -80,7 +80,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
   @Test
   def create_two_nodes_and_a_relationship_between_them() {
-    val result = parseAndExecute("create node a = {}, node b = {}, rel a-[r:REL]->b return r")
+    val result = parseAndExecute("create a = {}, b = {}, a-[r:REL]->b return r")
 
     assert(result.queryStatistics() === stats.copy(
       nodesCreated = 2,
@@ -97,7 +97,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def create_one_node_and_dumpToString() {
     createNode("age" -> 15)
 
-    val result = parseAndExecute("create node a = {name:'Cypher'}")
+    val result = parseAndExecute("create a = {name:'Cypher'}")
 
     assert(result.queryStatistics() === stats.copy(
       nodesCreated = 1,
@@ -112,7 +112,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def deletes_single_node() {
     val a = createNode().getId
 
-    val result = parseAndExecute("start a = node(1) with a delete a")
+    val result = parseAndExecute("start a = node(1) delete a")
     assert(result.queryStatistics() === stats.copy(
       deletedNodes = 1
     ))
@@ -125,7 +125,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def multiple_deletes_should_not_break_anything() {
     (1 to 4).foreach( i => createNode() )
 
-    val result = parseAndExecute("start a = node(1),b=node(2,3,4) with a delete a")
+    val result = parseAndExecute("start a = node(1),b=node(2,3,4) delete a")
     assert(result.queryStatistics() === stats.copy(
       deletedNodes = 1
     ))
@@ -144,7 +144,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
     relate(a, c)
     relate(a, d)
 
-    val result = parseAndExecute("start a = node(1) match a-[r]->() with r delete r")
+    val result = parseAndExecute("start a = node(1) match a-[r]->() delete r")
     assert(result.queryStatistics() === stats.copy(
       deletedRelationships = 3
     ))
@@ -158,7 +158,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
     val b = createNode()
     val c = createNode()
 
-    val result = parseAndExecute("create node n = {} with n start x = node(1,2,3) with n,x create rel n-[:REL]->x")
+    val result = parseAndExecute("create n = {} with n start x = node(1,2,3) create n-[:REL]->x")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       nodesCreated = 1,
@@ -174,7 +174,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def set_a_property() {
     val a = createNode("name" -> "Andres")
 
-    val result = parseAndExecute("start n=node(1) with n set n.name = 'Michael'")
+    val result = parseAndExecute("start n=node(1) set n.name = 'Michael'")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1
@@ -187,7 +187,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def set_a_property_to_an_expression() {
     val a = createNode("name" -> "Andres")
 
-    val result = parseAndExecute("start n=node(1) with n set n.name = n.name + ' was here'")
+    val result = parseAndExecute("start n=node(1) set n.name = n.name + ' was here'")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1
@@ -202,7 +202,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
     createNode("Michael")
     createNode("Peter")
 
-    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create node {name : names}")
+    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create {name : names}")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1,
@@ -216,7 +216,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def set_a_property_to_an_empty_collection() {
     createNode("Andres")
 
-    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create node {x : names}")
+    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create {x : names}")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1,
@@ -228,7 +228,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
   @Test
   def create_node_from_map_values() {
-    parseAndExecute("create node n = {a} return n", "a" -> Map("name" -> "Andres", "age" -> 66))
+    parseAndExecute("create n = {a} return n", "a" -> Map("name" -> "Andres", "age" -> 66))
     val n = graph.createdNodes.dequeue()
     assert(n.getProperty("name") === "Andres")
     assert(n.getProperty("age") === 66)
@@ -237,7 +237,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   @Test
   def set_property_for_null_removes_the_property() {
     val n = createNode("name"->"Michael")
-    parseAndExecute("start n = node(1) with n set n.name = null return n")
+    parseAndExecute("start n = node(1) set n.name = null return n")
 
     assertFalse("Property should have been removed", n.hasProperty("name"))
   }
@@ -247,7 +247,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
     createNode()
     createNode()
 
-    val r = parseAndExecute("start a = node(1), b = node(2) with a,b create rel a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
+    val r = parseAndExecute("start a = node(1), b = node(2) create a-[r:REL {param}]->b return r", "param" -> Map("name" -> "Andres", "age" -> 66)).
       toList.head("r").asInstanceOf[Relationship]
 
     assert(r.getProperty("name") === "Andres")

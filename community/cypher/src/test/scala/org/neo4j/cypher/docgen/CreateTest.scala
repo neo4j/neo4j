@@ -32,7 +32,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create node {}",
+      queryText = "create {}",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {})
   }
@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node and set properties",
       text = "The values for the properties can be any scalar expressions.",
-      queryText = "create node {name : 'Andres', title : 'Developer'}",
+      queryText = "create {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
@@ -50,7 +50,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create node a = {name : 'Andres'} return a",
+      queryText = "create a = {name : 'Andres'} return a",
       returns = "The newly created node is returned.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -72,7 +72,7 @@ class CreateTest extends DocumentingTestBase {
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create rel a-[r:REL]->b return r",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:REL]->b return r",
       returns = "The created relationship is returned.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -94,7 +94,7 @@ class CreateTest extends DocumentingTestBase {
       text = """When you set a property to an expression that returns a collection of values,
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
-      queryText = "start n = node(" + aId + "," + bId + ") with collect(n.name) as names create node new={ name : names } return new",
+      queryText = "start n = node(" + aId + "," + bId + ") with collect(n.name) as names create new={ name : names } return new",
       returns = "A node with an array property named name is returned.",
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]
@@ -119,7 +119,7 @@ for this to work.""",
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes." +
         "Note that the values can be any expression.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create rel a-[r:REL {name : a.name + '<->' + b.name }]->b return r",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:REL {name : a.name + '<->' + b.name }]->b return r",
       returns = "The newly created relationship is returned.",
       assertions = (p) => {
         val result = p.toList
