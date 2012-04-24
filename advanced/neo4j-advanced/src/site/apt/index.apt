@@ -8,7 +8,7 @@ Neo4j Advanced
     The Neo4j Advanced Edition adds advanced monitoring on top of Neo4j Community Edition.
 
     To see what's included, have a look at the {{{./dependencies.html}dependencies}}.
-    
-    To use this package, add the following dependency to your pom.xml.
 
-%{source-code|snippet=deps|file=target/extra-resources/pom.xml}
+    See the {{{http://docs.neo4j.org/chunked/milestone/tutorials-java-embedded-setup.html}Neo4j Manual}} for further information.
+
+
