@@ -1377,7 +1377,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Entity("a"), "a"))
 
 
-    testFrom_1_8("start a = node(1) with a create node b = {age : a.age * 2} return b", q)
+    testFrom_1_8("start a = node(1) with a create b = {age : a.age * 2} return b", q)
   }
 
   @Test def variable_length_path_with_iterable_name() {
@@ -1406,7 +1406,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node() {
-    testFrom_1_8("create node a = {} ",
+    testFrom_1_8("create a = {} ",
       Query.
         start(CreateNodeStartItem("a", Map()))
         returns()
@@ -1414,7 +1414,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_without_identifier() {
-    testFrom_1_8("create node {} ",
+    testFrom_1_8("create {} ",
       Query.
         start(CreateNodeStartItem("  UNNAMED1", Map()))
         returns()
@@ -1422,7 +1422,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_property() {
-    testFrom_1_8("create node a = {name : 'Andres'} ",
+    testFrom_1_8("create a = {name : 'Andres'} ",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
         returns()
@@ -1430,7 +1430,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_property_and_return_it() {
-    testFrom_1_8("create node a = {name : 'Andres'} return a",
+    testFrom_1_8("create a = {name : 'Andres'} return a",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
         returns (ReturnItem(Entity("a"), "a"))
@@ -1438,7 +1438,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_two_nodes_with_a_property_and_return_it() {
-    testFrom_1_8("create node a = {name : 'Andres'}, node b = {} return a,b",
+    testFrom_1_8("create a = {name : 'Andres'}, b = {} return a,b",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))), CreateNodeStartItem("b", Map()))
         returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"))
@@ -1446,13 +1446,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_from_map_expression() {
-    testFrom_1_8("create node a = {param}",
+    testFrom_1_8("create a = {param}",
       Query.
         start(CreateNodeStartItem("a", Map("*" -> ParameterExpression("param"))))
         returns()
     )
   }
-
 
   @Test def start_with_two_nodes_and_create_relationship() {
     val secondQ = Query.
@@ -1465,7 +1464,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"))
 
 
-    testFrom_1_8("start a=node(0), b=node(1) with a,b create rel a-[r:REL]->b", q)
+    testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL]->b", q)
   }
 
   @Test def start_with_two_nodes_and_create_relationship_using_alternative_with_syntax() {
@@ -1482,7 +1481,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testFrom_1_8("""
 start a=node(0), b=node(1)
 ========= a,b ============
-create rel a-[r:REL]->b
+create a-[r:REL]->b
 """, q)
   }
 
@@ -1499,25 +1498,25 @@ create rel a-[r:REL]->b
       returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"))
 
 
-    testFrom_1_8("start a=node(0), b=node(1) with a,b create rel a-[r:REL {why : 42, foo : 'bar'}]->b", q)
+    testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
   }
 
   @Test def create_relationship_without_identifier() {
-    testFrom_1_8("create rel {a}-[:REL]->{a}",
+    testFrom_1_8("create {a}-[:REL]->{a}",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", ParameterExpression("a"), ParameterExpression("a"), "REL", Map())).
         returns())
   }
 
   @Test def create_relationship_with_properties_from_map() {
-    testFrom_1_8("create rel {a}-[:REL {param}]->{a}",
+    testFrom_1_8("create {a}-[:REL {param}]->{a}",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", ParameterExpression("a"), ParameterExpression("a"), "REL", Map("*" -> ParameterExpression("param")))).
         returns())
   }
 
   @Test def create_relationship_without_identifier2() {
-    testFrom_1_8("create relationship {a}-[:REL]->{a}",
+    testFrom_1_8("create {a}-[:REL]->{a}",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", ParameterExpression("a"), ParameterExpression("a"), "REL", Map())).
         returns())
@@ -1587,7 +1586,7 @@ create rel a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a = node(1) create node b = {age : a.age * 2} return b", q)
+    testFrom_1_8("start a = node(1) create b = {age : a.age * 2} return b", q)
   }
 
   @Test def simple_start_with_two_nodes_and_create_relationship() {
@@ -1601,7 +1600,7 @@ create rel a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(0), b=node(1) create rel a-[r:REL]->b", q)
+    testFrom_1_8("start a=node(0), b=node(1) create a-[r:REL]->b", q)
   }
 
   @Test def simple_create_relationship_with_properties() {
@@ -1617,7 +1616,7 @@ create rel a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(0), b=node(1) create rel a-[r:REL {why : 42, foo : 'bar'}]->b", q)
+    testFrom_1_8("start a=node(0), b=node(1) create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
   }
 
   @Test def simple_delete_node() {

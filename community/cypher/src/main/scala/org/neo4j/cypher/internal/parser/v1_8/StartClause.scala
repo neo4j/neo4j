@@ -27,7 +27,7 @@ trait StartClause extends Base with Expressions {
 
   def readStart = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*))
 
-  def createStart = ignoreCase("create") ~> comaList(createNode | createRel) ^^ (x => Start(x: _*))
+  def createStart = ignoreCase("create") ~> comaList(createRel | createNode) ^^ (x => Start(x: _*))
 
   def properties =
     expression ^^ (x => Map[String,Expression]("*" -> x)) |
@@ -38,11 +38,11 @@ trait StartClause extends Base with Expressions {
 
   def createdNodeName = opt(identity <~ "=") ^^ (x => namer.name(x))
 
-  def createNode: Parser[StartItem] = ignoreCase("node") ~> createdNodeName ~ properties ^^ {
+  def createNode: Parser[StartItem] = createdNodeName ~ properties ^^ {
     case id ~ props => CreateNodeStartItem(id, props)
   }
 
-  def createRel: Parser[StartItem] = rels ~> expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ properties ~ "]" ~ "->" ~ expression ^^ {
+  def createRel: Parser[StartItem] = expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ properties ~ "]" ~ "->" ~ expression ^^ {
     case from ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "->" ~ to =>  CreateRelationshipStartItem(namer.name(id), from, to, relType, props)
   }
   

@@ -74,7 +74,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
   }
 
   @Test def create_relationships_missing_end_nodes() {
-    expectedError("create rel a-[r:REL]->b return r",
+    expectedError("create a-[r:REL]->b return r",
       "Unknown identifier `a`\nUnknown identifier `b`")
   }
 
