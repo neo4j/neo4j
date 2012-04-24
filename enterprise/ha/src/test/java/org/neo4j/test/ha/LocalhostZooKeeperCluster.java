@@ -54,7 +54,7 @@ public final class LocalhostZooKeeperCluster
     {
         if ( SINGLETON == null )
         {
-            SINGLETON = new LocalhostZooKeeperCluster( LocalhostZooKeeperCluster.class, 2181 );
+            SINGLETON = standardZoo( LocalhostZooKeeperCluster.class );
             Runtime.getRuntime().addShutdownHook( new Thread()
             {
                 @Override
