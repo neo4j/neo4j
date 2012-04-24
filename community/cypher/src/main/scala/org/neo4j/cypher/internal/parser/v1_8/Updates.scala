@@ -39,10 +39,10 @@ trait Updates extends Base with Expressions {
     case x ~ y => x.toSeq.flatten ++ y.toSeq.flatten
   }
 
-  def delete: Parser[List[UpdateCommand]] = "delete" ~> comaList(expression) ^^
+  def delete: Parser[List[UpdateCommand]] = ignoreCase("delete") ~> comaList(expression) ^^
     (expressions => expressions.map(DeleteEntityCommand(_)))
 
-  def set: Parser[List[UpdateCommand]] = "set" ~> comaList(propertySet)
+  def set: Parser[List[UpdateCommand]] = ignoreCase("set") ~> comaList(propertySet)
 
   def propertySet = property ~ "=" ~ expression ^^ {
     case p ~ "=" ~ e => SetProperty(p, e)
