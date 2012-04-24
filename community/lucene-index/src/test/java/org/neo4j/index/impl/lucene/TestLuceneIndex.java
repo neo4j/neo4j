@@ -46,10 +46,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1693,5 +1695,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
         restartTx();
         assertEquals( node, index.get( "name", ValueContext.numeric( id ) ).getSingle() );
+    }
+    
+    @Test
+    public void combinedNumericalQuery() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        
+        Node node = graphDb.createNode();
+        index.add( node, "start", ValueContext.numeric( 10 ) );
+        index.add( node, "end", ValueContext.numeric( 20 ) );
+        restartTx();
+        
+        BooleanQuery q = new BooleanQuery();
+        q.add( LuceneUtil.rangeQuery( "start", 9, null, true, true ), Occur.MUST );
+        q.add( LuceneUtil.rangeQuery( "end", null, 30, true, true ), Occur.MUST );
+        assertContains( index.query( q ), node );
     }
 }
