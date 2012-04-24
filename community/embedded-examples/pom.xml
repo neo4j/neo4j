@@ -25,6 +25,9 @@
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/tutorials-java-embedded.html</docs.url>
+    <paxrunnerversion>1.7.6</paxrunnerversion>
+    <paxexamversion>2.3.0</paxexamversion>
+    
   </properties>
 
   <dependencies>
@@ -73,8 +76,91 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
     </dependency>
-  </dependencies>
+  
+  <!-- OSGi-related -->
+   <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+      <version>4.2.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- Pax Exam Dependencies -->
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-player</artifactId>
+      <version>${paxexamversion}</version>
+      <scope>test</scope>
+    </dependency>
 
+    <dependency>
+      <groupId>org.ops4j.pax.url</groupId>
+      <artifactId>pax-url-wrap</artifactId>
+      <version>1.3.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-testforge</artifactId>
+      <version>${paxexamversion}</version>
+      <scope>test</scope>
+    </dependency>
+
+     <dependency>
+         <groupId>org.ops4j.pax.exam</groupId>
+         <artifactId>pax-exam-junit4</artifactId>
+         <version>${paxexamversion}</version>
+         <scope>test</scope>
+      </dependency>
+
+      <dependency>
+         <groupId>org.apache.geronimo.specs</groupId>
+         <artifactId>geronimo-atinject_1.0_spec</artifactId>
+         <version>1.0</version>
+         <scope>provided</scope>
+      </dependency>
+
+    <!-- paxrunner -->
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-container-paxrunner</artifactId>
+      <version>${paxexamversion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.runner</groupId>
+      <artifactId>pax-runner-no-jcl</artifactId>
+      <version>${paxrunnerversion}</version>
+      <scope>test</scope>
+    </dependency>
+
+
+
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-link-assembly</artifactId>
+      <version>${paxexamversion}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-container-rbc</artifactId>
+      <version>${paxexamversion}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- OSGi R4 frameworks -->
+    <!-- <dependency> <groupId>org.apache.felix</groupId> <artifactId>org.apache.felix.framework</artifactId> <version>3.2.1</version> <scope>test</scope> </dependency> -->
+
+    <!-- <dependency> <groupId>org.ops4j.pax.swissbox</groupId> <artifactId>pax-swissbox-tinybundles</artifactId> <version>1.3.1</version> <type>bundle</type> <scope>test</scope> </dependency> -->
+
+    <dependency>
+      <groupId>org.ops4j.pax.tinybundles</groupId>
+      <artifactId>tinybundles</artifactId>
+      <version>1.0.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
   <licenses>
     <license>
       <name>Apache License Version 2.0</name>
@@ -168,6 +254,13 @@
       <releases>
         <enabled>false</enabled>
       </releases>
+    </repository>
+    <repository>
+      <id>ops4jsnapshots</id>
+      <url>https://oss.sonatype.org/content/groups/ops4j/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
     </repository>
   </repositories>
 

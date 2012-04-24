@@ -45,3 +45,6 @@ include::graph-algo.txt[]
 
 include::management.txt[]
 
+:leveloffset: 2
+
+include::osgi.txt[]
