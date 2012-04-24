@@ -74,7 +74,7 @@ public class ZooClient extends AbstractZooKeeperManager
     static final String MASTER_NOTIFY_CHILD = "master-notify";
     static final String MASTER_REBOUND_CHILD = "master-rebound";
 
-    private ZooKeeper zooKeeper;
+    private final ZooKeeper zooKeeper;
     private final int machineId;
     private String sequenceNr;
 
