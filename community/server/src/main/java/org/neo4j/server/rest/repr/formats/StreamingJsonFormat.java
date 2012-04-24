@@ -32,6 +32,8 @@ import javax.ws.rs.core.MediaType;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.impl.Utf8Generator;
+import org.codehaus.jackson.io.IOContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.neo4j.helpers.Service;
@@ -55,11 +57,27 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     private final JsonFactory factory;
     public StreamingJsonFormat()
     {
-        super( MEDIA_TYPE );
+        super(MEDIA_TYPE);
+        this.factory = createJsonFactory();
+    }
+
+    private JsonFactory createJsonFactory() {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.getSerializationConfig().disable(SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE);
-        factory = new JsonFactory(objectMapper);
+        JsonFactory factory = new JsonFactory(objectMapper)
+        {
+            @Override
+            protected JsonGenerator _createUTF8JsonGenerator(OutputStream out, IOContext ctxt) throws IOException {
+                final int bufferSize = 1024 * 8;
+                Utf8Generator gen = new Utf8Generator(ctxt, _generatorFeatures, _objectCodec, out,new byte[bufferSize],0,true);
+                if (_characterEscapes != null) {
+                    gen.setCharacterEscapes(_characterEscapes);
+                }
+                return gen;
+            }
+        };
         factory.enable(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM);
+        return factory;
     }
 
     @Override
