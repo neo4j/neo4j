@@ -27,11 +27,5 @@ The Neo4j graph pattern matching component
 
 * Examples
 
-** Find all Nodes related to a given set of Nodes
-
-%{source-code|snippet=findNodesWithRelationshipsTo|file=src/test/java/examples/TestSiteIndexExamples.java}
-
-** Finding friends that I've known for a specified amount of time
-
-%{source-code|snippet=findFriends|file=src/test/java/examples/TestSiteIndexExamples.java}
+ See {{{https://github.com/neo4j/community/blob/master/graph-matching/src/test/java/examples/TestSiteIndexExamples.java}TestSiteIndexExamples.java}} for examples.
 

@@ -5,9 +5,4 @@ Neo4j Embedded
     To see the tutorials that use this code, see:
     {{{http://docs.neo4j.org/chunked/milestone/tutorials.html}The Neo4j Manual}}
 
-Neo4j Tests
 
-    For your reference, there are unit tests included which illustrate
-    approaches for testing graph-based applications.
-
-    * {{{./base-test.html}Base test}} - simplest possible unit test of a graph, with setup and teardown
