@@ -22,6 +22,7 @@ package org.neo4j.server.startup.healthcheck;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsMacOS;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
@@ -102,36 +103,38 @@ public class HTTPLoggingPreparednessRuleTest
         properties.put( Configurator.HTTP_LOGGING, "true" );
         final File unwritableDirectory = createUnwritableDirectory();
         properties.put( Configurator.HTTP_LOG_CONFIG_LOCATION,
-            createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath());
+            createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath() );
 
         // when
         boolean result = rule.execute( properties );
 
         // then
         assertFalse( result );
-        assertEquals( String.format("HTTP log file [%s] does not exist", unwritableDirectory + File.separator + "http.log"), rule.getFailureMessage() );
+        assertEquals(
+            String.format( "HTTP log file [%s] does not exist", unwritableDirectory + File.separator + "http.log" ),
+            rule.getFailureMessage() );
     }
 
-    private File createUnwritableDirectory()
+    public static File createUnwritableDirectory()
     {
         File file;
         if ( osIsWindows() )
         {
             file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
         }
+        else if ( osIsMacOS() )
+        {
+            file = new File( "/Network/Servers/localhost/" + UUID.randomUUID().toString() );
+        }
         else
         {
-            TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
-
-            file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
-            file.mkdirs();
-            file.setWritable( false, false );
+            file = new File( "/proc/" + UUID.randomUUID().toString() + "/random");
         }
 
         return file;
     }
 
-    private File createConfigFile( String configXml, File location ) throws IOException
+    public static File createConfigFile( String configXml, File location ) throws IOException
     {
         final File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
 
@@ -142,7 +145,7 @@ public class HTTPLoggingPreparednessRuleTest
         return configFile;
     }
 
-    private String createLogbackConfigXml( File logDirectory )
+    public static String createLogbackConfigXml( File logDirectory )
     {
 
         return "<configuration>\n" +

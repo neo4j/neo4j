@@ -29,7 +29,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
@@ -46,6 +45,7 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
+import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -108,7 +108,8 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confdir" );
         FileUtils.forceMkdir( confDir );
 
-        final File configFile = createConfigFile( createLogbackConfigFile( logDirectory ), confDir );
+        final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
+            HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "true" )
@@ -137,7 +138,8 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         FileUtils.forceMkdir( confDir );
         final File unwritableLogDir = createUnwritableDirectory();
 
-        final File configFile = createConfigFile( createLogbackConfigFile( unwritableLogDir ), confDir );
+        final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
+            HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
 
         server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
@@ -155,7 +157,8 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log file [%s] does not exist", unwritableLogDir.getAbsolutePath() + File.separator + "http.log" ) ) );
+                containsString( String.format( "HTTP log file [%s] does not exist",
+                    unwritableLogDir.getAbsolutePath() + File.separator + "http.log" ) ) );
         }
 
     }
@@ -201,35 +204,24 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         return result;
     }
 
-    private File createConfigFile( String configXml, File location ) throws IOException
-    {
-        final File configFile = new File( location.getAbsolutePath() + File.separator + "neo4j-logback-config.xml" );
 
-        FileOutputStream fos = new FileOutputStream( configFile );
-        fos.write( configXml.getBytes() );
-        fos.close();
-
-        return configFile;
-    }
-
-
-    private String createLogbackConfigFile( File logDirectory )
-    {
-        return "<configuration>\n" +
-            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
-            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
-            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
-            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
-            "      <maxHistory>30</maxHistory>\n" +
-            "    </rollingPolicy>\n" +
-            "\n" +
-            "    <encoder>\n" +
-            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
-            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
-            "    </encoder>\n" +
-            "  </appender>\n" +
-            "\n" +
-            "  <appender-ref ref=\"FILE\" />\n" +
-            "</configuration>";
-    }
+//    private String createLogbackConfigFile( File logDirectory )
+//    {
+//        return "<configuration>\n" +
+//            "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
+//            "    <file>" + logDirectory.getAbsolutePath() + File.separator + "http.log</file>\n" +
+//            "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
+//            "      <fileNamePattern>" + logDirectory.getAbsolutePath() + File.separator + "http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
+//            "      <maxHistory>30</maxHistory>\n" +
+//            "    </rollingPolicy>\n" +
+//            "\n" +
+//            "    <encoder>\n" +
+//            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+//            "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
+//            "    </encoder>\n" +
+//            "  </appender>\n" +
+//            "\n" +
+//            "  <appender-ref ref=\"FILE\" />\n" +
+//            "</configuration>";
+//    }
 }
