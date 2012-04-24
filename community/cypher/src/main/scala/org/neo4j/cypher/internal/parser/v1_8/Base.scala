@@ -25,7 +25,8 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class Base extends JavaTokenParsers {
   var namer = new NodeNamer
-  val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
+  val keywords = List("start", "create", "set", "delete", "foreach", "match", "where",
+    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending")
 
   def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
 

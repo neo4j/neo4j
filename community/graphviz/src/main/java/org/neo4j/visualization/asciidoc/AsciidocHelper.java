@@ -121,8 +121,9 @@ public class AsciidocHelper
 
     public static String createCypherSnippet( final String query )
     {
-        String[] keywordsToBreakOn = new String[] {"start", "match", "where", "return", "skip", "limit", "order by",
-                "asc", "ascending", "desc", "descending"};
+        String[] keywordsToBreakOn = new String[] {"start", "create", "set", "delete", "foreach",
+		"match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
+		"desc", "descending"};
 
         String result = "[source,cypher]\n----\n" + query + "\n----\n";
 
