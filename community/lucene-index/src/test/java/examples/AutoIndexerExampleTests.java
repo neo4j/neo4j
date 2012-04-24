@@ -19,9 +19,14 @@
  */
 package examples;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -43,8 +48,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 
-import static org.junit.Assert.*;
-
 public class AutoIndexerExampleTests implements GraphHolder
 {
     private static final TargetDirectory target = TargetDirectory.forTest( AutoIndexerExampleTests.class );
@@ -63,8 +66,8 @@ public class AutoIndexerExampleTests implements GraphHolder
     @Test
     public void testConfig() throws Exception
     {
+        String storeDirectory = getStoreDir( "testConfig" );
         // START SNIPPET: ConfigAutoIndexer
-
         /*
          * Creating the configuration, adding nodeProp1 and nodeProp2 as
          * auto indexed properties for Nodes and relProp1 and relProp2 as
@@ -72,7 +75,8 @@ public class AutoIndexerExampleTests implements GraphHolder
          * indexed. We also have to enable auto indexing for both these
          * primitives explicitly.
          */
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "testConfig" ) ).
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( storeDirectory ).
             setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
             setConfig( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ).
             setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
@@ -112,7 +116,9 @@ public class AutoIndexerExampleTests implements GraphHolder
 
         // START SNIPPET: APIReadAutoIndex
         // Get the Node auto index
-        ReadableIndex<Node> autoNodeIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        ReadableIndex<Node> autoNodeIndex = graphDb.index()
+                .getNodeAutoIndexer()
+                .getAutoIndex();
         // node1 and node2 both had auto indexed properties, get them
         assertEquals( node1,
                 autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
@@ -123,7 +129,9 @@ public class AutoIndexerExampleTests implements GraphHolder
                 "nodeProp2NonIndexedValue" ).hasNext() );
 
         // Get the relationship auto index
-        ReadableIndex<Relationship> autoRelIndex = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+        ReadableIndex<Relationship> autoRelIndex = graphDb.index()
+                .getRelationshipAutoIndexer()
+                .getAutoIndex();
         // One property was set for auto indexing
         assertEquals( rel,
                 autoRelIndex.get( "relProp1", "relProp1Value" ).getSingle() );
@@ -137,19 +145,22 @@ public class AutoIndexerExampleTests implements GraphHolder
     @Test
     public void testAPI() throws Exception
     {
+        String storeDirectory = getStoreDir( "testAPI" );
         // START SNIPPET: APIAutoIndexer
-
         // Start without any configuration
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getStoreDir( "testAPI" ) );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().
+                newEmbeddedDatabase( storeDirectory );
 
         // Get the Node AutoIndexer, set nodeProp1 and nodeProp2 as auto
         // indexed.
-        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        AutoIndexer<Node> nodeAutoIndexer = graphDb.index()
+                .getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( "nodeProp1" );
         nodeAutoIndexer.startAutoIndexingProperty( "nodeProp2" );
 
         // Get the Relationship AutoIndexer
-        AutoIndexer<Relationship> relAutoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        AutoIndexer<Relationship> relAutoIndexer = graphDb.index()
+                .getRelationshipAutoIndexer();
         relAutoIndexer.startAutoIndexingProperty( "relProp1" );
 
         // None of the AutoIndexers are enabled so far. Do that now
@@ -211,12 +222,13 @@ public class AutoIndexerExampleTests implements GraphHolder
     @Test
     public void testMutations() throws Exception
     {
+        String storeDirectory = getStoreDir( "mutations" );
         // START SNIPPET: Mutations
-
         /*
          * Creating the configuration
          */
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( getStoreDir( "mutations" ) ).
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( storeDirectory ).
             setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
             setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
