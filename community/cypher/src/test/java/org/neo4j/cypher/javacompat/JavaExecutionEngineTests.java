@@ -271,11 +271,11 @@ public class JavaExecutionEngineTests
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
-        engine.execute( "create node {props}", params );
+        engine.execute( "create {props}", params );
         // END SNIPPET: create_node_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
-        assertThat( count( result ), is(1));
+        assertThat( count( result ), is( 1 ) );
     }
 
 
