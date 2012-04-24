@@ -28,6 +28,7 @@ import static org.ops4j.pax.exam.CoreOptions.repository;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.Index;
@@ -43,7 +44,7 @@ public class OSGiTest {
     public static final String NEO4J_VERSION = "1.8-SNAPSHOT";
     public static final String GERONIMO_JTA_VERSION = "1.1.1";
 
-    @Test
+    @Test @Ignore
     public void neo4jStartupTestFelix()
         throws Exception
     {
