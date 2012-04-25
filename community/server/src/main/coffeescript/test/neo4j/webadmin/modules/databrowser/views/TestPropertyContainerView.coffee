@@ -1,5 +1,5 @@
 
-define ["neo4j/webadmin/modules/databrowser/views/PropertyContainerView"], (PropertyContainerView) ->
+define ['lib/amd/Backbone','neo4j/webadmin/modules/databrowser/views/PropertyContainerView'], (Backbone, PropertyContainerView) ->
 
   describe "PropertyContainerView", ->
     it "recognizes non-quoted strings as strings", ->
