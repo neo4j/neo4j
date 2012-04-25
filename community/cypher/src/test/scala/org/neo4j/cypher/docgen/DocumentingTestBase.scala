@@ -123,11 +123,11 @@ _Graph_
       dir.mkdirs()
     }
 
-    val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
+    val writer = new PrintWriter(new File(dir, nicefy(title) + ".txt"), "UTF-8")
     dumpToFile(writer, title, query, returns, text, result)
 
     val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
-    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName + ".txt")))
+    val graphViz = new PrintWriter(new File(dir, graphFileName + ".txt"), "UTF-8")
     dumpGraphViz(graphViz, graphFileName)
   }
 
