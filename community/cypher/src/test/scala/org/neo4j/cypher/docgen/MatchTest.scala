@@ -267,7 +267,7 @@ Cypher will try to match the relationship where the connected nodes switch sides
   @Test def match_mimicking_or() {
       testQuery(
               title = "Matching on a bound relationship",
-              text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction, 
+              text = """When your pattern contains a bound relationship, and that relationship pattern doesn't specify direction, 
                 Cypher will try to match the relationship where the connected nodes switch sides.""",
               queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
               returns = "This returns the two connected nodes, once as the start node, and once as the end node",

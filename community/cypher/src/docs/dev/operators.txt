@@ -12,7 +12,7 @@ Since Neo4j is a schema less graph database, Cypher has two special operators - 
 
 They are used on properties, and are used to deal with missing values. A comparison on a property
 that does not exist will cause an error. Instead of having to always check if the property exists
-before comparing it's value with something else, the question mark make the comparison always return
+before comparing its value with something else, the question mark make the comparison always return
 true if the property is missing, and the exclamation mark makes the comparator return false.
 
 This predicate will evaluate to true if n.prop is missing.
