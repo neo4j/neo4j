@@ -25,8 +25,10 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import javax.management.remote.JMXServiceURL;
 
@@ -100,7 +102,34 @@ public class ZooClient extends AbstractZooKeeperManager
         String storeDir = graphDb.getStoreDir();
         msgLog = StringLogger.getLogger( storeDir );
         allowCreateCluster = HaConfig.getAllowInitFromConfig( config );
+        /*
+         * Chicken and egg problem of sorts. The WatcherImpl might need zooKeeper instance
+         * before its constructor has returned, hence the "flushUnprocessedEvents" workaround.
+         * Without it the watcher might throw NPE on the initial (maybe SyncConnected) events,
+         * which would effectively prevent a client from feeling connected to its ZK cluster.
+         * See WatcherImpl for more detail on this.
+         */
         zooKeeper = instantiateZooKeeper();
+        flushUnprocessedEvents( zooKeeper );
+    }
+
+    private final Queue<WatchedEvent> unprocessedEvents = new LinkedList<WatchedEvent>();
+
+   /**
+    * Flush all events we go before initialization of ZooKeeper/WatcherImpl was completed.
+    * @param zooKeeper ZooKeeper instance to use when processing. We cannot rely on the
+    * zooKeeper instance inherited from ZooClient since the contract says that such fields
+    * are only guaranteed to be published when the constructor has returned, and at this
+    * point it hasn't.
+    */
+    protected void flushUnprocessedEvents( ZooKeeper zooKeeper )
+    {
+        synchronized ( unprocessedEvents )
+        {
+            WatchedEvent e = null;
+            while ( ( e = unprocessedEvents.poll() ) != null )
+                processEvent( e, zooKeeper );
+        }
     }
 
     @Override
@@ -117,13 +146,36 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public void process( WatchedEvent event )
     {
+        /*
+         * MP: The setup we have here is messed up. Why do I say that? Well, we've got
+         * this watcher which uses the ZooKeeper object that it's set to watch. And
+         * it is passed in to the constructor of the ZooKeeper object. So, if this watcher
+         * gets an event before the ZooKeeper constructor returns we're screwed here.
+         *
+         * Cue unprocessedEvents queue. It will act as a shield for this design blunder
+         * and absorb the events we get before everything is properly initialized,
+         * and emit them right thereafter (see #flushUnprocessedEvents()).
+         */
+        synchronized ( unprocessedEvents )
+        {
+            if ( zooKeeper == null || !unprocessedEvents.isEmpty() )
+            {
+                unprocessedEvents.add( event );
+                return;
+            }
+        }
+
+        processEvent( event, zooKeeper );
+    }
+
+    private void processEvent( WatchedEvent event, ZooKeeper zooKeeper )
+    {
+
         String path = event.getPath();
-        msgLog.logMessage( this + ", " + new Date() + " Got event: " + event
-                           + " (path=" + path + ")", true );
+        msgLog.logMessage( this + ", " + new Date() + " Got event: " + event      + " (path=" + path + ")", true );
         if ( shutdown )
         {
-            msgLog.logMessage( this
-                               + ", is shutdown, the above event is ignored" );
+            msgLog.logMessage( this + ", is shutdown, the above event is ignored" );
             return;
         }
         try
