@@ -1,0 +1,180 @@
+2012-01-09 12:52:16.081+0100: Creating new db @ index-stuff/neostore
+2012-01-09 12:52:16.224+0100: Opened [index-stuff/nioneo_logical.log.1] clean empty log, version=0, lastTxId=1
+2012-01-09 12:52:16.261+0100: Opened [/home/mattias/.eclipse-workspace/testo/index-stuff/index/lucene.log.1] clean empty log, version=0, lastTxId=1
+2012-01-09 12:52:16.265+0100: TM new log: tm_tx_log.1
+2012-01-09 12:52:16.277+0100: --- CONFIGURATION START ---
+2012-01-09 12:52:16.277+0100: Graph Database: org.neo4j.kernel.EmbeddedGraphDatabase StoreId[time:1326109936095, id:8784871874141011385, store version: 13561656364791302]
+2012-01-09 12:52:16.277+0100: Physical mem: 16059MB, Heap size: 3569MB
+2012-01-09 12:52:16.278+0100: Kernel version: Neo4j - Graph Database Kernel 1.5
+2012-01-09 12:52:16.278+0100: Neo4j component versions:
+2012-01-09 12:52:16.279+0100:   Neo4j - Graph Database Kernel 1.5
+2012-01-09 12:52:16.279+0100: Store versions:
+2012-01-09 12:52:16.279+0100:   NeoStore v0.A.0
+2012-01-09 12:52:16.279+0100:   NodeStore v0.A.0
+2012-01-09 12:52:16.279+0100:   RelationshipStore v0.A.0
+2012-01-09 12:52:16.279+0100:   RelationshipTypeStore v0.A.0
+2012-01-09 12:52:16.279+0100:   PropertyStore v0.A.0
+2012-01-09 12:52:16.279+0100:   PropertyIndexStore v0.A.0
+2012-01-09 12:52:16.279+0100:   StringPropertyStore v0.A.0
+2012-01-09 12:52:16.279+0100:   ArrayPropertyStore v0.A.0
+2012-01-09 12:52:16.282+0100: Process id: 26276@mattias-P150HMx
+2012-01-09 12:52:16.284+0100: Operating System: Linux; version: 3.0.0-14-generic; arch: amd64; cpus: 8
+2012-01-09 12:52:16.284+0100: Max number of file descriptors: 4096
+2012-01-09 12:52:16.284+0100: Number of open file descriptors: 40
+2012-01-09 12:52:16.286+0100: Total Physical memory: 15.68 GB
+2012-01-09 12:52:16.286+0100: Free Physical memory: 11.26 GB
+2012-01-09 12:52:16.287+0100: Committed virtual memory: 4.21 GB
+2012-01-09 12:52:16.287+0100: Total swap space: 20.02 GB
+2012-01-09 12:52:16.287+0100: Free swap space: 20.02 GB
+2012-01-09 12:52:16.287+0100: Byte order: LITTLE_ENDIAN
+2012-01-09 12:52:16.288+0100: VM Name: Java HotSpot(TM) 64-Bit Server VM
+2012-01-09 12:52:16.288+0100: VM Vendor: Sun Microsystems Inc.
+2012-01-09 12:52:16.288+0100: VM Version: 20.1-b02
+2012-01-09 12:52:16.288+0100: JIT compiler: HotSpot 64-Bit Tiered Compilers
+2012-01-09 12:52:16.289+0100: Class Path:
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jsse.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/dev/neo4j/community/kernel/target/test-classes/
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/neo4j/neo4j-kernel/1.5/neo4j-kernel-1.5-tests.jar
+2012-01-09 12:52:16.290+0100:    [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/localedata.jar
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jce.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/neo4j/neo4j-lucene-index/1.5/neo4j-lucene-index-1.5.jar
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/rt.jar
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/lib/tools.jar
+2012-01-09 12:52:16.290+0100:    [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/dnsns.jar
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/resources.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/apache/servicemix/bundles/org.apache.servicemix.bundles.jline/0.9.94_1/org.apache.servicemix.bundles.jline-0.9.94_1.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/neo4j/neo4j-kernel/1.5/neo4j-kernel-1.5.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/neo4j/neo4j-graph-algo/1.5/neo4j-graph-algo-1.5.jar
+2012-01-09 12:52:16.290+0100:    [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/charsets.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/neo4j/neo4j-shell/1.5/neo4j-shell-1.5.jar
+2012-01-09 12:52:16.290+0100:    [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/sunjce_provider.jar
+2012-01-09 12:52:16.290+0100:    [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/sunpkcs11.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/apache/lucene/lucene-core/3.1.0/lucene-core-3.1.0.jar
+2012-01-09 12:52:16.290+0100:    [classpath + loader.0] file:/home/mattias/.m2/repository/org/apache/geronimo/specs/geronimo-jta_1.1_spec/1.1.1/geronimo-jta_1.1_spec-1.1.1.jar
+2012-01-09 12:52:16.291+0100:    [classpath + loader.0] file:/home/mattias/.eclipse-workspace/testo/target/classes/
+2012-01-09 12:52:16.291+0100: Library Path:
+2012-01-09 12:52:16.291+0100:   /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64/server
+2012-01-09 12:52:16.291+0100:   /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64
+2012-01-09 12:52:16.291+0100:   /usr/lib/jvm/java-6-sun-1.6.0.26/lib/amd64
+2012-01-09 12:52:16.291+0100:   /usr/java/packages/lib/amd64
+2012-01-09 12:52:16.291+0100:   /usr/lib64
+2012-01-09 12:52:16.291+0100:   /lib64
+2012-01-09 12:52:16.291+0100:   /lib
+2012-01-09 12:52:16.291+0100:   /usr/lib
+2012-01-09 12:52:16.292+0100: Garbage Collector: PS Scavenge: [PS Eden Space, PS Survivor Space]
+2012-01-09 12:52:16.292+0100: Garbage Collector: PS MarkSweep: [PS Eden Space, PS Survivor Space, PS Old Gen, PS Perm Gen]
+2012-01-09 12:52:16.293+0100: Memory Pool: Code Cache (Non-heap memory): committed=2.44 MB, used=453.50 kB, max=48.00 MB, threshold=0.00 B
+2012-01-09 12:52:16.293+0100: Memory Pool: PS Eden Space (Heap memory): committed=62.75 MB, used=10.85 MB, max=1.29 GB, threshold=?
+2012-01-09 12:52:16.294+0100: Memory Pool: PS Survivor Space (Heap memory): committed=10.44 MB, used=0.00 B, max=10.44 MB, threshold=?
+2012-01-09 12:52:16.294+0100: Memory Pool: PS Old Gen (Heap memory): committed=167.31 MB, used=0.00 B, max=2.61 GB, threshold=0.00 B
+2012-01-09 12:52:16.295+0100: Memory Pool: PS Perm Gen (Non-heap memory): committed=20.75 MB, used=6.84 MB, max=82.00 MB, threshold=0.00 B
+2012-01-09 12:52:16.295+0100: VM Arguments: [-ea, -Dfile.encoding=UTF-8, -Xbootclasspath:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/resources.jar:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/rt.jar:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jsse.jar:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jce.jar:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/charsets.jar:/usr/lib/jvm/java-6-sun-1.6.0.26/lib/tools.jar]
+2012-01-09 12:52:16.295+0100: System properties:
+2012-01-09 12:52:16.295+0100:   sun.boot.library.path = /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64
+2012-01-09 12:52:16.295+0100:   path.separator = :
+2012-01-09 12:52:16.295+0100:   file.encoding.pkg = sun.io
+2012-01-09 12:52:16.295+0100:   sun.java.launcher = SUN_STANDARD
+2012-01-09 12:52:16.295+0100:   user.country = GB
+2012-01-09 12:52:16.296+0100:   sun.os.patch.level = unknown
+2012-01-09 12:52:16.296+0100:   user.dir = /home/mattias/.eclipse-workspace/testo
+2012-01-09 12:52:16.296+0100:   sun.jnu.encoding = UTF-8
+2012-01-09 12:52:16.296+0100:   sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+2012-01-09 12:52:16.296+0100:   user.home = /home/mattias
+2012-01-09 12:52:16.296+0100:   user.timezone = Europe/Stockholm
+2012-01-09 12:52:16.296+0100:   file.encoding = UTF-8
+2012-01-09 12:52:16.296+0100:   user.name = mattias
+2012-01-09 12:52:16.296+0100:   sun.java.command = IndexStuff
+2012-01-09 12:52:16.296+0100:   sun.arch.data.model = 64
+2012-01-09 12:52:16.296+0100:   user.language = en
+2012-01-09 12:52:16.296+0100:   file.separator = /
+2012-01-09 12:52:16.296+0100:   sun.io.unicode.encoding = UnicodeLittle
+2012-01-09 12:52:16.296+0100:   sun.cpu.endian = little
+2012-01-09 12:52:16.296+0100:   sun.desktop = gnome
+2012-01-09 12:52:16.296+0100:   sun.cpu.isalist = 
+2012-01-09 12:52:16.296+0100: Neo4j Kernel properties:
+2012-01-09 12:52:16.296+0100:   store_dir=index-stuff
+2012-01-09 12:52:16.297+0100:   logical_log=index-stuff/nioneo_logical.log
+2012-01-09 12:52:16.297+0100:   node_auto_indexing=false
+2012-01-09 12:52:16.297+0100:   neostore.relationshipstore.db.mapped_memory=100M
+2012-01-09 12:52:16.297+0100:   neostore.nodestore.db.mapped_memory=20M
+2012-01-09 12:52:16.297+0100:   use_memory_mapped_buffers=true
+2012-01-09 12:52:16.297+0100:   rebuild_idgenerators_fast=true
+2012-01-09 12:52:16.297+0100:   neostore.propertystore.db.index.keys.mapped_memory=1M
+2012-01-09 12:52:16.297+0100:   neostore.propertystore.db.arrays.mapped_memory=130M
+2012-01-09 12:52:16.297+0100:   neostore.propertystore.db.strings.mapped_memory=130M
+2012-01-09 12:52:16.297+0100:   neo_store=index-stuff/neostore
+2012-01-09 12:52:16.297+0100:   neostore.propertystore.db.index.mapped_memory=1M
+2012-01-09 12:52:16.297+0100:   create=true
+2012-01-09 12:52:16.297+0100:   neostore.propertystore.db.mapped_memory=90M
+2012-01-09 12:52:16.297+0100:   relationship_auto_indexing=false
+2012-01-09 12:52:16.297+0100: Storage files:
+2012-01-09 12:52:16.298+0100:   neostore.propertystore.db.id: 9.00 B
+2012-01-09 12:52:16.298+0100:   nioneo_logical.log.1: 16.00 B
+2012-01-09 12:52:16.298+0100:   neostore.nodestore.db.id: 9.00 B
+2012-01-09 12:52:16.298+0100:   neostore.relationshiptypestore.db: 0.00 B
+2012-01-09 12:52:16.298+0100:   neostore.propertystore.db.index.keys: 38.00 B
+2012-01-09 12:52:16.298+0100:   messages.log: 9.18 kB
+2012-01-09 12:52:16.299+0100:   neostore.nodestore.db: 9.00 B
+2012-01-09 12:52:16.299+0100:   neostore.propertystore.db.arrays: 128.00 B
+2012-01-09 12:52:16.299+0100:   neostore.relationshipstore.db.id: 9.00 B
+2012-01-09 12:52:16.299+0100:   neostore.propertystore.db.strings: 128.00 B
+2012-01-09 12:52:16.299+0100:   lock: 0.00 B
+2012-01-09 12:52:16.299+0100:   index:
+2012-01-09 12:52:16.300+0100:     lucene.log.1: 16.00 B
+2012-01-09 12:52:16.300+0100:     lucene-store.db: 32.00 B
+2012-01-09 12:52:16.300+0100:     lucene.log.active: 4.00 B
+2012-01-09 12:52:16.300+0100:   - Total: 52.00 B
+2012-01-09 12:52:16.300+0100:   neostore: 45.00 B
+2012-01-09 12:52:16.300+0100:   active_tx_log: 11.00 B
+2012-01-09 12:52:16.300+0100:   neostore.id: 9.00 B
+2012-01-09 12:52:16.301+0100:   neostore.relationshiptypestore.db.names.id: 9.00 B
+2012-01-09 12:52:16.301+0100:   neostore.propertystore.db.arrays.id: 9.00 B
+2012-01-09 12:52:16.301+0100:   neostore.propertystore.db.index: 0.00 B
+2012-01-09 12:52:16.301+0100:   neostore.propertystore.db.strings.id: 9.00 B
+2012-01-09 12:52:16.301+0100:   neostore.propertystore.db.index.keys.id: 9.00 B
+2012-01-09 12:52:16.301+0100:   nioneo_logical.log.active: 4.00 B
+2012-01-09 12:52:16.301+0100:   tm_tx_log.1: 0.00 B
+2012-01-09 12:52:16.302+0100:   neostore.relationshipstore.db: 0.00 B
+2012-01-09 12:52:16.302+0100:   neostore.propertystore.db: 0.00 B
+2012-01-09 12:52:16.302+0100:   neostore.relationshiptypestore.db.names: 38.00 B
+2012-01-09 12:52:16.302+0100:   neostore.propertystore.db.index.id: 9.00 B
+2012-01-09 12:52:16.302+0100:   neostore.relationshiptypestore.db.id: 9.00 B
+2012-01-09 12:52:16.302+0100: Id usage:
+2012-01-09 12:52:16.302+0100:   NodeStore: used=1 high=0
+2012-01-09 12:52:16.302+0100:   RelationshipStore: used=0 high=-1
+2012-01-09 12:52:16.303+0100:   RelationshipTypeStore: used=0 high=-1
+2012-01-09 12:52:16.303+0100:   PropertyStore: used=0 high=-1
+2012-01-09 12:52:16.303+0100:   PropertyIndexStore: used=0 high=-1
+2012-01-09 12:52:16.303+0100:   StringPropertyStore: used=1 high=0
+2012-01-09 12:52:16.303+0100:   ArrayPropertyStore: used=1 high=0
+2012-01-09 12:52:16.306+0100: Schedulers:   none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  none
+  noop deadline [cfq] 
+  noop deadline [cfq] 
+
+2012-01-09 12:52:16.306+0100: --- CONFIGURATION END ---
+2012-01-09 12:52:16.307+0100: Extension org.neo4j.kernel.KernelExtension[dummy] loaded ok
+2012-01-09 12:52:16.307+0100: Extension org.neo4j.kernel.KernelExtension[other dummy] loaded ok
+2012-01-09 12:52:16.307+0100: Extension org.neo4j.kernel.KernelExtension[shell] loaded ok
