@@ -67,14 +67,8 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
 
     val resultText = result.dumpToString()
-    if (resultText.contains("No data returned")) {
-      writer.println("----")
-      writer.println(resultText)
-      writer.println("----")
-    } else {
-      writer.println(".Result")
-      writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
-    }
+    writer.println(".Result")
+    writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
     writer.println()
     writer.println()
     if(generateConsole) {
