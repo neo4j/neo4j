@@ -32,7 +32,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create {}",
+      queryText = "create n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {})
   }
@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node and set properties",
       text = "The values for the properties can be any scalar expressions.",
-      queryText = "create {name : 'Andres', title : 'Developer'}",
+      queryText = "create n = {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }

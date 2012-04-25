@@ -202,7 +202,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
     createNode("Michael")
     createNode("Peter")
 
-    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create {name : names}")
+    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create new = {name : names}")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1,
@@ -216,7 +216,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
   def set_a_property_to_an_empty_collection() {
     createNode("Andres")
 
-    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create {x : names}")
+    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create new = {x : names}")
     val statistics = result.queryStatistics()
     assert(statistics === stats.copy(
       propertiesSet = 1,
