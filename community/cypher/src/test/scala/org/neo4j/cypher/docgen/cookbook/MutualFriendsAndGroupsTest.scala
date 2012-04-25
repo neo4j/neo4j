@@ -47,7 +47,7 @@ between persons. If no mutual groups or friends are found, there should be a 0 r
             "RETURN other.name as name, count(distinct pGroups) AS mutualGroups, count(distinct pMutualFriends) AS mutualFriends " +
             "ORDER By mutualFriends DESC",
       returns =
-"""The question we are asking is - how many unique paths are there between me and Jill, the paths being common group memberships, and common friends.
+"""The question we are asking is -- how many unique paths are there between me and Jill, the paths being common group memberships, and common friends.
 If the paths are mandatory, no results will be returned if me and Bob lack any common friends, and we don't want that. To make a path optional,
 you have to make at least one of it's relationships optional. That makes the whole path optional.""",
       assertions = (p) => assertEquals(List(Map("name" -> "Jill", "mutualGroups" -> 1, "mutualFriends" -> 1),
