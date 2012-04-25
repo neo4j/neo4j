@@ -42,8 +42,8 @@ class MutualFriendsAndGroupsTest extends DocumentingTestBase {
 between persons. If no mutual groups or friends are found, there should be a 0 returned.""",
       queryText = "START me=node(%Joe%), other=node(%Jill%, %Bob%) " +
           "MATCH " +
-          "pGroups=me-[?:member_of_group]->mg<-[:member_of_group]-other, " +
-          "pMutualFriends=me-[?:knows]->mf<-[:knows]-other " +
+          "pGroups=me-[?:member_of_group]->mg<-[?:member_of_group]-other, " +
+          "pMutualFriends=me-[?:knows]->mf<-[?:knows]-other " +
             "RETURN other.name as name, count(distinct pGroups) AS mutualGroups, count(distinct pMutualFriends) AS mutualFriends " +
             "ORDER By mutualFriends DESC",
       returns =
