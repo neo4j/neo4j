@@ -22,9 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
-import org.junit.Before
-
 
 class MutualFriendsAndGroupsTest extends DocumentingTestBase {
   def graphDescription = List(
@@ -36,20 +33,24 @@ class MutualFriendsAndGroupsTest extends DocumentingTestBase {
       "Jill knows Bill")
 
   def section = "cookbook"
-    
+
   @Test def peopleSimilarityTags() {
     testQuery(
       title = "Find mutual friends and groups",
-      text = """In this scenario, the problem is to determine mutual friends and groups, if any,
+      text =
+"""In this scenario, the problem is to determine mutual friends and groups, if any,
 between persons. If no mutual groups or friends are found, there should be a 0 returned.""",
       queryText = "START me=node(%Joe%), other=node(%Jill%, %Bob%) " +
-      		"MATCH " +
-      		"pGroups=me-[?:member_of_group]->mg<-[?:member_of_group]-other, " +
-      		"pMutualFriends=me-[?:knows]->mf<-[?:knows]-other " +
+          "MATCH " +
+          "pGroups=me-[?:member_of_group]->mg<-[:member_of_group]-other, " +
+          "pMutualFriends=me-[?:knows]->mf<-[:knows]-other " +
             "RETURN other.name as name, count(distinct pGroups) AS mutualGroups, count(distinct pMutualFriends) AS mutualFriends " +
             "ORDER By mutualFriends DESC",
-      returns = "The list of mutual groups and friends for the given persons.",
-      (p) => assertEquals(List(Map("name" -> "Jill", "mutualGroups" -> 1, "mutualFriends" -> 1),
+      returns =
+"""The question we are asking is - how many unique paths are there between me and Jill, the paths being common group memberships, and common friends.
+If the paths are mandatory, no results will be returned if me and Bob lack any common friends, and we don't want that. To make a path optional,
+you have to make at least one of it's relationships optional. That makes the whole path optional.""",
+      assertions = (p) => assertEquals(List(Map("name" -> "Jill", "mutualGroups" -> 1, "mutualFriends" -> 1),
           Map("name" -> "Bob", "mutualGroups" -> 1, "mutualFriends" -> 0)), p.toList))
   } 
 }
