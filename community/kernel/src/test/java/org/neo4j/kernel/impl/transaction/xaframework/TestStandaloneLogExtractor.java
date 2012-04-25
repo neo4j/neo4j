@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -32,12 +34,14 @@ import static org.neo4j.test.TargetDirectory.*;
 public class TestStandaloneLogExtractor
 {
     @Test
+    @Category(SlowTests.class)
     public void testRecreateCleanDbFromStandaloneExtractor() throws Exception
     {
         run( true, 1 );
     }
     
     @Test
+    @Category(SlowTests.class)
     public void testRecreateUncleanDbFromStandaloneExtractor() throws Exception
     {
         run( false, 2 );

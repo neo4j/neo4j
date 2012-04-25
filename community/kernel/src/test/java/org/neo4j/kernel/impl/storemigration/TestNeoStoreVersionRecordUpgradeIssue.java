@@ -26,10 +26,12 @@ import java.net.URL;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.ProduceUncleanStore;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 public class TestNeoStoreVersionRecordUpgradeIssue
@@ -37,6 +39,7 @@ public class TestNeoStoreVersionRecordUpgradeIssue
     public final @Rule TestName testName = new TestName();
     
     @Test
+    @Category(SlowTests.class)
     public void upgradeOneFiveMilestoneTwoWhereStoreVersionRecordShouldBeAddedCorrectly() throws Exception
     {
         File storeDir = copyResourceStore( "1.5.M02-store" );

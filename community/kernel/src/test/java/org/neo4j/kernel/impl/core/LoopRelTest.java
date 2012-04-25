@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -42,6 +44,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public class LoopRelTest
 {
     @Test
+    @Category(SlowTests.class)
     public void runTheTests() throws Exception
     {
         TargetDirectory.recursiveDelete( new File( "target/looprels" ) );

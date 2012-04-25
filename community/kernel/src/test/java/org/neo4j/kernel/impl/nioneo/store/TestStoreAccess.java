@@ -25,6 +25,8 @@ import java.io.RandomAccessFile;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -38,6 +40,7 @@ public class TestStoreAccess
     TestDirectory testdir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
+    @Category(SlowTests.class)
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
     {
         ProduceUncleanStore.atPath( testdir.directory() );

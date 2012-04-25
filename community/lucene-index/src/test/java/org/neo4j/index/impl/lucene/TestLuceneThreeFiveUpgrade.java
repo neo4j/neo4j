@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 /**
@@ -62,6 +64,7 @@ public class TestLuceneThreeFiveUpgrade
     }
     
     @Test
+    @Category(SlowTests.class)
     public void upgradeThenUncleanShutdownShouldHaveUpgraded() throws Exception
     {
         // Upgrade, but shutdown unclean
