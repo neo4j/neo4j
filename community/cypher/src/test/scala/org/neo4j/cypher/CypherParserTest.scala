@@ -1406,23 +1406,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node() {
-    testFrom_1_8("create a = {} ",
+    testFrom_1_8("create a",
       Query.
         start(CreateNodeStartItem("a", Map()))
         returns()
     )
   }
 
-  @Test def create_node_without_identifier() {
-    testFrom_1_8("create {} ",
-      Query.
-        start(CreateNodeStartItem("  UNNAMED1", Map()))
-        returns()
-    )
-  }
-
   @Test def create_node_with_a_property() {
-    testFrom_1_8("create a = {name : 'Andres'} ",
+    testFrom_1_8("create a = {name : 'Andres'}",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
         returns()
@@ -1438,7 +1430,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_two_nodes_with_a_property_and_return_it() {
-    testFrom_1_8("create a = {name : 'Andres'}, b = {} return a,b",
+    testFrom_1_8("create a = {name : 'Andres'}, b return a,b",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))), CreateNodeStartItem("b", Map()))
         returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"))

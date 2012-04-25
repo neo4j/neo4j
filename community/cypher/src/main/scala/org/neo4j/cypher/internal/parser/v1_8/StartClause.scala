@@ -30,22 +30,23 @@ trait StartClause extends Base with Expressions {
   def createStart = ignoreCase("create") ~> comaList(createRel | createNode) ^^ (x => Start(x: _*))
 
   def properties =
-    expression ^^ (x => Map[String,Expression]("*" -> x)) |
-      opt("{" ~> repsep(propertyAssignment, ",") <~ "}") ^^ {
-        case None => Map[String,Expression]()
-        case Some(x) => x.toMap
-      }
+      expression ^^ (x => Map[String,Expression]("*" -> x)) |
+      "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ ( _.toMap)
 
-  def createdNodeName = opt(identity <~ "=") ^^ (x => namer.name(x))
-
-  def createNode: Parser[StartItem] = createdNodeName ~ properties ^^ {
-    case id ~ props => CreateNodeStartItem(id, props)
+  def createNode: Parser[StartItem] = identity ~ opt("=" ~> properties) ^^ {
+    case id ~ props => CreateNodeStartItem(id, getProperties(props))
   }
 
-  def createRel: Parser[StartItem] = expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ properties ~ "]" ~ "->" ~ expression ^^ {
-    case from ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "->" ~ to =>  CreateRelationshipStartItem(namer.name(id), from, to, relType, props)
+  def createRel: Parser[StartItem] = expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ opt(properties) ~ "]" ~ "->" ~ expression ^^ {
+    case from ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "->" ~ to =>
+      CreateRelationshipStartItem(namer.name(id), from, to, relType, getProperties(props))
   }
-  
+
+  private def getProperties(props: Option[Map[String, Expression]]): Map[String, Expression] = props match {
+    case None => Map[String, Expression]()
+    case Some(x) => x
+  }
+
   def propertyAssignment:Parser[(String, Expression)] = identity ~ ":" ~ expression ^^ {
     case id ~ ":" ~ exp => (id,exp)
   }
