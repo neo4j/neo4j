@@ -106,7 +106,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     }
 
     if (queryStatistics.containsUpdates) {
-      writer.println(queryStatistics.toString)
+      writer.print(queryStatistics.toString)
     }
 
     writer.println("%s ms".format(timeTaken))
