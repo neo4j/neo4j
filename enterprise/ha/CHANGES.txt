@@ -1,3 +1,8 @@
+1.8.M01 (2012-04-26)
+--------------------
+o Fix for a rare race condition in initialization code of zoo keeper client which could make
+  a database unable to join its cluster sometimes.
+
 1.7 (2012-04-19)
 ----------------
 o Changed so branched data directories end up in a sub-directory.
