@@ -37,9 +37,9 @@ trait StartClause extends Base with Expressions {
     case id ~ props => CreateNodeStartItem(id, getProperties(props))
   }
 
-  def createRel: Parser[StartItem] = expression ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ opt(properties) ~ "]" ~ "->" ~ expression ^^ {
-    case from ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "->" ~ to =>
-      CreateRelationshipStartItem(namer.name(id), from, to, relType, getProperties(props))
+  def createRel: Parser[StartItem] = expression ~ opt("<" ) ~ "-" ~ "[" ~ opt(identity) ~ ":" ~identity ~ opt(properties) ~ "]" ~ "-" ~ opt(">") ~ expression ^^ {
+    case from ~ None ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "-" ~ Some(">") ~ to => CreateRelationshipStartItem(namer.name(id), from, to, relType, getProperties(props))
+    case to ~ Some("<") ~ "-" ~ "[" ~ id ~ ":" ~ relType ~ props ~ "]" ~ "-" ~ None ~ from=> CreateRelationshipStartItem(namer.name(id), from, to, relType, getProperties(props))
   }
 
   private def getProperties(props: Option[Map[String, Expression]]): Map[String, Expression] = props match {

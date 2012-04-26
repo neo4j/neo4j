@@ -1597,7 +1597,7 @@ create a-[r:REL]->b
 
   @Test def simple_create_relationship_with_properties() {
     val secondQ = Query.
-      start(CreateRelationshipStartItem("r", Entity("a"), Entity("b"), "REL",
+      start(CreateRelationshipStartItem("r", Entity("b"), Entity("a"), "REL",
       Map("why" -> Literal(42), "foo" -> Literal("bar"))
     )).
       returns()
@@ -1608,7 +1608,7 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(0), b=node(1) create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
+    testFrom_1_8("start a=node(0), b=node(1) create a<-[r:REL {why : 42, foo : 'bar'}]-b", q)
   }
 
   @Test def simple_delete_node() {
