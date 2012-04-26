@@ -31,8 +31,9 @@ UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
 FILTERDEST       = ~/.asciidoc/filters
 SCRIPTDIR        = $(CURDIR)/src/build
-ASCIIDOC         = $(CURDIR)/src/bin/asciidoc/asciidoc.py
-A2X              = $(CURDIR)/src/bin/asciidoc/a2x.py
+ASCIDOCDIR       = $(CURDIR)/src/bin/asciidoc
+ASCIIDOC         = $(ASCIDOCDIR)/asciidoc.py
+A2X              = $(ASCIDOCDIR)/a2x.py
 
 ifdef VERBOSE
 	V = -v
@@ -167,7 +168,7 @@ docbook-html:  manpages copyimages
 	#
 	#
 	mkdir -p "$(BUILDDIR)"
-		"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --attribute console=1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/linkedimages.conf" --out-file "$(DOCBOOKFILEHTML)" "$(SRCFILE)" 2>&1 | "$(SCRIPTDIR)/outputcheck-includefiles.sh"
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --attribute console=1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/linkedimages.conf" --out-file "$(DOCBOOKFILEHTML)" "$(SRCFILE)" 2>&1 | "$(SCRIPTDIR)/outputcheck-includefiles.sh"
 	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKFILEHTML)"
 
 pdf: docbook-shortinfo copyimages
@@ -280,7 +281,16 @@ upgrade:
 	#
 	#
 	mkdir -p "$(UPGRADE)"
-	"$(A2X)" -k -f text -D "$(UPGRADE)" "$(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt"
+	"$(ASCIIDOC)" --backend docbook -a a2x-format=text --out-file "$(UPGRADE)/upgrades.xml" "$(BUILDDIR)/docs/neo4j-docs-jar/ops/upgrades.txt"
+	# swap out arrow glyph for plain -->
+	sed 's/&#8594;/--\&gt;/g' <"$(UPGRADE)/upgrades.xml" >"$(UPGRADE)/upgrades.xml.safe"
+	rm -f "$(UPGRADE)/upgrades.xml"
+	mv "$(UPGRADE)/upgrades.xml.safe" "$(UPGRADE)/upgrades.xml"
+	xmllint --nonet --noout --valid "$(UPGRADE)/upgrades.xml"
+	cd "$(UPGRADE)"
+	xsltproc  --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --stringparam admon.graphics 0  --output "$(UPGRADE)/upgrades.text.html" "$(ASCIDOCDIR)/docbook-xsl/text.xsl" "$(UPGRADE)/upgrades.xml"
+	cd "$(CURDIR)"
+	w3m -cols 70 -dump -T text/html -no-graph "$(UPGRADE)/upgrades.text.html" > "$(UPGRADE)/upgrades.text"
 	cp -f "$(SCRIPTDIR)/bom" "$(UPGRADE)/UPGRADE.txt"
 	cat "$(UPGRADE)/upgrades.text" >> "$(UPGRADE)/UPGRADE.txt"
 	rm "$(UPGRADE)/upgrades.text"
