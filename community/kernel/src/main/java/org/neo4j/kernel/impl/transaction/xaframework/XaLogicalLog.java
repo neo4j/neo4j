@@ -1201,6 +1201,13 @@ public class XaLogicalLog implements LogLoader
                 else
                 {
                     LogIoUtils.writeLogEntry( entry, writeBuffer );
+                    if ( entry instanceof LogEntry.Commit )
+                    {
+                        /*
+                         * Just writeOut(), don't force or performance will be impacted severely.
+                         */
+                        writeBuffer.writeOut();
+                    }
                     applyEntry( entry );
                 }
             }
