@@ -1,3 +1,20 @@
+1.8.M01 (2012-04-26)
+--------------------
+o Byte array properties are handled in a more optimized way, increasing performance by a couple of times at least.
+o Fix for an issue where update of cache when creating a relationship on a very dense node would take longer and longer time.
+o Fix for an issue where a recovery would sometimes fail with it reporting that a start record already had been injected.
+o Added "create" shell app for Cypher queries only doing creations.
+Server:
+  o Added streaming to REST API. All representation implementations have been adapted to produce their data lazily.
+  o Added HTTP logging.
+Cypher:
+  o Added the possibility to return all graph elements using RETURN *
+  o Added CREATE, SET, DELETE, FOREACH, WITH
+  o Fixes issue #432, #446
+High Availability and Backup:
+  o Fix for a rare race condition in initialization code of zoo keeper client which could make
+    a database unable to join its cluster sometimes.
+
 1.7 (2012-04-18)
 ----------------
 o Moved BatchInserter to a different package.
