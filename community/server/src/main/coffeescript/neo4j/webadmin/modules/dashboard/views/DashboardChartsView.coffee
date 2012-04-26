@@ -20,10 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['ribcage/ui/LineChart'
+   'ribcage/ui/LineChartTimeTicker'
    'ribcage/View'
    './charts'
    'lib/amd/jQuery'], 
-  (LineChart, View, template, $) ->
+  (LineChart, LineChartTimeTicker, View, template, $) ->
   
     class DashboardChartsView extends View
       
@@ -36,6 +37,7 @@ define(
       initialize : (opts) =>
         @statistics = opts.statistics
         @dashboardState = opts.dashboardState
+        @timeTicker = new LineChartTimeTicker()
         @bind()
 
       render : =>
@@ -66,20 +68,21 @@ define(
           metricKeys = for v in chartDef.layers
             v.key
 
-          startTime = Math.round new Date().getTime() / 1000 - zoomLevel.xSpan
+          endTime = Math.round(new Date().getTime() / 1000) - @statistics.timezoneOffset
+          startTime = endTime - zoomLevel.xSpan
           metrics = @statistics.getMetrics(metricKeys, startTime, zoomLevel.granularity)
           
           # Add meta info to each data layer
           data = for i in [0...metrics.length]
             _.extend({ data:metrics[i] }, chartDef.layers[i] )
-
+         
           settings =
             xaxis : 
-              min : startTime - @statistics.timezoneOffset
-              mode : "time"
-              timeformat : zoomLevel.timeformat
-              tickFormatter : (v) ->
-                $.plot.formatDate new Date( v * 1000 ), zoomLevel.timeformat
+              min : startTime
+              #mode : "time"
+              ticks : @timeTicker.getTicks(startTime, endTime)
+              #tickFormatter : (v) ->
+              #  $.plot.formatDate new Date( v * 1000 ), zoomLevel.timeformat
           chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>
