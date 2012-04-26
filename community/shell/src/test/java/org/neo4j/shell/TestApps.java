@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import java.io.File;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -364,5 +366,21 @@ public class TestApps extends AbstractShellTest
                 "node = db.createNode()\n" +
                 "node.setProperty( \"name\", \"Mattias\" )\n" +
                 "node.getProperty( \"name\" )\n", "Mattias" );
+    }
+
+    @Test
+    public void cypherNodeStillHasRelationshipsException() throws Exception
+    {
+        try
+        {
+            executeCommand("create a,b,a-[:x]->b;");
+            executeCommand("start n=node(*) delete n;");
+            fail( "Should have failed with " + NodeStillHasRelationshipsException.class.getName() + " exception" );
+        }
+        catch ( ShellException e )
+        {
+            assertTrue( "Expected notice about cause not found in " + e.getMessage(),
+                    e.getMessage().contains( NodeStillHasRelationshipsException.class.getSimpleName() ) );
+        }
     }
 }
