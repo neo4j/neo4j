@@ -19,7 +19,7 @@
 package org.neo4j.examples.osgi;
 
 import static org.ops4j.pax.exam.CoreOptions.cleanCaches;
-import static org.ops4j.pax.exam.CoreOptions.autoWrap;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 import static org.ops4j.pax.exam.CoreOptions.frameworkStartLevel;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
@@ -56,7 +56,7 @@ public class OSGiTest {
         Player player = new Player().with(
             options
         );
-        test(player, 13);
+        test(player, 19);
     }
 
     public Option[] testOptions( )
@@ -65,18 +65,17 @@ public class OSGiTest {
         Option[] options = options(
             repository("https://oss.sonatype.org/content/groups/ops4j/"),
             cleanCaches(),
-            autoWrap(),
             frameworkStartLevel( 10),
             mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId( "geronimo-jta_1.1_spec" ).version( GERONIMO_JTA_VERSION ),
-            mavenBundle().groupId( "org.apache.lucene" ).artifactId( "lucene-core" ).version( "3.5.0" ),
-            mavenBundle().groupId( "org.neo4j" ).artifactId( "neo4j-kernel" ).version( NEO4J_VERSION ),
-            mavenBundle().groupId( "org.neo4j" ).artifactId( "neo4j-lucene-index" ).version( NEO4J_VERSION ),
-            mavenBundle().groupId("org.ops4j.pax.logging").artifactId("pax-logging-api").version("1.6.1"),
-            mavenBundle().groupId("org.osgi").artifactId("org.osgi.compendium").version("4.2.0"),
-            
-            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.runtime").version(gogoVersion),
-            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.shell").version(gogoVersion),
-            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.command").version(gogoVersion),
+            wrappedBundle( mavenBundle().groupId( "org.apache.lucene" ).artifactId( "lucene-core" ).version( "3.5.0" )),
+            wrappedBundle( mavenBundle().groupId( "org.neo4j" ).artifactId( "neo4j-kernel" ).version( NEO4J_VERSION )),
+            wrappedBundle( mavenBundle().groupId( "org.neo4j" ).artifactId( "neo4j-lucene-index" ).version( NEO4J_VERSION )),
+//            mavenBundle().groupId("org.ops4j.pax.logging").artifactId("pax-logging-api").version("1.6.1"),
+//            mavenBundle().groupId("org.osgi").artifactId("org.osgi.compendium").version("4.2.0"),
+//            
+//            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.runtime").version(gogoVersion),
+//            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.shell").version(gogoVersion),
+//            mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.gogo.command").version(gogoVersion),
 //            workingDirectory( "target/server" )
             provision( bundle()
                     .add (Neo4jActivator.class )
