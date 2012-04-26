@@ -34,7 +34,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 @Service.Implementation( App.class )
-public class Start extends GraphDatabaseApp
+public class Start extends ReadOnlyGraphDatabaseApp
 {
     public Start()
     {

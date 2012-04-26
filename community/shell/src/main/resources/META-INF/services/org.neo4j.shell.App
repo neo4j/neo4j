@@ -4,6 +4,7 @@ org.neo4j.shell.apps.Export
 org.neo4j.shell.apps.Help
 org.neo4j.shell.apps.Man
 org.neo4j.shell.kernel.apps.Cd
+org.neo4j.shell.kernel.apps.Create
 org.neo4j.shell.kernel.apps.Cypher
 org.neo4j.shell.kernel.apps.Ls
 org.neo4j.shell.kernel.apps.Mknode
