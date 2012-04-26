@@ -23,8 +23,6 @@ import java.util.logging.Level;
 
 public class Logger
 {
-    // public static Logger log = Logger.getLogger(Logger.class);
-
     java.util.logging.Logger logger;
 
     public static Logger getLogger( Class<?> clazz )
@@ -55,9 +53,15 @@ public class Logger
     public void log( Level level, String message, Object... parameters )
     {
 
-        if ( logger.isLoggable( level ) )
+        final String logMessage = String.format( message, parameters );
+        if ( logger != null && logger.isLoggable( level ) )
         {
-            logger.log( level, String.format( message, parameters ) );
+            logger.log( level, logMessage );
+        }
+        else
+        {
+            System.out.println(
+                String.format( "Logger not configured, logging to std out instead: [%s] %s", level.getName(), logMessage ) );
         }
     }
 
