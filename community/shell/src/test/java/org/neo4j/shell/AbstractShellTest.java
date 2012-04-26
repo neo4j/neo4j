@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -49,36 +48,31 @@ public abstract class AbstractShellTest
     private static ShellServer shellServer;
     private ShellClient shellClient;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
-    
+
     private Transaction tx;
-    
-    @BeforeClass
-    public static void startUp() throws Exception
+
+    @Before
+    public void doBefore() throws Exception
     {
         db = new ImpermanentGraphDatabase();
         shellServer = new GraphDatabaseShellServer( db );
-    }
-    
-    @Before
-    public void doBefore()
-    {
-        db.cleanContent( true );
         shellClient = new SameJvmClient( shellServer );
     }
-    
+
     @After
-    public void doAfter()
+    public void doAfter() throws Exception
     {
-        if ( tx != null ) finishTx();
         shellClient.shutdown();
+        shellServer.shutdown();
+        db.shutdown();
     }
-    
+
     protected void beginTx()
     {
         assert tx == null;
         tx = db.beginTx();
     }
-    
+
     protected void finishTx()
     {
         finishTx( true );
@@ -98,7 +92,7 @@ public abstract class AbstractShellTest
         shellServer.shutdown();
         db.shutdown();
     }
-    
+
     protected static String pwdOutputFor( Object... entities )
     {
         StringBuilder builder = new StringBuilder();
@@ -116,18 +110,18 @@ public abstract class AbstractShellTest
         }
         return Pattern.quote( builder.toString() );
     }
-    
+
     public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
         executeCommand( shellServer, shellClient, command, theseLinesMustExistRegEx );
     }
-    
+
     public void executeCommand( ShellServer server, ShellClient client, String command,
             String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         server.interpretLine( command, client.session(), output );
-        
+
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {
             boolean negative = lineThatMustExist.startsWith( "!" );
@@ -164,12 +158,12 @@ public abstract class AbstractShellTest
             }
         }
     }
-    
+
     protected void assertRelationshipExists( Relationship relationship )
     {
         assertRelationshipExists( relationship.getId() );
     }
-    
+
     protected void assertRelationshipExists( long id )
     {
         try
@@ -181,12 +175,12 @@ public abstract class AbstractShellTest
             fail( "Relationship " + id + " should exist" );
         }
     }
-    
+
     protected void assertRelationshipDoesntExist( Relationship relationship )
     {
         assertRelationshipDoesntExist( relationship.getId() );
     }
-    
+
     protected void assertRelationshipDoesntExist( long id )
     {
         try
@@ -198,12 +192,12 @@ public abstract class AbstractShellTest
         { // Good
         }
     }
-    
+
     protected void assertNodeExists( Node node )
     {
         assertNodeExists( node.getId() );
     }
-    
+
     protected void assertNodeExists( long id )
     {
         try
@@ -215,12 +209,12 @@ public abstract class AbstractShellTest
             fail( "Node " + id + " should exist" );
         }
     }
-    
+
     protected void assertNodeDoesntExist( Node node )
     {
         assertNodeDoesntExist( node.getId() );
     }
-    
+
     protected void assertNodeDoesntExist( long id )
     {
         try
@@ -232,17 +226,17 @@ public abstract class AbstractShellTest
         { // Good
         }
     }
-    
+
     protected Relationship[] createRelationshipChain( int length )
     {
         return createRelationshipChain( RELATIONSHIP_TYPE, length );
     }
-    
+
     protected Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
         return createRelationshipChain( db.getReferenceNode(), type, length );
     }
-    
+
     protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type,
             int length )
     {
@@ -259,7 +253,7 @@ public abstract class AbstractShellTest
         tx.finish();
         return rels;
     }
-    
+
     protected void deleteRelationship( Relationship relationship )
     {
         Transaction tx = db.beginTx();
@@ -267,7 +261,7 @@ public abstract class AbstractShellTest
         tx.success();
         tx.finish();
     }
-    
+
     protected void setProperty( Node node, String key, Object value )
     {
         Transaction tx = db.beginTx();
