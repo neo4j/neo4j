@@ -28,7 +28,7 @@ class ReturnTest extends DocumentingTestBase {
 
   def section = "Return"
 
-  override val properties = Map("A" -> Map("<<!!__??>>" -> "Yes!", "age" -> 55))
+  override val properties = Map("A" -> Map("happy" -> "Yes!", "age" -> 55))
 
   @Test def returnNode() {
     testQuery(
@@ -64,9 +64,9 @@ class ReturnTest extends DocumentingTestBase {
       text = """To introduce a placeholder that is made up of characters that are
       outside of the english alphabet, you can use the +`+ to enclose the identifier, like this:""",
       queryText = """start `This isn't a common identifier`=node(%A%)
-return `This isn't a common identifier`.`<<!!__??>>`""",
+return `This isn't a common identifier`.happy""",
       returns = """The node indexed with name "A" is returned""",
-      assertions = (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
+      assertions = (p) => assertEquals(List(Map("This isn't a common identifier.happy" -> "Yes!")), p.toList))
   }
 
   @Test def nullable_properties() {
