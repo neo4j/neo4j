@@ -1,7 +1,10 @@
+1.8.M01 (2012-04-26)
+--------------------
+o Added "create" app for Cypher queries only doing creations.
+
 1.7 (2012-04-18)
 ----------------
 o No major changes
-
 
 1.7.M01 (2012-03-12)
 --------------------
