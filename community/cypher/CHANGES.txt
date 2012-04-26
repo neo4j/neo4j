@@ -1,7 +1,7 @@
-<NOT YET RELEASED>
-----------------
+1.8.M01 (2012-04-27)
+--------------------
 o Added the possibility to return all graph elements using RETURN *
-o Added CREATE, SET, DELETE, FOREACH 
+o Added CREATE, SET, DELETE, FOREACH, WITH
 o Fixes issue #432, #446
 
 1.7 (2012-04-18)
