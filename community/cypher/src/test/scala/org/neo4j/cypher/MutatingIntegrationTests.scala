@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
-import org.neo4j.graphdb.{NotFoundException, Relationship, Node}
+import org.neo4j.graphdb.{TransactionFailureException, NotFoundException, Relationship, Node}
 
 class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
@@ -123,7 +123,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
   @Test
   def multiple_deletes_should_not_break_anything() {
-    (1 to 4).foreach( i => createNode() )
+    (1 to 4).foreach(i => createNode())
 
     val result = parseAndExecute("start a = node(1),b=node(2,3,4) delete a")
     assert(result.queryStatistics() === stats.copy(
@@ -236,7 +236,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
   @Test
   def set_property_for_null_removes_the_property() {
-    val n = createNode("name"->"Michael")
+    val n = createNode("name" -> "Michael")
     parseAndExecute("start n = node(1) set n.name = null return n")
 
     assertFalse("Property should have been removed", n.hasProperty("name"))
@@ -277,4 +277,24 @@ foreach(n in nodes(p) :
     assertTrue(b.getProperty("marked").asInstanceOf[Boolean])
     assertTrue(c.getProperty("marked").asInstanceOf[Boolean])
   }
+
+  @Test
+  def match_and_delete() {
+    val a = createNode()
+    val b = createNode()
+
+    relate(a,b, "HATES")
+    relate(a,b, "LOVES")
+
+    intercept[NodeStillHasRelationshipsException](parseAndExecute("start n = node(1) match n-[r:HATES]->() delete n,r"))
+  }
+
+  @Test
+  def delete_and_return() {
+    val a = createNode()
+
+    val result = parseAndExecute("start n = node(1) delete n return n").toList
+    assert(result === List(Map("n" -> a)))
+  }
+
 }

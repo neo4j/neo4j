@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.InternalException
+import org.neo4j.graphdb.{TransactionFailureException, GraphDatabaseService}
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException
+import org.neo4j.cypher.{NodeStillHasRelationshipsException, InternalException}
 
 class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSource(source) {
+  lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
+
   def createResults(state: QueryState) = {
     val result = source.createResults(state)
 
@@ -30,7 +33,26 @@ class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSour
       case None => throw new InternalException("Expected to be in a transaction but wasn't")
       case Some(tx) => {
         tx.success()
-        tx.finish()
+        try {
+          tx.finish()
+        } catch {
+          case e: TransactionFailureException => {
+            if (e.getCause != null) {
+              val inner = e.getCause
+              if (inner.getCause != null) {
+                val invalidRecord = inner.getCause
+                if (invalidRecord.isInstanceOf[InvalidRecordException]) {
+                  invalidRecord.getMessage match {
+                    case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
+                    case _ => throw e
+                  }
+                }
+              }
+            }
+
+            throw e
+          }
+        }
       }
     }
 
