@@ -72,6 +72,10 @@ function createCypherConsoles( $ )
     var url= REQUEST_BASE;
     url += "init=" + encodeURIComponent( database );
     url += "&query=" + encodeURIComponent( command );
+    if ( neo4jVersion )
+    {
+      url += "&version=" + encodeURIComponent( neo4jVersion );
+    }
     iframe = $( "<iframe/>" ).attr( "id", "console" ).addClass( "console" ).attr( "src", url );
     button.after( iframe );
     currentButton = button;
