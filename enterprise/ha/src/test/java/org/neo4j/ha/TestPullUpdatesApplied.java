@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.HaConfig;
@@ -55,7 +54,6 @@ import org.neo4j.test.ha.LocalhostZooKeeperCluster;
  * bit better than checking messages.log for certain entries. Another, more
  * direct, test is present in community.
  */
-@Ignore( "Until the fix is in place" )
 public class TestPullUpdatesApplied
 {
     private LocalhostZooKeeperCluster zoo;
