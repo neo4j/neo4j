@@ -1841,12 +1841,12 @@ RETURN x0.name?
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.6").asJava)
     val engine = new ExecutionEngine(db)
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
-      engine.execute("start n=node(0) where all(x in n.prop where x = 'monkey') return n")
+      engine.execute("create a")
     } catch {
       case x: SyntaxException =>
       case _ => fail("expected exception")
