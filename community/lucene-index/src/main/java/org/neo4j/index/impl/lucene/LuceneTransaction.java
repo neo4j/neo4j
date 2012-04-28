@@ -178,7 +178,10 @@ class LuceneTransaction extends XaTransaction
         }
         else if ( c1 != null && c2 != null )
         {
-            Collection<Long> result = new HashSet<Long>( c1 );
+            if (c1.isEmpty()) return c2;
+            if (c2.isEmpty()) return c1;
+            Collection<Long> result = new HashSet<Long>( c1.size()+c2.size(), 1 );
+            result.addAll( c1 );
             result.addAll( c2 );
             return result;
         }
