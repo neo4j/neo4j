@@ -189,13 +189,15 @@ public class ExactTxData extends TxData
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     private Collection<Long> toLongs( Set<Object> ids )
     {
+        if (ids.isEmpty()) return Collections.emptySet();
+
         if ( ids.iterator().next() instanceof Long )
         {
             return (Collection) ids;
         }
         else
         {
-            Collection<Long> longs = new ArrayList<Long>();
+            Collection<Long> longs = new ArrayList<Long>(ids.size());
             for ( Object id : ids )
             {
                 longs.add( ((RelationshipId) id).id );
