@@ -20,5 +20,8 @@
 
 <xsl:import href="offline-footer.xsl"/>
 
+<xsl:template match="formalpara[@role = 'cypherconsole']" />
+<xsl:template match="simpara[@role = 'cypherconsole']" />
+
 </xsl:stylesheet>
 
