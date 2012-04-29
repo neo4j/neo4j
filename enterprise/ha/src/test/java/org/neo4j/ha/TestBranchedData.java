@@ -42,7 +42,7 @@ import org.neo4j.test.TargetDirectory;
 public class TestBranchedData
 {
     private final File dir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-    
+
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception
     {
@@ -53,7 +53,7 @@ public class TestBranchedData
             timestamps[i] = moveAwayToLookLikeOldBranchedDirectory();
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
-        
+
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dir.getAbsolutePath(), stringMap( HaSettings.server_id.name(), "1" ) )
         {
             @Override
@@ -61,7 +61,7 @@ public class TestBranchedData
             {
                 return new FakeMasterBroker( configuration );
             }
-            
+
             @Override
             protected ClusterClient createClusterClient()
             {
@@ -69,19 +69,22 @@ public class TestBranchedData
             }
         };
         db.shutdown();
-        
+
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
         {
-            assertFalse( new File( dir, "branched-" + timestamp ).exists() );
-            assertTrue( BranchedDataPolicy.getBranchedDataDirectory( dir.getAbsolutePath(), timestamp ).exists() );
+            assertFalse( "directory branched-" + timestamp + " still exists.",
+                    new File( dir, "branched-" + timestamp ).exists() );
+            assertTrue( "directory " + timestamp + " is not there",
+                    BranchedDataPolicy.getBranchedDataDirectory( dir.getAbsolutePath(), timestamp ).exists() );
+
         }
     }
 
     private long moveAwayToLookLikeOldBranchedDirectory()
     {
         long timestamp = System.currentTimeMillis();
-        File branchDir = new File( dir, "branched-" + System.currentTimeMillis() );
+        File branchDir = new File( dir, "branched-" + timestamp );
         branchDir.mkdirs();
         for ( File file : dir.listFiles() )
         {
