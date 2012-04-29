@@ -1,9 +1,0 @@
-﻿UTF-8 BOM Test
-==============
-
-Include file with UTF-8 BOM:
-
-:leveloffset: 1
-include::{docfile}[depth=1]
-
-Lorum ipsum...

@@ -1,7 +1,14 @@
 /*
   CSS stylesheet for XHTML produced by DocBook XSL stylesheets.
-  Tested with XSL stylesheets 1.61.2, 1.67.2
 */
+
+body {
+  font-family: Georgia,serif;
+}
+
+code, pre {
+  font-family: "Courier New", Courier, monospace;
+}
 
 span.strong {
   font-weight: bold;
@@ -25,7 +32,7 @@ body div {
 h1, h2, h3, h4, h5, h6
 {
   color: #527bbd;
-  font-family: tahoma, verdana, sans-serif;
+  font-family: Arial,Helvetica,sans-serif;
 }
 
 div.toc p:first-child,
@@ -37,7 +44,7 @@ div.sidebar p.title
 {
   font-weight: bold;
   color: #527bbd;
-  font-family: tahoma, verdana, sans-serif;
+  font-family: Arial,Helvetica,sans-serif;
   margin-bottom: 0.2em;
 }
 
@@ -81,7 +88,7 @@ div.footnotes hr {
 }
 
 div.navheader th, div.navheader td, div.navfooter td {
-  font-family: sans-serif;
+  font-family: Arial,Helvetica,sans-serif;
   font-size: 0.9em;
   font-weight: bold;
   color: #527bbd;
@@ -207,7 +214,7 @@ div.revhistory table {
 div.revhistory th {
   border: none;
   color: #527bbd;
-  font-family: tahoma, verdana, sans-serif;
+  font-family: Arial,Helvetica,sans-serif;
 }
 div.revhistory td {
   border: 1px solid silver;

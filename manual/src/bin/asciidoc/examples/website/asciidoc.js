@@ -1,1 +1,0 @@
-../../javascripts/asciidoc.js

@@ -4,6 +4,93 @@ AsciiDoc ChangeLog
 :website: http://www.methods.co.nz/asciidoc/
 
 
+Version 8.6.7 (2012-03-17)
+--------------------------
+.Release highlights
+No major enhancements but quite a few bug fixes which, among other
+things, fixes Jython compatibility and improves Windows compatibility.
+
+.All additions and changes
+- Vim syntax highlighter: highlight entity refs in macro arguments.
+- Added files with `.asciidoc` extension to Vim file type detection.
+  http://groups.google.com/group/asciidoc/browse_thread/thread/a9762e21ec0cc244/5d3a4ebf20e6847e[Patch]
+  submitted by Dag Wiers.
+- Added 'replacement3' substitution to enable
+  http://groups.google.com/group/asciidoc/browse_thread/thread/843d7d3d671006fb/25628e14c829db3f[ODT
+  whitespace processing].
+- Added 'unbreakable' option to XHTML and HTML 5 backends.
+- Implemented toc::[] block macro and 'toc-placement' attribute for
+  HTML backends to allow the Table of Contents placement to be set
+  manually by the author.
+- Added FAQs: 'How can I control page breaks when printing HTML
+  outputs?' and 'Is it possible to reposition the Table of Contents
+  in HTML outputs?'.
+- Added `--backend` and `--backend-opts` options to the 'a2x' command
+  to allow 'a2x' to use backend plugin code extensions.
+  http://groups.google.com/group/asciidoc/browse_thread/thread/b8e93740b7cd0e1d/b5e0b83fe37ae31a[Patch]
+  submitted by Lex Trotman.
+- Added
+  http://groups.google.com/group/asciidoc/browse_thread/thread/3d06b0105dfbb780/8c60eb7a62f522e4[args
+  block attribute] to source highlight blocks to allow arbitrary
+  parameters to be passed to the source highlighters.
+- If the 'ascii-ids' attribute is defined then non-ascii characters in
+  auto-generated IDs
+  http://groups.google.com/group/asciidoc/browse_thread/thread/33e99b78e2472122[are
+  replaced] by their nearest ascii equivalents (to work around DocBook
+  processor limitations).
+- Added global 'blockname' attribute which is dynamically updated to
+  identify the current block.  See
+  http://groups.google.com/group/asciidoc/browse_thread/thread/8200e29815c40f72[discussion
+  list].
+- 'xhtml11', 'html5' backends: Include book part TOC entries for
+  multi-part books.  Patch submitted by Loïc Paillotin.
+- Removed code filter example from the AsciiDoc User Guide so that
+  backends implemented as external plugins can compile the manual. See
+  http://groups.google.com/group/asciidoc/browse_thread/thread/849e5ea91f43adf2[discussion
+  list].
+- If the delimited block 'skip' option is set then do not consume
+  block title and attributes. This makes it possible for the comment
+  delimited blocks to use an attribute list (previously the comment
+  delimited block was hardwired to skip preceding attributes and
+  titles). See
+  http://groups.google.com/group/asciidoc/browse_thread/thread/e92a75abcc382701[discussion
+  list].
+- Added `backend-confdir` intrinsic attribute.
+
+.Bug fixes
+- *FIXED*: slidy backend: broken 'stylesheet' attribute.
+  http://groups.google.com/group/asciidoc/browse_thread/thread/58d0843ae4345afd[Patch]
+  submitted by Micheal Hackett.
+- *FIXED*: Restored
+  http://groups.google.com/group/asciidoc/browse_thread/thread/b0e69e393b6f9f20/47a2c7586f9e40c6?lnk=gst&q=themes+tarball#47a2c7586f9e40c6[missing
+  themes] to zip file distribution archive.
+- *FIXED*: Grammatical error in error messages.
+  http://groups.google.com/group/asciidoc/browse_thread/thread/b9d705c6b6b39f59/1e120483dafca109[Patch]
+  submitted by Dag Wieers.
+- *FIXED*: Use configured normal substitution in preference to the
+  default one.
+- *FIXED*: The 'eval' block macro would execute multiple times if it
+  evaluated to 'None'.
+- *FIXED*: Duplicated entries in TOC of large document.
+  http://groups.google.com/group/asciidoc/browse_thread/thread/103445ab9d95cb0c[Patch]
+  submitted by Sebastien Helleu.
+- *FIXED*: Python 2.4 backward
+  http://code.google.com/p/asciidoc/issues/detail?id=9[incompatibility].
+- *FIXED*: 8.6.6 regression broke Jython compatibility.  See
+  http://groups.google.com/group/asciidoc/browse_thread/thread/4608b77ec289f6c4[discussion
+  list].
+- *FIXED*: Leaky file handles in a2x and music and latex filters which
+  created incompatibility problems for Jython.
+- *FIXED*: All Python filters are executed with the same Python
+  interpreter that executes the asciidoc parent (previously filters
+  were hardwired to execute the 'python' interpreter). This prevents
+  http://groups.google.com/group/asciidoc/browse_thread/thread/14e8fcb289a135b/3af3b4e57b827c78?lnk=gst&q=archlinux#3af3b4e57b827c78[Python
+  mix-ups].
+- *FIXED*: Microsoft Windows shelled command-line truncation that
+  caused shelled commands to fail e.g. the 'data-uri' attribute
+  failure.
+
+
 Version 8.6.6 (2011-09-04)
 --------------------------
 .Release highlights

@@ -1,1 +1,0 @@
-../../docbook-xsl/asciidoc-docbook-xsl.txt

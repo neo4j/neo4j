@@ -1,1 +1,0 @@
-../../doc/publishing-ebooks-with-asciidoc.txt

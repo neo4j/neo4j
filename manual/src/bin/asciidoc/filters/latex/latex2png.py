@@ -90,6 +90,20 @@ def print_verbose(line):
     if verbose:
         print_stderr(line)
 
+def write_file(filename, data, mode='w'):
+    f = open(filename, mode)
+    try:
+        f.write(data)
+    finally:
+        f.close()
+
+def read_file(filename, mode='r'):
+    f = open(filename, mode)
+    try:
+        return f.read()
+    finally:
+        f.close()
+
 def run(cmd):
     global verbose
     if verbose:
@@ -117,12 +131,12 @@ def latex2png(infile, outfile, dpi, modified):
             checksum = md5.new(tex).digest()
             md5_file = os.path.splitext(outfile)[0] + '.md5'
             if os.path.isfile(md5_file) and os.path.isfile(outfile) and \
-                    checksum == open(md5_file,'rb').read():
+                    checksum == read_file(md5_file,'rb'):
                 skip = True
     else:
         if not os.path.isfile(infile):
             raise EApp, 'input file does not exist: %s' % infile
-        tex = open(infile).read()
+        tex = read_file(infile)
         if modified and os.path.isfile(outfile) and \
                 os.path.getmtime(infile) <= os.path.getmtime(outfile):
             skip = True
@@ -131,7 +145,7 @@ def latex2png(infile, outfile, dpi, modified):
         return
     tex = '%s\n%s\n%s\n' % (TEX_HEADER, tex.strip(), TEX_FOOTER)
     print_verbose('tex:\n%s' % tex)
-    open(texfile, 'w').write(tex)
+    write_file(texfile, tex)
     saved_pwd = os.getcwd()
     os.chdir(outdir)
     try:
@@ -152,7 +166,7 @@ def latex2png(infile, outfile, dpi, modified):
                 os.remove(f)
     if 'md5_file' in locals():
         print_verbose('writing: %s' % md5_file)
-        open(md5_file,'wb').write(checksum)
+        write_file(md5_file, checksum, 'wb')
 
 def usage(msg=''):
     if msg:

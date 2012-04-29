@@ -1,1 +1,0 @@
-../../filters/graphviz/asciidoc-graphviz-sample.txt

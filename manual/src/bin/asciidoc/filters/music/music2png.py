@@ -70,6 +70,20 @@ def print_verbose(line):
     if verbose:
         print_stderr(line)
 
+def write_file(filename, data, mode='w'):
+    f = open(filename, mode)
+    try:
+        f.write(data)
+    finally:
+        f.close()
+
+def read_file(filename, mode='r'):
+    f = open(filename, mode)
+    try:
+        return f.read()
+    finally:
+        f.close()
+
 def run(cmd):
     global verbose
     if not verbose:
@@ -90,19 +104,20 @@ def music2png(format, infile, outfile, modified):
     if infile == '-':
         source = sys.stdin.read()
         checksum = md5.new(source).digest()
-        f = os.path.splitext(outfile)[0] + '.md5'
+        filename = os.path.splitext(outfile)[0] + '.md5'
         if modified:
-            if os.path.isfile(f) and os.path.isfile(outfile) and \
-                    checksum == open(f,'rb').read():
+            if os.path.isfile(filename) and os.path.isfile(outfile) and \
+                    checksum == read_file(filename,'rb'):
                 skip = True
-            open(f,'wb').write(checksum)
+            else:
+                write_file(filename, checksum, 'wb')
     else:
         if not os.path.isfile(infile):
             raise EApp, 'input file does not exist: %s' % infile
         if modified and os.path.isfile(outfile) and \
                 os.path.getmtime(infile) <= os.path.getmtime(outfile):
             skip = True
-        source = open(infile).read()
+        source = read_file(infile)
     if skip:
         print_verbose('skipped: no change: %s' % outfile)
         return
@@ -111,7 +126,8 @@ def music2png(format, infile, outfile, modified):
             format = 'ly'
         else:
             format = 'abc'
-    open('%s.%s' % (basefile,format), 'w').write(source) # Temp source file.
+    # Write temporary source file.
+    write_file('%s.%s' % (basefile,format), source)
     abc = basefile + '.abc'
     ly = basefile + '.ly'
     png = basefile + '.png'

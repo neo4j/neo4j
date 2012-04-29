@@ -1,1 +1,0 @@
-../../javascripts/ASCIIMathML.js

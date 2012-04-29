@@ -1,1 +1,0 @@
-../../doc/latex-bugs.txt

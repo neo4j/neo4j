@@ -23,7 +23,7 @@ import xml.dom.minidom
 import mimetypes
 
 PROG = os.path.basename(os.path.splitext(__file__)[0])
-VERSION = '8.6.6'
+VERSION = '8.6.7'
 
 # AsciiDoc global configuration file directory.
 # NOTE: CONF_DIR is "fixed up" by Makefile -- don't rename or change syntax.
@@ -53,6 +53,7 @@ ASCIIDOC_OPTS = ''
 DBLATEX_OPTS = ''
 FOP_OPTS = ''
 XSLTPROC_OPTS = ''
+BACKEND_OPTS = ''
 
 ######################################################################
 # End of configuration file parameters.
@@ -143,6 +144,20 @@ def find_executable(file_name):
         result = _find_executable(file_name)
     return result
 
+def write_file(filename, data, mode='w'):
+    f = open(filename, mode)
+    try:
+        f.write(data)
+    finally:
+        f.close()
+
+def read_file(filename, mode='r'):
+    f = open(filename, mode)
+    try:
+        return f.read()
+    finally:
+        f.close()
+
 def shell_cd(path):
     verbose('chdir %s' % path)
     if not OPTIONS.dry_run:
@@ -176,7 +191,8 @@ def shell_rmtree(path):
 
 def shell(cmd, raise_error=True):
     '''
-    Execute command cmd in shell and return resulting subprocess.Popen object.
+    Execute command cmd in shell and return tuple
+    (stdoutdata, stderrdata, returncode).
     If raise_error is True then a non-zero return terminates the application.
     '''
     if os.name == 'nt':
@@ -190,25 +206,26 @@ def shell(cmd, raise_error=True):
             mo = re.match(r'^\s*(?P<arg0>[^ ]+)', cmd)
         if mo.group('arg0').endswith('.py'):
             cmd = 'python ' + cmd
-    # Remove redundant quoting -- this is not just costmetic, quoting seems to
-    # dramatically decrease the allowed command length in Windows XP.
-    cmd = re.sub(r'"([^ ]+?)"', r'\1', cmd)
+        # Remove redundant quoting -- this is not just cosmetic,
+        # quoting seems to dramatically decrease the allowed command
+        # length in Windows XP.
+        cmd = re.sub(r'"([^ ]+?)"', r'\1', cmd)
     verbose('executing: %s' % cmd)
     if OPTIONS.dry_run:
         return
-    if OPTIONS.verbose:
-        stdout = stderr = None
-    else:
-        stdout = stderr = subprocess.PIPE
+    stdout = stderr = subprocess.PIPE
     try:
         popen = subprocess.Popen(cmd, stdout=stdout, stderr=stderr,
                 shell=True, env=ENV)
     except OSError, e:
         die('failed: %s: %s' % (cmd, e))
-    popen.wait()
+    stdoutdata, stderrdata = popen.communicate()
+    if OPTIONS.verbose:
+        print stdoutdata
+        print stderrdata
     if popen.returncode != 0 and raise_error:
         die('%s returned non-zero exit status %d' % (cmd, popen.returncode))
-    return popen
+    return (stdoutdata, stderrdata, popen.returncode)
 
 def find_resources(files, tagname, attrname, filter=None):
     '''
@@ -234,19 +251,20 @@ def find_resources(files, tagname, attrname, filter=None):
     if isinstance(files, str):
         files = [files]
     result = []
-    for f in files:
-        verbose('finding resources in: %s' % f)
+    for filename in files:
+        verbose('finding resources in: %s' % filename)
         if OPTIONS.dry_run:
             continue
         parser = FindResources()
         # HTMLParser has problems with non-ASCII strings.
         # See http://bugs.python.org/issue3932
-        mo = re.search(r'^<\?xml.* encoding="(.*?)"', open(f).readline())
+        contents = read_file(filename)
+        mo = re.search(r'\A<\?xml.* encoding="(.*?)"', contents)
         if mo:
             encoding = mo.group(1)
-            parser.feed(open(f).read().decode(encoding))
+            parser.feed(contents.decode(encoding))
         else:
-            parser.feed(open(f).read())
+            parser.feed(contents)
         parser.close()
     result = list(set(result))   # Drop duplicate values.
     result.sort()
@@ -257,12 +275,12 @@ def copy_files(files, src_dir, dst_dir):
     '''
     Copy list of relative file names from src_dir to dst_dir.
     '''
-    for f in files:
-        f = os.path.normpath(f)
-        if os.path.isabs(f):
+    for filename in files:
+        filename = os.path.normpath(filename)
+        if os.path.isabs(filename):
             continue
-        src = os.path.join(src_dir, f)
-        dst = os.path.join(dst_dir, f)
+        src = os.path.join(src_dir, filename)
+        dst = os.path.join(dst_dir, filename)
         if not os.path.exists(dst):
             if not os.path.isfile(src):
                 warning('missing file: %s' % src)
@@ -321,10 +339,14 @@ def get_source_options(asciidoc_file):
     result = []
     if os.path.isfile(asciidoc_file):
         options = ''
-        for line in open(asciidoc_file):
-            mo = re.search(r'^//\s*a2x:', line)
-            if mo:
-                options += ' ' + line[mo.end():].strip()
+        f = open(asciidoc_file)
+        try:
+            for line in f:
+                mo = re.search(r'^//\s*a2x:', line)
+                if mo:
+                    options += ' ' + line[mo.end():].strip()
+        finally:
+            f.close()
         parse_options()
     return result
 
@@ -348,8 +370,12 @@ class A2X(AttrDict):
         self.dblatex_opts  += ' ' + DBLATEX_OPTS
         self.fop_opts      += ' ' + FOP_OPTS
         self.xsltproc_opts += ' ' + XSLTPROC_OPTS
+        self.backend_opts  += ' ' + BACKEND_OPTS
         # Execute to_* functions.
-        self.__getattribute__('to_'+self.format)()
+        if self.backend:
+            self.to_backend()
+        else:
+            self.__getattribute__('to_'+self.format)()
         if not (self.keep_artifacts or self.format == 'docbook' or self.skip_asciidoc):
             shell_rm(self.dst_path('.xml'))
 
@@ -378,6 +404,23 @@ class A2X(AttrDict):
         home_dir = os.environ.get('HOME')
         if home_dir is not None:
             conf_files.append(os.path.join(home_dir, '.asciidoc', CONF_FILE))
+        # If asciidoc is not local to a2x then search the PATH.
+        if not self.asciidoc:
+            self.asciidoc = find_executable(ASCIIDOC)
+            if not self.asciidoc:
+                die('unable to find asciidoc: %s' % ASCIIDOC)
+        # From backend plugin directory.
+        if self.backend is not None:
+            stdout = shell(self.asciidoc + ' --backend list')[0]
+            backends = [(i, os.path.split(i)[1]) for i in stdout.splitlines()]
+            backend_dir = [i[0] for i in backends if i[1] == self.backend]
+            if len(backend_dir) == 0:
+                die('missing %s backend' % self.backend)
+            if len(backend_dir) > 1:
+                die('more than one %s backend' % self.backend)
+            verbose('found %s backend directory: %s' %
+                    (self.backend, backend_dir[0]))
+            conf_files.append(os.path.join(backend_dir[0], 'a2x-backend.py'))
         # From --conf-file option.
         if self.conf_file is not None:
             if not os.path.isfile(self.conf_file):
@@ -391,13 +434,8 @@ class A2X(AttrDict):
         # Load ordered files.
         for f in conf_files:
             if os.path.isfile(f):
-                verbose('loading conf file: %s' % f)
+                verbose('loading configuration file: %s' % f)
                 execfile(f, globals())
-        # If asciidoc is not local to a2x then search the PATH.
-        if not self.asciidoc:
-            self.asciidoc = find_executable(ASCIIDOC)
-            if not self.asciidoc:
-                die('unable to find asciidoc: %s' % ASCIIDOC)
 
     def process_options(self):
         '''
@@ -417,12 +455,16 @@ class A2X(AttrDict):
         if self.resource_manifest:
             if not os.path.isfile(self.resource_manifest):
                 die('missing --resource-manifest: %s' % self.resource_manifest)
-            for r in open(self.resource_manifest):
-                self.resources.append(r.strip())
+            f = open(self.resource_manifest)
+            try:
+                for r in f:
+                    self.resources.append(r.strip())
+            finally:
+                f.close()
         for r in self.resources:
             r = os.path.expanduser(r)
             r = os.path.expandvars(r)
-            if r.endswith(('/','\\')):
+            if r.endswith('/') or r.endswith('\\'):
                 if  os.path.isdir(r):
                     self.resource_dirs.append(r)
                 else:
@@ -580,6 +622,15 @@ class A2X(AttrDict):
                 shell_makedirs(dstdir)
                 shell_copy(src, dst)
 
+    def to_backend(self):
+        '''
+        Convert AsciiDoc source file to a backend output file using the global
+        'to_<backend name>' function (loaded from backend plugin a2x-backend.py
+        file).
+        Executes the global function in an A2X class instance context.
+        '''
+        eval('to_%s(self)' % self.backend)
+
     def to_docbook(self):
         '''
         Use asciidoc to convert asciidoc_file to DocBook.
@@ -683,7 +734,7 @@ class A2X(AttrDict):
                     f = os.path.normpath(f)
                     if f not in ['content.opf']:
                         resource_files.append(f)
-        opf = xml.dom.minidom.parseString(open(opf_file).read())
+        opf = xml.dom.minidom.parseString(read_file(opf_file))
         manifest_files = []
         manifest = opf.getElementsByTagName('manifest')[0]
         for el in manifest.getElementsByTagName('item'):
@@ -704,7 +755,7 @@ class A2X(AttrDict):
                 item.setAttribute('media-type', mimetype)
                 manifest.appendChild(item)
         if count > 0:
-            open(opf_file, 'w').write(opf.toxml())
+            write_file(opf_file, opf.toxml())
 
     def to_epub(self):
         self.to_docbook()
@@ -736,7 +787,7 @@ class A2X(AttrDict):
                 try:
                     # Create and add uncompressed mimetype file.
                     verbose('archiving: mimetype')
-                    open('mimetype','w').write('application/epub+zip')
+                    write_file('mimetype', 'application/epub+zip')
                     zip.write('mimetype', compress_type=zipfile.ZIP_STORED)
                     # Compress all remaining files.
                     for (p,dirs,files) in os.walk('.'):
@@ -810,6 +861,9 @@ if __name__ == '__main__':
         action='store', dest='doctype', metavar='DOCTYPE',
         choices=('article','manpage','book'),
         help='article, manpage, book')
+    parser.add_option('-b','--backend',
+        action='store', dest='backend', metavar='BACKEND',
+        help='name of backend plugin')
     parser.add_option('--epubcheck',
         action='store_true', dest='epubcheck', default=False,
         help='check EPUB output with epubcheck')
@@ -864,6 +918,9 @@ if __name__ == '__main__':
     parser.add_option('--dblatex-opts',
         action='append', dest='dblatex_opts', default=[],
         metavar='DBLATEX_OPTS', help='dblatex options')
+    parser.add_option('--backend-opts',
+        action='append', dest='backend_opts', default=[],
+        metavar='BACKEND_OPTS', help='backend plugin options')
     parser.add_option('--fop',
         action='store_true', dest='fop', default=False,
         help='use FOP to generate PDF files')
@@ -882,7 +939,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         parser.parse_args(['--help'])
     source_options = get_source_options(sys.argv[-1])
-    argv = source_options + sys.argv[1:] 
+    argv = source_options + sys.argv[1:]
     opts, args = parser.parse_args(argv)
     if len(args) != 1:
         parser.error('incorrect number of arguments')
@@ -890,6 +947,7 @@ if __name__ == '__main__':
     opts.dblatex_opts = ' '.join(opts.dblatex_opts)
     opts.fop_opts = ' '.join(opts.fop_opts)
     opts.xsltproc_opts = ' '.join(opts.xsltproc_opts)
+    opts.backend_opts = ' '.join(opts.backend_opts)
     opts = eval(str(opts))  # Convert optparse.Values to dict.
     a2x = A2X(opts)
     OPTIONS = a2x           # verbose and dry_run used by utility functions.

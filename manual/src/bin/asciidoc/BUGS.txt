@@ -3,9 +3,6 @@ Bugs and Known Problems
 
 AsciiDoc
 --------
-- Configuration attribute entries are not passed to table asciidoc
-  filters because configuration attribute entries cannot be passed to
-  the `--attributes` command-line parameter.
 - A benign warning 'with will become a reserved keyword
   in Python 2.6' sometimes occurs when using Python 2.5 -- it's
   harmless and will disappear with Python 3.

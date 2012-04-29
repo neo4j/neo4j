@@ -1,1 +1,0 @@
-../../javascripts/LaTeXMathML.js
