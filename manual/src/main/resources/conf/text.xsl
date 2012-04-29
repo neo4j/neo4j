@@ -70,5 +70,8 @@
   <xsl:param name="generate.legalnotice.link" select="1"></xsl:param>
   <xsl:param name="legalnotice.filename">license.html</xsl:param>
 
+  <xsl:template match="formalpara[@role = 'cypherconsole']" />
+  <xsl:template match="simpara[@role = 'cypherconsole']" />
+
 </xsl:stylesheet>
 

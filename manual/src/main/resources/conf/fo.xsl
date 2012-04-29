@@ -399,5 +399,8 @@
   <xsl:attribute name="text-align">center</xsl:attribute>
 </xsl:attribute-set>
 
+<xsl:template match="formalpara[@role = 'cypherconsole']" />
+<xsl:template match="simpara[@role = 'cypherconsole']" />
+
 </xsl:stylesheet>
 
