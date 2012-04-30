@@ -19,7 +19,7 @@
 package org.neo4j.examples.osgi;
 
 import java.util.ArrayList;
-import java.util.Properties;
+import java.util.Hashtable;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -67,11 +67,11 @@ public class Neo4jActivator implements BundleActivator
         
         //the OSGi registration
         serviceRegistration = context.registerService(
-                GraphDatabaseService.class.getName(), db, new Properties() );
+                GraphDatabaseService.class.getName(), db, new Hashtable<String,String>() );
         System.out.println( "registered " + serviceRegistration.getReference() );
         indexServiceRegistration = context.registerService(
                 Index.class.getName(), db.index().forNodes( "nodes" ),
-                new Properties() );
+                new Hashtable<String,String>() );
         Transaction tx = db.beginTx();
         try
         {
