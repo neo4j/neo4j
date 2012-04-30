@@ -1,3 +1,8 @@
+1.8.M02 (2012-05-10)
+--------------------
+o Fixed Swedish character problem in webadmin string properties.
+o Webadmin chart labels have nice formatting now.
+
 1.8.M01 (2012-04-26)
 --------------------
 o Added streaming to REST API. All representation implementations have been adapted to produce their data lazily.
