@@ -32,6 +32,16 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class UserTransactionImpl implements UserTransaction
 {
+    /*
+     * The GD API reference below is used exclusively for accessing
+     * the TransactionManager. It is on purpose _not_ replaced with a
+     * reference to that however. In HA settings the reference passed is
+     * to a HAGD which when restarted has its TM changed. If we kept a
+     * reference to the TM it would be valid until the next internal
+     * restart. In contrast, this way always looks up the "real"
+     * reference and keeps the Spring integration working even when
+     * HA master switches happen.
+     */
     private final AbstractGraphDatabase neo4j;
 
     public UserTransactionImpl( GraphDatabaseService neo4j )
