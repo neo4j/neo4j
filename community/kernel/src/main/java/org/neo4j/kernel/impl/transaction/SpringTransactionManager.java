@@ -32,77 +32,64 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class SpringTransactionManager implements TransactionManager
 {
-    private TransactionManager tm;
+    private final GraphDatabaseAPI neo4j;
 
-    /**
-     * Using this constructor requires setting the the transaction manager via
-     * {@link #setTransactionManager(TransactionManager)} method.
-     */
-    public SpringTransactionManager()
-    { 
-    }
-    
-    public SpringTransactionManager( GraphDatabaseService neo4j )
+    public SpringTransactionManager( GraphDatabaseAPI neo4j )
     {
-        this.tm = ((GraphDatabaseAPI) neo4j).getTxManager();
+        this.neo4j = neo4j;
     }
-    
+
+    private TransactionManager getTxManager()
+    {
+        return neo4j.getTxManager();
+    }
+
     public void begin() throws NotSupportedException, SystemException
     {
-        tm.begin();
+        getTxManager().begin();
     }
 
     public void commit() throws RollbackException, HeuristicMixedException,
         HeuristicRollbackException, SecurityException, IllegalStateException,
         SystemException
     {
-        tm.commit();
+        getTxManager().commit();
     }
 
     public int getStatus() throws SystemException
     {
-        return tm.getStatus();
+        return getTxManager().getStatus();
     }
 
     public Transaction getTransaction() throws SystemException
     {
-        return tm.getTransaction();
+        return getTxManager().getTransaction();
     }
 
     public void resume( Transaction tx ) throws InvalidTransactionException,
         IllegalStateException, SystemException
     {
-        tm.resume( tx );
+        getTxManager().resume(tx);
     }
 
     public void rollback() throws IllegalStateException, SecurityException,
         SystemException
     {
-        tm.rollback();
+        getTxManager().rollback();
     }
 
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        tm.setRollbackOnly();
+        getTxManager().setRollbackOnly();
     }
 
     public void setTransactionTimeout( int sec ) throws SystemException
     {
-        tm.setTransactionTimeout( sec );
+        getTxManager().setTransactionTimeout(sec);
     }
 
     public Transaction suspend() throws SystemException
     {
-        return tm.suspend();
-    }
-
-    public void setTransactionManager( TransactionManager tm )
-    {
-        this.tm = tm;
-    }
-
-    public TransactionManager getTransactionManager()
-    {
-        return tm;
+        return getTxManager().suspend();
     }
 }

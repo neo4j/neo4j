@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.kernel.GraphDatabaseAPI;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -29,48 +31,49 @@ import javax.transaction.UserTransaction;
 
 public class UserTransactionImpl implements UserTransaction
 {
-    private TransactionManager tm;
-    
-    public UserTransactionImpl()
+    private final GraphDatabaseAPI neo4j;
+
+    public UserTransactionImpl( GraphDatabaseAPI neo4j)
     {
+        this.neo4j = neo4j;
     }
-    
-    public UserTransactionImpl( TransactionManager tm)
+
+    private TransactionManager getTxManager()
     {
-        this.tm = tm;
+        return neo4j.getTxManager();
     }
-    
+
     public void begin() throws NotSupportedException, SystemException
     {
-        tm.begin();
+        getTxManager().begin();
     }
 
     public void commit() throws RollbackException, HeuristicMixedException,
         HeuristicRollbackException, SecurityException, IllegalStateException,
         SystemException
     {
-        tm.commit();
+        getTxManager().commit();
     }
 
     public void rollback() throws SecurityException, IllegalStateException,
         SystemException
     {
-        tm.rollback();
+        getTxManager().rollback();
     }
 
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        tm.setRollbackOnly();
+        getTxManager().setRollbackOnly();
     }
 
     public int getStatus() throws SystemException
     {
-        return tm.getStatus();
+        return getTxManager().getStatus();
     }
 
     public void setTransactionTimeout( int seconds ) throws SystemException
     {
-        tm.setTransactionTimeout( seconds );
+        getTxManager().setTransactionTimeout( seconds );
     }
 
     /**
@@ -81,7 +84,7 @@ public class UserTransactionImpl implements UserTransaction
     {
         try
         {
-            TransactionImpl tx = (TransactionImpl) tm.getTransaction();
+            TransactionImpl tx = (TransactionImpl) getTxManager().getTransaction();
             if ( tx != null )
             {
                 return tx.getEventIdentifier();
@@ -91,15 +94,5 @@ public class UserTransactionImpl implements UserTransaction
         {
         }
         return null;
-    }
-
-    public void setTransactionManager( TransactionManager tm )
-    {
-        this.tm = tm;
-    }
-
-    public TransactionManager getTransactionManager()
-    {
-        return tm;
     }
 }
