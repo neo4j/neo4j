@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -29,8 +27,20 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
+import org.neo4j.kernel.GraphDatabaseAPI;
+
 public class UserTransactionImpl implements UserTransaction
 {
+    /*
+     * The GD API reference below is used exclusively for accessing
+     * the TransactionManager. It is on purpose _not_ replaced with a
+     * reference to that however. In HA settings the reference passed is
+     * to a HAGD which when restarted has its TM changed. If we kept a
+     * reference to the TM it would be valid until the next internal
+     * restart. In contrast, this way always looks up the "real"
+     * reference and keeps the Spring integration working even when
+     * HA master switches happen.
+     */
     private final GraphDatabaseAPI neo4j;
 
     public UserTransactionImpl( GraphDatabaseAPI neo4j)
