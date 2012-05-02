@@ -1213,13 +1213,9 @@ public class HighlyAvailableGraphDatabase
         XaDataSource nioneoDataSource = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
         Pair<Integer,Long> myMaster;
-        Response<Pair<Integer, Long>> response = null;
-        Pair<Integer, Long> mastersMaster;
         try
         {
             myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
-            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, getStoreId( newDb ) );
-            mastersMaster = response.response();
         }
         catch ( NoSuchLogVersionException e )
         {
@@ -1242,6 +1238,25 @@ public class HighlyAvailableGraphDatabase
                     "Exception while getting master ID for txId "
                             + myLastCommittedTx + ".", e );
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
+        }
+
+        Response<Pair<Integer, Long>> response = null;
+        Pair<Integer, Long> mastersMaster;
+        try
+        {
+            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, getStoreId( newDb ) );
+            mastersMaster = response.response();
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() instanceof NoSuchLogVersionException )
+            {
+                throw new BranchedDataException( "Maybe not branched data, but it could solve it", e.getCause() );
+            }
+            else
+            {
+                throw e;
+            }
         }
         finally
         {
