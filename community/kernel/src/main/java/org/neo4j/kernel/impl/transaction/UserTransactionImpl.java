@@ -19,90 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 
-public class UserTransactionImpl implements UserTransaction
+public class UserTransactionImpl extends BaseSpringTransactionImpl implements UserTransaction
 {
-    /*
-     * The GD API reference below is used exclusively for accessing
-     * the TransactionManager. It is on purpose _not_ replaced with a
-     * reference to that however. In HA settings the reference passed is
-     * to a HAGD which when restarted has its TM changed. If we kept a
-     * reference to the TM it would be valid until the next internal
-     * restart. In contrast, this way always looks up the "real"
-     * reference and keeps the Spring integration working even when
-     * HA master switches happen.
-     */
-    private final GraphDatabaseAPI neo4j;
-
     public UserTransactionImpl( GraphDatabaseAPI neo4j)
     {
-        this.neo4j = neo4j;
-    }
-
-    private TransactionManager getTxManager()
-    {
-        return neo4j.getTxManager();
-    }
-
-    public void begin() throws NotSupportedException, SystemException
-    {
-        getTxManager().begin();
-    }
-
-    public void commit() throws RollbackException, HeuristicMixedException,
-        HeuristicRollbackException, SecurityException, IllegalStateException,
-        SystemException
-    {
-        getTxManager().commit();
-    }
-
-    public void rollback() throws SecurityException, IllegalStateException,
-        SystemException
-    {
-        getTxManager().rollback();
-    }
-
-    public void setRollbackOnly() throws IllegalStateException, SystemException
-    {
-        getTxManager().setRollbackOnly();
-    }
-
-    public int getStatus() throws SystemException
-    {
-        return getTxManager().getStatus();
-    }
-
-    public void setTransactionTimeout( int seconds ) throws SystemException
-    {
-        getTxManager().setTransactionTimeout( seconds );
-    }
-
-    /**
-     * Returns the event identifier for the current transaction. If no
-     * transaction is active <CODE>null</CODE> is returned.
-     */
-    public Integer getEventIdentifier()
-    {
-        try
-        {
-            TransactionImpl tx = (TransactionImpl) getTxManager().getTransaction();
-            if ( tx != null )
-            {
-                return tx.getEventIdentifier();
-            }
-        }
-        catch ( SystemException e )
-        {
-        }
-        return null;
+        super( neo4j );
     }
 }
