@@ -1849,4 +1849,21 @@ RETURN x0.name?
 
     assert(parseAndExecute(q).size === 1)
   }
+
+  @Test def issue_479() {
+    createNode()
+
+    val q = "start n=node(1) match n-[?]->x where x-->() return x"
+
+    assert(parseAndExecute(q).toList === List())
+  }
+
+  @Test def issue_479_has_relationship_to_specific_node() {
+    createNode()
+
+    val q = "start n=node(1) match n-[?:FRIEND]->x where not n-[:BLOCK]->x return x"
+
+    assert(parseAndExecute(q).toList === List(Map("x"->null)))
+  }
+
 }

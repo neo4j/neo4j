@@ -105,12 +105,17 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
     val toNode = to(m).asInstanceOf[Node]
-    
+
+    if ((fromNode == null) || (toNode == null)) {
+      return false
+    }
+
     if(relType.isEmpty) {
       fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
     } else {
       val types = relType.map(t=>  DynamicRelationshipType.withName(t))
-      fromNode.getRelationships(dir, types:_*).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+      val rels = fromNode.getRelationships(dir, types: _*).iterator().asScala
+      rels.exists(rel => rel.getOtherNode(fromNode) == toNode)
     }
   }
 
@@ -125,6 +130,11 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
 case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
+
+    if (fromNode == null) {
+      return false
+    }
+
 
     if (relType.isEmpty)
       fromNode.getRelationships(dir).iterator().hasNext
@@ -182,7 +192,7 @@ case class Has(property: Property) extends Predicate {
   def filter(f: (Expression) => Boolean) = property.filter(f)
 }
 
-case class  LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
+case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
   lazy val pattern = regex(Map()).asInstanceOf[String].r.pattern
   
   def isMatch(m: Map[String, Any]) = pattern.matcher(a(m).asInstanceOf[String]).matches()
