@@ -538,7 +538,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         else if ( value instanceof Long )
         {
             long keyAndType = keyId | (((long)PropertyType.LONG.intValue()) << 24);
-            if ( ShortArray.LONG.getRequiredBits( value ) <= 35 )
+            if ( ShortArray.LONG.getRequiredBits( (Long)value ) <= 35 )
             {   // We only need one block for this value, special layout compared to, say, an integer
                 block.setSingleBlock( keyAndType | (1L << 28) |  (((Long)value).longValue() << 29) );
             }

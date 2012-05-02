@@ -105,7 +105,7 @@ public class PropertyBlock
 
     public boolean isLight()
     {
-        return valueRecords.size() == 0;
+        return valueRecords.isEmpty();
     }
 
     public PropertyData newPropertyData( PropertyRecord parent )
@@ -164,7 +164,7 @@ public class PropertyBlock
     @Override
     public String toString()
     {
-        StringBuffer result = new StringBuffer("PropertyBlock[");
+        StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
         result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
         result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static java.util.Arrays.copyOf;
 
 import java.io.UnsupportedEncodingException;
-import java.util.EnumSet;
+import java.util.Arrays;
 
 import org.neo4j.kernel.impl.util.Bits;
 
@@ -136,7 +136,7 @@ public enum LongerShortString
         @Override
         int encTranslate( byte b )
         {
-            return super.encTranslate( b ) - 0x40;
+            return super.encTranslate(b) - 0x40;
         }
 
         @Override
@@ -167,7 +167,7 @@ public enum LongerShortString
         @Override
         int encTranslate( byte b )
         {
-            return super.encTranslate( b ) - 0x60;
+            return super.encTranslate(b) - 0x60;
         }
 
         @Override
@@ -198,7 +198,7 @@ public enum LongerShortString
         @Override
         int encTranslate( byte b )
         {
-            return super.encTranslate( b ) - 0x60;
+            return super.encTranslate(b) - 0x60;
         }
 
         @Override
@@ -428,16 +428,22 @@ public enum LongerShortString
             }
         }
     };
+    public static final int REMOVE_LARGE_ENCODINGS_MASK = invertedBitMask( ALPHANUM, ALPHASYM, URI, EUROPEAN );
+    public static final LongerShortString[] ENCODINGS = values();
+    public static final int ENCODING_COUNT = ENCODINGS.length;
+    public static final int ALL_BIT_MASK = bitMask( LongerShortString.values() );
+    public static final int ENCODING_UTF8 = 0;
+    public static final int ENCODING_LATIN1 = 10;
 
     final int encodingHeader;
-    final short mask;
-    final short step;
+    final long mask;
+    final int step;
 
     private LongerShortString( int encodingHeader, int step )
     {
         this.encodingHeader = encodingHeader;
-        this.mask = (short) Bits.rightOverflowMask( step );
-        this.step = (short) step;
+        this.mask = Bits.rightOverflowMask( step );
+        this.step = step;
     }
 
     int maxLength( int payloadSize )
@@ -503,162 +509,34 @@ public enum LongerShortString
      * F-  ð  ñ  ò  ó  ô  õ  ö       ø  ù  ú  û  ü  ý  þ  ÿ
      */
     public static boolean encode( int keyId, String string,
-            PropertyBlock target, int payloadSize )
+                                  PropertyBlock target, int payloadSize )
     {
         // NUMERICAL can carry most characters, so compare to that
-        int stringLength = string.length();
+        int dataLength = string.length();
         // We only use 6 bits for storing the string length
         // TODO could be dealt with by having string length zero and go for null bytes,
         // at least for LATIN1 (that's what the ShortString implementation initially did)
-        if ( stringLength > NUMERICAL.maxLength( payloadSize ) || stringLength > 63 ) return false; // Not handled by any encoding
-//        if ( string.equals( "" ) )
-//        {
-//            Bits bits = Bits.bits( 8 );
-//            writeHeader( bits, keyId, 0, 0 );
-//            target.setValueBlocks( bits.getLongs() );
-//            return true;
-//        }
-        // Keep track of the possible encodings that can be used for the string
-        EnumSet<LongerShortString> possible = null;
+        if ( dataLength > NUMERICAL.maxLength( payloadSize ) || dataLength > 63 )
+        {
+            return false; // Not handled by any encoding
+        }
+
         // Allocate space for the intermediate representation
         // (using the intermediate representation table above)
-        byte[] data = new byte[stringLength];
-        if ( possible == null )
+        byte[] data = new byte[dataLength];
+
+        // Keep track of the possible encodings that can be used for the string
+        // 0 means none applies
+        int encodings = determineEncoding( string, data, dataLength, payloadSize );
+        if ( encodings != 0 && tryEncode( encodings, keyId, target, payloadSize, data, dataLength ) )
         {
-            possible = EnumSet.allOf( LongerShortString.class );
-            for ( LongerShortString possibility : LongerShortString.values() )
-            {
-                if ( data.length > possibility.maxLength( payloadSize ) ) possible.remove( possibility );
-            }
+            return true;
         }
-        LOOP: for ( int i = 0; i < data.length && !possible.isEmpty(); i++ )
-        {
-            char c = string.charAt( i );
-            switch ( c )
-            {
-            case ' ':
-                data[i] = 0;
-                possible.remove( EMAIL );
-                break;
-            case '_':
-                data[i] = 1;
-                possible.removeAll( EnumSet.of( NUMERICAL, DATE ) );
-                break;
-            case '.':
-                data[i] = 2;
-                possible.removeAll( EnumSet.of( ALPHANUM, DATE ) );
-                break;
-            case '-':
-                data[i] = 3;
-                possible.remove( ALPHANUM );
-                break;
-            case ':':
-                data[i] = 4;
-                possible.removeAll( EnumSet.of( ALPHANUM, NUMERICAL, EUROPEAN, EMAIL ) );
-                break;
-            case '/':
-                data[i] = 5;
-                possible.removeAll( EnumSet.of( ALPHANUM, NUMERICAL, EUROPEAN, EMAIL ) );
-                break;
-            case '+':
-                data[i] = 6;
-                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, URI, ALPHASYM ) );
-                break;
-            case ',':
-                data[i] = 7;
-                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, URI, ALPHASYM ) );
-                break;
-            case '\'':
-                data[i] = 8;
-                possible.retainAll( EnumSet.of( NUMERICAL, URI, ALPHASYM ) );
-                break;
-            case '@':
-                data[i] = 9;
-                possible.retainAll( EnumSet.of( EMAIL, URI, ALPHASYM ) );
-                break;
-            case '|':
-                data[i] = 0xA;
-                possible.retainAll( EnumSet.of( ALPHASYM ) );
-                break;
-            // These below are all for the URI encoding only (as of yet at least)
-            case ';':
-                data[i] = 0xB;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '*':
-                data[i] = 0xC;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '?':
-                data[i] = 0xD;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '&':
-                data[i] = 0xE;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '%':
-                data[i] = 0xF;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '#':
-                data[i] = 0x10;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '(':
-                data[i] = 0x11;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case ')':
-                data[i] = 0x12;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '$':
-                data[i] = 0x13;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '<':
-                data[i] = 0x14;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '>': data[i] = 0x15;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            case '=': data[i] = 0x16;
-                possible.retainAll( EnumSet.of( URI ) );
-                break;
-            // These above are all for the URI encoding only (as of yet at least)
-            default:
-                if ( ( c >= 'A' && c <= 'Z' ) )
-                {
-                    possible.removeAll( EnumSet.of( NUMERICAL, DATE, LOWER, EMAIL, URI ) );
-                }
-                else if ( ( c >= 'a' && c <= 'z' ) )
-                {
-                    possible.removeAll( EnumSet.of( NUMERICAL, DATE, UPPER ) );
-                }
-                else if ( ( c >= '0' && c <= '9' ) )
-                {
-                    possible.removeAll( EnumSet.of( UPPER, LOWER, EMAIL, ALPHASYM ) );
-                }
-                else if ( c >= 'À' && c <= 'ÿ' && c != 0xD7 && c != 0xF7 )
-                {
-                    possible.retainAll( EnumSet.of( EUROPEAN ) );
-                }
-                else
-                {
-                    possible.clear();
-                    break LOOP; // fall back to UTF-8
-                }
-                data[i] = (byte) c;
-            }
-        }
-        for ( LongerShortString encoding : possible )
-        {
-            // Will return false if the data is too long for the encoding
-            if ( encoding.doEncode( keyId, data, target, payloadSize ) )
-                return true;
-        }
+        return encodeWithCharSet( keyId, string, target, payloadSize, dataLength );
+    }
+
+    private static boolean encodeWithCharSet(int keyId, String string, PropertyBlock target, int payloadSize, int stringLength)
+    {
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
         {
@@ -666,6 +544,138 @@ public enum LongerShortString
             if ( encodeUTF8( keyId, string, target, payloadSize ) ) return true;
         }
         return false;
+    }
+
+    private static boolean tryEncode( int encodings, int keyId, PropertyBlock target, int payloadSize, byte[] data, final int length )
+    {
+        // find encoders in order that are still selected and try to encode the data
+        for ( LongerShortString encoding : ENCODINGS )
+        {
+            if ( (encoding.bitMask() & encodings) == 0 )
+            {
+                continue;
+            }
+            if ( encoding.doEncode( keyId, data, target, payloadSize, length ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // inverted combined bit-mask for the encoders
+    static int invertedBitMask( LongerShortString... encoders )
+    {
+        return ~bitMask( encoders );
+    }
+
+    // combined bit-mask for the encoders
+    private static int bitMask( LongerShortString[] encoders )
+    {
+        int result = 0;
+        for ( LongerShortString encoder : encoders )
+        {
+            result |= encoder.bitMask();
+        }
+        return result;
+    }
+
+    // translation lookup for each ascii character
+    private static final int TRANSLATION_COUNT = 256;
+    // transformation for the char to byte according to the default translation table
+    private static final byte[] TRANSLATION = new byte[TRANSLATION_COUNT];
+    // mask for encoders that are not applicable for this character
+    private static final int[] REMOVE_MASK = new int[TRANSLATION_COUNT];
+
+    private static void setUp( char pos, int value, LongerShortString... removeEncodings )
+    {
+        TRANSLATION[pos] = (byte) value;
+        REMOVE_MASK[pos] = invertedBitMask( removeEncodings );
+    }
+
+    static
+    {
+        Arrays.fill( TRANSLATION, (byte) 0xFF );
+        Arrays.fill( REMOVE_MASK, invertedBitMask( ENCODINGS ) );
+        setUp( ' ', 0, EMAIL );
+        setUp( '_', 1, NUMERICAL, DATE );
+        setUp( '.', 2, DATE, ALPHANUM );
+        setUp( '-', 3, ALPHANUM );
+        setUp( ':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL );
+        setUp( '/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL );
+        setUp( '+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN );
+        setUp( ',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN );
+        setUp( '\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN );
+        setUp( '@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN );
+        setUp( '|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN );
+        final LongerShortString[] retainUri = {NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN};
+        setUp( ';', 0xB, retainUri );
+        setUp( '*', 0xC, retainUri );
+        setUp( '?', 0xD, retainUri );
+        setUp( '&', 0xE, retainUri );
+        setUp( '%', 0xF, retainUri );
+        setUp( '#', 0x10, retainUri );
+        setUp( '(', 0x11, retainUri );
+        setUp( ')', 0x12, retainUri );
+        setUp( '$', 0x13, retainUri );
+        setUp( '<', 0x14, retainUri );
+        setUp( '>', 0x15, retainUri );
+        setUp( '=', 0x16, retainUri );
+        for ( char c = 'A'; c <= 'Z'; c++ )
+        {
+            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI );
+        }
+        for ( char c = 'a'; c <= 'z'; c++ )
+        {
+            setUp( c, (byte) c, NUMERICAL, DATE, UPPER );
+        }
+        for ( char c = '0'; c <= '9'; c++ )
+        {
+            setUp( c, (byte) c, UPPER, LOWER, EMAIL, ALPHASYM );
+        }
+        for ( char c = 'À'; c <= 'ÿ'; c++ )
+        {
+            if ( c != 0xD7 && c != 0xF7 )
+            {
+                setUp( c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM );
+            }
+        }
+    }
+
+    private static int determineEncoding( String string, byte[] data, int length, int payloadSize )
+    {
+        if ( length == 0 )
+        {
+            return 0;
+        }
+        int encodings = ALL_BIT_MASK;
+        // filter out larger encodings in one go
+        if ( length > ALPHANUM.maxLength( payloadSize ) )
+        {
+            encodings &= REMOVE_LARGE_ENCODINGS_MASK;
+        }
+        for ( int i = 0; i < length; i++ )
+        {
+            char c = string.charAt( i );
+            // non ASCII chars not supported
+            if ( c >= TRANSLATION_COUNT )
+            {
+                return 0;
+            }
+            data[i] = TRANSLATION[c];
+            // remove not matching encoders
+            encodings &= REMOVE_MASK[c];
+            if ( encodings == 0 )
+            {
+                return 0;
+            }
+        }
+        return encodings;
+    }
+
+    int bitMask()
+    {
+        return 1 << ordinal();
     }
 
     private static void writeHeader( Bits bits, int keyId, int encoding, int stringLength )
@@ -677,7 +687,7 @@ public enum LongerShortString
     /**
      * Decode a short string represented as a long[]
      *
-     * @param data the value to decode to a short string.
+     * @param block the value to decode to a short string.
      * @return the decoded short string
      */
     public static String decode( PropertyBlock block )
@@ -690,56 +700,54 @@ public enum LongerShortString
         bits.getByte( 4 ); // Get rid of the type
         int encoding = bits.getByte( 5 ); //(int) ( ( firstLong & 0xF00000000L ) >>> 32 );
         int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
-        if ( encoding == 0 ) return decodeUTF8( bits, stringLength );
-        if ( encoding == 10 ) return decodeLatin1( bits, stringLength );
+        if ( encoding == ENCODING_UTF8 ) return decodeUTF8( bits, stringLength );
+        if ( encoding == ENCODING_LATIN1 ) return decodeLatin1( bits, stringLength );
 
         LongerShortString table = getEncodingTable( encoding );
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
         // we must "unshift" in the reverse order
-        for ( int i = 0; i < result.length; i++ )
+        for ( int i = 0; i < stringLength; i++ )
         {
             byte codePoint = bits.getByte( table.step );
             result[i] = table.decTranslate( codePoint );
         }
-        return new String( result );
+        return String.valueOf(result);
     }
 
-    private static LongerShortString getEncodingTable( int encoding )
+    // lookup table by encoding header
+    private final static LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 1];
+
+    static
     {
-        LongerShortString table;
-        switch ( encoding )
+        for ( LongerShortString encoding : ENCODINGS )
         {
-        case 1: table = NUMERICAL; break;
-        case 2: table = DATE; break;
-        case 3: table = UPPER; break;
-        case 4: table = LOWER; break;
-        case 5: table = EMAIL; break;
-        case 6: table = URI; break;
-        case 7: table = ALPHANUM; break;
-        case 8: table = ALPHASYM; break;
-        case 9: table = EUROPEAN; break;
-        default: throw new IllegalArgumentException( "Invalid encoding '" + encoding + "'" );
+            ENCODINGS_BY_ENCODING[encoding.encodingHeader] = encoding;
         }
-        return table;
     }
 
-    private static Bits newBits( int encoding, int length )
+    private static LongerShortString getEncodingTable( int encodingHeader )
     {
-        return Bits.bits( calculateNumberOfBlocksUsed( encoding, length )*8 );
+        final LongerShortString encoding = ENCODINGS_BY_ENCODING[encodingHeader];
+        if (encoding==null) throw new IllegalArgumentException( "Invalid encoding '" + encoding + "'" );
+        return encoding;
+    }
+
+    private static Bits newBits( LongerShortString encoding, int length )
+    {
+        return Bits.bits(calculateNumberOfBlocksUsed( encoding, length ) << 3 ); //*8
+    }
+
+    private static Bits newBitsForStep8(int length)
+    {
+        return Bits.bits(calculateNumberOfBlocksUsedForStep8(length) << 3 ); //*8
     }
 
     private static boolean encodeLatin1( int keyId, String string, PropertyBlock target )
     {
         int length = string.length();
-        Bits bits = newBits( 10, length );
-        /*
-        if ( bits.getLongs().length > 4 )
-        {
-             return false;
-        }
-        */
-        writeHeader( bits, keyId, 10, length );
+        Bits bits = newBitsForStep8(length);
+        writeHeader( bits, keyId, ENCODING_LATIN1, length );
         if ( !writeLatin1Characters( string, bits ) ) return false;
         target.setValueBlocks( bits.getLongs() );
         return true;
@@ -763,15 +771,10 @@ public enum LongerShortString
         try
         {
             byte[] bytes = string.getBytes( "UTF-8" );
-            if ( bytes.length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
-            Bits bits = newBits( 0, bytes.length );
-            /*
-            if ( bits.getLongs().length > 4 )
-            {
-                return false;
-            }
-            */
-            writeHeader( bits, keyId, 0, bytes.length ); // In this case it isn't the string length, but the number of bytes
+            final int length = bytes.length;
+            if ( length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
+            Bits bits = newBitsForStep8(length);
+            writeHeader( bits, keyId, ENCODING_UTF8, length); // In this case it isn't the string length, but the number of bytes
             for ( byte value : bytes )
             {
                 bits.put( value );
@@ -785,31 +788,29 @@ public enum LongerShortString
         }
     }
 
-    private boolean doEncode( int keyId, byte[] data, PropertyBlock target,
-            int payloadSize )
+    private boolean doEncode(int keyId, byte[] data, PropertyBlock target,
+                             int payloadSize, final int length)
     {
-        if ( data.length > maxLength( payloadSize ) ) return false;
-        Bits bits = newBits( encodingHeader, data.length );
-        /*
-        if ( bits.getLongs().length > 4 )
-        {
-            return false;
-        }
-        */
-        writeHeader( bits, keyId, encodingHeader, data.length );
-        for ( int i = 0; i < data.length; i++ )
-        {
-            int encodedChar = encTranslate( data[i] );
-            bits.put( encodedChar, step );
-        }
+        if ( length > maxLength( payloadSize ) ) return false;
+        Bits bits = newBits( this, length);
+        writeHeader( bits, keyId, encodingHeader, length);
+        if (length >0) translateData(bits, data, length, step);
         target.setValueBlocks( bits.getLongs() );
         return true;
+    }
+
+    private void translateData(Bits bits, byte[] data, int length, final int step)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            bits.put(encTranslate(data[i]), step);
+        }
     }
 
     private static String decodeLatin1( Bits bits, int stringLength )
     { // see decode
         char[] result = new char[stringLength];
-        for ( int i = 0; i < result.length; i++ )
+        for ( int i = 0; i < stringLength; i++ )
         {
             result[i] = (char) bits.getShort( 8 );
         }
@@ -847,17 +848,22 @@ public enum LongerShortString
         int encoding = bits.getByte( 5 );
         int length = bits.getByte( 6 );
         */
-        return calculateNumberOfBlocksUsed( encoding, length );
+        if (encoding==ENCODING_UTF8 || encoding == ENCODING_LATIN1) return calculateNumberOfBlocksUsedForStep8(length);
+        return calculateNumberOfBlocksUsed( getEncodingTable(encoding), length );
     }
 
-    public static int calculateNumberOfBlocksUsed( int encoding, int length )
+    public static int calculateNumberOfBlocksUsedForStep8( int length )
     {
-        int bitsForCharacters = 0;
-        if ( encoding == 0 || encoding == 10 ) bitsForCharacters = length*8;
-        else bitsForCharacters = getEncodingTable( encoding ).step*length;
+        return totalBits(length << 3); // * 8
+    }
+    public static int calculateNumberOfBlocksUsed( LongerShortString encoding, int length )
+    {
+        return totalBits(length * encoding.step);
+    }
 
-        int bitsInTotal = 24+4+5+6+bitsForCharacters;
-        int result = ( bitsInTotal - 1 ) / 64 + 1;
-        return result;
+    private static int totalBits( int bitsForCharacters )
+    {
+        int bitsInTotal = 24 + 4 + 5 + 6 + bitsForCharacters;
+        return ((bitsInTotal - 1) >> 6) + 1; // /64
     }
 }

@@ -78,7 +78,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         if ( type == null ) throw new IllegalArgumentException( array + " not a valid array type." );
         
         int arrayLength = Array.getLength( array );
-        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array );
+        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength);
         int totalBits = requiredBits*arrayLength;
         int numberOfBytes = (totalBits-1)/8+1;
         int bitsUsedInLastByte = totalBits%8;
@@ -104,7 +104,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bits.put( (byte)type.intValue() );
             bits.put( (byte)bitsUsedInLastByte );
             bits.put( (byte)requiredBits );
-            for ( int i = 0; i < length; i++ ) type.put( Array.get( array, i ), bits, requiredBits );
+            type.writeAll(array,length,requiredBits,bits);
             bytes = bits.asBytes();
         }
         return allocateRecords( startBlock, bytes );
@@ -178,7 +178,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             int bitsUsedInLastByte = header[1];
             int requiredBits = header[2];
             if ( requiredBits == 0 )
-                return type.createArray( 0 );
+                return type.createEmptyArray();
             Object result = null;
             if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
             {   // Optimization for byte arrays (probably large ones)
@@ -188,8 +188,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             {   // Fallback to the generic approach, which is a slower
                 Bits bits = Bits.bitsFromBytes( bArray );
                 int length = (bArray.length*8-(8-bitsUsedInLastByte))/requiredBits;
-                result = type.createArray( length );
-                for ( int i = 0; i < length; i++ ) type.get( result, i, bits, requiredBits );
+                result = type.createArray(length, bits, requiredBits);
             }
             return result;
         }
