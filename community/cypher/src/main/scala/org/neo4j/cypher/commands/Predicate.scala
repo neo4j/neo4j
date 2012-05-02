@@ -79,6 +79,11 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
     val toNode = to(m).asInstanceOf[Node]
+
+    if ((fromNode == null) || (toNode == null)) {
+      return false
+    }
+
     relType match {
       case None => fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
       case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
@@ -95,11 +100,17 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
 case class HasRelationship(from: Expression, dir: Direction, relType: Option[String]) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
+
+    if (fromNode == null) {
+      return false
+    }
+
     relType match {
       case None => fromNode.getRelationships(dir).iterator().hasNext
       case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().hasNext
     }
   }
+
 
   def atoms: Seq[Predicate] = Seq(this)
 
