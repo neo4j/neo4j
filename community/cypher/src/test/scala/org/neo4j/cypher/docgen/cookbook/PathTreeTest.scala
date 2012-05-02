@@ -48,7 +48,7 @@ class PathTreeTest extends DocumentingTestBase {
     testQuery(
       title = "Return the full range",
       text = """In this case, the range goes from the first to the last leaf of the index tree. Here, 
-      +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values canan
+      +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values can
          be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
         
 include::path-tree-layout-full-range.txt[]
