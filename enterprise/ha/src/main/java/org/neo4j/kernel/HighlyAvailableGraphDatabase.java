@@ -1251,6 +1251,12 @@ public class HighlyAvailableGraphDatabase
         {
             if ( e.getCause() instanceof NoSuchLogVersionException )
             {
+                /*
+                 * This means the master was unable to find a log entry for the txid we just asked. This
+                 * probably means the thing we asked for is too old or too new. Anyway, since it doesn't
+                 * have the tx it is better if we just throw our store away and ask for a new copy. Next
+                 * time around it shouldn't have to even pass from here.
+                 */
                 throw new BranchedDataException( "Maybe not branched data, but it could solve it", e.getCause() );
             }
             else
