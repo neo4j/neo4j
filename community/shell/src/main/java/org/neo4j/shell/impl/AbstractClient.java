@@ -65,7 +65,7 @@ public abstract class AbstractClient implements ShellClient
     public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";
 
     private static final Set<String> EXIT_COMMANDS = new HashSet<String>(
-        Arrays.asList( "exit", "quit" ) );
+        Arrays.asList( "exit", "quit", null ) );
 
     private Console console;
     private long timeConnection;
