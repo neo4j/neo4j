@@ -176,5 +176,6 @@ public class TestZooClient
         }
         wakeMeUp.interrupt();
         wakeMeUp.join();
+        client.shutdown();
     }
 }
