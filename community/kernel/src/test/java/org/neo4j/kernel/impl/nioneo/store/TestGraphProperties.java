@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -46,11 +47,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.*;
 
 import static java.util.Arrays.*;
 import static org.junit.Assert.*;
@@ -323,6 +320,7 @@ public class TestGraphProperties
     }
     
     @Test
+    @Category(SlowTests.class)
     public void twoUncleanInARow() throws Exception
     {
         String storeDir = TargetDirectory.forTest( TestGraphProperties.class ).directory( "nonclean", true ).getAbsolutePath();

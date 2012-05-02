@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.neo4j.test.SlowTests;
 
 public class TestArrayMap
 {
@@ -184,6 +186,7 @@ public class TestArrayMap
     }
     
     @Test
+    @Category(SlowTests.class)
     public void testThreadSafeSize() throws InterruptedException
     {
         ArrayMap<Integer,Object> map = new ArrayMap<Integer,Object>((byte)5, true, true );

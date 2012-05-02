@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -178,6 +180,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
+    @Category(SlowTests.class)
     public void charRange() throws Exception
     {
         Node node = getGraphDb().createNode();
@@ -220,6 +223,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
+    @Category(SlowTests.class)
     public void floatRange() throws Exception
     {
         float step = 1234567890123456789012345678901234.1234F;

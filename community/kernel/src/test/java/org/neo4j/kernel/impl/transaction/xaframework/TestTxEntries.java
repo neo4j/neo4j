@@ -22,10 +22,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.util.Random;
 import javax.transaction.xa.Xid;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -40,6 +42,7 @@ public class TestTxEntries
     private final long startPosition = 1000;
 
     @Test
+    @Category(SlowTests.class)
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
      * triggering a bug where an extra start entry for that tx is written

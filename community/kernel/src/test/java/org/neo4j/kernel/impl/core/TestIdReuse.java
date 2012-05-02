@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.io.File;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.SlowTests;
 
 import static org.junit.Assert.*;
 
@@ -40,6 +42,7 @@ public class TestIdReuse
     }
     
     @Test
+    @Category(SlowTests.class)
     public void makeSureIdsGetsReusedForArrayStore() throws Exception
     {
         long[] array = new long[500];

@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -50,6 +52,7 @@ public class TestBrokenStoreRecovery
      * @throws Exception
      */
     @Test
+    @Category(SlowTests.class)
     public void testTruncatedPropertyStore() throws Exception
     {
         File storeDir = TargetDirectory.forTest(
