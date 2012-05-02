@@ -20,9 +20,12 @@
 
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,8 +35,6 @@ import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
-
-import static org.junit.Assert.*;
 
 public class TestZooClient
 {
@@ -61,7 +62,7 @@ public class TestZooClient
         stringConfig.put( HaSettings.server_id.name(), "1" );
         stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( millisForSessionToExpire ) );
         Config config = new Config(new ConfigurationDefaults(OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ).apply( stringConfig ));
-        
+
         ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
 
         final AtomicBoolean stop = new AtomicBoolean( false );
@@ -158,5 +159,6 @@ public class TestZooClient
         }
         wakeMeUp.interrupt();
         wakeMeUp.join();
+        client.shutdown();
     }
 }
