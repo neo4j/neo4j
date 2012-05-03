@@ -177,12 +177,14 @@ The traversal framework use RelationshipExpanders to discover the relationships 
 
 === Expander ===
 
-A more generic version of relationships where a +RelationshipExpander+ is injected, defining all relationships to be traversed for any given node. By default (and when using relationships) a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#emptyExpander[default expander] is used, where any particular order of relationships isn't guaranteed. There's another implementation which guarantees that relationships are traversed in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/OrderedByTypeExpander.html[order of relationship type], where types are iterated in the order they were added.
+A more generic version of relationships where a +RelationshipExpander+ is injected, defining all relationships to be traversed for any given node. By default (and when using relationships) a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#emptyExpander[default expander] is used, where any particular order of relationships isn't guaranteed.
+There's another implementation which guarantees that relationships are traversed in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/OrderedByTypeExpander.html[order of relationship type], where types are iterated in the order they were added.
 
 The +Expander+ interface is an extension of the +RelationshipExpander+ interface that makes it possible to build customized versions of an +Expander+.
-The implementation of +TraversalDescription+ uses this to provide methods for defining which relationship types to traverse, this is the usual way a user of the API would define a +RelationshipExpander+ - by building it internally in the +TraversalDescription+.
+The implementation of +TraversalDescription+ uses this to provide methods for defining which relationship types to traverse, this is the usual way a user of the API would define a +RelationshipExpander+ -- by building it internally in the +TraversalDescription+.
 
-All the RelationshipExpanders provided by the Neo4j traversal framework also implement the Expander interface. For a user of the traversal API it is easier to implement the RelationshipExpander interface, since it only contains one method - the method for doing getting the relationships from a node, the methods that the Expander interface adds are just for building new Expanders.
+All the RelationshipExpanders provided by the Neo4j traversal framework also implement the Expander interface.
+For a user of the traversal API it is easier to implement the RelationshipExpander interface, since it only contains one method -- the method for getting the relationships from a node, the methods that the Expander interface adds are just for building new Expanders.
 
 :leveloffset: 3
 
