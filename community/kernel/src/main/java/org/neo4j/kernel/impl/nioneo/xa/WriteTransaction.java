@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,8 +73,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 /**
  * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
@@ -84,20 +84,20 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private final Map<Long, PropertyRecord> propertyRecords = new HashMap<Long, PropertyRecord>();
     private final Map<Long,RelationshipRecord> relRecords =
         new HashMap<Long,RelationshipRecord>();
-    private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
+    private Map<Integer, RelationshipTypeRecord> relTypeRecords =
         new HashMap<Integer,RelationshipTypeRecord>();
-    private final Map<Integer,PropertyIndexRecord> propIndexRecords =
+    private Map<Integer, PropertyIndexRecord> propIndexRecords =
         new HashMap<Integer,PropertyIndexRecord>();
 
     private final ArrayList<Command.NodeCommand> nodeCommands =
         new ArrayList<Command.NodeCommand>();
     private final ArrayList<Command.PropertyCommand> propCommands =
         new ArrayList<Command.PropertyCommand>();
-    private final ArrayList<Command.PropertyIndexCommand> propIndexCommands =
+    private ArrayList<Command.PropertyIndexCommand> propIndexCommands =
         new ArrayList<Command.PropertyIndexCommand>();
     private final ArrayList<Command.RelationshipCommand> relCommands =
         new ArrayList<Command.RelationshipCommand>();
-    private final ArrayList<Command.RelationshipTypeCommand> relTypeCommands =
+    private ArrayList<Command.RelationshipTypeCommand> relTypeCommands =
         new ArrayList<Command.RelationshipTypeCommand>();
 
     private final NeoStore neoStore;
@@ -590,17 +590,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             nodeRecords.clear();
             propertyRecords.clear();
             relRecords.clear();
-            relTypeRecords.clear();
-            propIndexRecords.clear();
+            relTypeRecords = null;
+            propIndexRecords = null;
 
             nodeCommands.clear();
             propCommands.clear();
-            propIndexCommands.clear();
+            propIndexCommands = null;
             relCommands.clear();
-            relTypeCommands.clear();
+            relTypeCommands = null;
         }
     }
-
 
     private void removePropertyFromCache( PropertyCommand command )
     {
@@ -1638,7 +1637,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     PropertyIndexRecord getPropertyIndexRecord( int id )
     {
-        return propIndexRecords.get( id );
+        return propIndexRecords != null ? propIndexRecords.get( id ) : null;
     }
 
     private static class LockableRelationship implements Relationship
