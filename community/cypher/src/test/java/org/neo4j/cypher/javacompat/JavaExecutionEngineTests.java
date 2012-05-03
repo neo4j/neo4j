@@ -19,26 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.junit.matchers.JUnitMatchers.hasItem;
-import static org.junit.matchers.JUnitMatchers.hasItems;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +28,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.*;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class JavaExecutionEngineTests
 {
@@ -276,6 +269,28 @@ public class JavaExecutionEngineTests
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 1 ) );
+    }
+
+    @Test
+    public void create_multiple_nodes_from_map() throws Exception
+    {
+        // START SNIPPET: create_multiple_nodes_from_map
+        Map<String, Object> n1 = new HashMap<String, Object>();
+        n1.put( "name", "Andres" );
+        n1.put( "position", "Developer" );
+
+        Map<String, Object> n2 = new HashMap<String, Object>();
+        n2.put( "name", "Michael" );
+        n2.put( "position", "Developer" );
+
+        Map<String, Object> params = new HashMap<String, Object>();
+        List<Map<String, Object>> maps = Arrays.asList(n1, n2);
+        params.put( "props", maps);
+        engine.execute("create n = {props} return n", params);
+        // END SNIPPET: create_multiple_nodes_from_map
+
+        ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        assertThat( count( result ), is( 2 ) );
     }
 
 

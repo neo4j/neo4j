@@ -91,9 +91,10 @@ public class PropertyRecord extends Abstract64BitRecord
     public int size()
     {
         int result = 0;
-        for ( PropertyBlock block : blockRecords )
+        final int size = blockRecords.size();
+        for (int i = 0; i < size; i++)
         {
-            result += block.getSize();
+            result += blockRecords.get(i).getSize();
         }
         return result;
     }

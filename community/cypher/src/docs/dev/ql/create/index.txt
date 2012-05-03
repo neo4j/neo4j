@@ -34,3 +34,25 @@ source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
 tag=create_node_from_map
 classifier=test-sources
 ----
+
+[[create-create-multiple-nodes-from-map]]
+== Create multiple nodes from maps ==
+By providing an iterable of maps (Iterable<Map<String,Object>>), Cypher will create a node for each map
+in the iterable. When you do this, you can't create anything else in the same create statement.
+
+_Query_
+
+[source,cypher]
+----
+create node {props}
+----
+
+This query can be used in the following fashion:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=create_multiple_nodes_from_map
+classifier=test-sources
+----

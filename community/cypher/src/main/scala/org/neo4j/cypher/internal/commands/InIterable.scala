@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.commands
 import collection.Seq
 import org.neo4j.cypher.internal.symbols.{Identifier, AnyIterableType}
 import collection.Map
+import java.lang.{Iterable => JavaIterable}
+import java.util.{Map => JavaMap}
 
-abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate {
+import collection.JavaConverters._
+
+abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate with IterableSupport {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val seq = expression(m) match {
-      case x:Seq[_] => x
-      case x:Array[_] => x.toSeq
-    }
+    val seq = makeTraversable(expression(m)).toSeq
 
     seqMethod(seq)(item => {
       val innerMap = m ++ Map(symbol -> item)
@@ -69,4 +70,19 @@ case class SingleInIterable(iterable: Expression, symbolName: String, inner: Pre
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
   def name = "single"
   def rewrite(f: (Expression) => Expression) = SingleInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
+}
+
+trait IterableSupport {
+  def makeTraversable(z:Any):Traversable[Any] = z match {
+    case x:Seq[_] => x
+    case x:Map[_,_] => Stream(x)
+    case x:JavaMap[_,_] => Stream(x.asScala)
+    case x:Iterable[_] => x.toStream
+    case x:JavaIterable[_] => x.asScala.map {
+      case y:JavaMap[_,_] => y.asScala
+      case y => y
+    }
+    case x:Array[_] => x.toStream
+    case x => Stream(x)
+  }
 }
