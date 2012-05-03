@@ -297,4 +297,43 @@ foreach(n in nodes(p) :
     assert(result === List(Map("n" -> a)))
   }
 
+  @Test
+  def create_multiple_nodes() {
+    val maps = List(
+      Map("name" -> "Andres", "prefers" -> "Scala"),
+      Map("name" -> "Michael", "prefers" -> "Java"),
+      Map("name" -> "Peter", "prefers" -> "Java"))
+
+    val statistics = parseAndExecute("create n = {params}", "params" -> maps).queryStatistics()
+
+    assert(statistics === stats.copy(
+      nodesCreated = 3,
+      propertiesSet = 6
+    ))
+  }
+
+  @Test
+  def create_multiple_nodes_and_return() {
+    val maps = List(
+      Map("name" -> "Andres"),
+      Map("name" -> "Michael"),
+      Map("name" -> "Peter"))
+
+    val result = parseAndExecute("create n = {params} return n", "params" -> maps).toList
+    assert(result.size === 3)
+  }
+
+  @Test
+  def fail_to_create_from_two_iterables() {
+    val maps1 = List(
+      Map("name" -> "Andres"),
+      Map("name" -> "Michael"),
+      Map("name" -> "Peter"))
+    val maps2 = List(
+      Map("name" -> "Andres"),
+      Map("name" -> "Michael"),
+      Map("name" -> "Peter"))
+
+    intercept[ParameterWrongTypeException](parseAndExecute("create a = {params1}, b = {params2}", "params1" -> maps1, "params2" -> maps2))
+  }
 }
