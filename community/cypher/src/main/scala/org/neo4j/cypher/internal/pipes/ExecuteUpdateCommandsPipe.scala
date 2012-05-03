@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.InternalException
 import collection.mutable.{HashSet => MutableHashSet}
 import org.neo4j.cypher.internal.mutation.{DeleteEntityAction, UpdateAction}
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService, NotInTransactionException}
+import org.neo4j.cypher.{ParameterWrongTypeException, InternalException}
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction]) extends PipeWithSource(source) {
 
@@ -31,32 +31,38 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     val deletedNodes = MutableHashSet[Long]()
     val deletedRelationships = MutableHashSet[Long]()
 
-    source.createResults(state).map {
-      case ctx => {
-        executeMutationCommands(ctx, state, deletedNodes, deletedRelationships)
-        ctx
+    if (commands.size == 1) {
+      source.createResults(state).flatMap {
+        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships).flatten
+      }
+    } else {
+      source.createResults(state).flatMap {
+        case ctx => {
+          val commands = executeMutationCommands(ctx, state, deletedNodes, deletedRelationships)
+          commands.foreach(x => if (x.size > 1) throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
+          commands.last
+        }
       }
     }
   }
 
   // TODO: Make it better
-  private def executeMutationCommands(ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long]) {
-
+  private def executeMutationCommands(ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long]): Traversable[Traversable[ExecutionContext]] =
     try {
-      commands.foreach {
+      commands.map {
         case cmd@DeleteEntityAction(expression) => {
           expression(ctx) match {
             case n: Node => {
               if (!deletedNodes.contains(n.getId)) {
                 deletedNodes.add(n.getId)
                 cmd.exec(ctx, state)
-              }
+              } else Stream()
             }
             case r: Relationship => {
               if (!deletedRelationships.contains(r.getId)) {
                 deletedRelationships.add(r.getId)
                 cmd.exec(ctx, state)
-              }
+              } else Stream()
             }
             case _ => cmd.exec(ctx, state)
           }
@@ -66,7 +72,6 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     } catch {
       case e: NotInTransactionException => throw new InternalException("Expected to be in a transaction at this point", e)
     }
-  }
 
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
 

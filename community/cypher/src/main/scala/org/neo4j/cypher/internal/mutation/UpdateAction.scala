@@ -23,19 +23,18 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.graphdb.{RelationshipType => KernelRelType, _}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.cypher.internal.commands.{Property, Expression}
 
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
-
+import collection.Map
+import org.neo4j.cypher.internal.commands.{Literal, IterableSupport, Property, Expression}
 
 abstract class UpdateAction {
-  def exec(context: ExecutionContext, state: QueryState)
+  def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
   def dependencies: Seq[Identifier]
 
   def influenceSymbolTable(symbols: SymbolTable): SymbolTable
-
 
   def makeValueNeoSafe(a: Any): Any = if (a.isInstanceOf[Traversable[_]]) {
     transformTraversableToArray(a)
@@ -64,10 +63,8 @@ abstract class UpdateAction {
     } catch {
       case e: ClassCastException => throw new CypherTypeException("Collections containing mixed types can not be stored in properties.", e)
     }
-
   }
 }
-
 
 trait GraphElementPropertyFunctions extends UpdateAction {
   def setProps(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
@@ -93,26 +90,38 @@ trait GraphElementPropertyFunctions extends UpdateAction {
         state.propertySet.increase()
       }
     }
-
   }
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
     val value = makeValueNeoSafe(expression(context))
     pc.setProperty(key, value)
     state.propertySet.increase()
-
   }
-
 }
 
 case class CreateNodeAction(key: String, props: Map[String, Expression], db: GraphDatabaseService)
-  extends UpdateAction with GraphElementPropertyFunctions {
-  def exec(context: ExecutionContext, state: QueryState) {
-    val node = db.createNode()
-    state.createdNodes.increase()
-    setProps(node, props, context, state)
-    context.put(key, node)
-  }
+  extends UpdateAction
+  with GraphElementPropertyFunctions
+  with IterableSupport {
+  def exec(context: ExecutionContext, state: QueryState) =
+    if (props.size == 1 && props.head._1 == "*") {
+      makeTraversable(props.head._2(context)).map(x => {
+        val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
+          case (k, v) => (k -> Literal(v))
+        }
+        val node = db.createNode()
+        state.createdNodes.increase()
+        setProps(node, m, context, state)
+        context.copy(m = context.m ++ Map(key -> node))
+      })
+    } else {
+      val node = db.createNode()
+      state.createdNodes.increase()
+      setProps(node, props, context, state)
+      context.put(key, node)
+
+      Stream(context)
+    }
 
   def dependencies = propDependencies(props)
 
@@ -131,6 +140,7 @@ case class CreateRelationshipAction(key: String, from: Expression, to: Expressio
     state.createdRelationships.increase()
     setProps(relationship, props, context, state)
     context.put(key, relationship)
+    Stream(context)
   }
 
   def dependencies = from.dependencies(NodeType()) ++ to.dependencies(NodeType()) ++ propDependencies(props)
@@ -142,7 +152,7 @@ case class CreateRelationshipAction(key: String, from: Expression, to: Expressio
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
 
-  def exec(context: ExecutionContext, state: QueryState) {
+  def exec(context: ExecutionContext, state: QueryState) = {
     elementToDelete(context) match {
       case n: Node => {
         state.deletedNodes.increase()
@@ -154,6 +164,8 @@ case class DeleteEntityAction(elementToDelete: Expression)
       }
       case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
+
+    Stream(context)
   }
 
   def dependencies = elementToDelete.dependencies(MapType())
@@ -164,12 +176,14 @@ case class DeleteEntityAction(elementToDelete: Expression)
 case class DeletePropertyAction(element: Expression, property: String)
   extends UpdateAction {
 
-  def exec(context: ExecutionContext, state: QueryState) {
+  def exec(context: ExecutionContext, state: QueryState) = {
     val entity = element(context).asInstanceOf[PropertyContainer]
     if (entity.hasProperty(property)) {
       entity.removeProperty(property)
       state.propertySet.increase()
     }
+
+    Stream(context)
   }
 
   def dependencies = element.dependencies(MapType())
@@ -183,7 +197,7 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def dependencies = e.dependencies(AnyType())
 
-  def exec(context: ExecutionContext, state: QueryState) {
+  def exec(context: ExecutionContext, state: QueryState) = {
     val value = makeValueNeoSafe(e(context))
     val entity = context(entityKey).asInstanceOf[PropertyContainer]
 
@@ -193,38 +207,34 @@ case class PropertySetAction(prop: Property, e: Expression)
     }
 
     state.propertySet.increase()
+
+    Stream(context)
   }
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
 }
 
 case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[UpdateAction])
-  extends UpdateAction {
+  extends UpdateAction
+  with IterableSupport {
   def dependencies = iterable.dependencies(AnyIterableType()) ++ actions.flatMap(_.dependencies).filterNot(_.name == symbol)
 
-  private def getSeq(context: ExecutionContext): Seq[Any] = {
-    iterable(context) match {
-      case x: Seq[_] => x
-      case x: Array[_] => x.toSeq
-      case x => Seq(x)
-    }
-  }
-
-  def exec(context: ExecutionContext, state: QueryState) {
+  def exec(context: ExecutionContext, state: QueryState) = {
     val before = context.get(symbol)
 
-    val seq = getSeq(context)
+    val seq = makeTraversable(iterable(context))
     seq.foreach(element => {
       context.put(symbol, element)
-      actions.foreach( action => action.exec(context, state) )
+      actions.foreach(action => action.exec(context, state))
     })
 
     before match {
       case None => context.remove(symbol)
       case Some(old) => context.put(symbol, old)
     }
-  }
 
+    Stream(context)
+  }
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
 }
