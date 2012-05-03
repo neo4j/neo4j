@@ -48,7 +48,7 @@ function versionSwitcher( $ )
 
   var contentElement = $( CONTENT_ELEMENT );
 
-  var versionSelector = $( '<select id="version-selector" name="version-selector"></select>' );
+  var versionSelector = $( '<select id="version-selector" title="See this page for a different Neo4j version." name="version-selector"></select>' );
 
   loadVersionsIntoSelector( availableDocVersions, versionSelector );
 
