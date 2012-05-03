@@ -21,302 +21,619 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 import org.neo4j.kernel.impl.util.Bits;
 
 public enum ShortArray
 {
-    BOOLEAN( PropertyType.BOOL, 1, Boolean.class )
+    BOOLEAN( PropertyType.BOOL, 1, Boolean.class, boolean.class )
     {
         @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( Object array, int arrayLength )
         {
             return 1;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Boolean)value).booleanValue() ? 1 : 0, 1 );
+            if ( isPrimitive( array ) )
+            {
+                for ( boolean value : (boolean[]) array )
+                {
+                    result.put( value ? 1 : 0, 1 );
+                }
+            } else
+            {
+                for ( boolean value : (Boolean[]) array )
+                {
+                    result.put( value ? 1 : 0, 1 );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new boolean[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_BOOLEAN_ARRAY;
+            }
+            final boolean[] result = new boolean[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = bits.getByte( requiredBits ) != 0;
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            Array.setBoolean( array, position, bits.getByte( requiredBits ) != 0 );
+            return EMPTY_BOOLEAN_ARRAY;
         }
     },
-    BYTE( PropertyType.BYTE, 8, Byte.class )
+    BYTE( PropertyType.BYTE, 8, Byte.class, byte.class )
     {
-        @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( byte value )
         {
-            byte v = ((Number)value).byteValue();
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & value) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( byte value : (byte[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( byte value : (Byte[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Byte)value).byteValue(), requiredBits );
-        }
-
-        @Override
-        Object createArray( int ofLength )
-        {
-            return new byte[ofLength];
-        }
-
-        @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
-        {
-            Array.setByte( array, position, bits.getByte( requiredBits ) );
-        }
-    },
-    SHORT( PropertyType.SHORT, 16, Short.class )
-    {
-        @Override
-        int getRequiredBits( Object value )
-        {
-            short v = ((Number)value).shortValue();
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            if ( isPrimitive( array ) )
             {
-                if ( (mask&v) != 0 )
+                for ( byte b : (byte[]) array )
                 {
-                    highest = i;
+                    result.put( b, requiredBits );
+                }
+            } else
+            {
+                for ( byte b : (Byte[]) array )
+                {
+                    result.put( b, requiredBits );
+                }
+            }
+        }
+
+        @Override
+        Object createArray( int length, Bits bits, int requiredBits )
+        {
+            if ( length == 0 )
+            {
+                return EMPTY_BYTE_ARRAY;
+            }
+            final byte[] result = new byte[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = bits.getByte( requiredBits );
+            }
+            return result;
+        }
+
+        @Override
+        public Object createEmptyArray()
+        {
+            return EMPTY_BYTE_ARRAY;
+        }
+
+    },
+    SHORT( PropertyType.SHORT, 16, Short.class, short.class )
+    {
+        int getRequiredBits( short value )
+        {
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
+            {
+                if ( (mask & value) != 0 )
+                {
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( short value : (short[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( short value : (Short[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Short)value).shortValue(), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( short value : (short[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            } else
+            {
+                for ( short value : (Short[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new short[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_SHORT_ARRAY;
+            }
+            final short[] result = new short[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = bits.getShort( requiredBits );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            Array.setShort( array, position, bits.getShort( requiredBits ) );
+            return EMPTY_SHORT_ARRAY;
         }
     },
-    CHAR( PropertyType.CHAR, 16, Character.class )
+    CHAR( PropertyType.CHAR, 16, Character.class , char.class)
     {
-        @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( char value )
         {
-            char v = ((Character)value).charValue();
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & value) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( char value : (char[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( char value : (Character[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Character)value).charValue(), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( char value : (char[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            } else
+            {
+                for ( char value : (Character[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new char[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_CHAR_ARRAY;
+            }
+            final char[] result = new char[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = (char) bits.getShort( requiredBits );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            Array.setChar( array, position, (char)bits.getShort( requiredBits ) );
+            return EMPTY_CHAR_ARRAY;
         }
     },
-    INT( PropertyType.INT, 32, Integer.class )
+    INT( PropertyType.INT, 32, Integer.class , int.class)
     {
-        @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( int value )
         {
-            int v = ((Number)value).intValue();
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & value) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( int value : (int[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( int value : (Integer[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Integer)value).intValue(), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( int value : (int[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            } else
+            {
+                for ( int value : (Integer[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new int[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_INT_ARRAY;
+            }
+            final int[] result = new int[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = bits.getInt( requiredBits );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            Array.setInt( array, position, bits.getInt( requiredBits ) );
+            return EMPTY_INT_ARRAY;
         }
     },
-    LONG( PropertyType.LONG, 64, Long.class )
+    LONG( PropertyType.LONG, 64, Long.class , long.class)
     {
-        @Override
-        int getRequiredBits( Object value )
+        public int getRequiredBits( long value )
         {
-            long v = ((Number)value).longValue();
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & value) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( long value : (long[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( long value : (Long[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( ((Long)value).longValue(), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( long value : (long[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            } else
+            {
+                for ( long value : (Long[]) array )
+                {
+                    result.put( value, requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new long[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_LONG_ARRAY;
+            }
+            final long[] result = new long[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = bits.getLong( requiredBits );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            Array.setLong( array, position, bits.getLong( requiredBits ) );
+            return EMPTY_LONG_ARRAY;
         }
     },
-    FLOAT( PropertyType.FLOAT, 32, Float.class )
+    FLOAT( PropertyType.FLOAT, 32, Float.class ,float.class)
     {
-        @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( float value )
         {
-            int v = Float.floatToIntBits( ((Number)value).floatValue() );
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            int v = Float.floatToIntBits( value );
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & v) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( float value : (float[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( float value : (Float[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( Float.floatToIntBits( ((Float)value).floatValue() ), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( float value : (float[]) array )
+                {
+                    result.put( Float.floatToIntBits( value ), requiredBits );
+                }
+            } else
+            {
+                for ( float value : (Float[]) array )
+                {
+                    result.put( Float.floatToIntBits( value ), requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new float[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_FLOAT_ARRAY;
+            }
+            final float[] result = new float[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = Float.intBitsToFloat( bits.getInt( requiredBits ) );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            int value = bits.getInt( requiredBits );
-            Array.setFloat( array, position, Float.intBitsToFloat( value ) );
+            return EMPTY_FLOAT_ARRAY;
         }
     },
-    DOUBLE( PropertyType.DOUBLE, 64, Double.class )
+    DOUBLE( PropertyType.DOUBLE, 64, Double.class, double.class )
     {
-        @Override
-        int getRequiredBits( Object value )
+        int getRequiredBits( double value )
         {
-            long v = Double.doubleToLongBits( ((Number)value).doubleValue() );
-            int highest = 0;
-            long mask = 1;
-            for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
+            long v = Double.doubleToLongBits( value );
+            long mask = 1L << maxBits - 1;
+            for ( int i = maxBits; i > 0; i--, mask >>= 1 )
             {
-                if ( (mask&v) != 0 )
+                if ( (mask & v) != 0 )
                 {
-                    highest = i;
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        int getRequiredBits( Object array, int arrayLength )
+        {
+            int highest = 1;
+            if ( isPrimitive( array ) )
+            {
+                for ( double value : (double[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
+                }
+            } else
+            {
+                for ( double value : (Double[]) array )
+                {
+                    highest = Math.max( getRequiredBits( value ), highest );
                 }
             }
             return highest;
         }
 
         @Override
-        void put( Object value, Bits bytes, int requiredBits )
+        void writeAll( Object array, int length, int requiredBits, Bits result )
         {
-            bytes.put( Double.doubleToLongBits( ((Double)value).doubleValue() ), requiredBits );
+            if ( isPrimitive( array ) )
+            {
+                for ( double value : (double[]) array )
+                {
+                    result.put( Double.doubleToLongBits( value ), requiredBits );
+                }
+            } else
+            {
+                for ( double value : (Double[]) array )
+                {
+                    result.put( Double.doubleToLongBits( value ), requiredBits );
+                }
+            }
         }
 
         @Override
-        Object createArray( int ofLength )
+        Object createArray( int length, Bits bits, int requiredBits )
         {
-            return new double[ofLength];
+            if ( length == 0 )
+            {
+                return EMPTY_DOUBLE_ARRAY;
+            }
+            final double[] result = new double[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[i] = Double.longBitsToDouble( bits.getLong( requiredBits ) );
+            }
+            return result;
         }
 
         @Override
-        void get( Object array, int position, Bits bits, int requiredBits )
+        public Object createEmptyArray()
         {
-            long value = bits.getLong( requiredBits );
-            Array.setDouble( array, position, Double.longBitsToDouble( value ) );
+            return EMPTY_DOUBLE_ARRAY;
         }
     };
+    public static final boolean[] EMPTY_BOOLEAN_ARRAY = new boolean[0];
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final short[] EMPTY_SHORT_ARRAY = new short[0];
+    public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+    public static final int[] EMPTY_INT_ARRAY = new int[0];
+    public static final long[] EMPTY_LONG_ARRAY = new long[0];
+    public static final float[] EMPTY_FLOAT_ARRAY = new float[0];
+    public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
+
+    private static boolean isPrimitive( Object array )
+    {
+        return array.getClass().getComponentType().isPrimitive();
+    }
+
+    private final static Map<Class, ShortArray> all = new IdentityHashMap<Class, ShortArray>( values().length * 2 );
+
+    static
+    {
+        for ( ShortArray shortArray : values() )
+        {
+            all.put( shortArray.primitiveClass, shortArray );
+            all.put( shortArray.boxedClass, shortArray );
+        }
+    }
 
     final int maxBits;
 
     private final Class<?> boxedClass;
+    private final Class<?> primitiveClass;
     private final PropertyType type;
 
-    private ShortArray( PropertyType type, int maxBits, Class<?> boxedClass )
+    private ShortArray( PropertyType type, int maxBits, Class<?> boxedClass, Class<?> primitiveClass)
     {
         this.type = type;
         this.maxBits = maxBits;
         this.boxedClass = boxedClass;
+        this.primitiveClass = primitiveClass;
     }
 
     public int intValue()
@@ -324,28 +641,11 @@ public enum ShortArray
         return type.intValue();
     }
 
-    abstract int getRequiredBits( Object value );
-
-    abstract void put( Object value, Bits bits, int requiredBits );
-
-    abstract void get( Object array, int position, Bits bits, int requiredBits );
-
-    abstract Object createArray( int ofLength );
-
-    boolean matches( Class<?> cls )
-    {
-        return boxedClass.equals( cls );
-    }
+    abstract Object createArray(int length, Bits bits, int requiredBits);
 
     public static boolean encode( int keyId, Object array,
-            PropertyBlock target, int payloadSizeInBytes )
+                                  PropertyBlock target, int payloadSizeInBytes )
     {
-        ShortArray type = typeOf( array );
-        if ( type == null )
-        {
-            return false;
-        }
-
         /*
          *  If the array is huge, we don't have to check anything else.
          *  So do the length check first.
@@ -355,40 +655,49 @@ public enum ShortArray
         {
             return false;
         }
-        int requiredBits = type.calculateRequiredBitsForArray( array );
+
+        ShortArray type = typeOf( array );
+        if ( type == null )
+        {
+            return false;
+        }
+
+        int requiredBits = type.calculateRequiredBitsForArray( array, arrayLength );
         if ( !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
             return false;
         }
-        Bits result = Bits.bits( calculateNumberOfBlocksUsed( arrayLength, requiredBits )*8 );
-        if ( result.getLongs().length > PropertyType.getPayloadSizeLongs() )
+        final int numberOfBytes = calculateNumberOfBlocksUsed( arrayLength, requiredBits ) * 8;
+        if ( Bits.requiredLongs( numberOfBytes ) > PropertyType.getPayloadSizeLongs() )
         {
             return false;
         }
+        Bits result = Bits.bits( numberOfBytes );
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        writeHeader( keyId, type, arrayLength, requiredBits, result );
+        type.writeAll( array, arrayLength, requiredBits, result );
+        target.setValueBlocks( result.getLongs() );
+        return true;
+    }
+
+    private static void writeHeader( int keyId, ShortArray type, int arrayLength, int requiredBits, Bits result )
+    {
         result.put( keyId, 24 );
         result.put( PropertyType.SHORT_ARRAY.intValue(), 4 );
         result.put( type.type.intValue(), 4 );
         result.put( arrayLength, 6 );
         result.put( requiredBits, 6 );
-
-        for ( int i = 0; i < arrayLength; i++ )
-        {
-            type.put( Array.get( array, i ), result, requiredBits );
-        }
-        target.setValueBlocks( result.getLongs() );
-        return true;
     }
 
     public static Object decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs( Arrays.copyOf( block.getValueBlocks(), block.getValueBlocks().length ) );
+        Bits bits = Bits.bitsFromLongs(Arrays.copyOf(block.getValueBlocks(), block.getValueBlocks().length));
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.getInt( 24 ); // Get rid of key
         bits.getByte( 4 ); // Get rid of short array type
         int typeId = bits.getByte( 4 );
-        int arrayLength = bits.getByte( 6 );
+        int arrayLength = bits.getByte(6);
         int requiredBits = bits.getByte( 6 );
         /*
          * So, it can be the case that values require 64 bits to store. However, you cannot encode this
@@ -401,13 +710,9 @@ public enum ShortArray
             requiredBits = 64;
         }
         ShortArray type = typeOf( (byte)typeId );
-        Object array = type.createArray( arrayLength );
-        for ( int i = 0; i < arrayLength; i++ )
-        {
-            type.get( array, i, bits, requiredBits );
-        }
-        return array;
+        return type.createArray(arrayLength, bits, requiredBits);
     }
+
 
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
@@ -416,21 +721,31 @@ public enum ShortArray
         return totalBitsRequired <= maxBits;
     }
 
-    public int calculateRequiredBitsForArray( Object array )
+    public int calculateRequiredBitsForArray(Object array, int arrayLength)
     {
-        int arrayLength = Array.getLength( array );
         if ( arrayLength == 0 )
         {
             return 0;
         }
+        // return getRequiredBits(findBiggestValue(array, arrayLength));
+        return getRequiredBits(array, arrayLength);
+    }
+
+    public int getRequiredBits( long value )
+    {
         int highest = 1;
-        for ( int i = 0; i < arrayLength; i++ )
+        long mask = 1;
+        for ( int i = 1; i <= maxBits; i++, mask <<= 1 )
         {
-            Object value = Array.get( array, i );
-            highest = Math.max( highest, getRequiredBits( value ) );
+            if ( (mask & value) != 0 )
+            {
+                highest = i;
+            }
         }
         return highest;
     }
+
+    abstract int getRequiredBits(Object array, int arrayLength);
 
     public static ShortArray typeOf( byte typeId )
     {
@@ -439,23 +754,7 @@ public enum ShortArray
 
     public static ShortArray typeOf( Object array )
     {
-        Class<?> componentType = array.getClass().getComponentType();
-        if ( componentType.isPrimitive() )
-        {
-            String name = componentType.getSimpleName();
-            return valueOf( name.toUpperCase() );
-        }
-        else
-        {
-            for ( ShortArray type : values() )
-            {
-                if ( type.matches( componentType ) )
-                {
-                    return type;
-                }
-            }
-        }
-        return null;
+        return ShortArray.all.get(array.getClass().getComponentType());
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
@@ -483,5 +782,12 @@ public enum ShortArray
         int totalBits = 24 + 4 + 4 + 6 + 6 + bitsForItems;
         int result = ( totalBits - 1 ) / 64 + 1;
         return result;
+    }
+
+    abstract void writeAll(Object array, int length, int requiredBits, Bits result);
+
+    public Object createEmptyArray()
+    {
+        return Array.newInstance( primitiveClass, 0 );
     }
 }

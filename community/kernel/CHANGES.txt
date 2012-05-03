@@ -1,3 +1,7 @@
+1.8.M02 (2012-05-10)
+--------------------
+o Optimized short string and short array encoding algorithms
+
 1.8.M01 (2012-04-26)
 --------------------
 o Byte array properties are handled in a more optimized way, increasing performance by a couple of times at least.
