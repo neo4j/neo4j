@@ -336,4 +336,21 @@ foreach(n in nodes(p) :
 
     intercept[ParameterWrongTypeException](parseAndExecute("create a = {params1}, b = {params2}", "params1" -> maps1, "params2" -> maps2))
   }
+
+  @Test
+  def first_read_then_write() {
+    val root = createNode()
+    val a = createNode("Alfa")
+    val b = createNode("Beta")
+    val c = createNode("Gamma")
+
+    relate(root,a)
+    relate(root,b)
+    relate(root,c)
+
+    parseAndExecute("start root=node(1) match root-->other create new={name:other.name}, root-[:REL]->new")
+
+    val result = parseAndExecute("start root=node(1) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
+    assert(result === List("Alfa","Alfa","Beta","Beta","Gamma","Gamma"))
+  }
 }
