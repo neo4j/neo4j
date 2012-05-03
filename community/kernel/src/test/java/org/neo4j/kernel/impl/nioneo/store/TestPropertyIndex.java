@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.batchinsert.BatchInserter;
+import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class TestPropertyIndex
 {
@@ -40,7 +40,7 @@ public class TestPropertyIndex
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
         File dir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-        BatchInserter inserter = BatchInserters.inserter( dir.getAbsolutePath() );
+        BatchInserter inserter = new BatchInserterImpl( dir.getAbsolutePath() );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
