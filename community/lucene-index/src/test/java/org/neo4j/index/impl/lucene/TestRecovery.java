@@ -144,47 +144,4 @@ public class TestRecovery
                                                    new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();
     }
-
-    @Test
-    public void testHardCoreRecovery() throws Exception
-    {
-        String path = "target/hcdb";
-        FileUtils.deleteRecursively( new File( path ) );
-        Process process = Runtime.getRuntime().exec( new String[] {
-                "java", "-cp", System.getProperty( "java.class.path" ),
-                Inserter.class.getName(), path
-        } );
-        
-        // Let it run for a while and then kill it, and wait for it to die
-        Thread.sleep( 5000 );
-        process.destroy();
-        process.waitFor();
-        
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-        assertTrue( db.index().existsForNodes( "myIndex" ) );
-        Index<Node> index = db.index().forNodes( "myIndex" );
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-        {
-            for ( String key : node.getPropertyKeys() )
-            {
-                String value = (String) node.getProperty( key );
-                boolean found = false;
-                for ( Node indexedNode : index.get( key, value ) )
-                {
-                    if ( indexedNode.equals( node ) )
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if ( !found )
-                {
-                    throw new IllegalStateException( node + " has property '" + key + "'='" +
-                            value + "', but not in index" );
-                }
-            }
-        }
-        db.shutdown();
-    }
-  
 }
