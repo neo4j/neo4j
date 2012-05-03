@@ -23,7 +23,6 @@ package org.neo4j.index.impl.lucene;
 import java.io.File;
 import java.util.Map;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.SlowTests;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.*;
@@ -108,7 +106,6 @@ public class TestRecovery
     }
     
     @Test
-    @Category(SlowTests.class)
     public void testIndexDeleteIssue() throws Exception
     {
         GraphDatabaseService db = newGraphDbService();
@@ -126,7 +123,6 @@ public class TestRecovery
     }
 
     @Test
-    @Category(SlowTests.class)
     public void recoveryForRelationshipCommandsOnly() throws Exception
     {
         String path = getDbPath();
@@ -153,7 +149,6 @@ public class TestRecovery
     }
 
     @Test
-    @Category(SlowTests.class)
     public void testHardCoreRecovery() throws Exception
     {
         String path = "target/hcdb";

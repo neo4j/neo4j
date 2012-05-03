@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.core;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.SlowTests;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase
 public class TestLargeProperties extends AbstractNeo4jTestCase
@@ -45,7 +43,6 @@ public class TestLargeProperties extends AbstractNeo4jTestCase
     }
     
     @Test
-    @Category(SlowTests.class)
     public void testLargeProperties()
     {
         byte[] bytes = new byte[10*1024*1024];

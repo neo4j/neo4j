@@ -36,7 +36,6 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.test.SlowTests;
 
 public class TestBigJumpingStore
 {
@@ -109,7 +107,6 @@ public class TestBigJumpingStore
     }
 
     @Test
-    @Category(SlowTests.class)
     public void crudOnHighIds() throws Exception
     {
         // Create stuff

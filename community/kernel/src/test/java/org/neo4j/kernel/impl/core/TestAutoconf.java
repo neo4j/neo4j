@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
@@ -41,12 +40,10 @@ import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.SlowTests;
 
 public class TestAutoconf
 {
     @Test
-    @Category(SlowTests.class)
     public void autoConfResultsInMoreMemoryForBiggerStore() throws Exception
     {
         String storeDir = forTest( getClass() ).directory( "db", true ).getAbsolutePath();

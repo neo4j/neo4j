@@ -26,9 +26,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString.Charset;
-import org.neo4j.test.SlowTests;
 
 public class TestLongerShortString
 {
@@ -62,7 +60,6 @@ public class TestLongerShortString
     }
 
     @Test
-    @Category(SlowTests.class)
     public void testRandomStrings() throws Exception
     {
         for ( int i = 0; i < 1000; i++ )

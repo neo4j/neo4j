@@ -36,7 +36,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +43,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.test.SlowTests;
 
 public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
 {
@@ -124,7 +122,6 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
      * @throws Exception
      */
     @Test
-    @Category(SlowTests.class)
     public void makeSureFilesAreClosedProperly() throws Exception
     {
         commitTx();
@@ -207,8 +204,8 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
         latch.await();
     }
 
+    @Ignore
     @Test
-    @Category(SlowTests.class)
     public void testPerformanceForManySmallTransactions() throws Exception
     {
         final Index<Node> index = nodeIndex( "index", LuceneIndexImplementation.EXACT_CONFIG );

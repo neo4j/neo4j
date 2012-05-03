@@ -38,13 +38,10 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.SlowTests;
 
-@Category(SlowTests.class)
 public class StoreUpgraderTest
 {
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )

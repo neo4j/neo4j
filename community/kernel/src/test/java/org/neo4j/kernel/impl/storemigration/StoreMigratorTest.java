@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -53,13 +52,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.SlowTests;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 public class StoreMigratorTest
 {
     @Test
-    @Category(SlowTests.class)
     public void shouldMigrate() throws IOException
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
