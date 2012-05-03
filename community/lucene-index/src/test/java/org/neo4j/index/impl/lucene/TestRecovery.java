@@ -34,7 +34,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -44,10 +43,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.*;
 
