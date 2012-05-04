@@ -37,13 +37,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Entity("s"), "s")))
   }
 
-  @Test def end_with_semicolon_is_not_a_problem() {
-    testFrom_1_8("start s = NODE(1) return s;",
-      Query.
-        start(NodeById("s", 1)).
-        returns(ReturnItem(Entity("s"), "s")))
-  }
-
   @Test def allTheNodes() {
     testFrom_1_7("start s = NODE(*) return s",
       Query.
@@ -1673,6 +1666,7 @@ create a-[r:REL]->b
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
+    testQuery(None, query + ";", expectedQuery)
   }
 
   def test_1_6(query: String, expectedQuery: Query) {

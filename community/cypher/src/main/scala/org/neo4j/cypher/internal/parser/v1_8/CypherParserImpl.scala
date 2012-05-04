@@ -99,7 +99,7 @@ Thank you, the Neo4j Team.""")
     }
   }
 
-  def noBody: Parser[Body] = "$".r ^^ (x => NoBody())
+  def noBody: Parser[Body] = opt(";") ~> "$".r ^^ (x => NoBody())
 
   def checkForAggregates(where: Option[Predicate]) {
     where match {
