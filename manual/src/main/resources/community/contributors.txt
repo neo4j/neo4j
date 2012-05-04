@@ -42,5 +42,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Hendy Irawan |https://github.com/ceefour[ceefour]
 |Luanne Misquitta |https://github.com/luanne[luanne]
 |Jim Radford |https://github.com/radford[radford]
+|Axel Morgner |https://github.com/amorgner[amorgner]
 |=======
 
