@@ -23,8 +23,8 @@ public class BatchOperationFailedException extends RuntimeException {
 
     private int status;
 
-    public BatchOperationFailedException(int status, String message) {
-        super(message);
+    public BatchOperationFailedException( int status, String message, Exception e ) {
+        super(message,e);
         this.status = status;
     }
 

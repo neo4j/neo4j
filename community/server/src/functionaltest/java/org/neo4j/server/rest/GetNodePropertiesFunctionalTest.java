@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,10 +31,12 @@ import javax.ws.rs.core.MediaType;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -91,6 +94,35 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         JaxRsResponse response = request.get(createResponse.getLocation().toString() + "/properties");
         assertNotNull( response.getHeaders().get("Content-Length") );
+    }
+
+    @Test
+    public void shouldGetCorrectContentEncodingRetrievingProperties() throws PropertyValueException
+    {
+        String asianText = "\u4f8b\u5b50";
+        String germanText = "öäüÖÄÜß";
+
+        String complicatedString = asianText + germanText;
+
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
+        final RestRequest request = req;
+        JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
+        String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) ).getEntity() );
+        assertEquals( complicatedString, response );
+    }
+    @Test
+    public void shouldGetCorrectContentEncodingRetrievingPropertiesWithStreaming() throws PropertyValueException
+    {
+        String asianText = "\u4f8b\u5b50";
+        String germanText = "öäüÖÄÜß";
+
+        String complicatedString = asianText + germanText;
+
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
+        final RestRequest request = req;
+        JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
+        String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) , new MediaType( "application","json", stringMap( "stream", "true" ) )).getEntity() );
+        assertEquals( complicatedString, response );
     }
 
     @Test

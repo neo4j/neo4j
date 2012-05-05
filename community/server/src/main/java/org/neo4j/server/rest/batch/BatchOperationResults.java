@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.repr;
+package org.neo4j.server.rest.batch;
 
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -47,7 +47,7 @@ public class BatchOperationResults
     private Map<Integer, String> locations = new HashMap<Integer, String>();
 
     public BatchOperationResults() {
-        results.append(OPENING_BRACKET);
+        results.append( OPENING_BRACKET );
     }
 
     public void addOperationResult( String from, Integer id, String body, String location )
@@ -94,7 +94,7 @@ public class BatchOperationResults
 
     public String toJSON()
     {
-        results.append(CLOSING_BRACKET);
+        results.append( CLOSING_BRACKET );
         return results.toString();
     }
 }

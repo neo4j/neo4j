@@ -21,44 +21,31 @@ package org.neo4j.server.rest.web;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.net.URI;
-import java.util.List;
+import java.io.OutputStream;
 import java.util.Map;
 
-import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.mortbay.log.Log;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.domain.BatchOperationFailedException;
+import org.neo4j.server.rest.batch.BatchOperationResults;
+import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.BatchOperationResults;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.web.WebServer;
 
 @Path("/batch")
 public class BatchOperationService {
-
-    private static final String ID_KEY = "id";
-    private static final String METHOD_KEY = "method";
-    private static final String BODY_KEY = "body";
-    private static final String TO_KEY = "to";
-
-    private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final OutputFormat output;
     private final WebServer webServer;
@@ -77,65 +64,60 @@ public class BatchOperationService {
             @Context HttpHeaders httpHeaders, InputStream body)
             throws BadInputException
     {
-        GraphDatabaseAPI db = database.graph;
+        if (isStreaming(httpHeaders)) {
+            return batchProcessAndStream( uriInfo, httpHeaders, body );
+        } else {
+            return batchProcess( uriInfo, httpHeaders, body );
+        }
+    }
 
-        Transaction tx = db.beginTx();
+    private Response batchProcessAndStream( final UriInfo uriInfo, final HttpHeaders httpHeaders, final InputStream body )
+    {
         try
         {
-            JsonParser jp = jsonFactory.createJsonParser(body);
-            ObjectMapper mapper = new ObjectMapper();
-
-            BatchOperationResults results = new BatchOperationResults();
-
-            JsonToken token;
-            String field;
-            String jobMethod, jobPath, jobBody;
-            Integer jobId;
-
-            // TODO: Perhaps introduce a simple DSL for
-            // deserializing streamed JSON?
-            while ((token = jp.nextToken()) != null)
-            {
-                if (token == JsonToken.START_OBJECT)
+            final StreamingOutput stream = new StreamingOutput() {
+                public void write(final OutputStream output) throws IOException, WebApplicationException
                 {
-                    jobMethod = jobPath = jobBody = "";
-                    jobId = null;
-                    while ((token = jp.nextToken()) != JsonToken.END_OBJECT
-                            && token != null)
-                    {
-                        field = jp.getText();
-                        token = jp.nextToken();
-                        if (field.equals(METHOD_KEY))
-                        {
-                            jobMethod = jp.getText().toUpperCase();
-                        } else if (field.equals(TO_KEY))
-                        {
-                            jobPath = jp.getText();
-                        } else if (field.equals(ID_KEY))
-                        {
-                            jobId = jp.getIntValue();
-                        } else if (field.equals(BODY_KEY))
-                        {
-                            JsonNode node = mapper.readTree(jp);
-                            StringWriter out = new StringWriter();
-                            JsonGenerator gen = jsonFactory
-                                    .createJsonGenerator(out);
-                            mapper.writeTree(gen, node);
-                            gen.flush();
-                            gen.close();
-                            jobBody = out.toString();
-                        }
+                    Transaction tx = database.graph.beginTx();
+                    try {
+                        final ServletOutputStream servletOutputStream = new ServletOutputStream() {
+                            public void write(int i) throws IOException {
+                                output.write(i);
+                            }
+                        };
+                        new StreamingBatchOperations(webServer).readAndExecuteOperations( uriInfo, httpHeaders, body, servletOutputStream );
+                        tx.success();
+                    } catch (Exception e) {
+                        Log.warn( "Error executing batch request ", e );
+                        tx.failure();
+//                        if (e instanceof RuntimeException) throw (RuntimeException)e;
+//                        throw new WebApplicationException(e);
+                    } finally {
+                        tx.finish();
                     }
-
-                    // Read one job description. Execute it.
-                    performJob(results, uriInfo, jobMethod, jobPath, jobBody,
-                            jobId, httpHeaders);
                 }
-            }
+            };
+
+            return Response.ok(stream)
+                    .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
+                    .type( MediaType.APPLICATION_JSON ).build();
+        } catch (Exception e)
+        {
+            return output.serverError(e);
+        }
+    }
+
+    private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body )
+    {
+        Transaction tx = database.graph.beginTx();
+        try
+        {
+            NonStreamingBatchOperations batchOperations = new NonStreamingBatchOperations( webServer );
+            BatchOperationResults results = batchOperations.performBatchJobs( uriInfo, httpHeaders, body );
 
             Response res = Response.ok().entity(results.toJSON())
                     .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
-                    .type(MediaType.APPLICATION_JSON).build();
+                    .type( MediaType.APPLICATION_JSON).build();
 
             tx.success();
             return res;
@@ -149,94 +131,17 @@ public class BatchOperationService {
         }
     }
 
-    private void performJob(BatchOperationResults results, UriInfo uriInfo,
-            String method, String path, String body, Integer id,
-            HttpHeaders httpHeaders) throws IOException, ServletException
+    private boolean isStreaming( HttpHeaders httpHeaders )
     {
-        // Replace {[ID]} placeholders with location values
-        Map<Integer, String> locations = results.getLocations();
-        path = replaceLocationPlaceholders(path, locations);
-        body = replaceLocationPlaceholders(body, locations);
-
-        URI targetUri = calculateTargetUri(uriInfo, path);
-
-        InternalJettyServletRequest req = new InternalJettyServletRequest(
-                method, targetUri.toString(), body);
-        InternalJettyServletResponse res = new InternalJettyServletResponse();
-        addHeaders(req, httpHeaders);
-
-        webServer.invokeDirectly(targetUri.getPath(), req, res);
-
-        if (is2XXStatusCode(res.getStatus()))
+        for ( MediaType mediaType : httpHeaders.getAcceptableMediaTypes() )
         {
-            results.addOperationResult(path, id, res.getOutputStream()
-                    .toString(), res.getHeader("Location"));
-        } else
-        {
-            throw new BatchOperationFailedException(res.getStatus(), res
-                    .getOutputStream().toString());
-        }
-    }
-
-    private void addHeaders(final InternalJettyServletRequest res,
-            final HttpHeaders httpHeaders)
-    {
-        for (Map.Entry<String, List<String>> header : httpHeaders
-                .getRequestHeaders().entrySet())
-        {
-            final String key = header.getKey();
-            final List<String> value = header.getValue();
-            if (value == null)
-                continue;
-            if (value.size() != 1)
-                throw new IllegalArgumentException(
-                        "expecting one value per header");
-            if (key.equals("Accept") || key.equals("Content-Type"))
+            Map<String, String> parameters = mediaType.getParameters();
+            if ( parameters.containsKey( "stream" ) && parameters.get("stream").equals( "true" ) )
             {
-                continue; // We add them explicitly
-            } else
-            {
-                res.addHeader(key, value.get(0));
+                return true;
             }
         }
-        // Make sure they are there and always json
-        // Taking advantage of Map semantics here
-        res.addHeader("Accept", "application/json");
-        res.addHeader("Content-Type", "application/json");
+        return false;
     }
 
-    private URI calculateTargetUri(UriInfo serverUriInfo, String requestedPath)
-    {
-        URI baseUri = serverUriInfo.getBaseUri();
-
-        if (requestedPath.startsWith(baseUri.toString()))
-        {
-            requestedPath = requestedPath
-                    .substring(baseUri.toString().length());
-        }
-
-        if (!requestedPath.startsWith("/"))
-        {
-            requestedPath = "/" + requestedPath;
-        }
-
-        return baseUri.resolve("." + requestedPath);
-    }
-
-    private String replaceLocationPlaceholders(String str,
-            Map<Integer, String> locations)
-    {
-        // TODO: Potential memory-hog on big requests, write smarter
-        // implementation.
-        for (Integer jobId : locations.keySet())
-        {
-            str = str.replace("{" + jobId + "}", locations.get(jobId));
-        }
-        return str;
-    }
-
-    private boolean is2XXStatusCode(int statusCode)
-    {
-        return statusCode >= 200 && statusCode < 300;
-    }
 }

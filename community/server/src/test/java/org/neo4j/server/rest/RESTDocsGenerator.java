@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,6 +94,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
+    private Map<String, String> headers = new TreeMap<String, String>(  );
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -164,6 +166,18 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     public RESTDocsGenerator payloadType( final MediaType payloadMediaType )
     {
         this.payloadMediaType = payloadMediaType;
+        return this;
+    }
+
+    /**
+     * The additional headers for the request
+     *
+     * @param key header key
+     * @param value header value
+     */
+    public RESTDocsGenerator withHeader( final String key, final String value )
+    {
+        this.headers.put(key,value);
         return this;
     }
 

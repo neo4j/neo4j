@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 public class ExceptionRepresentation extends MappingRepresentation
 {
     private final Throwable exception;
@@ -41,12 +44,13 @@ public class ExceptionRepresentation extends MappingRepresentation
         StackTraceElement[] trace = exception.getStackTrace();
         if ( trace != null )
         {
-            String[] lines = new String[trace.length];
-            for ( int i = 0; i < lines.length; i++ )
+            Collection<String> lines = new ArrayList<String>( trace.length );
+            for ( StackTraceElement element : trace )
             {
-                lines[i] = trace[i].toString();
+                if (element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" )) continue;
+                lines.add( element.toString() );
             }
-            serializer.putList( "stacktrace", ListRepresentation.strings( lines ) );
+            serializer.putList( "stacktrace", ListRepresentation.string( lines ) );
         }
     }
 }
