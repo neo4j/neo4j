@@ -146,7 +146,11 @@ trait Expressions extends Base {
     "sign" -> func(1, args => SignFunction(args.head)),
     "head" -> func(1, args => HeadFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
-    "tail" -> func(1, args => TailFunction(args.head))
+    "tail" -> func(1, args => TailFunction(args.head)),
+    "range" -> Function(x => x == 2||x == 3, args => {
+      val step = if (args.size == 2) Literal(1) else args(2)
+      RangeFunction(args(0), args(1), step)
+    })
   )
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
