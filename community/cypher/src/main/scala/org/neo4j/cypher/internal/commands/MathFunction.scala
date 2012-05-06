@@ -44,14 +44,16 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
 }
 
 trait NumericHelper {
-  protected def asDouble(a: Any) = try {
-    a.asInstanceOf[Number].doubleValue()
+  protected def asDouble(a: Any) = asNumber(a).doubleValue()
+
+  private def asNumber(a: Any): Number = try {
+    a.asInstanceOf[Number]
   }
   catch {
     case x: ClassCastException => throw new CypherTypeException("Expected a numeric value for " + toString() + ", but got: " + a.toString)
   }
 
-  protected def asInt(a: Any) = asDouble(a).toInt
+  protected def asInt(a: Any) = asNumber(a).intValue()
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
@@ -67,7 +69,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     val startVal = asInt(start(m))
     val endVal = asInt(end(m))
     val stepVal = asInt(step(m))
-    new Range(startVal, endVal+1, stepVal).toList
+    new Range(startVal, endVal + 1, stepVal).toList
   }
 
   def declareDependencies(extectedType: AnyType) = start.declareDependencies(NumberType()) ++
@@ -84,7 +86,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     }
   }
 
-  val identifier = Identifier("range("+ start + "," + end + "," + step + ")", NumberType())
+  val identifier = Identifier("range(" + start + "," + end + "," + step + ")", NumberType())
 
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 }
