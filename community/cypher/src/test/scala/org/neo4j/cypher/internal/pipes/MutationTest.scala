@@ -108,7 +108,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def throw_exception_if_wrong_stuff_to_delete() {
     val createRel = DeleteEntityAction(Literal("some text"))
 
-    intercept[CypherTypeException](createRel.exec(ExecutionContext(MutableMap()), QueryState()))
+    intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, QueryState()))
   }
 
   @Test

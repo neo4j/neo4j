@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.commands._
 import collection.Seq
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
+import org.neo4j.cypher.internal.mutation.UpdateAction
 
 
 object PartiallySolvedQuery {
@@ -75,7 +76,7 @@ solved, and which parts are not yet finished.
  */
 case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 start: Seq[QueryToken[StartItem]],
-                                updates: Seq[QueryToken[UpdateCommand]],
+                                updates: Seq[QueryToken[UpdateAction]],
                                 patterns: Seq[QueryToken[Pattern]],
                                 where: Seq[QueryToken[Predicate]],
                                 aggregation: Seq[QueryToken[AggregationExpression]],

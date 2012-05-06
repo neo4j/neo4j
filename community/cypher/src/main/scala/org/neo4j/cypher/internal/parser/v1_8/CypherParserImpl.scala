@@ -23,6 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
+import org.neo4j.cypher.internal.mutation.UpdateAction
 
 class CypherParserImpl extends Base
 with StartClause
@@ -108,7 +109,7 @@ Thank you, the Neo4j Team.""")
     }
   }
 
-  private def expandQuery(start: Start, updates: Seq[UpdateCommand], body: Body): Query = body match {
+  private def expandQuery(start: Start, updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
       Query(b.returns, start, updates, b.matching, b.where, b.aggregate, None, None, b.namedPath, Some(expandQuery(Start(b.start:_*), b.updates, b.next)))
@@ -158,7 +159,7 @@ Thank you, the Neo4j Team.""")
     case None => (None, None)
   }
 
-  private def updateCommands:Parser[(Seq[UpdateCommand], Seq[StartItem])] = opt(createStart) ~ updates ^^ {
+  private def updateCommands:Parser[(Seq[UpdateAction], Seq[StartItem])] = opt(createStart) ~ updates ^^ {
     case starts ~ updates => {
 
       val createCommands = starts.map( _.startItems).flatten.toSeq
@@ -166,7 +167,7 @@ Thank you, the Neo4j Team.""")
     }
   }
 
-  private def atLeastOneUpdateCommand:Parser[(Seq[UpdateCommand], Seq[StartItem])] = Parser {
+  private def atLeastOneUpdateCommand:Parser[(Seq[UpdateAction], Seq[StartItem])] = Parser {
     case in => {
       updateCommands(in) match {
         case Success((changes, starts), rest) if (starts.size + changes.size) == 0 => Failure("", rest)
@@ -180,6 +181,6 @@ abstract sealed class Body
 
 case class BodyReturn(matching: Option[Match], namedPath: Option[NamedPaths], slice: Option[Slice], where: Option[Predicate], order: Option[Sort], returns: Return, aggregate: Option[Aggregation]) extends Body
 
-case class BodyWith(updates:Seq[UpdateCommand], matching: Option[Match], namedPath: Option[NamedPaths], where: Option[Predicate], returns: Return, aggregate: Option[Aggregation], start:Seq[StartItem], next: Body) extends Body
+case class BodyWith(updates:Seq[UpdateAction], matching: Option[Match], namedPath: Option[NamedPaths], where: Option[Predicate], returns: Return, aggregate: Option[Aggregation], start:Seq[StartItem], next: Body) extends Body
 
 case class NoBody() extends Body

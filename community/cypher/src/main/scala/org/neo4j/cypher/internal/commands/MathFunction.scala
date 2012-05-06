@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
-import org.neo4j.cypher.internal.symbols.{ScalarType, AnyType, Identifier, NumberType}
+import org.neo4j.cypher.internal.symbols._
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()
@@ -45,6 +45,7 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
 
 trait NumericHelper {
   protected def asDouble(a: Any) = asNumber(a).doubleValue()
+  protected def asInt(a: Any) = asNumber(a).intValue()
 
   private def asNumber(a: Any): Number = try {
     a.asInstanceOf[Number]
@@ -52,8 +53,6 @@ trait NumericHelper {
   catch {
     case x: ClassCastException => throw new CypherTypeException("Expected a numeric value for " + toString() + ", but got: " + a.toString)
   }
-
-  protected def asInt(a: Any) = asNumber(a).intValue()
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
@@ -86,7 +85,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     }
   }
 
-  val identifier = Identifier("range(" + start + "," + end + "," + step + ")", NumberType())
+  val identifier = Identifier("range("+ start + "," + end + "," + step + ")", new IterableType(NumberType()))
 
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 }

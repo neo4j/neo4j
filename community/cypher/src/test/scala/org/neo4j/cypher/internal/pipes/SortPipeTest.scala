@@ -92,7 +92,7 @@ class SortPipeTest extends JUnitSuite {
 class FakePipe(data: Seq[Map[String, Any]], val symbols: SymbolTable) extends Pipe {
   def this(data: Seq[Map[String, Any]]) = this(data, new FakeSymbolTable())
 
-  def createResults(state: QueryState): Traversable[ExecutionContext] = data.map(m => ExecutionContext(m))
+  def createResults(state: QueryState): Traversable[ExecutionContext] = data.map(m => ExecutionContext(null, m))
 
   def executionPlan(): String = "FAKE"
 }

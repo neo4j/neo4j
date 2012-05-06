@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.mutation._
 
 class DeleteAndPropertySetBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -36,9 +33,7 @@ class DeleteAndPropertySetBuilder(db: GraphDatabaseService) extends PlanBuilder 
     }
 
     val commands = plan.query.updates.filter(cmd => cmd.unsolved && p.symbols.satisfies(cmd.token.dependencies))
-    val updateCommands = commands.map(mapCommandToAction)
-    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, updateCommands)
-
+    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands.map(_.token))
 
     plan.copy(
       containsTransaction = true,
@@ -48,17 +43,15 @@ class DeleteAndPropertySetBuilder(db: GraphDatabaseService) extends PlanBuilder 
 
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.updates.exists(cmd =>
-    cmd.unsolved &&
-      plan.pipe.symbols.satisfies(cmd.token.dependencies))
+  def canWorkWith(plan: ExecutionPlanInProgress) = {
+    var symbols = plan.pipe.symbols
+
+    //First allow all updating commands a chance to influence the symbol table.
+    plan.query.updates.foreach(cmd => symbols = cmd.token.influenceSymbolTable(symbols))
+
+    //Now check that we have at least one update that can safely run
+    plan.query.updates.exists(cmd => cmd.unsolved && symbols.satisfies(cmd.token.dependencies))
+  }
 
   def priority = PlanBuilder.Mutation
-
-  private def mapCommandToAction(cmd: QueryToken[UpdateCommand]): UpdateAction = cmd.token match {
-    case DeleteEntityCommand(Property(entity, propertyKey)) => DeletePropertyAction(Entity(entity), propertyKey)
-    case DeleteEntityCommand(expression) => DeleteEntityAction(expression)
-    case SetProperty(Property(entity, propertyKey), value) => PropertySetAction(Property(entity, propertyKey), value)
-    case SetProperty(prop, _) => throw new SyntaxException("Don't know how to set that :`" + prop + "`")
-    case Foreach(iterable, symbol, cmds) => ForeachAction(iterable, symbol, cmds.map( c => mapCommandToAction(Unsolved(c))))
-  }
 }

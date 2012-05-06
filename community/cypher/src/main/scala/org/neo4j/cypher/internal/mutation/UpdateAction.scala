@@ -27,12 +27,16 @@ import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.commands.{Literal, IterableSupport, Property, Expression}
+import org.neo4j.cypher.internal.commands._
 
-abstract class UpdateAction {
+trait UpdateAction {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
   def dependencies: Seq[Identifier]
+
+  def rewrite(f: Expression => Expression):UpdateAction
+
+  def filter(f: Expression => Boolean): Seq[Expression]
 
   def influenceSymbolTable(symbols: SymbolTable): SymbolTable
 
@@ -126,6 +130,10 @@ case class CreateNodeAction(key: String, props: Map[String, Expression], db: Gra
   def dependencies = propDependencies(props)
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols.add(Identifier(key, NodeType()))
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = props.values.flatMap(_.filter(f)).toSeq
+
+  def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeAction(key, props.map{ case (k,v) => k->v.rewrite(f) }, db)
 }
 
 case class CreateRelationshipAction(key: String, from: Expression, to: Expression, typ: String, props: Map[String, Expression])
@@ -147,6 +155,9 @@ case class CreateRelationshipAction(key: String, from: Expression, to: Expressio
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols.add(Identifier(key, RelationshipType()))
 
+  def filter(f: (Expression) => Boolean): Seq[Expression] = from.filter(f) ++ props.values.flatMap(_.filter(f))
+
+  def rewrite(f: (Expression) => Expression): UpdateAction = CreateRelationshipAction(key, from.rewrite(f), to.rewrite(f), typ, props)
 }
 
 case class DeleteEntityAction(elementToDelete: Expression)
@@ -171,6 +182,10 @@ case class DeleteEntityAction(elementToDelete: Expression)
   def dependencies = elementToDelete.dependencies(MapType())
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
+
+  def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
+
+  def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
 }
 
 case class DeletePropertyAction(element: Expression, property: String)
@@ -189,6 +204,10 @@ case class DeletePropertyAction(element: Expression, property: String)
   def dependencies = element.dependencies(MapType())
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f)
+
+  def rewrite(f: (Expression) => Expression): UpdateAction = DeletePropertyAction(element.rewrite(f), property:String)
 }
 
 case class PropertySetAction(prop: Property, e: Expression)
@@ -212,6 +231,10 @@ case class PropertySetAction(prop: Property, e: Expression)
   }
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
+
+  def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
 }
 
 case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[UpdateAction])
@@ -235,6 +258,10 @@ case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[Upda
 
     Stream(context)
   }
+
+  def filter(f: (Expression) => Boolean) = Some(iterable).filter(f).toSeq ++ actions.flatMap(_.filter(f))
+
+  def rewrite(f: (Expression) => Expression) = ForeachAction(f(iterable), symbol, actions.map(_.rewrite(f)))
 
   def influenceSymbolTable(symbols: SymbolTable) = symbols
 }

@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
-import org.neo4j.graphdb.{TransactionFailureException, NotFoundException, Relationship, Node}
+import org.neo4j.graphdb.{NotFoundException, Relationship, Node}
 
 class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions {
 
@@ -283,8 +283,8 @@ foreach(n in nodes(p) :
     val a = createNode()
     val b = createNode()
 
-    relate(a,b, "HATES")
-    relate(a,b, "LOVES")
+    relate(a, b, "HATES")
+    relate(a, b, "LOVES")
 
     intercept[NodeStillHasRelationshipsException](parseAndExecute("start n = node(1) match n-[r:HATES]->() delete n,r"))
   }
@@ -344,13 +344,13 @@ foreach(n in nodes(p) :
     val b = createNode("Beta")
     val c = createNode("Gamma")
 
-    relate(root,a)
-    relate(root,b)
-    relate(root,c)
+    relate(root, a)
+    relate(root, b)
+    relate(root, c)
 
     parseAndExecute("start root=node(1) match root-->other create new={name:other.name}, root-[:REL]->new")
 
     val result = parseAndExecute("start root=node(1) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
-    assert(result === List("Alfa","Alfa","Beta","Beta","Gamma","Gamma"))
+    assert(result === List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 }

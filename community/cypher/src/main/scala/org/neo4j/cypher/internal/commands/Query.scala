@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import org.neo4j.cypher.internal.mutation.UpdateAction
+
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
-  def updates(cmds:UpdateCommand*) = new QueryBuilder(Seq()).updates(cmds:_*)
+  def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
 }
 
 case class Query(returns: Return,
                  start: Start,
-                 updatedCommands:Seq[UpdateCommand],
+                 updatedCommands:Seq[UpdateAction],
                  matching: Option[Match],
                  where: Option[Predicate],
                  aggregation: Option[Aggregation],

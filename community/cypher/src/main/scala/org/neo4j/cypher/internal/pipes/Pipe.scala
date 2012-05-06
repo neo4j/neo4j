@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.pipes
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.Iterator
-import collection.mutable.{Queue, Map => MutableMap}
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import collection.mutable.{Queue, Map => MutableMap}
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -41,7 +41,7 @@ trait Pipe {
 }
 
 class NullPipe extends Pipe {
-  def createResults(state: QueryState) = Seq(ExecutionContext(MutableMap()))
+  def createResults(state: QueryState) = Seq(ExecutionContext.empty)
 
   def symbols: SymbolTable = new SymbolTable()
 
@@ -68,10 +68,13 @@ class Counter {
 }
 
 object ExecutionContext {
-  def empty = new ExecutionContext(MutableMap())
+  def empty = new ExecutionContext(null, MutableMap())
 }
 
-case class ExecutionContext(m: MutableMap[String, Any], mutationCommands: Queue[UpdateAction] = Queue[UpdateAction]()) extends MutableMap[String, Any] {
+case class ExecutionContext(db: GraphDatabaseService,
+                            m: MutableMap[String, Any],
+                            mutationCommands: Queue[UpdateAction] = Queue[UpdateAction]())
+  extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
 
   def iterator: Iterator[(String, Any)] = m.iterator
@@ -85,5 +88,4 @@ case class ExecutionContext(m: MutableMap[String, Any], mutationCommands: Queue[
     m -= key
     this
   }
-
 }

@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.symbols.{Identifier, AnyType}
+import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable, Identifier, AnyType}
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.InternalException
 
 
 abstract sealed class StartItem(val identifierName:String) {
@@ -43,18 +47,22 @@ case class AllRelationships(columnName:String) extends RelationshipStartItem(col
 case class CreateNodeStartItem(varName: String, properties: Map[String, Expression])
   extends NodeStartItem(varName)
   with Mutator
-  with UpdateCommand {
+  with UpdateAction {
   def dependencies: Seq[Identifier] = properties.values.flatMap(_.dependencies(AnyType())).toSeq
 
   def filter(f: (Expression) => Boolean) = properties.values.filter(f).toSeq
 
   def rewrite(f: (Expression) => Expression) = CreateNodeStartItem(varName, properties.map(mapRewrite(f)))
+
+  def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = throw new InternalException("This method should not be called.")
+
+  def influenceSymbolTable(symbols: SymbolTable): SymbolTable = symbols.add(Identifier(varName, NodeType()))
 }
 
 case class CreateRelationshipStartItem(varName: String, from: Expression, to: Expression, typ: String, properties: Map[String, Expression])
   extends NodeStartItem(varName)
   with Mutator
-  with UpdateCommand {
+  with UpdateAction {
   def dependencies: Seq[Identifier] = properties.values.flatMap(_.dependencies(AnyType())).toSeq ++
     from.dependencies(AnyType()) ++
     to.dependencies(AnyType())
@@ -68,6 +76,10 @@ case class CreateRelationshipStartItem(varName: String, from: Expression, to: Ex
   }
 
   def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(varName, f(from), f(to), typ, properties.map(mapRewrite(f)))
+
+  def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = throw new InternalException("This method should not be called.")
+
+  def influenceSymbolTable(symbols: SymbolTable): SymbolTable = null
 }
 
 trait Mutator extends StartItem {
