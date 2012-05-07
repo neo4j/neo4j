@@ -47,37 +47,14 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
     public static final MediaType STREAMING_JSON = new MediaType( "application", "json", MapUtil.stringMap( "stream", "true" ) );
 
     /**
-     * Execute multiple operations in batch.
-     * 
-     * This lets you execute multiple API calls through a single HTTP call,
-     * significantly improving performance for large insert and update
-     * operations.
-     * 
-     * The batch service expects an array of job descriptions as input, each job
-     * description describing an action to be performed via the normal server
-     * API.
-     * 
-     * This service is transactional. If any of the operations performed fails
-     * (returns a non-2xx HTTP status code), the transaction will be rolled back
-     * and all changes will be undone.
-     * 
-     * Each job description should contain a +to+ attribute, with a value
-     * relative to the data API root (so http://localhost:7474/db/data/node becomes
-     * just /node), and a +method+ attribute containing HTTP verb to use.
-     * 
-     * Optionally you may provide a +body+ attribute, and an +id+ attribute to
-     * help you keep track of responses, although responses are guaranteed to be
-     * returned in the same order the job descriptions are received.
-     * 
-     * The following figure outlines the different parts of the job
-     * descriptions:
-     * 
-     * image::batch-request-api.png[]
+     * By specifying an extended header attribute in the HTTP request,
+     * the server will stream the results back as soon as they are processed on the server side
+     * instead of constructing a full response when all entities are processed.
      */
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph("Joe knows John")
-    public void shouldPerformMultipleOperations() throws Exception {
+    public void execute_multiple_operations_in_batch_streaming() throws Exception {
         long idJoe = data.get().get( "Joe" ).getId();
         String jsonString = new PrettyJSON()
             .array()
@@ -154,8 +131,6 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
     }
     
     /**
-     * Refer to items created earlier in the same batch job.
-     * 
      * The batch operation API allows you to refer to the URI returned from a
      * created resource in subsequent job descriptions, within the same batch
      * call.
@@ -164,7 +139,7 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
      * into JSON strings in subsequent job descriptions.
      */
     @Test
-    public void shouldBeAbleToReferToCreatedResource() throws Exception {
+    public void refer_to_items_created_earlier_in_the_same_batch_job_streaming() throws Exception {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
