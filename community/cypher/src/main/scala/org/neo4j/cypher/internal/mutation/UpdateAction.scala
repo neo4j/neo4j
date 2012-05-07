@@ -184,8 +184,11 @@ case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[Upda
   with IterableSupport {
   def dependencies =
     {
+      val ownIdentifiers = actions.flatMap(_.identifier)
+
       val updateDeps = actions.flatMap(_.dependencies).
-      filterNot(_.name == symbol) //
+      filterNot(_.name == symbol). //remove dependencies to the symbol we're introducing
+      filterNot(ownIdentifiers contains) //remove dependencies to identifiers we are introducing
 
       iterable.dependencies(AnyIterableType()) ++ updateDeps
     }

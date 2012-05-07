@@ -354,7 +354,7 @@ foreach(n in nodes(p) :
     assert(result === List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
-  @Test @Ignore
+  @Test
   def create_node_and_rel_in_foreach() {
     parseAndExecute("""
 create center
