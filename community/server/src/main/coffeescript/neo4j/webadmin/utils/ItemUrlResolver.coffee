@@ -32,7 +32,7 @@ define [], () ->
       @server.url + "/db/data/relationship/" + id
       
     getNodeIndexHitsUrl: (index,key,value) =>
-      @server.url + "/db/data/index" + index + "/" + key + "/" + value
+      @server.url + "/db/data/index" + index + "/" + ( encodeURIComponent key ) + "/" + ( encodeURIComponent value )
  
     extractNodeId : (url) =>
       @extractLastUrlSegment(url)
