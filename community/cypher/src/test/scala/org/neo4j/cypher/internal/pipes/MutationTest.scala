@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.mutation.{DeleteEntityAction, CreateRelationshipAction, CreateNodeAction}
+import org.neo4j.cypher.internal.mutation.{DeleteEntityAction}
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}

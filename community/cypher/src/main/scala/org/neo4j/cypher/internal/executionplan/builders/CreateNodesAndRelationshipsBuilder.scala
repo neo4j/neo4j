@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.commands.{StartItem, CreateRelationshipStartItem, CreateNodeStartItem}
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.mutation.{UpdateAction, CreateRelationshipAction, CreateNodeAction}
+import org.neo4j.cypher.internal.mutation.{UpdateAction}
 
 
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
