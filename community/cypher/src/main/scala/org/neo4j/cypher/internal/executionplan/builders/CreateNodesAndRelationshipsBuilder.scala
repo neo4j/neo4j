@@ -21,21 +21,16 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.mutation.{CreateRelationshipAction, CreateNodeAction}
 import org.neo4j.cypher.internal.commands.{StartItem, CreateRelationshipStartItem, CreateNodeStartItem}
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
+import org.neo4j.cypher.internal.mutation.{UpdateAction, CreateRelationshipAction, CreateNodeAction}
 
 
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
-    val mutatingStartItems = mutatingQueryTokens.map(_.token)
-
-    val commands = mutatingStartItems.map {
-      case CreateNodeStartItem(id, properties) => CreateNodeAction(id, properties, db)
-      case CreateRelationshipStartItem(id, from, to, typ, properties) => CreateRelationshipAction(id, from, to, typ, properties)
-    }
+    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdateAction])
 
     val p = if (plan.containsTransaction) {
       plan.pipe
