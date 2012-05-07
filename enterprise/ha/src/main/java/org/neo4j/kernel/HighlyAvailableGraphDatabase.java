@@ -189,7 +189,7 @@ public class HighlyAvailableGraphDatabase
     /**
      * Create a new instance of HighlyAvailableGraphDatabase
      */
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders, 
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Iterable<IndexProvider> indexProviders,
             Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
     {
         this.storeDir = storeDir;
@@ -221,7 +221,7 @@ public class HighlyAvailableGraphDatabase
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
         caches = new HaCaches( messageLog );
-        
+
         /*
          * TODO
          * lame, i know, but better than before.
@@ -259,7 +259,7 @@ public class HighlyAvailableGraphDatabase
         this.broker = createBroker();
         this.pullUpdates = false;
         this.clusterClient = createClusterClient();
-        
+
         migrateBranchedDataDirectoriesToRootDirectory();
 
         start();
@@ -273,7 +273,7 @@ public class HighlyAvailableGraphDatabase
         {
             if ( !oldBranchedDir.isDirectory() || !oldBranchedDir.getName().startsWith( "branched-" ) )
                 continue;
-            
+
             long timestamp = 0;
             try
             {
@@ -283,7 +283,7 @@ public class HighlyAvailableGraphDatabase
             {   // OK, it wasn't a branched directory after all.
                 continue;
             }
-            
+
             File targetDir = BranchedDataPolicy.getBranchedDataDirectory( storeDir, timestamp );
             try
             {
@@ -1240,10 +1240,37 @@ public class HighlyAvailableGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Response<Pair<Integer, Long>> response = master.first().getMasterIdForCommittedTx(
-                myLastCommittedTx, getStoreId( newDb ) );
-        Pair<Integer, Long> mastersMaster = response.response();
-        response.close();
+        Response<Pair<Integer, Long>> response = null;
+        Pair<Integer, Long> mastersMaster;
+        try
+        {
+            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, getStoreId( newDb ) );
+            mastersMaster = response.response();
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() instanceof NoSuchLogVersionException )
+            {
+                /*
+                 * This means the master was unable to find a log entry for the txid we just asked. This
+                 * probably means the thing we asked for is too old or too new. Anyway, since it doesn't
+                 * have the tx it is better if we just throw our store away and ask for a new copy. Next
+                 * time around it shouldn't have to even pass from here.
+                 */
+                throw new BranchedDataException( "Maybe not branched data, but it could solve it", e.getCause() );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        finally
+        {
+            if ( response != null )
+            {
+                response.close();
+            }
+        }
 
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
             && !myMaster.equals( mastersMaster ) )
@@ -1634,13 +1661,13 @@ public class HighlyAvailableGraphDatabase
         {
             return directory.isDirectory() && directory.getName().equals( BRANCH_SUBDIRECTORY );
         }
-        
+
         public static boolean isBranchedDataDirectory( File directory )
         {
             return directory.isDirectory() && directory.getParentFile().getName().equals( BRANCH_SUBDIRECTORY ) &&
                     isAllDigits( directory.getName() );
         }
-        
+
         private static boolean isAllDigits( String string )
         {
             for ( char c : string.toCharArray() )
@@ -1653,12 +1680,12 @@ public class HighlyAvailableGraphDatabase
         {
             return new File( dbStoreDir, BRANCH_SUBDIRECTORY );
         }
-        
+
         public static File getBranchedDataDirectory( String dbStoreDir, long timestamp )
         {
             return new File( getBranchedDataRootDirectory( dbStoreDir ), "" + timestamp );
         }
-        
+
         public static File[] listBranchedDataDirectories( String storeDir )
         {
             return getBranchedDataRootDirectory( storeDir ).listFiles( new FileFilter()
