@@ -14,7 +14,7 @@ There are two ways you can select which parser to use. You can configure your da
 that doesn't explicitly say anything else, will get the parser you have configured.
 
 The other way is on a query by query basis. By simply pre-pending your query with +"CYPHER 1.6"+, that particular query
-will be parsed with the 1.5 version of the parser. Example:
+will be parsed with the 1.6 version of the parser. Example:
 
 [source,cypher]
 ----
