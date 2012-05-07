@@ -353,4 +353,14 @@ foreach(n in nodes(p) :
     val result = parseAndExecute("start root=node(1) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
     assert(result === List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
+
+  @Test @Ignore
+  def create_node_and_rel_in_foreach() {
+    parseAndExecute("""
+create center
+foreach(x in range(1,10) :
+  create leaf1 = {number : x} , center-[:X]->leaf1
+)
+return distinct center""")
+  }
 }

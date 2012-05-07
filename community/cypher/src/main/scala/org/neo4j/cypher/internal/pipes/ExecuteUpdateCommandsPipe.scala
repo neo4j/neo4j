@@ -75,7 +75,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
 
-  def symbols = commands.foldLeft(source.symbols)((symbol, cmd) => cmd.influenceSymbolTable(symbol))
+  def symbols = source.symbols.add(commands.flatMap(_.identifier):_*)
 
   def dependencies = commands.flatMap(_.dependencies)
 }

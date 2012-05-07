@@ -40,18 +40,9 @@ class DeleteAndPropertySetBuilder(db: GraphDatabaseService) extends PlanBuilder 
       query = plan.query.copy(updates = plan.query.updates.filterNot(commands.contains) ++ commands.map(_.solve)),
       pipe = resultPipe
     )
-
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
-    var symbols = plan.pipe.symbols
-
-    //First allow all updating commands a chance to influence the symbol table.
-    plan.query.updates.foreach(cmd => symbols = cmd.token.influenceSymbolTable(symbols))
-
-    //Now check that we have at least one update that can safely run
-    plan.query.updates.exists(cmd => cmd.unsolved && symbols.satisfies(cmd.token.dependencies))
-  }
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.updates.exists(cmd => cmd.unsolved && plan.pipe.symbols.satisfies(cmd.token.dependencies))
 
   def priority = PlanBuilder.Mutation
 }

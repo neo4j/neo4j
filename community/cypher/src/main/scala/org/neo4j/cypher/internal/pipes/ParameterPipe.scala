@@ -29,7 +29,7 @@ class ParameterPipe() extends Pipe {
     val map: Map[String, Any] = state.params.map {
       case (k, v) => "-=PARAMETER=-" + k + "-=PARAMETER=-" -> ParameterValue(v)
     }
-    Seq(ExecutionContext(null,map))
+    Seq(ExecutionContext(map))
   }
 
   val identifiers = Seq()

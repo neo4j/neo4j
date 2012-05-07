@@ -49,11 +49,12 @@ class NullPipe extends Pipe {
 }
 
 object QueryState {
-  def apply() = new QueryState(MutableMap())
+  def apply() = new QueryState(null, MutableMap())
 }
 
-class QueryState( val params: MutableMap[String, Any],
-                  var transaction: Option[Transaction] = None) {
+class QueryState(val db:GraphDatabaseService,
+                 val params: MutableMap[String, Any],
+                 var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter
   val createdRelationships = new Counter
   val propertySet = new Counter
@@ -68,11 +69,10 @@ class Counter {
 }
 
 object ExecutionContext {
-  def empty = new ExecutionContext(null, MutableMap())
+  def empty = new ExecutionContext(MutableMap())
 }
 
-case class ExecutionContext(db: GraphDatabaseService,
-                            m: MutableMap[String, Any],
+case class ExecutionContext(m: MutableMap[String, Any],
                             mutationCommands: Queue[UpdateAction] = Queue[UpdateAction]())
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
