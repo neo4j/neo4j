@@ -75,7 +75,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
     val result = collection.mutable.Map(sourceRow.toSeq: _*)
     val validPredicates = predicates.filter(p => symbolTable.satisfies(p.dependencies))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
-    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
+    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.map(patternMatch => {
       patternNodes.foreach {
         case (key, pn) => result += key -> patternMatch.getNodeFor(pn)
       }
@@ -84,10 +84,10 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
       }
 
       if (validPredicates.forall(p => p.isMatch(result)))
-        Some(result.clone())
+        result.clone()
       else
-        None
-    })
+        null
+    }).filter(_ != null)
   }
 }
 
