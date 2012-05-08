@@ -26,10 +26,9 @@ package org.neo4j.graphalgo.impl.ancestor;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.RelationshipExpander;
 
 /**
  * @author Pablo Pareja Tobes
@@ -44,19 +43,18 @@ public class AncestorsUtil {
      * @return The LCA node if there's one, null otherwise.
      */
     public static Node lowestCommonAncestor(List<Node> nodeSet,
-            RelationshipType relationshipType,
-            Direction relationshipDirection) {
+            RelationshipExpander expander) {
 
         Node lowerCommonAncestor = null;
 
         if (nodeSet.size() > 1) {
 
             Node firstNode = nodeSet.get(0);
-            LinkedList<Node> firstAncestors = getAncestorsPlusSelf(firstNode, relationshipType, relationshipDirection);
+            LinkedList<Node> firstAncestors = getAncestorsPlusSelf(firstNode, expander);
 
             for (int i = 1; i < nodeSet.size() && !firstAncestors.isEmpty(); i++) {
                 Node currentNode = nodeSet.get(i);
-                lookForCommonAncestor(firstAncestors, currentNode, relationshipType, relationshipDirection);                
+                lookForCommonAncestor(firstAncestors, currentNode, expander);                
             }
             
             if(!firstAncestors.isEmpty()){
@@ -69,27 +67,22 @@ public class AncestorsUtil {
     }
 
     private static LinkedList<Node> getAncestorsPlusSelf(Node node,
-            RelationshipType relationship,
-            Direction direction) {
-
+            RelationshipExpander expander) {
+        
         LinkedList<Node> ancestors = new LinkedList<Node>();
 
         ancestors.add(node);
-        Iterator<Relationship> relIterator = node.getRelationships(relationship, direction).iterator();
+        Iterator<Relationship> relIterator = expander.expand(node).iterator();
 
         while (relIterator.hasNext()) {
 
             Relationship rel = relIterator.next();
-            Node parentNode = null;
-            if (direction.equals(Direction.INCOMING)) {
-                parentNode = rel.getStartNode();
-            } else {
-                parentNode = rel.getEndNode();
-            }
+            node = rel.getOtherNode(node);       
 
-            ancestors.add(parentNode);
+            ancestors.add(node);
+            System.out.println(node.getId());
 
-            relIterator = parentNode.getRelationships(relationship, direction).iterator();
+            relIterator = expander.expand(node).iterator();
 
         }
 
@@ -99,8 +92,7 @@ public class AncestorsUtil {
 
     private static void lookForCommonAncestor(LinkedList<Node> commonAncestors,
             Node currentNode,
-            RelationshipType relationship,
-            Direction direction) {
+            RelationshipExpander expander) {
 
         while (currentNode != null) {
 
@@ -114,17 +106,13 @@ public class AncestorsUtil {
                 }
             }
 
-            Iterator<Relationship> relIt = currentNode.getRelationships(relationship, direction).iterator();
+            Iterator<Relationship> relIt = expander.expand(currentNode).iterator();
 
             if (relIt.hasNext()) {
                 
                 Relationship rel = relIt.next();
                 
-                if (direction.equals(Direction.INCOMING)) {
-                    currentNode = rel.getStartNode();
-                } else {
-                    currentNode = rel.getEndNode();
-                }
+                currentNode = rel.getOtherNode(currentNode); 
                 
             }else{
                 currentNode = null;
