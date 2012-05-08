@@ -146,7 +146,7 @@ The Neo4j Team
     new ShortestPathBuilder,
     new RelationshipByIdBuilder(graph),
     new CreateNodesAndRelationshipsBuilder(graph),
-    new DeleteAndPropertySetBuilder(graph),
+    new UpdateActionBuilder(graph),
     new EmptyResultBuilder
   )
 

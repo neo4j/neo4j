@@ -66,7 +66,7 @@ object QueryState {
   def apply() = new QueryState(null, MutableMaps.create)
 }
 
-class QueryState(val db:GraphDatabaseService,
+class QueryState(val db: GraphDatabaseService,
                  val params: MutableMap[String, Any],
                  var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter
@@ -78,8 +78,12 @@ class QueryState(val db:GraphDatabaseService,
 
 class Counter {
   private var counter = 0L;
+
   def count = counter
-  def increase() { counter += 1 }
+
+  def increase() {
+    counter += 1
+  }
 }
 
 object ExecutionContext {

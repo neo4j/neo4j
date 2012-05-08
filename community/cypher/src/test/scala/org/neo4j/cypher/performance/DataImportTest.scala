@@ -29,7 +29,7 @@ import org.neo4j.graphdb.index.BatchInserterIndex
 import scala.io.Source.fromFile
 import org.junit.{Ignore, Test}
 
-class DataImportTest extends Assertions {
+class xDataImportTest extends Assertions {
 
   val CATEGORY = DynamicRelationshipType.withName("category")
   val RATING = DynamicRelationshipType.withName("rating")
@@ -51,7 +51,6 @@ class DataImportTest extends Assertions {
 
     indexProvider.shutdown();
     inserter.shutdown();
-
   }
 
   private def addRatings(sourceDir: File, movies: Map[String, Long], inserter: BatchInserterImpl, typeIdx: BatchInserterIndex) = {

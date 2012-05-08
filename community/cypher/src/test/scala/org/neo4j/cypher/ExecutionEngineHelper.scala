@@ -44,4 +44,11 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
     plan.execute(params.toMap)
   }
 
+  def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
+    case List(m) => if (m.size!=1)
+      fail("expected scalar value: " + m)
+      else m.head._2.asInstanceOf[T]
+    case x => fail(x.toString())
+  }
+
 }

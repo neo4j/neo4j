@@ -25,8 +25,6 @@ import commands._
 /*
 This rewriter rewrites expressions that come after the RETURN clause,
 so the user can either use the raw expression, or the alias
-
-These clauses are HAVING and ORDER BY right now.
  */
 object ReattachAliasedExpressions {
   def apply(q: Query): Query = {

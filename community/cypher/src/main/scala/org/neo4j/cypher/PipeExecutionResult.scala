@@ -41,7 +41,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
 
   def columnAs[T](column: String): Iterator[T] = {
     this.map(m => {
-      val item: Any = m.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
+      val item: Any = m.getOrElse(column, throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
       item.asInstanceOf[T]
     }).toIterator
   }

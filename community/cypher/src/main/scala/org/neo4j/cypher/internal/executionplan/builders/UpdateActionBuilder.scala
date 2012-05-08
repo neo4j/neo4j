@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{ExecuteUpdateCommandsPipe, TransactionStartPipe}
 
-class DeleteAndPropertySetBuilder(db: GraphDatabaseService) extends PlanBuilder {
+class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
 
     val p = if (plan.containsTransaction) {

@@ -26,7 +26,7 @@ import org.neo4j.cypher.CypherTypeException
 
 class PropertySetActionTest extends Assertions {
 
-  val x = PropertySetAction(Property("a", "b"), null)
+  val x = new Object with GraphElementPropertyFunctions
 
   @Test def string_collection_turns_into_string_array() {
     assert(x.makeValueNeoSafe(Seq("a", "b")) === Array("a", "b"))

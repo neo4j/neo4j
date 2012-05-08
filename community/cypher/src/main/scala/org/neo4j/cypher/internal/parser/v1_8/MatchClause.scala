@@ -86,10 +86,10 @@ trait MatchClause extends Base with Expressions {
 
   def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
-      var fromNode = namer.name(head)
+      var fromNode = head
       val list = tails.map(_ match {
-        case (back, rel, relType, forward, end, varLength, optional, predicate) => {
-          val toNode = namer.name(end)
+        case (back, rel, relType, forward, toNode, varLength, optional, predicate) => {
+
           val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
@@ -114,10 +114,10 @@ trait MatchClause extends Base with Expressions {
       case _ => Direction.BOTH
     }
 
-  def node: Parser[Option[String]] =
+  private def node: Parser[String] =
     (parensNode
       | relatedNode
-      | failure("expected node identifier"))
+      | failure("expected node identifier")) ^^ (x => namer.name(x))
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 

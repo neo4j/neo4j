@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands._
-import internal.mutation.{ForeachAction, PropertySetAction, DeleteEntityAction}
+import internal.mutation.{RelateLink, ForeachAction, PropertySetAction, DeleteEntityAction}
 import internal.parser.v1_6.ConsoleCypherParser
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
@@ -1664,6 +1664,99 @@ create a-[r:REL]->b
         start(NodeById("s", 1)).
         returns(AllIdentifiers()))
   }
+
+  @Test def single_relate() {
+    val secondQ = Query.
+      relate(RelateLink("a", "b", "  UNNAMED1", "reltype", Direction.OUTGOING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1), b=node(2) relate a-[:reltype]->b", q)
+  }
+
+  @Test def single_relate_with_rel() {
+    val secondQ = Query.
+      relate(RelateLink("a", "b", "r", "reltype", Direction.OUTGOING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1), b=node(2) relate a-[r:reltype]->b", q)
+  }
+
+  @Test def single_relate_with_empty_parenthesis() {
+    val secondQ = Query.
+      relate(RelateLink("a", "  UNNAMED1", "  UNNAMED2", "reltype", Direction.OUTGOING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1), b=node(2) relate a-[:reltype]->()", q)
+  }
+
+  @Test def two_relates() {
+    val secondQ = Query.
+      relate(
+      RelateLink("a", "b", "  UNNAMED1", "X", Direction.OUTGOING),
+      RelateLink("b", "c", "  UNNAMED2", "X", Direction.INCOMING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1) relate a-[:X]->b<-[:X]-c", q)
+  }
+
+  @Test def relate_with_initial_values_for_node() {
+    val secondQ = Query.
+      relate(
+      RelateLink(name("a"), ("b", Map[String, Expression]("name" -> Literal("Andres"))), name("  UNNAMED1"), "X", Direction.OUTGOING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1) relate a-[:X]->(b {name:'Andres'})", q)
+  }
+
+  @Test def relate_with_initial_values_for_rel() {
+    val secondQ = Query.
+      relate(
+      RelateLink(name("a"), name("b"), ("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
+      returns()
+
+    val q = Query.
+      start(NodeById("a", 1)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+    testFrom_1_8("start a = node(1) relate a-[:X {name:'Andres'}]->b", q)
+  }
+
+  @Test def foreach_with_literal_collection() {
+
+    val q2 = Query.updates(
+      ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNodeStartItem("a", Map("number" -> Entity("x")))))
+    ).returns()
+
+    testFrom_1_8(
+      "create root foreach(x in [1,2,3] : create a={number:x})",
+      Query.
+        start(CreateNodeStartItem("root", Map.empty)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  private def name(x: String) = (x, Map[String, Expression]())
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)

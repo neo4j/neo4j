@@ -31,13 +31,45 @@ import org.neo4j.cypher.internal.commands._
 
 trait UpdateAction {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
-
   def dependencies:Seq[Identifier]
-  def identifier:Option[Identifier]
-
+  def identifier:Seq[Identifier]
   def rewrite(f: Expression => Expression):UpdateAction
-
   def filter(f: Expression => Boolean): Seq[Expression]
+}
+
+trait GraphElementPropertyFunctions {
+  def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
+    props.foreach {
+      case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
+      case (key, expression) => setSingleValue(expression, context, pc, key, state)
+    }
+  }
+
+  def propDependencies(props: Map[String, Expression]) = props.values.flatMap(_.dependencies(AnyType())).toSeq.distinct
+
+  def rewrite(props: Map[String, Expression], f: (Expression) => Expression): Map[String, Expression] = props.map{ case (k,v) => k->v.rewrite(f) }
+
+  private def getMapFromExpression(v: Any): Map[String, Any] = v match {
+    case m: collection.Map[String, Any] => m.toMap
+    case m: JavaMap[String, Any] => m.asScala.toMap
+    case x => throw new CypherTypeException("Don't know how to extract parameters from this type: " + x.getClass.getName)
+  }
+
+  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
+    val map = getMapFromExpression(expression(context))
+    map.foreach {
+      case (key, value) => {
+        pc.setProperty(key, value)
+        state.propertySet.increase()
+      }
+    }
+  }
+
+  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
+    val value = makeValueNeoSafe(expression(context))
+    pc.setProperty(key, value)
+    state.propertySet.increase()
+  }
 
   def makeValueNeoSafe(a: Any): Any = if (a.isInstanceOf[Traversable[_]]) {
     transformTraversableToArray(a)
@@ -69,159 +101,5 @@ trait UpdateAction {
   }
 }
 
-trait GraphElementPropertyFunctions extends UpdateAction {
-  def setProps(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
-    props.foreach {
-      case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
-      case (key, expression) => setSingleValue(expression, context, pc, key, state)
-    }
-  }
 
-  def propDependencies(props: Map[String, Expression]) = props.values.flatMap(_.dependencies(AnyType())).toSeq.distinct
 
-  private def getMapFromExpression(v: Any): Map[String, Any] = v match {
-    case m: collection.Map[String, Any] => m.toMap
-    case m: JavaMap[String, Any] => m.asScala.toMap
-    case x => throw new CypherTypeException("Don't know how to extract parameters from this type: " + x.getClass.getName)
-  }
-
-  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
-    val map = getMapFromExpression(expression(context))
-    map.foreach {
-      case (key, value) => {
-        pc.setProperty(key, value)
-        state.propertySet.increase()
-      }
-    }
-  }
-
-  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
-    val value = makeValueNeoSafe(expression(context))
-    pc.setProperty(key, value)
-    state.propertySet.increase()
-  }
-}
-
-case class DeleteEntityAction(elementToDelete: Expression)
-  extends UpdateAction {
-
-  def exec(context: ExecutionContext, state: QueryState) = {
-    elementToDelete(context) match {
-      case n: Node => delete(n, state)
-      case r: Relationship => delete(r, state)
-      case null =>
-      case p:Path => p.iterator().asScala.foreach( pc => delete(pc, state))
-      case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
-    }
-
-    Stream(context)
-  }
-
-  private def delete(x: PropertyContainer, state: QueryState) {
-    x match {
-      case n: Node => {
-        state.deletedNodes.increase()
-        n.delete()
-      }
-      case r: Relationship => {
-        state.deletedRelationships.increase()
-        r.delete()
-      }
-    }
-  }
-
-  def identifier = None
-
-  def dependencies = elementToDelete.dependencies(AnyType())
-
-  def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
-
-  def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
-}
-
-case class DeletePropertyAction(element: Expression, property: String)
-  extends UpdateAction {
-
-  def exec(context: ExecutionContext, state: QueryState) = {
-    val entity = element(context).asInstanceOf[PropertyContainer]
-    if (entity.hasProperty(property)) {
-      entity.removeProperty(property)
-      state.propertySet.increase()
-    }
-
-    Stream(context)
-  }
-
-  def dependencies = element.dependencies(MapType())
-
-  def identifier = None
-
-  def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f)
-
-  def rewrite(f: (Expression) => Expression): UpdateAction = DeletePropertyAction(element.rewrite(f), property:String)
-}
-
-case class PropertySetAction(prop: Property, e: Expression)
-  extends UpdateAction {
-  val Property(entityKey, propertyKey) = prop
-
-  def dependencies = e.dependencies(AnyType())
-
-  def exec(context: ExecutionContext, state: QueryState) = {
-    val value = makeValueNeoSafe(e(context))
-    val entity = context(entityKey).asInstanceOf[PropertyContainer]
-
-    value match {
-      case null => entity.removeProperty(propertyKey)
-      case _ => entity.setProperty(propertyKey, value)
-    }
-
-    state.propertySet.increase()
-
-    Stream(context)
-  }
-
-  def identifier = None
-
-  def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
-
-  def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
-}
-
-case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[UpdateAction])
-  extends UpdateAction
-  with IterableSupport {
-  def dependencies =
-    {
-      val ownIdentifiers = actions.flatMap(_.identifier)
-
-      val updateDeps = actions.flatMap(_.dependencies).
-      filterNot(_.name == symbol). //remove dependencies to the symbol we're introducing
-      filterNot(ownIdentifiers contains) //remove dependencies to identifiers we are introducing
-
-      iterable.dependencies(AnyIterableType()) ++ updateDeps
-    }
-
-  def exec(context: ExecutionContext, state: QueryState) = {
-    val before = context.get(symbol)
-
-    val seq = makeTraversable(iterable(context))
-    seq.foreach(element => {
-      context.put(symbol, element)
-      actions.foreach(action => action.exec(context, state))
-    })
-
-    before match {
-      case None => context.remove(symbol)
-      case Some(old) => context.put(symbol, old)
-    }
-
-    Stream(context)
-  }
-
-  def filter(f: (Expression) => Boolean) = Some(iterable).filter(f).toSeq ++ actions.flatMap(_.filter(f))
-
-  def rewrite(f: (Expression) => Expression) = ForeachAction(f(iterable), symbol, actions.map(_.rewrite(f)))
-
-  def identifier = None
-}

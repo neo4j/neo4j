@@ -33,49 +33,52 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
     if (commands.size == 1) {
       source.createResults(state).flatMap {
-        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships).flatten
+        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships)
       }
     } else {
       source.createResults(state).flatMap {
-        case ctx => {
-          val commands = executeMutationCommands(ctx, state, deletedNodes, deletedRelationships)
-          commands.foreach(x => if (x.size > 1) throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
-          commands.last
-        }
+        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships, ctx => if (ctx.size > 1) throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
       }
     }
   }
 
   // TODO: Make it better
-  private def executeMutationCommands(ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long]): Traversable[Traversable[ExecutionContext]] =
+  private def executeMutationCommands(ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long], f: Traversable[ExecutionContext] => Unit = x=>{}): Traversable[ExecutionContext] =
     try {
-      commands.map {
-        case cmd@DeleteEntityAction(expression) => {
-          expression(ctx) match {
-            case n: Node => {
-              if (!deletedNodes.contains(n.getId)) {
-                deletedNodes.add(n.getId)
-                cmd.exec(ctx, state)
-              } else Stream()
-            }
-            case r: Relationship => {
-              if (!deletedRelationships.contains(r.getId)) {
-                deletedRelationships.add(r.getId)
-                cmd.exec(ctx, state)
-              } else Stream()
-            }
-            case _ => cmd.exec(ctx, state)
-          }
-        }
-        case cmd => cmd.exec(ctx, state)
-      }
+      commands.foldLeft(Traversable(ctx))((context, cmd) => context.flatMap( c => exec(cmd, c, state, deletedNodes, deletedRelationships, f)))
     } catch {
       case e: NotInTransactionException => throw new InternalException("Expected to be in a transaction at this point", e)
     }
 
+  private def exec(cmd: UpdateAction, ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long], f: Traversable[ExecutionContext] => Unit): Traversable[ExecutionContext] = {
+    val result = cmd match {
+      case cmd@DeleteEntityAction(expression) => {
+        expression(ctx) match {
+          case n: Node => {
+            if (!deletedNodes.contains(n.getId)) {
+              deletedNodes.add(n.getId)
+              cmd.exec(ctx, state)
+            } else Stream(ctx)
+          }
+          case r: Relationship => {
+            if (!deletedRelationships.contains(r.getId)) {
+              deletedRelationships.add(r.getId)
+              cmd.exec(ctx, state)
+            } else Stream(ctx)
+          }
+          case _ => cmd.exec(ctx, state)
+        }
+      }
+      case cmd => cmd.exec(ctx, state)
+    }
+    f(result)
+    result
+  }
+
+
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
 
-  def symbols = source.symbols.add(commands.flatMap(_.identifier):_*)
+  def symbols = source.symbols.add(commands.flatMap(_.identifier): _*)
 
   def dependencies = commands.flatMap(_.dependencies)
 }

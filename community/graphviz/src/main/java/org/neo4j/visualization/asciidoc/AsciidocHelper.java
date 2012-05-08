@@ -123,7 +123,7 @@ public class AsciidocHelper
     {
         String[] keywordsToBreakOn = new String[] {"start", "create", "set", "delete", "foreach",
 		"match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-		"desc", "descending"};
+		"desc", "descending", "relate"};
 
         String result = "[source,cypher]\n----\n" + query + "\n----\n";
 

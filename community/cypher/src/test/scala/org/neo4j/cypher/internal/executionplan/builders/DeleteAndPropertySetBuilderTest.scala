@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.commands.Entity
 import org.neo4j.cypher.internal.mutation.DeleteEntityAction
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
-  val builder = new DeleteAndPropertySetBuilder(null)
+  val builder = new UpdateActionBuilder(null)
 
   @Test
   def does_not_offer_to_solve_done_queries() {

@@ -1,3 +1,8 @@
+1.8.M03 (not yet released)
+--------------------
+o Added RELATE
+o Fixes issue #512, #506, #514
+
 1.8.M02 (2012-05-11)
 --------------------
 o Added the possibility to create nodes from an iterable of maps
