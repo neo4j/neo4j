@@ -26,10 +26,10 @@ class NiceHasher(val original: Seq[Any]) {
     
     val other = p1.asInstanceOf[NiceHasher]
 
-    comperableValues.equals(other.comperableValues)
+    hash == other.hash && comperableValues.equals(other.comperableValues)
   }
   
-  def comperableValues = original.map {
+  lazy val comperableValues = original.map {
     case x:Array[_] => x.deep
     case x => x
   }
