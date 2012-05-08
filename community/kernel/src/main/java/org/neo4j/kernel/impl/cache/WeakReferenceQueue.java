@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
 
-public class WeakReferenceQueue<K,V> extends ReferenceQueue<WeakValue>
+public class WeakReferenceQueue<K,V> extends ReferenceQueue<WeakValue<K,V>>
 {
     public WeakReferenceQueue()
     {

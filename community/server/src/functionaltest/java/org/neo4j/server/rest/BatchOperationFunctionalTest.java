@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -54,7 +56,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
      * (returns a non-2xx HTTP status code), the transaction will be rolled back
      * and all changes will be undone.
      * 
-     * Each job description should contain a +path+ attribute, with a value
+     * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
      * 
@@ -318,27 +320,40 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     }
     
     @Test
-    @Graph("\u4f8b\u5b50 has öäüÖÄÜß")
-    public void shouldHandleUnicodeGetCorrectly() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
-        String asian = "\u4f8b\u5b50";
-        String german = "öäüÖÄÜß";
-        Node gnode = getNode( german );
-        Node anode = getNode( asian );
-        assertTrue( gen.get()
+    @SuppressWarnings("unchecked")
+    public void shouldHandleUnicodeGetCorrectly() throws Exception {
+        String asianText = "\u4f8b\u5b50";
+        String germanText = "öäüÖÄÜß";
+        
+        String complicatedString = asianText + germanText;
+        
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                    .key("body")   .object()
+                                       .key(complicatedString).value(complicatedString)
+                                   .endObject()
+                .endObject()
+            .endArray()
+            .toString();
+        
+        String entity = gen.get()
                 .expectedStatus( 200 )
-                .get( getNodeUri( anode ) )
-                .entity().contains(asian) );
-        assertTrue( gen.get()
-                .expectedStatus( 200 )
-                .get( getNodeUri( gnode ) )
-                .entity().contains(german) );
-        testBatch(anode, asian);
-        testBatch(gnode, german);
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
+        
+        // Pull out the property value from the depths of the response
+        Map<String, Object> response = (Map<String, Object>) JsonHelper.jsonToList(entity).get(0).get("body");
+        String returnedValue = (String)((Map<String,Object>)response.get("data")).get(complicatedString);
+        
+        // Ensure nothing was borked.
+        assertThat(returnedValue, is(complicatedString));
     }
     
     @Test
-    //@Ignore
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
             UniformInterfaceException, JSONException, PropertyValueException {
@@ -382,24 +397,6 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(results.get(0).get("body"), name);
-    }
-
-    private void testBatch( Node anode, String asian ) throws JSONException
-    {
-        String jsonString = new PrettyJSON()
-            .array()
-                .object()
-                    .key("method") .value("GET")
-                    .key("to")     .value("/node/"+anode.getId()+"/properties")
-                .endObject()
-            .endArray()
-            .toString();
-        String entity = gen.get()
-                .expectedStatus( 200 )
-                .payload( jsonString )
-                .post( batchUri() )
-                .entity();
-        assertTrue( entity.contains( asian) );
     }
 
     @Test
@@ -468,6 +465,47 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
 
+    }
+    
+    @Test
+    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/node/Cultures?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("ID")
+                            .key("value").value("fra")
+                            .key("properties")
+                                .object()
+                                    .key("ID").value("fra")
+                                .endObject()
+                        .endObject()
+                    .key("id")      .value(0)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("id")      .value(1)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("{1}/relationships")
+                    .key("body")
+                        .object()
+                            .key("to").value("{0}")
+                            .key("type").value("has")
+                        .endObject()
+                    .key("id")      .value(2)
+                .endObject()
+            .endArray().toString();
+        
+        JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
+
+        assertEquals(200, response.getStatus());
+        
     }
     
     private int countNodes()

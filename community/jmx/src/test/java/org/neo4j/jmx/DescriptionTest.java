@@ -19,29 +19,28 @@
  */
 package org.neo4j.jmx;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-import static org.junit.Assert.assertEquals;
-
 import java.util.Hashtable;
-
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.management.ManagementFactory.*;
+import static org.junit.Assert.*;
 
 public class DescriptionTest
 {
-    private static AbstractGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
 
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new ImpermanentGraphDatabase();
+        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
     @AfterClass
@@ -79,7 +78,7 @@ public class DescriptionTest
 
     private MBeanInfo kernelMBeanInfo() throws Exception
     {
-        Kernel kernel = graphdb.getManagementBean( Kernel.class );
+        Kernel kernel = ((GraphDatabaseAPI)graphdb).getSingleManagementBean( Kernel.class );
         ObjectName query = kernel.getMBeanQuery();
         Hashtable<String, String> properties = new Hashtable<String, String>( query.getKeyPropertyList() );
         properties.put( "name", Kernel.NAME );

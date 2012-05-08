@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -29,14 +31,17 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class InterceptingXaLogicalLog extends XaLogicalLog
 {
     private final XaDataSource ds;
-    private TransactionInterceptor interceptor;
+    private final List<Pair<TransactionInterceptorProvider, Object>> providers;
+    private final DependencyResolver dependencyResolver;
 
     public InterceptingXaLogicalLog( String fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
-            TransactionInterceptor interceptor, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger)
+            List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver,
+            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger )
     {
         super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, stringLogger );
-        this.interceptor = interceptor;
+        this.providers = providers;
+        this.dependencyResolver = dependencyResolver;
         this.ds = xaRm.getDataSource();
     }
 
@@ -44,6 +49,8 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
     protected LogDeserializer getLogDeserializer(
             ReadableByteChannel byteChannel )
     {
+        final TransactionInterceptor interceptor = TransactionInterceptorProvider.resolveChain( providers, ds, dependencyResolver );
+        
         LogDeserializer toReturn = new LogDeserializer( byteChannel )
         {
             @Override

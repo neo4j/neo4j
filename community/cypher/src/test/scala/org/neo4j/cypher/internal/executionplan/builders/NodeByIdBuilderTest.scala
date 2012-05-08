@@ -19,45 +19,43 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.scalatest.Assertions
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.executionplan.{Solved, Unsolved, PartiallySolvedQuery}
 import org.junit.{Ignore, Test}
-import org.neo4j.cypher.internal.commands.{RelationshipById, Parameter, NodeById}
+import org.neo4j.cypher.internal.commands.{RelationshipById, ParameterExpression, NodeById}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery}
 
-class NodeByIdBuilderTest extends Assertions {
+class NodeByIdBuilderTest extends BuilderTest {
 
-  val builder = new NodeByIdBuilder(null)
+  val builder: PlanBuilder = new NodeByIdBuilder(null)
 
   @Test
   def says_yes_to_node_by_id_queries() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeById("s", 0))))
 
-    assertTrue("Should be able to build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
   def only_takes_one_start_item_at_the_time() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(NodeById("s", 0)),Unsolved(NodeById("x", 1))))
+      copy(start = Seq(Unsolved(NodeById("s", 0)), Unsolved(NodeById("x", 1))))
 
-    val (_,remaining) = builder((new NullPipe(), q))
+    val remaining = builder(plan(q)).query
 
-    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length )
-    assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length )
+    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
+    assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
   }
 
   @Test
   def fixes_node_by_id_and_keeps_the_rest_around() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(NodeById("s", 0)),Unsolved(RelationshipById("x", 1))))
+      copy(start = Seq(Unsolved(NodeById("s", 0)), Unsolved(RelationshipById("x", 1))))
 
-    
-    val (_,result) = builder((new NullPipe(), q))
 
-    val expected = Set(Solved(NodeById("s", 0)),Unsolved(RelationshipById("x", 1)))
+    val result = builder(plan(q)).query
+
+    val expected = Set(Solved(NodeById("s", 0)), Unsolved(RelationshipById("x", 1)))
 
     assert(result.start.toSet === expected)
   }
@@ -67,16 +65,16 @@ class NodeByIdBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("s", 0))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
   @Ignore("revisit when we consider this")
   def say_no_id_param_is_needed() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(NodeById("s", Parameter("x")))))
+      copy(start = Seq(Unsolved(NodeById("s", ParameterExpression("x")))))
 
-    assertFalse("Should not build on this", builder.isDefinedAt((new NullPipe(), q)))
+    assertFalse("Should not build on this", builder.canWorkWith(plan(q)))
   }
 
   @Test
@@ -84,7 +82,7 @@ class NodeByIdBuilderTest extends Assertions {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeById("s", 0))))
 
-    val (_, remainingQ) = builder((new NullPipe(), q))
+    val remainingQ = builder(plan(q)).query
 
     assert(remainingQ.start === Seq(Solved(NodeById("s", 0))))
   }

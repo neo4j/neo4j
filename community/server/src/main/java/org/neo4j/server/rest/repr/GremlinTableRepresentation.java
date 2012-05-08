@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import com.tinkerpop.pipes.util.structures.Table;
+import org.neo4j.helpers.collection.IterableWrapper;
+
 import com.tinkerpop.pipes.util.structures.Row;
+import com.tinkerpop.pipes.util.structures.Table;
 
 public class GremlinTableRepresentation extends ObjectRepresentation
 {
@@ -46,23 +47,25 @@ public class GremlinTableRepresentation extends ObjectRepresentation
     @Mapping( "data" )
     public Representation data()
     {
-        List<Representation> rows = new ArrayList<Representation>();
-        for (  Row  row : queryResult )
+        final List<String> columnNames = queryResult.getColumnNames();
+        final IterableWrapper<Representation, Row> rows = new IterableWrapper<Representation, Row>(queryResult)
         {
-            rows.add( new ListRepresentation( "row", convertRow(row)) );
-        }
+            protected Representation underlyingObjectToObject(Row row)
+            {
+                return new ListRepresentation("row", convertRow(row, columnNames));
+            }
+        };
         return new ListRepresentation( "data", rows );
     }
 
-    private List<Representation> convertRow(Row row) {
-        List<Representation> fields = new ArrayList<Representation>();
-        for ( String column : queryResult.getColumnNames() )
+    private Iterable<Representation> convertRow(final Row row, final List<String> columnNames) {
+        return new IterableWrapper<Representation,String>(columnNames)
         {
-            final Object fieldValue = row.getColumn(column);
-            Representation fieldRepresentation = converter.convert(fieldValue);
-            fields.add( fieldRepresentation );
-
-        }
-        return fields;
+            protected Representation underlyingObjectToObject(String column)
+            {
+                final Object fieldValue = row.getColumn(column);
+                return converter.convert(fieldValue);
+            }
+        };
     }
 }

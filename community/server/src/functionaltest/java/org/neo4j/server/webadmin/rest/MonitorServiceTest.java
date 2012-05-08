@@ -64,8 +64,8 @@ public class MonitorServiceTest implements JobScheduler
         @SuppressWarnings( "unchecked" ) Map<String, Object> resources = (Map<String, Object>) resultAsMap.get( "resources" );
         assertThat( (String) resources.get( "data_from" ), containsString( "/fetch/{start}" ) );
         assertThat( (String) resources.get( "data_period" ), containsString( "/fetch/{start}/{stop}" ) );
-        URI latest_data = (URI) resources.get( "latest_data" );
-        assertThat( latest_data.toString(), containsString( "/fetch" ) );
+        String latest_data = (String) resources.get( "latest_data" );
+        assertThat( latest_data, containsString( "/fetch" ) );
     }
 
     @Test

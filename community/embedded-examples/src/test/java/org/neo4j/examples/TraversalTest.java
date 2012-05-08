@@ -20,13 +20,12 @@
 // START SNIPPET: _sampleDocumentation
 package org.neo4j.examples;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
 public class TraversalTest extends AbstractJavaDocTestbase
 {
@@ -117,7 +116,7 @@ public class TraversalTest extends AbstractJavaDocTestbase
         TraversalExample example = new TraversalExample();
         gen.get().addSnippet(
                 "graph",
-                        createGraphViz( "Traversal Example Graph", graphdb(),
+                        createGraphVizWithNodeId( "Traversal Example Graph", graphdb(),
                         gen.get().getTitle() ) );
 
         String output = example.knowsLikesTraverser( joe );

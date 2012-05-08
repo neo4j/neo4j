@@ -20,14 +20,45 @@
 package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
-
+import org.neo4j.visualization.graphviz.StyleParameter.Simple;
+import org.neo4j.visualization.graphviz.color.AutoRelationshipTypeColor;
 
 public class AsciiDocStyle extends GraphStyle
 {
+    static final Simple SIMPLE_PROPERTY_STYLE = StyleParameter.Simple.PROPERTY_AS_KEY_EQUALS_VALUE;
+    static final DefaultStyleConfiguration PLAIN_STYLE = new DefaultStyleConfiguration(
+            SIMPLE_PROPERTY_STYLE );
+
+    public AsciiDocStyle()
+    {
+        super();
+    }
+
+    AsciiDocStyle( StyleParameter... parameters )
+    {
+        super( parameters );
+    }
+
+    public AsciiDocStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
+    {
+        super( nodeStyle, edgeStyle );
+    }
+
+    @Override
     protected void emitGraphStart( Appendable stream ) throws IOException
     {
     }
+
+    @Override
     protected void emitGraphEnd( Appendable stream ) throws IOException
     {
+    }
+
+    public static AsciiDocStyle withAutomaticRelationshipTypeColors()
+    {
+        return new AsciiDocStyle( new DefaultNodeStyle( PLAIN_STYLE ),
+                new DefaultRelationshipStyle( new DefaultStyleConfiguration(
+                        AsciiDocStyle.SIMPLE_PROPERTY_STYLE,
+                        new AutoRelationshipTypeColor() ) ) );
     }
 }

@@ -1,16 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2002-2012 "Neo Technology,"
+  Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+  This file is part of Neo4j.
+
+  Neo4j is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as
+  published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses />.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>31</version>
+        <version>33</version>
         <relativePath />
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>1.7-SNAPSHOT</version>
+    <version>1.8-SNAPSHOT</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -22,6 +42,7 @@
         <short-name>server</short-name>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
+        <docs-plugin.filter>true</docs-plugin.filter>
 
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
@@ -30,7 +51,10 @@
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
-        <neo4j.codename />
+        <neo4j.codename>Bastuträsk Bänk</neo4j.codename>
+
+        <!-- Relative to /webadmin/ -->
+        <neo4j.codename.icon>img/icons/branding/1.7.png</neo4j.codename.icon>
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -40,7 +64,7 @@
         <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
         <testWithExternalServer>false</testWithExternalServer>
 
-        <webdriver.version>2.5.0</webdriver.version>
+        <webdriver.version>2.20.0</webdriver.version>
         <webdriver.implementation>Firefox</webdriver.implementation>
 
         <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
@@ -78,14 +102,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -93,34 +117,32 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>server-api</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.6.1</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>0.9.30</version>
         </dependency>
+
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
-            <version>1.6.1</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>0.9.30</version>
         </dependency>
+
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>1.6.1</version>
+            <groupId>janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>2.5.10</version>
+
         </dependency>
 
         <dependency>
@@ -222,7 +244,6 @@
             <artifactId>rrd4j</artifactId>
             <version>2.0.7</version>
         </dependency>
-    
 
         <!-- File uploads -->
         <dependency>
@@ -251,12 +272,14 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <scope>test</scope>
+            <version>4.1.3</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
             <scope>test</scope>
+            <version>4.1.3</version>
         </dependency>
 
         <dependency>
@@ -287,14 +310,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-shell</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -305,9 +328,9 @@
             <artifactId>hamcrest-all</artifactId>
         </dependency>
         <dependency>
-          <groupId>bouncycastle</groupId>
-          <artifactId>bcprov-jdk16</artifactId>
-          <version>140</version>
+            <groupId>bouncycastle</groupId>
+            <artifactId>bcprov-jdk16</artifactId>
+            <version>140</version>
         </dependency>
     </dependencies>
 
@@ -373,20 +396,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>docs</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <attach>true</attach>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    <execution>
                         <id>sources</id>
                         <phase>package</phase>
                         <configuration>
@@ -418,8 +427,8 @@
             </plugin>
 
             <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
+                <groupId>org.neo4j.build.plugins</groupId>
+                <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <strictCheck>true</strictCheck>
                     <header>${license-text.header}</header>
@@ -480,7 +489,7 @@
                         <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
                         <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}</webdriver.override.neo-server.baseuri>
                     </systemPropertyVariables>
-                    <argLine>-Xmx1024m</argLine>
+                    <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                     <forkMode>once</forkMode>
                 </configuration>
             </plugin>
@@ -574,7 +583,7 @@
                     <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
                 </configuration>
             </plugin>
-            
+
           <plugin>
             <groupId>com.github.searls</groupId>
             <artifactId>jasmine-maven-plugin</artifactId>
@@ -670,7 +679,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <argLine>-Xmx1024m</argLine>
+                            <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
                             <forkMode>always</forkMode>
                         </configuration>
                     </plugin>

@@ -23,14 +23,14 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes.aggregation._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.SyntaxException
-
+import collection.Map
 abstract class AggregationExpression extends Expression {
-  def apply(m: Map[String, Any]) = m.get(name) match  {
+  def compute(m: Map[String, Any]) = m.get(name) match  {
     case None => null
     case Some(x) => x
   }
 
-  override def identifier = Identifier(name, typ)
+  override val identifier = Identifier(name, typ)
 
   def name: String
 
@@ -65,7 +65,7 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(expectedInnerType)
   def expectedInnerType: AnyType
   
-  override def identifier = Identifier("%s(%s)".format(name, inner.identifier.name), typ)
+  override val identifier = Identifier("%s(%s)".format(name, inner.identifier.name), typ)
 
   def filter(f: (Expression) => Boolean) = if (f(this))
     Seq(this) ++ inner.filter(f)
@@ -76,7 +76,7 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
 case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {
   def typ = innerAggregator.identifier.typ
 
-  override def identifier = Identifier("%s(distinct %s)".format(innerAggregator.name, expression.identifier.name), innerAggregator.identifier.typ)
+  override val identifier = Identifier("%s(distinct %s)".format(innerAggregator.name, expression.identifier.name), innerAggregator.identifier.typ)
 
   def expectedInnerType: AnyType = AnyType()
 

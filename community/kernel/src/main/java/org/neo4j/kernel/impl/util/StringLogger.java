@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
@@ -27,11 +28,10 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 public abstract class StringLogger
 {
@@ -196,7 +196,7 @@ public abstract class StringLogger
 
     public abstract void close();
 
-    abstract void logLine( String line );
+    protected abstract void logLine( String line );
 
     public static final StringLogger DEV_NULL = new StringLogger()
     {
@@ -210,7 +210,7 @@ public abstract class StringLogger
         public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush ) {}
 
         @Override
-        void logLine( String line ) {}
+        protected void logLine( String line ) {}
 
         @Override
         public void flush() {}
@@ -312,7 +312,7 @@ public abstract class StringLogger
         }
 
         @Override
-        void logLine( String line )
+        protected void logLine( String line )
         {
             out.println( "    " + line );
         }

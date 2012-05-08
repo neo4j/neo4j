@@ -18,13 +18,8 @@
  */
 package org.neo4j.examples;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +27,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * An example of unit testing with Neo4j.
@@ -47,7 +46,7 @@ public class Neo4jBasicTest
     @Before
     public void prepareTestDatabase()
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
     // END SNIPPET: beforeTest
 

@@ -81,7 +81,7 @@ This is an example with multiple entries, each on a separate line:
 
 [source]
 ----
-include::org.neo4j.server.plugins.ServerPlugin[]
+include::../org.neo4j.server.plugins.ServerPlugin[]
 ----
 
 The code above makes an extension visible in the database representation (via the +@PluginTarget+ annotation)

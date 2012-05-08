@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.shell;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.Test;
+import org.neo4j.test.ProcessStreamHandler;
+
+import static java.lang.Runtime.*;
+import static java.lang.System.*;
+import static org.junit.Assert.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 public class TestRmiPublication
 {
@@ -33,7 +35,7 @@ public class TestRmiPublication
     {
         assertEquals( 0, spawnJvm( DontShutdownClient.class, "client" ) );
     }
-    
+
     @Test
     public void jvmShouldDieEvenIfLocalServerIsLeftHanging() throws Exception
     {
@@ -50,17 +52,26 @@ public class TestRmiPublication
     private int waitForExit( Process process, int maxSeconds ) throws InterruptedException
     {
         long endTime = System.currentTimeMillis() + maxSeconds*1000;
-        while ( System.currentTimeMillis() < endTime )
+        ProcessStreamHandler streamHandler = new ProcessStreamHandler( process, false );
+        streamHandler.launch();
+        try
         {
-            try
+            while ( System.currentTimeMillis() < endTime )
             {
-                return process.exitValue();
+                try
+                {
+                    return process.exitValue();
+                }
+                catch ( IllegalThreadStateException e )
+                {   // OK, not exited yet
+                    Thread.sleep( 100 );
+                }
             }
-            catch ( IllegalThreadStateException e )
-            {   // OK, not exited yet
-                Thread.sleep( 100 );
-            }
+            throw new RuntimeException( "Process didn't exit on its own" );
         }
-        throw new RuntimeException( "Process didn't exit on its own" );
+        finally
+        {
+            streamHandler.cancel();
+        }
     }
 }

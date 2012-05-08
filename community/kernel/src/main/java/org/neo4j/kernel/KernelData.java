@@ -24,9 +24,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class KernelData
@@ -112,16 +111,18 @@ public abstract class KernelData
 
     public abstract Config getConfig();
 
-    public abstract GraphDatabaseSPI graphDatabase();
+    public abstract GraphDatabaseAPI graphDatabase();
 
     public abstract Map<String, String> getConfigParams();
 
     private final Map<KernelExtension<?>, Object> state = new HashMap<KernelExtension<?>, Object>();
 
-    Collection<KernelExtension<?>> loadExtensionConfigurations( StringLogger msgLog )
+    Collection<KernelExtension<?>> loadExtensionConfigurations( StringLogger msgLog,
+                                                                Iterable<KernelExtension> kernelExtensions
+    )
     {
         Collection<KernelExtension<?>> loadedExtensions = new ArrayList<KernelExtension<?>>();
-        for ( KernelExtension<?> extension : Service.load( KernelExtension.class ) )
+        for ( KernelExtension<?> extension : kernelExtensions )
         {
             try
             {

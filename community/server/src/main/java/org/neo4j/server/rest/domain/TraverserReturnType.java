@@ -23,6 +23,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.rest.repr.FullPathRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
+import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 
 public enum TraverserReturnType
@@ -38,11 +39,11 @@ public enum TraverserReturnType
     relationship( RepresentationType.RELATIONSHIP )
     {
         @Override
-        public MappingRepresentation toRepresentation( Path position )
+        public Representation toRepresentation( Path position )
         {
             Relationship lastRelationship = position.lastRelationship();
             
-            return lastRelationship != null? new org.neo4j.server.rest.repr.RelationshipRepresentation( lastRelationship ): null;
+            return lastRelationship != null? new org.neo4j.server.rest.repr.RelationshipRepresentation( lastRelationship ): Representation.emptyRepresentation();
         }
     },
     path( RepresentationType.PATH )
@@ -68,5 +69,5 @@ public enum TraverserReturnType
         this.repType = repType;
     }
 
-    public abstract MappingRepresentation toRepresentation( Path position );
+    public abstract Representation toRepresentation( Path position );
 }

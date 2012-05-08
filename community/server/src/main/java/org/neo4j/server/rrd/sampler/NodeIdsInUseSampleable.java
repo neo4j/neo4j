@@ -20,12 +20,12 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
 
-    public NodeIdsInUseSampleable( GraphDatabaseSPI db )
+    public NodeIdsInUseSampleable( GraphDatabaseAPI db )
     {
         super( db );
     }

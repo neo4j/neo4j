@@ -22,7 +22,6 @@ package org.neo4j.visualization.graphviz;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -33,7 +32,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 {
 	boolean displayRelationshipLabel = true;
 
-	DefaultStyleConfiguration( StyleParameter[] parameters )
+    DefaultStyleConfiguration( StyleParameter... parameters )
 	{
 		this.nodeHeader = new HashMap<String, String>(
 		    GraphStyle.header().nodeHeader );
@@ -51,7 +50,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
     {
         label = label.replace( "\\", "\\\\" );
         label = label.replace( "\"", "\\\"" );
-        label = label.replace( "'", "\\\\'" );
+        label = label.replace( "'", "\\'" );
         label = label.replace( "\n", "\\n" );
         label = label.replace( "<", "\\<" );
         label = label.replace( ">", "\\>" );

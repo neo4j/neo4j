@@ -21,6 +21,7 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -34,7 +35,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -126,8 +127,14 @@ public class PropertyFileConfigurator implements Configurator
             return;
         }
 
-        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations( databaseTuningPropertyFileLocation );
-
+        try
+        {
+            databaseTuningProperties = MapUtil.load(databaseTuningPropertyFile);
+        }
+        catch( IOException e )
+        {
+            databaseTuningProperties = new HashMap<String, String>();
+        }
     }
 
     private void loadPropertiesConfig( File configFile ) throws ConfigurationException

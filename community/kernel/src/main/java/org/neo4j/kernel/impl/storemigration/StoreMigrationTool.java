@@ -17,17 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -61,7 +67,11 @@ public class StoreMigrationTool
 
         File targetStoreFile = new File( targetStoreDirectory, NeoStore.DEFAULT_NAME );
         config.put( "neo_store", targetStoreFile.getPath() );
-        NeoStore neoStore = new StoreFactory(config, CommonFactories.defaultIdGeneratorFactory(), CommonFactories.defaultFileSystemAbstraction(), null, StringLogger.SYSTEM, null).createNeoStore(targetStoreFile.getPath());
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+
+        config = new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config );
+
+        NeoStore neoStore = new StoreFactory(new Config( config ), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null).createNeoStore(targetStoreFile.getPath());
 
         long startTime = System.currentTimeMillis();
 
@@ -72,7 +82,7 @@ public class StoreMigrationTool
 
         neoStore.close();
 
-        EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( targetStoreDirectoryFile.getPath() );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( targetStoreDirectoryFile.getPath() );
         database.shutdown();
     }
 }

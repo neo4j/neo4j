@@ -105,7 +105,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
 
     @Test
     @Graph( "I know you" )
-    @Documented
     public void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
             throws PropertyValueException
     {

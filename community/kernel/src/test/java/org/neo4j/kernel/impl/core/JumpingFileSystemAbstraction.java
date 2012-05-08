@@ -91,6 +91,12 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     }
     
     @Override
+    public void copyFile( String from, String to ) throws IOException
+    {
+        FileUtils.copyRecursively( new File( from ), new File( to ) );
+    }
+    
+    @Override
     public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
     {
         return FileLock.getOsSpecificFileLock( fileName, channel );

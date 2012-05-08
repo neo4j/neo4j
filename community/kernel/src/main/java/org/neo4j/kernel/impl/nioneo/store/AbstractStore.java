@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -43,14 +44,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class AbstractStore extends CommonAbstractStore
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-
-        boolean rebuild_idgenerators_fast(boolean def);
+        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
-    private Configuration conf;
+    private Config conf;
 
     /**
      * Returns the fixed size of each record in this store.
@@ -72,7 +72,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    public AbstractStore( String fileName, Configuration conf, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+    public AbstractStore( String fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
         super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
         this.conf = conf;
@@ -166,10 +166,9 @@ public abstract class AbstractStore extends CommonAbstractStore
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();
-        File file = new File( getStorageFileName() + ".id" );
-        if ( file.exists() )
+        if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
         {
-            boolean success = file.delete();
+            boolean success = fileSystemAbstraction.deleteFile( getStorageFileName() + ".id" );
             assert success;
         }
         createIdGenerator( getStorageFileName() + ".id" );
@@ -182,12 +181,12 @@ public abstract class AbstractStore extends CommonAbstractStore
             long fileSize = fileChannel.size();
             int recordSize = getRecordSize();
             boolean fullRebuild = true;
-            if ( conf.rebuild_idgenerators_fast(true))
+            if ( conf.getBoolean( Configuration.rebuild_idgenerators_fast) )
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();
             }
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
+            ByteBuffer byteBuffer = ByteBuffer.allocate( recordSize );
             // Duplicated code block
             LinkedList<Long> freeIdList = new LinkedList<Long>();
             if ( fullRebuild )
@@ -196,18 +195,17 @@ public abstract class AbstractStore extends CommonAbstractStore
                     i++ )
                 {
                     fileChannel.position( i * recordSize );
+                    byteBuffer.clear();
                     fileChannel.read( byteBuffer );
                     byteBuffer.flip();
-                    byte inUse = byteBuffer.get();
-                    byteBuffer.flip();
-                    nextId();
-                    if ( (inUse & 0x1) == Record.NOT_IN_USE.byteValue() )
+                    if ( !isRecordInUse( byteBuffer ) )
                     {
                         freeIdList.add( i );
                     }
                     else
                     {
                         highId = i;
+                        setHighId( highId+1 );
                         while ( !freeIdList.isEmpty() )
                         {
                             freeId( freeIdList.removeFirst() );

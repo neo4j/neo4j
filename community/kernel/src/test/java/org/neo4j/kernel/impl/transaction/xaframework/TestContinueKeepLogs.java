@@ -19,25 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-
 import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
 
 public class TestContinueKeepLogs
 {
@@ -93,22 +91,22 @@ public class TestContinueKeepLogs
     
     private Map<String, String> keepLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, "true" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
     }
     
     private Map<String, String> dontKeepLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, "false" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
     }
     
     private Map<String, String> dontKeepMyLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=false" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), dataSourceName() + "=false" );
     }
     
     private Map<String, String> keepMyLogs()
     {
-        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=true" );
+        return stringMap( GraphDatabaseSettings.keep_logical_logs.name(), dataSourceName() + "=true" );
     }
     
     protected String dataSourceName()
@@ -123,7 +121,7 @@ public class TestContinueKeepLogs
     
     private void doStuffAndExpectLogs( Map<String, String> config, int... expectedLogVersions ) throws Exception
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH, config );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( config ).newGraphDatabase();
         doTransaction( db );
         db.shutdown();
         expectLogs( db, expectedLogVersions );

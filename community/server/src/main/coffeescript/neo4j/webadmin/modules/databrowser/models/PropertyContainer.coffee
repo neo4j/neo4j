@@ -20,12 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   './Property','lib/backbone'], 
-  (ItemUrlResolver, Property) ->
+   './Property'
+   'ribcage/Model'], 
+  (ItemUrlResolver, Property, Model) ->
   
     ID_COUNTER = 0
 
-    class PropertyContainer extends Backbone.Model
+    class PropertyContainer extends Model
       
       defaults :
         status : "saved"

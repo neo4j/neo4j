@@ -23,8 +23,8 @@ define(
    './visualizationSettings',
    './ProfileListItemView',
    'ribcage/View',
-   'lib/backbone'],
-  (ItemUrlResolver, template, ProfileListItemView, View) ->
+   'lib/amd/jQuery'],
+  (ItemUrlResolver, template, ProfileListItemView, View, $) ->
   
     class VisualizationSettingsView extends View
     

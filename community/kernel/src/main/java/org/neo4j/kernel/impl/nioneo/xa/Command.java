@@ -115,7 +115,7 @@ public abstract class Command extends XaCommand
             }
         }
     }
-
+    
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {

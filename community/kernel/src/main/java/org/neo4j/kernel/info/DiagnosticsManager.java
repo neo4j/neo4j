@@ -24,12 +24,11 @@ import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
@@ -219,6 +218,15 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
     public <T> void register( DiagnosticsExtractor<T> extractor, T source )
     {
         appendProvider( extractedProvider( extractor, source ) );
+    }
+
+    public <T> T tryAppendProvider( T protentialProvider )
+    {
+        if ( protentialProvider instanceof DiagnosticsProvider )
+        {
+            appendProvider( (DiagnosticsProvider) protentialProvider );
+        }
+        return protentialProvider;
     }
 
     public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void registerAll( Class<E> extractorEnum, T source )

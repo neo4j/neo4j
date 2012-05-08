@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -31,10 +31,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class NodeStore extends AbstractStore implements Store, RecordStore<NodeRecord>
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-
     }
 
     public static final String TYPE_DESCRIPTOR = "NodeStore";
@@ -42,7 +41,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     public static final int RECORD_SIZE = 9;
 
-    public NodeStore(String fileName, Configuration config,
+    public NodeStore(String fileName, Config config,
                      IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super(fileName, config, IdType.NODE, idGeneratorFactory, fileSystemAbstraction, stringLogger);

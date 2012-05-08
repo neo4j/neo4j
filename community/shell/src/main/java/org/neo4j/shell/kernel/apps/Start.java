@@ -23,7 +23,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.SyntaxException;
+import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
@@ -33,10 +33,6 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-/**
- * Mimics the POSIX application with the same name, i.e. renames a property. It
- * could also (regarding POSIX) move nodes, but it doesn't).
- */
 @Service.Implementation( App.class )
 public class Start extends GraphDatabaseApp
 {
@@ -48,9 +44,10 @@ public class Start extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Executes a Cypher query. Usage: start <rest of query>\n" +
-                "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
-                "where {self} will be replaced with the current location in the graph";
+        return "Executes a Cypher query. Usage: start <rest of query>;\n" +
+                "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name;\n" +
+                "where {self} will be replaced with the current location in the graph." +
+                "Please, note that the query must end with a semicolon.";
     }
 
     @Override
@@ -58,16 +55,18 @@ public class Start extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         String query = parser.getLine();
-        
-        if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
+
+        if ( isComplete(query) )
         {
+            String queryWithoutSemicolon = query.substring(0, query.lastIndexOf(";"));
+
             ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
             try
             {
-                ExecutionResult result = engine.execute( query, getParameters( session ) );
+                ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
                 out.println( result.toString() );
             }
-            catch ( SyntaxException e )
+            catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
             }
@@ -93,15 +92,8 @@ public class Start extends GraphDatabaseApp
         return params;
     }
 
-    private boolean looksToBeComplete( String query )
+    private boolean isComplete(String query)
     {
-        // TODO do for real
-        return query.toLowerCase().contains( "return" );
-//        return false;
-    }
-
-    private boolean endsWithNewLine( String query )
-    {
-        return query.length() > 0 && query.endsWith( "\n" );
+        return query.trim().endsWith(";");
     }
 }

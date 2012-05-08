@@ -21,26 +21,16 @@ package org.neo4j.cypher.internal.pipes
 
 import matching.MatchingContext
 import java.lang.String
-import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, Predicate, Pattern}
-import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.commands.{Predicate, Pattern}
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
-  val symbols = source.symbols.add(identifiers: _*)
+  val symbols = matchingContext.symbols
 
-  def identifiers = patterns.flatMap(_ match {
-    case RelatedTo(left, right, rel, _, _, _, _) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
-    case path: PathPattern => Seq(
-      Identifier(path.start, NodeType()),
-      Identifier(path.end, NodeType()),
-      Identifier(path.pathName, PathType())
-    ) ++ path.relIterator.map(Identifier(_, new IterableType(RelationshipType())))
-    case _ => Seq()
-  })
-
-
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
-    source.createResults(params).flatMap(sourcePipeRow => matchingContext.getMatches(sourcePipeRow))
+  def createResults(state: QueryState) =
+    source.createResults(state).flatMap(ctx => {
+      matchingContext.getMatches(ctx.toMap).map(pm => ctx.copy(m = ctx.m ++ pm) )
+    })
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"
 }

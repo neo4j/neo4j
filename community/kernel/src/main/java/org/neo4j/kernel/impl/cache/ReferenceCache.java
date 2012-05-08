@@ -19,7 +19,19 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-public abstract class ReferenceCache<K,V> implements Cache<K,V>
+public abstract class ReferenceCache<E extends EntityWithSize> implements Cache<E>
 {
     protected abstract void pollClearedValues();
+
+    @Override
+    public void updateSize( E entity, int newSize )
+    {
+        // do nothing
+    }
+
+    @Override
+    public void printStatistics()
+    {
+        // do nothing
+    }
 }

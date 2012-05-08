@@ -72,7 +72,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
       shouldFollow = e => !visited.contains(e),
       visit = (e, data: Seq[PatternElement]) => {
         visited += e
-        val result = data ++ Seq(e)
+        val result = data :+ e
 
         val foundPathBetweenBoundElements = boundPatternElements.contains(e) && result.size > 1
 
@@ -146,10 +146,10 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
     val vNode = (n: PatternNode, x: Unit) => {
       if (visited.contains(n))
         loop = true
-      visited = visited ++ Seq(n)
+      visited = visited :+ n
     }
 
-    val vRel = (r: PatternRelationship, x: Unit) => visited = visited ++ Seq(r);
+    val vRel = (r: PatternRelationship, x: Unit) => visited :+= r
 
     boundPatternElements.foreach {
       case pr: PatternRelationship => pr.startNode.traverse(follow, vNode, vRel, ())

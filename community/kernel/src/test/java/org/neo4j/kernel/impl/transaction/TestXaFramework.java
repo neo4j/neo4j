@@ -17,10 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+package org.neo4j.kernel.impl.transaction;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -29,19 +27,23 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -57,6 +59,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -228,7 +232,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 map.put( "store_dir", path() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), null);
+                        new DummyTransactionFactory(), null, null);
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
@@ -337,8 +341,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "store_dir", "target/var" );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -399,7 +404,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(), CommonFactories.defaultLogBufferFactory(), CommonFactories.defaultFileSystemAbstraction(), StringLogger.DEV_NULL, CommonFactories.defaultRecoveryVerifier())) );
+            FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

@@ -19,38 +19,49 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.junit.matchers.JUnitMatchers.hasItem;
+import static org.junit.matchers.JUnitMatchers.hasItems;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-import java.io.IOException;
-import java.util.*;
+public class JavaExecutionEngineTests
+{
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.*;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-
-public class JavaExecutionEngineTests {
-
-    private AbstractGraphDatabase db;
+    private GraphDatabaseService db;
     private ExecutionEngine engine;
     private Node andreasNode;
     private Node johanNode;
     private Node michaelaNode;
 
     @Before
-    public void setUp() throws IOException {
-        db = new ImpermanentGraphDatabase();
+    public void setUp() throws IOException
+    {
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         engine = new ExecutionEngine( db );
         Transaction tx = db.beginTx();
         andreasNode = db.createNode();
@@ -68,19 +79,25 @@ public class JavaExecutionEngineTests {
         tx.success();
         tx.finish();
     }
-    
+
     @After
-    public void shutdownDb() {
-        if ( db != null ) db.shutdown();
+    public void shutdownDb()
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
         db = null;
     }
 
-    private void index( Node n ) {
+    private void index( Node n )
+    {
         db.index().forNodes( "people" ).add( n, "name", n.getProperty( "name" ) );
     }
 
     @Test
-    public void exampleQuery() throws Exception {
+    public void exampleQuery() throws Exception
+    {
 // START SNIPPET: JavaQuery
         ExecutionEngine engine = new ExecutionEngine( db );
         ExecutionResult result = engine.execute( "start n=node(0) where 1=1 return n" );
@@ -93,7 +110,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void shouldBeAbleToEmitJavaIterables() throws Exception {
+    public void shouldBeAbleToEmitJavaIterables() throws Exception
+    {
         makeFriends( michaelaNode, andreasNode );
         makeFriends( michaelaNode, johanNode );
 
@@ -101,13 +119,14 @@ public class JavaExecutionEngineTests {
 
         ExecutionResult result = engine.execute( "start n=node(0) match n-->friend return collect(friend)" );
 
-        Iterable<Node> friends = ( Iterable<Node> ) result.columnAs( "collect(friend)" ).next();
+        Iterable<Node> friends = (Iterable<Node>) result.columnAs( "collect(friend)" ).next();
         assertThat( friends, hasItems( andreasNode, johanNode ) );
         assertThat( friends, instanceOf( Iterable.class ) );
     }
 
     @Test
-    public void testColumnAreInTheRightOrder() throws Exception {
+    public void testColumnAreInTheRightOrder() throws Exception
+    {
         createTenNodes();
         String q = "start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), " +
                 "seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
@@ -117,9 +136,11 @@ public class JavaExecutionEngineTests {
 
     }
 
-    private void createTenNodes() {
+    private void createTenNodes()
+    {
         Transaction tx = db.beginTx();
-        for( int i = 0; i < 10; i++ ) {
+        for ( int i = 0; i < 10; i++ )
+        {
             db.createNode();
         }
         tx.success();
@@ -127,7 +148,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterForNodeId() throws Exception {
+    public void exampleWithParameterForNodeId() throws Exception
+    {
         // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", 0 );
@@ -140,7 +162,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterForMultipleNodeIds() throws Exception {
+    public void exampleWithParameterForMultipleNodeIds() throws Exception
+    {
         // START SNIPPET: exampleWithParameterForMultipleNodeIds
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "id", Arrays.asList( 0, 1, 2 ) );
@@ -150,14 +173,16 @@ public class JavaExecutionEngineTests {
         assertEquals( asList( "Michaela", "Andreas", "Johan" ), this.<String>toList( result, "n.name" ) );
     }
 
-    private <T> List<T> toList( ExecutionResult result, String column ) {
+    private <T> List<T> toList( ExecutionResult result, String column )
+    {
         List<T> results = new ArrayList<T>();
         IteratorUtil.addToCollection( result.<T>columnAs( column ), results );
         return results;
     }
 
     @Test
-    public void exampleWithStringLiteralAsParameter() throws Exception {
+    public void exampleWithStringLiteralAsParameter() throws Exception
+    {
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
@@ -168,7 +193,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParametersForIndexKeyAndValue() throws Exception {
+    public void exampleWithParametersForIndexKeyAndValue() throws Exception
+    {
         // START SNIPPET: exampleWithParametersForIndexKeyAndValue
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "key", "name" );
@@ -180,7 +206,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParametersForQuery() throws Exception {
+    public void exampleWithParametersForQuery() throws Exception
+    {
         // START SNIPPET: exampleWithParametersForQuery
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "query", "name:Andreas" );
@@ -191,7 +218,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterForNodeObject() throws Exception {
+    public void exampleWithParameterForNodeObject() throws Exception
+    {
         // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
@@ -204,7 +232,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterForSkipAndLimit() throws Exception {
+    public void exampleWithParameterForSkipAndLimit() throws Exception
+    {
         // START SNIPPET: exampleWithParameterForSkipLimit
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
@@ -218,7 +247,8 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterRegularExpression() throws Exception {
+    public void exampleWithParameterRegularExpression() throws Exception
+    {
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
@@ -231,8 +261,26 @@ public class JavaExecutionEngineTests {
         assertEquals( "Johan", n_column.next() );
     }
 
+    @Test
+    public void create_node_from_map() throws Exception
+    {
+        // START SNIPPET: create_node_from_map
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "name", "Andres" );
+        props.put( "position", "Developer" );
 
-    private void makeFriends( Node a, Node b ) {
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put( "props", props );
+        engine.execute( "create node {props}", params );
+        // END SNIPPET: create_node_from_map
+
+        ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
+        assertThat( count( result ), is(1));
+    }
+
+
+    private void makeFriends( Node a, Node b )
+    {
         Transaction tx = db.beginTx();
         a.createRelationshipTo( b, DynamicRelationshipType.withName( "friend" ) );
         tx.success();

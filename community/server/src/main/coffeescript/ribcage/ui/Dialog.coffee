@@ -20,8 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Overlay'
-   'ribcage/View'
-   'lib/backbone'], 
+   'ribcage/View'], 
   (Overlay, View) ->
   
     class Dialog extends View

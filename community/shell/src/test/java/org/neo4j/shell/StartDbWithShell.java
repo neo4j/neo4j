@@ -20,16 +20,17 @@
 package org.neo4j.shell;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 public class StartDbWithShell
 {
     public static void main( String[] args ) throws Exception
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( "target/test-data/shell-db", MapUtil.stringMap(
-                Config.ENABLE_REMOTE_SHELL, "true" ) );
+        GraphDatabaseService db = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( "target/test-data/shell-db" ).
+            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE).
+            newGraphDatabase();
         System.out.println( "ENTER to quit" );
         System.in.read();
         db.shutdown();

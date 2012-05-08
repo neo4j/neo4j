@@ -22,28 +22,30 @@ package org.neo4j.server.database;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.ext.udc.UdcProperties;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.statistic.StatisticCollector;
+import org.neo4j.shell.ShellSettings;
 import org.rrd4j.core.RrdDb;
 
 public class Database
 {
     public static Logger log = Logger.getLogger( Database.class );
 
-    public GraphDatabaseSPI graph;
+    public GraphDatabaseAPI graph;
 
     private final String databaseStoreDirectory;
     private RrdDb rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
-    public Database( GraphDatabaseSPI db )
+    public Database( GraphDatabaseAPI db )
     {
         this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
@@ -63,7 +65,7 @@ public class Database
         this( createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static GraphDatabaseSPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
+    private static GraphDatabaseAPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
             Map<String, String> databaseProperties )
     {
         log.info( "Using database at " + databaseStoreDirectory );
@@ -73,9 +75,9 @@ public class Database
             databaseProperties = new HashMap<String, String>();
         }
 
-        putIfAbsent( databaseProperties, Config.ENABLE_REMOTE_SHELL, "true" );
-        databaseProperties.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
+        putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
+        databaseProperties.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
+        databaseProperties.put( UdcSettings.udc_source.name(), "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }

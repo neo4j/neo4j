@@ -30,18 +30,19 @@ These clauses are HAVING and ORDER BY right now.
  */
 object ReattachAliasedExpressions {
   def apply(q: Query): Query = {
-      val newSort = q.sort.map( oldSort => Sort(oldSort.sortItems.map(rewrite(q.returns.returnItems)):_*) )
+    val newSort = q.sort.map(oldSort => Sort(oldSort.sortItems.map(rewrite(q.returns.returnItems)): _*))
 
-      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, q.queryString)
-    }
+    q.copy(sort = newSort)
+  }
 
-  private def rewrite(returnItems: Seq[ReturnItem])(in: SortItem): SortItem = {
+  private def rewrite(returnItems: Seq[ReturnColumn])(in: SortItem): SortItem = {
     SortItem(in.expression.rewrite(expressionRewriter(returnItems)), in.ascending)
   }
 
-  private def expressionRewriter(returnItems: Seq[ReturnItem])(expression:Expression):Expression = expression match {
-    case e:Entity => {
-      val found = returnItems.find(_.columnName == e.entityName)
+  private def expressionRewriter(returnColumns: Seq[ReturnColumn])(expression: Expression): Expression = expression match {
+    case e: Entity => {
+      val returnItems = keepReturnItems(returnColumns)
+      val found = returnItems.find(_.name == e.entityName)
 
       found match {
         case None => e
@@ -50,4 +51,8 @@ object ReattachAliasedExpressions {
     }
     case somethingElse => somethingElse
   }
+
+  private def keepReturnItems(returnColumns: Seq[ReturnColumn]):Seq[ReturnItem] = returnColumns.
+    filter(_.isInstanceOf[ReturnItem]).
+    map(_.asInstanceOf[ReturnItem])
 }

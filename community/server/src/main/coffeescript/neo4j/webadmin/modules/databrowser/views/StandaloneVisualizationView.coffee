@@ -24,11 +24,11 @@ of the graph visualization.
 ###
 
 define(
-  ['./standaloneVisualization',
-   './DataBrowserView',
-   'ribcage/View',
-   'lib/backbone',], 
-  (template, DataBrowserView, View) ->
+  ['./standaloneVisualization'
+   './DataBrowserView'
+   'ribcage/View'
+   'lib/amd/jQuery'], 
+  (template, DataBrowserView, View, $) ->
   
     class StandaloneVisualizationView extends View
       

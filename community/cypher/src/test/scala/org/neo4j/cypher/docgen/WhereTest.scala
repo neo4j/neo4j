@@ -131,15 +131,18 @@ class WhereTest extends DocumentingTestBase {
   @Test def has_relationship_to() {
     testQuery(
       title = "Filter on relationships",
-      text = """To filter out subgraphs based on relationships between nodes, you use a limited part of the iconigraphy in the match clause. You can only describe the relationship with direction and eventual type. These are all valid expressions:
-      WHERE a-->b
-      WHERE a<--b
-      WHERE a<-[:KNOWS]-b
-      WHERE a-[:KNOWS]-b
+      text = """To filter out subgraphs based on relationships between nodes, you use a limited part of the iconigraphy in the match clause. You can only describe the relationship with direction and optional type. These are all valid expressions:
+[source,cypher]
+----
+WHERE a-->b
+WHERE a<--b
+WHERE a<-[:KNOWS]-b
+WHERE a-[:KNOWS]-b
+----
 
-      Not that you can not introduce new identifiers here. Although it might look very similar to the MATCH clause, the
-WHERE clause is all about eliminating matched subgraphs. MATCH a-->b is very different from WHERE a-->b; the first will
-produce a subgraph for every relationship between a and b, and the latter will eliminate any matched subgraphs where a and b
+Note that you can not introduce new identifiers here. Although it might look very similar to the `MATCH` clause, the
+`WHERE` clause is all about eliminating matched subgraphs. `MATCH a-->b` is very different from `WHERE a-->b`; the first will
+produce a subgraph for every relationship between `a` and `b`, and the latter will eliminate any matched subgraphs where `a` and `b`
 do not have a relationship between them.
       """,
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) where a<--b return b""",

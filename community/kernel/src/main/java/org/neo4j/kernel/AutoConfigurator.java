@@ -23,7 +23,9 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class AutoConfigurator
 {
@@ -31,9 +33,11 @@ public class AutoConfigurator
     private final int maxVmUsageMb;
     private final String dbPath;
     private final boolean useMemoryMapped;
+    private final FileSystemAbstraction fs;
 
-    public AutoConfigurator( String dbPath, boolean useMemoryMapped, boolean dump )
+    public AutoConfigurator( FileSystemAbstraction fs, String dbPath, boolean useMemoryMapped, boolean dump )
     {
+        this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
         OperatingSystemMXBean osBean =
@@ -73,8 +77,9 @@ public class AutoConfigurator
         return "Physical mem: " + totalPhysicalMemMb + "MB, Heap size: " + maxVmUsageMb + "MB";
     }
 
-    public void configure( Map<String, String> config )
+    public Map<String,String> configure( )
     {
+        Map<String,String> autoConfiguredConfig = new HashMap<String,String>();
         if ( totalPhysicalMemMb > 0 )
         {
             if ( useMemoryMapped )
@@ -82,20 +87,21 @@ public class AutoConfigurator
                 int availableMem = (totalPhysicalMemMb - maxVmUsageMb );
                 // leave 15% for OS and other progs
                 availableMem -= (int) ( availableMem * 0.15f );
-                assignMemory( config, availableMem );
+                assignMemory( autoConfiguredConfig, availableMem );
             }
             else
             {
                 // use half of heap (if needed) for buffers
-                assignMemory( config, maxVmUsageMb / 2 );
+                assignMemory( autoConfiguredConfig, maxVmUsageMb / 2 );
             }
         }
+        return autoConfiguredConfig;
     }
 
     private int calculate( int memLeft, int storeSize, float use, float expand,
             boolean canExpand )
     {
-        int size = memLeft;
+        int size;
         if ( storeSize > (memLeft * use) )
         {
             size = (int) (memLeft * use);
@@ -155,12 +161,14 @@ public class AutoConfigurator
     private void configPut( Map<String, String> config, String store,
             int size )
     {
-        config.put( "neostore." + store + ".mapped_memory", size + "M" );
+        // Don't overwrite explicit config
+        String key = "neostore." + store + ".mapped_memory";
+        config.put( key, size + "M" );
     }
 
     private int getFileSizeMb( String file )
     {
-        long length = new File( dbPath + File.separator + "neostore." + file ).length();
+        long length = fs.getFileSize( dbPath + File.separator + "neostore." + file );
         int mb = (int) ( length / 1024 / 1024 );
         if ( mb > 0 )
         {

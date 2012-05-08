@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/modules/databrowser/models/PropertyContainer',
-   'ribcage/View',
-   './propertyEditor','lib/backbone'], 
-  (PropertyContainer, View, propertyEditorTemplate) ->
+  ['neo4j/webadmin/modules/databrowser/models/PropertyContainer'
+   'ribcage/View'
+   './propertyEditor'
+   'lib/amd/jQuery'], 
+  (PropertyContainer, View, propertyEditorTemplate, $) ->
 
     class PropertyContainerView extends View
 

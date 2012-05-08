@@ -22,10 +22,8 @@ package org.neo4j.jmx.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
-
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -74,7 +72,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
         return instanceId;
     }
 
-    public static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
+    private NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
     {
         XaDataSourceManager mgr = kernel.graphDatabase().getXaDataSourceManager();
         return mgr.getNeoStoreDataSource();

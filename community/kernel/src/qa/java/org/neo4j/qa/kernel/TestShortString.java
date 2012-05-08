@@ -19,21 +19,19 @@
  */
 package org.neo4j.qa.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
 import java.io.File;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.*;
 
 public class TestShortString
 {
@@ -46,7 +44,7 @@ public class TestShortString
     public void doBefore()
     {
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( PATH ) );
-        db = new EmbeddedGraphDatabase( PATH );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
     }
     
     @After
@@ -222,7 +220,7 @@ public class TestShortString
     {
         db.shutdown();
         long size = new File( PATH, "neostore.propertystore.db.strings" ).length();
-        db = new EmbeddedGraphDatabase( PATH );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         return size;
     }
 

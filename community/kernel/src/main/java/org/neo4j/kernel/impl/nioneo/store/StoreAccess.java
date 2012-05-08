@@ -20,13 +20,19 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
+import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -44,6 +50,9 @@ public class StoreAccess
     private final RecordStore<PropertyIndexRecord> propIndexStore;
     private final RecordStore<DynamicRecord> typeNameStore;
     private final RecordStore<DynamicRecord> propKeyStore;
+    // internal state
+    private boolean closeable;
+    private NeoStore neoStore;
 
     public StoreAccess( AbstractGraphDatabase graphdb )
     {
@@ -59,6 +68,7 @@ public class StoreAccess
     {
         this( store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
                 store.getRelationshipTypeStore() );
+        this.neoStore = store;
     }
 
     public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
@@ -73,6 +83,36 @@ public class StoreAccess
         this.propIndexStore = wrapStore( propStore.getIndexStore() );
         this.typeNameStore = wrapStore( typeStore.getNameStore() );
         this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
+    }
+
+    public StoreAccess( String path )
+    {
+        this( path, defaultParams() );
+    }
+
+    public StoreAccess( String path, Map<String, String> params )
+    {
+        this(
+            new StoreFactory( new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
+                                              .apply( requiredParams( params, path ) ) ), new DefaultIdGeneratorFactory(),
+                              new DefaultFileSystemAbstraction(),
+                              new DefaultLastCommittedTxIdSetter(), initLogger( path ),
+                              new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
+        this.closeable = true;
+    }
+
+    private static StringLogger initLogger( String path )
+    {
+        StringLogger logger = StringLogger.logger( path );
+        logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
+        return logger;
+    }
+
+    private static Map<String, String> requiredParams( Map<String, String> params, String path )
+    {
+        params = new HashMap<String, String>( params );
+        params.put( "neo_store", new File( path, "neostore" ).getAbsolutePath() );
+        return params;
     }
 
     public RecordStore<NodeRecord> getNodeStore()
@@ -122,15 +162,21 @@ public class StoreAccess
 
     public final <P extends RecordStore.Processor> P applyToAll( P processor )
     {
-        for ( RecordStore<?> store : allStores() )
+        for( RecordStore<?> store : allStores() )
+        {
             apply( processor, store );
+        }
         return processor;
     }
 
     protected RecordStore<?>[] allStores()
     {
-        if ( propStore == null ) return new RecordStore<?>[] { // no property stores
-                nodeStore, relStore, relTypeStore, typeNameStore };
+        if( propStore == null )
+        {
+            return new RecordStore<?>[]{ // no property stores
+                                         nodeStore, relStore, relTypeStore, typeNameStore
+            };
+        }
         return new RecordStore<?>[] {
                 nodeStore, relStore, propStore, stringStore, arrayStore, // basic
                 relTypeStore, propIndexStore, typeNameStore, propKeyStore, // internal
@@ -148,25 +194,31 @@ public class StoreAccess
         processor.applyFiltered( store, RecordStore.IN_USE );
     }
 
-    private static Map<Object, Object> defaultParams()
+    private static Map<String, String> defaultParams()
     {
-        Map<Object, Object> params = new HashMap<Object, Object>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( GraphDatabaseSettings.nodestore_mapped_memory.name(), "20M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_mapped_memory.name(), "90M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
+        params.put( GraphDatabaseSettings.nodestore_propertystore_index_mapped_memory.name(), "1M" );
+        params.put( GraphDatabaseSettings.strings_mapped_memory.name(), "130M" );
+        params.put( GraphDatabaseSettings.arrays_mapped_memory.name(), "130M" );
+        params.put( GraphDatabaseSettings.relationshipstore_mapped_memory.name(), "100M" );
         // if on windows, default no memory mapping
-        String nameOs = System.getProperty( "os.name" );
-        if ( nameOs.startsWith( "Windows" ) )
+        if ( GraphDatabaseSetting.osIsWindows() )
         {
-            params.put( "use_memory_mapped_buffers", "false" );
+            params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), "false" );
         }
-        params.put( Config.REBUILD_IDGENERATORS_FAST, "true" );
-
-        params.put( IdGeneratorFactory.class, new CommonFactories.DefaultIdGeneratorFactory() );
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
         return params;
+    }
+
+    public synchronized void close()
+    {
+        if ( closeable )
+        {
+            closeable = false;
+            neoStore.close();
+        }
     }
 }

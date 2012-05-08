@@ -17,15 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.ext.udc.impl;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +42,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -49,6 +59,10 @@ public class UdcExtensionImplTest
 {
 
     Random rnd = new Random();
+    private LocalTestServer server;
+    private PingerHandler handler;
+    private String serverAddress;
+    private Map<String,String> config;
 
     @Before
     public void resetUdcState()
@@ -66,7 +80,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldNotCrashNormalGraphdbCreation() throws IOException
     {
-        EmbeddedGraphDatabase graphdb = createTempDatabase( null );
+        GraphDatabaseService graphdb = createTempDatabase( null );
         destroy( graphdb );
     }
 
@@ -76,7 +90,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = createTempDatabase( null );
+        GraphDatabaseService graphdb = createTempDatabase( null );
         // when the UDC extension successfully loads, it initializes the attempts count to 0
         assertGotSuccessWithRetry( IS_ZERO );
         destroy( graphdb );
@@ -88,8 +102,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        EmbeddedGraphDatabase graphdb1 = createTempDatabase( null );
-        EmbeddedGraphDatabase graphdb2 = createTempDatabase( null );
+        GraphDatabaseService graphdb1 = createTempDatabase( null );
+        GraphDatabaseService graphdb2 = createTempDatabase( null );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -100,10 +114,11 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" ); // first delay must be long enough to allow class initialization to complete
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1" );
-        EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( "should-record-failures", config );
+        GraphDatabaseService graphdb = new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( "should-record-failures").
+            setConfig( UdcSettings.first_delay, "100" ).
+            setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
+            newGraphDatabase();
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
         destroy( graphdb );
     }
@@ -111,20 +126,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordSuccessesWhenThereIsAServer() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
-
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
-
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        setupServer();
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertGotFailureWithRetry( IS_ZERO );
         destroy( graphdb );
@@ -133,48 +136,61 @@ public class UdcExtensionImplTest
     @Test
     public void shouldBeAbleToSpecifySourceWithConfig() throws Exception
     {
+        setupServer();
+
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals("test", handler.getQueryMap().get("source"));
+
+        destroy( graphdb );
+    }
+
+    private void setupServer() throws Exception {
         // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
+        server = new LocalTestServer( null, null );
+        handler = new PingerHandler();
+        server.register("/*", handler);
         server.start();
 
         final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
+        serverAddress = hostname + ":" + server.getServicePort();
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-        config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
-
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test", handler.getQueryMap().get( "source" ) );
-
-        destroy( graphdb );
+        config = new HashMap<String, String>();
+        config.put(UdcSettings.first_delay.name(), "100");
+        config.put(UdcSettings.udc_host.name(), serverAddress);
+        config.put(UdcSettings.udc_source.name(), "test");
     }
 
     @Test
     public void shouldBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
 
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
+        setupServer();
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-        config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
-        config.put( UdcExtensionImpl.UDC_REGISTRATION_KEY, "marketoid" );
+        config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
 
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "marketoid", handler.getQueryMap().get( "reg" ) );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldBeAbleToDetermineTestTagFromClasspath() throws Exception
+    {
+        setupServer();
+
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        final String classPath = runtime.getClassPath();
+        for (String jar : classPath.split(":")) {
+            System.out.println(jar);
+        }
+
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "test", handler.getQueryMap().get( "tags" ) );
+
 
         destroy( graphdb );
     }
@@ -183,20 +199,9 @@ public class UdcExtensionImplTest
     @Test
     public void shouldIncludeMacAddressInConfig() throws Exception
     {
-        // first, set up the test server
-        LocalTestServer server = new LocalTestServer( null, null );
-        PingerHandler handler = new PingerHandler();
-        server.register( "/*", handler );
-        server.start();
+        setupServer();
 
-        final String hostname = server.getServiceHostName();
-        final String serverAddress = hostname + ":" + server.getServicePort();
-
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
-        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
-
-        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertNotNull(handler.getQueryMap().get("mac"));
 
@@ -249,9 +254,8 @@ public class UdcExtensionImplTest
         fail();
     }
 
-    private EmbeddedGraphDatabase createTempDatabase( Map<String, String> config ) throws IOException
+    private GraphDatabaseService createTempDatabase( Map<String, String> config ) throws IOException
     {
-        EmbeddedGraphDatabase tempdb = null;
         String randomDbName = "tmpdb-" + rnd.nextInt();
         File possibleDirectory = new File( "target" + File.separator
                 + randomDbName );
@@ -259,20 +263,20 @@ public class UdcExtensionImplTest
         {
             FileUtils.deleteDirectory( possibleDirectory );
         }
-        if ( config == null )
+
+        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( randomDbName );
+        if ( config != null )
         {
-            tempdb = new EmbeddedGraphDatabase( randomDbName );
-        } else
-        {
-            tempdb = new EmbeddedGraphDatabase( randomDbName, config );
+            graphDatabaseBuilder.setConfig( config );
         }
-        return tempdb;
+
+        return graphDatabaseBuilder.newGraphDatabase();
     }
 
-    private void destroy( EmbeddedGraphDatabase dbToDestroy ) throws IOException
+    private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
         dbToDestroy.shutdown();
-        FileUtils.deleteDirectory( new File( dbToDestroy.getStoreDir() ) );
+        FileUtils.deleteDirectory( new File( ((GraphDatabaseAPI)dbToDestroy).getStoreDir() ) );
     }
 
 }

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
-
 import java.io.IOException;
-
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
+
+import static org.neo4j.test.BatchTransaction.*;
 
 public class CreateSomeTransactions
 {
@@ -36,7 +36,7 @@ public class CreateSomeTransactions
     {
         String sourceDir = args[0];
         boolean shutdown = Boolean.parseBoolean( args[1] );
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( sourceDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourceDir ).setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
         
         BatchTransaction tx = beginBatchTx( db );
         Node node = db.createNode();

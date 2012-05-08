@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAndAssertLogHeader;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,16 +28,18 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.xa.Xid;
-
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
+
+import static java.lang.Math.*;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.*;
 
 public class LogExtractor
 {
@@ -71,9 +68,9 @@ public class LogExtractor
     public static class LogPositionCache
     {
         private final LruCache<Long, TxPosition> txStartPositionCache =
-                new LruCache<Long, TxPosition>( "Tx start position cache", 10000, null );
+                new LruCache<Long, TxPosition>( "Tx start position cache", 10000 );
         private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache =
-                new LruCache<Long, Long>( "Log header cache", 1000, null );
+                new LruCache<Long, Long>( "Log header cache", 1000 );
         
         public void clear()
         {
@@ -534,7 +531,7 @@ public class LogExtractor
     {
         LogLoader loader = new LogLoader()
         {
-            private final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+            private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             private final Map<Long, String> activeLogFiles = getActiveLogs( storeDir );
             private final long highestLogVersion = max( getHighestHistoryLogVersion( new File( storeDir ),
                     LOGICAL_LOG_DEFAULT_NAME ), maxKey( activeLogFiles ) );

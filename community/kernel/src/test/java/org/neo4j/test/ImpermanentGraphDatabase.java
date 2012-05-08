@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.test;
 
 import java.io.File;
@@ -30,12 +31,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Config;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -48,7 +54,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
-
+    
     static
     {
         try
@@ -57,13 +63,19 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            throw new Error( "Couldn't clear directory" );
+            throw new Error( "Couldn't clear directory", e );
         }
     }
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), withoutMemmap( params ));
+        super( path(), withoutMemmap( params ) );
+    }
+
+    public ImpermanentGraphDatabase( Map<String,String> params, Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
+    {
+        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders );
     }
 
     @Override
@@ -77,11 +89,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         return new EphemeralIdGenerator.Factory();
     }
-
+    
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
         Map<String, String> result = new HashMap<String, String>( params );
-        result.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        result.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
         return result;
     }
 
@@ -97,11 +109,13 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
     
     @Override
-    protected StringLogger createStringLogger()
+    protected Logging createStringLogger()
     {
-        return StringLogger.DEV_NULL;
+        ClassicLoggingService logging = new ClassicLoggingService( config );
+        life.add( logging );
+        return logging;
     }
-
+    
     private static String path()
     {
         File path = null;
@@ -122,7 +136,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
         catch ( IOException e )
         {
-            if ( Config.osIsWindows() )
+            if ( GraphDatabaseSetting.osIsWindows() )
             {
                 System.err.println( "Couldn't clear directory, and that's ok because this is Windows. Next " +
                         ImpermanentGraphDatabase.class.getSimpleName() + " will get a new directory" );

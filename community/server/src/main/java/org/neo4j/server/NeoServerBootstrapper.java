@@ -23,8 +23,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
@@ -34,6 +33,7 @@ import org.neo4j.server.modules.StatisticModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
+import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
@@ -42,7 +42,8 @@ public class NeoServerBootstrapper extends Bootstrapper
     @Override
     public Iterable<StartupHealthCheckRule> getHealthCheckRules()
     {
-        return Arrays.asList( new ConfigFileMustBePresentRule(), new Neo4jPropertiesMustExistRule() );
+        return Arrays.asList( new ConfigFileMustBePresentRule(), new Neo4jPropertiesMustExistRule(),
+            new HTTPLoggingPreparednessRule() );
     }
 
     @Override
@@ -59,10 +60,13 @@ public class NeoServerBootstrapper extends Bootstrapper
         return new GraphDatabaseFactory()
         {
             @Override
-            public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
-                return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+                return (GraphDatabaseAPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().
+                    newEmbeddedDatabaseBuilder( databaseStoreDirectory ).
+                    setConfig( databaseProperties ).
+                    newGraphDatabase();
             }
         };
     }

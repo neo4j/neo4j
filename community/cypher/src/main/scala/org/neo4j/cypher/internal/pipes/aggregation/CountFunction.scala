@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.Expression
+import collection.Map
 
 class CountFunction(value: Expression) extends AggregationFunction {
   var count: Long = 0

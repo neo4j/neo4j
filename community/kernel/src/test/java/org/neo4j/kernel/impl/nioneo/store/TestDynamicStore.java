@@ -17,11 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,22 +33,26 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.ConfigProxy;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.*;
 
 public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-            CommonFactories.defaultIdGeneratorFactory();
+            new DefaultIdGeneratorFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
-            CommonFactories.defaultFileSystemAbstraction();
+            new DefaultFileSystemAbstraction();
 
     private String path()
     {
@@ -119,7 +120,7 @@ public class TestDynamicStore
 
     private DynamicArrayStore newStore()
     {
-        return new DynamicArrayStore( dynamicStoreFile(), ConfigProxy.config(config(), DynamicArrayStore.Configuration.class), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
+        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
     }
 
     private void deleteBothFiles()
@@ -159,11 +160,11 @@ public class TestDynamicStore
         }
     }
 
-    private Map<String,String> config()
+    private Config config()
     {
-        return MapUtil.stringMap(
+        return new Config(new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
-                "store_dir", path());
+                "store_dir", path()))  );
     }
 
     @Test

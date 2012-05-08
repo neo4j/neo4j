@@ -23,13 +23,14 @@ import scala.math.signum
 import org.neo4j.cypher.internal.commands.SortItem
 import java.lang.String
 import org.neo4j.cypher.internal.Comparer
+import collection.mutable.Map
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols = source.symbols
 
   assertDependenciesAreMet()
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
+  def createResults(state:QueryState) = source.createResults(state).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
 
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false

@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -33,11 +31,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,11 +44,26 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationChange;
+import org.neo4j.kernel.configuration.ConfigurationChangeListener;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
+import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.MeasureDoNothing;
+import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -96,40 +107,56 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.neo4j.helpers.Exceptions.*;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
  */
 public abstract class AbstractGraphDatabase
-        implements GraphDatabaseService, GraphDatabaseSPI
+        implements GraphDatabaseService, GraphDatabaseAPI
 {
-
-    interface Configuration
+    public static class Configuration
     {
-        boolean read_only(boolean def);
+        public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings.dump_configuration;
+        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+        public static final GraphDatabaseSetting.BooleanSetting execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
+        public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
+        public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
+        public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
 
-        NodeManager.CacheType cache_type(NodeManager.CacheType def);
-
-        boolean load_kernel_extensions( boolean def );
+        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
+        public static final GraphDatabaseSetting.StringSetting logical_log = new GraphDatabaseSetting.StringSetting( "logical_log",".*","TODO" );
     }
 
-    private static final NodeManager.CacheType DEFAULT_CACHE_TYPE = NodeManager.CacheType.soft;
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
     protected String storeDir;
     protected Map<String, String> params;
-    private StoreId storeId;
+    private Iterable<KernelExtension> kernelExtensions;
+    protected StoreId storeId;
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
+    protected Logging logging;
     protected StringLogger msgLog;
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
     protected NodeManager nodeManager;
+    protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
     protected Config config;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
@@ -138,7 +165,6 @@ public abstract class AbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected RagManager ragManager;
     protected LockManager lockManager;
-    protected AdaptiveCacheManager cacheManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected RelationshipTypeCreator relationshipTypeCreator;
     protected LastCommittedTxIdSetter lastCommittedTxIdSetter;
@@ -156,17 +182,37 @@ public abstract class AbstractGraphDatabase
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
+    protected Guard guard;
+
+    protected MeasureDoNothing monitorGc;
 
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
+    protected Caches caches;
 
-    private LifeSupport life = new LifeSupport();
+    protected final LifeSupport life = new LifeSupport();
+    private final Map<String,CacheProvider> cacheProviders;
 
-    protected AbstractGraphDatabase(String storeDir, Map<String, String> params)
+    protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
+                                    Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
+                                    Iterable<CacheProvider> cacheProviders )
     {
         this.params = params;
+        this.cacheProviders = mapCacheProviders( cacheProviders );
         this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
+
+        // SPI - provided services
+        this.indexProviders = indexProviders;
+        this.kernelExtensions = kernelExtensions;
+    }
+
+    private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
+    {
+        Map<String, CacheProvider> map = new HashMap<String, CacheProvider>();
+        for ( CacheProvider provider : cacheProviders )
+            map.put( provider.getName(), provider );
+        return map;
     }
 
     protected void run()
@@ -190,25 +236,81 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
+        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
+        String separator = System.getProperty( "file.separator" );
+        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
+        params.put( Configuration.store_dir.name(), this.storeDir );
+        params.put( Configuration.neo_store.name(), store );
+        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+        params.put( Configuration.logical_log.name(), logicalLog );
+        // END SMELL
+
+        fileSystem = life.add(createFileSystemAbstraction());
+
+        // Get the list of settings classes for extensions
+        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
+        settingsClasses.add( GraphDatabaseSettings.class );
+        for( KernelExtension kernelExtension : kernelExtensions )
+        {
+            Class settingsClass = kernelExtension.getSettingsClass();
+            if( settingsClass != null )
+            {
+                settingsClasses.add( settingsClass );
+            }
+        }
+
+        // Apply defaults to configuration just for logging purposes
+        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( settingsClasses );
+
+        // Setup configuration
+        config = new Config( configurationDefaults.apply( new SystemPropertiesConfiguration(settingsClasses).apply( params ) ) );
+
+        // Create logger
+        this.logging = createStringLogger();
+
+        // Collect system properties, migrate settings and then apply defaults again
+        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
+        Map<String,String> configParams = configurationDefaults.apply(configurationMigrator.migrateConfiguration( new SystemPropertiesConfiguration(settingsClasses).apply( params )));
+
+        // Apply autoconfiguration for memory settings
+        AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
+                                                                  config.get( NeoStoreXaDataSource.Configuration.store_dir ),
+                                                                  config.getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ),
+                                                                  config.getBoolean( GraphDatabaseSettings.dump_configuration ) );
+        Map<String,String> autoConfiguration = autoConfigurator.configure( );
+        for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
+        {
+            // Don't override explicit settings
+            if( !params.containsKey( autoConfig.getKey() ) )
+            {
+                configParams.put( autoConfig.getKey(), autoConfig.getValue() );
+            }
+        }
+
+        config.applyChanges( configParams );
+
+        this.msgLog = logging.getLogger( Loggers.NEO4J );
+
         // Instantiate all services - some are overridable by subclasses
-        this.msgLog = createStringLogger();
-        params = new ConfigurationMigrator(msgLog).migrateConfiguration( params );
-        
-        Configuration conf = ConfigProxy.config(params, Configuration.class);
+        boolean readOnly = config.getBoolean( Configuration.read_only );
 
-        boolean readOnly = conf.read_only(false);
-
-        NodeManager.CacheType cacheType = conf.cache_type(DEFAULT_CACHE_TYPE);
+        String cacheTypeName = config.get( Configuration.cache_type );
+        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
+        if ( cacheProvider == null )
+            throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
 
         kernelEventHandlers = new KernelEventHandlers();
 
-        diagnosticsManager = life.add(new DiagnosticsManager( msgLog ));
+        caches = createCaches();
+        diagnosticsManager = life.add(new DiagnosticsManager( logging.getLogger( Loggers.DIAGNOSTICS )) );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
         txHook = createTxHook();
 
-        fileSystem = life.add(createFileSystemAbstraction());
+        xaDataSourceManager = life.add( new XaDataSourceManager( logging.getLogger( Loggers.DATASOURCE )) );
+
+        guard = config.getBoolean( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 
@@ -218,10 +320,10 @@ public abstract class AbstractGraphDatabase
 
         } else
         {
-            String serviceName = params.get( Config.TXMANAGER_IMPLEMENTATION );
+            String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, msgLog, fileSystem);
+                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook, logging.getLogger( Loggers.TXMANAGER ), fileSystem);
             }
             else {
                 TransactionManagerProvider provider;
@@ -231,7 +333,7 @@ public abstract class AbstractGraphDatabase
                     throw new IllegalStateException( "Unknown transaction manager implementation: "
                             + serviceName );
                 }
-                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, msgLog, fileSystem);
+                txManager = provider.loadTransactionManager( this.storeDir, kernelPanicEventGenerator, txHook, logging.getLogger( Loggers.TXMANAGER ), fileSystem);
             }
         }
         life.add( txManager );
@@ -240,14 +342,12 @@ public abstract class AbstractGraphDatabase
 
         txIdGenerator = createTxIdGenerator();
 
-        ragManager = new RagManager(txManager);
+        ragManager = new RagManager(txManager );
         lockManager = createLockManager();
-
-        cacheManager = life.add( new AdaptiveCacheManager( ConfigProxy.config( params, AdaptiveCacheManager.Configuration.class ) ) );
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        relationshipTypeCreator = new DefaultRelationshipTypeCreator();
+        relationshipTypeCreator = createRelationshipTypeCreator();
 
         lastCommittedTxIdSetter = createLastCommittedTxIdSetter();
 
@@ -268,35 +368,22 @@ public abstract class AbstractGraphDatabase
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
             persistenceManager, persistenceSource, relationshipTypeCreator );
 
-        nodeManager = !readOnly ? new NodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this, cacheManager,
-                lockManager, lockReleaser, txManager,
-                persistenceManager, persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager,
+        caches.configure( cacheProvider, config );
+        Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
+        Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-                createNodeLookup(), createRelationshipLookups() ):
-                new ReadOnlyNodeManager( ConfigProxy.config(params, NodeManager.Configuration.class), this,
-                        cacheManager, lockManager, lockReleaser,
-                        txManager, persistenceManager, persistenceSource,
-                        relationshipTypeHolder, cacheType, propertyIndexManager,
-                        createNodeLookup(), createRelationshipLookups());
+        nodeManager = guard != null ?
+                createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
+                createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+
         life.add( nodeManager );
 
         lockReleaser.setNodeManager(nodeManager); // TODO Another cyclic dep that needs to be refactored
 
         indexStore = new IndexStore( this.storeDir, fileSystem);
 
-        // Default settings that need to be available
-        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
-        String separator = System.getProperty( "file.separator" );
-        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
-        params.put( "store_dir", this.storeDir );
-        params.put( "neo_store", store );
-        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-        params.put( "logical_log", logicalLog );
-        // END SMELL
-
-        config = new Config( this.storeDir,  params );
         diagnosticsManager.prependProvider( config );
-        
+
         // Config can auto-configure memory mapping settings and what not, so reassign params
         // after we've instantiated Config.
         params = config.getParams();
@@ -310,24 +397,28 @@ public abstract class AbstractGraphDatabase
 
         extensions = life.add(createKernelData());
 
-        if ( conf.load_kernel_extensions(true))
+        if ( config.getBoolean( Configuration.load_kernel_extensions ))
         {
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
 
+        if( indexProviders == null )
+        {
+            indexProviders = new LegacyIndexIterable();
+        }
         indexManager = new IndexManagerImpl(config, indexStore, xaDataSourceManager, txManager, this);
-        nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( ConfigProxy.config( params, NodeAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
-        relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( ConfigProxy.config( params, RelationshipAutoIndexerImpl.Configuration.class ), indexManager, nodeManager));
+        nodeAutoIndexer = life.add(new NodeAutoIndexerImpl( config, indexManager, nodeManager));
+        relAutoIndexer = life.add(new RelationshipAutoIndexerImpl( config, indexManager, nodeManager));
 
         // TODO This cyclic dependency should be resolved
         indexManager.setNodeAutoIndexer( nodeAutoIndexer );
         indexManager.setRelAutoIndexer( relAutoIndexer );
-        
+
         recoveryVerifier = createRecoveryVerifier();
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(params, txIdGenerator, txManager, logBufferFactory, fileSystem, msgLog, recoveryVerifier );
+        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, logging.getLogger( Loggers.XAFACTORY), recoveryVerifier );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
@@ -343,22 +434,151 @@ public abstract class AbstractGraphDatabase
         try
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
-            neoDataSource = new NeoStoreXaDataSource( ConfigProxy.config( params, NeoStoreXaDataSource.Configuration.class ),
-                    storeFactory, lockManager, lockReleaser, msgLog, xaFactory, providers, new DependencyResolverImpl());
+            neoDataSource = new NeoStoreXaDataSource( config,
+                    storeFactory, fileSystem, lockManager, lockReleaser, logging.getLogger( Loggers.DATASOURCE ), xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
         {
             throw new IllegalStateException("Could not create Neo XA datasource", e);
         }
-        
+
         life.add( new StuffToDoAfterRecovery() );
+
+        life.add( new MonitorGc( config, msgLog ) );
 
         // This is how we lock the entire database to avoid threads using it during lifecycle events
         life.add( new DatabaseAvailability() );
-        
+
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
+
+        // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
+        life.add( new ConfigurationChangedRestarter() );
     }
+
+    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    {
+        return new DefaultRelationshipTypeCreator();
+    }
+
+    private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
+    {
+        if ( readOnly )
+        {
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                    createRelationshipLookups(), nodeCache, relCache );
+        }
+
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                createRelationshipLookups(), nodeCache, relCache );
+    }
+
+    private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
+            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
+    {
+        if ( readOnly )
+        {
+            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                    persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                    createRelationshipLookups(), nodeCache, relCache )
+            {
+                @Override
+                protected Node getNodeByIdOrNull( final long nodeId )
+                {
+                    guard.check();
+                    return super.getNodeByIdOrNull( nodeId );
+                }
+
+                @Override
+                public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+                {
+                    guard.check();
+                    return super.getNodeForProxy( nodeId, lock );
+                }
+
+                @Override
+                public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+                {
+                    guard.check();
+                    return super.getRelationshipForProxy( relId, lock );
+                }
+
+                @Override
+                protected Relationship getRelationshipByIdOrNull( final long relId )
+                {
+                    guard.check();
+                    return super.getRelationshipByIdOrNull( relId );
+                }
+
+                @Override
+                public Node createNode()
+                {
+                    guard.check();
+                    return super.createNode();
+                }
+
+                @Override
+                public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                        final Node endNode, final RelationshipType type )
+                {
+                    guard.check();
+                    return super.createRelationship( startNodeProxy, startNode, endNode, type );
+                }
+            };
+        }
+
+        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+                persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
+                createRelationshipLookups(), nodeCache, relCache )
+        {
+            @Override
+            protected Node getNodeByIdOrNull( final long nodeId )
+            {
+                guard.check();
+                return super.getNodeByIdOrNull( nodeId );
+            }
+
+            @Override
+            public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+            {
+                guard.check();
+                return super.getNodeForProxy( nodeId, lock );
+            }
+
+            @Override
+            public RelationshipImpl getRelationshipForProxy( final long relId, final LockType lock )
+            {
+                guard.check();
+                return super.getRelationshipForProxy( relId, lock );
+            }
+
+            @Override
+            protected Relationship getRelationshipByIdOrNull( final long relId )
+            {
+                guard.check();
+                return super.getRelationshipByIdOrNull( relId );
+            }
+
+            @Override
+            public Node createNode()
+            {
+                guard.check();
+                return super.createNode();
+            }
+
+            @Override
+            public Relationship createRelationship( final Node startNodeProxy, final NodeImpl startNode,
+                                                    final Node endNode, final RelationshipType type )
+            {
+                guard.check();
+                return super.createRelationship( startNodeProxy, startNode, endNode, type );
+            }
+        };
+    }
+
 
     @Override
     public void shutdown()
@@ -375,14 +595,14 @@ public abstract class AbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(params, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook);
+        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, logging.getLogger( Loggers.NEOSTORE ), txHook);
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
     {
-        return CommonFactories.defaultRecoveryVerifier();
+        return RecoveryVerifier.ALWAYS_VALID;
     }
-    
+
     protected KernelData createKernelData()
     {
         return new DefaultKernelData(config, this);
@@ -397,7 +617,12 @@ public abstract class AbstractGraphDatabase
     {
         return TxIdGenerator.DEFAULT;
     }
-
+    
+    protected Caches createCaches()
+    {
+        return new DefaultCaches( msgLog );
+    }
+    
     protected RelationshipProxy.RelationshipLookups createRelationshipLookups()
     {
         return new RelationshipProxy.RelationshipLookups()
@@ -415,7 +640,7 @@ public abstract class AbstractGraphDatabase
                 // TODO: add CAS check here for requests not in tx to guard against shutdown
                 return nodeManager.getRelationshipForProxy( relationshipId, null );
             }
-            
+
             @Override
             public RelationshipImpl lookupRelationship( long relationshipId, LockType lock )
             {
@@ -453,7 +678,7 @@ public abstract class AbstractGraphDatabase
                 // TODO: add CAS check here for requests not in tx to guard against shutdown
                 return nodeManager.getNodeForProxy( nodeId, null );
             }
-            
+
             @Override
             public NodeImpl lookup( long nodeId, LockType lock )
             {
@@ -487,7 +712,7 @@ public abstract class AbstractGraphDatabase
 
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        return new CommonFactories.DefaultIdGeneratorFactory();
+        return new DefaultIdGeneratorFactory();
     }
 
     protected LockManager createLockManager()
@@ -495,21 +720,19 @@ public abstract class AbstractGraphDatabase
         return new LockManager(ragManager);
     }
 
-    protected StringLogger createStringLogger()
+    protected Logging createStringLogger()
     {
-        final StringLogger stringLogger = StringLogger.logger( this.storeDir );
-        life.add( new LifecycleAdapter()
+        try
         {
-            @Override
-            public void shutdown()
-                throws Throwable
-            {
-                stringLogger.close();
-            }
-        });
-        return stringLogger;
+            getClass().getClassLoader().loadClass("ch.qos.logback.classic.LoggerContext");
+            return life.add( new LogbackService( config ));
+        }
+        catch( ClassNotFoundException e )
+        {
+            return life.add( new ClassicLoggingService(config));
+        }
     }
-    
+
     public final String getStoreDir()
     {
         return storeDir;
@@ -519,7 +742,7 @@ public abstract class AbstractGraphDatabase
     {
         return storeId;
     }
-    
+
     @Override
     public Transaction beginTx()
     {
@@ -583,8 +806,10 @@ public abstract class AbstractGraphDatabase
         if ( beans.hasNext() )
         {
             T bean = beans.next();
-            if ( beans.hasNext() )
+            if( beans.hasNext() )
+            {
                 throw new NotFoundException( "More than one management bean for " + type.getName() );
+            }
             return bean;
         }
         return null;
@@ -600,13 +825,13 @@ public abstract class AbstractGraphDatabase
     {
         return getClass().getSimpleName() + " [" + getStoreDir() + "]";
     }
-    
+
     @Override
     public Iterable<Node> getAllNodes()
     {
         return GlobalGraphOperations.at( this ).getAllNodes();
     }
-    
+
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
@@ -635,45 +860,6 @@ public abstract class AbstractGraphDatabase
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.unregisterTransactionEventHandler( handler );
-    }
-
-    /**
-     * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most
-     * likely be removed in future releases.
-     *
-     * @param file the property file to load
-     * @return a map containing the properties from the file
-     * @throws IllegalArgumentException if file does not exist
-     */
-    public static Map<String,String> loadConfigurations( String file )
-    {
-        Properties props = new Properties();
-        try
-        {
-            FileInputStream stream = new FileInputStream( new File( file ) );
-            try
-            {
-                props.load( stream );
-            }
-            finally
-            {
-                stream.close();
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalArgumentException( "Unable to load " + file, e );
-        }
-        Set<Map.Entry<Object,Object>> entries = props.entrySet();
-        Map<String,String> stringProps = new HashMap<String,String>();
-        for ( Map.Entry<Object,Object> entry : entries )
-        {
-            String key = (String) entry.getKey();
-            String value = (String) entry.getValue();
-            stringProps.put( key, value );
-        }
-        return stringProps;
     }
 
     public Node createNode()
@@ -709,6 +895,12 @@ public abstract class AbstractGraphDatabase
         return defaultTxBuilder;
     }
 
+    @Override
+    public Guard getGuard()
+    {
+        return guard;
+    }
+
     public <T> Collection<T> getManagementBeans( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
@@ -733,7 +925,10 @@ public abstract class AbstractGraphDatabase
                 {
                     @SuppressWarnings( "unchecked" ) Collection<T> result =
                             (Collection<T>) getManagementBeans.invoke( state, beanClass );
-                    if ( result == null ) return Collections.emptySet();
+                    if( result == null )
+                    {
+                        return Collections.emptySet();
+                    }
                     return result;
                 }
                 catch ( InvocationTargetException ex )
@@ -756,7 +951,7 @@ public abstract class AbstractGraphDatabase
         }
         throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
     }
-    
+
     public KernelData getKernelData()
     {
         return extensions;
@@ -825,7 +1020,7 @@ public abstract class AbstractGraphDatabase
     {
         return msgLog;
     }
-    
+
     @Override
     public KernelPanicEventGenerator getKernelPanicGenerator()
     {
@@ -851,7 +1046,7 @@ public abstract class AbstractGraphDatabase
         {
             return true;
         }
-        if( o == null || getClass() != o.getClass() )
+        if ( o == null || !(o instanceof AbstractGraphDatabase) )
         {
             return false;
         }
@@ -876,12 +1071,12 @@ public abstract class AbstractGraphDatabase
         return storeDir.hashCode();
     }
 
-    protected class DefaultKernelData extends KernelData implements Lifecycle
+	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final Config config;
-        private GraphDatabaseSPI graphDb;
+        private final GraphDatabaseAPI graphDb;
 
-        public DefaultKernelData(Config config, GraphDatabaseSPI graphDb)
+        public DefaultKernelData(Config config, GraphDatabaseAPI graphDb)
         {
             this.config = config;
             this.graphDb = graphDb;
@@ -902,11 +1097,11 @@ public abstract class AbstractGraphDatabase
         @Override
         public Map<String, String> getConfigParams()
         {
-            return params;
+            return config.getParams();
         }
 
         @Override
-        public GraphDatabaseSPI graphDatabase()
+        public GraphDatabaseAPI graphDatabase()
         {
             return graphDb;
         }
@@ -953,15 +1148,15 @@ public abstract class AbstractGraphDatabase
         public void init()
             throws Throwable
         {
-            loaded = extensions.loadExtensionConfigurations( msgLog );
-            loadIndexImplementations(indexManager, msgLog);
+            loaded = extensions.loadExtensionConfigurations( logging.getLogger( Loggers.EXTENSION ), kernelExtensions );
+            loadIndexImplementations(indexManager, logging.getLogger( Loggers.INDEX));
         }
 
         @Override
         public void start()
             throws Throwable
         {
-            extensions.loadExtensions( loaded, msgLog );
+            extensions.loadExtensions( loaded, logging.getLogger( Loggers.EXTENSION ) );
         }
 
         @Override
@@ -978,7 +1173,7 @@ public abstract class AbstractGraphDatabase
 
         void loadIndexImplementations( IndexManagerImpl indexes, StringLogger msgLog )
         {
-            for ( IndexProvider index : Service.load( IndexProvider.class ) )
+            for ( IndexProvider index : indexProviders)
             {
                 try
                 {
@@ -987,18 +1182,26 @@ public abstract class AbstractGraphDatabase
                 catch ( Throwable cause )
                 {
                     msgLog.logMessage( "Failed to load index provider " + index.identifier(), cause );
-                    if ( isAnUpgradeProblem( cause ) ) throw launderedException( cause );
-                    else cause.printStackTrace();
+                    if( isAnUpgradeProblem( cause ) )
+                    {
+                        throw launderedException( cause );
+                    }
+                    else
+                    {
+                        cause.printStackTrace();
+                    }
                 }
             }
         }
-
 
         private boolean isAnUpgradeProblem( Throwable cause )
         {
             while ( cause != null )
             {
-                if ( cause instanceof Throwable ) return true;
+                if( cause instanceof Throwable )
+                {
+                    return true;
+                }
                 cause = cause.getCause();
             }
             return false;
@@ -1016,36 +1219,72 @@ public abstract class AbstractGraphDatabase
         }
     }
 
+    /**
+     * FIXME: This is supposed to be handled by a Dependency Injection framework...
+     * @author ceefour
+     */
     class DependencyResolverImpl
             implements DependencyResolver
     {
         @Override
         public <T> T resolveDependency(Class<T> type)
         {
-            if (type.equals(Map.class))
-                return (T) params;
-            else if (GraphDatabaseService.class.isAssignableFrom(type))
+            if( type.equals( Map.class ) )
+            {
+                return (T) getConfig().getParams();
+            }
+            else if( type.equals( Config.class ) )
+            {
+                return (T) getConfig();
+            }
+            else if( GraphDatabaseService.class.isAssignableFrom( type ) )
+            {
                 return (T) AbstractGraphDatabase.this;
-            else if (TransactionManager.class.isAssignableFrom(type))
+            }
+            else if( TransactionManager.class.isAssignableFrom( type ) )
+            {
                 return (T) txManager;
-            else if (LockManager.class.isAssignableFrom(type))
+            }
+            else if( LockManager.class.isAssignableFrom( type ) )
+            {
                 return (T) lockManager;
-            else if (LockReleaser.class.isAssignableFrom(type))
+            }
+            else if( LockReleaser.class.isAssignableFrom( type ) )
+            {
                 return (T) lockReleaser;
-            else if (StoreFactory.class.isAssignableFrom(type))
+            }
+            else if( StoreFactory.class.isAssignableFrom( type ) )
+            {
                 return (T) storeFactory;
-            else if (StringLogger.class.isAssignableFrom(type))
+            }
+            else if( StringLogger.class.isAssignableFrom( type ) )
+            {
                 return (T) msgLog;
-            else if (IndexStore.class.isAssignableFrom(type))
+            }
+            else if( IndexStore.class.isAssignableFrom( type ) )
+            {
                 return (T) indexStore;
-            else if (XaFactory.class.isAssignableFrom(type))
+            }
+            else if( XaFactory.class.isAssignableFrom( type ) )
+            {
                 return (T) xaFactory;
-            else if (XaDataSourceManager.class.isAssignableFrom(type))
+            }
+            else if( XaDataSourceManager.class.isAssignableFrom( type ) )
+            {
                 return (T) xaDataSourceManager;
-            else if (FileSystemAbstraction.class.isAssignableFrom(type))
+            }
+            else if( FileSystemAbstraction.class.isAssignableFrom( type ) )
+            {
                 return (T) fileSystem;
+            }
+            else if( Guard.class.isAssignableFrom( type ) )
+            {
+                return (T) guard;
+            }
             else
-                throw new IllegalArgumentException("Could not resolve dependency of type:"+type.getName());
+            {
+                throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+            }
         }
     }
 
@@ -1097,6 +1336,7 @@ public abstract class AbstractGraphDatabase
             throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
+            msgLog.logMessage( "Started - database is now available" );
         }
 
         @Override
@@ -1104,6 +1344,7 @@ public abstract class AbstractGraphDatabase
             throws Throwable
         {
             // TODO: Starting database. Make sure none can access it through lock or CAS
+            msgLog.logMessage( "Stopping - database is now unavailable" );
         }
 
         @Override
@@ -1113,7 +1354,7 @@ public abstract class AbstractGraphDatabase
             // TODO: Starting database. Make sure none can access it through lock or CAS
         }
     }
-    
+
     // TODO Probably change name
     class StuffToDoAfterRecovery implements Lifecycle
     {
@@ -1138,6 +1379,53 @@ public abstract class AbstractGraphDatabase
         @Override
         public void shutdown() throws Throwable
         {
+        }
+    }
+
+    private class ConfigurationChangedRestarter
+        extends LifecycleAdapter
+    {
+        private ConfigurationChangeListener listener = new ConfigurationChangeListener()
+                    {
+                        Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
+
+                        @Override
+                        public void notifyConfigurationChanges( final Iterable<ConfigurationChange> change )
+                        {
+                            executor.execute( new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    // Restart
+                                    try
+                                    {
+                                        life.stop();
+                                        life.start();
+
+                                        msgLog.logMessage( "Database restarted with the following configuration changes:" + change );
+                                    }
+                                    catch( LifecycleException e )
+                                    {
+                                        msgLog.logMessage( "Could not restart database", e );
+                                    }
+                                }
+                            } );
+                        }
+                    };
+
+        @Override
+        public void start()
+            throws Throwable
+        {
+            config.addConfigurationChangeListener( listener );
+        }
+
+        @Override
+        public void stop()
+            throws Throwable
+        {
+            config.removeConfigurationChangeListener( listener );
         }
     }
 }

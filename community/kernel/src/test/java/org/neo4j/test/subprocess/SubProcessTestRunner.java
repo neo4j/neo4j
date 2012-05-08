@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.internal.runners.statements.RunBefores;
 import org.junit.runner.notification.Failure;
@@ -45,6 +44,7 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.subprocess.ForeignBreakpoints.BreakpointDef;
+import org.neo4j.test.subprocess.SubProcess.DebugDispatch;
 
 public class SubProcessTestRunner extends BlockJUnit4ClassRunner
 {
@@ -196,7 +196,8 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
                             {
                                 breakpoints.put( name, new BreakpointDispatcher(
                                         ( (FrameworkMethod) bp ).getAnnotation( BreakpointTrigger.class ).on(),
-                                        getTestClass().getJavaClass(), ( (FrameworkMethod) bp ).getMethod(), handler ) );
+                                        ( (FrameworkMethod) bp ).getMethod().getDeclaringClass(),
+                                        ( (FrameworkMethod) bp ).getMethod(), handler ) );
                             }
                             else
                             {
@@ -312,23 +313,19 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
         {
             enabled.add( name );
         }
-        for ( Map.Entry<String, BreakPoint> bp : this.breakpoints.entrySet() )
+        for ( Map.Entry<String, BreakPoint> entry : this.breakpoints.entrySet() )
         {
-            if ( enabled.remove( bp.getKey() ) )
-            {
-                bp.getValue().enable();
-            }
-            else
-            {
-                bp.getValue().disable();
-            }
+            BreakPoint bp = entry.getValue();
+            ( enabled.remove( entry.getKey() ) ? bp.enable() : bp.disable() ).resetInvocationCount();
         }
         if ( !enabled.isEmpty() ) throw new IllegalArgumentException( "Unknown breakpoints: " + enabled );
     }
 
     private void verifyBreakpointState() throws SuspendedThreadsException
     {
-        DebuggedThread[] threads = SubProcess.DebugDispatch.get( dispatcher ).suspendedThreads();
+        DebugDispatch debugger = SubProcess.DebugDispatch.get( dispatcher );
+        // if there are no breakpoints we will have no debugger
+        DebuggedThread[] threads = (debugger == null) ? new DebuggedThread[0] : debugger.suspendedThreads();
         if ( threads.length != 0 )
         {
             String[] names = new String[threads.length];

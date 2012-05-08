@@ -19,26 +19,44 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.pipes.{ColumnFilterPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.ColumnFilterPipe
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
 
 class ColumnFilterBuilder extends PlanBuilder {
-  def apply(v1: (Pipe, PartiallySolvedQuery)): (Pipe, PartiallySolvedQuery) = v1 match {
-    case (p, q) => {
+  def apply(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+    val p = plan.pipe
+    val isLastPipe = q.tail.isEmpty
 
-      val resultPipe = new ColumnFilterPipe(p, q.returns.map(_.token))
-      val resultQ = q.copy(returns = q.returns.map(_.solve))
+    val returnItems = getReturnItems(q.returns, p.symbols)
+    val filterPipe = new ColumnFilterPipe(p, returnItems, isLastPipe)
 
-      (resultPipe, resultQ)
+    val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
+      filterPipe
+    } else {
+      p
     }
+
+    val resultQ = q.copy(returns = q.returns.map(_.solve))
+
+    plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def isDefinedAt(x: (Pipe, PartiallySolvedQuery)): Boolean = x match {
-    case (p, q) => q.extracted &&
+  def canWorkWith(plan: ExecutionPlanInProgress) = {
+    val q = plan.query
+
+    q.extracted &&
       !q.sort.exists(_.unsolved) &&
       !q.slice.exists(_.unsolved) &&
       q.returns.exists(_.unsolved)
   }
 
-  def priority: Int = PlanBuilder.ColumnFilter
+  def priority = PlanBuilder.ColumnFilter
+
+  private def getReturnItems(q: Seq[QueryToken[ReturnColumn]], symbols: SymbolTable): Seq[ReturnItem] = q.map(_.token).flatMap {
+    case x: ReturnItem => Seq(x)
+    case x: AllIdentifiers => x.expressions(symbols).map(e => ReturnItem(e, e.identifier.name))
+  }
 }

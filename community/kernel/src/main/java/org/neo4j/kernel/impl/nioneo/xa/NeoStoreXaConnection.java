@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.util.Map;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.index.IndexXaConnection;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
@@ -41,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
  * operations requested via the store implementations.
  */
 public class NeoStoreXaConnection extends XaConnectionHelpImpl
+    implements IndexXaConnection // Implements this to enable a temporary workaround, see #createIndex
 {
     private final NeoStoreXaResource xaResource;
     private final NeoStore neoStore;
@@ -112,5 +117,21 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     public RelationshipTypeStore getRelationshipTypeStore()
     {
         return neoStore.getRelationshipTypeStore();
+    }
+
+    @Override
+    public void createIndex( Class<? extends PropertyContainer> entityType, String indexName,
+            Map<String, String> config )
+    {
+        // This gets called in the index creator thread in IndexManagerImpl when "creating"
+        // an index which uses the graph as its backing. Normally this would add a command to
+        // a log, put the transaction in a non-read-only state and cause it to commit and
+        // write these command plus add it to the index store (where index configuration is kept).
+        // But this is a temporary workaround for supporting in-graph indexes without the
+        // persistence around their creation or existence. The reason is that there are no
+        // index life cycle commands for the neo store. When/if graph data source gets merged
+        // with other index data sources (i.e. they will have one unified log and data source
+        // to act as the front end) this will be resolved and this workaround can be removed
+        // (NeoStoreXaConnection implementing IndexXaConnection).
     }
 }

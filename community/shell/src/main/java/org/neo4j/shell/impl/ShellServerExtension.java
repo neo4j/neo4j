@@ -19,14 +19,12 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.Map;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation( KernelExtension.class )
@@ -37,6 +35,12 @@ public final class ShellServerExtension extends KernelExtension<GraphDatabaseShe
     public ShellServerExtension()
     {
         super( KEY );
+    }
+
+    @Override
+    public Class getSettingsClass()
+    {
+        return ShellSettings.class;
     }
 
     @Override
@@ -88,27 +92,6 @@ public final class ShellServerExtension extends KernelExtension<GraphDatabaseShe
         }
     }
 
-    public void enableRemoteShell( KernelData kernel, Map<String, Serializable> config )
-    {
-        ShellBootstrap bootstrap = new ShellBootstrap( config );
-        GraphDatabaseShellServer server = getState( kernel );
-        try
-        {
-            if ( server != null )
-            {
-                bootstrap.enable( server );
-            }
-            else
-            {
-                loadAgent( kernel, bootstrap );
-            }
-        }
-        catch ( RemoteException cause )
-        {
-            throw new RuntimeException( "Could not load remote shell", cause );
-        }
-    }
-    
     public ShellServer getShellServer( KernelData kernel )
     {
         return getState( kernel );

@@ -24,14 +24,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class AbstractNameStore<T extends AbstractNameRecord> extends AbstractStore implements Store, RecordStore<T>
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractStore.Configuration
     {
         
@@ -40,7 +40,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     private DynamicStringStore nameStore;
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    public AbstractNameStore(String fileName, Configuration configuration, IdType idType,
+    public AbstractNameStore(String fileName, Config configuration, IdType idType,
                              IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                              DynamicStringStore nameStore)
     {
@@ -371,7 +371,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
             }
         }
         return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                nameRecord.getNameId(), relevantRecords, nameStore ) );
+                nameRecord.getNameId(), relevantRecords, nameStore, PropertyType.STRING ).other() );
     }
 
     @Override

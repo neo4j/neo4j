@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -52,17 +53,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>
 {
-    interface Configuration
+    public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
-
-        boolean rebuild_idgenerators_fast(boolean def);
+        public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
-    private Configuration conf;
+    private Config conf;
     private int blockSize;
 
-    public AbstractDynamicStore( String fileName, Configuration conf, IdType idType,
+    public AbstractDynamicStore( String fileName, Config conf, IdType idType,
                                  IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
@@ -470,16 +470,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();
-        File file = new File( getStorageFileName() + ".id" );
-        if ( file.exists() )
+        if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
         {
-            boolean success = file.delete();
+            boolean success = fileSystemAbstraction.deleteFile( getStorageFileName() + ".id" );
             assert success;
         }
         createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator( false );
-//        nextBlockId(); // reserved first block containing blockSize
-        setHighId( 1 );
+        setHighId( 1 ); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();
         long highId = 0;
         long defraggedCount = 0;
@@ -488,7 +486,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             long fileSize = fileChannel.size();
             boolean fullRebuild = true;
 
-            if ( conf.rebuild_idgenerators_fast(false))
+            if ( conf.getBoolean( Configuration.rebuild_idgenerators_fast ))
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();
@@ -501,18 +499,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 for ( long i = 1; i * getBlockSize() < fileSize; i++ )
                 {
                     fileChannel.position( i * getBlockSize() );
+                    byteBuffer.clear();
                     fileChannel.read( byteBuffer );
                     byteBuffer.flip();
-                    byte inUse = byteBuffer.get();
-                    byteBuffer.flip();
-                    nextBlockId();
-                    if ( inUse == Record.NOT_IN_USE.byteValue() )
+                    if ( !isRecordInUse( byteBuffer ) )
                     {
                         freeIdList.add( i );
                     }
                     else
                     {
                         highId = i;
+                        setHighId( highId + 1 );
                         while ( !freeIdList.isEmpty() )
                         {
                             freeBlockId( freeIdList.removeFirst() );

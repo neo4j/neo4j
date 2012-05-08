@@ -25,10 +25,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.GraphDatabaseSPI;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 public abstract class ParameterList
@@ -47,13 +46,13 @@ public abstract class ParameterList
 
     private static abstract class Converter<T>
     {
-        abstract T convert( GraphDatabaseSPI graphDb, Object value )
+        abstract T convert( GraphDatabaseAPI graphDb, Object value )
                 throws BadInputException;
 
         abstract T[] newArray( int size );
     }
 
-    private <T> T[] getList( String name, GraphDatabaseSPI graphDb,
+    private <T> T[] getList( String name, GraphDatabaseAPI graphDb,
             Converter<T> converter ) throws BadInputException
     {
         Object value = data.get( name );
@@ -92,7 +91,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<String>()
         {
             @Override
-            String convert( GraphDatabaseSPI graphDb, Object value )
+            String convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertString( value );
@@ -121,7 +120,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Integer>()
         {
             @Override
-            Integer convert( GraphDatabaseSPI graphDb, Object value )
+            Integer convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertInteger( value );
@@ -150,7 +149,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Long>()
         {
             @Override
-            Long convert( GraphDatabaseSPI graphDb, Object value )
+            Long convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertLong( value );
@@ -179,7 +178,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Byte>()
         {
             @Override
-            Byte convert( GraphDatabaseSPI graphDb, Object value )
+            Byte convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertByte( value );
@@ -208,7 +207,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Character>()
         {
             @Override
-            Character convert( GraphDatabaseSPI graphDb, Object value )
+            Character convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertCharacter( value );
@@ -237,7 +236,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Boolean>()
         {
             @Override
-            Boolean convert( GraphDatabaseSPI graphDb, Object value )
+            Boolean convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertBoolean( value );
@@ -266,7 +265,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Short>()
         {
             @Override
-            Short convert( GraphDatabaseSPI graphDb, Object value )
+            Short convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertShort( value );
@@ -295,7 +294,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Float>()
         {
             @Override
-            Float convert( GraphDatabaseSPI graphDb, Object value )
+            Float convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertFloat( value );
@@ -324,7 +323,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Double>()
         {
             @Override
-            Double convert( GraphDatabaseSPI graphDb, Object value )
+            Double convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertDouble( value );
@@ -341,7 +340,7 @@ public abstract class ParameterList
     protected abstract Double convertDouble( Object value )
             throws BadInputException;
 
-    public Node getNode( GraphDatabaseSPI graphDb, String name )
+    public Node getNode( GraphDatabaseAPI graphDb, String name )
             throws BadInputException
     {
         Object value = data.get( name );
@@ -349,13 +348,13 @@ public abstract class ParameterList
         return convertNode( graphDb, value );
     }
 
-    public Node[] getNodeList( GraphDatabaseSPI graphDb, String name )
+    public Node[] getNodeList( GraphDatabaseAPI graphDb, String name )
             throws BadInputException
     {
         return getList( name, graphDb, new Converter<Node>()
         {
             @Override
-            Node convert( GraphDatabaseSPI graphDb, Object value )
+            Node convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertNode( graphDb, value );
@@ -369,10 +368,10 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Node convertNode( GraphDatabaseSPI graphDb,
+    protected abstract Node convertNode( GraphDatabaseAPI graphDb,
             Object value ) throws BadInputException;
 
-    public Relationship getRelationship( GraphDatabaseSPI graphDb,
+    public Relationship getRelationship( GraphDatabaseAPI graphDb,
             String name ) throws BadInputException
     {
         Object value = data.get( name );
@@ -380,13 +379,13 @@ public abstract class ParameterList
         return convertRelationship( graphDb, value );
     }
 
-    public Relationship[] getRelationshipList( GraphDatabaseSPI graphDb,
+    public Relationship[] getRelationshipList( GraphDatabaseAPI graphDb,
             String name ) throws BadInputException
     {
         return getList( name, graphDb, new Converter<Relationship>()
         {
             @Override
-            Relationship convert( GraphDatabaseSPI graphDb, Object value )
+            Relationship convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertRelationship( graphDb, value );
@@ -401,7 +400,7 @@ public abstract class ParameterList
     }
 
     protected abstract Relationship convertRelationship(
-            GraphDatabaseSPI graphDb, Object value )
+            GraphDatabaseAPI graphDb, Object value )
             throws BadInputException;
 
     public URI getUri( String name ) throws BadInputException
@@ -416,7 +415,7 @@ public abstract class ParameterList
         return getList( name, null, new Converter<URI>()
         {
             @Override
-            URI convert( GraphDatabaseSPI graphDb, Object value )
+            URI convert( GraphDatabaseAPI graphDb, Object value )
                     throws BadInputException
             {
                 return convertURI( value );

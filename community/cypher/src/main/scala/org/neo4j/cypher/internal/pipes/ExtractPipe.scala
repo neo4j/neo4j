@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import collection.Seq
-import collection.immutable.Map
 import org.neo4j.cypher.internal.commands.{Expression, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable, Identifier}
 
@@ -30,17 +29,14 @@ import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable, Identifier}
 class ExtractPipe(source: Pipe, val expressions: Seq[Expression]) extends PipeWithSource(source) {
   def dependencies = expressions.flatMap(_.dependencies(AnyType()))
 
-  type MapTransformer = Map[String, Any] => Map[String, Any]
-
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
 
   val symbols: SymbolTable = source.symbols.add(expressions.map(_.identifier):_*)
 
-
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
-    source.createResults(params).map(row => {
-      val projection: Map[String, Any] = expressions.map( exp =>exp.identifier.name -> exp(row) ).toMap
-      projection ++ row
+  def createResults(state: QueryState) = {
+    source.createResults(state).map(row => {
+      expressions.foreach( exp => row += exp.identifier.name -> exp(row) )
+      row
     })
   }
 

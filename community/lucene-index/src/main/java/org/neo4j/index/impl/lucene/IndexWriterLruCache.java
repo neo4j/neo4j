@@ -39,7 +39,7 @@ public class IndexWriterLruCache extends LruCache<IndexIdentifier, IndexWriter>
      */
     public IndexWriterLruCache( int maxSize )
     {
-        super( "IndexWriterCache", maxSize, null );
+        super( "IndexWriterCache", maxSize );
     }
 
     @Override

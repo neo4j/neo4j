@@ -19,23 +19,19 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.File;
 import java.nio.channels.FileChannel;
-
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 public class TestOsSpecificLocks
 {
@@ -52,8 +48,8 @@ public class TestOsSpecificLocks
     @Test
     public void sanityCheck() throws Exception
     {
-        assumeTrue( Config.osIsWindows() );
-        FileSystemAbstraction fs = CommonFactories.defaultFileSystemAbstraction();
+        assumeTrue( GraphDatabaseSetting.osIsWindows() );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         // Must end in neostore to get the lock
         String fileName = path + "\\1neostore";
         FileChannel channel = fs.open( fileName, "rw" );
@@ -81,8 +77,8 @@ public class TestOsSpecificLocks
     @Test
     public void testDatabaseLocking()
     {
-        assumeTrue( Config.osIsWindows() );
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( path );
+        assumeTrue( GraphDatabaseSetting.osIsWindows() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
@@ -90,7 +86,7 @@ public class TestOsSpecificLocks
         assertTrue( new File( path + "\\lock" ).exists() );
         try
         {
-            new EmbeddedGraphDatabase(path);
+            new GraphDatabaseFactory().newEmbeddedDatabase( path );
             fail("Should not be able to start up another db in the same dir");
         }
         catch ( Exception e )

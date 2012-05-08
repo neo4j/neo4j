@@ -48,12 +48,27 @@ public abstract class PropertyTypeDispatcher<K, T>
     public static void consumeProperties( PropertyTypeDispatcher<String, Void> dispatcher,
             PropertyContainer entity )
     {
-        for ( String key : entity.getPropertyKeys() )
+        final Iterable<String> keys = entity.getPropertyKeys();
+        if (keys instanceof List)
         {
-            Object property = entity.getProperty( key, null );
-            if ( property == null ) continue;
-            dispatcher.dispatch( property, key );
+            final List<String> keysList = (List<String>) keys;
+            for (int i = keysList.size() - 1; i >= 0; i--)
+            {
+                dispatchProperty(dispatcher, entity, keysList.get(i));
+            }
+        } else
+        {
+            for (String key : keys)
+            {
+                dispatchProperty(dispatcher, entity, key);
+            }
         }
+    }
+
+    private static void dispatchProperty(PropertyTypeDispatcher<String, Void> dispatcher, PropertyContainer entity, String key) {
+        Object property = entity.getProperty(key, null);
+        if ( property == null ) return;
+        dispatcher.dispatch( property, key );
     }
 
     public static <T> Collection<T> dispatchProperties(

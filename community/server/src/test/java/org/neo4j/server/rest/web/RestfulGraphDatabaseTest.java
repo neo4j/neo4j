@@ -51,6 +51,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
@@ -1032,6 +1034,38 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
+    public void shouldNotBeAbleToCreateAnIndexWithEmptyName() throws Exception
+    {
+        URI node = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
+        
+        Map<String, String> createRel = new HashMap<String, String>();
+        createRel.put( "to", node.toString() );
+        createRel.put( "type", "knows" );
+        URI rel = (URI)service.createRelationship(FORCE, helper.createNode(), JsonHelper.createJsonFrom(createRel)).getMetadata().getFirst("Location");
+        
+        Map<String, String> indexPostBody = new HashMap<String, String>();
+        indexPostBody.put( "key", "mykey" );
+        indexPostBody.put( "value", "myvalue" );
+        
+        indexPostBody.put( "uri", node.toString() );
+        Response response = service.addToNodeIndex( FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        indexPostBody.put( "uri", rel.toString() );
+        response = service.addToRelationshipIndex(FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        Map<String,String> basicIndexCreation = new HashMap<String,String>();
+        basicIndexCreation.put("name", "");
+        
+        response = service.jsonCreateNodeIndex(FORCE, JsonHelper.createJsonFrom(basicIndexCreation));
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+        
+        response = service.jsonCreateRelationshipIndex(FORCE, JsonHelper.createJsonFrom(basicIndexCreation));
+        assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
+    }
+
+    @Test
     public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
     {
         URI node = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
@@ -1725,5 +1759,96 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRoot();
         assertThat( new String( (byte[]) response.getEntity() ),
                 containsString( "\"relationship_types\" : \"http://neo4j.org/relationship/types\"" ) );
+    }
+
+    @Test
+    public void nodeAutoIndexerEnabling() {
+        testAutoIndexEnableForType("node");
+    }
+
+    @Test
+    public void relationshipAutoIndexerEnabling() {
+        testAutoIndexEnableForType("relationship");
+    }
+
+    @Test
+    public void addRemoveAutoindexPropertiesOnNodes() throws JsonParseException {
+        addRemoveAutoindexProperties("node");
+    }
+
+    @Test
+    public void addRemoveAutoindexPropertiesOnRelationships() throws JsonParseException {
+        addRemoveAutoindexProperties("relationship");
+    }
+
+    @Test
+    public void nodeAutoindexingSupposedToWork() throws JsonParseException {
+        String type = "node";
+//        Response response = service.getAutoIndexedProperties(type);
+//        assertEquals(200, response.getStatus());
+//        List<String> properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+//        assertEquals(0, properties.size());
+
+        Response response = service.startAutoIndexingProperty(type, "myAutoIndexedProperty");
+        assertEquals(204, response.getStatus());
+
+        response = service.setAutoIndexerEnabled(type, "true");
+        assertEquals(204, response.getStatus());
+
+        service.createNode( FORCE, "{\"myAutoIndexedProperty\" : \"value\"}" );
+
+        IndexHits<Node> indexResult = database.getIndexManager().getNodeAutoIndexer().getAutoIndex().get("myAutoIndexedProperty", "value");
+        assertEquals(1, indexResult.size());
+    }
+
+    private void addRemoveAutoindexProperties(String type) throws JsonParseException {
+        Response response = service.getAutoIndexedProperties(type);
+        assertEquals(200, response.getStatus());
+        List<String> properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        assertEquals(0, properties.size());
+
+        response = service.startAutoIndexingProperty(type, "myAutoIndexedProperty1");
+        assertEquals(204, response.getStatus());
+
+        response = service.startAutoIndexingProperty(type, "myAutoIndexedProperty2");
+        assertEquals(204, response.getStatus());
+
+
+        response = service.getAutoIndexedProperties(type);
+        assertEquals(200, response.getStatus());
+        properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        assertEquals(2, properties.size());
+        assertTrue(properties.contains("myAutoIndexedProperty1"));
+        assertTrue(properties.contains("myAutoIndexedProperty2"));
+
+        response = service.stopAutoIndexingProperty(type, "myAutoIndexedProperty2");
+        assertEquals(204, response.getStatus());
+
+        response = service.getAutoIndexedProperties(type);
+        assertEquals(200, response.getStatus());
+        properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        assertEquals(1, properties.size());
+        assertTrue(properties.contains("myAutoIndexedProperty1"));
+    }
+
+
+    private void testAutoIndexEnableForType(String type) {
+        Response response = service.isAutoIndexerEnabled(type);
+        assertEquals(200, response.getStatus());
+        assertFalse(Boolean.parseBoolean(entityAsString(response)));
+
+        response = service.setAutoIndexerEnabled(type, "true");
+        assertEquals(204, response.getStatus());
+
+        response = service.isAutoIndexerEnabled(type);
+        assertEquals(200, response.getStatus());
+        assertTrue(Boolean.parseBoolean(entityAsString(response)));
+
+        response = service.setAutoIndexerEnabled(type, "false");
+        assertEquals(204, response.getStatus());
+
+        response = service.isAutoIndexerEnabled(type);
+        assertEquals(200, response.getStatus());
+        assertFalse(Boolean.parseBoolean(entityAsString(response)));
     }
 }

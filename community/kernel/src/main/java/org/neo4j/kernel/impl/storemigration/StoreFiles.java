@@ -73,7 +73,7 @@ public class StoreFiles
     static void moveFile( String fileName, File fromDirectory,
             File toDirectory ) throws IOException
     {
-        if ( FileUtils.moveFile( new File( fromDirectory, fileName ),
+        if ( FileUtils.moveFileToDirectory( new File( fromDirectory, fileName ),
                 toDirectory ) == null )
         {
             throw new IOException( "Move of file " + fileName + " from "

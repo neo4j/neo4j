@@ -25,56 +25,108 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
+import collection.mutable.{Map => MutableMap}
+import internal.symbols.SymbolTable
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
   def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
 
-  private def prepareExecutionPlan(): ((Map[String, Any]) => PipeExecutionResult, String) = {
-    var pipe: Pipe = new ParameterPipe()
-    var query = PartiallySolvedQuery(inputQuery)
+  private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
 
-    while (builders.exists(_.isDefinedAt((pipe, query)))) {
-      val matchingBuilders = builders.filter(_.isDefinedAt((pipe, query)))
+    var continue = true
+    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), false)
 
-      val builder = matchingBuilders.sortBy(_.priority).head
-      val (p, q) = builder((pipe, query))
+    while (continue) {
+      while (builders.exists(_.canWorkWith(planInProgress))) {
+        val matchingBuilders = builders.filter(_.canWorkWith(planInProgress))
 
-      pipe = p
-      query = q
+        val builder = matchingBuilders.sortBy(_.priority).head
+        val newPlan = builder(planInProgress)
+
+        if (planInProgress == newPlan) {
+          throw new InternalException("Something went wrong trying to build your query. The offending builder was: " + builder.getClass.getSimpleName)
+        }
+
+        planInProgress = newPlan
+      }
+
+      if (!planInProgress.query.isSolved) {
+        produceAndThrowException(planInProgress)
+      }
+
+      planInProgress.query.tail match {
+        case None => continue = false
+        case Some(q) => planInProgress = planInProgress.copy(query = q)
+      }
     }
 
-    if (!query.isSolved) {
-      val sp = new ShortestPathBuilder
-      sp.checkForUnsolvedShortestPaths(query, pipe)
-
-      checkForMissingPredicates(query, pipe)
+    val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
+    val (pipe, func) = if (planInProgress.containsTransaction) {
+      val p = new CommitPipe(planInProgress.pipe, graph)
+      (p, getEagerReadWriteQuery(p, columns))
+    } else {
+      (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
     }
 
-
-    val func = (params: Map[String, Any]) => {
-      val start = System.currentTimeMillis()
-      val results = pipe.createResults(params)
-      val timeTaken = System.currentTimeMillis() - start
-
-      new PipeExecutionResult(results, pipe.symbols, inputQuery.returns.columns, timeTaken)
-    }
     val executionPlan = pipe.executionPlan()
 
     (func, executionPlan)
   }
 
-  private def checkForMissingPredicates(querySoFar: PartiallySolvedQuery, pipe: Pipe) {
-    val unsolvedPredicates = querySoFar.where.filter(_.unsolved).map(_.token)
-    if (unsolvedPredicates.nonEmpty) {
-      val x = unsolvedPredicates.
-        flatMap(pred => pipe.symbols.missingDependencies(pred.dependencies)).
-        map(_.name).
-        mkString(",")
-
-      throw new SyntaxException("Unknown identifier `" + x + "`.")
+  private def getQueryResultColumns(q: Query, currentSymbols:SymbolTable) = {
+    var query = q
+    while (query.tail.isDefined) {
+      query = query.tail.get
     }
+
+    val columns = query.returns.columns.flatMap {
+      case "*" => currentSymbols.identifiers.map(_.name).toList
+      case x => Seq(x)
+    }
+
+    columns
+  }
+
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
+    val func = (params: Map[String, Any]) => {
+      val state = new QueryState(MutableMap() ++ params)
+      new PipeExecutionResult(pipe.createResults(state), pipe.symbols, columns)
+    }
+
+    func
+  }
+
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
+    val func = (params: Map[String, Any]) => {
+      val state = new QueryState(MutableMap() ++ params)
+      new EagerPipeExecutionResult(pipe.createResults(state), pipe.symbols, columns, state)
+    }
+
+    func
+  }
+
+  private def produceAndThrowException(plan: ExecutionPlanInProgress) {
+    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder -> _)).toList.
+      sortBy {
+      case (builder, _) => builder.priority
+    }
+
+    if (errors.isEmpty) {
+      throw new SyntaxException("""Somehow, Cypher was not able to construct a valid execution plan from your query.
+The Neo4j team is very interested in knowing about this query. Please, consider sending a copy of it to cypher@neo4j.org.
+Thank you!
+
+The Neo4j Team
+""")
+    }
+
+    val prio = errors.head._1.priority
+    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).map("Unknown identifier `" + _._2 + "`")
+
+    val errorMessage = errorsOfHighestPrio.mkString("\n")
+    throw new SyntaxException(errorMessage)
   }
 
   lazy val builders = Seq(
@@ -84,14 +136,19 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     new FilterBuilder,
     new NamedPathBuilder,
     new ExtractBuilder,
-    new SortedAggregationBuilder,
+    //TODO: Reintroduce this when the problems with SlicePipe are solved.
+    //new SortedAggregationBuilder,
     new MatchBuilder,
     new SortBuilder,
     new ColumnFilterBuilder,
     new SliceBuilder,
     new AggregationBuilder,
     new ShortestPathBuilder,
-    new RelationshipByIdBuilder(graph))
+    new RelationshipByIdBuilder(graph),
+    new CreateNodesAndRelationshipsBuilder(graph),
+    new DeleteAndPropertySetBuilder(graph),
+    new EmptyResultBuilder
+  )
 
   override def toString = executionPlanText
 }

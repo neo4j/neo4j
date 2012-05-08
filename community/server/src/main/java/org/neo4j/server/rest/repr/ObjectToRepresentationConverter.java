@@ -19,14 +19,16 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.FirstItemIterable;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.IteratorWrapper;
 
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
@@ -66,60 +68,54 @@ public class ObjectToRepresentationConverter
 
     static Representation getIteratorRepresentation( Iterator data )
     {
-        final List<Representation> results = new ArrayList<Representation>();
-        while ( data.hasNext() )
-        {
-            Object value = data.next();
-            if ( value instanceof Iterable )
-            {
-                List<Representation> nested = new ArrayList<Representation>();
-                nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
-                results.add( new ListRepresentation( getType( nested ), nested ) );
+        final FirstItemIterable<Representation> results = new FirstItemIterable<Representation>(new IteratorWrapper<Representation, Object>(data) {
+            @Override
+            protected Representation underlyingObjectToObject(Object value) {
+                if ( value instanceof Iterable )
+                {
+                    FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
+                    return new ListRepresentation( getType( nested ), nested );
+                } else {
+                    return getSingleRepresentation( value );
+                }
             }
-            final Representation representation = getSingleRepresentation( value );
-            results.add( representation );
-        }
+        });
         return new ListRepresentation( getType( results ), results );
     }
 
     public static ListRepresentation getListRepresentation( Iterable data )
     {
-        final List<Representation> results = convertValuesToRepresentations( data );
+        final FirstItemIterable<Representation> results = convertValuesToRepresentations( data );
         return new ListRepresentation( getType( results ), results );
     }
 
-    static List<Representation> convertValuesToRepresentations( Iterable data )
+    static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
-        final List<Representation> results = new ArrayList<Representation>();
         if ( data instanceof Table )
         {
-            results.add( new GremlinTableRepresentation( (Table) data ) );
+            return new FirstItemIterable<Representation>(Collections.<Representation>singleton(new GremlinTableRepresentation( (Table) data )));
         }
-        else
-        {
-            for ( final Object value : data )
-            {
+        return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
+            @Override
+            protected Representation underlyingObjectToObject(Object value) {
                 if ( value instanceof Iterable )
                 {
-                    List<Representation> nested = new ArrayList<Representation>();
-                    nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
-                    results.add( new ListRepresentation( getType( nested ),
-                            nested ) );
+                    final FirstItemIterable<Representation> nested = convertValuesToRepresentations((Iterable) value);
+                    return new ListRepresentation( getType( nested ), nested);
                 }
                 else
                 {
-                    results.add( getSingleRepresentation( value ) );
+                    return getSingleRepresentation( value );
                 }
             }
-        }
-        return results;
+        });
     }
 
-    static RepresentationType getType( List<Representation> representations )
+    static RepresentationType getType( FirstItemIterable<Representation> representations )
     {
-        if ( representations == null || representations.isEmpty() )
-            return RepresentationType.STRING;
-        return representations.get( 0 ).getRepresentationType();
+        Representation  representation = representations.getFirst();
+        if ( representation == null ) return RepresentationType.STRING;
+        return representation.getRepresentationType();
     }
 
     static Representation getSingleRepresentation( Object result )

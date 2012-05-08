@@ -19,31 +19,30 @@
  */
 package recovery;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-
 import javax.transaction.xa.Xid;
-
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
+
+import static org.junit.Assert.*;
 
 // TODO These tests need review. Don't work after refactoring
 
@@ -94,7 +93,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class TwoWriteTransactions implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             Node node;
@@ -126,7 +125,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class SingleWriteTransaction implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -147,7 +146,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class Crash implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             throw new AssertionError( "Should not reach here - the breakpoint should avoid it" );
         }
@@ -156,7 +155,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     static class Verification implements Task
     {
         @Override
-        public void run( EmbeddedGraphDatabase graphdb )
+        public void run( GraphDatabaseAPI graphdb )
         {
             assertNotNull( "No graph database", graphdb );
             Index<Node> index = graphdb.index().forNodes( "nodes" );
@@ -217,7 +216,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
             return new Bootstrapper( test, 0 )
             {
                 @Override
-                protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
+                protected void shutdown( GraphDatabaseService graphdb, boolean normal )
                 {
                     if ( normal ) super.shutdown( graphdb, normal );
                 };
@@ -238,7 +237,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
      */
     public static void main( String... args ) throws Exception
     {
-        TxLog log = new TxLog( args[0], CommonFactories.defaultFileSystemAbstraction() );
+        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

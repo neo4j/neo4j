@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -28,7 +29,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.guard.Guard;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.security.KeyStoreInformation;
 
@@ -41,11 +41,11 @@ public interface WebServer
     void setPort( int portNo );
 
     void setAddress( String addr );
-    
+
     void setEnableHttps( boolean enable );
-    
+
     void setHttpsPort( int portNo );
-    
+
     void setHttpsCertificateInformation( KeyStoreInformation config );
 
     void start();
@@ -59,13 +59,14 @@ public interface WebServer
     void addStaticContent( String contentLocation, String serverMountPoint );
 
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
-            throws IOException, ServletException;
-    
-    void addSecurityRules(SecurityRule ... rules);
+        throws IOException, ServletException;
 
-    void addExecutionLimitFilter( Guard guard );
+    void addSecurityRules( SecurityRule... rules );
+
+    void addExecutionLimitFilter( int timeout );
+
+    void enableHTTPLoggingForWebadmin( File logbackConfig, File logDir );
 
     @Deprecated
     Server getJetty();
-    
 }

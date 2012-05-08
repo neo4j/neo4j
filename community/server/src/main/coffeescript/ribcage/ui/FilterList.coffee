@@ -21,8 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['ribcage/View'
    './filterListTemplate'
-   './filterListSelect'
-   'lib/backbone'], 
+   './filterListSelect'], 
   (View, template, selectTemplate) ->
 
     FILTER_PLACEHOLDER_TEXT = "Search available nodes"

@@ -25,6 +25,17 @@ import org.neo4j.cypher.SyntaxException
 
 
 trait Expressions extends Base {
+  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
+    case head ~ rest => {
+      var result = head
+      rest.foreach {
+        case "+" ~ f => result = Add(result, f)
+        case "-" ~ f => result = Subtract(result, f)
+      }
+
+      result
+    }
+  }
 
   def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor | "%" ~ factor | "^" ~ factor) ^^ {
     case head ~ rest => {
@@ -34,18 +45,6 @@ trait Expressions extends Base {
         case "/" ~ f => result = Divide(result,f)
         case "%" ~ f => result = Modulo(result,f)
         case "^" ~ f => result = Pow(result,f)
-      }
-
-      result
-    }
-  }
-
-  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
-    case head ~ rest => {
-      var result = head
-      rest.foreach {
-        case "+" ~ f => result = Add(result, f)
-        case "-" ~ f => result = Subtract(result, f)
       }
 
       result
@@ -158,7 +157,15 @@ trait Expressions extends Base {
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 
-  def predicate: Parser[Predicate] = (
+  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( ignoreCase("or") ~> predicateLvl1 ) ^^ {
+    case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
+  }
+
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( ignoreCase("and") ~> predicateLvl2 ) ^^{
+    case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
+  }
+
+  def predicateLvl2: Parser[Predicate] = (
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
@@ -169,19 +176,12 @@ trait Expressions extends Base {
       | hasRelationshipTo
       | hasRelationship
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
-    ) * (
-    ignoreCase("and") ^^^ {
-      (a: Predicate, b: Predicate) => And(a, b)
-    } |
-      ignoreCase("or") ^^^ {
-        (a: Predicate, b: Predicate) => Or(a, b)
-      }
     )
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)  }
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas) }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
@@ -217,18 +217,17 @@ trait Expressions extends Base {
     NullablePredicate(pred, map  )
   }
 
-
   def expressionOrEntity = expression | entity
 
   def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ { case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2) }
 
   def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ { case a ~ rel  => HasRelationship(a, rel._1, rel._2) }
 
-  def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
+  def relInfo: Parser[(Direction, Seq[String])] = opt("<") ~ "-" ~ opt("[:" ~> rep1sep(identity, "|") <~ "]") ~ "-" ~ opt(">") ^^ {
     case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.", "query", 666)
-    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
-    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
+    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType.toSeq.flatten)
+    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType.toSeq.flatten)
+    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType.toSeq.flatten)
   }
 
 }

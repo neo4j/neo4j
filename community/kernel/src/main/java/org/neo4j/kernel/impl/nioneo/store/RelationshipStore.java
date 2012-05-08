@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -31,10 +31,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class RelationshipStore extends AbstractStore implements Store, RecordStore<RelationshipRecord>
 {
-    public interface Configuration
+    public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-        
     }
     
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
@@ -45,7 +44,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     // second_next_rel_id+next_prop_id(int)
     public static final int RECORD_SIZE = 33;
 
-    public RelationshipStore(String fileName, Configuration configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public RelationshipStore(String fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
         super(fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
