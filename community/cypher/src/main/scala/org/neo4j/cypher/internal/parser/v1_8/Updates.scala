@@ -24,24 +24,14 @@ import org.neo4j.cypher.internal.commands.{Entity, Property}
 
 
 trait Updates extends Base with Expressions with StartClause {
-  def updates: Parser[Seq[UpdateAction]] = (deleteThenSet | setThenDelete) ~ opt(foreach) ^^ {
-    case deleteAndSet ~ foreach => deleteAndSet ++ foreach.toSeq
-  }
+  def updates: Parser[Seq[UpdateAction]] = rep(delete | set | foreach) ^^ ( cmds => cmds.flatten )
 
-  def foreach: Parser[UpdateAction] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
+  def foreach: Parser[List[UpdateAction]] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
     case id ~ in ~ iterable ~ ":" ~ creates ~ innerUpdates => {
       val createCmds = creates.toSeq.map(_.startItems.map(_.asInstanceOf[UpdateAction])).flatten
       val updateCmds = innerUpdates.toSeq.flatten
-      ForeachAction(iterable, id, createCmds ++ updateCmds)
+      List(ForeachAction(iterable, id, createCmds ++ updateCmds))
     }
-  }
-
-  def deleteThenSet: Parser[Seq[UpdateAction]] = opt(delete) ~ opt(set) ^^ {
-    case x ~ y => x.toSeq.flatten ++ y.toSeq.flatten
-  }
-
-  def setThenDelete: Parser[Seq[UpdateAction]] = opt(delete) ~ opt(set) ^^ {
-    case x ~ y => x.toSeq.flatten ++ y.toSeq.flatten
   }
 
   def delete: Parser[List[UpdateAction]] = ignoreCase("delete") ~> comaList(expression) ^^ {
