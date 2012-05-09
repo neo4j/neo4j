@@ -14,7 +14,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.7-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -30,7 +30,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <windows-wrapper.version>4</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
     
@@ -43,7 +43,7 @@
     <org.neo4j.webserver.https.port>7473</org.neo4j.webserver.https.port>
     <org.neo4j.server.webserver.https.cert.location>conf/ssl/snakeoil.cert</org.neo4j.server.webserver.https.cert.location>
     <org.neo4j.server.webserver.https.key.location>conf/ssl/snakeoil.key</org.neo4j.server.webserver.https.key.location>
-    <org.neo4j.server.webserver.https.keystore.location>system/keystore</org.neo4j.server.webserver.https.keystore.location>
+    <org.neo4j.server.webserver.https.keystore.location>data/keystore</org.neo4j.server.webserver.https.keystore.location>
      <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
     <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
 

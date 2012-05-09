@@ -204,6 +204,7 @@ startit() {
         -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
         -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        -Dfile.encoding=UTF-8 \
         org.neo4j.server.Bootstrapper >> \"$NEO4J_INSTANCE/data/log/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
@@ -362,7 +363,7 @@ installservice() {
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
           update-rc.d ${SERVICE_NAME} defaults
-          chown -R $proposed_user: "$NEO4J_HOME/data"
+          chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
