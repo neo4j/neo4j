@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.symbols
 
 object BooleanType {
-  lazy val instance = new BooleanType()
+  val instance = new BooleanType()
 
   def apply() = instance
 }

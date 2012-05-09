@@ -25,7 +25,7 @@ package org.neo4j.cypher.internal.symbols
 
 object StringType
 {
-  lazy val instance = new StringType()
+  val instance = new StringType()
 
   def apply() = instance
 }

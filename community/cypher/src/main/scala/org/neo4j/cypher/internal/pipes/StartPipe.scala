@@ -37,8 +37,7 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
     val map = inner.createResults(state).flatMap(ctx => {
       val source: Iterable[T] = createSource(ctx)
       source.map(x => {
-        val newMap = ctx.m.clone().asInstanceOf[Map[String, Any]]
-        ctx.copy(m = newMap += name -> x)
+        ctx.newWith(name -> x)
       })
     })
     map

@@ -1475,7 +1475,7 @@ RETURN x0.name?
     relate(b, y, "X", "rBY")
 
     val result = parseAndExecute("""START a=node(1), b=node(2) match a-[r1?]->x<-[r2?]-b return x""")
-    assert(List(z, x, y) === result.columnAs[Node]("x").toList)
+    assert(List(x, y, z) === result.columnAs[Node]("x").toList)
   }
 
   private def createTriangle(number: Int): (Node, Node, Node) = {

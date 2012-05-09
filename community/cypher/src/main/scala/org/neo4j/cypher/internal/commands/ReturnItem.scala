@@ -44,11 +44,11 @@ case class AllIdentifiers() extends ReturnColumn {
 case class ReturnItem(expression: Expression, name: String, renamed: Boolean = false) extends ReturnColumn {
   def expressions(symbols: SymbolTable) = Seq(expression)
 
-  def dependencies = expression.dependencies(AnyType())
+  val dependencies = expression.dependencies(AnyType())
 
-  def identifier = Identifier(name, expression.identifier.typ)
+  val identifier = Identifier(name, expression.identifier.typ)
 
-  def columnName = identifier.name
+  val columnName = identifier.name
 
   override def toString() = identifier.name
 

@@ -61,7 +61,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
         val node = db.createNode()
         state.createdNodes.increase()
         setProps(node, m, context, state)
-        context.copy(m = context.m ++ Map(key -> node))
+        context.newWith( key -> node )
       })
     } else {
       val node = db.createNode()
