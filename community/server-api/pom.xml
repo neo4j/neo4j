@@ -61,9 +61,9 @@ the relevant Commercial Agreement.
     </dependency>
 
     <dependency>
-      <groupId>javax.ws.rs</groupId>
+      <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
       <artifactId>jsr311-api</artifactId>
-      <version>1.1.1</version>
+      <version>1.1.2.r612</version>
     </dependency>
 
     <dependency>
