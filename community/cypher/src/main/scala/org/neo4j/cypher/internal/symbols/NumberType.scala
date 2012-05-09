@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.symbols
 
 
 object NumberType {
-  lazy val instance = new NumberType()
+  val instance = new NumberType()
 
   def apply(): NumberType = instance
 }

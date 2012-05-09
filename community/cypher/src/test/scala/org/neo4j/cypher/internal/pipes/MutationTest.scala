@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNo
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = new QueryState(graph, MutableMap())
+  def createQueryState = new QueryState(graph, MutableMaps.create)
 
   @Test
   def create_node() {

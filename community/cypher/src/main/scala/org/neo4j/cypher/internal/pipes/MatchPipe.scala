@@ -29,7 +29,7 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]
 
   def createResults(state: QueryState) =
     source.createResults(state).flatMap(ctx => {
-      matchingContext.getMatches(ctx.toMap).map(pm => ctx.copy(m = ctx.m ++ pm) )
+      matchingContext.getMatches(ctx.toMap).map(pm => ctx.newWith( pm ) )
     })
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"

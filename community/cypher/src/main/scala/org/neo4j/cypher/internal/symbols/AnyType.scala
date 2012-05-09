@@ -39,7 +39,7 @@ object AnyType {
     ScalarType()
   }
 
-  lazy val instance = new AnyType()
+  val instance = new AnyType()
 
   def apply() = instance
 }

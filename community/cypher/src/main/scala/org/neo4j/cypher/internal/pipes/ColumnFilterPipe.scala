@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import collection.mutable.Map
 import org.neo4j.cypher.internal.commands.{ParameterValue, ReturnItem}
 import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
+import scala.collection.JavaConverters._
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe: Boolean)
   extends PipeWithSource(source) {
@@ -37,20 +37,17 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe:
 
   def createResults(state: QueryState) = {
     source.createResults(state).map(ctx => {
-      val newMap = Map[String, Any]()
+      val newMap = MutableMaps.create(ctx.size)
 
       ctx.foreach {
         case (k, p) => if (p.isInstanceOf[ParameterValue] && !lastPipe) {
           newMap.put(k, p)
         } else {
-          val ri = returnItems.find(_.expression.identifier.name == k)
-          if (ri.nonEmpty) {
-            newMap.put(ri.get.columnName, p)
-          }
+          returnItems.foreach( ri => if (ri.expression.identifier.name == k) { newMap.put(ri.columnName, p) } )
         }
       }
 
-      ctx.copy(m = newMap)
+      ctx.newFrom( newMap )
     })
   }
 

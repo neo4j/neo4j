@@ -60,7 +60,15 @@ private class OrderedAggregator(source: Traversable[ExecutionContext],
   val aggregateColumns = aggregations.map(_.identifier.name)
 
   def getIntermediateResults[U](ctx: ExecutionContext) = {
-    ctx.copy(m = (keyColumns.zip(currentKey.get) ++ aggregateColumns.zip(aggregationSpool.map(_.result))).foldLeft(Map[String, Any]())(_ += _))
+    val newMap = MutableMaps.create
+
+    //add key values
+    keyColumns.zip(currentKey.get).foreach( newMap += _)
+
+    //add aggregated values
+    aggregateColumns.zip(aggregationSpool.map(_.result)).foreach( newMap += _ )
+
+    ctx.newFrom(newMap)
   }
 
   def foreach[U](f: ExecutionContext => U) {

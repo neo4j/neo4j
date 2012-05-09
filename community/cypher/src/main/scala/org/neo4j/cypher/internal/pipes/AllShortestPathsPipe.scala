@@ -35,8 +35,7 @@ class AllShortestPathsPipe(source: Pipe, ast: ShortestPath) extends ShortestPath
       case (List(), true) => Seq(ctx += pathName -> null)
       case (List(), false) => Seq()
       case (paths, _) => paths.map(path => {
-        val result = ctx.m.clone()
-        ctx.copy(m = result += pathName -> path)
+        ctx.newWith(pathName -> path)
       })
     }
   }
