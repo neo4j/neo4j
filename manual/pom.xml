@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>31</version>
+    <version>33</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.doc</groupId>
@@ -323,16 +323,6 @@
               </arguments>
             </configuration>
           </execution>
-          <execution>
-            <id>upload-to-servers</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>${project.build.directory}/../src/build/upload.sh</executable>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -418,8 +408,8 @@
         
       </plugin>
       <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>license-maven-plugin</artifactId>
         <configuration>
           <excludes>
             <exclude>src/main/resources/js/**</exclude>
@@ -584,6 +574,35 @@
                     <argument>VERSION=${project.version}</argument>
                     <argument>IMPORTDIR=${docs.sources}</argument>
                   </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>publish-manual</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>publish-manual</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>upload-to-servers</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>${project.build.directory}/../src/build/upload.sh</executable>
                 </configuration>
               </execution>
             </executions>
