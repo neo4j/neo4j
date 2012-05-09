@@ -188,7 +188,6 @@ public abstract class Service
     public static <T> Iterable<T> load( Class<T> type )
     {
         Iterable<T> loader;
-        if ( null != ( loader = osgiLoader( type ) ) ) return loader;
         if ( null != ( loader = java6Loader( type ) ) ) return loader;
         if ( null != ( loader = sunJava5Loader( type ) ) ) return loader;
         if ( null != ( loader = ourOwnLoader( type ) ) ) return loader;
@@ -276,52 +275,6 @@ public abstract class Service
                 };
             }
         };
-    }
-
-    private static volatile OSGiLoader osgiLoader;
-
-    private static <T> Iterable<T> osgiLoader( Class<T> type )
-    {
-        OSGiLoader loader = osgiLoader;
-        if ( loader == null )
-        {
-            osgiLoader = loader = OSGiLoader.instance();
-        }
-        return loader.load( type );
-    }
-
-    static class OSGiLoader
-    {
-        private static OSGiLoader instance;
-
-        synchronized static OSGiLoader instance()
-        {
-            if ( instance == null )
-            {
-                try
-                {
-                    @SuppressWarnings( "unchecked" ) Class<? extends OSGiLoader> loaderClass =
-                        (Class<? extends OSGiLoader>) Class.forName( "org.neo4j.helpers.OSGiServiceLoader" );
-                    instance = loaderClass.newInstance();
-                }
-                catch ( LinkageError err )
-                {
-                }
-                catch ( Exception ex )
-                {
-                }
-                if ( instance == null )
-                {
-                    instance = new OSGiLoader();
-                }
-            }
-            return instance;
-        }
-
-        <T> Iterable<T> load( @SuppressWarnings( "unused" ) Class<T> type )
-        {
-            return null;
-        }
     }
 
     @SuppressWarnings("unchecked")

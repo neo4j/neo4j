@@ -1,5 +1,6 @@
 1.8.M02 (2012-05-11)
 --------------------
+o fixed Jboss7 classloading compatibility in Service loader
 o Optimized short string and short array encoding algorithms
 o Fixed problem with SpringTransactionManager during HA master switch
 
