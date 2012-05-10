@@ -44,5 +44,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Jim Radford |https://github.com/radford[radford]
 |Axel Morgner |https://github.com/amorgner[amorgner]
 |Taylor Buley |https://github.com/editor[editor]
+|Alex Smirnow |https://github.com/alexsmirnov[alexsmirnov]
 |=======
 
