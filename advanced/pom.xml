@@ -60,5 +60,55 @@ terms of the relevant Commercial Agreement.
     </site>
   </distributionManagement>
 
+  <profiles>
+    <profile>
+      <id>freeze</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>freeze</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>ease-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>aggregate-artifacts</id>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>org.neo4j:*</include>
+                    <include>org.neo4j.app:*</include>
+                  </includes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-advanced</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.app</groupId>
+          <artifactId>neo4j-server-advanced</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 </project>
 
