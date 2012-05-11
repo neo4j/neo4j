@@ -1,6 +1,7 @@
 1.8.M02 (2012-05-10)
 --------------------
 o Optimized short string and short array encoding algorithms
+o Fixed problem with SpringTransactionManager during HA master switch
 
 1.8.M01 (2012-04-26)
 --------------------
