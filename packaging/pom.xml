@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>31</version>
+    <version>34</version>
     <relativePath />
   </parent>
 
@@ -56,6 +56,92 @@ terms of the relevant Commercial Agreement.
       <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
     </site>
   </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>freeze</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>freeze</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j.build</groupId>
+          <artifactId>community-build</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.build</groupId>
+          <artifactId>advanced-build</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.build</groupId>
+          <artifactId>enterprise-build</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.drivers</groupId>
+          <artifactId>neo4j-python-embedded</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.server.plugin</groupId>
+          <artifactId>neo4j-cypher-plugin</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.server.plugin</groupId>
+          <artifactId>neo4j-gremlin-plugin</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.doc</groupId>
+          <artifactId>neo4j-manual</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>ease-maven-plugin</artifactId>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <executions>
+              <execution>
+                <id>aggregate-artifacts</id>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <configuration>
+                  <excludeTransitive>true</excludeTransitive>
+                  <includes>
+                    <include>org.neo4j:*</include>
+                    <include>org.neo4j.build:*</include>
+                    <include>org.neo4j.doc:*</include>
+                    <include>org.neo4j.app:*</include>
+                    <include>org.neo4j.examples:*</include>
+                  </includes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
 
