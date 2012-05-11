@@ -1,4 +1,4 @@
-1.8.M02 (not yet released)
+1.8.M02 (2012-05-11)
 --------------------
 o Added the possibility to create nodes from an iterable of maps
 o Fixes issue #479
