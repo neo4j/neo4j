@@ -485,7 +485,8 @@ public class ImdbExampleTest
         assertEquals( theMatrix, hits.getSingle() );
 
         // START SNIPPET: defaultOperator
-        QueryContext query = new QueryContext( "title:*Matrix* year:1999" ).defaultOperator( Operator.AND );
+        QueryContext query = new QueryContext( "title:*Matrix* year:1999" )
+                .defaultOperator( Operator.AND );
         hits = movies.query( query );
         // END SNIPPET: defaultOperator
         // with OR the result would be 2 hits
@@ -603,9 +604,10 @@ public class ImdbExampleTest
                 "target/neo4jdb-batchinsert" ) );
         // START SNIPPET: batchInsert
         BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
-        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        BatchInserterIndex actors = indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
+        BatchInserterIndexProvider indexProvider = 
+                new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex actors = 
+                indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
         actors.setCacheCapacity( "name", 100000 );
 
         Map<String, Object> properties = MapUtil.map( "name", "Keanu Reeves" );
