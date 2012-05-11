@@ -19,10 +19,12 @@
  */
 package org.neo4j.helpers;
 
-public abstract class FooService extends Service {
+public abstract class FooService extends Service
+{
 
-	public FooService() {
-		super("foo");
-	}
+    public FooService()
+    {
+        super( "foo" );
+    }
 
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers;
 
-public class BarService extends FooService {
+public class BarService extends FooService
+{
 
 }

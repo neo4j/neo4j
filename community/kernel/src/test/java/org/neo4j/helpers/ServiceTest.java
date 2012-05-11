@@ -29,79 +29,111 @@ import java.util.Enumeration;
 
 import org.junit.Test;
 
-public class ServiceTest {
-	
-	@Test
-	public void shouldLoadServiceInDefaultEnvironment() throws Exception {
-		FooService fooService = Service.load(FooService.class,"foo");
-		assertTrue( fooService instanceof BarService);
-	}
+public class ServiceTest
+{
 
-	@Test
-	public void whenContextCalssLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader() {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(new ServiceBlockClassLoader(contextClassLoader));
-			FooService fooService = Service.load(FooService.class,"foo");
-			assertTrue( fooService instanceof BarService);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
+    @Test
+    public void shouldLoadServiceInDefaultEnvironment() throws Exception
+    {
+        FooService fooService = Service.load( FooService.class, "foo" );
+        assertTrue( fooService instanceof BarService );
+    }
 
-	@Test
-	public void whenContextClassLoaderOverridesServiceShouldLoadThatClass() throws Exception {
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(new ServiceRedirectClassLoader(contextClassLoader));
-			FooService fooService = Service.load(FooService.class,"foo");
-			assertTrue( fooService instanceof BazService);
-		} finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
-	}
-	
-	private static final class ServiceBlockClassLoader extends ClassLoader {
-		
-		public ServiceBlockClassLoader(ClassLoader parent) {
-			super(parent);
-		}
-		
-		@Override
-		public URL getResource(String name) {
-			return name.startsWith("META-INF/services") ? null:super.getResource(name);
-		}
-		
-		@Override
-		public Enumeration<URL> getResources(String name) throws IOException {
-			return name.startsWith("META-INF/services") ? Collections.enumeration(Collections.<URL>emptySet()): super.getResources(name);
-		}
-		
-		@Override
-		public InputStream getResourceAsStream(String name) {
-			return name.startsWith("META-INF/services") ? null:super.getResourceAsStream(name);
-		}
-	}
+    @Test
+    public void whenContextCalssLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
+    {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        try
+        {
+            Thread.currentThread().setContextClassLoader(
+                    new ServiceBlockClassLoader( contextClassLoader ) );
+            FooService fooService = Service.load( FooService.class, "foo" );
+            assertTrue( fooService instanceof BarService );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( contextClassLoader );
+        }
+    }
 
-	private static final class ServiceRedirectClassLoader extends ClassLoader {
-		
-		public ServiceRedirectClassLoader(ClassLoader parent) {
-			super(parent);
-		}
-		
-		@Override
-		public URL getResource(String name) {
-			return name.startsWith("META-INF/services") ? super.getResource("test/"+name):super.getResource(name);
-		}
-		
-		@Override
-		public Enumeration<URL> getResources(String name) throws IOException {
-			return name.startsWith("META-INF/services") ? super.getResources("test/"+name): super.getResources(name);
-		}
-		
-		@Override
-		public InputStream getResourceAsStream(String name) {
-			return name.startsWith("META-INF/services") ? super.getResourceAsStream("test/"+name):super.getResourceAsStream(name);
-		}
-	}
+    @Test
+    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
+            throws Exception
+    {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        try
+        {
+            Thread.currentThread().setContextClassLoader(
+                    new ServiceRedirectClassLoader( contextClassLoader ) );
+            FooService fooService = Service.load( FooService.class, "foo" );
+            assertTrue( fooService instanceof BazService );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( contextClassLoader );
+        }
+    }
+
+    private static final class ServiceBlockClassLoader extends ClassLoader
+    {
+
+        public ServiceBlockClassLoader( ClassLoader parent )
+        {
+            super( parent );
+        }
+
+        @Override
+        public URL getResource( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? null
+                    : super.getResource( name );
+        }
+
+        @Override
+        public Enumeration<URL> getResources( String name ) throws IOException
+        {
+            return name.startsWith( "META-INF/services" ) ? Collections.enumeration( Collections.<URL>emptySet() )
+                    : super.getResources( name );
+        }
+
+        @Override
+        public InputStream getResourceAsStream( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? null
+                    : super.getResourceAsStream( name );
+        }
+    }
+
+    private static final class ServiceRedirectClassLoader extends ClassLoader
+    {
+
+        public ServiceRedirectClassLoader( ClassLoader parent )
+        {
+            super( parent );
+        }
+
+        @Override
+        public URL getResource( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResource( "test/"
+                                                                               + name )
+                    : super.getResource( name );
+        }
+
+        @Override
+        public Enumeration<URL> getResources( String name ) throws IOException
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResources( "test/"
+                                                                                + name )
+                    : super.getResources( name );
+        }
+
+        @Override
+        public InputStream getResourceAsStream( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResourceAsStream( "test/"
+                                                                                       + name )
+                    : super.getResourceAsStream( name );
+        }
+    }
 }
