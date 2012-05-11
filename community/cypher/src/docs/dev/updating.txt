@@ -1,33 +1,38 @@
 [[query-updating]]
 Updating the graph with Cypher
 ==============================
+
 Cypher can be used for both querying and updating your graph.
 
-Updating query structure
+== Updating query structure ==
 
 A Cypher query part can't both match and update the graph at the same time. Every part can either read and match on the
 graph, or make updates on it.
 
 == Query Parts & Structure ==
-If you read from the graph, and then update the graph, your query implicitly has two parts - the reading is the first
+
+If you read from the graph, and then update the graph, your query implicitly has two parts -- the reading is the first
 part, and the writing is the second. If your query is read-only, Cypher will be lazy, and not actually pattern match
 until you ask for the results. Here, the semantics are that _all_ the reading will be done before any writing actually
-happens. This is very important - without this it's easy to find cases where the pattern matcher runs into data that is
+happens. This is very important -- without this it's easy to find cases where the pattern matcher runs into data that is
 being created by the very same query, and all bets are off. That road leads to Heisenbugs, Brownian motion and cats that
 are dead and alive at the same time.
 
-First reading, and then writing, is the only pattern where the query parts are implicit - any other order and you
+First reading, and then writing, is the only pattern where the query parts are implicit -- any other order and you
 have to be explicit about your query parts. The parts are separated using the `WITH` statement. `WITH` is like the event
-horizon - it's a barrier between a plan and the finished execution of that plan.
+horizon -- it's a barrier between a plan and the finished execution of that plan.
 
-When you want filter using aggregated data, you have to chain together two reading query parts - the first one does the
+When you want filter using aggregated data, you have to chain together two reading query parts -- the first one does the
 aggregating, and the second query filters on the results coming from the first one.
 
+[source,cypher]
+----
 START n=node(...)
 MATCH n-[:friend]-friend
 WITH n, count(friend) as friendsCount
 WHERE friendsCount > 3
 RETURN n, friendsCount
+----
 
 Using `WITH`, you specify how you want the aggregation to happen, and that the aggregation has to be finished before
 Cypher can start filtering.
@@ -35,11 +40,13 @@ Cypher can start filtering.
 You can chain together as many query parts as you have JVM heap for.
 
 == Returning data ==
-Any query can return data. If your query is read only, it has to return data - it serves no purpose if it doesn't, and
+
+Any query can return data. If your query is read only, it has to return data -- it serves no purpose if it doesn't, and
  it is not a valid Cypher query. Queries that update the graph don't have to return anything, but they can.
 
-After all the parts of the query, comes one final `RETURN`-statement. `RETURN` is not part of any query part - it
-is a period symbol after an eloquent statement. When `RETURN` is legal, it's also legal to use SKIP/LIMIT and ORDER BY.
+After all the parts of the query, comes one final `RETURN` statement. `RETURN` is not part of any query part -- it
+is a period symbol after an eloquent statement. When `RETURN` is legal, it's also legal to use `SKIP`/`LIMIT` and `ORDER BY`.
 
-If you return graph elements from a query that has just deleted them - beware, you are holding a pointer that is no
+If you return graph elements from a query that has just deleted them -- beware, you are holding a pointer that is no
  longer valid. Operations on that node might fail mysteriously and unpredictably.
+ 
