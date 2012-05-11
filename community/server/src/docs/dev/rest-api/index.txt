@@ -278,3 +278,4 @@ include::execute-multiple-operations-in-batch.txt[]
 
 include::refer-to-items-created-earlier-in-the-same-batch-job.txt[]
 
+include::execute-multiple-operations-in-batch-streaming.txt[]

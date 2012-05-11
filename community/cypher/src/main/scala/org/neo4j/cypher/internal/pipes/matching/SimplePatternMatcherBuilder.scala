@@ -25,6 +25,7 @@ import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternN
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.MutableMaps
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   val patternNodes = pattern.patternNodes.map {
@@ -72,10 +73,10 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
 
   def getMatches(sourceRow: Map[String, Any]) = {
     setAssociations(sourceRow)
-    val result = collection.mutable.Map(sourceRow.toSeq: _*)
+    val result = MutableMaps.create(sourceRow)
     val validPredicates = predicates.filter(p => symbolTable.satisfies(p.dependencies))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
-    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
+    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.map(patternMatch => {
       patternNodes.foreach {
         case (key, pn) => result += key -> patternMatch.getNodeFor(pn)
       }
@@ -84,10 +85,10 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
       }
 
       if (validPredicates.forall(p => p.isMatch(result)))
-        Some(result.clone())
+        MutableMaps.create(result)
       else
-        None
-    })
+        null
+    }).filter(_ != null)
   }
 }
 

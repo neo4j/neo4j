@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.mutation
 import org.scalatest.Assertions
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
-import org.neo4j.cypher.internal.commands.Literal
+import org.neo4j.cypher.internal.commands.{CreateNodeStartItem, Literal}
+import org.neo4j.cypher.internal.pipes.{MutableMaps, ExecutionContext, QueryState}
 
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
   @Test def mixed_types_are_not_ok() {
-    val action = CreateNodeAction("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), graph)
+    val action = CreateNodeStartItem("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))))
 
     val tx = graph.beginTx()
-    action.exec(ExecutionContext.empty, QueryState())
+    action.exec(ExecutionContext.empty, new QueryState(graph, MutableMaps.create))
     tx.success()
     tx.finish()
 

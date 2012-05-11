@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, SymbolTable}
 import org.neo4j.cypher.internal.commands.{Expression, AggregationExpression}
-import collection.mutable.Map
+import collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -42,7 +42,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
 
   def createResults(state: QueryState): Traversable[ExecutionContext] = {
     // This is the temporary storage used while the aggregation is going on
-    val result = Map[NiceHasher, (ExecutionContext,Seq[AggregationFunction])]()
+    val result = MutableMap[NiceHasher, (ExecutionContext,Seq[AggregationFunction])]()
     val keyNames = keyExpressions.map(_.identifier.name)
     val aggregationNames = aggregations.map(_.identifier.name)
 
@@ -54,7 +54,8 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
 
     result.map {
       case (key, (ctx,aggregator)) => {
-        val newMap = Map[String,Any]()
+
+        val newMap = MutableMaps.create
 
         //add key values
         keyNames.zip(key.original).foreach( newMap += _)
@@ -62,7 +63,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
         //add aggregated values
         aggregationNames.zip(aggregator.map(_.result)).foreach( newMap += _ )
 
-        ctx.copy(m=newMap)
+        ctx.newFrom(newMap)
       }
     }
   }

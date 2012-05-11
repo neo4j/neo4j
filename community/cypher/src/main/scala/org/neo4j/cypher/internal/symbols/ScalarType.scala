@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.symbols
  */
 object ScalarType
 {
-  lazy val instance = new ScalarType()
+  val instance = new ScalarType()
 
   def apply() = instance
 }

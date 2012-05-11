@@ -19,32 +19,41 @@
  */
 package org.neo4j.cypher.internal.parser.v1_8
 
-import org.neo4j.cypher.internal.commands.{Foreach, SetProperty, DeleteEntityCommand, UpdateCommand}
+import org.neo4j.cypher.internal.mutation._
+import org.neo4j.cypher.internal.commands.{Entity, Property}
 
 
-trait Updates extends Base with Expressions {
-  def updates:Parser[Seq[UpdateCommand]] = (deleteThenSet | setThenDelete) ~ opt(foreach) ^^ {
+trait Updates extends Base with Expressions with StartClause {
+  def updates: Parser[Seq[UpdateAction]] = (deleteThenSet | setThenDelete) ~ opt(foreach) ^^ {
     case deleteAndSet ~ foreach => deleteAndSet ++ foreach.toSeq
   }
 
-  def foreach:Parser[UpdateCommand] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ updates <~ ")" ^^ {
-    case id ~ in ~ iterable ~ ":" ~ innerUpdates => Foreach(iterable, id, innerUpdates)
+  def foreach: Parser[UpdateAction] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
+    case id ~ in ~ iterable ~ ":" ~ creates ~ innerUpdates => {
+      val createCmds = creates.toSeq.map(_.startItems.map(_.asInstanceOf[UpdateAction])).flatten
+      val updateCmds = innerUpdates.toSeq.flatten
+      ForeachAction(iterable, id, createCmds ++ updateCmds)
+    }
   }
 
-  def deleteThenSet:Parser[Seq[UpdateCommand]] = opt(delete) ~ opt(set) ^^ {
+  def deleteThenSet: Parser[Seq[UpdateAction]] = opt(delete) ~ opt(set) ^^ {
     case x ~ y => x.toSeq.flatten ++ y.toSeq.flatten
   }
 
-  def setThenDelete:Parser[Seq[UpdateCommand]] = opt(delete) ~ opt(set) ^^ {
+  def setThenDelete: Parser[Seq[UpdateAction]] = opt(delete) ~ opt(set) ^^ {
     case x ~ y => x.toSeq.flatten ++ y.toSeq.flatten
   }
 
-  def delete: Parser[List[UpdateCommand]] = ignoreCase("delete") ~> comaList(expression) ^^
-    (expressions => expressions.map(DeleteEntityCommand(_)))
+  def delete: Parser[List[UpdateAction]] = ignoreCase("delete") ~> comaList(expression) ^^ {
+    case expressions => expressions.map {
+      case Property(entity, property) => DeletePropertyAction(Entity(entity), property)
+      case x => DeleteEntityAction(x)
+    }
+  }
 
-  def set: Parser[List[UpdateCommand]] = ignoreCase("set") ~> comaList(propertySet)
+  def set: Parser[List[UpdateAction]] = ignoreCase("set") ~> comaList(propertySet)
 
   def propertySet = property ~ "=" ~ expression ^^ {
-    case p ~ "=" ~ e => SetProperty(p, e)
+    case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
   }
 }

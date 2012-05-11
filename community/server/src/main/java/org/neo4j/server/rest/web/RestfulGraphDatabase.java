@@ -202,6 +202,10 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
+        catch ( ClassCastException e )
+        {
+            return output.badRequest( e );
+        }
     }
 
     private Response generateBadRequestDueToMangledJsonResponse( String body )

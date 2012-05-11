@@ -112,25 +112,46 @@ trait Expressions extends Base {
     case symbol ~ in ~ collection ~ where ~ pred => FilterFunction(collection, symbol, pred)
   }
 
-  def functionNames = ignoreCases("type", "id", "length", "nodes", "rels", "relationships",
-    "abs", "round", "sqrt", "sign", "head", "last", "tail")
-  def function: Parser[Expression] = functionNames ~ parens(expression | entity) ^^ {
-    case functionName ~ inner => functionName.toLowerCase match {
-      case "type" => RelationshipTypeFunction(inner)
-      case "id" => IdFunction(inner)
-      case "length" => LengthFunction(inner)
-      case "nodes" => NodesFunction(inner)
-      case "rels" => RelationshipFunction(inner)
-      case "relationships" => RelationshipFunction(inner)
-      case "abs" => AbsFunction(inner)
-      case "round" => RoundFunction(inner)
-      case "sqrt" => SqrtFunction(inner)
-      case "sign" => SignFunction(inner)
-      case "head" => HeadFunction(inner)
-      case "last" => LastFunction(inner)
-      case "tail" => TailFunction(inner)
+  def function: Parser[Expression] = Parser {
+    case in => {
+      val inner = identity ~ parens(comaList(expression | entity))
+
+      inner(in) match {
+
+        case Success(name ~ args, rest) => functions.get(name.toLowerCase) match {
+          case None => Failure("No such function found", rest)
+          case Some(func) if !func.acceptsTheseManyArguments(args.size) => Failure("Wrong number of parameters for function " + name, rest)
+          case Some(func) => Success(func.create(args), rest)
+        }
+
+        case Failure(msg, rest) => Failure(msg, rest)
+        case Error(msg, rest) => Error(msg, rest)
+      }
     }
   }
+
+
+  private def func(numberOfArguments: Int, create: List[Expression] => Expression) = new Function(x => x == numberOfArguments, create)
+  case class Function(acceptsTheseManyArguments: Int => Boolean, create: List[Expression] => Expression)
+  val functions = Map(
+    "type" -> func(1, args => RelationshipTypeFunction(args.head)),
+    "id" -> func(1, args => IdFunction(args.head)),
+    "length" -> func(1, args => LengthFunction(args.head)),
+    "nodes" -> func(1, args => NodesFunction(args.head)),
+    "rels" -> func(1, args => RelationshipFunction(args.head)),
+    "relationships" -> func(1, args => RelationshipFunction(args.head)),
+    "abs" -> func(1, args => AbsFunction(args.head)),
+    "round" -> func(1, args => RoundFunction(args.head)),
+    "sqrt" -> func(1, args => SqrtFunction(args.head)),
+    "sign" -> func(1, args => SignFunction(args.head)),
+    "head" -> func(1, args => HeadFunction(args.head)),
+    "last" -> func(1, args => LastFunction(args.head)),
+    "tail" -> func(1, args => TailFunction(args.head)),
+    "range" -> Function(x => x == 2||x == 3, args => {
+      val step = if (args.size == 2) Literal(1) else args(2)
+      RangeFunction(args(0), args(1), step)
+    })
+  )
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
@@ -188,7 +209,7 @@ trait Expressions extends Base {
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
     case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-")))
   }
-  
+
   def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
 
   def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInIterable(x._1, x._2, x._3))

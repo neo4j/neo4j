@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>33</version>
+    <version>34</version>
     <relativePath />
   </parent>
 
@@ -45,7 +45,6 @@
     <git.executable>git</git.executable>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
-    <defaultJunitCategory>!org.neo4j.test.SlowTests</defaultJunitCategory>
   </properties>
 
   <packaging>jar</packaging>
@@ -120,22 +119,13 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-        <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.12</version>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.maven.surefire</groupId>
-                    <artifactId>surefire-junit47</artifactId>
-                    <version>2.12</version>
-                </dependency>
-            </dependencies>
-            <configuration>
-                <skip>false</skip>
-                <argLine>-Xmx1200m</argLine>
-                <groups>${defaultJunitCategory}</groups>
-            </configuration>
-        </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>false</skip>
+          <argLine>-Xmx300m</argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>

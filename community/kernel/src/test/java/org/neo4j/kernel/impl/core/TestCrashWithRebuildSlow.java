@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,7 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.SlowTests;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -43,7 +41,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public class TestCrashWithRebuildSlow
 {
     @Test
-    @Category(SlowTests.class)
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         // Produce the string store with holes in it

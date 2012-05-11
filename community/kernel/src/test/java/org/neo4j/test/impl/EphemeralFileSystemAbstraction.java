@@ -19,10 +19,6 @@
  */
 package org.neo4j.test.impl;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -45,11 +41,15 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.test.MultipleFailureException;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
 {
@@ -86,10 +86,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         super.finalize();
     }
 
-    @SuppressWarnings( "deprecation" )
     public void assertNoOpenFiles() throws Exception
     {
-        List<Throwable> open = new ArrayList<Throwable>();
+        List<FileStillOpenException> open = new ArrayList<FileStillOpenException>();
         for ( EphemeralFileData file : files.values() )
         {
             for ( EphemeralFileChannel channel : loop( file.getOpenChannels() ) )
@@ -97,11 +96,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 open.add( channel.openedAt );
             }
         }
-        if (!open.isEmpty())
-        {
-            if (open.size() == 1) throw (FileStillOpenException) open.get( 0 );
-            throw new MultipleFailureException( open );
-        }
+        MultipleExceptionsStrategy.assertEmptyExceptions( open );
     }
 
     @SuppressWarnings( "serial" )
@@ -181,7 +176,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         files.put(to, files.remove(from));
         return true;
     }
-    
+
     @Override
     public void copyFile( String from, String to ) throws IOException
     {
@@ -513,7 +508,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
 
             init();
         }
-        
+
         @Override
         public DynamicByteBuffer clone()
         {
@@ -551,7 +546,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         {
             buf = allocate( 0 );
         }
-        
+
         private DynamicByteBuffer( ByteBuffer toClone )
         {
             int sizeIndex = toClone.capacity() / SIZES[SIZES.length - 1];
@@ -676,7 +671,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 bytes -= howMuchToReadThisTime;
             }
         }
-        
+
         /**
          * Checks if more space needs to be allocated.
          */

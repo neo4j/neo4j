@@ -23,14 +23,14 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType, NodeType, Identifier}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.pipes.{Pipe, NullPipe, FakePipe}
+import org.neo4j.cypher.internal.pipes.{MutableMaps, Pipe, NullPipe, FakePipe}
 
 abstract class BuilderTest extends Assertions {
   def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()) = {
     val nodeIdentifiers = nodes.map(x => Identifier(x, NodeType()))
     val relIdentifiers = relationships.map(x => Identifier(x, RelationshipType()))
 
-    new FakePipe(Seq(MutableMap()), new SymbolTable(nodeIdentifiers ++ relIdentifiers: _*))
+    new FakePipe(Seq(MutableMaps.create), new SymbolTable(nodeIdentifiers ++ relIdentifiers: _*))
   }
 
   def plan(q: PartiallySolvedQuery):ExecutionPlanInProgress = plan(new NullPipe, q)

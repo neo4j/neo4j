@@ -16,6 +16,8 @@ include::identifiers.txt[]
 
 include::comments.txt[]
 
+include::updating.txt[]
+
 include::transactions.txt[]
 
 :leveloffset: 2

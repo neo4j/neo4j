@@ -279,6 +279,25 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assert(List(Map("sign(-17)"-> -1, "sign(0.1)"->1)) === p.toList)
     )
   }
+
+  @Test def range() {
+    testThis(
+      title = "RANGE",
+      syntax = "RANGE( start, end [, step] )",
+      arguments = List(
+        "start" -> "A numerical expression",
+        "end" -> "A numerical expression",
+        "step" -> "A numerical expression"
+      ),
+      text = "Returns numerical values in range [start;end) with non-zero step value step. Range is inclusive in both ends.",
+      queryText = "start n=node(1) return range(0,10), range(2,18,3)",
+      returns = "Two lists of numbers.",
+      assertions = (p) => assert(List(Map(
+        "range(0,10)"-> List(0,1,2,3,4,5,6,7,8,9,10),
+        "range(2,18,3)"->List(2,5,8,11,14,17)
+      )) === p.toList)
+    )
+  }
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s

@@ -43,6 +43,7 @@ public class RestRequest {
     private final URI baseUri;
     private final static Client DEFAULT_CLIENT = Client.create();
     private final Client client;
+    private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
 
     public RestRequest( URI baseUri ) {
         this( baseUri, null, null );
@@ -87,7 +88,7 @@ public class RestRequest {
 
 
     private Builder builder(String path) {
-        return builder(path, MediaType.APPLICATION_JSON_TYPE);
+        return builder(path, accept);
     }
 
     private Builder builder(String path, final MediaType accept) {
@@ -201,5 +202,11 @@ public class RestRequest {
 
     public JaxRsResponse put(URI uri, String data) {
         return put(uri.toString(),data);
+    }
+
+    public RestRequest accept( MediaType accept )
+    {
+        this.accept = accept;
+        return this;
     }
 }

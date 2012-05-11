@@ -32,9 +32,10 @@ class SymbolTable(val identifiers: Identifier*) {
   } catch {
     case _ => false
   }
-  
-  def missingDependencies(needs:Seq[Identifier]):Seq[Identifier] = needs.filter( id=> !satisfies(Seq(id))  )
-  def missingExpressions(needs:Seq[Expression]):Seq[Expression] = needs.filter( id=> !satisfies(Seq(id.identifier))  )
+
+  def missingDependencies(needs: Seq[Identifier]): Seq[Identifier] = needs.filter(id => !satisfies(Seq(id)))
+
+  def missingExpressions(needs: Seq[Expression]): Seq[Expression] = needs.filter(id => !satisfies(Seq(id.identifier)))
 
   def assertHas(name: String, typ: AnyType) {
     assertHas(Identifier(name, typ))
@@ -52,6 +53,8 @@ class SymbolTable(val identifiers: Identifier*) {
   }
 
   def assertThat(id: Identifier): AnyType = actualIdentifier(id).typ
+
+  def remove(id: Identifier) = new SymbolTable(identifiers.filterNot(_ == id):_*)
 
   def keys = identifiers.map(_.name)
 
@@ -111,7 +114,7 @@ class SymbolTable(val identifiers: Identifier*) {
 
   override def equals(p1: Any): Boolean = p1 match {
     case null => false
-    case x:SymbolTable => this.identifiers == x.identifiers
+    case x: SymbolTable => this.identifiers == x.identifiers
     case _ => false
   }
 }

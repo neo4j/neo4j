@@ -46,6 +46,7 @@ include::relationships.txt[]
 include::extract.txt[]
 include::filter.txt[]
 include::tail.txt[]
+include::range.txt[]
 
 :leveloffset: 2
 

@@ -23,7 +23,6 @@ package org.neo4j.index.impl.lucene;
 import java.io.File;
 import java.util.Map;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,7 +34,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -45,11 +43,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.SlowTests;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.*;
 
@@ -108,7 +103,6 @@ public class TestRecovery
     }
     
     @Test
-    @Category(SlowTests.class)
     public void testIndexDeleteIssue() throws Exception
     {
         GraphDatabaseService db = newGraphDbService();
@@ -126,7 +120,6 @@ public class TestRecovery
     }
 
     @Test
-    @Category(SlowTests.class)
     public void recoveryForRelationshipCommandsOnly() throws Exception
     {
         String path = getDbPath();
@@ -151,48 +144,4 @@ public class TestRecovery
                                                    new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();
     }
-
-    @Test
-    @Category(SlowTests.class)
-    public void testHardCoreRecovery() throws Exception
-    {
-        String path = "target/hcdb";
-        FileUtils.deleteRecursively( new File( path ) );
-        Process process = Runtime.getRuntime().exec( new String[] {
-                "java", "-cp", System.getProperty( "java.class.path" ),
-                Inserter.class.getName(), path
-        } );
-        
-        // Let it run for a while and then kill it, and wait for it to die
-        Thread.sleep( 5000 );
-        process.destroy();
-        process.waitFor();
-        
-        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-        assertTrue( db.index().existsForNodes( "myIndex" ) );
-        Index<Node> index = db.index().forNodes( "myIndex" );
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-        {
-            for ( String key : node.getPropertyKeys() )
-            {
-                String value = (String) node.getProperty( key );
-                boolean found = false;
-                for ( Node indexedNode : index.get( key, value ) )
-                {
-                    if ( indexedNode.equals( node ) )
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if ( !found )
-                {
-                    throw new IllegalStateException( node + " has property '" + key + "'='" +
-                            value + "', but not in index" );
-                }
-            }
-        }
-        db.shutdown();
-    }
-  
 }

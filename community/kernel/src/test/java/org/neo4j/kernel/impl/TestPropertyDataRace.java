@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl;
 import java.util.concurrent.CountDownLatch;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.SlowTests;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -52,7 +50,6 @@ public class TestPropertyDataRace
 
     @Test
     @EnabledBreakpoints( { "enable breakpoints", "done" } )
-    @Category(SlowTests.class)
     public void readingMutatorVersusCommittingMutator() throws Exception
     {
         final Node one, two;

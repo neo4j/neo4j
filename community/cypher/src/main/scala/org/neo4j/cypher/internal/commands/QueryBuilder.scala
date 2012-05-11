@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import org.neo4j.cypher.internal.mutation.UpdateAction
+
 class QueryBuilder(startItems: Seq[StartItem]) {
-  var updates = Seq[UpdateCommand]()
+  var updates = Seq[UpdateAction]()
   var matching: Option[Match] = None
   var where: Option[Predicate] = None
   var aggregation: Option[Aggregation] = None
@@ -35,7 +37,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     matching = Some(Match(patterns: _*))
   }
 
-  def updates(cmds: UpdateCommand*): QueryBuilder = store {
+  def updates(cmds: UpdateAction*): QueryBuilder = store {
     updates = cmds
   }
 

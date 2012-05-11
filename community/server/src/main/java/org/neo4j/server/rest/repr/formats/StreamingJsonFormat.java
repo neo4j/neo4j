@@ -133,7 +133,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         {
             return DefaultFormat.validateKeys( JsonHelper.jsonToMap( stripByteOrderMark( input ) ), requiredKeys );
         }
-        catch ( JsonParseException ex )
+        catch ( Exception ex )
         {
             throw new BadInputException( ex );
         }

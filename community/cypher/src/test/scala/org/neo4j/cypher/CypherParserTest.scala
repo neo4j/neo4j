@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands._
+import internal.mutation.{ForeachAction, PropertySetAction, DeleteEntityAction}
 import internal.parser.v1_6.ConsoleCypherParser
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
@@ -32,13 +33,6 @@ import org.hamcrest.CoreMatchers.equalTo
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
     testAll("start s = NODE(1) return s",
-      Query.
-        start(NodeById("s", 1)).
-        returns(ReturnItem(Entity("s"), "s")))
-  }
-
-  @Test def end_with_semicolon_is_not_a_problem() {
-    testFrom_1_8("start s = NODE(1) return s;",
       Query.
         start(NodeById("s", 1)).
         returns(ReturnItem(Entity("s"), "s")))
@@ -1516,7 +1510,7 @@ create a-[r:REL]->b
 
   @Test def delete_node() {
     val secondQ = Query.
-      updates(DeleteEntityCommand(Entity("a"))).
+      updates(DeleteEntityAction(Entity("a"))).
       returns()
 
     val q = Query.
@@ -1529,7 +1523,7 @@ create a-[r:REL]->b
 
   @Test def set_property_on_node() {
     val secondQ = Query.
-      updates(SetProperty(Property("a", "hello"), Literal("world"))).
+      updates(PropertySetAction(Property("a", "hello"), Literal("world"))).
       returns()
 
     val q = Query.
@@ -1542,7 +1536,7 @@ create a-[r:REL]->b
 
   @Test def update_property_with_expression() {
     val secondQ = Query.
-      updates(SetProperty(Property("a", "salary"), Multiply(Property("a", "salary"), Literal(2.0)))).
+      updates(PropertySetAction(Property("a", "salary"), Multiply(Property("a", "salary"), Literal(2.0)))).
       returns()
 
     val q = Query.
@@ -1555,7 +1549,7 @@ create a-[r:REL]->b
 
   @Test def foreach_on_path() {
     val secondQ = Query.
-      updates(Foreach(NodesFunction(Entity("p")), "n", Seq(SetProperty(Property("n", "touched"), Literal(true))))).
+      updates(ForeachAction(NodesFunction(Entity("p")), "n", Seq(PropertySetAction(Property("n", "touched"), Literal(true))))).
       returns()
 
     val q = Query.
@@ -1613,7 +1607,7 @@ create a-[r:REL]->b
 
   @Test def simple_delete_node() {
     val secondQ = Query.
-      updates(DeleteEntityCommand(Entity("a"))).
+      updates(DeleteEntityAction(Entity("a"))).
       returns()
 
     val q = Query.
@@ -1626,7 +1620,7 @@ create a-[r:REL]->b
 
   @Test def simple_set_property_on_node() {
     val secondQ = Query.
-      updates(SetProperty(Property("a", "hello"), Literal("world"))).
+      updates(PropertySetAction(Property("a", "hello"), Literal("world"))).
       returns()
 
     val q = Query.
@@ -1639,7 +1633,7 @@ create a-[r:REL]->b
 
   @Test def simple_update_property_with_expression() {
     val secondQ = Query.
-      updates(SetProperty(Property("a", "salary"), Multiply(Property("a", "salary"), Literal(2.0)))).
+      updates(PropertySetAction(Property("a", "salary"), Multiply(Property("a", "salary"), Literal(2.0)))).
       returns()
 
     val q = Query.
@@ -1652,7 +1646,7 @@ create a-[r:REL]->b
 
   @Test def simple_foreach_on_path() {
     val secondQ = Query.
-      updates(Foreach(NodesFunction(Entity("p")), "n", Seq(SetProperty(Property("n", "touched"), Literal(true))))).
+      updates(ForeachAction(NodesFunction(Entity("p")), "n", Seq(PropertySetAction(Property("n", "touched"), Literal(true))))).
       returns()
 
     val q = Query.
@@ -1673,6 +1667,7 @@ create a-[r:REL]->b
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
+    testQuery(None, query + ";", expectedQuery)
   }
 
   def test_1_6(query: String, expectedQuery: Query) {

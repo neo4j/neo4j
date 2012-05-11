@@ -271,4 +271,10 @@ public class InternalJettyServletRequest extends Request
     {
         return method;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getConnection() != null ? getConnection().getRequestFields() : "no HttpConnection" );
+    }
 }

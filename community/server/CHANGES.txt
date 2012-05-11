@@ -1,5 +1,7 @@
 1.8.M02 (2012-05-10)
 --------------------
+o Support for streaming results for http batch operations.
+o Proper encoding of Index URI key/value pairs.
 o Fixed Swedish character problem in webadmin string properties.
 o Webadmin chart labels have nice formatting now.
 
