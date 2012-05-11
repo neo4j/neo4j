@@ -101,7 +101,7 @@ source=examples/ImdbExampleTest.java
 tag=createRelationships
 ----
 
-Assuming we set the same key-value pairs as properties as well, our example graph looks like this:
+After these operations, our example graph looks like this:
 
 include::movie-and-actor-graph.txt[]
 
@@ -125,9 +125,12 @@ tag=removeNodeFromIndex
 [[indexing-update]]
 == Update ==
 
-IMPORTANT: To update an index entry, old one must be removed and a new one added.
+[IMPORTANT]
+To update an index entry, the old one must be removed and a new one added.
+For details on removing index entries, see <<indexing-remove>>.
 
-Remember that a node or relationship can be associated with any number of key-value pairs in an index, which means that you can index a node or relationship with many key-value pairs that have the same key.
+Remember that a node or relationship can be associated with any number of key-value pairs in an index.
+This means that you can index a node or relationship with many key-value pairs that have the same key.
 In the case where a property value changes and you'd like to update the index, it's not enough to just index the new value - you'll have to remove the old value as well.
 
 Here's a code example for that demonstrates how it's done:
