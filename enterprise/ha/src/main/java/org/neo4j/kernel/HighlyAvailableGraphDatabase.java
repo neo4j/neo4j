@@ -918,8 +918,28 @@ public class HighlyAvailableGraphDatabase
                     newMaster( storeId, new NullPointerException(
                             "master returned from broker" ) );
                 }
-                slaveOperations.receive( broker.getMaster().first().pullUpdates(
-                    slaveOperations.getSlaveContext( -1 ) ) );
+                
+                SlaveContext slaveContext = null;
+                
+                // If this method is called from the outside then we need to tell the caller
+                // that this update wasn't performed due to either a shutdown or an internal restart,
+                // so throw NoMasterException
+                if ( !pullUpdates )
+                    throw new NoMasterException();
+                synchronized ( this )
+                {
+                    // If we got the monitor and pullUpdates is false this means that we've
+                    // just shut down the database. Don't do pull updates then and be done.
+                    if ( !pullUpdates )
+                        return;
+                    slaveContext = slaveOperations.getSlaveContext( -1 );
+                }
+                
+                // The above synchronization only guards for getting the SlaveContext,
+                // but an internal(shutdown) can still happen in the middle of receive.
+                // This is a general problem which should be taken care of in a general
+                // way, not here.
+                slaveOperations.receive( broker.getMaster().first().pullUpdates( slaveContext ) );
             }
         }
         catch ( ZooKeeperException e )
