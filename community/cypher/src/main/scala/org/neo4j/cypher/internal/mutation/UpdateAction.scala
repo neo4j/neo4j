@@ -107,6 +107,18 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def exec(context: ExecutionContext, state: QueryState) = {
     elementToDelete(context) match {
+      case n: Node => delete(n, state)
+      case r: Relationship => delete(r, state)
+      case null =>
+      case p:Path => p.iterator().asScala.foreach( pc => delete(pc, state))
+      case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
+    }
+
+    Stream(context)
+  }
+
+  private def delete(x: PropertyContainer, state: QueryState) {
+    x match {
       case n: Node => {
         state.deletedNodes.increase()
         n.delete()
@@ -115,15 +127,12 @@ case class DeleteEntityAction(elementToDelete: Expression)
         state.deletedRelationships.increase()
         r.delete()
       }
-      case x => throw new CypherTypeException("Expression `" + elementToDelete.toString() + "` yielded `" + x.toString + "`. Don't know how to delete that.")
     }
-
-    Stream(context)
   }
 
   def identifier = None
 
-  def dependencies = elementToDelete.dependencies(MapType())
+  def dependencies = elementToDelete.dependencies(AnyType())
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
 

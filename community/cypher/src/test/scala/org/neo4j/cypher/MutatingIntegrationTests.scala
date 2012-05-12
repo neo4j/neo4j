@@ -363,4 +363,25 @@ foreach(x in range(1,10) :
 )
 return distinct center""")
   }
+
+  @Test
+  def delete_optionals() {
+    createNode()
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
+
+    parseAndExecute("""start n=node(*) match n-[r?]-() delete n,r""")
+    assert(graph.getAllNodes.asScala.size === 0)
+  }
+
+  @Test
+  def delete_path() {
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
+
+    parseAndExecute("""start n=node(1) match p=n-->() delete p""")
+    assert(graph.getAllNodes.asScala.size === 1)
+  }
 }
