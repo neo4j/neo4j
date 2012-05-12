@@ -44,7 +44,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * position and context of the managed object.
      * 
      * The result is a complex security scheme that can easily be implemented in a graph structure, 
-     * supporting permissions overriding, principal and content composition, and does not duplicate data anywhere.
+     * supporting permissions overriding, principal and content composition, without duplicating data anywhere.
      *
      * image::ACL.png[scaledwidth="100%"]
      *
