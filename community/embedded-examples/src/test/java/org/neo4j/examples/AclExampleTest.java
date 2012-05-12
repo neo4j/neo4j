@@ -32,7 +32,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
 {
     
     /**
-     * This example gives a generic overview of an approach to handling ACLs in graphs,
+     * This example gives a generic overview of an approach to handling Access Control Lists (ACLs) in graphs,
      * and a simplified example with concrete queries.
      *
      * == Generic approach ==
@@ -40,7 +40,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * In many scenarios, an application needs to handle security on some form of managed 
      * objects. This example describes one pattern to handle that through use a the graph structure and traversers 
      * that build a full permissions-structure for any managed object with exclude and include overriding 
-     * possibilities. This results in a dynamic construction of Access Control Lists (ACLs) based on the 
+     * possibilities. This results in a dynamic construction of ACLs based on the
      * position and context of the managed object.
      * 
      * The result is a complex security scheme that can easily be implemented in a graph structure, 
