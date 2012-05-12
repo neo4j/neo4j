@@ -36,14 +36,14 @@ abstract class NullInNullOutExpression(argument: Expression) extends Expression 
   }
 }
 
-case class ExtractFunction(iterable: Expression, id: String, expression: Expression) extends NullInNullOutExpression(iterable) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
-    case x: Iterable[Any] => x.map(iterValue => {
+case class ExtractFunction(iterable: Expression, id: String, expression: Expression)
+  extends NullInNullOutExpression(iterable)
+  with IterableSupport
+{
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).map(iterValue => {
       val innerMap = m + (id -> iterValue)
       expression(innerMap)
     }).toList
-    case _ => throw new IterableRequiredException(iterable)
-  }
 
   val identifier = Identifier("extract(" + id + " in " + iterable.identifier.name + " : " + expression.identifier.name + ")", new IterableType(expression.identifier.typ))
 
@@ -118,12 +118,11 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
     relationship.filter(f)
 }
 
-case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inner) {
+case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inner) with IterableSupport {
   def compute(value: Any, m: Map[String, Any]) = value match {
     case path: Path => path.length()
-    case iter: Traversable[_] => iter.toList.length
     case s: String => s.length()
-    case x => throw new IterableRequiredException(inner)
+    case x => makeTraversable(x).toSeq.length
   }
 
   val identifier = Identifier("LENGTH(" + inner.identifier.name + ")", IntegerType())
@@ -160,13 +159,8 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
     inner.filter(f)
 }
 
-case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
-    case path: Path => path.startNode()
-    case iter: Traversable[_] => iter.head
-    case array: Array[_] => array.head
-    case x => throw new IterableRequiredException(collection)
-  }
+case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head
 
   private def myType = collection.identifier.typ match {
     case x: IterableType => x.iteratedType
@@ -185,13 +179,8 @@ case class HeadFunction(collection: Expression) extends NullInNullOutExpression(
     collection.filter(f)
 }
 
-case class LastFunction(collection: Expression) extends NullInNullOutExpression(collection) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
-    case path: Path => path.endNode()
-    case iter: Traversable[_] => iter.last
-    case array: Array[_] => array.last
-    case x => throw new IterableRequiredException(collection)
-  }
+case class LastFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).last
 
   val identifier = Identifier("last(" + collection.identifier.name + ")", ScalarType())
 
@@ -205,13 +194,8 @@ case class LastFunction(collection: Expression) extends NullInNullOutExpression(
     collection.filter(f)
 }
 
-case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
-    case path: Path => path.iterator().asScala.toSeq.tail
-    case iter: Traversable[_] => iter.tail
-    case array: Array[_] => array.tail
-    case x => throw new IterableRequiredException(collection)
-  }
+case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).tail
 
   val identifier = Identifier("tail(" + collection.identifier.name + ")", collection.identifier.typ)
 
@@ -243,17 +227,11 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
     path.filter(f)
 }
 
-case class FilterFunction(collection: Expression, symbol: String, predicate: Predicate) extends NullInNullOutExpression(collection) {
-  def compute(value: Any, m: Map[String, Any]) = {
-    val seq = value match {
-      case path: Path => path.iterator().asScala.toSeq
-      case iter: Traversable[_] => iter.toSeq
-      case array: Array[_] => array.toSeq
-      case x => throw new IterableRequiredException(collection)
-    }
-
-    seq.filter(element => predicate.isMatch(m + (symbol -> element)))
-  }
+case class FilterFunction(collection: Expression, symbol: String, predicate: Predicate)
+  extends NullInNullOutExpression(collection)
+  with IterableSupport
+{
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).filter(element => predicate.isMatch(m + (symbol -> element)))
 
   val identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection.identifier.name, predicate), collection.identifier.typ)
 
