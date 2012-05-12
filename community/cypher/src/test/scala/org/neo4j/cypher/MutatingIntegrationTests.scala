@@ -369,4 +369,25 @@ return distinct center""")
     val result = parseAndExecute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x : i/2) as x""")
     assert(result.toList == List(Map("x" -> List(0.5, 1.0, 1.5))))
   }
+
+  @Test
+  def delete_optionals() {
+    createNode()
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
+
+    parseAndExecute("""start n=node(*) match n-[r?]-() delete n,r""")
+    assert(graph.getAllNodes.asScala.size === 0)
+  }
+
+  @Test
+  def delete_path() {
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
+
+    parseAndExecute("""start n=node(1) match p=n-->() delete p""")
+    assert(graph.getAllNodes.asScala.size === 1)
+  }
 }
