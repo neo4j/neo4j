@@ -90,50 +90,49 @@ public class ImdbExampleTest
             // START SNIPPET: createNodes
             // Actors
             Node reeves = graphDb.createNode();
-            actors.add( reeves, "name", "Keanu Reeves" );
+            reeves.setProperty( "name", "Keanu Reeves" );
+            actors.add( reeves, "name", reeves.getProperty( "name" ) );
             Node bellucci = graphDb.createNode();
-            actors.add( bellucci, "name", "Monica Bellucci" );
-            // multiple values for a field
+            bellucci.setProperty( "name", "Monica Bellucci" );
+            actors.add( bellucci, "name", bellucci.getProperty( "name" ) );
+            // multiple values for a field, in this case for search only
+            // and not stored as a property.
             actors.add( bellucci, "name", "La Bellucci" );
             // Movies
             Node theMatrix = graphDb.createNode();
-            movies.add( theMatrix, "title", "The Matrix" );
-            movies.add( theMatrix, "year", 1999 );
-            Node theMatrixReloaded = graphDb.createNode();
-            movies.add( theMatrixReloaded, "title", "The Matrix Reloaded" );
-            movies.add( theMatrixReloaded, "year", 2003 );
-            Node malena = graphDb.createNode();
-            movies.add( malena, "title", "Malèna" );
-            movies.add( malena, "year", 2000 );
-            // END SNIPPET: createNodes
-
-            reeves.setProperty( "name", "Keanu Reeves" );
-            bellucci.setProperty( "name", "Monica Bellucci" );
             theMatrix.setProperty( "title", "The Matrix" );
             theMatrix.setProperty( "year", 1999 );
+            movies.add( theMatrix, "title", theMatrix.getProperty( "title" ) );
+            movies.add( theMatrix, "year", theMatrix.getProperty( "year" ) );
+            Node theMatrixReloaded = graphDb.createNode();
             theMatrixReloaded.setProperty( "title", "The Matrix Reloaded" );
             theMatrixReloaded.setProperty( "year", 2003 );
+            movies.add( theMatrixReloaded, "title", theMatrixReloaded.getProperty( "title" )  );
+            movies.add( theMatrixReloaded, "year", 2003 );
+            Node malena = graphDb.createNode();
             malena.setProperty( "title", "Malèna" );
             malena.setProperty( "year", 2000 );
+            movies.add( malena, "title", malena.getProperty( "title" ) );
+            movies.add( malena, "year", malena.getProperty( "year" ) );
+            // END SNIPPET: createNodes
 
             // START SNIPPET: createRelationships
             // we need a relationship type
             DynamicRelationshipType ACTS_IN = DynamicRelationshipType.withName( "ACTS_IN" );
             // create relationships
             Relationship role1 = reeves.createRelationshipTo( theMatrix, ACTS_IN );
-            roles.add( role1, "name", "Neo" );
-            Relationship role2 = reeves.createRelationshipTo( theMatrixReloaded, ACTS_IN );
-            roles.add( role2, "name", "Neo" );
-            Relationship role3 = bellucci.createRelationshipTo( theMatrixReloaded, ACTS_IN );
-            roles.add( role3, "name", "Persephone" );
-            Relationship role4 = bellucci.createRelationshipTo( malena, ACTS_IN );
-            roles.add( role4, "name", "Malèna Scordia" );
-            // END SNIPPET: createRelationships
-
             role1.setProperty( "name", "Neo" );
+            roles.add( role1, "name", role1.getProperty( "name" ) );
+            Relationship role2 = reeves.createRelationshipTo( theMatrixReloaded, ACTS_IN );
             role2.setProperty( "name", "Neo" );
+            roles.add( role2, "name", role2.getProperty( "name" ) );
+            Relationship role3 = bellucci.createRelationshipTo( theMatrixReloaded, ACTS_IN );
             role3.setProperty( "name", "Persephone" );
+            roles.add( role3, "name", role3.getProperty( "name" ) );
+            Relationship role4 = bellucci.createRelationshipTo( malena, ACTS_IN );
             role4.setProperty( "name", "Malèna Scordia" );
+            roles.add( role4, "name", role4.getProperty( "name" ) );
+            // END SNIPPET: createRelationships
 
             transaction.success();
         }
@@ -486,7 +485,8 @@ public class ImdbExampleTest
         assertEquals( theMatrix, hits.getSingle() );
 
         // START SNIPPET: defaultOperator
-        QueryContext query = new QueryContext( "title:*Matrix* year:1999" ).defaultOperator( Operator.AND );
+        QueryContext query = new QueryContext( "title:*Matrix* year:1999" )
+                .defaultOperator( Operator.AND );
         hits = movies.query( query );
         // END SNIPPET: defaultOperator
         // with OR the result would be 2 hits
@@ -604,9 +604,10 @@ public class ImdbExampleTest
                 "target/neo4jdb-batchinsert" ) );
         // START SNIPPET: batchInsert
         BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
-        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        BatchInserterIndex actors = indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
+        BatchInserterIndexProvider indexProvider = 
+                new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex actors = 
+                indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
         actors.setCacheCapacity( "name", 100000 );
 
         Map<String, Object> properties = MapUtil.map( "name", "Keanu Reeves" );

@@ -1,4 +1,4 @@
-``Cypher'' is a declarative graph query language that allows for expressive and efficient querying and updating of the
+_Cypher_ is a declarative graph query language that allows for expressive and efficient querying and updating of the
 graph store without having to write traversals through the graph structure in code. Cypher is still growing and
 maturing, and that means that there probably will be breaking syntax changes. It also means that it has not undergone
 the same rigorous performance testing as the other components.
@@ -20,23 +20,23 @@ implementation detail not exposed to the user.
 
 The query language is comprised of several distinct clauses.
 
-* +START+: Starting points in the graph, obtained by element IDs or via index lookups
+* +START+: Starting points in the graph, obtained via index lookups or by element IDs.
 
-* +MATCH+: The graph pattern to match, bound to the starting points in +START+
+* +MATCH+: The graph pattern to match, bound to the starting points in +START+.
 
-* +WHERE+: Filtering criteria
+* +WHERE+: Filtering criteria.
 
-* +RETURN+: What to return
+* +RETURN+: What to return.
 
-* +CREATE+: Creates nodes and relationships
+* +CREATE+: Creates nodes and relationships.
 
-* +DELETE+: Removed nodes, relationships and properties
+* +DELETE+: Removes nodes, relationships and properties.
 
-* +SET+: Set values to properties
+* +SET+: Set values to properties.
 
-* +FOREACH+: Performs updating actions once per element in a list
+* +FOREACH+: Performs updating actions once per element in a list.
 
-* +WITH+: Divides a query into multiple, distinct parts
+* +WITH+: Divides a query into multiple, distinct parts.
 
 
 Let's see three of them in action:

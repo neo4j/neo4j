@@ -83,7 +83,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def relatedNodesByMultipleRelationshipTypes() {
     testQuery(
       title = "Match by multiple relationship types",
-      text = "If multiple types are acceptable, you can specify this by chaining them with the pipe symbol |",
+      text = "If multiple types are acceptable, you can specify this by chaining them with the pipe symbol `|`.",
       queryText = """start n=node(%A%) match (n)-[:BLOCKS|KNOWS]->(x) return x""",
       returns = """All nodes with a +BLOCK+ or +KNOWS+ relationship to A.""",
       assertions = (p) => assertEquals(List(node("C"), node("B")), p.columnAs[Node]("x").toList)
@@ -122,7 +122,7 @@ class MatchTest extends DocumentingTestBase {
       text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, " +
         "like this:",
       queryText = """start a=node(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
-      returns = """The three nodes in the path.""",
+      returns = """The three nodes in the path are returned.""",
       assertions = (p) => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"))), p.toList)
     )
   }
@@ -180,7 +180,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Optional relationship",
       text = "If a relationship is optional, it can be marked with a question mark. This is similar to how a SQL outer join " +
         "works. If the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
-        "anything hanging off an optional relationship, is in turn optional, unless it is connected with a bound node some other " +
+        "anything hanging off an optional relationship, is in turn optional, unless it is connected with a bound node through some other " +
         "path.",
       queryText = """start a=node(%E%) match a-[?]->x return a,x""",
       returns = """A node, and +null+, since the node has no outgoing relationships.""",
@@ -193,7 +193,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Properties on optional elements",
       text = "Returning a property from an optional element that is +null+ will also return +null+.",
       queryText = """start a=node(%E%) match a-[?]->x return x, x.name""",
-      returns = """The element x (`null` in this query), and `null` as it's name.""",
+      returns = """This returns the element x (`null` in this query), and `null` as it's name.""",
       assertions = (p) => assertEquals(List(Map("x" -> null, "x.name" -> null)), p.toList)
     )
   }
@@ -204,7 +204,7 @@ class MatchTest extends DocumentingTestBase {
       text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
         "you need.",
       queryText = """start a=node(%A%) match a-[r?:LOVES]->() return a,r""",
-      returns = """A node, and +null+, since the node has no outgoing `LOVES` relationships.""",
+      returns = """This returns a node, and +null+, since the node has no outgoing `LOVES` relationships.""",
       assertions = (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
     )
   }
@@ -212,7 +212,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def shortestPathBetweenTwoNodes() {
     testQuery(
       title = "Shortest path",
-      text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath`-function, like this:",
+      text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath` function, like this:",
       queryText = """start d=node(%D%), e=node(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
  you write a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
@@ -238,7 +238,7 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=node(%A%)
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",
-      returns = """The four nodes in the paths.""",
+      returns = """This returns the four nodes in the paths.""",
       assertions = p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
     )
   }
@@ -248,7 +248,7 @@ return a,b,c,d""",
       title = "Named path",
       text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
       queryText = """start a=node(%A%) match p = a-->b return p""",
-      returns = """The two paths starting from the first node.""",
+      returns = """This returns the two paths starting from the first node.""",
       assertions = (p) => assertEquals(2, p.toSeq.length)
     )
   }
@@ -259,7 +259,7 @@ return a,b,c,d""",
       text = """When your pattern contains a bound relationship, and that relationship pattern doesn't specify direction,
 Cypher will try to match the relationship where the connected nodes switch sides.""",
       queryText = """start r=rel(0) match a-[r]-b return a,b""",
-      returns = "This returns the two connected nodes, once as the start node, and once as the end node",
+      returns = "This returns the two connected nodes, once as the start node, and once as the end node.",
       assertions = p => assertEquals(2, p.toSeq.length)
     )
   }
@@ -299,7 +299,7 @@ RETURN p"""
     testQuery(
       title = "introduction",
       text = """Pattern matching is one of the pillars of Cypher. The pattern is used to describe the shape of the data that we are
-looking for. Cypher will then try to find patterns in the graph -- these are called matching sub graphs.
+looking for. Cypher will then try to find patterns in the graph -- these are called matching subgraphs.
 
 The description of the pattern is made up of one or more paths, separated by commas. A path is a sequence of nodes and
 relationships that always start and end in nodes. An example path would be:

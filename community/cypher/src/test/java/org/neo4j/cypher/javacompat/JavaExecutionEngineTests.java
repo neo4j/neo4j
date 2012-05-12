@@ -179,7 +179,8 @@ public class JavaExecutionEngineTests
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
-        ExecutionResult result = engine.execute( "start n=node(0,1,2) where n.name = {name} return n", params );
+        ExecutionResult result = 
+                engine.execute( "start n=node(0,1,2) where n.name = {name} return n", params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
         assertEquals( asList( johanNode ), this.<Node>toList( result, "n" ) );
@@ -192,7 +193,8 @@ public class JavaExecutionEngineTests
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "key", "name" );
         params.put( "value", "Michaela" );
-        ExecutionResult result = engine.execute( "start n=node:people({key} = {value}) return n", params );
+        ExecutionResult result = 
+                engine.execute( "start n=node:people({key} = {value}) return n", params );
         // END SNIPPET: exampleWithParametersForIndexKeyAndValue
 
         assertEquals( asList( michaelaNode ), this.<Node>toList( result, "n" ) );
@@ -231,7 +233,8 @@ public class JavaExecutionEngineTests
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        ExecutionResult result = engine.execute( "start n=node(0,1,2) return n.name skip {s} limit {l}", params );
+        ExecutionResult result = 
+                engine.execute( "start n=node(0,1,2) return n.name skip {s} limit {l}", params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -245,7 +248,8 @@ public class JavaExecutionEngineTests
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
-        ExecutionResult result = engine.execute( "start n=node(0,1,2) where n.name =~ {regex} return n.name", params );
+        ExecutionResult result = 
+                engine.execute( "start n=node(0,1,2) where n.name =~ {regex} return n.name", params );
         // END SNIPPET: exampleWithParameterRegularExpression
 
         assertThat( result.columns(), hasItem( "n.name" ) );
