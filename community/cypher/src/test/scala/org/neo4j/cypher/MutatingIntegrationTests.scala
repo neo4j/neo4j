@@ -269,7 +269,7 @@ match p=a-->b-->c
 foreach(n in nodes(p) :
   set n.marked = true
 )
-            """
+    """
 
     parseAndExecute(q)
 
@@ -356,17 +356,11 @@ foreach(n in nodes(p) :
 
   @Test
   def create_node_and_rel_in_foreach() {
-    parseAndExecute( """
+    parseAndExecute("""
 create center
 foreach(x in range(1,10) :
   create leaf1 = {number : x} , center-[:X]->leaf1
 )
 return distinct center""")
-  }
-
-  @Test
-  def extract_on_arrays() {
-    val result = parseAndExecute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x : i/2) as x""")
-    assert(result.toList == List(Map("x" -> List(0.5, 1.0, 1.5))))
   }
 }

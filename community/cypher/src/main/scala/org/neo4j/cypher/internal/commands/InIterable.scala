@@ -26,7 +26,6 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 
 import collection.JavaConverters._
-import org.neo4j.cypher.IterableRequiredException
 
 abstract class InIterable(expression: Expression, symbol: String, closure: Predicate) extends Predicate with IterableSupport {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
