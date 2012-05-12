@@ -38,7 +38,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * == Generic approach ==
      *
      * In many scenarios, an application needs to handle security on some form of managed 
-     * objects. This example describes one pattern to handle that through use a the graph structure and traversers 
+     * objects. This example describes one pattern to handle this through the use of a graph structure and traversers
      * that build a full permissions-structure for any managed object with exclude and include overriding 
      * possibilities. This results in a dynamic construction of ACLs based on the
      * position and context of the managed object.

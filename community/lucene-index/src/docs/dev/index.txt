@@ -477,7 +477,7 @@ classifier=test-sources
 
 The same options that are available during database creation via the configuration can also be set during runtime via the +AutoIndexer+ API.
 
-Gaining access to the +AutoIndexer+ API and adding two +Node+ and one +Relationship properties to auto index is done like so:
+Gaining access to the +AutoIndexer+ API and adding two +Node+ and one +Relationship+ properties to auto index is done like so:
 
 [snippet,java]
 ----
