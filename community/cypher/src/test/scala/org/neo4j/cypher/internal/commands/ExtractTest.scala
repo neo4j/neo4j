@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.commands
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.IterableRequiredException
 
 class ExtractTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
@@ -35,18 +34,6 @@ class ExtractTest extends Assertions {
 
     val extract = ExtractFunction(iterable, "n", expression)
 
-    assert( extract.apply(m) === Seq(1,3,2))
-  }
-
-
-  @Test(expected = classOf[IterableRequiredException]) def requiresIterable() {
-    val l = 12
-    val expression = LengthFunction(Entity("n"))
-    val iterable = Entity("l")
-    val m = Map("l" -> l)
-
-    val extract = ExtractFunction(iterable, "n", expression)
-
-    assert( extract.apply(m) === Seq(1,3,2))
+    assert(extract.apply(m) === Seq(1, 3, 2))
   }
 }

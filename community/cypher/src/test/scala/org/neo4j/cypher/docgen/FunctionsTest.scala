@@ -165,8 +165,8 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) return a.array, tail(a.array)""",
       returns = "The first node in the path",
       assertions = (p) => {
-        val toList = p.columnAs[Array[_]]("tail(a.array)").toList.head
-        assert(toList === Array("two","three"))
+        val toList = p.columnAs[WrappedArray[_]]("tail(a.array)").toList.head.toList
+        assert(toList === List("two","three"))
       })
   }
 

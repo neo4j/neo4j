@@ -40,49 +40,63 @@ abstract class InIterable(expression: Expression, symbol: String, closure: Predi
   }
 
   def dependencies: Seq[Identifier] = expression.dependencies(AnyIterableType()) ++ closure.dependencies.filterNot(_.name == symbol)
+
   def atoms: Seq[Predicate] = Seq(this)
-  def exists(f: (Expression) => Boolean) = expression.exists(f)||closure.exists(f)
-  def name:String
+
+  def exists(f: (Expression) => Boolean) = expression.exists(f) || closure.exists(f)
+
+  def name: String
+
   override def toString = name + "(" + symbol + " in " + expression + " where " + closure + ")"
+
   def containsIsNull = closure.containsIsNull
+
   def filter(f: (Expression) => Boolean): Seq[Expression] = expression.filter(f) ++ closure.filter(f)
 }
 
 case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
+
   def name = "all"
+
   def rewrite(f: (Expression) => Expression) = AllInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class AnyInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
+
   def name = "any"
+
   def rewrite(f: (Expression) => Expression) = AnyInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class NoneInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
+
   def name = "none"
+
   def rewrite(f: (Expression) => Expression) = NoneInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 case class SingleInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
+
   def name = "single"
+
   def rewrite(f: (Expression) => Expression) = SingleInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
 trait IterableSupport {
-  def makeTraversable(z:Any):Traversable[Any] = z match {
-    case x:Seq[_] => x
-    case x:Map[_,_] => Stream(x)
-    case x:JavaMap[_,_] => Stream(x.asScala)
-    case x:Iterable[_] => x.toStream
-    case x:JavaIterable[_] => x.asScala.map {
-      case y:JavaMap[_,_] => y.asScala
+  def makeTraversable(z: Any): Traversable[Any] = z match {
+    case x: Seq[_] => x
+    case x: Array[_] => x
+    case x: Map[_, _] => Stream(x)
+    case x: JavaMap[_, _] => Stream(x.asScala)
+    case x: Iterable[_] => x
+    case x: JavaIterable[_] => x.asScala.map {
+      case y: JavaMap[_, _] => y.asScala
       case y => y
     }
-    case x:Array[_] => x.toStream
     case x => Stream(x)
   }
 }
