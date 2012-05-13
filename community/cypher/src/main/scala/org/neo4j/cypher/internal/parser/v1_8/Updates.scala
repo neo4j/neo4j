@@ -48,7 +48,7 @@ trait Updates extends Base with Expressions with StartClause {
       var start = head
       val links = tails.map {
         case l ~ "-[" ~ rel ~ ":" ~ typ ~ properties ~ "]-" ~ r ~ end => {
-          val t = RelateLink(start, end, (namer.name(rel), properties), typ, direction(l, r))
+          val t = RelateLink(NamedExpectation(start._1,start._2), NamedExpectation(end._1,end._2), NamedExpectation(namer.name(rel), properties), typ, direction(l, r))
           start = end
           t
         }

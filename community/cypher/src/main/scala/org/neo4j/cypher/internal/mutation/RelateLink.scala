@@ -27,13 +27,24 @@ import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.{RelatePathNotUnique, CypherTypeException}
 
+case class NamedExpectation(name : String, properties : Map[String,Expression]) {
+  def this(name : String) = this(name, Map.empty)
+  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = {
+    properties.forall {
+      case (k, exp) => {
+        pc.hasProperty(k) && exp(ctx) == pc.getProperty(k)
+      }
+    }
+  }
+}
 
 object RelateLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): RelateLink =
-    new RelateLink((start, Map.empty), (end, Map.empty), (relName, Map.empty), relType, dir)
+    new RelateLink(NamedExpectation(start, Map.empty), NamedExpectation(end, Map.empty), NamedExpectation(relName, Map.empty), relType, dir)
 }
 
-case class RelateLink(start: (String, Map[String, Expression]), end: (String, Map[String, Expression]), rel: (String, Map[String, Expression]), relType: String, dir: Direction)
+
+case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions {
   lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
@@ -65,7 +76,7 @@ case class RelateLink(start: (String, Map[String, Expression]), end: (String, Ma
   private def twoNodes(startNode: Node, endNode: Node, ctx: ExecutionContext, state: QueryState): RelateResult = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.
       filter(r => {
-      r.getOtherNode(startNode) == endNode && compareWithExpectations(r, ctx, rel.properties)
+      r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, ctx)
     }).toList
 
     rels match {
@@ -78,14 +89,10 @@ case class RelateLink(start: (String, Map[String, Expression]), end: (String, Ma
   // When only one node exists in the context, we'll traverse all the relationships of that node
   // and try to find a matching node/rel. If matches are found, they are returned. If nothing is
   // found, we'll create it and return it
-  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: (String, Map[String, Expression])): RelateResult = {
+  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: NamedExpectation): RelateResult = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.filter(r => {
-      val matchingRelationship = compareWithExpectations(r, ctx, rel.properties)
-      if (!matchingRelationship)
-        false
-      else
-        compareWithExpectations(r.getOtherNode(startNode), ctx, end.properties)
-    })
+      rel.compareWithExpectations(r, ctx) && end.compareWithExpectations(r.getOtherNode(startNode), ctx)
+    }).toList
 
     rels match {
       case List() => Update(createUpdateActions(dir, startNode, end): _*)
@@ -95,7 +102,7 @@ case class RelateLink(start: (String, Map[String, Expression]), end: (String, Ma
   }
 
 
-  private def createUpdateActions(dir: Direction, startNode: Node, end: (String, Map[String, Expression])): Seq[UpdateWrapper] = {
+  private def createUpdateActions(dir: Direction, startNode: Node, end: NamedExpectation): Seq[UpdateWrapper] = {
     val createRel = if (dir == Direction.OUTGOING) {
       CreateRelationshipStartItem(rel.name, Literal(startNode), Entity(end.name), relType, rel.properties)
     } else {
@@ -106,18 +113,6 @@ case class RelateLink(start: (String, Map[String, Expression]), end: (String, Ma
     val nodeCreate = UpdateWrapper(Seq(), CreateNodeStartItem(end.name, end.properties))
 
     Seq(nodeCreate, relUpdate)
-  }
-
-  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext, properties: Map[String, Expression]): Boolean = {
-    properties.forall {
-      case (k, exp) => {
-        if (!pc.hasProperty(k)) {
-          false
-        } else {
-          exp(ctx) == pc.getProperty(k)
-        }
-      }
-    }
   }
 
   private def getNode(context: ExecutionContext, key: String): Option[Node] = if (key.startsWith("  UNAMED")) {
@@ -132,21 +127,11 @@ case class RelateLink(start: (String, Map[String, Expression]), end: (String, Ma
   def dependencies = (propDependencies(start.properties) ++ propDependencies(end.properties) ++ propDependencies(rel.properties)).distinct
 
   def rewrite(f: (Expression) => Expression): RelateLink = {
-    val s: (String, Map[String, Expression]) = (start.name, rewrite(start.properties, f))
-    val e: (String, Map[String, Expression]) = (end.name, rewrite(end.properties, f))
-    val r: (String, Map[String, Expression]) = (rel.name, rewrite(rel.properties, f))
+    val s = NamedExpectation(start.name, rewrite(start.properties, f))
+    val e = NamedExpectation(end.name, rewrite(end.properties, f))
+    val r = NamedExpectation(rel.name, rewrite(rel.properties, f))
     RelateLink(s, e, r, relType, dir)
   }
 
   def filter(f: (Expression) => Boolean) = Seq.empty
-
-  //A little implicit magic to make handing these tuples a little easier
-  implicit def foo2bar(x: (String, Map[String, Expression])): A = new A(x)
-
-  class A(inner: (String, Map[String, Expression])) {
-    def name = inner._1
-
-    def properties = inner._2
-  }
-
 }

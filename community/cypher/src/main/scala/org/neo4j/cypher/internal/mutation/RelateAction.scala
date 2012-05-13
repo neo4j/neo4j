@@ -47,7 +47,7 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
       } else if (updateCommands.nonEmpty) {
         ctx = runUpdateCommands(updateCommands, ctx, state) //We could not move forward by traversing - let's build the road
       } else {
-        throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to hadle.")
+        throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
       }
     }
 
@@ -59,7 +59,7 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
       //We can only go forward following a unique path. Fail.
       throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     } else {
-      oldContext.copy(oldContext.m ++ nextSteps.toMap)
+      oldContext.newWith(nextSteps)
     }
   }
 

@@ -275,7 +275,7 @@ FOREACH(name in ['a','b','c'] :
   }
 
   @Test
-  def two_outoing_parts() {
+  def two_outgoing_parts() {
     val a = createNode()
     val b1 = createNode()
     val b2 = createNode()

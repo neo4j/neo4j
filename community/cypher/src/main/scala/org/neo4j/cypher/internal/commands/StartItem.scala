@@ -74,7 +74,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
       state.createdNodes.increase()
       setProperties(node, props, context, state)
 
-      Stream(context.copy(m = context.m ++ Map(key -> node)))
+      Stream(context.newWith(key -> node))
     }
   }
 

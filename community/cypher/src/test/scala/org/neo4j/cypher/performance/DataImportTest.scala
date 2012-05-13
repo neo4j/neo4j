@@ -29,7 +29,7 @@ import org.neo4j.graphdb.index.BatchInserterIndex
 import scala.io.Source.fromFile
 import org.junit.{Ignore, Test}
 
-class xDataImportTest extends Assertions {
+class DataImportTest extends Assertions {
 
   val CATEGORY = DynamicRelationshipType.withName("category")
   val RATING = DynamicRelationshipType.withName("rating")

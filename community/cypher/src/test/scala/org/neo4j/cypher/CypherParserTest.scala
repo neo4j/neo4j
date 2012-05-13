@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands._
-import internal.mutation.{RelateLink, ForeachAction, PropertySetAction, DeleteEntityAction}
+import internal.mutation._
 import internal.parser.v1_6.ConsoleCypherParser
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
@@ -1718,7 +1718,7 @@ create a-[r:REL]->b
   @Test def relate_with_initial_values_for_node() {
     val secondQ = Query.
       relate(
-      RelateLink(name("a"), ("b", Map[String, Expression]("name" -> Literal("Andres"))), name("  UNNAMED1"), "X", Direction.OUTGOING)).
+      RelateLink(new NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), new NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
@@ -1731,7 +1731,7 @@ create a-[r:REL]->b
   @Test def relate_with_initial_values_for_rel() {
     val secondQ = Query.
       relate(
-      RelateLink(name("a"), name("b"), ("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
+      RelateLink(new NamedExpectation("a"), new NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
@@ -1755,8 +1755,6 @@ create a-[r:REL]->b
         returns(AllIdentifiers())
     )
   }
-
-  private def name(x: String) = (x, Map[String, Expression]())
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)

@@ -1,7 +1,7 @@
 1.8.M03 (not yet released)
 --------------------
 o Added RELATE
-o Fixes issue #512, #506, #514
+o Fixes issues #512, #506, #514, #508
 
 1.8.M02 (2012-05-11)
 --------------------
