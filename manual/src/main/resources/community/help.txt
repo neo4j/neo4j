@@ -10,7 +10,7 @@ To get information on upcoming Neo4j events, have a look here:
 
 Get help from the Neo4j open source community; here are some starting points.
 
-* http://neo4j.org/forums/[Forum / Mailing list (searchable)], http://www.mail-archive.com/user@lists.neo4j.org/info.html[archive], http://neo4j.org/#SubscribeForm[sign up].
+* http://neo4j.org/forums/[Forum / Mailing list (searchable)], http://www.mail-archive.com/user@lists.neo4j.org/info.html[archive].
 * Twitter: http://twitter.com/neo4j
 * IRC channel: irc://irc.freenode.net/neo4j http://webchat.freenode.net/?randomnick=1&channels=neo4j[web chat].
 
