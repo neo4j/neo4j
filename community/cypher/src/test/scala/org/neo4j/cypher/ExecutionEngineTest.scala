@@ -1932,4 +1932,12 @@ RETURN x0.name?
     assert(parseAndExecute(q).toList === List(Map("x"->null)))
   }
 
+  @Test def issue_508() {
+    createNode()
+
+    val q = "start n=node(0) set n.x=[1,2,3] return length(n.x)"
+
+    assert(parseAndExecute(q).toList === List(Map("length(n.x)"->3)))
+  }
+
 }
