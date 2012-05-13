@@ -13,6 +13,7 @@ together with whatever dependencies it needs
 and specifically docbook, w3m, fop and graphviz.
 
 http://maven.apache.org/[Apache Maven] together with http://www.gnu.org/software/make/[Make] are used to unpack the pieces of the manual and to execute asciidoc on them.
+Note that running parallel jobs with Make (-j option) is not supported.
 
 To build the documentation, use: +
 `mvn clean install`
