@@ -22,4 +22,4 @@ tag=setup
 ----
 
 [TIP]
-The source code of the example above is found https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/osgi/[here].
+The source code of the example above is found at https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/osgi/Neo4jActivator.java[Neo4jActivator.java].
