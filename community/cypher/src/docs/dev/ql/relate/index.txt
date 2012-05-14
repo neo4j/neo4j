@@ -9,7 +9,6 @@ found an exception will be thrown.
 
 :leveloffset: 2
 
-include::create-single-node.txt[]
 include::create-relationship-if-it-is-missing.txt[]
 include::create-node-if-missing.txt[]
 include::create-nodes-with-values.txt[]
