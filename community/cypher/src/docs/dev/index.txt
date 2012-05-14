@@ -70,6 +70,10 @@ include::ql/set/index.txt[]
 
 :leveloffset: 2
 
+include::ql/relate/index.txt[]
+
+:leveloffset: 2
+
 include::ql/foreach/index.txt[]
 
 :leveloffset: 2
