@@ -218,13 +218,20 @@ public interface ProgressIndicator
         private long position;
         private long lastStep;
         private final String doneMessage;
+        private final PrintStream out;
 
         public UnknownEndProgress( long stepSize, String doneMessage )
         {
-            this.stepSize = stepSize;
-            this.doneMessage = doneMessage;
+            this(stepSize, doneMessage, new PrintStream(System.out));
         }
         
+        public UnknownEndProgress(long stepSize, String doneMessage, PrintStream out)
+        {
+            this.stepSize = stepSize;
+            this.doneMessage = doneMessage;
+            this.out = out;
+        }
+
         @Override
         public void update( boolean incremental, long value )
         {
@@ -232,8 +239,8 @@ public interface ProgressIndicator
             long step = position/stepSize;
             if ( lastStep != step )
             {
-                if ( lastStep > 0 && lastStep % 30 == 0 ) System.out.println();
-                System.out.print( "." );
+                if ( lastStep > 0 && lastStep % 30 == 0 ) out.println();
+                out.print( "." );
             }
             lastStep = step;
         }
@@ -259,8 +266,8 @@ public interface ProgressIndicator
         @Override
         public void done( long totalProgress )
         {
-            if ( lastStep > 0 ) System.out.println();
-            System.out.println( "[" + totalProgress + " " + doneMessage + "]" );
+            if ( lastStep > 0 ) out.println();
+            out.println( "[" + totalProgress + " " + doneMessage + "]" );
         }
     }
 }
