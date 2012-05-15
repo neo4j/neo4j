@@ -25,10 +25,8 @@ import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -41,7 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.StreamConsumer;
+import org.neo4j.test.ProcessStreamHandler;
 
 public class TestBackupToolEmbedded
 {
@@ -175,24 +173,10 @@ public class TestBackupToolEmbedded
         allArgs.addAll( Arrays.asList( args ) );
 
         Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
-        List<Thread> threads = new LinkedList<Thread>();
-        launchStreamConsumers(threads, p);
-
+        ProcessStreamHandler consumer = new ProcessStreamHandler( p, false );
+        consumer.launch();
         int toReturn = p.waitFor();
-        for (Thread t : threads)
-            t.join();
+        consumer.done();
         return toReturn;
-    }
-
-    private static void launchStreamConsumers( List<Thread> join, Process p )
-    {
-        InputStream outStr = p.getInputStream();
-        InputStream errStr = p.getErrorStream();
-        Thread out = new Thread( new StreamConsumer( outStr, System.out ) );
-        join.add( out );
-        Thread err = new Thread( new StreamConsumer( errStr, System.err ) );
-        join.add( err );
-        out.start();
-        err.start();
     }
 }
