@@ -161,6 +161,9 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
 case class Literal(v: Any) extends Expression {
   def compute(m: Map[String, Any]) = v
+
+  override def apply(m: Map[String, Any]): Any = compute(m)
+
   val identifier = Identifier(name, AnyType.fromJava(v))
   private def name = v match {
     case null => "null"
