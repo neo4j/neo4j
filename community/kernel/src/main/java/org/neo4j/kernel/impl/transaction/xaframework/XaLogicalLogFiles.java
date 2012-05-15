@@ -30,8 +30,8 @@ import java.nio.channels.FileChannel;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 /**
- * Helps determine what state a set of logical log files are
- * in, used to decide what logical log to open.
+ * Used to figure out what logical log file to open when the database
+ * starts up.
  */
 public class XaLogicalLogFiles {
 
