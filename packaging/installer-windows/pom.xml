@@ -26,7 +26,7 @@
 
   <properties>
     <short-name>installer-windows</short-name>
-    <neo4j.version>1.7</neo4j.version>
+    <neo4j.version>1.7.1-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>
@@ -107,7 +107,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.7</version>
+        <version>1.7.1-SNAPSHOT</version>
         <executions>
           <execution>
             <id>build-installers</id>
