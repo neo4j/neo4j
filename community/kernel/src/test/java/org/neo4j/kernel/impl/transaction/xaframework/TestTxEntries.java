@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import java.io.InputStream;
 import java.util.Random;
 
 import javax.transaction.xa.Xid;
@@ -31,7 +30,7 @@ import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.test.StreamConsumer;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 public class TestTxEntries
@@ -57,35 +56,30 @@ public class TestTxEntries
                 new String[] { "java", "-cp",
                         System.getProperty( "java.class.path" ),
                         RollbackUnclean.class.getName(), storeDir } );
-        InputStream stdout = process.getInputStream();
-        InputStream stderr = process.getErrorStream();
-        Thread out = new Thread( new StreamConsumer( stdout, System.out ) );
-        Thread err = new Thread( new StreamConsumer( stderr, System.err ) );
-        out.start();
-        err.start();
-        out.join();
-        err.join();
+        ProcessStreamHandler handler = new ProcessStreamHandler( process, false );
+        handler.launch();
         int exit = process.waitFor();
+        handler.done();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
         new EmbeddedGraphDatabase( storeDir ).shutdown();
     }
-    
+
     @Test
     public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
     {
         // Positive Xid hashcode
         assertorrectChecksumEquality( randomXid( Boolean.TRUE ) );
-        
+
         // Negative Xid hashcode
         assertorrectChecksumEquality( randomXid( Boolean.FALSE ) );
     }
 
     private void assertorrectChecksumEquality( Xid refXid )
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime ); 
+        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime );
         assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime ) );
-        
+
         // Different Xids
         assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ) );
 

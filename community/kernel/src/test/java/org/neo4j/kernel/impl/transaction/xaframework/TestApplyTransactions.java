@@ -25,18 +25,16 @@ import java.io.File;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
 
 public class TestApplyTransactions
 {
     @Test
     public void testCommittedTransactionReceivedAreForcedToLog() throws Exception
     {
-        File baseStoreDir = TargetDirectory.forTest( TestApplyTransactions.class ).directory(
-                "testCommittedTransactionReceivedAreForcedToLog", true );
+        File baseStoreDir = new File( new File( "test-data" ), "test-apply-transaction" );
         Process process = Runtime.getRuntime().exec(
                 new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                         TestApplyTransactions.class.getName(), baseStoreDir.getAbsolutePath() } );
@@ -48,7 +46,8 @@ public class TestApplyTransactions
          */
         File destStoreDir = new File( baseStoreDir, "destination" );
         EmbeddedGraphDatabase dest = new EmbeddedGraphDatabase( destStoreDir.getAbsolutePath() );
-        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource destNeoDataSource = dest.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                Config.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) destNeoDataSource.getLastCommittedTxId();
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
@@ -69,7 +68,7 @@ public class TestApplyTransactions
         origin.createNode();
         tx.success();
         tx.finish();
-        XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
+        XaDataSource originNeoDataSource = origin.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
                 Config.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();
         System.out.println( "Xtracted tx id " + latestTxId );
@@ -77,7 +76,8 @@ public class TestApplyTransactions
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 
         EmbeddedGraphDatabase dest = new EmbeddedGraphDatabase( destStoreDir.getAbsolutePath() );
-        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource destNeoDataSource = dest.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                Config.DEFAULT_DATA_SOURCE_NAME );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
 
         origin.shutdown();

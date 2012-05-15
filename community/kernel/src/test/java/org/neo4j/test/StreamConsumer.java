@@ -30,7 +30,6 @@ import java.io.Writer;
 /**
  * A simple Runnable that is meant to consume the output and error streams of a
  * detached process, for debugging purposes.
- *
  */
 public class StreamConsumer implements Runnable
 {
@@ -39,9 +38,11 @@ public class StreamConsumer implements Runnable
     private final Writer out;
 
     private static final int BUFFER_SIZE = 32;
+    private boolean quiet;
 
-    public StreamConsumer( InputStream in, OutputStream out )
+    public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
     {
+        this.quiet = quiet;
         this.in = new InputStreamReader( in );
         this.out = new OutputStreamWriter( out );
     }
@@ -55,7 +56,7 @@ public class StreamConsumer implements Runnable
             int count;
             while ( ( count = in.read( cbuf, 0, BUFFER_SIZE ) ) >= 0 )
             {
-                out.write( cbuf, 0, count );
+                if ( !quiet ) out.write( cbuf, 0, count );
             }
             out.flush();
         }
