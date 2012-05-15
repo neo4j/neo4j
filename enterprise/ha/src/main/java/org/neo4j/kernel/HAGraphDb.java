@@ -936,10 +936,37 @@ public class HAGraphDb extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Response<Pair<Integer, Long>> response = master.first().getMasterIdForCommittedTx(
-                myLastCommittedTx, getStoreId( newDb ) );
-        Pair<Integer, Long> mastersMaster = response.response();
-        response.close();
+        Response<Pair<Integer, Long>> response = null;
+        Pair<Integer, Long> mastersMaster;
+        try
+        {
+            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, getStoreId( newDb ) );
+            mastersMaster = response.response();
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() instanceof NoSuchLogVersionException )
+            {
+                /*
+                * This means the master was unable to find a log entry for the txid we just asked. This
+                * probably means the thing we asked for is too old or too new. Anyway, since it doesn't
+                * have the tx it is better if we just throw our store away and ask for a new copy. Next
+                * time around it shouldn't have to even pass from here.
+                */
+                throw new BranchedDataException( "Maybe not branched data, but it could solve it", e.getCause() );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        finally
+        {
+            if ( response != null )
+            {
+                response.close();
+            }
+        }
 
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
             && !myMaster.equals( mastersMaster ) )
