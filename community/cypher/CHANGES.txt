@@ -1,6 +1,6 @@
 <NOT YET RELEASED>
 ----------------
-o Fixes issue #432
+o Fixes issue #432, #523
 
 1.7 (2012-04-18)
 ----------------
