@@ -33,7 +33,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
   def create_a_single_node() {
     val before = graph.getAllNodes.asScala.size
 
-    val result = parseAndExecute("create a = {}")
+    val result = parseAndExecute("create a")
 
     assertStats(result, nodesCreated = 1)
     assert(graph.getAllNodes.asScala.size === before + 1)
@@ -44,7 +44,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
   def create_a_single_node_with_props_and_return_it() {
     val before = graph.getAllNodes.asScala.size
 
-    val result = parseAndExecute("create a = {name : 'Andres'} return a")
+    val result = parseAndExecute("create (a {name : 'Andres'}) return a")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
     assert(graph.getAllNodes.asScala.size === before + 1)
@@ -61,7 +61,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
   def start_with_a_node_and_create_a_new_node_with_the_same_properties() {
     createNode("age" -> 15)
 
-    val result = parseAndExecute("start a = node(1) with a create b = {age : a.age * 2} return b")
+    val result = parseAndExecute("start a = node(1) with a create (b {age : a.age * 2}) return b")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
 
@@ -73,14 +73,14 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
 
   @Test
   def create_two_nodes_and_a_relationship_between_them() {
-    val result = parseAndExecute("create a = {}, b = {}, a-[r:REL]->b")
+    val result = parseAndExecute("create a, b, a-[r:REL]->b")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
   @Test
   def create_one_node_and_dumpToString() {
-    val result = parseAndExecute("create a = {name:'Cypher'}")
+    val result = parseAndExecute("create (a {name:'Cypher'})")
 
     assertStats(result,
       nodesCreated = 1,
@@ -135,7 +135,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
     val b = createNode()
     val c = createNode()
 
-    val result = parseAndExecute("create n = {} with n start x = node(1,2,3) create n-[:REL]->x")
+    val result = parseAndExecute("create n with n start x = node(1,2,3) create n-[:REL]->x")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -174,7 +174,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
     createNode("Michael")
     createNode("Peter")
 
-    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create new = {name : names}")
+    val result = parseAndExecute("start n=node(1,2,3) with collect(n.name) as names create ({name : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -187,7 +187,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
   def set_a_property_to_an_empty_collection() {
     createNode("Andres")
 
-    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create new = {x : names}")
+    val result = parseAndExecute("start n=node(1) with filter(x in collect(n.name) : x = 12) as names create ({x : names})")
     assertStats(result,
       propertiesSet = 1,
       nodesCreated = 1
@@ -198,7 +198,7 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
 
   @Test
   def create_node_from_map_values() {
-    parseAndExecute("create n = {a} return n", "a" -> Map("name" -> "Andres", "age" -> 66))
+    parseAndExecute("create (n {a}) return n", "a" -> Map("name" -> "Andres", "age" -> 66))
     val n = graph.createdNodes.dequeue()
     assert(n.getProperty("name") === "Andres")
     assert(n.getProperty("age") === 66)
@@ -274,7 +274,7 @@ foreach(n in nodes(p) :
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = parseAndExecute("create n = {params}", "params" -> maps)
+    val result = parseAndExecute("create ({params})", "params" -> maps)
 
     assertStats(result,
       nodesCreated = 3,
@@ -289,7 +289,7 @@ foreach(n in nodes(p) :
       Map("name" -> "Michael"),
       Map("name" -> "Peter"))
 
-    val result = parseAndExecute("create n = {params} return n", "params" -> maps).toList
+    val result = parseAndExecute("create (n {params}) return n", "params" -> maps).toList
     assert(result.size === 3)
   }
 
@@ -304,7 +304,7 @@ foreach(n in nodes(p) :
       Map("name" -> "Michael"),
       Map("name" -> "Peter"))
 
-    intercept[ParameterWrongTypeException](parseAndExecute("create a = {params1}, b = {params2}", "params1" -> maps1, "params2" -> maps2))
+    intercept[ParameterWrongTypeException](parseAndExecute("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2))
   }
 
   @Test
@@ -318,7 +318,7 @@ foreach(n in nodes(p) :
     relate(root, b)
     relate(root, c)
 
-    parseAndExecute("start root=node(1) match root-->other create new={name:other.name}, root-[:REL]->new")
+    parseAndExecute("start root=node(1) match root-->other create (new {name:other.name}), root-[:REL]->new")
 
     val result = parseAndExecute("start root=node(1) match root-->other return other.name order by other.name").columnAs[String]("other.name").toList
     assert(result === List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
@@ -326,10 +326,10 @@ foreach(n in nodes(p) :
 
   @Test
   def create_node_and_rel_in_foreach() {
-    parseAndExecute( """
+    parseAndExecute("""
 create center
 foreach(x in range(1,10) :
-  create leaf1 = {number : x} , center-[:X]->leaf1
+  create (leaf1 {number : x}) , center-[:X]->leaf1
 )
 return distinct center""")
   }

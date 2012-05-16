@@ -104,7 +104,7 @@ trait Expressions extends Base {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
   }
 
-  def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(comaList(expression)) ^^ {
+  def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(commaList(expression)) ^^ {
     case expressions => CoalesceFunction(expressions: _*)
   }
 
@@ -114,7 +114,7 @@ trait Expressions extends Base {
 
   def function: Parser[Expression] = Parser {
     case in => {
-      val inner = identity ~ parens(comaList(expression | entity))
+      val inner = identity ~ parens(commaList(expression | entity))
 
       inner(in) match {
 

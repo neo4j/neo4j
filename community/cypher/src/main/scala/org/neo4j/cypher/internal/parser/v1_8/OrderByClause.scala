@@ -35,7 +35,7 @@ trait OrderByClause extends Base with Expressions  {
   def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
 
   def order: Parser[Sort] = 
-    (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }
+    (ignoreCase("order by") ~> commaList(sortItem) ^^ { case items => Sort(items:_*) }
       | ignoreCase("order") ~> failure("expected by"))
 }
 

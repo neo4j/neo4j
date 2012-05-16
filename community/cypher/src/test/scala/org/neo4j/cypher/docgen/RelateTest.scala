@@ -72,4 +72,13 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
         "name it.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
   }
+
+  @Test def commad_separated_pattern() {
+    testQuery(
+      title = "Describe complex pattern",
+      text = "The pattern described by +RELATE+ can be separated by commas, just like in +MATCH+ and +CREATE+",
+      queryText = "start root=node(%root%) relate root-[:X]->x, root-[:Y]->x return x",
+      returns = "This example pattern uses two paths, separated by a comma.",
+      assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
+  }
 }

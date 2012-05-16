@@ -48,7 +48,7 @@ abstract class Base extends JavaTokenParsers {
     case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong if we get here.")
   }
 
-  def comaList[T](inner: Parser[T]): Parser[List[T]] =
+  def commaList[T](inner: Parser[T]): Parser[List[T]] =
     rep1sep(inner, ",") |
       rep1sep(inner, ",") ~> opt(",") ~> failure("trailing coma")
 

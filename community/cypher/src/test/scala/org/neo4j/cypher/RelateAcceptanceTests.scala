@@ -290,7 +290,7 @@ FOREACH(name in ['a','b','c'] :
     val a = createNode()
 
     val result = parseAndExecute("""START root=node(1)
-      CREATE value = { year:2012, month:5, day:11 }
+      CREATE (value {year:2012, month:5, day:11})
       WITH root,value
       RELATE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
     return value;""")
@@ -310,7 +310,7 @@ FOREACH(name in ['a','b','c'] :
     assertStats(result, nodesCreated = 4, relationshipsCreated = 4, propertiesSet = 6)
 
     val result2 = parseAndExecute("""START root=node(1)
-      CREATE value = { year:2012, month:5, day:12 }
+      CREATE (value { year:2012, month:5, day:12 })
       WITH root,value
       RELATE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
     return value;""")

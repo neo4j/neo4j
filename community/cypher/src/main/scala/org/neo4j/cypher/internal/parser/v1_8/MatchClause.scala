@@ -30,7 +30,7 @@ trait MatchClause extends Base with Expressions {
     correctMatch |
   ignoreCase("match") ~> failure("invalid pattern")
 
-  def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
+  def correctMatch = ignoreCase("match") ~> commaList(path) ^^ {
     case matching => {
       val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
       val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])

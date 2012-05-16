@@ -41,7 +41,7 @@ class EagerVsLazyTests extends Assertions {
     var created = false
     graph.createNode_Do(() => created = true)
 
-    execute("create a = {}")
+    execute("create ({})")
 
     assertTrue("This should be eager", created)
   }

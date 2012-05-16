@@ -1371,7 +1371,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Entity("a"), "a"))
 
 
-    testFrom_1_8("start a = node(1) with a create b = {age : a.age * 2} return b", q)
+    testFrom_1_8("start a = node(1) with a create (b {age : a.age * 2}) return b", q)
   }
 
   @Test def variable_length_path_with_iterable_name() {
@@ -1408,7 +1408,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_property() {
-    testFrom_1_8("create a = {name : 'Andres'}",
+    testFrom_1_8("create (a {name : 'Andres'})",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
         returns()
@@ -1416,7 +1416,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_property_and_return_it() {
-    testFrom_1_8("create a = {name : 'Andres'} return a",
+    testFrom_1_8("create (a {name : 'Andres'}) return a",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
         returns (ReturnItem(Entity("a"), "a"))
@@ -1424,7 +1424,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_two_nodes_with_a_property_and_return_it() {
-    testFrom_1_8("create a = {name : 'Andres'}, b return a,b",
+    testFrom_1_8("create (a {name : 'Andres'}), b return a,b",
       Query.
         start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))), CreateNodeStartItem("b", Map()))
         returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"))
@@ -1432,7 +1432,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_from_map_expression() {
-    testFrom_1_8("create a = {param}",
+    testFrom_1_8("create (a {param})",
       Query.
         start(CreateNodeStartItem("a", Map("*" -> ParameterExpression("param"))))
         returns()
@@ -1572,7 +1572,7 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a = node(1) create b = {age : a.age * 2} return b", q)
+    testFrom_1_8("start a = node(1) create (b {age : a.age * 2}) return b", q)
   }
 
   @Test def simple_start_with_two_nodes_and_create_relationship() {
@@ -1748,7 +1748,7 @@ create a-[r:REL]->b
     ).returns()
 
     testFrom_1_8(
-      "create root foreach(x in [1,2,3] : create a={number:x})",
+      "create root foreach(x in [1,2,3] : create (a {number:x}))",
       Query.
         start(CreateNodeStartItem("root", Map.empty)).
         tail(q2).

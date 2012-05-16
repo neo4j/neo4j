@@ -268,7 +268,7 @@ public class JavaExecutionEngineTests
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "props", props );
-        engine.execute( "create n = {props}", params );
+        engine.execute( "create ({props})", params );
         // END SNIPPET: create_node_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
@@ -290,7 +290,7 @@ public class JavaExecutionEngineTests
         Map<String, Object> params = new HashMap<String, Object>();
         List<Map<String, Object>> maps = Arrays.asList(n1, n2);
         params.put( "props", maps);
-        engine.execute("create n = {props} return n", params);
+        engine.execute("create (n {props}) return n", params);
         // END SNIPPET: create_multiple_nodes_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );

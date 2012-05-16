@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.mutation._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.{Expression, Entity, Property}
+import org.neo4j.cypher.internal.commands.{Entity, Property}
 
-trait Updates extends Base with Expressions with StartClause {
+trait Updates extends Base with Expressions with StartClause with ParserPattern {
   def updates: Parser[Seq[UpdateAction]] = rep(delete | set | foreach | relate) ^^ (cmds => cmds.flatten)
 
   def foreach: Parser[Seq[UpdateAction]] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
@@ -34,48 +33,27 @@ trait Updates extends Base with Expressions with StartClause {
     }
   }
 
-  def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> comaList(expression) ^^ {
+  def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {
     case expressions => expressions.map {
       case Property(entity, property) => DeletePropertyAction(Entity(entity), property)
       case x => DeleteEntityAction(x)
     }
   }
 
-  def set: Parser[Seq[UpdateAction]] = ignoreCase("set") ~> comaList(propertySet)
-
-  def relate: Parser[Seq[UpdateAction]] = ignoreCase("relate") ~> node ~ rep1(tail) ^^ {
-    case head ~ tails => {
-      var start = head
-      val links = tails.map {
-        case l ~ "-[" ~ rel ~ ":" ~ typ ~ properties ~ "]-" ~ r ~ end => {
-          val t = RelateLink(NamedExpectation(start._1,start._2), NamedExpectation(end._1,end._2), NamedExpectation(namer.name(rel), properties), typ, direction(l, r))
-          start = end
-          t
-        }
-      }
-
-      Seq(RelateAction(links:_*))
-    }
+  private def translate(abstractPattern: AbstractPattern): Option[RelateLink] = abstractPattern match {
+    case ParsedRelation(Entity(name), props, ParsedEntity(Entity(startName), startProps), ParsedEntity(Entity(endName), endProps), typ, dir) => Some(RelateLink(
+      start = NamedExpectation(startName, startProps),
+      end = NamedExpectation(endName, endProps),
+      rel = NamedExpectation(name, props),
+      relType = typ,
+      dir = dir
+    ))
+    case _ => None
   }
 
-  private def props = opt(properties) ^^ {
-    case None => Map[String, Expression]()
-    case Some(x) => x
-  }
+  def set: Parser[Seq[UpdateAction]] = ignoreCase("set") ~> commaList(propertySet)
 
-  private def node: Parser[(String, Map[String, Expression])] =
-    identity ^^ (name => (name, Map[String, Expression]())) |
-      parens(opt(identity) ~ props) ^^ { case id ~ props => (namer.name(id), props) }
-
-
-  private def tail = opt("<") ~ "-[" ~ opt(identity) ~ ":" ~ identity ~ props ~ "]-" ~ opt(">") ~ node
-
-  private def direction(l: Option[String], r: Option[String]): Direction = (l, r) match {
-    case (None, Some(_)) => Direction.OUTGOING
-    case (Some(_), None) => Direction.INCOMING
-    case _ => Direction.BOTH
-
-  }
+  def relate: Parser[Seq[UpdateAction]] = ignoreCase("relate") ~> usePattern(translate) ^^ (links => Seq(RelateAction(links: _*)))
 
   def propertySet = property ~ "=" ~ expression ^^ {
     case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)

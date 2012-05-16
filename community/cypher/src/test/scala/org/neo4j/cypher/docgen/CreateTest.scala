@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node and set properties",
       text = "The values for the properties can be any scalar expressions.",
-      queryText = "create n = {name : 'Andres', title : 'Developer'}",
+      queryText = "create (n {name : 'Andres', title : 'Developer'})",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
@@ -50,7 +50,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create a = {name : 'Andres'} return a",
+      queryText = "create (a {name : 'Andres'}) return a",
       returns = "The newly created node is returned.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -94,7 +94,7 @@ class CreateTest extends DocumentingTestBase {
       text = """When you set a property to an expression that returns a collection of values,
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
-      queryText = "start n = node(" + aId + "," + bId + ") with collect(n.name) as names create new={ name : names } return new",
+      queryText = "start n = node(" + aId + "," + bId + ") with collect(n.name) as names create (new { name : names }) return new",
       returns = "A node with an array property named name is returned.",
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]

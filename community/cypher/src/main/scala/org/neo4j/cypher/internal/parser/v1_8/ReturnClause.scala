@@ -42,7 +42,7 @@ trait ReturnClause extends Base with Expressions {
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-  def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
+  def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ commaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.name).toList
 
