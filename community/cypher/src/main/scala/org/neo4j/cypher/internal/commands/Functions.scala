@@ -127,10 +127,7 @@ case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inn
 
   val identifier = Identifier("LENGTH(" + inner.identifier.name + ")", IntegerType())
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = {
-    val seq = inner.dependencies(AnyIterableType()).toList
-    seq
-  }
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(AnyIterableType()).toList
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
