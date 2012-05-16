@@ -1940,4 +1940,11 @@ RETURN x0.name?
     assert(parseAndExecute(q).toList === List(Map("length(n.x)"->3)))
   }
 
+  @Test def length_on_filter() {
+    // https://github.com/neo4j/community/issues/526
+    val q = "start n=node(*) match n-[r?]->m return length(filter(x in collect(r) : x <> null)) as cn"
+
+    assert( executeScalar[Long](q) === 0)
+  }
+
 }

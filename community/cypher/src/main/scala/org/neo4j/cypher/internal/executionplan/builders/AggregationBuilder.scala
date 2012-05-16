@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{ExtractPipe, EagerAggregationPipe}
-import org.neo4j.cypher.internal.commands.{Entity, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.commands.{CachedExpression, Entity, Expression, AggregationExpression}
 
 class AggregationBuilder extends PlanBuilder with ExpressionExtractor {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -62,7 +62,7 @@ class AggregationBuilder extends PlanBuilder with ExpressionExtractor {
   }
 
   private def removeAggregates(e: Expression) = e match {
-    case e: AggregationExpression => Entity(e.identifier.name)
+    case e: AggregationExpression => CachedExpression(e.identifier.name, e.identifier)
     case x => x
   }
 
