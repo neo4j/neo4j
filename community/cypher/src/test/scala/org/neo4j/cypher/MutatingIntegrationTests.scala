@@ -360,6 +360,13 @@ return distinct center""")
     parseAndExecute("""start n=node(1) match p=n-->() delete p""")
     assert(graph.getAllNodes.asScala.size === 1)
   }
+
+  @Test
+  def string_literals_should_not_be_mistaken_for_identifiers() {
+    //https://github.com/neo4j/community/issues/523
+    val result = executeScalar[List[Node]]("create tag1={name:'tag2'}, tag2={name:'tag1'} return [tag1,tag2] as tags")
+    assert(result.size == 2)
+  }
 }
 
 trait StatisticsChecker extends Assertions {

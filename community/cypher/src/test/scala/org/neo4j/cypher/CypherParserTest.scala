@@ -1756,6 +1756,17 @@ create a-[r:REL]->b
     )
   }
 
+  @Test def string_literals_should_not_be_mistaken_for_identifiers() {
+    testFrom_1_8(
+      "create tag1={name:'tag2'}, tag2={name:'tag1'}",
+      Query.
+        start(
+        CreateNodeStartItem("tag1", Map("name"->Literal("tag2"))),
+        CreateNodeStartItem("tag2", Map("name"->Literal("tag1")))
+      ).returns()
+    )
+  }
+
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
