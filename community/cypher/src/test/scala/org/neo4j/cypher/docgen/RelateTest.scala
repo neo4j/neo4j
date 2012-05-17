@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
 import org.neo4j.cypher.StatisticsChecker
+import org.junit.Test
 
 class RelateTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List(
@@ -77,7 +77,7 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Describe complex pattern",
       text = "The pattern described by +RELATE+ can be separated by commas, just like in +MATCH+ and +CREATE+",
-      queryText = "start root=node(%root%) relate root-[:X]->x, root-[:Y]->x return x",
+      queryText = "start root=node(%root%) relate root-[:FOO]->x, root-[:BAR]->x return x",
       returns = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
   }

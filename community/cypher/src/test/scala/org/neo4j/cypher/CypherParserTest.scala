@@ -1758,7 +1758,7 @@ create a-[r:REL]->b
 
   @Test def string_literals_should_not_be_mistaken_for_identifiers() {
     testFrom_1_8(
-      "create tag1={name:'tag2'}, tag2={name:'tag1'}",
+      "create (tag1 {name:'tag2'}), (tag2 {name:'tag1'})",
       Query.
         start(
         CreateNodeStartItem("tag1", Map("name"->Literal("tag2"))),
@@ -1766,6 +1766,22 @@ create a-[r:REL]->b
       ).returns()
     )
   }
+
+  @Test def relate_with_two_rels_to_same_node() {
+    val returns = Query.
+      updates(RelateAction(
+      RelateLink("x", "root", "r1", "X", Direction.INCOMING),
+      RelateLink("root", "x", "r2", "Y", Direction.OUTGOING)))
+      .returns(ReturnItem(Entity("x"), "x"))
+
+    val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
+
+    testFrom_1_8(
+      "start root=node(0) relate x<-[r1:X]-root-[r2:Y]->x return x",
+      q
+    )
+  }
+
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
