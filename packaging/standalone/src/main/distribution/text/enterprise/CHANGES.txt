@@ -1,3 +1,21 @@
+1.5.3 (2012-05-17)
+------------------
+o [kernel] Improved performance of byte arrays
+o [kernel] Bug fix around aggressive id reuse
+o [kernel] Performance improvement for relationship creation
+o [kernel] Bug fix where a transaction could be applied twice
+o [index] putIfAbsent() functionality added
+o [server] Support for wildcard security rules
+o [com] Responses are now always released
+o [ha] ZooKeeper session timeout is now configurable via ha.zk_session_timeout
+o [ha] Support for uniquely indexed entities via putIfAbsent()
+o [ha] It is now possible to wait for zookeeper to form a quorum when starting for the first time
+o [ha] Bug fix where if really old instances try to join the store will be copied instead
+
+1.5.2 (2012-02-07)
+------------------
+<redo of the 1.5.1 release>
+
 1.5.1 (2011-02-02)
 ------------------
 o Numerous fixes of bugs that led to corruption of the store

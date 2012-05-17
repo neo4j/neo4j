@@ -1,3 +1,17 @@
+1.5.3 (2012-05-17)
+------------------
+o [kernel] Improved performance of byte arrays
+o [kernel] Bug fix around aggressive id reuse
+o [kernel] Performance improvement for relationship creation
+o [kernel] Bug fix where a transaction could be applied twice
+o [index] putIfAbsent() functionality added
+o [server] Support for wildcard security rules
+
+
+1.5.2 (2012-02-07)
+------------------
+<redo of the 1.5.1 release>
+
 1.5.1 (2012-02-02)
 ------------------
 o Improvements in consistency checker
