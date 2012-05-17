@@ -10,7 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server-enterprise</artifactId>
-  <version>1.6.3-SNAPSHOT</version>
+  <version>1.6.3</version>
   <name>Neo4j Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -73,7 +73,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
-      <version>1.6.3-SNAPSHOT</version>
+      <version>1.6.3</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -87,7 +87,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.6.3-SNAPSHOT</version>
+      <version>1.6.3</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
