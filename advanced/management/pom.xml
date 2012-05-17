@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
-    <neo4j.version>1.5.3-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.5.3</neo4j.version>
     <licensesVersion>7</licensesVersion>
     <currentYear>2012</currentYear>
   </properties>
