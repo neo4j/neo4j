@@ -247,6 +247,17 @@ Example: +index -i persons name+ (will index the name for the current node or re
 * +-i+ will index a key-value pair in an index for the current node/relationship. If no value is given the property value for that key for the current node is used as value.
 * +-r+ will remove a key-value pair (if it exists) from an index for the current node/relationship. Key and value is optional. 
 
+=== Transactions ===
+It is useful to be able to test changes, and then being able to commit or rollback said changes.
+
+Transactions can be nested. With a nested transaction, a commit does not write any changes to disk, except for the
+top level transaction. A rollback, however works regardless of the level of the transaction. It will roll back
+all open transactions.
+
+* +begin transaction+  Starts a transaction.
+* +commit+ Commits a transaction.
+* +rollback+ Rollbacks all open transactions.
+
 [[shell-extending]]
 == Extending the shell: Adding your own commands ==
 
