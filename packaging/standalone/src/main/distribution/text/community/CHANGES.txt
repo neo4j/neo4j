@@ -1,3 +1,9 @@
+1.6.3 (2012-05-17)
+-----------------
+o [kernel] Performance fix for creation of multiple relationships
+o [kernel] Fix dual start entry issue
+o [kernel] Fix issue with log not being flushed after applying transactions
+
 1.6.2 (2012-04-11)
 -----------------
 [kernel] Added a Garbage Collection resistant cache and various fixes around that

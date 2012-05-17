@@ -1,3 +1,11 @@
+1.6.3 (2012-05-17)
+-----------------
+o [kernel] Performance fix for creation of multiple relationships
+o [kernel] Fix dual start entry issue
+o [kernel] Fix issue with log not being flushed after applying transactions
+o [ha] Now the zookeeper quorum is waited for on startup
+o [ha] Fix for issue where instances with very old stores would not join - now they grab a new store copy instead
+
 1.6.2 (2012-04-11)
 -----------------
 [kernel] Added a Garbage Collection resistant cache and various fixes around that
