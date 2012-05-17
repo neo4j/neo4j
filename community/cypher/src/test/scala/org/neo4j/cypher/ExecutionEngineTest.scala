@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
+import java.text.DecimalFormat
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -991,7 +992,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(b, x1, "REL", "BX1")
     relate(b, x2, "REL", "BX2")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node({A}), b = node({B})
 match a-[rA]->x<-[rB]->b
 return x""", "A" -> 1, "B" -> 2)
@@ -1016,7 +1017,7 @@ return x""", "A" -> 1, "B" -> 2)
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node({A}), b = node({B}), c = node({C})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""", "A" -> 1, "B" -> 2, "C" -> 3)
@@ -1055,7 +1056,7 @@ return x""", "A" -> 1, "B" -> 2, "C" -> 3)
     relate(c, g)
     relate(c, j)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node({A}), b = node({B}), c = node({C})
 match a-->x, b-->x, c-->x
 return x""", "A" -> 1, "B" -> 2, "C" -> 3)
@@ -1081,7 +1082,7 @@ return x""", "A" -> 1, "B" -> 2, "C" -> 3)
 
     relate(c, e, "knows", "rCE")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match a-[r1:knows]->friend-[r2:knows]->foaf, a-[foafR?:knows]->foaf
 where foafR is null
@@ -1099,7 +1100,7 @@ order by count(*)""")
     relate(a, b, "knows", "rAB")
     relate(b, c, "knows", "rBC")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match a-[r1?:knows]->friend-[r2:knows]->foaf
 return foaf""")
@@ -1120,11 +1121,11 @@ return foaf""")
     val b = createNode("B")
     val c = createNode("C")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1,2,3,1)
 return distinct a
 order by a.name
-""")
+                                  """)
 
     assert(List(a, b, c) === result.columnAs[Node]("a").toList)
   }
@@ -1136,11 +1137,11 @@ order by a.name
     relate(a, b, "X")
     relate(a, c, "X")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match p = a -[*]-> b
 return b, avg(length(p))
-""")
+                                  """)
 
     assert(Set(b, c) === result.columnAs[Node]("b").toSet)
   }
@@ -1151,11 +1152,11 @@ return b, avg(length(p))
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = a -[?]-> x
 return x, p
-""")
+                                  """)
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1169,11 +1170,11 @@ return x, p
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = shortestPath(a -[?*]-> x)
 return x, p
-""")
+                                  """)
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1186,11 +1187,11 @@ return x, p
     val b = createNode("B")
     val r = relate(a, b, "X")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match p = a-->b-[?*]->c
 return p
-""")
+                                  """)
 
     assert(List(
       Map("p" -> null)
@@ -1203,11 +1204,11 @@ return p
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = a -[?*]-> x
 return x, p
-""")
+                                  """)
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1218,11 +1219,11 @@ return x, p
   @Test def shouldSupportMultipleRegexes() {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 where a.name =~ /And.*/ AND a.name =~ /And.*/
 return a
-""")
+                                  """)
 
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
@@ -1230,10 +1231,10 @@ return a
   @Test def shouldSupportColumnRenaming() {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result: ExecutionResult = parseAndExecute("""
+    val result: ExecutionResult = parseAndExecute( """
 start a  = node(1)
 return a as OneLove
-""")
+                                                   """)
 
     assert(List(a) === result.columnAs[Node]("OneLove").toList)
   }
@@ -1241,10 +1242,10 @@ return a as OneLove
   @Test def shouldSupportColumnRenamingForAggregatesAsWell() {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 return count(*) as OneLove
-""")
+                                  """)
 
     assert(List(1) === result.columnAs[Node]("OneLove").toList)
   }
@@ -1259,10 +1260,10 @@ return count(*) as OneLove
     })
 
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node:numericIndex(number = 13)
 return a
-""")
+                                  """)
 
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
@@ -1272,11 +1273,11 @@ return a
     createNode("name" -> "B", "age" -> 12)
     createNode("name" -> "C", "age" -> 11)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1,2,3,1)
 return distinct a.name
 order by a.age
-""")
+                                  """)
 
     result.toList
   }
@@ -1289,12 +1290,12 @@ order by a.age
     relate(a, b)
     relate(a, c)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match a-->b
 return distinct b
 order by b.name
-""")
+                                  """)
 
     assert(List(b, c) === result.columnAs[Node]("b").toList)
   }
@@ -1302,10 +1303,10 @@ order by b.name
   @Test def shouldBeAbleToRunCoalesce() {
     createNode("name" -> "A")
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 return coalesce(a.title?, a.name?)
-""")
+                                  """)
 
     assert(List(Map("coalesce(a.title?, a.name?)" -> "A")) === result.toList)
   }
@@ -1317,11 +1318,11 @@ return coalesce(a.title?, a.name?)
     val r1 = relate(a, b)
     val r2 = relate(b, c)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1)
 match a-[r*2]->c
 return r
-""")
+                                  """)
 
     assert(List(Map("r" -> List(r1, r2))) === result.toList)
   }
@@ -1329,11 +1330,11 @@ return r
   @Test def shouldHandleAllShortestPaths() {
     createDiamond()
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1), d = node(4)
 match p = allShortestPaths( a-[*]->d )
 return p
-""")
+                                  """)
 
     assert(2 === result.toList.size)
   }
@@ -1347,12 +1348,12 @@ return p
     val rac = relate(a, c)
     val rcd = relate(c, d)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start root  = node(1)
 match p = root-[*]->leaf
 where not(leaf-->())
 return p, leaf
-""")
+                                  """)
 
     assert(List(
       Map("leaf" -> b, "p" -> PathImpl(a, rab, b)),
@@ -1370,11 +1371,11 @@ return p, leaf
     relate(leaf, stuff1)
     relate(leaf, stuff2)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start root = node(1)
 match allLeafPaths( root-->leaf ), leaf <-- stuff
 return leaf, stuff
-""")
+                                  """)
 
     assert(List(
       Map("leaf" -> leaf, "stuff" -> stuff1),
@@ -1388,11 +1389,11 @@ return leaf, stuff
     val c = createNode()
     relate(a, b)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1), other = node(2,3)
 where not(a-->other)
 return other
-""")
+                                  """)
 
     assert(List(Map("other" -> c)) === result.toList)
   }
@@ -1406,11 +1407,11 @@ return other
     createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
     createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
 
-    val result = parseAndExecute("""
+    val result = parseAndExecute( """
 start a  = node(1,2)
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1
-""")
+                                  """)
 
     assert(List(
       Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
@@ -1454,11 +1455,11 @@ order by a.COL1
     val a = createNode()
     val b = createNode()
     relate(a, b)
-    val result = parseAndExecute("""START n=node(1)
+    val result = parseAndExecute( """START n=node(1)
 MATCH n-->x0-[?]->x1
 WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.label) AND x1.label="Reservoir Dogs"
 RETURN x0.name?
-""")
+                                  """)
     assert(List() === result.toList)
   }
 
@@ -1474,7 +1475,7 @@ RETURN x0.name?
     relate(b, x, "X", "rBX")
     relate(b, y, "X", "rBY")
 
-    val result = parseAndExecute("""START a=node(1), b=node(2) match a-[r1?]->x<-[r2?]-b return x""")
+    val result = parseAndExecute( """START a=node(1), b=node(2) match a-[r1?]->x<-[r2?]-b return x""")
     assert(List(x, y, z) === result.columnAs[Node]("x").toList)
   }
 
@@ -1511,29 +1512,29 @@ RETURN x0.name?
     relate(b, z4, "X", "BZ")
     relate(c, y4, "X", "CY")
 
-    val result = parseAndExecute("""START a=node(1), b=node(2), c=node(3) match a-[?]-x-->y-[?]-c, b-[?]-z<--y, z-->x return x""")
+    val result = parseAndExecute( """START a=node(1), b=node(2), c=node(3) match a-[?]-x-->y-[?]-c, b-[?]-z<--y, z-->x return x""")
     assert(List(x1, x2, x3, x4) === result.columnAs[Node]("x").toList)
   }
 
   @Test def shouldFindNodesBothDirections() {
     val a = createNode()
     relate(a, refNode, "Admin")
-    val result = parseAndExecute("""start n = node(0) match (n) -[:Admin]- (b) return id(n), id(b)""")
+    val result = parseAndExecute( """start n = node(0) match (n) -[:Admin]- (b) return id(n), id(b)""")
     assert(List(Map("id(n)" -> 0, "id(b)" -> 1)) === result.toList)
 
-    val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return id(n), id(b)""")
+    val result2 = parseAndExecute( """start n = node(1) match (n) -[:Admin]- (b) return id(n), id(b)""")
     assert(List(Map("id(n)" -> 1, "id(b)" -> 0)) === result2.toList)
   }
 
   @Test def shouldToStringArraysPrettily() {
     createNode("foo" -> Array("one", "two"))
 
-    val result = parseAndExecute("""start n = node(1) return n.foo""")
+    val result = parseAndExecute( """start n = node(1) return n.foo""")
 
 
     val string = result.dumpToString()
 
-    assertThat(string, containsString("""["one","two"]"""))
+    assertThat(string, containsString( """["one","two"]"""))
   }
 
   @Test def shouldAllowOrderingOnAggregateFunction() {
@@ -1929,7 +1930,7 @@ RETURN x0.name?
 
     val q = "start n=node(1) match n-[?:FRIEND]->x where not n-[:BLOCK]->x return x"
 
-    assert(parseAndExecute(q).toList === List(Map("x"->null)))
+    assert(parseAndExecute(q).toList === List(Map("x" -> null)))
   }
 
   @Test def issue_508() {
@@ -1937,14 +1938,20 @@ RETURN x0.name?
 
     val q = "start n=node(0) set n.x=[1,2,3] return length(n.x)"
 
-    assert(parseAndExecute(q).toList === List(Map("length(n.x)"->3)))
+    assert(parseAndExecute(q).toList === List(Map("length(n.x)" -> 3)))
   }
 
   @Test def length_on_filter() {
     // https://github.com/neo4j/community/issues/526
     val q = "start n=node(*) match n-[r?]->m return length(filter(x in collect(r) : x <> null)) as cn"
 
-    assert( executeScalar[Long](q) === 0)
+    assert(executeScalar[Long](q) === 0)
   }
 
+  @Test def long_or_double() {
+    val result = parseAndExecute("start n=node(0) return 1, 1.5").toList.head
+
+    assert(result("1").getClass === classOf[java.lang.Long])
+    assert(result("1.5").getClass === classOf[java.lang.Double])
+  }
 }
