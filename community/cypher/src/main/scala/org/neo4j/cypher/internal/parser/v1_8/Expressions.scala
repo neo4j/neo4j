@@ -75,7 +75,7 @@ trait Expressions extends Base {
   def stringLit:Parser[Expression] = string ^^ (x=>Literal(x))
 
   def numberLiteral:Parser[Expression] = number ^^ (x => {
-    val value: Double = if(x.contains("."))
+    val value:Any = if(x.contains("."))
       x.toDouble
     else
       x.toLong

@@ -60,7 +60,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
     expectedError("start a=node(0) where a.age =~ 13 return a",
-      "13.0 expected to be of type StringType but it is of type NumberType")
+      "13 expected to be of type StringType but it is of type NumberType")
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {
