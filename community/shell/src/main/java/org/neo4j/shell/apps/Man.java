@@ -28,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -54,14 +55,14 @@ public class Man extends AbstractApp
                 "Display the commands in a vertical list" ) );
     }
 
-    public String execute( AppCommandParser parser, Session session,
+    public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
         if ( parser.arguments().size() == 0 )
         {
             boolean list = parser.options().containsKey( "l" );
             printHelpString( out, getServer(), list );
-            return null;
+            return Continuation.INPUT_COMPLETE;
         }
 
         App app = this.getApp( parser );
@@ -95,7 +96,7 @@ public class Man extends AbstractApp
         {
             println( out, "" );
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private static String[] splitDescription( String description, int maxLength )

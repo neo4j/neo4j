@@ -28,13 +28,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.shell.Console;
+import org.neo4j.shell.Output;
+import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.TextUtil;
+import org.neo4j.shell.Welcome;
 
 /**
  * A common implementation of a {@link ShellClient}.
@@ -69,9 +72,17 @@ public abstract class AbstractClient implements ShellClient
 
     private Console console;
     private long timeConnection;
-    private final Set<String> grabbedKeysFromServer = new HashSet<String>();
     private volatile boolean end;
     private final Collection<String> multiLine = new ArrayList<String>();
+    private Serializable id;
+    private String prompt;
+
+    private final Map<String, Serializable> initialSession;
+    
+    public AbstractClient( Map<String, Serializable> initialSession )
+    {
+        this.initialSession = initialSession;
+    }
     
     public void grabPrompt()
     {
@@ -96,9 +107,15 @@ public abstract class AbstractClient implements ShellClient
         }
         this.shutdown();
     }
-
+    
     @Override
     public void evaluate( String line ) throws ShellException
+    {
+        evaluate( line, getOutput() );
+    }
+
+    @Override
+    public void evaluate( String line, Output out ) throws ShellException
     {
         if ( EXIT_COMMANDS.contains( line ) )
         {
@@ -109,20 +126,22 @@ public abstract class AbstractClient implements ShellClient
         boolean success = false;
         try
         {
-            String expandedLine = expandLine( fullLine( line ) );
-            String result = getServer().interpretLine( expandedLine, session(), getOutput() );
-            if ( result == null || result.trim().length() == 0 )
-            {   // One-liner, or end of multi-line
+            String expandedLine = fullLine( line ); //expandLine( fullLine( line ) );
+            Response response = getServer().interpretLine( id, expandedLine, out );
+            switch ( response.getContinuation() )
+            {
+            case INPUT_COMPLETE:
                 endMultiLine();
-            }
-            else if ( result.contains( "c" ) )
-            {
+                break;
+            case INPUT_INCOMPLETE:
                 multiLine.add( line );
-            }
-            else if ( result.contains( "e" ) )
-            {
+                break;
+            case EXIT:
+                getServer().leave( id );
                 end();
+                break;
             }
+            prompt = response.getPrompt();
             success = true;
         }
         catch ( RemoteException e )
@@ -131,7 +150,8 @@ public abstract class AbstractClient implements ShellClient
         }
         finally
         {
-            if ( !success ) endMultiLine();
+            if ( !success )
+                endMultiLine();
         }
     }
 
@@ -153,12 +173,6 @@ public abstract class AbstractClient implements ShellClient
     {
         end = true;
     }
-    
-    private String expandLine( String line ) throws RemoteException
-    {
-        // Look for environment variables and expand to the real values
-        return TextUtil.templateString( line, this.session().asMap() );
-    }
 
     protected static String getShortExceptionMessage( Exception e )
     {
@@ -167,46 +181,30 @@ public abstract class AbstractClient implements ShellClient
 
     public String getPrompt()
     {
-        if ( !multiLine.isEmpty() ) return "> ";
-        String result = null;
-        try
-        {
-            result = ( String ) getSessionVariable( PROMPT_KEY, null, true );
-        }
-        catch ( Exception e )
-        {
-            try
-            {
-                result = ( String ) getSessionVariable( PROMPT_KEY, null, false );
-            }
-            catch ( ShellException e1 )
-            {
-                throw new RuntimeException( e1 );
-            }
-        }
-        return result;
+        if ( !multiLine.isEmpty() )
+            return "> ";
+        return prompt;
     }
 
     public boolean shouldPrintStackTraces()
     {
-        Object value = this.session().get( STACKTRACES_KEY );
-        return this.getSafeBooleanValue( value, false );
-    }
-
-    private boolean getSafeBooleanValue( Object value, boolean def )
-    {
-        return value == null ? def : Boolean.parseBoolean( value.toString() );
+        try
+        {
+            String stringValue = (String) getServer().interpretVariable( id, STACKTRACES_KEY );
+            return Boolean.parseBoolean( stringValue );
+        }
+        catch ( Exception e )
+        {
+            return true;
+        }
     }
 
     protected void init()
     {
         try
         {
-            ShellServer server = getServer();
-            possiblyGrabDefaultVariableFromServer( server, PROMPT_KEY, "$ " );
-            possiblyGrabDefaultVariableFromServer( server, TITLE_KEYS_KEY, null );
-            possiblyGrabDefaultVariableFromServer( server, TITLE_MAX_LENGTH, null );
-            getOutput().println( server.welcome() );
+            // To make sure we have a connection to our server.
+            getServer();
 
             // Grab a jline console if available, else a standard one.
             console = JLineConsole.newConsoleOrNullIfNotFound( this );
@@ -224,57 +222,15 @@ public abstract class AbstractClient implements ShellClient
         }
     }
 
-    protected void possiblyGrabDefaultVariableFromServer( ShellServer server, String key,
-        Serializable defaultValue )
+    protected void sayHi( ShellServer server ) throws RemoteException
     {
-        try
-        {
-            if ( this.session().get( key ) == null )
-            {
-                grabbedKeysFromServer.add( key );
-                Serializable value = server.getProperty( key );
-                if ( value == null ) value = defaultValue;
-                if ( value != null ) session().set( key, value );
-            }
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-    
-    protected void regrabVariablesFromServer( ShellServer server )
-    {
-        for ( String key : grabbedKeysFromServer )
-        {
-            Serializable value = this.session().remove( key );
-            possiblyGrabDefaultVariableFromServer( server, key, value );
-        }
+        Welcome welcome = server.welcome( initialSession );
+        id = welcome.getId();
+        prompt = welcome.getPrompt();
+        getOutput().println( welcome.getMessage() );
     }
 
-    protected Serializable getSessionVariable( String key,
-        Serializable defaultValue, boolean interpret ) throws ShellException
-    {
-        try
-        {
-            Serializable result = this.session().get( key );
-            if ( result == null )
-            {
-                result = defaultValue;
-            }
-            if ( interpret && result != null )
-            {
-                result = this.getServer().interpretVariable( key, result, session() );
-            }
-            return result;
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public String readLine( String prompt )
+    protected String readLine( String prompt )
     {
         return console.readLine( prompt );
     }
@@ -297,6 +253,12 @@ public abstract class AbstractClient implements ShellClient
     public void shutdown()
     {
     }
+    
+    @Override
+    public Serializable getId()
+    {
+        return id;
+    }
 
     protected void tryUnexport( Remote remote )
     {
@@ -308,5 +270,18 @@ public abstract class AbstractClient implements ShellClient
     	{
     		System.out.println( "Couldn't unexport:" + remote );
     	}
+    }
+    
+    @Override
+    public void setSessionVariable( String key, Serializable value ) throws ShellException
+    {
+        try
+        {
+            getServer().setSessionVariable( id, key, value );
+        }
+        catch ( RemoteException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
     }
 }

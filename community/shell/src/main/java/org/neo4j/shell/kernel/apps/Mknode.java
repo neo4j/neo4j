@@ -24,6 +24,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -51,7 +52,7 @@ public class Mknode extends GraphDatabaseApp
     }
     
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
+    protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         AbstractGraphDatabase db = (AbstractGraphDatabase)getServer().getDb();
         Node node = null;
@@ -78,6 +79,6 @@ public class Mknode extends GraphDatabaseApp
         {
             out.println( "Node " + getDisplayName( getServer(), session, node, false ) + " created" );
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 }

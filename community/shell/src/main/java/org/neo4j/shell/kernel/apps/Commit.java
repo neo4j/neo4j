@@ -28,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -44,7 +45,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
+    protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
         Integer txCount = (Integer) session.get( tx_count );
@@ -72,7 +73,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
                 tx.commit();
                 session.remove( tx_count );
                 out.println("Transaction committed");
-                return null;
+                return Continuation.INPUT_COMPLETE;
             } catch ( Exception e )
             {
                 throw fail( session, e.getMessage() );
@@ -81,7 +82,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
         {
             session.set( tx_count, --txCount );
             out.println("Transaction committed");
-            return null;
+            return Continuation.INPUT_COMPLETE;
         }
     }
 

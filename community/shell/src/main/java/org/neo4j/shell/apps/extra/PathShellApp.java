@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -62,7 +63,7 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
+    protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         String fromString = parser.options().get( "from" );
         String toString = parser.argument( 0, "Must supply a 'to' node as first argument" );
@@ -92,7 +93,7 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
             }
         }
         
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private PathFinder<Path> getPathFinder( String algo, RelationshipExpander expander, int maxDepth, Output out ) throws Exception

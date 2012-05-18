@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,7 +33,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
+import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TabCompletion;
@@ -105,29 +108,25 @@ public abstract class AbstractAppServer extends AbstractServer
 	    super.shutdown();
 	}
 
-	public String interpretLine( String line, Session session, Output out )
+	@Override
+	public Response interpretLine( Serializable clientId, String line, Output out )
 		throws ShellException
 	{
+        Session session = getClientSession( clientId );
 		if ( line == null || line.trim().length() == 0 )
-		{
-			return "";
-		}
+			return new Response( getPrompt( session ), Continuation.INPUT_COMPLETE );
 
         try
         {
-            String result = null;
+            Continuation commandResult = null;
             for ( String command : line.split( Pattern.quote( "&&" ) ) )
             {
                 command = TextUtil.removeSpaces( command );
                 command = replaceAlias( command, session );
                 AppCommandParser parser = new AppCommandParser( this, command );
-                String commandResult = parser.app().execute( parser, session, out );
-                if ( commandResult != null )
-                {
-                    result = commandResult;
-                }
+                commandResult = parser.app().execute( parser, session, out );
             }
-            return result;
+            return new Response( getPrompt( session ), commandResult );
         }
         catch ( Exception e )
         {
@@ -144,8 +143,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	        changed = false;
     	    String appName = AppCommandParser.parseOutAppName( line );
     	    String prefixedKey = Alias.ALIAS_PREFIX + appName;
-    	    String alias = ( String ) AbstractApp.safeGet(
-    	            session, prefixedKey );
+    	    String alias = ( String ) session.get( prefixedKey );
     	    if ( alias != null && appNames.add( alias ) )
     	    {
     	        changed = true;
@@ -162,7 +160,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	}
 
     @Override
-    public TabCompletion tabComplete( String partOfLine, Session session )
+    public TabCompletion tabComplete( Serializable clientID, String partOfLine )
             throws ShellException, RemoteException
     {
         // TODO We can't assume it's an AppShellServer, can we?
@@ -170,7 +168,7 @@ public abstract class AbstractAppServer extends AbstractServer
         {
             AppCommandParser parser = new AppCommandParser( this, partOfLine );
             App app = parser.app();
-            List<String> appCandidates = app.completionCandidates( partOfLine, session );
+            List<String> appCandidates = app.completionCandidates( partOfLine, getClientSession( clientID ) );
             appCandidates = quote( appCandidates );
             if ( appCandidates.size() == 1 )
             {

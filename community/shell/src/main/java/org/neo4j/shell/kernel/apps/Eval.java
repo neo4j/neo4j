@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
 
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 
@@ -53,7 +54,7 @@ public class Eval extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
+    protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         // satisfied if:
         // * it ends with \n
@@ -61,7 +62,7 @@ public class Eval extends GraphDatabaseApp
         boolean satisfied =
                 parser.getLine().endsWith( "\n" ) ||
                 (parser.getLineWithoutApp().length() > 0 && parser.getLine().indexOf( '\n' ) == -1);
-        if ( !satisfied ) return "c";
+        if ( !satisfied ) return Continuation.INPUT_INCOMPLETE;
         scripting = scripting != null ? scripting : new ScriptEngineViaReflection( getServer() );
         String javascriptCode = parser.getLineWithoutApp();
         javascriptCode = decorateWithImports( javascriptCode, STANDARD_EVAL_IMPORTS );
@@ -72,6 +73,6 @@ public class Eval extends GraphDatabaseApp
         {
             out.println( result.toString() );
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 }
