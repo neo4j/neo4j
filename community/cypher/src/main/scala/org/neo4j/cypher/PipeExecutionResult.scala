@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import internal.pipes.QueryState
 import internal.StringExtras
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
+import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
 import internal.symbols.SymbolTable
@@ -99,15 +99,23 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
 
       writer.println(---)
       writer.println(footer)
+      if (queryStatistics.containsUpdates) {
+        writer.print(queryStatistics.toString)
+      }
     } else {
-      writer.println("+-------------------+")
-      writer.println("| No data returned. |")
-      writer.println("+-------------------+")
+      if (queryStatistics.containsUpdates) {
+        writer.println("+-------------------+")
+        writer.println("| No data returned. |")
+        writer.println("+-------------------+")
+        writer.print(queryStatistics.toString)
+      } else {
+        writer.println("+--------------------------------------------+")
+        writer.println("| No data returned, and nothing was changed. |")
+        writer.println("+--------------------------------------------+")
+      }
     }
 
-    if (queryStatistics.containsUpdates) {
-      writer.print(queryStatistics.toString)
-    }
+
 
     writer.println("%s ms".format(timeTaken))
   }
