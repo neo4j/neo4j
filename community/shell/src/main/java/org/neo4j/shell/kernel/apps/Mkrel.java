@@ -28,6 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -75,7 +76,7 @@ public class Mkrel extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
+    protected Continuation exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
         assertCurrentIsNode( session );
@@ -128,6 +129,6 @@ public class Mkrel extends GraphDatabaseApp
         }
         
         if ( parser.options().containsKey( "cd" ) ) cdTo( session, node );
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 }

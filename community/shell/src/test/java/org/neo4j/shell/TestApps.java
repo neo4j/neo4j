@@ -42,7 +42,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestApps extends AbstractShellTest
@@ -267,7 +266,7 @@ public class TestApps extends AbstractShellTest
         tx.finish();
 
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( newDb );
-        ShellClient client = new SameJvmClient( server );
+        ShellClient client = ShellLobby.newClient( server );
         executeCommand( server, client, "pwd", Pattern.quote( "(?)" ) );
         executeCommand( server, client, "ls " + node.getId(), "Test" );
         executeCommand( server, client, "cd -a " + node.getId() );

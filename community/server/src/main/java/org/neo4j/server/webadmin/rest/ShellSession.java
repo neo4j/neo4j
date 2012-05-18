@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
@@ -57,7 +59,7 @@ public class ShellSession implements ScriptSession
                 server = getFallbackServer(graph);
             }
             output = new CollectingOutput();
-            client = new SameJvmClient( server, output );
+            client = new SameJvmClient( new HashMap<String, Serializable>(), server, output );
             output.asString();
         }
         catch ( RemoteException e )

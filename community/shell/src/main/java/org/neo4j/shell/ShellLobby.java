@@ -19,6 +19,10 @@
  */
 package org.neo4j.shell;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
@@ -57,8 +61,21 @@ public abstract class ShellLobby
 	 */
 	public static ShellClient newClient( ShellServer server )
 	{
-		return new SameJvmClient( server );
+	    return newClient( server, new HashMap<String, Serializable>() );
 	}
+	
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * @param server the server (in the same JVM) which the client will
+     * communicate with.
+     * @param initialSession the initial session variables the shell will have,
+     * in addition to those provided by the server initially.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession )
+    {
+        return new SameJvmClient( initialSession, server );
+    }
 	
     /**
      * Creates a client and "starts" it, i.e. grabs the console prompt.
@@ -126,9 +143,24 @@ public abstract class ShellLobby
 	public static ShellClient newClient( RmiLocation serverLocation )
 		throws ShellException
 	{
-		return new RemoteClient( serverLocation );
+		return newClient( serverLocation, new HashMap<String, Serializable>() );
 	}
 	
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server specified by {@code serverLocation}.
+     * @param serverLocation the RMI location of the server to connect to.
+     * @param initialSession the initial session variables the shell will have,
+     * in addition to those provided by the server initially.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( RmiLocation serverLocation, Map<String, Serializable> initialSession )
+        throws ShellException
+    {
+        return new RemoteClient( initialSession, serverLocation );
+    }
+    
     /**
      * Creates a client and "starts" it, i.e. grabs the console prompt.
      * It will try to find a remote server on {@code host} with default

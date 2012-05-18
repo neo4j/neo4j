@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import java.io.Serializable;
+
 /**
  * Represents a shell client which communicates with a {@link ShellServer}.
  * A client is very thin, it just grabs a command line from the user and sends
@@ -26,18 +28,12 @@ package org.neo4j.shell;
  */
 public interface ShellClient
 {
+    Serializable getId();
+    
 	/**
 	 * Grabs the console prompt.
 	 */
 	void grabPrompt();
-	
-	/**
-	 * Reads the next line from the user console and feeds it into
-	 * {@link #evaluate(String)}.
-	 * @param prompt the prompt to display.
-	 * @return the next command line from the user.
-	 */
-	String readLine( String prompt );
 	
 	/**
 	 * Evaluates a line and reacts to it.
@@ -47,10 +43,14 @@ public interface ShellClient
 	 */
 	void evaluate( String line ) throws ShellException;
 	
-	/**
-	 * @return the session (or environment) for this client.
-	 */
-	Session session();
+    /**
+     * Evaluates a line and reacts to it.
+     * @param line the line to evaluate.
+     * @param out output just for this evaluation.
+     * @return the next command line from the user.
+     * @throws ShellException if something went wrong.
+     */
+	void evaluate( String line, Output out ) throws ShellException;
 	
 	/**
 	 * Tells the client session to end, i.e. exit the {@link #grabPrompt()}.
@@ -82,4 +82,6 @@ public interface ShellClient
 	 * Shuts down any resource needing to shut down.
 	 */
 	void shutdown();
+	
+	void setSessionVariable( String key, Serializable value ) throws ShellException;
 }

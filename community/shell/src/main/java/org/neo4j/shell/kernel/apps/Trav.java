@@ -45,6 +45,7 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -105,7 +106,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session,
+    protected Continuation exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
         assertCurrentIsNode( session );
@@ -219,7 +220,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
                 }
             }
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private Evaluator parseEvaluator( String evaluator ) throws ShellException

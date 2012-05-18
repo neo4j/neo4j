@@ -19,11 +19,10 @@
  */
 package org.neo4j.shell.apps;
 
-import java.io.Serializable;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.impl.AbstractApp;
@@ -41,14 +40,14 @@ public class Env extends AbstractApp
 		return "Lists all environment variables";
 	}
 
-	public String execute( AppCommandParser parser, Session session,
+	public Continuation execute( AppCommandParser parser, Session session,
 		Output out ) throws Exception
 	{
 		for ( String key : session.keys() )
 		{
-			Serializable value = session.get( key );
+			Object value = session.get( key );
 			out.println( key + "=" + ( value == null ? "" : value ) );
 		}
-		return null;
+		return Continuation.INPUT_COMPLETE;
 	}
 }

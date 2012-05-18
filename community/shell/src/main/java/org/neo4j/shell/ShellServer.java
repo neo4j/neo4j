@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Map;
 
 /**
  * A shell server which clients can connect to and send requests
@@ -38,6 +39,7 @@ public interface ShellServer extends Remote
 	/**
 	 * Receives a command line (probably from a {@link ShellClient}) and reacts
 	 * to it. Output is written to the {@link Output} object.
+     * @param the ID identifying the client.
 	 * @param line the command line to react to.
 	 * @param session the client session (environment).
 	 * @param out where output should go (like System.out).
@@ -48,45 +50,39 @@ public interface ShellServer extends Remote
 	 * interpretation/execution of the command line.
 	 * @throws RemoteException RMI error.
 	 */
-	String interpretLine( String line, Session session, Output out )
+	Response interpretLine( Serializable clientID, String line, Output out )
 		throws ShellException, RemoteException;
 	
 	/**
 	 * Interprets a variable from a client session and returns the
 	 * interpreted result.
+	 * @param the ID identifying the client.
 	 * @param key the variable key.
-	 * @param value the variable value.
 	 * @param session the client session to get necessary values from to
 	 * help the interpretation.
 	 * @return the interpreted value.
 	 * @throws ShellException if some error should occur.
 	 * @throws RemoteException RMI error.
 	 */
-	Serializable interpretVariable( String key, Serializable value,
-		Session session ) throws ShellException, RemoteException;
+	Serializable interpretVariable( Serializable clientID, String key ) throws ShellException, RemoteException;
  
 	/**
+	 * @param initialSession the initial session variables that the client would
+	 * like to override or add to any initial server session variables.
 	 * @return a nice welcome for a client. Typically a client connects and
 	 * asks for a greeting message to display to the user.
 	 * @throws RemoteException RMI error.
 	 */
-	String welcome() throws RemoteException;
-	
+	Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException;
+
 	/**
-	 * Sets a server property, typically used for setting default values which
-	 * clients can read at startup, but can be used for anything.
-	 * @param key the property key.
-	 * @param value the property value.
+	 * Notifies this server that the client identified by {@code clientID} is about to
+	 * leave, so any session associated with it will be removed.
+	 * @param clientID the ID which identifies the client which is leaving.
+	 * These IDs are handed out from {@link #welcome(Map)}.
 	 * @throws RemoteException RMI error.
 	 */
-	void setProperty( String key, Serializable value ) throws RemoteException;
-	
-	/**
-	 * @param key the property key.
-	 * @return the server property value for {@code key}.
-	 * @throws RemoteException RMI error.
-	 */
-	Serializable getProperty( String key ) throws RemoteException;
+	void leave( Serializable clientID ) throws RemoteException;
 	
 	/**
 	 * Shuts down the server.
@@ -111,12 +107,22 @@ public interface ShellServer extends Remote
 	/**
 	 * Tries to complete a half-entered line and returns possible candidates,
 	 * in the form of a {@link TabCompletion}.
+     * @param the ID identifying the client.
 	 * @param partOfLine the half-entered line to try to complete.
 	 * @param session the client {@link Session}.
 	 * @return a {@link TabCompletion} containing the possible candidates for completion.
      * @throws ShellException if some error should occur.
      * @throws RemoteException RMI error.
 	 */
-	TabCompletion tabComplete( String partOfLine, Session session )
+	TabCompletion tabComplete( Serializable clientID, String partOfLine )
 	        throws ShellException, RemoteException;
+	
+	/**
+	 * Sets a session property for the session identified by {@code clientID}.
+	 * @param clientID the client ID to identify the session.
+	 * @param key the property key.
+	 * @param value the property value.
+     * @throws RemoteException RMI error.
+	 */
+	void setSessionVariable( Serializable clientID, String key, Object value ) throws RemoteException;
 }
