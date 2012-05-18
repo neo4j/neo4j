@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -42,7 +43,7 @@ public class Rm extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session,
+    protected Continuation exec( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
         if ( parser.arguments().isEmpty() )
@@ -57,6 +58,6 @@ public class Rm extends GraphDatabaseApp
         {
             out.println( "Property '" + key + "' not found" );
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 }

@@ -23,12 +23,14 @@ import java.io.Serializable;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
 
 import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
+import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TabCompletion;
+import org.neo4j.shell.Welcome;
 
 /**
  * The remote aspect of a {@link ShellServer}.
@@ -45,38 +47,39 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
         this.actual = actual;
     }
 
+    @Override
     public String getName() throws RemoteException
     {
         return actual.getName();
     }
 
-    public String interpretLine( String line, Session session, Output out ) throws ShellException,
+    @Override
+    public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException,
             RemoteException
     {
-        return actual.interpretLine( line, session, out );
+        return actual.interpretLine( clientId, line, out );
     }
 
-    public Serializable interpretVariable( String key, Serializable value, Session session )
+    @Override
+    public Serializable interpretVariable( Serializable clientId, String key )
             throws ShellException, RemoteException
     {
-        return actual.interpretVariable( key, value, session );
+        return actual.interpretVariable( clientId, key );
     }
 
-    public String welcome() throws RemoteException
+    @Override
+    public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException
     {
-        return actual.welcome();
+        return actual.welcome( initialSession );
     }
-
-    public void setProperty( String key, Serializable value ) throws RemoteException
+    
+    @Override
+    public void leave( Serializable clientID ) throws RemoteException
     {
-        actual.setProperty( key, value );
+        actual.leave( clientID );
     }
 
-    public Serializable getProperty( String key ) throws RemoteException
-    {
-        return actual.getProperty( key );
-    }
-
+    @Override
     public void shutdown() throws RemoteException
     {
         try
@@ -89,20 +92,29 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
         }
     }
 
+    @Override
     public void makeRemotelyAvailable( int port, String name ) throws RemoteException
     {
         RmiLocation location = RmiLocation.location( "localhost", port, name );
         location.bind( this );
     }
 
+    @Override
     public String[] getAllAvailableCommands() throws RemoteException
     {
         return actual.getAllAvailableCommands();
     }
 
-    public TabCompletion tabComplete( String partOfLine, Session session ) throws ShellException,
+    @Override
+    public TabCompletion tabComplete( Serializable clientId, String partOfLine ) throws ShellException,
             RemoteException
     {
-        return actual.tabComplete( partOfLine, session );
+        return actual.tabComplete( clientId, partOfLine );
+    }
+
+    @Override
+    public void setSessionVariable( Serializable clientID, String key, Object value ) throws RemoteException
+    {
+        actual.setSessionVariable( clientID, key, value );
     }
 }

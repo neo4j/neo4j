@@ -22,13 +22,15 @@ package org.neo4j.shell.impl;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TabCompletion;
+import org.neo4j.shell.Welcome;
 
 /**
  * A common implementation of a {@link ShellServer}.
@@ -49,8 +51,9 @@ public abstract class AbstractServer implements ShellServer
 	 */
 	public static final int DEFAULT_PORT = 1337;
 	
-	private Map<String, Serializable> properties =
-		new HashMap<String, Serializable>();
+	private final Map<Serializable, Session> clientSessions = new ConcurrentHashMap<Serializable, Session>();
+	
+	private final AtomicInteger nextClientId = new AtomicInteger();
 	
 	/**
 	 * Constructs a new server.
@@ -67,28 +70,76 @@ public abstract class AbstractServer implements ShellServer
 		return DEFAULT_NAME;
 	}
 
-	public Serializable getProperty( String key )
+	@Override
+	public Serializable interpretVariable( Serializable clientID, String key ) throws ShellException, RemoteException
 	{
-		return this.properties.get( key );
-	}
-
-	public void setProperty( String key, Serializable value )
-	{
-		this.properties.put( key, value );
+		return (Serializable) getClientSession( clientID ).get( key );
 	}
 	
-	public Serializable interpretVariable( String key, Serializable value,
-		Session session ) throws ShellException, RemoteException
+	protected Serializable newClientId()
 	{
-		return session.get( key );
+	    return nextClientId.incrementAndGet();
 	}
 
-	public String welcome()
+	@Override
+	public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException
 	{
-		return "Welcome to the shell";
+	    Serializable clientId = newClientId();
+	    if ( clientSessions.containsKey( clientId ) )
+	        throw new IllegalStateException( "Client " + clientId + " already initialized" );
+	    Session session = newSession( clientId, initialSession );
+        clientSessions.put( clientId, session );
+		try
+        {
+            return new Welcome( getWelcomeMessage(), clientId, getPrompt( session ) );
+        }
+        catch ( ShellException e )
+        {
+            throw new RemoteException( e.getMessage() );
+        }
 	}
 	
-	public synchronized void shutdown() throws RemoteException
+	private Session newSession( Serializable id, Map<String, Serializable> initialSession )
+    {
+	    Session session = new Session( id );
+	    initialPopulateSession( session );
+	    for ( Map.Entry<String, Serializable> entry : initialSession.entrySet() )
+	        session.set( entry.getKey(), entry.getValue() );
+	    return session;
+    }
+
+    protected void initialPopulateSession( Session session )
+    {
+    }
+
+    protected String getPrompt( Session session ) throws ShellException
+    {
+	    return "sh$ ";
+    }
+
+    protected String getWelcomeMessage()
+    {
+	    return "Welcome to the shell";
+    }
+    
+    public Session getClientSession( Serializable clientID )
+    {
+        Session session = clientSessions.get( clientID );
+        if ( session == null )
+            throw new IllegalStateException( "Client " + clientID + " not initialized" );
+        return session;
+    }
+    
+    @Override
+    public void leave( Serializable clientID ) throws RemoteException
+    {
+        // TODO how about clients not properly leaving?
+        
+        if ( clientSessions.remove( clientID ) == null )
+            throw new IllegalStateException( "Client " + clientID + " not initialized" );
+    }
+
+    public synchronized void shutdown() throws RemoteException
 	{
 	    if ( remoteEndPoint != null )
 	    {
@@ -114,5 +165,11 @@ public abstract class AbstractServer implements ShellServer
 	        throws ShellException, RemoteException
 	{
 	    return new TabCompletion( Collections.<String>emptyList(), 0 );
+	}
+	
+	@Override
+	public void setSessionVariable( Serializable clientID, String key, Object value )
+	{
+	    getClientSession( clientID ).set( key, value );
 	}
 }

@@ -26,9 +26,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.Stack;
 
 import org.neo4j.shell.impl.RemoteOutput;
+import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.test.AsciiDocGenerator;
 
 public class Documenter
@@ -101,10 +103,10 @@ public class Documenter
     private final Stack<Job> stack = new Stack<Documenter.Job>();
     private final ShellClient client;
 
-    public Documenter( final String title, final ShellClient client )
+    public Documenter( final String title, final ShellServer server )
     {
         this.title = title;
-        this.client = client;
+        this.client = new SameJvmClient( new HashMap<String, Serializable>(), server );
     }
 
     public void add( final String query, final String assertion, final String comment )
@@ -124,16 +126,11 @@ public class Documenter
             try
             {
                 DocOutput output = new DocOutput();
-                String prompt = client.getServer().interpretVariable( "PS1", client.session().get("PS1"), client.session() ).toString();
-                client.getServer().interpretLine( job.query, client.session(),
-                        output );
+                String prompt = client.getPrompt();
+                client.evaluate( job.query, output );
                 String result = output.baos.toString();
                 assertTrue( result + "did not contain " + job.assertion, result.contains( job.assertion ) );
                 doc( job, out, result, prompt );
-            }
-            catch ( RemoteException e )
-            {
-                throw new RuntimeException( e );
             }
             catch ( ShellException e )
             {

@@ -20,18 +20,32 @@
 package org.neo4j.shell;
 
 import java.io.Serializable;
-import java.util.HashMap;
 
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-public class DontShutdownClient
+public class Welcome implements Serializable
 {
-    public static void main( String[] args ) throws Exception
+    private final String message;
+    private final Serializable id;
+    private final String prompt;
+    
+    public Welcome( String message, Serializable id, String prompt )
     {
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server );
-        server.shutdown();
-        // Intentionally don't shutdown the client
+        this.message = message;
+        this.id = id;
+        this.prompt = prompt;
+    }
+    
+    public String getMessage()
+    {
+        return message;
+    }
+    
+    public Serializable getId()
+    {
+        return id;
+    }
+    
+    public String getPrompt()
+    {
+        return prompt;
     }
 }

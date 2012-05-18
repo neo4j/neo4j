@@ -21,7 +21,6 @@ package org.neo4j.shell.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,23 +111,6 @@ public abstract class AbstractApp implements App
 		}
 		return builder.toString();
 	}
-
-	protected static Serializable safeGet( Session session, String key )
-	{
-	    return session.get( key );
-	}
-	
-	protected static void safeSet( Session session, String key,
-		Serializable value )
-	{
-	    session.set( key, value );
-	}
-
-	protected static Serializable safeRemove( Session session, String key )
-	{
-	    return session.remove( key );
-	}
-	
 	protected static Map<String, Object> parseFilter( String filterString,
 	    Output out ) throws RemoteException, ShellException
 	{

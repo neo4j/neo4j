@@ -35,6 +35,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -99,7 +100,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
+    protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
         boolean doCd = parser.options().containsKey( "cd" );
@@ -143,7 +144,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             
             if ( getIndex( getIndexName( parser ), getEntityType( parser ), out ) == null )
             {
-                return null;
+                return Continuation.INPUT_COMPLETE;
             }
             
             IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out );
@@ -194,7 +195,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             listIndexes( out );
         }
         
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private String getIndexName( AppCommandParser parser ) throws ShellException
