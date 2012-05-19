@@ -118,13 +118,13 @@ public class GraphStyle
             @Override
             protected void emitGraphStart( Appendable stream ) throws IOException
             {
-                stream.append( " subgraph " + subgraphName + " {" );
+                stream.append( String.format( " subgraph cluster_%s {", subgraphName ) );
             }
 
             @Override
             protected void emitGraphEnd( Appendable stream ) throws IOException
             {
-                stream.append( " }\n" );
+                stream.append( String.format( " label = \"%s\"\n }\n", subgraphName ) );
             }
         };
     }
