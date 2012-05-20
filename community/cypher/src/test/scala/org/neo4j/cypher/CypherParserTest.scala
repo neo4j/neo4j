@@ -1415,6 +1415,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def create_node_with_a_property2() {
+    testFrom_1_8("create a={name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem("a", Map("name" -> Literal("Andres"))))
+        returns()
+    )
+  }
+
   @Test def create_node_with_a_property_and_return_it() {
     testFrom_1_8("create (a {name : 'Andres'}) return a",
       Query.

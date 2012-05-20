@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase {
     testQuery(
       title = "Create single node and set properties",
       text = "The values for the properties can be any scalar expressions.",
-      queryText = "create (n {name : 'Andres', title : 'Developer'})",
+      queryText = "create n = {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
@@ -51,7 +51,7 @@ class CreateTest extends DocumentingTestBase {
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (a {name : 'Andres'}) return a",
-      returns = "The newly created node is returned.",
+      returns = "The newly created node is returned. This query uses the alternative syntax, which fits with how +RELATE+ looks.",
       assertions = (p) => assert(p.size === 1)
     )
   }
