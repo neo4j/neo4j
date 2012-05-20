@@ -50,6 +50,10 @@ trait ParserPattern extends Base with Expressions {
   private def pattern: Parser[Seq[AbstractPattern]] = commaList(patternBit) ^^ (patterns => patterns.flatten)
 
   private def patternBit: Parser[Seq[AbstractPattern]] = relationship |
+    identity ~ "=" ~ properties ^^
+      {
+        case name ~ "=" ~ map => Seq(ParsedEntity(Entity(name), map))
+      } |
     node ^^ (n => Seq(n))
 
 
