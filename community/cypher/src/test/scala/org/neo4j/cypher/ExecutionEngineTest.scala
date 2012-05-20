@@ -1954,4 +1954,10 @@ RETURN x0.name?
     assert(result("1").getClass === classOf[java.lang.Long])
     assert(result("1.5").getClass === classOf[java.lang.Double])
   }
+
+  @Test def square_function_returns_decimals() {
+    val result = parseAndExecute("start n=node(0) return sqrt(12.96)").toList
+
+    assert(result === List(Map("sqrt(12.96)"->3.6)))
+  }
 }

@@ -107,7 +107,7 @@ case class RoundFunction(expression: Expression) extends MathFunction(expression
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
-  def compute(m: Map[String, Any]): Any = Math.sqrt(asDouble(argument(m))).toInt
+  def compute(m: Map[String, Any]): Any = Math.sqrt(asDouble(argument(m)))
 
   protected def name = "sqrt"
 
