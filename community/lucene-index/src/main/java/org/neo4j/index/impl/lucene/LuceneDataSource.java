@@ -543,13 +543,20 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
         else
         {
-            if ( searcher.other().compareAndSet( true, false ) )
+            if ( searcher.other().get() )
             {
-                IndexWriter writer = getIndexWriter( identifier );
-                searcher = refreshSearcher( searcher, writer );
-                if ( searcher != null )
+                synchronized ( searcher )
                 {
-                    indexSearchers.put( identifier, searcher );
+                    if ( searcher.other().get() )
+                    {
+                        IndexWriter writer = getIndexWriter( identifier );
+                        searcher = refreshSearcher( searcher, writer );
+                        if ( searcher != null )
+                        {
+                            indexSearchers.put( identifier, searcher );
+                        }
+                        searcher.other().set( false );
+                    }
                 }
             }
         }
@@ -599,12 +606,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return new LuceneTransaction( identifier, logicalLog, this );
     }
 
-    synchronized void invalidateIndexSearcher( IndexIdentifier identifier )
+    void invalidateIndexSearcher( IndexIdentifier identifier )
     {
         Pair<IndexSearcherRef, AtomicBoolean> searcher = indexSearchers.get( identifier );
         if ( searcher != null )
         {
-            searcher.other().set( true );
+            synchronized ( searcher )
+            {
+                searcher.other().set( true );
+            }
         }
     }
 
