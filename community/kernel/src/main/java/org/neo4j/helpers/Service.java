@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterable;
@@ -187,7 +188,6 @@ public abstract class Service
     public static <T> Iterable<T> load( Class<T> type )
     {
         Iterable<T> loader;
-        if ( null != ( loader = osgiLoader( type ) ) ) return loader;
         if ( null != ( loader = java6Loader( type ) ) ) return loader;
         if ( null != ( loader = sunJava5Loader( type ) ) ) return loader;
         if ( null != ( loader = ourOwnLoader( type ) ) ) return loader;
@@ -277,60 +277,23 @@ public abstract class Service
         };
     }
 
-    private static volatile OSGiLoader osgiLoader;
-
-    private static <T> Iterable<T> osgiLoader( Class<T> type )
-    {
-        OSGiLoader loader = osgiLoader;
-        if ( loader == null )
-        {
-            osgiLoader = loader = OSGiLoader.instance();
-        }
-        return loader.load( type );
-    }
-
-    static class OSGiLoader
-    {
-        private static OSGiLoader instance;
-
-        synchronized static OSGiLoader instance()
-        {
-            if ( instance == null )
-            {
-                try
-                {
-                    @SuppressWarnings( "unchecked" ) Class<? extends OSGiLoader> loaderClass =
-                        (Class<? extends OSGiLoader>) Class.forName( "org.neo4j.helpers.OSGiServiceLoader" );
-                    instance = loaderClass.newInstance();
-                }
-                catch ( LinkageError err )
-                {
-                }
-                catch ( Exception ex )
-                {
-                }
-                if ( instance == null )
-                {
-                    instance = new OSGiLoader();
-                }
-            }
-            return instance;
-        }
-
-        <T> Iterable<T> load( @SuppressWarnings( "unused" ) Class<T> type )
-        {
-            return null;
-        }
-    }
-
-    private static <T> Iterable<T> java6Loader( Class<T> type )
+    @SuppressWarnings("unchecked")
+	private static <T> Iterable<T> java6Loader( Class<T> type )
     {
         try
         {
-            @SuppressWarnings( "unchecked" ) Iterable<T> result = (Iterable<T>)
-                    Class.forName( "java.util.ServiceLoader" )
+            Class<?> serviceLoaderClass = Class.forName( "java.util.ServiceLoader" );
+			Iterable<T> contextClassLoaderServices = (Iterable<T>)
+                    serviceLoaderClass
                     .getMethod( "load", Class.class )
                     .invoke( null, type );
+			// Jboss 7 does not export content of META-INF/services to context class loader,
+			// so this call adds implementations defined in Neo4j libraries from the same module.
+			Iterable<T> currentClassLoaderServices = (Iterable<T>)
+                    serviceLoaderClass
+                    .getMethod( "load", Class.class, ClassLoader.class )
+                    .invoke( null, type, Service.class.getClassLoader() );
+            Iterable<T> result = new CombiningIterable<T>(Arrays.asList(contextClassLoaderServices,currentClassLoaderServices));
             return filterExceptions( result );
         }
         catch ( Exception e )
