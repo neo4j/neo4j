@@ -1,3 +1,15 @@
+1.7.1 (2012-05-21)
+-----------------
+o [kernel] Fixed bug where some transactions were applied to the store but not flushed to the log
+o [kernel] Fixed bug with duplicate start entries in the logical log
+o [kernel] SpringTransactionManager now properly retrieves the underlying transaction manager in HA setups
+o [kernel] PropertyIndexManager uses less synchronized methods
+o [lucene-index] Index searchers are now non synchronized for the common, non-dirty case
+o [server] keep_logical_logs=false will now be respected if explicitly set
+o [ha] Fixed some synchronization issues in ZooKeeper related code
+o [ha] Fix ensuring really old instances copy the store instead of failing due to transaction not found
+o [ha] Fixed a race condition in pull updates which could lead to NPEs
+
 1.7 (2012-04-18)
 ----------------
 o Moved BatchInserter to a different package.

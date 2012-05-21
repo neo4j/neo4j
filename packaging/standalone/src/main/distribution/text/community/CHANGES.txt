@@ -1,3 +1,12 @@
+1.7.1 (2012-05-21)
+-----------------
+o [kernel] Fixed bug where some transactions were applied to the store but not flushed to the log
+o [kernel] Fixed bug with duplicate start entries in the logical log
+o [kernel] SpringTransactionManager now properly retrieves the underlying transaction manager in HA setups
+o [kernel] PropertyIndexManager uses less synchronized methods
+o [lucene-index] Index searchers are now non synchronized for the common, non-dirty case
+o [server] keep_logical_logs=false will now be respected if explicitly set
+
 1.7 (2012-04-18)
 ----------------
 o Moved BatchInserter to a different package.
