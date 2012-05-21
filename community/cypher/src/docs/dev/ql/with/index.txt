@@ -7,6 +7,10 @@ used to pipe the result from one query to the next.
 +WITH+ is also used to separate reading from updating of the graph. Every sub-query of a query must either be
 a read-only or a write-only.
 
+[TIP]
+Only variables that are explicitly named in the prepending +WITH+ clause can be seen be the following sub-query.
+Everything else is isolated from the following statements and not visible.
+
 include::cypher-with-graph.txt[]
 
 include::filter-on-aggregate-function-results.txt[]
