@@ -42,8 +42,8 @@ define(
         # lost splash have been pre-loaded, so we
         # have them in case the server dies.
         splash = $(template())
-        splash.hide()
         $("body").append(splash)
+        setTimeout((-> splash.hide()),0)
 
       connectionLost : =>
 
