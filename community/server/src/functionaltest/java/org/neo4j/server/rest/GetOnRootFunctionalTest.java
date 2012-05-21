@@ -102,7 +102,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     /**
      * The whole REST API can be transmitted as JSON streams,
      * resulting in better performance and lower memory overhead at the server side.
-     * To use it, adjust your accep headers on the request for every call.
+     * To use it, adjust your accept headers on the request for every call.
      */
     @Documented
     @Test
