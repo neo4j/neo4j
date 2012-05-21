@@ -24,28 +24,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class PropertyIndexManager
     implements Lifecycle
 {
-    private ArrayMap<String,List<PropertyIndex>> indexMap = 
-        new ArrayMap<String,List<PropertyIndex>>( (byte)5, true, false );
-    private ArrayMap<Integer,PropertyIndex> idToIndexMap = 
-        new ArrayMap<Integer,PropertyIndex>( (byte)9, true, false );
+    private ConcurrentHashMap<String, List<PropertyIndex>> indexMap = new ConcurrentHashMap<String, List<PropertyIndex>>();
+    private ConcurrentHashMap<Integer, PropertyIndex> idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
 
-    private ArrayMap<Transaction,TxCommitHook> txCommitHooks = 
-        new ArrayMap<Transaction,TxCommitHook>( (byte)5, true, false );
+    private ConcurrentHashMap<Transaction, TxCommitHook> txCommitHooks = new ConcurrentHashMap<Transaction, TxCommitHook>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
@@ -74,8 +73,8 @@ public class PropertyIndexManager
     @Override
     public void stop()
     {
-        indexMap = new ArrayMap<String,List<PropertyIndex>>( (byte)5, true, false );
-        idToIndexMap = new ArrayMap<Integer,PropertyIndex>( (byte)9, true, false );
+        indexMap = new ConcurrentHashMap<String, List<PropertyIndex>>();
+        idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
         txCommitHooks.clear();
     }
 
@@ -86,20 +85,28 @@ public class PropertyIndexManager
 
     public Iterable<PropertyIndex> index( String key )
     {
-        List<PropertyIndex> list = indexMap.get( key );
-        TxCommitHook hook = txCommitHooks.get( getTransaction() );
-        if ( hook != null )
+        List<PropertyIndex> list = null;
+        if ( key != null )
         {
-            PropertyIndex index = hook.getIndex( key );
-            if ( index != null )
+            list = indexMap.get( key );
+            Transaction tx = getTransaction();
+            if ( tx != null )
             {
-                List<PropertyIndex> added = new ArrayList<PropertyIndex>();
-                if ( list != null )
+                TxCommitHook hook = txCommitHooks.get( getTransaction() );
+                if ( hook != null )
                 {
-                    added.addAll( list );
+                    PropertyIndex index = hook.getIndex( key );
+                    if ( index != null )
+                    {
+                        List<PropertyIndex> added = new ArrayList<PropertyIndex>();
+                        if ( list != null )
+                        {
+                            added.addAll( list );
+                        }
+                        added.add( index );
+                        return added;
+                    }
                 }
-                added.add( index );
-                return added;
             }
         }
         if ( list == null )
@@ -128,29 +135,33 @@ public class PropertyIndexManager
     {
         for ( NameData rawIndex : indexes )
         {
-            addPropertyIndex( new PropertyIndex( rawIndex.getName(), 
+            addPropertyIndex( new PropertyIndex( rawIndex.getName(),
                 rawIndex.getId() ) );
         }
     }
 
     void addPropertyIndex( NameData rawIndex )
     {
-        addPropertyIndex( new PropertyIndex( rawIndex.getName(), 
+        addPropertyIndex( new PropertyIndex( rawIndex.getName(),
             rawIndex.getId() ) );
     }
-    
+
     public PropertyIndex getIndexFor( int keyId )
     {
         PropertyIndex index = idToIndexMap.get( keyId );
         if ( index == null )
         {
-            TxCommitHook commitHook = txCommitHooks.get( getTransaction() );
-            if ( commitHook != null )
+            Transaction tx = getTransaction();
+            if ( tx != null )
             {
-                index = commitHook.getIndex( keyId );
-                if ( index != null )
+                TxCommitHook commitHook = txCommitHooks.get( getTransaction() );
+                if ( commitHook != null )
                 {
-                    return index;
+                    index = commitHook.getIndex( keyId );
+                    if ( index != null )
+                    {
+                        return index;
+                    }
                 }
             }
             String indexString;
@@ -186,7 +197,7 @@ public class PropertyIndexManager
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to get transaction.", e );
         }
     }
@@ -229,7 +240,7 @@ public class PropertyIndexManager
             se.printStackTrace();
         }
     }
-    
+
     void commit( Transaction tx )
     {
         if ( tx != null )
@@ -244,7 +255,7 @@ public class PropertyIndexManager
             }
         }
     }
-    
+
     void rollback( Transaction tx )
     {
         txCommitHooks.remove( tx );
@@ -252,9 +263,9 @@ public class PropertyIndexManager
 
     private static class TxCommitHook
     {
-        private Map<String,PropertyIndex> createdIndexes = 
+        private Map<String,PropertyIndex> createdIndexes =
             new HashMap<String,PropertyIndex>();
-        private Map<Integer,PropertyIndex> idToIndex = 
+        private Map<Integer,PropertyIndex> idToIndex =
             new HashMap<Integer,PropertyIndex>();
 
 
