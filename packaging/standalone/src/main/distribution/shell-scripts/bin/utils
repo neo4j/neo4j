@@ -313,8 +313,13 @@ checkandrepairenv() {
 
 # Checks system limits, warns if not proper
 checklimits() {
-    OPEN_FILES=`ulimit -n`
     if [[ $DIST_OS != "macosx" ]] ; then
+      if [ $UID == 0 ] ; then
+        OPEN_FILES=`su $NEO4J_USER -c "ulimit -n"`
+      else
+        OPEN_FILES=`ulimit -n`
+      fi
+
       if [ $OPEN_FILES -lt 40000 ]; then
         echo "WARNING: Max $OPEN_FILES open files allowed, minimum of 40 000 recommended. See the Neo4j manual."
       fi
