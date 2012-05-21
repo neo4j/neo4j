@@ -33,10 +33,11 @@
       <outputDirectory>/</outputDirectory>
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
-       <excludes>
-          <exclude>conf/jmx.*</exclude>
-        </excludes>
-        <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>conf/jmx.*</exclude>
+      </excludes>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
     </fileSet>
     <!-- password files -->
     <fileSet>
@@ -44,10 +45,10 @@
       <outputDirectory>/</outputDirectory>
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
-       <includes>
-          <include>conf/jmx.*</include>
-        </includes>
-        <fileMode>0600</fileMode>
+      <includes>
+        <include>conf/jmx.*</include>
+      </includes>
+      <fileMode>0600</fileMode>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
