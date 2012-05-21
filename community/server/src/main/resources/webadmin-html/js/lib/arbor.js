@@ -239,7 +239,7 @@
             trace('using web workers')
             _screenInterval = setInterval(that.screenUpdate, params.timeout)
   
-            _physics = new Worker(arbor_path()+"arbor.js")
+            _physics = new Worker( arbor_path()+"arbor.js" )
             _physics.onmessage = that.workerMsg
             _physics.onerror = function(e){ trace('physics:',e) }
             _physics.postMessage({type:"physics", 
