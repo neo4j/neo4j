@@ -80,7 +80,6 @@ public class AncestorsUtil {
             node = rel.getOtherNode(node);       
 
             ancestors.add(node);
-            System.out.println(node.getId());
 
             relIterator = expander.expand(node).iterator();
 
