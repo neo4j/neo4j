@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -30,6 +31,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -80,4 +82,35 @@ public class ServerConfigTest extends ExclusiveServerTestBase
         response.close();
     }
 
+    @Test
+    public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
+    {
+        server = server().withProperty( Configurator.WADL_ENABLED, "true").build();
+        server.start();
+        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+
+        assertEquals(200, response.getStatus());
+        assertEquals("application/vnd.sun.wadl+xml", response.getHeaders().get("Content-Type").iterator().next());
+        assertThat(response.getEntity(String.class), containsString("<application xmlns=\"http://wadl.dev.java.net/2009/02\">"));
+    }
+
+    @Test
+    public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
+    {
+        server = server().build();
+        server.start();
+        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+
+        assertEquals(404, response.getStatus());
+    }
+
+    @Test
+    public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
+    {
+        server = server().withProperty( Configurator.WADL_ENABLED, "false").build();
+        server.start();
+        JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
+
+        assertEquals(404, response.getStatus());
+    }
 }
