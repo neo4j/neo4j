@@ -23,7 +23,7 @@ define(
    './RelationshipStyler'
    './VisualDataModel'
    './views/NodeFilterDialog'
-   'lib/amd/arbor'],
+   'lib/amd/arb-or'],
   (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog, arbor) ->
 
     class VisualGraph

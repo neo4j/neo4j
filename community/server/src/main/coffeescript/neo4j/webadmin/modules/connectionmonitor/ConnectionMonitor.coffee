@@ -38,6 +38,13 @@ define(
         # check if the server is alive.
         @db.heartbeat.addListener ->
 
+        # Make sure any images in the connection 
+        # lost splash have been pre-loaded, so we
+        # have them in case the server dies.
+        splash = $(template())
+        $("body").append(splash)
+        setTimeout((-> splash.hide()),0)
+
       connectionLost : =>
 
         if not @visible

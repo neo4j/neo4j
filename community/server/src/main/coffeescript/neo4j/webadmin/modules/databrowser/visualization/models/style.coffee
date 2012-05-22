@@ -29,7 +29,7 @@ define(
     
     LABEL_PATTERN_TOOLTIP = """You can use placeholders in the label.<br/>
 {id} for node id<br/>
-{PROPERTYNAME} or {prop.PROPERTYNAME} for properties.<br/>
+{propertyname} or {prop.propertyname} for properties.<br/>
 {props} for all properties.<br/><br/>
 <b>Truncate values</b><br/>
 {bigproperty|truncate:10}<br/><br/>
