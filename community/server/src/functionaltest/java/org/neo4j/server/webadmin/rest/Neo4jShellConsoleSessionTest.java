@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
@@ -44,7 +45,7 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class Neo4jShellConsoleSessionTest implements SessionFactory
+public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
 {
     private static final String LN = System.getProperty("line.separator");
     private ConsoleService consoleService;
@@ -96,5 +97,13 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
     {
         return (List<String>)JsonHelper.readJson(new String( (byte[]) response.getEntity(), "UTF-8" ));
+    }
+
+    @Override
+    public Iterable<String> supportedEngines()
+    {
+        return new ArrayList<String>(){{
+            add("shell");
+        }};
     }
 }

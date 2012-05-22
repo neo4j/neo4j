@@ -34,6 +34,7 @@ import org.codehaus.groovy.tools.shell.IO;
 import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.logging.Logger;
 
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
@@ -42,6 +43,8 @@ public class GremlinSession implements ScriptSession
 {
     private static final String INIT_FUNCTION = "init()";
 
+    private static final Logger log = Logger.getLogger(GremlinSession.class);
+    
     protected GremlinWebConsole scriptEngine;
     private final Database database;
     private final IO io;
@@ -99,13 +102,17 @@ public class GremlinSession implements ScriptSession
             }
             else
             {
-                scriptEngine.execute( script );
-                result = baos.toString();
-                resetIO();
+                try {
+                    scriptEngine.execute( script );
+                    result = baos.toString();
+                } finally {
+                    resetIO();
+                }
             }
         }
         catch ( GroovyRuntimeException ex )
         {
+            log.error(ex);
             result = ex.getMessage();
         }
         return Pair.of( result, null );

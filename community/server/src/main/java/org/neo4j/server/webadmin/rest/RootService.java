@@ -41,7 +41,7 @@ public class RootService
 
     private AdvertisableService[] services()
     {
-        AdvertisableService console = new ConsoleService( (SessionFactory) null, null, null );
+        AdvertisableService console = new ConsoleService( (ConsoleSessionFactory) null, null, null );
         AdvertisableService jmx = new JmxService( null, null );
         MonitorService monitor = new MonitorService( null, null );
 

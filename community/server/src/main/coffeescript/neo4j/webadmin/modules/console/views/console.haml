@@ -1,11 +1,16 @@
-#console-tabs
-  %ul.button-bar.grouped
-    %li
-      %a(href="#/console/shell" class="button #{(current == 'shell' ? 'current':'')}") Neo4j Shell
-    %li
-      %a(href="#/console/gremlin" class="button #{(current == 'gremlin' ? 'current':'')}") Gremlin
-    %li
-      %a(href="#/console/http" class="button #{(current == 'http' ? 'current':'')}") HTTP
+:if engines.length > 1
+  #console-tabs
+    %ul.button-bar.grouped
+      :if _(engines).indexOf('shell') > -1
+        %li
+          %a(href="#/console/shell" class="button #{(current == 'shell' ? 'current':'')}") Neo4j Shell
+      :if _(engines).indexOf('gremlin') > -1
+        %li
+          %a(href="#/console/gremlin" class="button #{(current == 'gremlin' ? 'current':'')}") Gremlin
+      :if _(engines).indexOf('http') > -1
+        %li
+          %a(href="#/console/http" class="button #{(current == 'http' ? 'current':'')}") HTTP
+
 #console.pad
   %ul
     :each line in lines

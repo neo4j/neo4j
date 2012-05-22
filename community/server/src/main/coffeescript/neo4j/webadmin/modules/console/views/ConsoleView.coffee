@@ -36,6 +36,7 @@ define(
         @appState = opts.appState
         @consoleState = opts.consoleState
         @lang = opts.lang
+        @availableEngines = opts.engines
         @consoleState.bind("change", @renderConsole)
 
       consoleKeyUp : (ev) =>
@@ -63,7 +64,8 @@ define(
         $("#console-input").putCursorAtEnd()
 
       renderConsole : ()=>
-        $("#console-base",@el).html consoleTemplate(
+        $("#console-base",@el).html consoleTemplate(          
+          engines : @availableEngines
           lines : @consoleState.get "lines"
           prompt : @consoleState.get "prompt"
           showPrompt : @consoleState.get "showPrompt"

@@ -28,14 +28,14 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.SessionFactory;
+import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
 
 public class ServerRootRepresentationTest
 {
     @Test
     public void shouldProvideAListOfServiceUris() throws Exception
     {
-        ConsoleService consoleService = new ConsoleService( (SessionFactory) null, null, null );
+        ConsoleService consoleService = new ConsoleService( (ConsoleSessionFactory) null, null, null );
         ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
                 consoleService );
         Map<String, Map<String, String>> map = srr.serialize();

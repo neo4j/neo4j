@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 import javax.ws.rs.core.Response;
 
@@ -40,7 +40,7 @@ import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class GremlinConsoleServiceTest implements SessionFactory
+public class GremlinConsoleServiceTest implements ConsoleSessionFactory
 {
     private ConsoleService consoleService;
     private Database database;
@@ -76,17 +76,6 @@ public class GremlinConsoleServiceTest implements SessionFactory
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         assertThat( response, containsString( "v[2]" ) );
     }
-
-    @Test
-    public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
-    {
-        Response consoleResponse = consoleService.getServiceDefinition();
-
-        assertEquals( 200, consoleResponse.getStatus() );
-        String response = decode( consoleResponse );
-        assertThat( response, containsString( "resources" ) );
-        assertThat( response, containsString( uri.toString() ) );
-    }
     
     @Before
     public void setUp() throws Exception
@@ -105,5 +94,13 @@ public class GremlinConsoleServiceTest implements SessionFactory
     public ScriptSession createSession( String engineName, Database database )
     {
         return new GremlinSession( database );
+    }
+    
+    @Override
+    public Iterable<String> supportedEngines()
+    {
+        return new ArrayList<String>(){{
+            add("gremlin");
+        }};
     }
 }

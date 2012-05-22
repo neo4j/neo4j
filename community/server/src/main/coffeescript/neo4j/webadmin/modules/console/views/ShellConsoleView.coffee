@@ -29,7 +29,9 @@ define(
     class ShellConsoleView extends ConsoleView
       
       render : =>
-        $(@el).html(baseTemplate(current:'shell'))
+        $(@el).html(baseTemplate(
+          current:'shell'
+        ))
         @renderConsole()
         return this  
 )

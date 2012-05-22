@@ -20,7 +20,9 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +31,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.server.webadmin.rest.SessionFactoryImpl;
 
 public interface Configurator
 {
@@ -62,6 +65,14 @@ public interface Configurator
     String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
 
     String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
+    
+    String MANAGEMENT_CONSOLE_ENGINES = "org.neo4j.server.manage.console_engines";
+    List<String> DEFAULT_MANAGEMENT_CONSOLE_ENGINES = new ArrayList<String>(){
+        private static final long serialVersionUID = 6621747998288594121L;
+    {
+        add(SessionFactoryImpl.ConsoleEngineCreator.SHELL.name().toLowerCase());
+        add(SessionFactoryImpl.ConsoleEngineCreator.GREMLIN.name().toLowerCase());
+    }};
 
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
     
