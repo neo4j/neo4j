@@ -4,6 +4,7 @@ o Added RELATE
 o Changed the CREATE syntax, so it looks more like RELATE
 o Fixes issues #512, #506, #514, #508, #523, #526
 o Fixes #536: SQRT only returns an integer
+o Fixes #543: Appending elements to collections
 
 1.8.M02 (2012-05-11)
 --------------------

@@ -86,8 +86,24 @@ case class SingleInIterable(iterable: Expression, symbolName: String, inner: Pre
   def rewrite(f: (Expression) => Expression) = SingleInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
 }
 
+object IsIterable extends IterableSupport {
+  def unapply(x: Any) = if (isCollection(x)) {
+    Some(castToTraversable(x))
+  } else {
+    None
+  }
+}
+
 trait IterableSupport {
-  def makeTraversable(z: Any): Traversable[Any] = z match {
+  def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
+
+  def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {
+    castToTraversable(z)
+  } else {
+    Stream(z)
+  }
+
+  def castToTraversable: PartialFunction[Any, Traversable[Any]] = {
     case x: Seq[_] => x
     case x: Array[_] => x
     case x: Map[_, _] => Stream(x)
@@ -97,6 +113,5 @@ trait IterableSupport {
       case y: JavaMap[_, _] => y.asScala
       case y => y
     }
-    case x => Stream(x)
   }
 }

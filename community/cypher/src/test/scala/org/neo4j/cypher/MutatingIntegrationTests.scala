@@ -367,6 +367,20 @@ return distinct center""")
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     assert(result.size == 2)
   }
+
+  @Test
+  def concatenate_to_a_collection() {
+    val result = executeScalar[Array[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
+
+    assert(result === Array(1,2,3,4,5))
+  }
+
+  @Test
+  def concatenate_to_a_collection_in_reverse() {
+    val result = executeScalar[Array[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
+
+    assert(result === Array(1,2,3,4,5))
+  }
 }
 
 trait StatisticsChecker extends Assertions {
