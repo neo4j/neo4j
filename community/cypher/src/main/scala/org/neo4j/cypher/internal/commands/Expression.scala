@@ -73,6 +73,9 @@ case class Add(a: Expression, b: Expression) extends Expression {
     (aVal, bVal) match {
       case (x: Number, y: Number) => x.doubleValue() + y.doubleValue()
       case (x: String, y: String) => x + y
+      case (IsIterable(x), IsIterable(y)) => x ++ y
+      case (IsIterable(x), y) => x ++ Seq(y)
+      case (x, IsIterable(y)) => Seq(x) ++ y
       case _ => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
     }
   }
