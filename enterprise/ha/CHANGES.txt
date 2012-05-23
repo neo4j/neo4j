@@ -1,3 +1,8 @@
+1.8.M03 (2012-05-24)
+--------------------
+o Fixed possible but benign NPE when pulling updates
+o Really old instances when attempting to join but the tx is not in the master's log will now copy the store
+
 1.8.M01 (2012-04-26)
 --------------------
 o Fix for a rare race condition in initialization code of zoo keeper client which could make
