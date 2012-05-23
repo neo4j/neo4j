@@ -57,7 +57,7 @@ public interface App
 	 * it should exit. 
 	 * @throws Exception if the execution fails.
 	 */
-	String execute( AppCommandParser parser, Session session, Output out )
+	Continuation execute( AppCommandParser parser, Session session, Output out )
 		throws Exception;
 	
 	/**

@@ -20,42 +20,71 @@
 package org.neo4j.shell;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * A session (or environment) for a shell client.
  */
-public interface Session extends Serializable
+public class Session
 {
+    private final Serializable id;
+    private final Map<String, Object> properties = new HashMap<String, Object>();
+    
+    public Session( Serializable id )
+    {
+        this.id = id;
+    }
+    
+    public Serializable getId()
+    {
+        return id;
+    }
+    
 	/**
 	 * Sets a session value.
 	 * @param key the session key.
 	 * @param value the value.
 	 */
-	void set( String key, Serializable value );
+	public void set( String key, Object value )
+	{
+	    properties.put( key, value );
+	}
 	
 	/**
 	 * @param key the key to get the session value for.
 	 * @return the value for the {@code key} or {@code null} if not found.
 	 */
-	Serializable get( String key );
+	public Object get( String key )
+	{
+	    return properties.get( key );
+	}
 	
 	/**
 	 * Removes a value from the session.
 	 * @param key the session key to remove.
 	 * @return the removed value, or {@code null} if none.
 	 */
-	Serializable remove( String key );
+	public Object remove( String key )
+	{
+	    return properties.remove( key );
+	}
 	
 	/**
 	 * @return all the available session keys.
 	 */
-	String[] keys();
+	public String[] keys()
+	{
+	    return properties.keySet().toArray( new String[ properties.size() ] );
+	}
 	
 	/**
 	 * Returns the session as a {@link Map} representation. Changes in the
 	 * returned instance won't be reflected in the session.
 	 * @return the session as a {@link Map}.
 	 */
-	Map<String, Serializable> asMap();
+	public Map<String, Object> asMap()
+	{
+	    return properties;
+	}
 }

@@ -30,7 +30,6 @@ import java.io.PrintWriter;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -119,9 +118,8 @@ public class ShellTest
     {
         GraphDatabaseService db = new ImpermanentGraphDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
-        ShellClient client = new SameJvmClient( server );
 
-        Documenter doc = new Documenter("sample session", client);
+        Documenter doc = new Documenter( "sample session", server );
         doc.add("pwd", "", "where are we?");
         doc.add("set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"");
         doc.add("start n=node(0) return n;", "Jon", "send a cypher query");
@@ -147,9 +145,8 @@ public class ShellTest
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().loadPropertiesFromURL( getClass().getResource( "/autoindex.properties" ) ).newGraphDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
-        ShellClient client = new SameJvmClient( server );
 
-        Documenter doc = new Documenter("a matrix example", client);
+        Documenter doc = new Documenter( "a matrix example", server );
         doc.add( "mkrel -t ROOT -c -v", "created",
         "create the Thomas Andersson node" );
         doc.add("cd 1", "", "go to the new node");

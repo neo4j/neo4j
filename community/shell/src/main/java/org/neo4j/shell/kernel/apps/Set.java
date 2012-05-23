@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -157,7 +158,7 @@ public class Set extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session,
+    protected Continuation exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException
     {
         if ( parser.arguments().size() < 2 )
@@ -172,7 +173,7 @@ public class Set extends GraphDatabaseApp
 
         NodeOrRelationship thing = getCurrent( session );
         thing.setProperty( key, value );
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private static Object parseValue( String stringValue, ValueType valueType )

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -51,7 +52,7 @@ public class Rmnode extends GraphDatabaseApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
+    protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
         NodeOrRelationship node = null;
@@ -75,7 +76,7 @@ public class Rmnode extends GraphDatabaseApp
         if ( !node.isNode() )
         {
             out.println( "Please select a node to delete" );
-            return null;
+            return Continuation.INPUT_COMPLETE;
         }
         
         boolean forceDeletion = parser.options().containsKey( "f" );
@@ -94,6 +95,6 @@ public class Rmnode extends GraphDatabaseApp
                     " cannot be deleted because it still has relationships. Use -f to force deletion of its relationships" );
         }
         node.asNode().delete();
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 }

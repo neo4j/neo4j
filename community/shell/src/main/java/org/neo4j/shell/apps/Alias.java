@@ -22,6 +22,7 @@ package org.neo4j.shell.apps;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.impl.AbstractApp;
@@ -38,14 +39,14 @@ public class Alias extends AbstractApp
                 "Usage: alias <key>='<value>'";
     }
 
-    public String execute( AppCommandParser parser, Session session,
+    public Continuation execute( AppCommandParser parser, Session session,
             Output out ) throws Exception
     {
         String line = parser.getLineWithoutApp();
         if ( line.trim().length() == 0 )
         {
             printAllAliases( session, out );
-            return null;
+            return Continuation.INPUT_COMPLETE;
         }
 
         String[] keyValue = Export.splitInKeyEqualsValue( line );
@@ -53,13 +54,13 @@ public class Alias extends AbstractApp
         String value = keyValue[ 1 ];
         if ( value == null || value.trim().length() == 0 )
         {
-            safeRemove( session, key );
+            session.remove( key );
         }
         else
         {
-            safeSet( session, key, value );
+            session.set( key, value );
         }
-        return null;
+        return Continuation.INPUT_COMPLETE;
     }
 
     private void printAllAliases( Session session, Output out )
