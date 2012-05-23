@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -129,7 +128,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session,
+    protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
         List<TypedId> paths = readCurrentWorkingDir( session );
@@ -146,7 +145,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             {
                 clearCurrent( session );
                 writeCurrentWorkingDir( paths, session );
-                return Continuation.INPUT_COMPLETE;
+                return null;
             }
         }
         else
@@ -235,7 +234,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             clearCurrent( session );
         }
         writeCurrentWorkingDir( paths, session );
-        return Continuation.INPUT_COMPLETE;
+        return null;
     }
 
     private long findNodeWithTitle( Node node, String match, Session session )

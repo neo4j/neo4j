@@ -33,7 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -109,7 +108,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
+    protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         Kernel kernel = getKernel();
         boolean list = parser.options().containsKey( "l" ), get = parser.options().containsKey( "g" );
@@ -119,7 +118,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
             getUsage( usage );
             usage.append( ".\n" );
             out.print( usage.toString() );
-            return Continuation.INPUT_COMPLETE;
+            return null;
         }
         MBeanServer mbeans = getPlatformMBeanServer();
         String bean = null;
@@ -138,7 +137,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
             StringBuilder result = new StringBuilder();
             availableBeans( mbeans, kernel, result );
             out.print( result.toString() );
-            return Continuation.INPUT_COMPLETE;
+            return null;
         }
         ObjectName mbean;
         {
@@ -194,7 +193,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
             }
             out.println( json.toString( 2 ) );
         }
-        return Continuation.INPUT_COMPLETE;
+        return null;
     }
 
     private void printAttribute( JSONObject json, Object value ) throws RemoteException, ShellException

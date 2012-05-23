@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel.apps;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 
@@ -48,7 +47,7 @@ public class Jsh extends GraphDatabaseApp
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out )
+    protected String exec( AppCommandParser parser, Session session, Output out )
         throws Exception
     {
         return sh.execute( parser, session, out );

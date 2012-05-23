@@ -29,7 +29,6 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -52,7 +51,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out )
+    protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
         String query = parser.getLine();
@@ -71,11 +70,11 @@ public class Start extends ReadOnlyGraphDatabaseApp
             {
                 throw ShellException.wrapCause( e );
             }
-            return Continuation.INPUT_COMPLETE;
+            return null;
         }
         else
         {
-            return Continuation.INPUT_INCOMPLETE;
+            return "c";
         }
     }
 

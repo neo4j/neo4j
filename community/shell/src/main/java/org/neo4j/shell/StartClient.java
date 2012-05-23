@@ -23,19 +23,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Args;
 import org.neo4j.shell.impl.AbstractServer;
-import org.neo4j.shell.impl.RmiLocation;
+import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.impl.StandardConsole;
@@ -297,7 +294,8 @@ public class StartClient
 
         if ( !isCommandLine( args ) )
             System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
-        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ) );
+        ShellClient client = new SameJvmClient( server );
+        setSessionVariablesFromArgs( client, args );
         grabPromptOrJustExecuteCommand( client, args );
         shutdownIfNecessary( server );
     }
@@ -341,9 +339,10 @@ public class StartClient
             String host = args.get( ARG_HOST, "localhost" );
             int port = args.getNumber( ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue();
             String name = args.get( ARG_NAME, AbstractServer.DEFAULT_NAME );
-            ShellClient client = ShellLobby.newClient( RmiLocation.location( host, port, name ), getSessionVariablesFromArgs( args ) );
+            ShellClient client = ShellLobby.newClient( host, port, name );
             if ( !isCommandLine( args ) )
                 System.out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
+            setSessionVariablesFromArgs( client, args );
             grabPromptOrJustExecuteCommand( client, args );
         }
         catch ( Exception e )
@@ -362,7 +361,7 @@ public class StartClient
         String command = args.get( ARG_COMMAND, null );
         if ( command != null )
         {
-            client.evaluate( command );
+            client.getServer().interpretLine( command, client.session(), client.getOutput() );
             client.shutdown();
         }
         else
@@ -371,12 +370,14 @@ public class StartClient
         }
     }
 
-    static Map<String, Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
+    static void setSessionVariablesFromArgs(
+        ShellClient client, Args args ) throws RemoteException
     {
         String profile = args.get( "profile", null );
-        Map<String, Serializable> session = new HashMap<String, Serializable>();
         if ( profile != null )
-            applyProfileFile( new File( profile ), session );
+        {
+            applyProfileFile( new File( profile ), client );
+        }
 
         for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
         {
@@ -384,13 +385,12 @@ public class StartClient
             if ( key.startsWith( "D" ) )
             {
                 key = key.substring( 1 );
-                session.put( key, entry.getValue() );
+                client.session().set( key, entry.getValue() );
             }
         }
-        return session;
     }
 
-    private static void applyProfileFile( File file, Map<String, Serializable> session ) throws ShellException
+    private static void applyProfileFile( File file, ShellClient client )
     {
         InputStream in = null;
         try
@@ -401,7 +401,7 @@ public class StartClient
             {
                 String stringKey = ( String ) key;
                 String value = properties.getProperty( stringKey );
-                session.put( stringKey, value );
+                client.session().set( stringKey, value );
             }
         }
         catch ( IOException e )

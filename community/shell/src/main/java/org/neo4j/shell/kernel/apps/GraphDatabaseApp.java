@@ -47,7 +47,6 @@ import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
@@ -96,7 +95,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     public static NodeOrRelationship getCurrent(
         GraphDatabaseShellServer server, Session session ) throws ShellException
     {
-        String currentThing = ( String ) session.get( CURRENT_KEY );
+        String currentThing = ( String ) safeGet( session, CURRENT_KEY );
         NodeOrRelationship result = null;
         if ( currentThing == null )
         {
@@ -127,20 +126,20 @@ public abstract class GraphDatabaseApp extends AbstractApp
 
     public static boolean isCurrent( Session session, NodeOrRelationship thing )
     {
-        String currentThing = ( String ) session.get( CURRENT_KEY );
+        String currentThing = ( String ) safeGet( session, CURRENT_KEY );
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
     }
     
     protected static void clearCurrent( Session session )
     {
-        session.set( CURRENT_KEY, new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
+        safeSet( session, CURRENT_KEY, new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
     }
 
     protected static void setCurrent( Session session,
         NodeOrRelationship current )
     {
-        session.set( CURRENT_KEY, current.getTypedId().toString() );
+        safeSet( session, CURRENT_KEY, current.getTypedId().toString() );
     }
 
     protected void assertCurrentIsNode( Session session )
@@ -220,13 +219,13 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return this.getServer().getDb().getNodeById( id );
     }
     
-    public Continuation execute( AppCommandParser parser, Session session,
+    public String execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
         Transaction tx = getServer().getDb().beginTx();
         try
         {
-            Continuation result = this.exec( parser, session, out );
+            String result = this.exec( parser, session, out );
             tx.success();
             return result;
         }
@@ -241,7 +240,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return "OUTGOING, INCOMING, o, i";
     }
 
-    protected abstract Continuation exec( AppCommandParser parser, Session session,
+    protected abstract String exec( AppCommandParser parser, Session session,
         Output out ) throws Exception;
 
     protected void printPath( Path path, boolean quietPrint, Session session, Output out )
@@ -379,7 +378,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected static String findTitle( GraphDatabaseShellServer server,
         Session session, Node node )
     {
-        String keys = ( String ) session.get( AbstractClient.TITLE_KEYS_KEY );
+        String keys = ( String ) safeGet( session,
+            AbstractClient.TITLE_KEYS_KEY );
         if ( keys == null )
         {
             return null;
@@ -407,7 +407,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
 
     private static String trimLength( Session session, String string )
     {
-        String maxLengthString = ( String ) session.get( AbstractClient.TITLE_MAX_LENGTH );
+        String maxLengthString = ( String )
+            safeGet( session, AbstractClient.TITLE_MAX_LENGTH );
         int maxLength = maxLengthString != null ?
             Integer.parseInt( maxLengthString ) : Integer.MAX_VALUE;
         if ( string.length() > maxLength )
@@ -610,7 +611,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
             for ( String command : templateLines )
             {
                 String line = TextUtil.templateString( command, data );
-                server.interpretLine( session.getId(), line, out );
+                server.interpretLine( line, session, out );
             }
         }
         if ( newLineBetweenHits )
