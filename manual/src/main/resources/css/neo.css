@@ -51,6 +51,7 @@ body, div.navheader th, div.navheader td, div.navfooter td, #sidebar
 
 h1, h2, h3, h4, h5, h6,
 div.toc p b,
+div.toc p strong,
 div.important th, div.info th, div.tip th,
 div.warning th, div.note th, div.caution th,
 p.legalnotice-title,
@@ -59,7 +60,8 @@ div.sidebar p.title,
 th,
 div.table-contents td p span.strong strong,
 tr.question td b p,
-div.abstract p.title b
+div.abstract p.title b,
+div.abstract p.title strong
 {
   color: #15708E;
   font-family: Candara, Myriad Pro, Myriad, "Lucida Sans","Trebuchet MS",sans-serif;
@@ -75,7 +77,8 @@ td p strong
   font-size: 1.067em;
 }
 
-tr.question td b p
+tr.question td b p,
+tr.question td strong p
 {
   font-size: 1em;
   margin: 0.5em 0 0 0;
@@ -166,7 +169,8 @@ div.legalnotice
   padding-top: 3em;
 }
 
-p.legalnotice-title b
+p.legalnotice-title b,
+p.legalnotice-title strong
 {
   color: #ffffff;
   font-size: 1.5em;
@@ -314,7 +318,8 @@ div.sidebar ul
   margin-bottom: 0.3em;
 }
 
-p b, div.figure p.title b, div.table p.title b
+p b, div.figure p.title b, div.table p.title b,
+p strong, div.figure p.title strong, div.table p.title strong
 {
   font-style: italic;
   font-weight: normal;
