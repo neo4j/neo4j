@@ -24,6 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 
+@Ignore
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
   @Test def noReturnColumns() {
     expectError(

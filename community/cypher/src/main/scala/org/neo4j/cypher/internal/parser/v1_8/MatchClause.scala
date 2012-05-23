@@ -19,145 +19,36 @@
  */
 package org.neo4j.cypher.internal.parser.v1_8
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
 
-trait MatchClause extends Base with Expressions {
+trait MatchClause extends Base with ParserPattern {
+  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> usePattern(translate) ^^ {
+    case matching =>
+      val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val unnamedPaths = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
 
-
-  def matching: Parser[(Match, NamedPaths)] = 
-    correctMatch |
-  ignoreCase("match") ~> failure("invalid pattern")
-
-  def correctMatch = ignoreCase("match") ~> commaList(path) ^^ {
-    case matching => {
-      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
-      val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
-
-      (Match(unamedPaths: _*), NamedPaths(namedPaths: _*))
-    }
+      (Match(unnamedPaths: _*), NamedPaths(namedPaths: _*))
   }
 
-  def path: Parser[Any] =
-    (pathSegment
-      | parenPath
-      | failure("expected identifier"))
+  private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
+    case ParsedNamedPath(name, patterns) =>
+      val namedPathPatterns = patterns.map(translate)
 
-  def parenPath: Parser[Any] = identity ~ "=" ~ optParens(pathSegment) ^^ {
-    case p ~ "=" ~ pathSegment => {
-      if (pathSegment.size == 1 && pathSegment.head.isInstanceOf[PathPattern])
-        pathSegment.head.asInstanceOf[PathPattern].cloneWithOtherName(p).asInstanceOf[Pattern]
-      else
-        NamedPath(p, pathSegment: _*)
-    }
-  }
-
-  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
-
-  def singlePathSegment: Parser[Pattern] = onlyOne("expected single path segment", relatedTos)
-
-  def optionRelName(relName: String): Option[String] =
-    if (relName.startsWith("  UNNAMED"))
-      None
-    else
-      Some(relName)
-
-  def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
-    case algo ~ relInfo => {
-
-      val single = algo match {
-        case "shortestpath" => true
-        case "allshortestpaths" => false
+      val find = namedPathPatterns.find(!_.success)
+      find match {
+        case None => Yes(NamedPath(name, namedPathPatterns.map(_.value.asInstanceOf[Pattern]): _*))
+        case Some(No(msg)) => No(msg)
       }
 
-      relInfo match {
-        case RelatedTo(left, right, relName, relType, direction, optional, predicate) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName), predicate))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional, predicate) => {
-          if (minHops.nonEmpty) {
-            throw new SyntaxException("Shortest path does not support a minimal length", "quert", 666)
-          }
-          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable, predicate))
-        }
-      }
+    case ParsedRelation(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate) =>
+      Yes(RelatedTo(left = left, right = right, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
 
-    }
+    case ParsedVarLengthRelation(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate, min, max, relIterator) =>
+      Yes(VarLengthRelatedTo(pathName = name, start = left, end = right, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+
+    case ParsedShortestPath(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate, max, single, relIterator) =>
+      Yes(ShortestPath(pathName = name, start = left, end = right, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+
+    case _ => No("")
   }
-
-  def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
-    case head ~ tails => {
-      var fromNode = head
-      val list = tails.map(_ match {
-        case (back, rel, relType, forward, toNode, varLength, optional, predicate) => {
-
-          val dir = getDirection(back, forward)
-
-          val result: Pattern = varLength match {
-            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional, predicate)
-            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional, predicate)
-          }
-
-          fromNode = toNode
-
-          result
-        }
-      })
-
-      list
-    }
-  }
-
-  private def getDirection(back: Option[String], forward: Option[String]): Direction =
-    (back.nonEmpty, forward.nonEmpty) match {
-      case (true, false) => Direction.INCOMING
-      case (false, true) => Direction.OUTGOING
-      case _ => Direction.BOTH
-    }
-
-  private def node: Parser[String] =
-    (parensNode
-      | relatedNode
-      | failure("expected node identifier")) ^^ (x => namer.name(x))
-
-  def parensNode: Parser[Option[String]] = parens(opt(identity))
-
-  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) 
-
-  def relatedTail = workingLink |  
-    opt("<") ~> "-" ~> opt("[" ~> relationshipInfo ~> "]") ~> failure("expected -") |
-    opt("<") ~ "-" ~ "[" ~> relationshipInfo ~> failure("unclosed bracket") |
-    opt("<") ~ "-" ~ "[" ~> failure("expected relationship information") |
-    opt("<") ~ "-" ~> failure("expected [ or -") |
-    opt("<") ~> failure("w7")
-
-  def workingLink = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
-    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
-      case Some((relName, relType, varLength, optional, predicate)) => (back, relName, relType, forward, end, varLength, optional, predicate)
-      case None => (back, None, Seq(), forward, end, None, false, True())
-    }
-  }
-
-  private def intOrNone(s: Option[String]): Option[Int] = s match {
-    case None => None
-    case Some(x) => Some(x.toInt)
-  }
-
-  def relationshipInfo: Parser[(Option[String], Seq[String], Option[(Option[Int], Option[Int])], Boolean, Predicate)] =
-    opt(identity) ~ opt("?") ~ opt(":" ~> rep1sep(identity, "|")) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where")~> predicate) ^^ {
-      case relName ~ optional ~ relType ~ varLength ~ pred => {
-        val predicate = pred match {
-          case None => True()
-          case Some(p) => p
-        }
-        
-        val hops = varLength match {
-          case Some("*" ~ x ~ None ~ None) => Some((intOrNone(x), intOrNone(x)))
-          case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
-          case None => None
-        }
-        
-
-        (relName, relType.toSeq.flatten.distinct, hops, optional.isDefined, predicate)
-      }
-    }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.mutation._
-import org.neo4j.cypher.internal.commands.{Entity, Property}
+import org.neo4j.cypher.internal.commands.{True, Entity, Property}
 
-trait Updates extends Base with Expressions with StartClause with ParserPattern {
+trait Updates extends Base with Expressions with StartClause {
   def updates: Parser[Seq[UpdateAction]] = rep(delete | set | foreach | relate) ^^ (cmds => cmds.flatten)
 
   def foreach: Parser[Seq[UpdateAction]] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
@@ -40,15 +40,15 @@ trait Updates extends Base with Expressions with StartClause with ParserPattern 
     }
   }
 
-  private def translate(abstractPattern: AbstractPattern): Option[RelateLink] = abstractPattern match {
-    case ParsedRelation(Entity(name), props, ParsedEntity(Entity(startName), startProps), ParsedEntity(Entity(endName), endProps), typ, dir) => Some(RelateLink(
+  private def translate(abstractPattern: AbstractPattern): Maybe[RelateLink] = abstractPattern match {
+    case ParsedRelation(name, props, ParsedEntity(Entity(startName), startProps, True()), ParsedEntity(Entity(endName), endProps, True()), typ, dir, map, True()) if typ.size == 1 => Yes(RelateLink(
       start = NamedExpectation(startName, startProps),
       end = NamedExpectation(endName, endProps),
       rel = NamedExpectation(name, props),
-      relType = typ,
+      relType = typ.head,
       dir = dir
     ))
-    case _ => None
+    case _ => No("")
   }
 
   def set: Parser[Seq[UpdateAction]] = ignoreCase("set") ~> commaList(propertySet)

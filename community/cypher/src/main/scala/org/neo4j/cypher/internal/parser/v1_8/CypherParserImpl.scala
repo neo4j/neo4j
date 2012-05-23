@@ -48,7 +48,8 @@ Unfortunately, you have run into a syntax error that we don't have a nice messag
 By sending the query that produced this error to cypher@neo4j.org, you'll save the
 puppies and get better error messages in our next release.
 
-Thank you, the Neo4j Team.""")
+Thank you, the Neo4j Team.
+""", text, input.offset)
       }
     }
   }

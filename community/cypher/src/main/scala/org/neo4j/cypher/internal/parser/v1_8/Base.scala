@@ -72,7 +72,7 @@ abstract class Base extends JavaTokenParsers {
 
   def number: Parser[String] = """-?(\d+(\.\d*)?|\d*\.\d+)""".r
 
-  def optParens[U](q: => Parser[U]): Parser[U] = parens(q) | q
+  def optParens[U](q: => Parser[U]): Parser[U] = q | parens(q)
 
   def parens[U](inner: => Parser[U]) =
     ("(" ~> inner <~ ")"

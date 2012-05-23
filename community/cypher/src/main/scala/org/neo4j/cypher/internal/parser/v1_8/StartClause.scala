@@ -23,31 +23,29 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 
 
-trait StartClause extends Base with Expressions with ParserPattern {
+trait StartClause extends Base with Expressions {
   def start: Parser[Start] = createStart | readStart
 
   def readStart = ignoreCase("start") ~> commaList(startBit) ^^ (x => Start(x: _*))
 
   def createStart = ignoreCase("create") ~> commaList(usePattern(translate)) ^^ (x => Start(x.flatten: _*))
 
-  private def translate(abstractPattern: AbstractPattern): Option[StartItem] = abstractPattern match {
+  private def translate(abstractPattern: AbstractPattern): Maybe[StartItem] = abstractPattern match {
 
-    case ParsedRelation(Entity(name), props, ParsedEntity(a, startProps), ParsedEntity(b, endProps), relType, dir) =>
+    case ParsedRelation(name, props, ParsedEntity(a, startProps, True()), ParsedEntity(b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
       val (from, to) = if (dir == Direction.OUTGOING)
         (a, b)
       else
         (b, a)
-      Some(CreateRelationshipStartItem(name, from, to, relType, props))
+      Yes(CreateRelationshipStartItem(name, from, to, relType.head, props))
 
+    case ParsedEntity(Entity(name), props, True()) =>
+      Yes(CreateNodeStartItem(name, props))
 
-    case ParsedEntity(Entity(name), props) =>
-      Some(CreateNodeStartItem(name, props))
+    case ParsedEntity(p, _, True()) if p.isInstanceOf[ParameterExpression] =>
+      Yes(CreateNodeStartItem(namer.name(None), Map[String, Expression]("*" -> p)))
 
-    case ParsedEntity(p, _) if p.isInstanceOf[ParameterExpression] =>
-      Some(CreateNodeStartItem(namer.name(None), Map[String, Expression]("*" -> p)))
-
-
-    case _ => None
+    case _ => No("")
   }
 
   def startBit =
@@ -66,25 +64,33 @@ trait StartClause extends Base with Expressions with ParserPattern {
   def lookup: Parser[String => StartItem] =
     nodes ~> parens(parameter) ^^ (p => (column: String) => NodeById(column, p)) |
       nodes ~> ids ^^ (p => (column: String) => NodeById(column, p)) |
-      nodes ~> idxLookup ^^ {
-        case (idxName, key, value) => (column: String) => NodeByIndex(column, idxName, key, value)
-      } |
-      nodes ~> idxString ^^ {
-        case (idxName, query) => (column: String) => NodeByIndexQuery(column, idxName, query)
-      } |
+      nodes ~> idxLookup ^^ nodeIndexLookup |
+      nodes ~> idxString ^^ nodeIndexString |
       nodes ~> parens("*") ^^ (x => (column: String) => AllNodes(column)) |
       rels ~> parens(parameter) ^^ (p => (column: String) => RelationshipById(column, p)) |
       rels ~> ids ^^ (p => (column: String) => RelationshipById(column, p)) |
-      rels ~> idxLookup ^^ {
-        case (idxName, key, value) => (column: String) => RelationshipByIndex(column, idxName, key, value)
-      } |
-      rels ~> idxString ^^ {
-        case (idxName, query) => (column: String) => RelationshipByIndexQuery(column, idxName, query)
-      } |
+      rels ~> idxLookup ^^ relationshipIndexLookup |
+      rels ~> idxString ^^ relationshipIndexString |
       rels ~> parens("*") ^^ (x => (column: String) => AllRelationships(column)) |
       nodes ~> opt("(") ~> failure("expected node id, or *") |
       rels ~> opt("(") ~> failure("expected relationship id, or *")
 
+
+  def relationshipIndexString: ((String, Expression)) => (String) => RelationshipByIndexQuery = {
+    case (idxName, query) => (column: String) => RelationshipByIndexQuery(column, idxName, query)
+  }
+
+  def nodeIndexString: ((String, Expression)) => (String) => NodeByIndexQuery = {
+    case (idxName, query) => (column: String) => NodeByIndexQuery(column, idxName, query)
+  }
+
+  def nodeIndexLookup: ((String, Expression, Expression)) => (String) => NodeByIndex = {
+    case (idxName, key, value) => (column: String) => NodeByIndex(column, idxName, key, value)
+  }
+
+  def relationshipIndexLookup: ((String, Expression, Expression)) => (String) => RelationshipByIndex = {
+    case (idxName, key, value) => (column: String) => RelationshipByIndex(column, idxName, key, value)
+  }
 
   def ids =
     (parens(commaList(wholeNumber)) ^^ (x => Literal(x.map(_.toLong)))

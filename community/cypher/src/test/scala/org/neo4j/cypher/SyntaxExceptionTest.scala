@@ -23,6 +23,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 
+@Ignore
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
     val parser = new CypherParser()
