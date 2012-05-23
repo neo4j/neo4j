@@ -33,6 +33,8 @@
       <outputDirectory>/</outputDirectory>
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>

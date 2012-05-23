@@ -2,14 +2,14 @@ ${server.fullname} ${neo4j.version}
 =======================================
 
 Welcome to ${server.fullname} release ${neo4j.version}, a high-performance graph database.
-This is the standard distribution of ${server.fullname}, including everything you need to
+This is the community distribution of ${server.fullname}, including everything you need to
 start building applications that can model, persist and explore graph-like data.
 
 In the box
 ----------
 
 ${server.fullname} runs as a server application, exposing a Web-based management
-interface and RESTful endpoints for data access, along with logging and JMX.
+interface and RESTful endpoints for data access.
 
 Here in the installation directory, you'll find:
 

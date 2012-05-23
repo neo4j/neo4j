@@ -1,3 +1,18 @@
+1.8.M02 (2012-05-11)
+--------------------
+Kernel:
+ o Optimized short string and short array encoding algorithms
+ o Fixed problem with SpringTransactionManager during HA master switch
+Shell:
+ o Shell can now be exited with Ctrl-D
+Server:
+ o Support for streaming results for http batch operations.
+ o Proper encoding of Index URI key/value pairs.
+ o Fixed Swedish character problem in webadmin string properties.
+ o Webadmin chart labels have nice formatting now.
+Cypher:
+ o Added the possibility to create nodes from an iterable of maps
+
 1.8.M01 (2012-04-26)
 --------------------
 o Byte array properties are handled in a more optimized way, increasing performance by a couple of times at least.
