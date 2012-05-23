@@ -47,10 +47,17 @@ public class Begin extends ReadOnlyGraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
+        String lineWithoutApp = parser.getLineWithoutApp();
+        if ( !acceptableText( lineWithoutApp ) )
+        {
+            out.println( "Error: To open a transaction, write BEGIN TRANSACTION" );
+            return Continuation.INPUT_COMPLETE;
+        }
+
         Transaction tx = currentTransaction( getServer() );
 
         getServer().getDb().beginTx();
-        Integer txCount = (Integer) session.get( "tx_count" );
+        Integer txCount = (Integer) session.get( Commit.TX_COUNT );
 
         int count;
         if ( txCount == null )
@@ -58,6 +65,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
             if ( tx == null )
             {
                 count = 0;
+                out.println( "Transaction started" );
             } else
             {
                 count = 1;
@@ -65,11 +73,25 @@ public class Begin extends ReadOnlyGraphDatabaseApp
         } else
         {
             count = txCount;
+            out.println( String.format( "Nested transaction started (Tx count: %d)", count + 1 ) );
         }
 
-        session.set( "tx_count", ++count );
-        out.println("Transaction started");
+        session.set( Commit.TX_COUNT, ++count );
         return Continuation.INPUT_COMPLETE;
+    }
+
+
+    private static String TRANSACTION = "TRANSACTION";
+
+    private boolean acceptableText( String line )
+    {
+        if ( line == null || line.length() > TRANSACTION.length() )
+        {
+            return false;
+        }
+
+        String substring = TRANSACTION.substring( 0, line.length() );
+        return substring.equals( line.toUpperCase() );
     }
 
     public static Transaction currentTransaction( GraphDatabaseShellServer server ) throws ShellException
