@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -55,7 +56,7 @@ public abstract class AbstractShellTest
     {
         db = new ImpermanentGraphDatabase();
         shellServer = new GraphDatabaseShellServer( db );
-        shellClient = ShellLobby.newClient( shellServer );
+        shellClient = new SameJvmClient( shellServer );
     }
 
     @After
@@ -119,7 +120,7 @@ public abstract class AbstractShellTest
             String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
-        client.evaluate( command, output );
+        server.interpretLine( command, client.session(), output );
 
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {
@@ -145,7 +146,7 @@ public abstract class AbstractShellTest
         CollectingOutput output = new CollectingOutput();
         try
         {
-            shellClient.evaluate( command, output );
+            shellServer.interpretLine( command, shellClient.session(), output );
             fail( "Was expecting an exception" );
         }
         catch ( ShellException e )

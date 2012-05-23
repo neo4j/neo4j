@@ -52,7 +52,8 @@ class ShellTabCompletor implements Completor
         {
             if ( buffer.contains( " " ) )
             {
-                TabCompletion completion = client.getServer().tabComplete( client.getId(), buffer.trim() );
+                TabCompletion completion = client.getServer().tabComplete( buffer.trim(),
+                        client.session() );
                 cursor = completion.getCursor();
                 candidates.addAll( completion.getCandidates() );
             }

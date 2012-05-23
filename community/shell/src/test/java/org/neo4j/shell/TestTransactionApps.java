@@ -27,8 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
-import java.io.Serializable;
-import java.util.HashMap;
 import java.util.regex.Pattern;
 
 import javax.transaction.SystemException;
@@ -52,7 +50,7 @@ public class TestTransactionApps
     {
         db = new ImpermanentGraphDatabase();
         shellServer = new GraphDatabaseShellServer( db );
-        shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer );
+        shellClient = new SameJvmClient( shellServer );
     }
 
     @After
@@ -155,7 +153,7 @@ public class TestTransactionApps
                                 String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
-        client.evaluate( command, output );
+        server.interpretLine( command, client.session(), output );
 
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {
@@ -181,7 +179,7 @@ public class TestTransactionApps
         CollectingOutput output = new CollectingOutput();
         try
         {
-            shellClient.evaluate( command, output );
+            shellServer.interpretLine( command, shellClient.session(), output );
             fail( "Was expecting an exception" );
         } catch ( ShellException e )
         {

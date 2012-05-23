@@ -28,7 +28,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -44,7 +43,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    protected Continuation exec( AppCommandParser parser, Session session, Output out )
+    protected String exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
         Transaction tx = currentTransaction( getServer() );
@@ -69,7 +68,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
 
         session.set( "tx_count", ++count );
         out.println("Transaction started");
-        return Continuation.INPUT_COMPLETE;
+        return null;
     }
 
     public static Transaction currentTransaction( GraphDatabaseShellServer server ) throws ShellException

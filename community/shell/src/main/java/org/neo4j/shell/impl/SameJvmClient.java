@@ -19,11 +19,8 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.Serializable;
-import java.rmi.RemoteException;
-import java.util.Map;
-
 import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellServer;
 
@@ -35,29 +32,20 @@ public class SameJvmClient extends AbstractClient
 {
 	private Output out;
 	private ShellServer server;
+	private Session session = new SessionImpl();
 	
-	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server )
+	public SameJvmClient( ShellServer server )
 	{
-	    this( initialSession, server, new SystemOutput() );
+	    this( server, new SystemOutput() );
 	}
 	
 	/**
 	 * @param server the server to communicate with.
 	 */
-	public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server, Output out )
+	public SameJvmClient( ShellServer server, Output out )
 	{
-	    super( initialSession );
 	    this.out = out;
 		this.server = server;
-		try
-        {
-            sayHi( server );
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( "Will not happen since this is in the same JVM", e );
-        }
-		
 		init();
 	    updateTimeForMostRecentConnection();
 	}
@@ -70,5 +58,11 @@ public class SameJvmClient extends AbstractClient
 	public ShellServer getServer()
 	{
 		return this.server;
+	}
+	
+	@Override
+	public Session session()
+	{
+	    return session;
 	}
 }

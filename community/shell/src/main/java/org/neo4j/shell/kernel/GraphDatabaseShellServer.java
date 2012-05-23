@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.kernel;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -67,15 +67,11 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         this.graphDb = readOnly ? new ReadOnlyGraphDatabaseProxy( graphDb ) : graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
+        this.setProperty( AbstractClient.PROMPT_KEY, getShellPrompt() );
+        this.setProperty( AbstractClient.TITLE_KEYS_KEY,
+            ".*name.*,.*title.*" );
+        this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
         this.graphDbCreatedHere = false;
-    }
-    
-    @Override
-    protected void initialPopulateSession( Session session )
-    {
-        session.set( AbstractClient.PROMPT_KEY, getShellPrompt() );
-        session.set( AbstractClient.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
-        session.set( AbstractClient.TITLE_MAX_LENGTH, "40" );
     }
 
     private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly,
@@ -99,17 +95,24 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         name += " \\W$ ";
         return name;
     }
-    
+
     @Override
-    protected String getWelcomeMessage()
+    public String welcome()
     {
         return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
     }
-    
+
     @Override
-    protected String getPrompt( Session session ) throws ShellException
+    public Serializable interpretVariable( String key, Serializable value,
+        Session session ) throws ShellException
     {
-        return this.bashInterpreter.interpret( (String) getShellPrompt(), this, session );
+        Serializable result = value;
+        if ( key.equals( AbstractClient.PROMPT_KEY ) )
+        {
+            result = this.bashInterpreter.interpret( (String) value, this,
+                session );
+        }
+        return result;
     }
 
     /**

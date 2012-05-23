@@ -19,11 +19,10 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.Map;
 
 import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -37,22 +36,23 @@ public class RemoteClient extends AbstractClient
 	private ShellServer server;
 	private final RmiLocation serverLocation;
 	private final Output out;
+	private final SessionImpl session;
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation ) throws ShellException
+    public RemoteClient( RmiLocation serverLocation ) throws ShellException
     {
-        this( initialSession, serverLocation, RemoteOutput.newOutput() );
+        this( serverLocation, RemoteOutput.newOutput() );
     }
     
 	/**
 	 * @param serverLocation the RMI location of the server to connect to.
 	 * @throws ShellException if no server was found at the RMI location.
 	 */
-	public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output out ) throws ShellException
+	public RemoteClient( RmiLocation serverLocation, Output out ) throws ShellException
 	{
-	    super( initialSession );
 		this.serverLocation = serverLocation;
-		this.out = out;
 		this.server = findRemoteServer();
+		this.out = out;
+		this.session = new RemoteSession();
 	}
 
 	private ShellServer findRemoteServer() throws ShellException
@@ -60,7 +60,6 @@ public class RemoteClient extends AbstractClient
 		try
 		{
 			ShellServer result = ( ShellServer ) this.serverLocation.getBoundObject();
-			sayHi( result );
 			updateTimeForMostRecentConnection();
 			return result;
 		}
@@ -80,12 +79,13 @@ public class RemoteClient extends AbstractClient
 		// Poke the server by calling a method, f.ex. the welcome() method.
 		// If the connection is lost then try to reconnect, using the last
 		// server lookup address.
-	    boolean hadServer = this.server != null;
 		boolean shouldTryToReconnect = this.server == null;
 		try
 		{
 			if ( !shouldTryToReconnect )
-				server.getName();
+			{
+				this.server.welcome();
+			}
 		}
 		catch ( RemoteException e )
 		{
@@ -99,8 +99,8 @@ public class RemoteClient extends AbstractClient
 			try
 			{
 				this.server = findRemoteServer();
-				if ( hadServer )
-				    getOutput().println( "[Reconnected to server]" );
+				getOutput().println( "[Reconnected to server]" );
+				regrabVariablesFromServer( this.server );
 			}
 			catch ( ShellException ee )
 			{
@@ -123,9 +123,16 @@ public class RemoteClient extends AbstractClient
 		return this.server;
 	}
 	
+	@Override
+	public Session session()
+	{
+	    return session;
+	}
+
 	public void shutdown()
 	{
 	    super.shutdown();
+        if ( session.writer != null ) tryUnexport( session.writer );
 		tryUnexport( this.out );
 	}
 }

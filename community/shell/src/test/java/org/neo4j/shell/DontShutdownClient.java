@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
-import java.util.HashMap;
-
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -30,7 +27,7 @@ public class DontShutdownClient
     public static void main( String[] args ) throws Exception
     {
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( args[0], false, null );
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        ShellClient client = new SameJvmClient( server );
         server.shutdown();
         // Intentionally don't shutdown the client
     }
