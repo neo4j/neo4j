@@ -272,7 +272,7 @@ include::execute-a-dijkstra-algorithm-with-weights-on-relationships.txt[]
 [[rest-api-batch-ops]]
 == Batch operations ==
 
-[CAUTION] Batch support is currently _experimental_. Expect this part of the API to change.
+CAUTION: Batch support is currently _experimental_. Expect this part of the API to change.
 
 include::execute-multiple-operations-in-batch.txt[]
 
@@ -306,4 +306,3 @@ the set of potential interactions a client can drive with Neo4j server. Expect t
 and in some cases contradictory to the real API. In any cases where the WADL description disagrees with the REST API,
 the REST API should be considered authoritative. WADL generation may be withdrawn at any point in the Neo4j release
 cycle.
-
