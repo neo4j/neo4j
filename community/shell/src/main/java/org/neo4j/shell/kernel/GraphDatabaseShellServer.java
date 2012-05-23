@@ -26,11 +26,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
@@ -48,7 +47,7 @@ import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
  */
 public class GraphDatabaseShellServer extends SimpleAppServer
 {
-    private final GraphDatabaseService graphDb;
+    private final GraphDatabaseAPI graphDb;
     private final BashVariableInterpreter bashInterpreter;
     private boolean graphDbCreatedHere;
     protected final Map<Serializable, Transaction> transactions = new ConcurrentHashMap<Serializable, Transaction>();
@@ -63,13 +62,13 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         this.graphDbCreatedHere = true;
     }
 
-    public GraphDatabaseShellServer( GraphDatabaseService graphDb )
+    public GraphDatabaseShellServer( GraphDatabaseAPI graphDb )
             throws RemoteException
     {
         this( graphDb, false );
     }
 
-    public GraphDatabaseShellServer( GraphDatabaseService graphDb, boolean readOnly )
+    public GraphDatabaseShellServer( GraphDatabaseAPI graphDb, boolean readOnly )
             throws RemoteException
     {
         super();
@@ -101,7 +100,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     {
         try
         {
-            Transaction tx = ((AbstractGraphDatabase) getDb()).getTxManager().suspend();
+            Transaction tx = getDb().getTxManager().suspend();
             if ( tx == null )
             {
                 transactions.remove( clientId );
@@ -117,14 +116,14 @@ public class GraphDatabaseShellServer extends SimpleAppServer
 
     private void restoreTransaction( Serializable clientId ) throws ShellException
     {
-
         Transaction tx = transactions.get( clientId );
         if ( tx != null )
         {
             try
             {
-                ((AbstractGraphDatabase) getDb()).getTxManager().resume( tx );
-            } catch ( Exception e )
+                getDb().getTxManager().resume( tx );
+            }
+            catch ( Exception e )
             {
                 throw wrapException( e );
             }
@@ -139,7 +138,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         session.set( AbstractClient.TITLE_MAX_LENGTH, "40" );
     }
 
-    private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly,
+    private static GraphDatabaseAPI instantiateGraphDb( String path, boolean readOnly,
                                                             String configFileOrNull )
     {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().
@@ -149,7 +148,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         {
             builder.loadPropertiesFromFile( configFileOrNull );
         }
-        return builder.newGraphDatabase();
+        return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
     protected String getShellPrompt()
@@ -176,10 +175,10 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     }
 
     /**
-     * @return the {@link GraphDatabaseService} instance given in the
+     * @return the {@link GraphDatabaseAPI} instance given in the
      *         constructor.
      */
-    public GraphDatabaseService getDb()
+    public GraphDatabaseAPI getDb()
     {
         return this.graphDb;
     }

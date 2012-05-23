@@ -25,7 +25,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -57,6 +56,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
         Transaction tx = currentTransaction( getServer() );
 
         getServer().getDb().beginTx();
+            
         Integer txCount = (Integer) session.get( Commit.TX_COUNT );
 
         int count;
@@ -98,7 +98,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
     {
         try
         {
-            return ((AbstractGraphDatabase) server.getDb()).getTxManager().getTransaction();
+            return server.getDb().getTxManager().getTransaction();
         } catch ( SystemException e )
         {
             throw new ShellException( e.getMessage() );

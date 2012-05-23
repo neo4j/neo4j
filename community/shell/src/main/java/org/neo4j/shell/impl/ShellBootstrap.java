@@ -28,7 +28,8 @@ import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -102,7 +103,7 @@ public class ShellBootstrap implements Serializable
     }
 
     @SuppressWarnings( "boxing" )
-    GraphDatabaseShellServer load( GraphDatabaseService graphDb ) throws RemoteException
+    GraphDatabaseShellServer load( GraphDatabaseAPI graphDb ) throws RemoteException
     {
         if ( !enable ) return null;
         return enable( new GraphDatabaseShellServer( graphDb, read_only ) );

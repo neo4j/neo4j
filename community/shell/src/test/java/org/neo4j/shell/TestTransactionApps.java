@@ -25,8 +25,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 
 import javax.transaction.SystemException;
@@ -34,7 +34,7 @@ import javax.transaction.SystemException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -183,7 +183,7 @@ public class TestTransactionApps
 
 class FakeShellServer extends GraphDatabaseShellServer {
 
-    public FakeShellServer( GraphDatabaseService graphDb ) throws RemoteException
+    public FakeShellServer( GraphDatabaseAPI graphDb ) throws RemoteException
     {
         super( graphDb );
     }

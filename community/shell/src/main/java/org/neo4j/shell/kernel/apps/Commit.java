@@ -25,7 +25,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -64,7 +63,7 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             Transaction tx;
             try
             {
-                tx = ((AbstractGraphDatabase) getServer().getDb()).getTxManager().getTransaction();
+                tx = getServer().getDb().getTxManager().getTransaction();
                 if ( tx == null )
                 {
                     throw fail( session, "Not in a transaction" );

@@ -21,7 +21,7 @@ package org.neo4j.shell.kernel.apps;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -54,7 +54,7 @@ public class Mknode extends GraphDatabaseApp
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
-        AbstractGraphDatabase db = (AbstractGraphDatabase)getServer().getDb();
+        GraphDatabaseAPI db = getServer().getDb();
         Node node = null;
 //        if ( parser.options().containsKey( "r" ) )
 //        {

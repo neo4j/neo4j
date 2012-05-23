@@ -25,10 +25,13 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.neo4j.graphdb.Node;
@@ -36,16 +39,20 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @Ignore( "Not a unit test" )
 public abstract class AbstractShellTest
 {
-    protected static ImpermanentGraphDatabase db;
-    private static ShellServer shellServer;
+    protected GraphDatabaseAPI db;
+    protected ShellServer shellServer;
     private ShellClient shellClient;
+    private Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
 
     private Transaction tx;
@@ -53,9 +60,19 @@ public abstract class AbstractShellTest
     @Before
     public void doBefore() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
-        shellServer = new GraphDatabaseShellServer( db );
+        db = newDb();
+        shellServer = newServer( db );
         shellClient = ShellLobby.newClient( shellServer );
+    }
+    
+    protected GraphDatabaseAPI newDb()
+    {
+        return new ImpermanentGraphDatabase();
+    }
+
+    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    {
+        return new GraphDatabaseShellServer( db );
     }
 
     @After
@@ -71,25 +88,55 @@ public abstract class AbstractShellTest
         assert tx == null;
         tx = db.beginTx();
     }
-
+    
     protected void finishTx()
     {
         finishTx( true );
+    }
+    
+    protected ShellClient newRemoteClient() throws Exception
+    {
+        return newRemoteClient( new HashMap<String, Serializable>() );
+    }
+    
+    protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
+    {
+        return ShellLobby.newClient( RmiLocation.location( "localhost",
+                remotelyAvailableOnPort.intValue(), AbstractServer.DEFAULT_NAME ), initialSession );
+    }
+
+    protected void makeServerRemotelyAvailable() throws RemoteException
+    {
+        if ( remotelyAvailableOnPort == null )
+        {
+            remotelyAvailableOnPort = findFreePort();
+            shellServer.makeRemotelyAvailable( remotelyAvailableOnPort.intValue(), AbstractServer.DEFAULT_NAME );
+        }
+    }
+    
+    private int findFreePort()
+    {
+        // TODO
+        return AbstractServer.DEFAULT_PORT;
+    }
+
+    protected void restartServer() throws Exception
+    {
+        shellServer.shutdown();
+        db.shutdown();
+        db = newDb();
+        remotelyAvailableOnPort = null;
+        shellServer = newServer( db );
+        shellClient = ShellLobby.newClient( shellServer );
     }
 
     protected void finishTx( boolean success )
     {
         assert tx != null;
-        if ( success ) tx.success();
+        if ( success )
+            tx.success();
         tx.finish();
         tx = null;
-    }
-
-    @AfterClass
-    public static void shutDown() throws Exception
-    {
-        shellServer.shutdown();
-        db.shutdown();
     }
 
     protected static String pwdOutputFor( Object... entities )
@@ -112,10 +159,10 @@ public abstract class AbstractShellTest
 
     public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
-        executeCommand( shellServer, shellClient, command, theseLinesMustExistRegEx );
+        executeCommand( shellClient, command, theseLinesMustExistRegEx );
     }
 
-    public void executeCommand( ShellServer server, ShellClient client, String command,
+    public void executeCommand( ShellClient client, String command,
             String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();

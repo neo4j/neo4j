@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -119,7 +120,7 @@ public class ShellTest
     @Test
     public void testRemoveReferenceNode() throws Exception
     {
-        GraphDatabaseService db = new ImpermanentGraphDatabase();
+        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "sample session", server );
@@ -146,7 +147,8 @@ public class ShellTest
     @Test
     public void testMatrix() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().loadPropertiesFromURL( getClass().getResource( "/autoindex.properties" ) ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .loadPropertiesFromURL( getClass().getResource( "/autoindex.properties" ) ).newGraphDatabase();
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "a matrix example", server );
