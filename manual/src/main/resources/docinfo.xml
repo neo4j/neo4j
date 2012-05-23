@@ -42,12 +42,27 @@
       </listitem>
       <listitem>
         <para>
+          <xref linkend="cypher-query-lang" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
           <xref linkend="tutorials-java-embedded" />
         </para>
       </listitem>
       <listitem>
         <para>
           <xref linkend="tutorials-python-embedded" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="tutorials-rest" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="languages" />
         </para>
       </listitem>
       <listitem>

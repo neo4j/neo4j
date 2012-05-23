@@ -466,6 +466,11 @@ div.slide p, div.slide li
 
 /* Quickstart list on titlepage. */
 
+a.xref em
+{
+  font-style: normal;
+}
+
 div.abstract p
 {
   line-height: 0;
