@@ -183,7 +183,7 @@ public abstract class AbstractAppServer extends AbstractServer
         }
     }
 
-    private ShellException wrapException( Exception e )
+    protected ShellException wrapException( Exception e )
     {
         return ShellException.wrapCause( e );
     }

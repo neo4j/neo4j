@@ -20,15 +20,13 @@
 package org.neo4j.shell;
 
 import static java.util.regex.Pattern.compile;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.rmi.RemoteException;
 import java.util.regex.Pattern;
 
 import javax.transaction.SystemException;
@@ -36,6 +34,7 @@ import javax.transaction.SystemException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -44,16 +43,16 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 public class TestTransactionApps
 {
     protected ImpermanentGraphDatabase db;
-    private ShellServer shellServer;
+    private FakeShellServer shellServer;
     private ShellClient shellClient;
 
     @Before
     public void doBefore() throws Exception
     {
         db = new ImpermanentGraphDatabase();
-        shellServer = new GraphDatabaseShellServer( db );
+        shellServer = new FakeShellServer( db );
         shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer );
-    }
+   }
 
     @After
     public void doAfter() throws Exception
@@ -99,14 +98,6 @@ public class TestTransactionApps
     }
 
     @Test
-    public void transaction_closed_outside_of_shells_control() throws Exception
-    {
-        executeCommand( "begin transaction" );
-        db.getTxManager().getTransaction().commit();
-        executeCommandExpectingException( "commit", "Not in a transaction" );
-    }
-
-    @Test
     public void already_in_transaction() throws Exception
     {
         db.beginTx();
@@ -133,25 +124,21 @@ public class TestTransactionApps
 
     private void assertWeAreNotInATransaction() throws SystemException
     {
-        assertThat( "Expected to be in a transaction", currentTransaction(), nullValue() );
+        assertTrue( "Expected to not be in a transaction", shellServer.getActiveTransactionCount() == 0 );
     }
 
     private void assertWeAreInATransaction() throws SystemException
     {
-        assertThat( "Expected to be in a transaction", currentTransaction(), notNullValue() );
-    }
 
-    private javax.transaction.Transaction currentTransaction() throws SystemException
-    {
-        return db.getTxManager().getTransaction();
+        assertTrue( "Expected to be in a transaction", shellServer.getActiveTransactionCount() > 0 );
     }
 
     public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
-        executeCommand( shellServer, shellClient, command, theseLinesMustExistRegEx );
+        executeCommand(shellClient, command, theseLinesMustExistRegEx );
     }
 
-    public void executeCommand( ShellServer server, ShellClient client, String command,
+    public void executeCommand( ShellClient client, String command,
                                 String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
@@ -191,5 +178,18 @@ public class TestTransactionApps
                 fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain + "'" );
             }
         }
+    }
+}
+
+class FakeShellServer extends GraphDatabaseShellServer {
+
+    public FakeShellServer( GraphDatabaseService graphDb ) throws RemoteException
+    {
+        super( graphDb );
+    }
+
+    public int getActiveTransactionCount()
+    {
+        return transactions.size();
     }
 }
