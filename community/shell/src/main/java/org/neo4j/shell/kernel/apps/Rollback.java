@@ -45,6 +45,12 @@ public class Rollback extends ReadOnlyGraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
+        if ( parser.getLineWithoutApp().trim().length() > 0 )
+        {
+            out.println( "Error: ROLLBACK should  be run without trailing arguments" );
+            return Continuation.INPUT_COMPLETE;
+        }
+
         Transaction tx = Begin.currentTransaction( getServer() );
         if ( tx == null )
         {
@@ -53,8 +59,9 @@ public class Rollback extends ReadOnlyGraphDatabaseApp
         {
             try
             {
+                session.remove( Commit.TX_COUNT );
                 tx.rollback();
-                out.println("Transaction rolled back");
+                out.println( "Transaction rolled back" );
                 return Continuation.INPUT_COMPLETE;
             } catch ( SystemException e )
             {

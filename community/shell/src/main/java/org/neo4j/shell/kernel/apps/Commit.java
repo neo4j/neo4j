@@ -36,7 +36,7 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation(App.class)
 public class Commit extends ReadOnlyGraphDatabaseApp
 {
-    public static final String tx_count = "tx_count";
+    public static final String TX_COUNT = "TX_COUNT";
 
     @Override
     public String getDescription()
@@ -48,7 +48,13 @@ public class Commit extends ReadOnlyGraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        Integer txCount = (Integer) session.get( tx_count );
+        if ( parser.getLineWithoutApp().trim().length() > 0 )
+        {
+            out.println( "Error: COMMIT should  be run without trailing arguments" );
+            return Continuation.INPUT_COMPLETE;
+        }
+
+        Integer txCount = (Integer) session.get( TX_COUNT );
 
         if ( txCount == null || txCount.equals( 0 ) )
         {
@@ -71,8 +77,8 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             try
             {
                 tx.commit();
-                session.remove( tx_count );
-                out.println("Transaction committed");
+                session.remove( TX_COUNT );
+                out.println( "Transaction committed" );
                 return Continuation.INPUT_COMPLETE;
             } catch ( Exception e )
             {
@@ -80,15 +86,15 @@ public class Commit extends ReadOnlyGraphDatabaseApp
             }
         } else
         {
-            session.set( tx_count, --txCount );
-            out.println("Transaction committed");
+            session.set( TX_COUNT, --txCount );
+            out.println( String.format( "Nested transaction committed (Tx count: %d)", txCount ) );
             return Continuation.INPUT_COMPLETE;
         }
     }
 
     public static ShellException fail( Session session, String message ) throws ShellException
     {
-        session.remove( tx_count );
+        session.remove( TX_COUNT );
         return new ShellException( message );
     }
 }

@@ -72,7 +72,7 @@ public class TestTransactionApps
     @Test
     public void two_begin_tran_works_as_expected() throws Exception
     {
-        executeCommand( "begin transaction" );
+        executeCommand( "begin tran" );
         executeCommand( "begin transaction" );
         assertWeAreInATransaction();
     }
@@ -81,7 +81,7 @@ public class TestTransactionApps
     public void multiple_begins_and_commits_work() throws Exception
     {
         executeCommand( "begin transaction" );
-        executeCommand( "begin transaction" );
+        executeCommand( "begin" );
         executeCommand( "begin transaction" );
         executeCommand( "commit" );
         executeCommand( "commit" );
