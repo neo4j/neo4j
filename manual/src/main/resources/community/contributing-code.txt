@@ -47,7 +47,6 @@ The role defines their responsibilities and privileges:
 ** manage tickets for the repository.
 ** grant commit rights to the repository.
 * A _Neo4j admin_ manages the Neo4j infrastructure.
-  See [[#... become a Neo4j admin|How to become a Neo4j admin]]. 
   They:
 ** approve new Neo4j users.
 ** define new components and assign component maintainership.
@@ -56,6 +55,21 @@ The role defines their responsibilities and privileges:
 ==== Code Style ====
 
 The Neo4j Code style is maintained on GIThub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
+
+==== Unit Tests ====
+
+You have much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written. Also, make sure your code doesn't break any existing tests.
+
+==== Workflow ====
+
+* Fork the appropiate repo in github, and clone it
+* Create a new, appropriately named branch in your local repository for that specific feature or bugfix. (Keeping a new branch per feature makes sure we can easily pull in your changes without pulling any other stuff that is not supposed to be pulled.)
+* Modify the code to do what you want (e.g., fix it).
+* Make sure your change set has unit tests that are readable and relevant for your change. Try to do this even for small fixes. You never know whether you have introduced some weird bug without testing.
+* Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you changed.
+* Once you are satisfied with your changes, merge with our upstream repository. We can pull your stuff, but since you know best what you changed, you should do the merge. Use rebase!
+* Push to your remote repository on GitHub.
+* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository.
 
 ==== Commit messages ====
 
@@ -67,6 +81,7 @@ Use your common sense. In particular:
 * Remember that a commit is a _changeset_, which describes a cohesive set of changes across potentially many files.
   Try to group every commit as a logical change. 
   Explain what it changes.
+  If you have to redo work, you might want to clean up your commit log before doing a pull request.
 * If you fix a bug or an issue that's related to a ticket, then refer to the ticket in the message.
   For example, _"Added this-and-that and then changed this-and-that. This fixes #14."_ One of these synonyms should work:
   fixes #xxx
@@ -80,19 +95,6 @@ Use your common sense. In particular:
   Don't be too brief but don't provide too much detail, either. 
   That's what `git diff` is for.
 
-=== How to submit a patch ===
-
-. Create a ticket or find an existing ticket that matches your patch.
-. Attach the patch and write a comment that describes it.
-. Wait for a committer to review and either accept or reject it.
-
 === How to become a committer ===
 
 . Talk to a maintainer of the component you want commit access to.
-. If you don't have a user, you have to ask a Neo4j admin to give you a user. Send them a mail at admins (@) youknowwhatdomain.org.
-
-=== How to become a component maintainer ===
-
-Contact a Neo4j admin at admins (@) youknowwhatdomain.org.
-
-
