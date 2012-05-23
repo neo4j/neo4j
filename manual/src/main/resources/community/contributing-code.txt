@@ -2,46 +2,48 @@
 Contributing Code to Neo4j
 ==========================
 
+[[community-contributing-code-intro]]
 == Intro ==
 
 The Neo4j community is a free software and open source community centered around software and components for the Neo4j Graph Database.
-It is sponsored by [http://neotechnology.com Neo Technology], which provides infrastructure (different kinds of hosting, mailing lists, etc) as well as people to manage it.
+It is sponsored by http://neotechnology.com[Neo Technology], which provides infrastructure (different kinds of hosting, documentation, etc) as well as people to manage it.
 The Neo4j community is an open community, in so far as it welcomes any member that accepts the basic criterias of contribution and adheres to the community's Code of Conduct.
 
 Contribution can be in many forms (documentation, discussions, bug reports).
 This document outlines the rules of governance for a contributor of code.
 
+[[community-contributing-code-intro-the-fast-track]]
 == The Fast Track ==
 
-One crucial aspect of contributing is the http://wiki.neo4j.org/content/About_Contributor_License_Agreement[Contributor License Agreement].
+One crucial aspect of contributing is the <<cla,Contributor License Agreement>>.
 In short: make sure to sign the CLA, or the Neo4j project won't be able to accept your contribution.
 
+[[community-contributing-code-governance-fundamentals]]
 == Governance fundamentals ==
 
 In a nutshell, you need to be aware of the following fundamentals if you wish to contribute code:
 
-* All software hosted on the Neo4j infrastructure must have been contributed under the Neo4j Code [[About Contributor License Agreement|Contributor License Agreement]] (CLA).
+* All software published by the Neo4j project must have been contributed under the Neo4j Code <<cla,Contributor License Agreement>>.
 * Neo4j is a free software and open source community.
   As a contributor, you are free to place your work under any license that has been approved by either the http://fsf.org[Free Software Foundation] or the http://opensource.org[Open Source Initiative].
   You still retain copyright, so in addition to that license you can of course release your work under any other license (for example a fully proprietary license), just not on the Neo4j infrastructure.
 * The Neo4j software is split into components.
   A Git repository holds either a single or multiple components.
   Every component has one or more designated maintainers. 
-* The source code should follow the Neo4j [[Coding Standard]] and "fit in" with the Neo4j infrastructure as much as is reasonable for the specific component.
+* The source code should follow the Neo4j <<community-contributing-code-code-style,Code Style>> and "fit in" with the Neo4j infrastructure as much as is reasonable for the specific component.
 
+[[community-contributing-code-contributor-roles]]
 == Contributor roles ==
 
 Every individual that contributes code does so in the context of a role (a single individual can have multiple roles).
 The role defines their responsibilities and privileges:
 
 * A _patch submitter_ is a person who is not a Neo4j user but that wishes to contribute a patch to an existing component.
-  They attach the patch to a ticket. 
-  The patch is then reviewed and either accepted or rejected by a committer or maintainer of the component. See [[#... submit a patch|How to submit a patch]].
+  See <<community-contributing-code-workflow,Workflow>> below.
 * A _committer_ can contribute code directly to one or more components.
   They are a Neo4j user that has been granted commit access to a repository. 
-  See [[#... become a committer|How to become a committer]].
+  See <<community-contributing-code-how-to-become-a-committer,How to become a commiter>>.
 * A _component maintainer_ is in charge of a specific component.
-  See [[#... become a component maintainer|How to become a component maintainer]].
   They can:
 ** commit code in their component's repository.
 ** manage tickets for the repository.
@@ -52,26 +54,29 @@ The role defines their responsibilities and privileges:
 ** define new components and assign component maintainership.
 ** drive, mentor and coach Neo4j component development.
 
-==== Code Style ====
+[[community-contributing-code-code-style]]
+== Code Style ==
 
-The Neo4j Code style is maintained on GIThub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
+The Neo4j Code style is maintained on GitHub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
 
-==== Unit Tests ====
+== Unit Tests ==
 
-You have much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written. Also, make sure your code doesn't break any existing tests.
+You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written. Also, make sure your code doesn't break any existing tests.
 
-==== Workflow ====
+[[community-contributing-code-workflow]]
+== Workflow ==
 
-* Fork the appropiate repo in github, and clone it
-* Create a new, appropriately named branch in your local repository for that specific feature or bugfix. (Keeping a new branch per feature makes sure we can easily pull in your changes without pulling any other stuff that is not supposed to be pulled.)
-* Modify the code to do what you want (e.g., fix it).
-* Make sure your change set has unit tests that are readable and relevant for your change. Try to do this even for small fixes. You never know whether you have introduced some weird bug without testing.
-* Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you changed.
+* Fork the appropriate repository on GitHub, and clone it.
+* Create a new, appropriately named branch in your local repository for that specific feature or bugfix. Keeping a new branch for each feature ensures we can easily pull in your changes without pulling in any other commits that are not supposed to be pulled.
+* Modify the code to do what you want (e.g. fix a bug, implement a feature).
+* Make sure your changeset has unit tests that are readable and relevant for your change. Try to do this even for small fixes. You never know whether you have introduced some weird bug without testing.
+* Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you have changed.
 * Once you are satisfied with your changes, merge with our upstream repository. We can pull your stuff, but since you know best what you changed, you should do the merge. Use rebase!
 * Push to your remote repository on GitHub.
-* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository.
+* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository. If you know the person responsible for the component, be sure to mention him in the Pull Request (e.g. @user) so he will be notified.
 
-==== Commit messages ====
+[[community-contributing-code-commit-messages]]
+== Commit messages ==
 
 Please take some care in providing good commit messages.
 Use your common sense. In particular:
@@ -83,18 +88,20 @@ Use your common sense. In particular:
   Explain what it changes.
   If you have to redo work, you might want to clean up your commit log before doing a pull request.
 * If you fix a bug or an issue that's related to a ticket, then refer to the ticket in the message.
-  For example, _"Added this-and-that and then changed this-and-that. This fixes #14."_ One of these synonyms should work:
-  fixes #xxx
-  fixed #xxx
-  fix #xxx
-  closes #xxx
-  close #xxx
-  closed #xxx.
+  For example, _"Added this and then changed that. This fixes #14."_ 
   Just mentioning #xxx in the commit will connect  it to the GitHub issue with that number, see https://github.com/blog/831-issues-2-0-the-next-generation[GitHub issues].
+  Any of these synonyms will also work:
+  ** fixes #xxx
+  ** fixed #xxx
+  ** fix #xxx
+  ** closes #xxx
+  ** close #xxx
+  ** closed #xxx.
 * Remember to convey _intent_.
   Don't be too brief but don't provide too much detail, either. 
   That's what `git diff` is for.
 
-=== How to become a committer ===
+[[community-contributing-code-how-to-become-a-committer]]
+== How to become a committer ==
 
-. Talk to a maintainer of the component you want commit access to.
+Talk to a maintainer of the component you want commit access to.
