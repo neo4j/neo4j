@@ -1,7 +1,6 @@
 1.8.M03 (2012-05-24)
 --------------------
 o Changed array map to CHM in property index manager, better multithreaded performance
-o Added a ClockCache implementation that doesn't block on get() and is near-LRU
 
 1.8.M02 (2012-05-11)
 --------------------
