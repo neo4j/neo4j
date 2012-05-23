@@ -1,3 +1,7 @@
+1.8.M03 (2012-05-24)
+----------------
+o Added a FindCommonAncestor graph algorithm
+
 1.5 (2011-10-18)
 ----------------
 o Fixed an issue where the shortest path sometimes wouldn't be found (when finding single path)
