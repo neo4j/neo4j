@@ -1,6 +1,8 @@
 1.8.M03
 --------------------
 o Added BEGIN TRANSACTION/COMMIT/ROLLBACK
+o Sessions now live on the server side instead of on the client, which means that not just
+  serializable values can be set there. Paves the way for cypher making use of it.
 
 1.8.M02 (2012-05-11)
 --------------------
