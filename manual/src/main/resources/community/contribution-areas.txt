@@ -7,7 +7,7 @@ Neo4j is a project with a vast ecosystem and a lot of space for contributions. W
 == Neo4j Distribution ==
 
 * https://github.com/neo4j/community/issues[The Neo4j Community open issues] for some starting points for contribution 
-* See the https://github.com/neo4j/[GIThub Neo4j area] for a list of projects
+* See the https://github.com/neo4j/[GitHub Neo4j area] for a list of projects
 
 == Maintaining Neo4j Documentation ==
 
