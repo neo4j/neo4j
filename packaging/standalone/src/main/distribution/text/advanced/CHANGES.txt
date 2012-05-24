@@ -1,3 +1,25 @@
+1.8.M03 (2012-05-24)
+--------------------
+Kernel:
+ o Changed array map to CHM in property index manager, better multithreaded performance
+Shell:
+ o Added BEGIN TRANSACTION/COMMIT/ROLLBACK
+ o Sessions now live on the server side instead of on the client, which means that not just
+  serializable values can be set there. Paves the way for Cypher making use of it.
+Server:
+ o keep_logical_logs is now respected if set to false - default is still true
+Cypher:
+ o Added RELATE
+ o Changed the CREATE syntax, so it looks more like RELATE
+ o Fixes #506: delete head(rels) doesn't work
+ o Fixes #508: length function on array properties doesn't work
+ o Fixes #512: start n=node(*) match n-[r?]->() delete n,r not working
+ o Fixes #514: Extract doesn't work with array properties
+ o Fixes #523: String literals not parsed correctly in CREATE statement
+ o Fixes #526: cypher filter in return clause
+ o Fixes #536: SQRT only returns an integer
+ o Fixes #543: Appending elements to collections
+
 1.8.M02 (2012-05-11)
 --------------------
 Kernel:
