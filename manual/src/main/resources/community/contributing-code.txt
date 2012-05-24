@@ -42,7 +42,6 @@ The role defines their responsibilities and privileges:
   See <<community-contributing-code-workflow,Workflow>> below.
 * A _committer_ can contribute code directly to one or more components.
   They are a Neo4j user that has been granted commit access to a repository. 
-  See <<community-contributing-code-how-to-become-a-committer,How to become a commiter>>.
 * A _component maintainer_ is in charge of a specific component.
   They can:
 ** commit code in their component's repository.
@@ -70,6 +69,7 @@ You have a much higher chance of getting your changes accepted if you supply us 
 * Create a new, appropriately named branch in your local repository for that specific feature or bugfix. Keeping a new branch for each feature ensures we can easily pull in your changes without pulling in any other commits that are not supposed to be pulled.
 * Modify the code to do what you want (e.g. fix a bug, implement a feature).
 * Make sure your changeset has unit tests that are readable and relevant for your change. Try to do this even for small fixes. You never know whether you have introduced some weird bug without testing.
+* When adding new functionality or changing existing code significantly, be sure to add or update Javadoc comments to non-trivial classes and methods. Also check if the manual is affected by your change and needs to be updated, see <<community-docs>>.
 * Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you have changed.
 * Once you are satisfied with your changes, merge with our upstream repository. We can pull your stuff, but since you know best what you changed, you should do the merge. Use rebase!
 * Push to your remote repository on GitHub.
@@ -100,8 +100,3 @@ Use your common sense. In particular:
 * Remember to convey _intent_.
   Don't be too brief but don't provide too much detail, either. 
   That's what `git diff` is for.
-
-[[community-contributing-code-how-to-become-a-committer]]
-== How to become a committer ==
-
-Talk to a maintainer of the component you want commit access to.
