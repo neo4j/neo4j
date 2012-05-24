@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import static org.neo4j.shell.ShellException.wrapCause;
+
 import java.rmi.RemoteException;
 
 import javax.transaction.SystemException;
@@ -43,6 +45,18 @@ public class Commit extends ReadOnlyGraphDatabaseApp
         return "Commits a transaction";
     }
 
+    private Transaction getCurrectTransaction() throws ShellException
+    {
+        try
+        {
+
+            return getServer().getDb().getTxManager().getTransaction();
+        } catch ( SystemException e )
+        {
+            throw wrapCause( e );
+        }
+    }
+
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
@@ -55,20 +69,22 @@ public class Commit extends ReadOnlyGraphDatabaseApp
 
         Integer txCount = (Integer) session.get( TX_COUNT );
 
+        Transaction tx = getCurrectTransaction();
         if ( txCount == null || txCount.equals( 0 ) )
         {
-            throw new ShellException( "Not in a transaction" );
-        } else if ( txCount.equals( 1 ) )
-        {
-            Transaction tx;
-            try
+            if ( tx != null )
             {
-                tx = getServer().getDb().getTxManager().getTransaction();
-                if ( tx == null )
-                {
-                    throw fail( session, "Not in a transaction" );
-                }
-            } catch ( SystemException e )
+                out.println( "Warning: committing a transaction not started by the shell" );
+                txCount = 1;
+            } else
+            {
+                throw new ShellException( "Not in a transaction" );
+            }
+        }
+
+        if ( txCount.equals( 1 ) )
+        {
+            if ( tx == null )
             {
                 throw fail( session, "Not in a transaction" );
             }

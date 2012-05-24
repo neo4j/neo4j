@@ -69,6 +69,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
             } else
             {
                 count = 1;
+                out.println( "Warning: transaction found that was not started by the shell." );
             }
         } else
         {
