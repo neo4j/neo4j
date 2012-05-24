@@ -381,6 +381,13 @@ return distinct center""")
 
     assert(result === Array(1,2,3,4,5))
   }
+
+  @Test
+  def failed_query_should_not_leave_dangling_transactions() {
+    intercept[NotFoundException](parseAndExecute("START left=node(1), right=node(3,4) RELATE left-[r:KNOWS]->right RETURN r"))
+
+    assertNull("Did not expect to be in a transaction now", graph.getTxManager.getTransaction)
+  }
 }
 
 trait StatisticsChecker extends Assertions {

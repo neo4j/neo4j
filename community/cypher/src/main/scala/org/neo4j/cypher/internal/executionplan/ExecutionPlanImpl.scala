@@ -101,7 +101,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
       val state = new QueryState(graph, MutableMaps.create ++ params)
-      new EagerPipeExecutionResult(pipe.createResults(state), pipe.symbols, columns, state)
+      new EagerPipeExecutionResult(pipe.createResults(state), pipe.symbols, columns, state, graph)
     }
 
     func

@@ -164,21 +164,3 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
   lazy val queryStatistics = QueryStatistics.empty
 }
 
-class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]], symbols: SymbolTable, columns: List[String], state: QueryState)
-  extends PipeExecutionResult(r, symbols, columns) {
-
-  override lazy val queryStatistics = QueryStatistics(
-    nodesCreated = state.createdNodes.count,
-    relationshipsCreated = state.createdRelationships.count,
-    propertiesSet = state.propertySet.count,
-    deletedNodes = state.deletedNodes.count,
-    deletedRelationships = state.deletedRelationships.count)
-
-  override val createTimedResults = {
-    val start = System.currentTimeMillis()
-    val eagerResult = immutableResult.toList
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
-  }
-}
