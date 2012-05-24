@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -32,6 +34,9 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     public static final long MIN_SIZE = 1;
     private final AtomicReferenceArray<E> cache;
     private final long maxSize;
+    private long closeToMaxSize;
+    private long purgeStopSize;
+    private long purgeHandoffSize;
     private final AtomicLong currentSize = new AtomicLong( 0 );
     private final long minLogInterval;
     private final String name;
@@ -45,6 +50,11 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
     private long purgeCount = 0;
 
     private final StringLogger logger;
+    
+    private final AtomicBoolean purging = new AtomicBoolean();
+    private final AtomicInteger avertedPurgeWaits = new AtomicInteger();
+    private final AtomicInteger forcedPurgeWaits = new AtomicInteger();
+    private long purgeTime;
 
     GCResistantCache( AtomicReferenceArray<E> cache )
     {
@@ -53,6 +63,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
         this.maxSize = 1024l*1024*1024;
         this.name = "test cache";
         this.logger = null;
+        calculateSizes();
     }
     
     public GCResistantCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name, StringLogger logger )
@@ -75,13 +86,20 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
             throw new IllegalArgumentException( "Max size can not be " + maxSizeInBytes );
         }
 
-        long t = System.currentTimeMillis();
         this.cache = new AtomicReferenceArray<E>( (int) maxElementCount );
         this.maxSize = maxSizeInBytes;
         this.name = name == null ? super.toString() : name;
         this.logger = logger == null ? StringLogger.SYSTEM : logger;
+        calculateSizes();
     }
 
+    private void calculateSizes()
+    {
+        this.closeToMaxSize = (long)((double)maxSize * 0.95d);
+        this.purgeStopSize = (long)((double)maxSize * 0.90d);
+        this.purgeHandoffSize = (long)((double)maxSize * 1.05d);
+    }
+    
     private int getPosition( EntityWithSize obj )
     {
         return (int) ( obj.getId() % cache.length() );
@@ -122,7 +140,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
                     collisions++;
                 }
                 totalPuts++;
-                if ( size > maxSize )
+                if ( size > closeToMaxSize )
                 {
                     purgeFrom( pos );
                 }
@@ -179,12 +197,54 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
 
     private long lastPurgeLogTimestamp = 0;
 
-    private synchronized void purgeFrom( int pos )
+    private void purgeFrom( int pos )
     {
-        if ( currentSize.get() <= ( maxSize * 0.95f ) )
-        {
+        long myCurrentSize = currentSize.get();
+        if ( myCurrentSize <= closeToMaxSize )
             return;
+        
+        // if we're within 0.95 < size < 1.05 and someone else is purging then just return and let
+        // the other one purge for us. if we're above 1.05 then wait for the purger to finish before returning.
+        if ( purging.compareAndSet( false, true ) )
+        {   // We're going to do the purge
+            try
+            {
+                doPurge( pos );
+            }
+            finally
+            {
+                purging.set( false );
+            }
         }
+        else
+        {   // Someone else is currently doing a purge
+            if ( myCurrentSize < purgeHandoffSize )
+            {   // It's safe to just return and let the purger do its thing
+                avertedPurgeWaits.incrementAndGet();
+                return;
+            }
+            else
+            {
+                // Wait for the current purge to complete. Some threads might slip through here before
+                // A thread just entering doPurge above, but that's fine
+                forcedPurgeWaits.incrementAndGet();
+                waitForCurrentPurgeToComplete();
+            }
+        }
+    }
+
+    private synchronized void waitForCurrentPurgeToComplete()
+    {
+        // Just a nice way of saying "wait for the monitor on this object currently held by the thread doing a purge"
+    }
+
+    private synchronized void doPurge( int pos )
+    {
+        long myCurrentSize = currentSize.get();
+        if ( myCurrentSize <= closeToMaxSize )
+            return;
+        
+        long startTime = System.currentTimeMillis();
         purgeCount++;
         long sizeBefore = currentSize.get();
         try
@@ -196,19 +256,15 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
                 {
                     int minusPos = pos - index;
                     remove( minusPos );
-                    if ( currentSize.get() <= ( maxSize * 0.9f ) )
-                    {
+                    if ( currentSize.get() <= purgeStopSize )
                         return;
-                    }
                 }
                 if ( ( pos + index ) < cache.length() )
                 {
                     int plusPos = pos + index;
                     remove( plusPos );
-                    if ( currentSize.get() <= ( maxSize * 0.9f ) )
-                    {
+                    if ( currentSize.get() <= purgeStopSize )
                         return;
-                    }
                 }
                 index++;
             }
@@ -219,6 +275,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
         finally
         {
             long timestamp = System.currentTimeMillis();
+            purgeTime += (timestamp-startTime);
             if ( timestamp - lastPurgeLogTimestamp > minLogInterval )
             {
                 lastPurgeLogTimestamp = timestamp;
@@ -234,7 +291,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
                 logger.logMessage( name + " purge (nr " + purgeCount + ") " + sizeBeforeStr + " -> " + sizeAfterStr + " (" + diffStr +
                         ") " + missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").", true );
                 printAccurateStatistics();
-             }
+            }
         }
     }
 
@@ -294,8 +351,9 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
         String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
         String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
         
-        return name + " array size: " + cache.length() + " purge count: " + purgeCount + " size is: " + currentSizeStr + ", " +
-                missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").";
+        return name + " array:" + cache.length() + " purge:" + purgeCount + " size:" + currentSizeStr +
+                " misses:" + missPercentage + " collisions:" + colPercentage + " (" + collisions + ") av.purge waits:" +
+                avertedPurgeWaits.get() + " purge waits:" + forcedPurgeWaits.get() + " avg. purge time:" + (purgeCount > 0 ? (purgeTime/purgeCount) + "ms" : "N/A");
     }
 
     private String getSize( long size )
@@ -371,7 +429,7 @@ public class GCResistantCache<E extends EntityWithSize> implements Cache<E>, Dia
         }
         long size = currentSize.addAndGet( (newSize - existingObj.getRegisteredSize()) );
         obj.setRegisteredSize( newSize );
-        if ( size > maxSize )
+        if ( size > closeToMaxSize )
         {
             purgeFrom( pos );
         }
