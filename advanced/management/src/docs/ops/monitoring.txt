@@ -10,22 +10,27 @@ In order to be able to continuously get an overview of the health of a Neo4j dat
 [[operations-jmx]]
 == JMX ==
 
+[[jmx-remote]]
 === Adjusting remote JMX access to the Neo4j Server ===
 
-Per default, the Advanced and Enterprise Neo4j Server editions do not allow remove JMX connections, since the relevant options in the +conf/neo4j-wrapper.conf+ configuration file are commented out. To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
+Per default, the Neo4j Advanced Server and Neo4j Enterprise Server editions do not allow remote JMX connections, since the relevant options in the 'conf/neo4j-wrapper.conf' configuration file are commented out.
+To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
 
-When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the +conf/jmx.password+, +conf/jmx.access+ and +conf/wrapper.conf+ for details.
+When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the 'conf/jmx.password', 'conf/jmx.access' and 'conf/wrapper.conf' files for details.
 
-Make sure that +conf/jmx.password+ has the correct file permissions. The owner of the file has to be the user that will run the service, and the permissions should be read only for that user. On Unix systems, this is 0600. 
+Make sure that 'conf/jmx.password' has the correct file permissions.
+The owner of the file has to be the user that will run the service, and the permissions should be read only for that user.
+On Unix systems, this is +0600+.
 
-On Windows, follow this tutorial to set the correct permissions. If you are running the service under the Local System Account, the user that owns the file and has access to it should be SYSTEM.
+On Windows, follow the tutorial at http://docs.oracle.com/javase/6/docs/technotes/guides/management/security-windows.html to set the correct permissions.
+If you are running the service under the Local System Account, the user that owns the file and has access to it should be SYSTEM.
 
 With this setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
 
-Note that it is possible that you have to update the permissions and/or ownership of the +conf/jmx.password+ and +conf/jmx.access+ files - refer to the relevant section in +conf/wrapper.conf+ for details
+Note that it is possible that you have to update the permissions and/or ownership of the 'conf/jmx.password' and 'conf/jmx.access' files -- refer to the relevant section in 'conf/wrapper.conf' for details.
 
 [WARNING]
-For maximum security, please adjust at least the password settings in +conf/jmx.password+ for a production installation.
+For maximum security, please adjust at least the password settings in 'conf/jmx.password' for a production installation.
 
 For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 
@@ -35,7 +40,7 @@ First, start your embedded database or the Neo4j Server, for instance using
 
 [source,shell]
 ----
-$NEO4j_SERVER_HOME/bin/neo4j start
+$NEO4j_HOME/bin/neo4j start
 ----
 
 Now, start JConsole with
@@ -52,8 +57,8 @@ image::jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 Now, beside the MBeans exposed by the JVM, you will see an +org.neo4j+ section in the MBeans tab.
 Under that, you will have access to all the monitoring information exposed by Neo4j.
 
-For opening JMX to remote monitoring access, please refer to http://download.oracle.com/javase/1.5.0/docs/guide/management/agent.html#remote[the JMX documention]
-and pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
+For opening JMX to remote monitoring access, please see <<jmx-remote>> and http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html#gdenl[the JMX documention].
+When using Neo4j in embedded mode, make sure to pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
 
 .Neo4j MBeans View
 image::jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
@@ -62,146 +67,12 @@ image::jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
 === How to connect to the JMX monitoring programmatically ===
 
 In order to programmatically connect to the Neo4j JMX server, there are some convenience methods in the Neo4j Management component to help you find out the most commonly used monitoring attributes of Neo4j.
-For instance, the number of node IDs in use can be obtained with code like:
-
-[source, java]
-----
-Neo4jManager manager = new Neo4jManager( graphDb.getManagementBean( Kernel.class ) );
-long nodeIDsInUse    = manager.getPrimitivesBean.getNumberOfNodeIdsInUse();
-----
+See <<tutorials-java-embedded-jmx>> for an example.
 
 Once you have access to this information, you can use it to for instance expose the values to http://en.wikipedia.org/wiki/Simple_Network_Management_Protocol[SNMP] or other monitoring systems.
 
 === Reference of supported JMX MBeans ===
 
-.MBeans exposed by the Neo4j Kernel
-[options="header", cols="m,"]
-|===================
-|Name|Description
-|org.neo4j:instance=kernel#0,name=Memory Mapping|The status of Neo4j memory mapping
-|org.neo4j:instance=kernel#0,name=Locking|Information about the Neo4j lock status
-|org.neo4j:instance=kernel#0,name=Transactions|Information about the Neo4j transaction manager
-|org.neo4j:instance=kernel#0,name=Cache|Information about the caching in Neo4j
-|org.neo4j:instance=kernel#0,name=Configuration|The configuration parameters used to configure Neo4j
-|org.neo4j:instance=kernel#0,name=Primitive count|Estimates of the numbers of different kinds of Neo4j primitives
-|org.neo4j:instance=kernel#0,name=XA Resources|Information about the XA transaction manager
-|org.neo4j:instance=kernel#0,name=Store file sizes|Information about the sizes of the different parts of the Neo4j graph store
-|org.neo4j:instance=kernel#0,name=Kernel|Information about the Neo4j kernel
-|org.neo4j:instance=kernel#0,name=High Availability|Information an High Availability cluster, if enabled.
-|===================
+include::{importdir}/neo4j-ha-docs-jar/ops/jmx.txt[]
 
-
-.MBean Memory Mapping
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|MemoryPools  |Get information about each pool of memory mapped regions from store files with memory mapping enabled
-  |String
-|========================================================
-
-
-.MBean Locking
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|NumberOfAdvertedDeadlocks  |The number of lock sequences that would have lead to a deadlock situation that Neo4j has detected and adverted (by throwing DeadlockDetectedException).|Integer
-|========================================================
-
-
-.MBean Transactions
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|NumberOfOpenTransactions  |The number of currently open transactions|Integer
-|PeakNumberOfConcurrentTransactions  |The highest number of transactions ever opened concurrently|Integer
-|NumberOfOpenedTransactions  |The total number started transactions|Integer
-|NumberOfCommittedTransactions  |The total number of committed transactionss|Integer
-|NumberOfRolledBackTransactions  The total number of rolled back transactions|Integer
-|========================================================
-
-.MBean Cache
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|CacheType  |The type of cache used by Neo4j|String
-|NodeCacheSize  |The number of Nodes currently in cache|Integer
-|RelationshipCacheSize  |The number of Relationships currently in cache|Integer
-|clear()  |clear all caches|function, void
-|========================================================
-
-.MBean Configuration
-[options="header", cols="<45m,<45,<10"]
-|========================================================
-|Attribute|Description    |Type
-|store_dir  |Relative path for where the Neo4j storage directory is located|String
-|rebuild_idgenerators_fast  |Use a quick approach for rebuilding the ID generators. This give quicker recovery time, but will limit the ability to reuse the space of deleted entities.|String
-|logical_log  |Relative path for where the Neo4j logical log is located|String
-|neostore.propertystore.db.index.keys.mapped_memory  |The size to allocate for memory mapping the store for property key strings|String
-|neostore.propertystore.db.strings.mapped_memory  |The size to allocate for memory mapping the string property store|String
-|neostore.propertystore.db.arrays.mapped_memory  |The size to allocate for memory mapping the array property store|String
-|neo_store  |Relative path for where the Neo4j storage information file is located|String
-|neostore.relationshipstore.db.mapped_memory  |The size to allocate for memory mapping the relationship store|String
-|neostore.propertystore.db.index.mapped_memory  |The size to allocate for memory mapping the store for property key indexes|String
-|create  |Configuration attribute|String
-|enable_remote_shell  |Enable a remote shell server which shell clients can log in to|String
-|neostore.propertystore.db.mapped_memory  |The size to allocate for memory mapping the property value store|Integer
-|neostore.nodestore.db.mapped_memory  |The size to allocate for memory mapping the node store|String
-|dir  |Configuration attribute|String
-|========================================================
-
-.MBean Primitive count
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|NumberOfNodeIdsInUse  |An estimation of the number of nodes used in this Neo4j instance|Integer
-|NumberOfRelationshipIdsInUse  |An estimation of the number of relationships used in this Neo4j instance|Integer
-|NumberOfPropertyIdsInUse  |An estimation of the number of properties used in this Neo4j instance|Integer
-|NumberOfRelationshipTypeIdsInUse  |The number of relationship types used in this Neo4j instance|Integer
-|========================================================
-
-
-.MBean XA Resources
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|XaResources  |Information about all XA resources managed by the transaction manager | String
-|========================================================
-
-.MBean Store file sizes
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|TotalStoreSize  |The total disk space used by this Neo4j instance, in bytes.|Integer
-|LogicalLogSize  |The amount of disk space used by the current Neo4j logical log, in bytes.|Integer
-|ArrayStoreSize  |The amount of disk space used to store array properties, in bytes.|Integer
-|NodeStoreSize  |The amount of disk space used to store nodes, in bytes.|Integer
-|PropertyStoreSize  |The amount of disk space used to store properties (excluding string values and array values), in bytes.|Integer
-|RelationshipStoreSize  |The amount of disk space used to store relationships, in bytes.|Integer
-|StringStoreSize  |The amount of disk space used to store string properties, in bytes.|Integer
-|========================================================
-
-.MBean Kernel
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|ReadOnly  |Whether this is a read only instance.|boolean
-|MBeanQuery  |An ObjectName that can be used as a query for getting all management beans for this Neo4j instance.|String
-|KernelStartTime  |The time from which this Neo4j instance was in operational mode|Date
-|StoreCreationDate  |The time when this Neo4j graph store was created|Date
-|StoreId  |An identifier that, together with store creation time, uniquely identifies this Neo4j graph store|String
-|StoreLogVersion  |The current version of the Neo4j store logical log|String
-|KernelVersion  |The version of Neo4j|String
-|StoreDirectory  |The location where the Neo4j store is located|String
-|========================================================
-
-
-.MBean High Availability
-[options="header", cols="45m,45,10"]
-|========================================================
-|Attribute|Description    |Type
-|MachineId  |The cluster machine id of this instance|String
-|Master  |True, if this Neo4j instance is currently Master in the cluster|boolean
-|ConnectedSlaves  |A list of conencted slaves in this cluster|String
-|InstancesInCluster  |Information about the other Neo4j instances in this HA cluster|String
-|========================================================
 
