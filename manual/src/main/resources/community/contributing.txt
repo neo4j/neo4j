@@ -21,11 +21,15 @@ include::cla.txt[]
 
 :leveloffset: 2
 
+include::contribution-areas.txt[]
+
+:leveloffset: 2
+
 include::docs.txt[]
 
 :leveloffset: 2
 
-include::maintaining-docs.txt[]
+include::contributing-code.txt[]
 
 :leveloffset: 2
 
