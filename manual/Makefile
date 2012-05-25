@@ -107,7 +107,6 @@ cleanup:
 	#
 	#
 ifndef KEEP
-	rm -f "$(DOCBOOKFILEPDF)"
 	rm -f "$(DOCBOOKFILE)"
 	rm -f "$(BUILDDIR)/"*.xml
 	rm -f "$(ANNOTATEDDIR)/"*.xml
@@ -156,7 +155,7 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	mkdir -p "$(BUILDDIR)"
-	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKFILE)" "$(SRCFILE)"
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --attribute nonhtmloutput=1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKFILE)" "$(SRCFILE)"
 	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKFILE)"
 
 docbook-html:  manpages copyimages
