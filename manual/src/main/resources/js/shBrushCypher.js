@@ -25,7 +25,7 @@
 	{
         var funcs   =   'avg max min sum count not all any none single length type id nodes relationships collect extract shortestPath filter tail head last coalesce abs round sqrt sign collect type length';
 
-        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach';
+        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null cypher create with set delete foreach relate';
 
         var operators = 'or and';
 
