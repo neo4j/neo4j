@@ -59,6 +59,7 @@ The Neo4j Code style is maintained on GitHub in https://github.com/neo4j/neo4j.g
 
 You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written.
 Also, make sure your code doesn't break any existing tests.
+See the advice on building below.
 _Note that there may be downstream components that need to be tested as well,_ depending on what you change.
 
 [[community-contributing-code-workflow]]
@@ -71,12 +72,15 @@ _Note that there may be downstream components that need to be tested as well,_ d
 * Make sure your changeset has unit tests that are readable and relevant for your change.
   Try to do this even for small fixes.
   You never know whether you have introduced some weird bug without testing.
+* Run the Maven build frequently so you know if you've introduced any unexpected issues (`mvn clean verify`).
+  Running tests from your IDE isn't repeatable enough, even if you run all of the tests in the project.
 * When adding new functionality or changing existing code significantly, be sure to add or update Javadoc comments to non-trivial classes and methods. 
   Also check if the manual is affected by your change and needs to be updated, see <<community-docs>>.
 * Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you have changed.
 * Once you are satisfied with your changes, merge with our upstream repository.
   We can pull your stuff, but since you know best what you changed, you should do the merge. 
   Use rebase and/or squash commits as appropriate!
+* This is a good point to do one last clean build to see that the merge hasn't broken your code.
 * Push to your remote repository on GitHub.
 * Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository.
   If you know the person responsible for the component, be sure to mention him in the Pull Request (e.g. @user) so he will be notified.
