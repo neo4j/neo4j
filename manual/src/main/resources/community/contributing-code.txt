@@ -29,8 +29,7 @@ In a nutshell, you need to be aware of the following fundamentals if you wish to
   You still retain copyright, so in addition to that license you can of course release your work under any other license (for example a fully proprietary license), just not on the Neo4j infrastructure.
 * The Neo4j software is split into components.
   A Git repository holds either a single or multiple components.
-  Every component has one or more designated maintainers. 
-* The source code should follow the Neo4j <<community-contributing-code-code-style,Code Style>> and "fit in" with the Neo4j infrastructure as much as is reasonable for the specific component.
+* The source code should follow the Neo4j <<community-contributing-code-code-style,Code Style>> and ``fit in'' with the Neo4j infrastructure as much as is reasonable for the specific component.
 
 [[community-contributing-code-contributor-roles]]
 == Contributor roles ==
@@ -38,19 +37,17 @@ In a nutshell, you need to be aware of the following fundamentals if you wish to
 Every individual that contributes code does so in the context of a role (a single individual can have multiple roles).
 The role defines their responsibilities and privileges:
 
-* A _patch submitter_ is a person who is not a Neo4j user but that wishes to contribute a patch to an existing component.
+* A _patch submitter_ is a person who wishes to contribute a patch to an existing component.
   See <<community-contributing-code-workflow,Workflow>> below.
 * A _committer_ can contribute code directly to one or more components.
-  They are a Neo4j user that has been granted commit access to a repository. 
 * A _component maintainer_ is in charge of a specific component.
   They can:
-** commit code in their component's repository.
-** manage tickets for the repository.
-** grant commit rights to the repository.
+** commit code in their component's repository,
+** manage tickets for the repository,
+** grant push rights to the repository.
 * A _Neo4j admin_ manages the Neo4j infrastructure.
   They:
-** approve new Neo4j users.
-** define new components and assign component maintainership.
+** define new components and assign component maintainership,
 ** drive, mentor and coach Neo4j component development.
 
 [[community-contributing-code-code-style]]
@@ -60,20 +57,29 @@ The Neo4j Code style is maintained on GitHub in https://github.com/neo4j/neo4j.g
 
 == Unit Tests ==
 
-You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written. Also, make sure your code doesn't break any existing tests.
+You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written.
+Also, make sure your code doesn't break any existing tests.
+_Note that there may be downstream components that need to be tested as well,_ depending on what you change.
 
 [[community-contributing-code-workflow]]
 == Workflow ==
 
 * Fork the appropriate repository on GitHub, and clone it.
-* Create a new, appropriately named branch in your local repository for that specific feature or bugfix. Keeping a new branch for each feature ensures we can easily pull in your changes without pulling in any other commits that are not supposed to be pulled.
+* Create a new, appropriately named branch in your local repository for that specific feature or bugfix.
+  Keeping a new branch for each feature ensures we can easily pull in your changes without pulling in any other commits that are not supposed to be pulled.
 * Modify the code to do what you want (e.g. fix a bug, implement a feature).
-* Make sure your changeset has unit tests that are readable and relevant for your change. Try to do this even for small fixes. You never know whether you have introduced some weird bug without testing.
-* When adding new functionality or changing existing code significantly, be sure to add or update Javadoc comments to non-trivial classes and methods. Also check if the manual is affected by your change and needs to be updated, see <<community-docs>>.
+* Make sure your changeset has unit tests that are readable and relevant for your change.
+  Try to do this even for small fixes.
+  You never know whether you have introduced some weird bug without testing.
+* When adding new functionality or changing existing code significantly, be sure to add or update Javadoc comments to non-trivial classes and methods. 
+  Also check if the manual is affected by your change and needs to be updated, see <<community-docs>>.
 * Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you have changed.
-* Once you are satisfied with your changes, merge with our upstream repository. We can pull your stuff, but since you know best what you changed, you should do the merge. Use rebase!
+* Once you are satisfied with your changes, merge with our upstream repository.
+  We can pull your stuff, but since you know best what you changed, you should do the merge. 
+  Use rebase and/or squash commits as appropriate!
 * Push to your remote repository on GitHub.
-* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository. If you know the person responsible for the component, be sure to mention him in the Pull Request (e.g. @user) so he will be notified.
+* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository.
+  If you know the person responsible for the component, be sure to mention him in the Pull Request (e.g. @user) so he will be notified.
 
 [[community-contributing-code-commit-messages]]
 == Commit messages ==
@@ -88,7 +94,7 @@ Use your common sense. In particular:
   Explain what it changes.
   If you have to redo work, you might want to clean up your commit log before doing a pull request.
 * If you fix a bug or an issue that's related to a ticket, then refer to the ticket in the message.
-  For example, _"Added this and then changed that. This fixes #14."_ 
+  For example, _``Added this and then changed that. This fixes #14.''_ 
   Just mentioning #xxx in the commit will connect  it to the GitHub issue with that number, see https://github.com/blog/831-issues-2-0-the-next-generation[GitHub issues].
   Any of these synonyms will also work:
   ** fixes #xxx
@@ -100,3 +106,4 @@ Use your common sense. In particular:
 * Remember to convey _intent_.
   Don't be too brief but don't provide too much detail, either. 
   That's what `git diff` is for.
+
