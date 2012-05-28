@@ -24,6 +24,7 @@ import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{NotFoundException, Relationship, Node}
+import java.util.HashMap
 
 class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
@@ -387,6 +388,21 @@ return distinct center""")
     intercept[NotFoundException](parseAndExecute("START left=node(1), right=node(3,4) RELATE left-[r:KNOWS]->right RETURN r"))
 
     assertNull("Did not expect to be in a transaction now", graph.getTxManager.getTransaction)
+  }
+
+  @Test
+  def relate_twice_with_param_map() {
+    createNode()
+    createNode()
+
+    val map1 = Map("name" -> "Anders")
+    val map2 = new HashMap[String, Any]()
+    map2.put("name", "Anders")
+
+    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) relate a-[r:FOO {param}]->b return r", "param" -> map1)
+    val r2 = executeScalar[Relationship]("start a=node(1), b=node(2) relate a-[r:FOO {param}]->b return r", "param" -> map2)
+
+    assert(r1 === r2)
   }
 }
 

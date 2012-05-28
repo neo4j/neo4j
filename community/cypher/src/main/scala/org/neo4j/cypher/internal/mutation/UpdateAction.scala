@@ -49,7 +49,7 @@ trait GraphElementPropertyFunctions {
 
   def rewrite(props: Map[String, Expression], f: (Expression) => Expression): Map[String, Expression] = props.map{ case (k,v) => k->v.rewrite(f) }
 
-  private def getMapFromExpression(v: Any): Map[String, Any] = v match {
+  def getMapFromExpression(v: Any): Map[String, Any] = v match {
     case m: collection.Map[String, Any] => m.toMap
     case m: JavaMap[String, Any] => m.asScala.toMap
     case x => throw new CypherTypeException("Don't know how to extract parameters from this type: " + x.getClass.getName)

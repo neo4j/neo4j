@@ -27,14 +27,14 @@ import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.{RelatePathNotUnique, CypherTypeException}
 
-case class NamedExpectation(name : String, properties : Map[String,Expression]) {
-  def this(name : String) = this(name, Map.empty)
-  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = {
-    properties.forall {
-      case (k, exp) => {
-        pc.hasProperty(k) && exp(ctx) == pc.getProperty(k)
-      }
+case class NamedExpectation(name: String, properties: Map[String, Expression]) extends GraphElementPropertyFunctions {
+  def this(name: String) = this(name, Map.empty)
+
+  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = properties.forall {
+    case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
+      case (k, value) => pc.hasProperty(k) && pc.getProperty(k) == value
     }
+    case (k, exp) => pc.hasProperty(k) && exp(ctx) == pc.getProperty(k)
   }
 }
 
@@ -43,13 +43,12 @@ object RelateLink {
     new RelateLink(NamedExpectation(start, Map.empty), NamedExpectation(end, Map.empty), NamedExpectation(relName, Map.empty), relType, dir)
 }
 
-
 case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions {
   lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
   def exec(context: ExecutionContext, state: QueryState): RelateResult = {
-    // We haven't yet figured out if we already have boths elements in the context
+    // We haven't yet figured out if we already have both elements in the context
     // so let's start by finding that first
 
     val s = getNode(context, start.name)
