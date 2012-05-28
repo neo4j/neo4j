@@ -112,6 +112,12 @@ _Graph_
     graphViz.close()
   }
 
+  def executeQuery(queryText: String): ExecutionResult = {
+    var query = queryText
+    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+    engine.execute(query)
+  }
+  
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val r = testWithoutDocs(queryText, assertions:_*)
     val result: ExecutionResult = r._1
