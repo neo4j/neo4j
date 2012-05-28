@@ -383,6 +383,22 @@ return distinct center""")
   }
 
   @Test
+  def create_node_from_map_with_array_value_from_java() {
+    val list = new java.util.ArrayList[String]()
+    list.add("foo")
+    list.add("bar")
+
+    val map = new java.util.HashMap[String, Object]()
+    map.put("arrayProp", list)
+
+    val q = "create a={param} return a.arrayProp"
+    val result =  executeScalar[Array[String]](q, "param" -> map)
+
+    assertStats(parseAndExecute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
+    assert(result === Array("foo","bar"))
+  }
+
+  @Test
   def failed_query_should_not_leave_dangling_transactions() {
     intercept[NotFoundException](parseAndExecute("START left=node(1), right=node(3,4) RELATE left-[r:KNOWS]->right RETURN r"))
 
