@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Direction
 trait StartClause extends Base with Expressions {
   def start: Parser[Start] = createStart | readStart
 
-  def readStart = ignoreCase("start") ~> commaList(startBit) ^^ (x => Start(x: _*))
+  def readStart :Parser[Start] = ignoreCase("start") ~> commaList(startBit) ^^ (x => Start(x: _*)) | failure("expected START or CREATE")
 
   def createStart = ignoreCase("create") ~> commaList(usePattern(translate)) ^^ (x => Start(x.flatten: _*))
 

@@ -30,6 +30,13 @@ trait MatchClause extends Base with ParserPattern {
       (Match(unnamedPaths: _*), NamedPaths(namedPaths: _*))
   }
 
+  private def successIfEntities[T](l: Expression, r: Expression)(f: (String, String) => T): Maybe[T] = (l, r) match {
+    case (Entity(lName), Entity(rName)) => Yes(f(lName, rName))
+    case (x, Entity(_)) => No("MATCH end points have to be node identifiers - found: " + x)
+    case (Entity(_), x) => No("MATCH end points have to be node identifiers - found: " + x)
+    case (x, y) => No("MATCH end points have to be node identifiers - found: " + x + " and " + y)
+  }
+
   private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
       val namedPathPatterns = patterns.map(translate)
@@ -40,15 +47,15 @@ trait MatchClause extends Base with ParserPattern {
         case Some(No(msg)) => No(msg)
       }
 
-    case ParsedRelation(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate) =>
-      Yes(RelatedTo(left = left, right = right, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+    case ParsedRelation(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate) =>
+      successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
 
-    case ParsedVarLengthRelation(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate, min, max, relIterator) =>
-      Yes(VarLengthRelatedTo(pathName = name, start = left, end = right, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+    case ParsedVarLengthRelation(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate, min, max, relIterator) =>
+      successIfEntities(left, right)((l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
 
-    case ParsedShortestPath(name, props, ParsedEntity(Entity(left), startProps, True()), ParsedEntity(Entity(right), endProps, True()), relType, dir, optional, predicate, max, single, relIterator) =>
-      Yes(ShortestPath(pathName = name, start = left, end = right, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+    case ParsedShortestPath(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate, max, single, relIterator) =>
+      successIfEntities(left, right)((l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
 
-    case _ => No("")
+    case x => No("failed to parse MATCH pattern")
   }
 }

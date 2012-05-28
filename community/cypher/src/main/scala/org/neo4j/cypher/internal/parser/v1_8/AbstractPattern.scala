@@ -22,12 +22,14 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.{Predicate, Expression}
 import collection.Map
+import org.neo4j.cypher.SyntaxException
 
 abstract sealed class AbstractPattern
 
 object PatternWithEnds {
   def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], Direction, Boolean, Option[Int], Option[String], Predicate)] = p match {
-    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, predicate, maxDepth, single, relIterator) => Some((start, end, typ, dir, optional, maxDepth, relIterator, predicate))
+    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, predicate, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator, predicate))
+    case ParsedVarLengthRelation(_, _, _, _, _, _, _, _, Some(x), _, _) => throw new SyntaxException("Shortest path does not support a minimal length")
     case ParsedRelation(name, _, start, end, typ, dir, optional, predicate) => Some((start, end, typ, dir, optional, Some(1), Some(name), predicate))
   }
 }
