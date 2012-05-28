@@ -18,12 +18,12 @@
  */
 package org.neo4j.examples.server.plugins;
 
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.server.plugins.Description;
@@ -31,14 +31,11 @@ import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 
-
-
 /**
 * An extension performaing a predefined graph traversal
 */
 @Description( "Performs a depth two traversal along all relationship types." )
-public class
-        DepthTwo extends ServerPlugin
+public class DepthTwo extends ServerPlugin
 {
     @Description( "Traverse depth two and return the end nodes" )
     @PluginTarget( Node.class )
@@ -62,17 +59,5 @@ public class
     }
 
     private static final TraversalDescription traversal = Traversal.description().uniqueness(
-            Uniqueness.RELATIONSHIP_PATH ).prune( new PruneEvaluator()
-    {
-        public boolean pruneAfter( Path position )
-        {
-            return position.length() >= 2;
-        }
-    } ).filter( new Predicate<Path>()
-    {
-        public boolean accept( Path item )
-        {
-            return item.length() == 2;
-        }
-    } );
+            Uniqueness.RELATIONSHIP_PATH ).evaluator( atDepth( 2 ) );
 }

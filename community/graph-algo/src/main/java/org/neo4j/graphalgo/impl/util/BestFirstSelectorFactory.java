@@ -19,22 +19,32 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.graphalgo.impl.util.PriorityMap.Converter;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         implements BranchOrderingPolicy
 {
-    public BranchSelector create( TraversalBranch startSource )
+    public BranchSelector create( TraversalBranch startSource, PathExpander expander )
     {
-        return new BestFirstSelector( startSource, getStartData() );
+        return new BestFirstSelector( startSource, getStartData(), expander );
+    }
+    
+    public BranchSelector create( TraversalBranch startSource, RelationshipExpander expander )
+    {
+        return new BestFirstSelector( startSource, getStartData(), toPathExpander( expander ) );
     }
     
     protected abstract P getStartData();
@@ -46,22 +56,24 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         private TraversalBranch current;
         private P currentAggregatedValue;
         private final Set<Long> visitedNodes = new HashSet<Long>();
+        private final PathExpander expander;
 
-        public BestFirstSelector( TraversalBranch source, P startData )
+        public BestFirstSelector( TraversalBranch source, P startData, PathExpander expander )
         {
             this.current = source;
             this.currentAggregatedValue = startData;
+            this.expander = expander;
         }
 
-        public TraversalBranch next()
+        public TraversalBranch next( TraversalContext metadata )
         {
             // Exhaust current if not already exhausted
             while ( true )
             {
-                TraversalBranch next = current.next();
+                TraversalBranch next = current.next( expander, metadata );
                 if ( next != null )
                 {
-                    if ( !visitedNodes.contains( next.node().getId() ) )
+                    if ( !visitedNodes.contains( next.endNode().getId() ) )
                     {
                         P newPriority = addPriority( next, currentAggregatedValue,
                                 calculateValue( next ) );
@@ -80,7 +92,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
             {
                 current = entry.getEntity();
                 currentAggregatedValue = entry.getPriority();
-                visitedNodes.add( current.node().getId() );
+                visitedNodes.add( current.endNode().getId() );
                 return current;
             }
             return null;
@@ -97,7 +109,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
     {
         public Node convert( TraversalBranch source )
         {
-            return source.node();
+            return source.endNode();
         }
     };
 }

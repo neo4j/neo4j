@@ -21,22 +21,22 @@ package org.neo4j.kernel.impl.traversal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.Traversal.traversal;
 
 import java.util.Iterator;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.Traversal;
 
 public class TestOrderByTypeExpander extends AbstractTestBase
 {
-    @BeforeClass
-    public static void setup()
+    @Before
+    public void setup()
     {
         createGraph( "A1 NEXT A2", "A2 NEXT A3",
                 "A1 FIRST_COMMENT C1", "C1 COMMENT C2", "C2 COMMENT C3",
@@ -47,17 +47,17 @@ public class TestOrderByTypeExpander extends AbstractTestBase
     @Test
     public void makeSureNodesAreTraversedInCorrectOrder()
     {
-        RelationshipType next = DynamicRelationshipType.withName( "NEXT" );
-        RelationshipType firstComment = DynamicRelationshipType.withName( "FIRST_COMMENT" );
-        RelationshipType comment = DynamicRelationshipType.withName( "COMMENT" );
+        RelationshipType next = withName( "NEXT" );
+        RelationshipType firstComment = withName( "FIRST_COMMENT" );
+        RelationshipType comment = withName( "COMMENT" );
         RelationshipExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
-        Iterator<Node> itr = Traversal.description().depthFirst().expand(
+        Iterator<Node> itr = traversal().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
         expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
-        itr = Traversal.description().depthFirst().expand(
+        itr = traversal().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
     }

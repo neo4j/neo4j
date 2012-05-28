@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.helpers.Predicate;
 
 /**
  * An Evaluator controls what's to be returned from a traversal and also how
@@ -28,11 +27,6 @@ import org.neo4j.helpers.Predicate;
  * should be included in the traversal result. It also decides whether the traverser
  * should continue down that path or if it should be pruned so that the traverser
  * won't continue down that path.
- * 
- * {@link Evaluator} and the corresponding {@link TraversalDescription#evaluator(Evaluator)}
- * will replace {@link TraversalDescription#prune(PruneEvaluator)} and
- * {@link TraversalDescription#filter(Predicate)} because of the flexibility and
- * performance improvements it can provide.
  * 
  * @author Mattias Persson
  * @see Evaluation

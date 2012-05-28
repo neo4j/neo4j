@@ -20,34 +20,46 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.traversal.InitialStateFactory;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
-class StartNodeTraversalBranch extends TraversalBranchImpl
+class StartNodeTraversalBranch extends TraversalBranchWithState
 {
-    StartNodeTraversalBranch( TraverserIterator traverser, Node source,
-            RelationshipExpander expander )
+    private final InitialStateFactory initialState;
+    
+    StartNodeTraversalBranch( TraversalContext context, TraversalBranch parent, Node source,
+            InitialStateFactory initialState )
     {
-        super( traverser, source, expander );
+        super( context, parent, source );
+        this.initialState = initialState;
+        context.isUniqueFirst( this );
     }
 
     @Override
-    public TraversalBranch next()
+    public TraversalBranch next( PathExpander expander, TraversalContext metadata )
     {
         if ( !hasExpandedRelationships() )
         {
-            if ( traverser.okToProceedFirst( this ) )
-            {
-//                expandRelationshipsWithoutChecks();
-                expandRelationships();
-                return this;
-            }
-            else
-            {
-                return null;
-            }
+            expandRelationships( expander );
+            return this;
         }
-        return super.next();
+        return super.next( expander, metadata );
+    }
+    
+    @Override
+    protected TraversalBranch newNextBranch( Node node, Relationship relationship )
+    {
+        return initialState != InitialStateFactory.NO_STATE ?
+            new TraversalBranchWithState( this, 1, node, relationship ) :
+            new TraversalBranchImpl( this, 1, node, relationship );
+    }
+    
+    @Override
+    protected Object retrieveStateFromParent()
+    {
+        return initialState.initialState( this );
     }
 }

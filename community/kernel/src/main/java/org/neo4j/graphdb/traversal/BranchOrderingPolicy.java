@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.graphdb.PathExpander;
+
 /**
  * Creator of {@link BranchSelector} instances with a starting point to base
  * the first decision on.
@@ -30,8 +32,9 @@ public interface BranchOrderingPolicy
      * first branch to base a decision on "where to go next".
      *
      * @param startBranch the {@link TraversalBranch} to start from.
+     * @param expander {@link PathExpander} to use for expanding the branch.
      * @return a new {@link BranchSelector} used to decide "where to go next" in
      *         the traversal.
      */
-    BranchSelector create( TraversalBranch startBranch );
+    BranchSelector create( TraversalBranch startBranch, PathExpander expander );
 }

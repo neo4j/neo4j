@@ -32,11 +32,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.impl.util.SingleNodePath;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -331,8 +334,9 @@ public class Ls extends ReadOnlyGraphDatabaseApp
     {
         if ( sortByType )
         {
+            Path nodeAsPath = new SingleNodePath( node );
             return toSortedExpander( getServer().getDb(), Direction.BOTH, filterMap,
-                    caseInsensitiveFilters, looseFilters ).expand( node );
+                    caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, Traversal.NO_BRANCH_STATE );
         }
         else
         {
@@ -342,7 +346,8 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             }
             else
             {
-                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( node );
+                Path nodeAsPath = new SingleNodePath( node );
+                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, Traversal.NO_BRANCH_STATE );
             }
         }
     }

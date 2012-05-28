@@ -22,12 +22,14 @@ package org.neo4j.graphdb;
 /**
  * An expander of relationships. It's a flexible way of getting relationships
  * from a node.
+ * 
+ * @deprecated in favor or {@link PathExpander}. A {@link RelationshipExpander}
+ * can still be wrapped in a TODO to act like a {@link PathExpander}.
  */
 public interface RelationshipExpander
 {
     /**
-     * Returns relationships for a node in whatever way the implementation
-     * likes.
+     * Returns relationships for a {@link Node}.
      *
      * @param node the node to expand.
      * @return the relationships to return for the {@code node}.
@@ -35,11 +37,19 @@ public interface RelationshipExpander
     Iterable<Relationship> expand( Node node );
 
     /**
-     * Returns a new instance with the exact same {@link RelationshipType}s, but
-     * with all directions reversed (see {@link Direction#reverse()}).
+     * Returns a new instance with the exact expansion logic, but reversed.
+     * For example if this expander is set to expand:
+     * <ul>
+     *   <li>KNOWS : OUTGOING</li>
+     *   <li>LIVES : INCOMING</li>
+     * </ul>
+     * Then the reversed expander will be set to expand:
+     * <ul>
+     *   <li>KNOWS : INCOMING</li>
+     *   <li>LIVES : OUTGOING</li>
+     * </ul>
      * 
-     * @return a {@link RelationshipExpander} with the same types, but with
-     *         reversed directions.
+     * @return a reversed {@link RelationshipExpander}.
      */
     RelationshipExpander reversed();
 }

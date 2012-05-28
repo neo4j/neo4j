@@ -19,49 +19,53 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import java.util.Iterator;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
+import static org.neo4j.kernel.Traversal.traversal;
 
-import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
-public class AllPaths implements PathFinder<Path>
+public class AllPaths extends TraversalPathFinder
 {
-    private final RelationshipExpander expander;
+    private final PathExpander expander;
     private final int maxDepth;
+    private final TraversalDescription base;
 
     public AllPaths( int maxDepth, RelationshipExpander expander )
     {
+        this( maxDepth, toPathExpander( expander ) );
+    }
+
+    public AllPaths( int maxDepth, PathExpander expander )
+    {
         this.maxDepth = maxDepth;
         this.expander = expander;
+        this.base = traversal().depthFirst().uniqueness( uniqueness() );
     }
-
-    public Iterable<Path> findAllPaths( Node start, final Node end )
-    {
-        Predicate<Path> filter = new Predicate<Path>()
-        {
-            public boolean accept( Path pos )
-            {
-                return pos.endNode().equals( end );
-            }
-        };
-
-        return Traversal.description().expand( expander ).depthFirst().filter( filter ).prune(
-                Traversal.pruneAfterDepth( maxDepth ) ).uniqueness( uniqueness() ).traverse( start );
-    }
-
+    
     protected Uniqueness uniqueness()
     {
         return Uniqueness.RELATIONSHIP_PATH;
     }
 
-    public Path findSinglePath( Node start, Node end )
+    @Override
+    protected Traverser instantiateTraverser( Node start, Node end )
     {
-        Iterator<Path> paths = findAllPaths( start, end ).iterator();
-        return paths.hasNext() ? paths.next() : null;
+//        // Legacy single-directional traversal (for reference or something)
+//        return traversal().expand( expander ).depthFirst().uniqueness( uniqueness() )
+//                .evaluator( toDepth( maxDepth ) ).evaluator( Evaluators.includeWhereEndNodeIs( end ) )
+//                .traverse( start );   
+        
+        // Bidirectional traversal
+        return bidirectionalTraversal()
+                .startSide( base.expand( expander ).evaluator( toDepth( maxDepth/2 ) ) )
+                .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth-maxDepth/2 ) ) )
+                .traverse( start, end );
     }
 }

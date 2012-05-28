@@ -25,14 +25,17 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
+import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.Traversal.expanderForTypes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Ignore;
@@ -40,6 +43,7 @@ import org.junit.Test;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
+import org.neo4j.graphalgo.impl.path.TraversalShortestPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -51,17 +55,17 @@ import common.Neo4jAlgoTestCase;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
-    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
-    {
-        return instantiatePathFinder( Traversal.expanderForTypes( MyRelTypes.R1,
-                Direction.BOTH ), maxDepth );
-    }
-    
-    protected PathFinder<Path> instantiatePathFinder( RelationshipExpander expander, int maxDepth )
-    {
-        return GraphAlgoFactory.shortestPath(
-                expander, maxDepth );
-    }
+//    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
+//    {
+//        return instantiatePathFinder( Traversal.expanderForTypes( MyRelTypes.R1,
+//                Direction.BOTH ), maxDepth );
+//    }
+//    
+//    protected PathFinder<Path> instantiatePathFinder( RelationshipExpander expander, int maxDepth )
+//    {
+////        return GraphAlgoFactory.shortestPath( expander, maxDepth );
+//        return new TraversalShortestPath( expander, maxDepth );
+//    }
     
     @Test
     public void testSimplestGraph()
@@ -73,11 +77,17 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         //   \__/
         graph.makeEdge( "s", "t" );
         graph.makeEdge( "s", "t" );
-
-        PathFinder<Path> finder = instantiatePathFinder( 1 );
-        Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
-        assertPaths( paths, "s,t", "s,t" );
-        assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
+        
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
+                assertPaths( paths, "s,t", "s,t" );
+                assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
+            }
+        }, expanderForTypes( R1, BOTH ), 1 );
     }
     
     @Test
@@ -98,10 +108,15 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "n", "o" );
         graph.makeEdge( "o", "t" );
 
-        PathFinder<Path> finder = instantiatePathFinder( 6 );
-        Iterable<Path> paths =
-                finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
-        assertPaths( paths, "s,m,o,t", "s,n,o,t" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
+                assertPaths( paths, "s,m,o,t", "s,n,o,t" );
+            }
+        }, expanderForTypes( R1, BOTH ), 6 );
     }
     
     @Test
@@ -113,7 +128,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         // (3)   (1)
         //  | \ / |
         //  | / \ |
-        // (4)   (5)
+        // (4)   (2)
         //   \   /
         //    (t)
         graph.makeEdge( "s", "1" );
@@ -125,14 +140,15 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "2", "t" );
         graph.makeEdge( "4", "t" );
         
-        PathFinder<Path> singleStepFinder = instantiatePathFinder( 3 );
-        Iterable<Path> paths = singleStepFinder.findAllPaths( graph.getNode( "s" ),
-                graph.getNode( "t" ) );
-        assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
-
-        PathFinder<Path> finder = instantiatePathFinder( 3 );
-        paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
-        assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) ),
+                        "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
+            }
+        }, expanderForTypes( R1, BOTH ), 3 );
     }
     
     @Test
@@ -147,10 +163,14 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e,f,m" );
         graph.makeEdgeChain( "a,g,h,i,j,k,l,m" );
         
-        PathFinder<Path> finder = instantiatePathFinder(
-                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), 4 );
-        assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ),
-                "a,g,h,i,j" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ), "a,g,h,i,j" );
+            }
+        }, expanderForTypes( R1, OUTGOING ), 4 );
     }
     
     @Test
@@ -190,11 +210,18 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         //         \  v
         //         (d)
         //
-        
         graph.makeEdgeChain( "a,b,c,d,b,c,e" );
-        Node a = graph.getNode( "a" );
-        Node e = graph.getNode( "e" );
-        assertPaths( instantiatePathFinder( 6 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
+        
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                Node a = graph.getNode( "a" );
+                Node e = graph.getNode( "e" );
+                assertPaths( finder.findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
+            }
+        }, expanderForTypes( R1, BOTH ), 6 );
     }
     
     @Test
@@ -207,8 +234,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         //         \  v
         //         (d)
         //
-        
         graph.makeEdgeChain( "a,b,c,d,b,c,e" );
+        
         Node a = graph.getNode( "a" );
         Node e = graph.getNode( "e" );
         assertPaths( GraphAlgoFactory.pathsWithLength(
@@ -222,11 +249,18 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     @Test
     public void withFilters() throws Exception
     {
+        // Layout:
+        //
+        // (a)-->(b)-->(c)-->(d)
+        //   \               ^
+        //    -->(g)-->(h)--/
+        //
         graph.makeEdgeChain( "a,b,c,d" );
         graph.makeEdgeChain( "a,g,h,d" );
-        Node a = graph.getNode( "a" );
-        Node d = graph.getNode( "d" );
-        Node b = graph.getNode( "b" );
+        
+        final Node a = graph.getNode( "a" );
+        final Node d = graph.getNode( "d" );
+        final Node b = graph.getNode( "b" );
         b.setProperty( "skip", true );
         Predicate<Node> filter = new Predicate<Node>()
         {
@@ -237,24 +271,92 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 return !skip;
             }
         };
-        assertPaths( GraphAlgoFactory.shortestPath(
-                Traversal.expanderForAllTypes().addNodeFilter( filter ), 10 ).findAllPaths( a, d ), "a,g,h,d" );
+        
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( a, d ), "a,g,h,d" );
+            }
+        }, Traversal.expanderForAllTypes().addNodeFilter( filter ), 10 );
+    }
+    
+    @Test
+    public void withPathFilters() throws Exception
+    {
+        // Layout:
+        //
+        // (a)-->(b)-->(c)-->(d)
+        //   \               ^
+        //    -->(g)-->(h)--/
+        //
+        graph.makeEdgeChain( "a,b,c,d" );
+        graph.makeEdgeChain( "a,g,h,d" );
+        
+        Node a = graph.getNode( "a" );
+        Node d = graph.getNode( "d" );
+        Node g = graph.getNode( "g" );
+        Node h = graph.getNode( "h" );
+        a.setProperty( "include", true );
+        g.setProperty( "include", true );
+        h.setProperty( "include", true );
+        d.setProperty( "include", true );
+        Predicate<Path> allNodesInPathMustHaveInclude = new Predicate<Path>()
+        {
+            @Override
+            public boolean accept( Path path )
+            {
+                for ( Node node : path.nodes() )
+                {
+                    boolean include = (Boolean)node.getProperty( "include", false );
+                    if ( !include ) return false;
+                }
+                return true;
+            }
+        };
+        assertPaths( Traversal.description().expand(
+                Traversal.expanderForAllTypes().addFilter( allNodesInPathMustHaveInclude ) ).traverse( a ),
+                "a", "a,g", "a,g,h", "a,g,h,d" );
     }
     
     @Test
     public void testFinderShouldNotFindAnythingBeyondLimit()
     {
+        // Layout:
+        //
+        // (a)-->(b)-->(c)-->(d)-->(e)
+        //
         graph.makeEdgeChain( "a,b,c,d,e" );
 
-        PathFinder<Path> finderLimitZero = instantiatePathFinder(Traversal.emptyExpander(), 0 );
-        PathFinder<Path> finderLimitOne = instantiatePathFinder(Traversal.emptyExpander(), 1 );
-        PathFinder<Path> finderLimitTwo = instantiatePathFinder(Traversal.emptyExpander(), 2 );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) );
+            }
+        }, Traversal.emptyExpander(), 0 );
+        
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
+            }
+        }, Traversal.emptyExpander(), 1 );
 
-        assertPaths( finderLimitZero.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) );
-        assertPaths( finderLimitOne.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
-        assertPaths( finderLimitOne.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
-        assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
-        assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
+                assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
+            }
+        }, Traversal.emptyExpander(), 2 );
     }
     
     @Test
@@ -266,10 +368,10 @@ public class TestShortestPath extends Neo4jAlgoTestCase
          *    v
          *    (f)-->(g)-->(h)-->(i)
          */
-        
         graph.makeEdgeChain( "a,b,c,d,e" );
         graph.makeEdgeChain( "a,b,c,d,e" );
         graph.makeEdgeChain( "a,f,g,h,i" );
+        
         Node a = graph.getNode( "a" );
         Node b = graph.getNode( "b" );
         Node c = graph.getNode( "c" );
@@ -305,15 +407,20 @@ public class TestShortestPath extends Neo4jAlgoTestCase
          *                                  \ v
          *                                  (h)
          */
-        
         graph.makeEdgeChain( "i,g,f,e,d,c,b,a" );
         graph.makeEdgeChain( "i,h,f" );
         
-        PathFinder<Path> finder = instantiatePathFinder(
-                Traversal.expanderForTypes( MyRelTypes.R1, Direction.INCOMING ), 10 );
-        Node start = graph.getNode( "a" );
-        Node end = graph.getNode( "i" );
-        assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                Node start = graph.getNode( "a" );
+                Node end = graph.getNode( "i" );
+                assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );
+            }
+        }, expanderForTypes( R1, INCOMING ), 10 );
     }
     
     @Test
@@ -335,14 +442,18 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "o", "o" );
         graph.makeEdge( "n", "n" );
 
-        PathFinder<Path> finder = instantiatePathFinder( 3 );
-        Iterable<Path> paths =
-                finder.findAllPaths( graph.getNode( "m" ), graph.getNode( "p" ) );
-        assertPaths( paths, "m,s,n,p", "m,o,n,p" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPaths( finder.findAllPaths( graph.getNode( "m" ), graph.getNode( "p" ) ), "m,s,n,p", "m,o,n,p" );
+            }
+        }, expanderForTypes( R1, BOTH ), 3 );
     }
 
     @Test
-    public void makeSureAMaxResultCountCanIsObeyed()
+    public void makeSureAMaxResultCountIsObeyed()
     {
         // Layout:
         //
@@ -359,14 +470,31 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain(   "f,i,j,e" );
         graph.makeEdgeChain(     "i,k,e" );
         
-        RelationshipExpander expander = Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING );
-        Node a = graph.getNode( "a" );
-        Node e = graph.getNode( "e" );
-        assertEquals( 4, count( shortestPath( expander, 10, 10 ).findAllPaths( a, e ) ) );
-        assertEquals( 4, count( shortestPath( expander, 10, 4 ).findAllPaths( a, e ) ) );
-        assertEquals( 3, count( shortestPath( expander, 10, 3 ).findAllPaths( a, e ) ) );
-        assertEquals( 2, count( shortestPath( expander, 10, 2 ).findAllPaths( a, e ) ) );
-        assertEquals( 1, count( shortestPath( expander, 10, 1 ).findAllPaths( a, e ) ) );
+        final Node a = graph.getNode( "a" );
+        final Node e = graph.getNode( "e" );
+        RelationshipExpander expander = expanderForTypes( R1, OUTGOING );
+        
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertEquals( 4, count( finder.findAllPaths( a, e ) ) );
+            }
+        }, expander, 10, 10 );
+        
+        for ( int i = 4; i >= 1; i-- )
+        {
+            final int count = i;
+            testShortestPathFinder( new PathFinderTester()
+            {
+                @Override
+                public void test( PathFinder<Path> finder )
+                {
+                    assertEquals( count, count( finder.findAllPaths( a, e ) ) );
+                }
+            }, expander, 10, count );
+        }
     }
     
     @Test
@@ -383,11 +511,26 @@ public class TestShortestPath extends Neo4jAlgoTestCase
          */
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "a,c" );
-        Node a = graph.getNode( "a" );
-        Node c = graph.getNode( "c" );
+        final Node a = graph.getNode( "a" );
+        final Node c = graph.getNode( "c" );
         
-        assertPathDef( shortestPath( expanderForTypes( R1, OUTGOING ), 2 ).findSinglePath( a, c ), "a", "c" );
-        assertPathDef( shortestPath( expanderForTypes( R1, INCOMING ), 2 ).findSinglePath( c, a ), "c", "a" );
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPathDef( finder.findSinglePath( a, c ), "a", "c" );
+            }
+        }, expanderForTypes( R1, OUTGOING ), 2 );
+
+        testShortestPathFinder( new PathFinderTester()
+        {
+            @Override
+            public void test( PathFinder<Path> finder )
+            {
+                assertPathDef( finder.findSinglePath( c, a ), "c", "a" );
+            }
+        }, expanderForTypes( R1, INCOMING ), 2 );
     }
     
     @Ignore( "Exposes a problem where the expected path isn't returned" )
@@ -412,5 +555,25 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node c = graph.getNode( "c" );
         
         assertPaths( new ShortestPath( 3, expanderForTypes( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
+    }
+
+    private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth )
+    {
+        testShortestPathFinder( tester, expander, maxDepth, null );
+    }
+    
+    private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth,
+            Integer maxResultCount )
+    {
+        List<PathFinder<Path>> finders = new ArrayList<PathFinder<Path>>();
+        finders.add( maxResultCount != null ? shortestPath( expander, maxDepth, maxResultCount ) : shortestPath( expander, maxDepth ) );
+        finders.add( maxResultCount != null ? new TraversalShortestPath( expander, maxDepth, maxResultCount ) : new TraversalShortestPath( expander, maxDepth ) );
+        for ( PathFinder<Path> finder : finders )
+            tester.test( finder );
+    }
+    
+    private interface PathFinderTester
+    {
+        void test( PathFinder<Path> finder );
     }
 }

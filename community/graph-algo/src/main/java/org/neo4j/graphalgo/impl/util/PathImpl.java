@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.impl.util;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -28,6 +27,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.Traversal;
 
 public final class PathImpl implements Path
@@ -165,6 +166,17 @@ public final class PathImpl implements Path
 
     public Iterable<Node> nodes()
     {
+        return nodeIterator( start );
+    }
+    
+    @Override
+    public Iterable<Node> reverseNodes()
+    {
+        return nodeIterator( end );
+    }
+
+    private Iterable<Node> nodeIterator( final Node start )
+    {
         return new Iterable<Node>()
         {
             public Iterator<Node> iterator()
@@ -212,7 +224,27 @@ public final class PathImpl implements Path
 
     public Iterable<Relationship> relationships()
     {
-        return Collections.unmodifiableCollection( Arrays.asList( path ) );
+        return new Iterable<Relationship>()
+        {
+            @Override
+            public Iterator<Relationship> iterator()
+            {
+                return new ArrayIterator<Relationship>( path );
+            }
+        };
+    }
+    
+    @Override
+    public Iterable<Relationship> reverseRelationships()
+    {
+        return new Iterable<Relationship>()
+        {
+            @Override
+            public Iterator<Relationship> iterator()
+            {
+                return new ReverseArrayIterator<Relationship>( path );
+            }
+        };
     }
 
     public Iterator<PropertyContainer> iterator()

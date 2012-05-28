@@ -19,41 +19,72 @@
  */
 package org.neo4j.kernel;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.TraversalBranch;
 
 enum PrimitiveTypeFetcher
 {
     NODE
     {
         @Override
-        long getId( TraversalBranch source )
+        long getId( Path source )
         {
-            return source.node().getId();
+            if ( source == null )
+                System.out.println( "source null" );
+            if ( source.endNode() == null )
+                System.out.println( "endNode null for " + source );
+            return source.endNode().getId();
         }
 
         @Override
-        boolean idEquals( TraversalBranch source, long idToCompare )
+        boolean idEquals( Path source, long idToCompare )
         {
             return getId( source ) == idToCompare;
+        }
+        
+        @Override
+        boolean containsDuplicates( Path source )
+        {
+            Set<Node> nodes = new HashSet<Node>();
+            for ( Node node : source.reverseNodes() )
+                if ( !nodes.add( node ) )
+                    return true;
+            return false;
         }
     },
     RELATIONSHIP
     {
         @Override
-        long getId( TraversalBranch source )
+        long getId( Path source )
         {
-            return source.relationship().getId();
+            return source.lastRelationship().getId();
         }
 
         @Override
-        boolean idEquals( TraversalBranch source, long idToCompare )
+        boolean idEquals( Path source, long idToCompare )
         {
-            Relationship relationship = source.relationship();
+            Relationship relationship = source.lastRelationship();
             return relationship != null && relationship.getId() == idToCompare;
         }
-    };
-    abstract long getId( TraversalBranch source );
 
-    abstract boolean idEquals( TraversalBranch source, long idToCompare );
+        @Override
+        boolean containsDuplicates( Path source )
+        {
+            Set<Relationship> relationships = new HashSet<Relationship>();
+            for ( Relationship relationship : source.reverseRelationships() )
+                if ( !relationships.add( relationship ) )
+                    return true;
+            return false;
+        }
+    };
+    
+    abstract long getId( Path path );
+
+    abstract boolean idEquals( Path path, long idToCompare );
+    
+    abstract boolean containsDuplicates( Path path );
 }

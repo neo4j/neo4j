@@ -19,9 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 
 /**
@@ -29,7 +28,7 @@ import org.neo4j.graphdb.RelationshipExpander;
  * traversal context, for example parent and an iterator of relationships to go
  * next. It's a base to write a {@link BranchSelector} on top of.
  */
-public interface TraversalBranch
+public interface TraversalBranch extends Path
 {
     /**
      * The parent expansion source which created this {@link TraversalBranch}.
@@ -38,38 +37,12 @@ public interface TraversalBranch
     TraversalBranch parent();
 
     /**
-     * The position represented by this expansion source.
-     * @return the position represented by this expansion source.
-     */
-    Path position();
-
-    /**
-     * The depth for this expansion source compared to the start node of the
-     * traversal.
-     * @return the depth of this expansion source.
-     */
-    int depth();
-
-    /**
-     * The node for this expansion source.
-     * @return the node for this expansion source.
-     */
-    Node node();
-
-    /**
-     * The relationship for this expansion source. It's the relationship
-     * which was traversed to get to this expansion source.
-     * @return the relationship for this expansion source.
-     */
-    Relationship relationship();
-
-    /**
      * Returns the next expansion source from the expanded relationships
      * from the current node.
      *
      * @return the next expansion source from this expansion source.
      */
-    TraversalBranch next();
+    TraversalBranch next( PathExpander expander, TraversalContext metadata );
 
     /**
      * Returns the number of relationships this expansion source has expanded.
@@ -81,7 +54,39 @@ public interface TraversalBranch
      */
     int expanded();
     
-    Evaluation evaluation();
+    /**
+     * Explicitly tell this branch to be pruned so that consecutive calls to
+     * {@link #next()} is guaranteed to return {@code null}.
+     */
+    void prune();
     
-    void initialize();
+    /**
+     * @return whether or not the traversal should continue further along this
+     * branch.
+     */
+    boolean continues();
+    
+    /**
+     * @return whether or not this branch (the {@link Path} representation of
+     * this branch at least) should be included in the result of this
+     * traversal, i.e. returned as one of the {@link Path}s from f.ex.
+     * {@link TraversalDescription#traverse(org.neo4j.graphdb.Node...)}
+     */
+    boolean includes();
+    
+    /**
+     * Can change evaluation outcome in a negative direction. For example
+     * to force pruning.
+     * @param eval the {@link Evaluation} to AND with the current evaluation.
+     */
+    void evaluation( Evaluation eval );
+    
+    /**
+     * Initializes this {@link TraversalBranch}, the relationship iterator,
+     * {@link Evaluation} etc.
+     * 
+     * @param expander {@link RelationshipExpander} to use for getting relationships.
+     * @param metadata {@link TraversalContext} to update on progress.
+     */
+    void initialize( PathExpander expander, TraversalContext metadata );
 }

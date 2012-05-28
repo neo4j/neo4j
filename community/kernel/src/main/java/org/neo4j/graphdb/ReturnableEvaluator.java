@@ -48,14 +48,11 @@ package org.neo4j.graphdb;
  * };
  * </code>
  * </pre>
- */
-/*
  * @deprecated because of the introduction of a new traversal framework,
  * see more information at {@link TraversalDescription} and
  * {@link Traversal} and the new traversal framework's equivalent
  * {@link Predicate}.
  */
-// @Deprecated
 public interface ReturnableEvaluator
 {
     /**

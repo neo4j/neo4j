@@ -19,11 +19,12 @@
  */
 package org.neo4j.graphalgo.path;
 
+import static org.neo4j.graphalgo.GraphAlgoFactory.allPaths;
+import static org.neo4j.kernel.Traversal.expanderForAllTypes;
+
 import org.junit.Test;
-import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
-import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 
@@ -31,7 +32,7 @@ public class TestAllPaths extends Neo4jAlgoTestCase
 {
     protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-        return GraphAlgoFactory.allPaths( Traversal.expanderForAllTypes(), maxDepth );
+        return allPaths( expanderForAllTypes(), maxDepth );
     }
 
     @Test
