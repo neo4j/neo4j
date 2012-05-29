@@ -80,7 +80,11 @@ BSD licence:
 
 provided without support or warranty: JSON (JavaScript Object Notation)
 
+Creative Commons Attribution:
+ Glyphish icons
+
 Public domain:
  Dough Lea's util.concurrent package,
  ANTLR 2.7.7,
  JSON2.js
+ Tango icons
