@@ -236,7 +236,6 @@ startit() {
 	    done
 
 	    if kill -0 $STARTED_PID 2>/dev/null ; then
-	    # This should never happen, we checked before we started.
 	      if [ "$newpid" != "$STARTED_PID" ] ; then
 		    rm "$PID_FILE"
 	        kill -9 $STARTED_PID
@@ -245,6 +244,7 @@ startit() {
 	      fi
 
 	      echo " OK."
+        echo "Go to http://localhost:$NEO4J_SERVER_PORT/webadmin/ for administration interface."
 	      exit 0
 	    fi
 
