@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
@@ -55,9 +56,13 @@ import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 public class JmxDocsTest
 {
+    private static final String IFDEF_HTMLOUTPUT = "ifndef::nonhtmloutput[]\n";
+    private static final String IFDEF_NONHTMLOUTPUT = "ifdef::nonhtmloutput[]\n";
+    private static final String ENDIF = "endif::nonhtmloutput[]\n";
     private static final String BEAN_NAME0 = "name0";
     private static final String BEAN_NAME = "name";
     private static final List<String> QUERIES = Arrays.asList( new String[] { "org.neo4j:*" } );
+    private static final String JAVADOC_URL = "http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 13;
     private static final Set<String> EXCLUDES = new HashSet<String>()
     {
@@ -103,9 +108,9 @@ public class JmxDocsTest
     {
         StringBuilder beanList = new StringBuilder( 4096 );
         StringBuilder altBeanList = new StringBuilder( 2048 );
-        altBeanList.append( "ifdef::nonhtmloutput[]\n" );
+        altBeanList.append( IFDEF_NONHTMLOUTPUT );
         beanList.append( "[[jmx-list]]\n" + ".MBeans exposed by Neo4j\n"
-                         + "ifndef::nonhtmloutput[]\n"
+                         + IFDEF_HTMLOUTPUT
                          + "[options=\"header\", cols=\"m,\"]\n" + "|===\n"
                          + "|Name|Description\n" );
 
@@ -119,7 +124,6 @@ public class JmxDocsTest
             for ( ObjectInstance bean : beans )
             {
                 ObjectName objectName = bean.getObjectName();
-                System.out.println( objectName );
                 String name = objectName.getKeyProperty( BEAN_NAME );
                 if ( EXCLUDES.contains( name ) )
                 {
@@ -174,8 +178,10 @@ public class JmxDocsTest
 
             writeDetailsToFile( id, objectName, bean, info, description );
         }
-        beanList.append( "|===\n" + "endif::nonhtmloutput[]\n" );
-        altBeanList.append( "endif::nonhtmloutput[]\n\n" );
+        beanList.append( "|===\n" )
+                .append( ENDIF );
+        altBeanList.append( ENDIF )
+                .append( "\n" );
         beanList.append( altBeanList.toString() );
         Writer fw = null;
         try
@@ -220,30 +226,10 @@ public class JmxDocsTest
                     .append( name )
                     .append( " (" )
                     .append( bean.getClassName() )
-                    .append( ") Attributes\n" )
-                    .append(
-                            "[options=\"header\", cols=\"m,,m,,\"]\n"
-                                    + "|===\n"
-                                    + "|Name|Description|Type|Read|Write\n"
-                                    + "5.1+^e|" )
-                    .append( description )
-                    .append( '\n' );
-            for ( MBeanAttributeInfo attrInfo : attributes )
-            {
-                beanInfo.append( '|' )
-                        .append( attrInfo.getName() )
-                        .append( '|' )
-                        .append( attrInfo.getDescription()
-                                .replace( '\n', ' ' ) )
-                        .append( '|' )
-                        .append( getType( attrInfo.getType() ) )
-                        .append( '|' )
-                        .append( attrInfo.isReadable() ? "yes" : "no" )
-                        .append( '|' )
-                        .append( attrInfo.isWritable() ? "yes" : "no" )
-                        .append( '\n' );
-            }
-            beanInfo.append( "|===\n\n" );
+                    .append( ") Attributes\n" );
+            writeAttributesTable( description, beanInfo, attributes, false );
+            writeAttributesTable( description, beanInfo, attributes, true );
+            beanInfo.append( "\n" );
         }
 
         MBeanOperationInfo[] operations = info.getOperations();
@@ -253,35 +239,10 @@ public class JmxDocsTest
                     .append( name )
                     .append( " (" )
                     .append( bean.getClassName() )
-                    .append( ") Operations" );
-            beanInfo.append( "\n" + "[options=\"header\", cols=\"m,,m,m\"]\n"
-                             + "|===\n"
-                             + "|Name|Description|ReturnType|Signature\n" );
-            for ( MBeanOperationInfo operInfo : operations )
-            {
-                beanInfo.append( '|' );
-                beanInfo.append( operInfo.getName() );
-                beanInfo.append( '|' );
-                beanInfo.append( operInfo.getDescription()
-                        .replace( '\n', ' ' ) );
-                beanInfo.append( '|' );
-                beanInfo.append( getType( operInfo.getReturnType() ) );
-                beanInfo.append( '|' );
-                MBeanParameterInfo[] params = operInfo.getSignature();
-                for ( int i = 0; i < params.length; i++ )
-                {
-                    MBeanParameterInfo param = params[i];
-                    beanInfo.append( param.getName() );
-                    beanInfo.append( ':' );
-                    beanInfo.append( param.getType() );
-                    if ( i != ( params.length - 1 ) )
-                    {
-                        beanInfo.append( ',' );
-                    }
-                }
-                beanInfo.append( '\n' );
-            }
-            beanInfo.append( "|===\n\n" );
+                    .append( ") Operations\n" );
+            writeOperationsTable( beanInfo, operations, false );
+            writeOperationsTable( beanInfo, operations, true );
+            beanInfo.append( "\n" );
         }
 
         if ( beanInfo.length() > 0 )
@@ -302,6 +263,104 @@ public class JmxDocsTest
         }
     }
 
+    private void writeAttributesTable( String description,
+            StringBuilder beanInfo, MBeanAttributeInfo[] attributes,
+            boolean nonHtml )
+    {
+        addNonHtmlCondition( beanInfo, nonHtml );
+        beanInfo.append(
+                "[options=\"header\", cols=\"20m,36,20m,7,7\"]\n" + "|===\n"
+                        + "|Name|Description|Type|Read|Write\n" + "5.1+^e|" )
+                .append( description )
+                .append( '\n' );
+        for ( MBeanAttributeInfo attrInfo : attributes )
+        {
+            String type = getType( attrInfo.getType() );
+            Descriptor descriptor = attrInfo.getDescriptor();
+            type = getCompositeType( type, descriptor, nonHtml );
+            beanInfo.append( '|' )
+                    .append( makeBreakable( attrInfo.getName(), nonHtml ) )
+                    .append( '|' )
+                    .append( attrInfo.getDescription()
+                            .replace( '\n', ' ' ) )
+                    .append( '|' )
+                    .append( type )
+                    .append( '|' )
+                    .append( attrInfo.isReadable() ? "yes" : "no" )
+                    .append( '|' )
+                    .append( attrInfo.isWritable() ? "yes" : "no" )
+                    .append( '\n' );
+        }
+        beanInfo.append( "|===\n" );
+        beanInfo.append( ENDIF );
+    }
+
+    private void addNonHtmlCondition( StringBuilder beanInfo, boolean nonHtml )
+    {
+        if ( nonHtml )
+        {
+            beanInfo.append( IFDEF_NONHTMLOUTPUT );
+        }
+        else
+        {
+            beanInfo.append( IFDEF_HTMLOUTPUT );
+        }
+    }
+
+    private void writeOperationsTable( StringBuilder beanInfo,
+            MBeanOperationInfo[] operations, boolean nonHtml )
+    {
+        addNonHtmlCondition( beanInfo, nonHtml );
+        beanInfo.append( "[options=\"header\", cols=\"20m,40,20m,20m\"]\n"
+                         + "|===\n"
+                         + "|Name|Description|ReturnType|Signature\n" );
+        for ( MBeanOperationInfo operInfo : operations )
+        {
+            String type = getType( operInfo.getReturnType() );
+            Descriptor descriptor = operInfo.getDescriptor();
+            type = getCompositeType( type, descriptor, nonHtml );
+            beanInfo.append( '|' );
+            beanInfo.append( operInfo.getName() );
+            beanInfo.append( '|' );
+            beanInfo.append( operInfo.getDescription()
+                    .replace( '\n', ' ' ) );
+            beanInfo.append( '|' );
+            beanInfo.append( type );
+            beanInfo.append( '|' );
+            MBeanParameterInfo[] params = operInfo.getSignature();
+            for ( int i = 0; i < params.length; i++ )
+            {
+                MBeanParameterInfo param = params[i];
+                beanInfo.append( param.getName() );
+                beanInfo.append( ':' );
+                beanInfo.append( param.getType() );
+                if ( i != ( params.length - 1 ) )
+                {
+                    beanInfo.append( ',' );
+                }
+            }
+            beanInfo.append( '\n' );
+        }
+        beanInfo.append( "|===\n" );
+        beanInfo.append( ENDIF );
+    }
+
+    private String getCompositeType( String type, Descriptor descriptor,
+            boolean nonHtml )
+    {
+        String newType = type;
+        if ( "javax.management.openmbean.CompositeData[]".equals( type ) )
+        {
+            Object originalType = descriptor.getFieldValue( "originalType" );
+            if ( originalType != null )
+            {
+                newType = getLinkedType( getType( (String) originalType ),
+                        nonHtml );
+            }
+        }
+        return newType;
+    }
+
     private String getType( String type )
     {
         if ( TYPES.containsKey( type ) )
@@ -316,9 +375,65 @@ public class JmxDocsTest
             }
             else
             {
-                System.out.println( "===== UNKNOWN TYPE: " + type );
+                throw new IllegalArgumentException(
+                        "Don't know how to parse this type: " + type );
             }
         }
         return type;
+    }
+
+    private String getLinkedType( String type, boolean nonHtml )
+    {
+        if ( !type.startsWith( "org.neo4j" ) )
+        {
+            if ( !type.startsWith( "java.util.List<org.neo4j." ) )
+            {
+                return type;
+            }
+            else
+            {
+                String typeInList = type.substring( 15, type.length() - 1 );
+                return "java.util.List<" + getLinkedType( typeInList, nonHtml )
+                       + ">";
+            }
+        }
+        else if ( nonHtml )
+        {
+            return type;
+        }
+        else
+        {
+            StringBuilder url = new StringBuilder( 160 );
+            url.append( JAVADOC_URL );
+            String typeString = type;
+            if ( type.endsWith( "[]" ) )
+            {
+                typeString = type.substring( 0, type.length() - 2 );
+            }
+            url.append( typeString.replace( '.', '/' ) )
+                    .append( ".html[" )
+                    .append( typeString )
+                    .append( "]" );
+            if ( type.endsWith( "[]" ) )
+            {
+                url.append( "[]" );
+            }
+            return url.toString();
+        }
+    }
+
+    private String makeBreakable( String name, boolean nonHtml )
+    {
+        if ( nonHtml )
+        {
+            return name.replace( "_", "_\u200A" )
+                    .replace( "NumberOf", "NumberOf\u200A" )
+                    .replace( "InUse", "\u200AInUse" )
+                    .replace( "Transactions", "\u200ATransactions" );
+        }
+        else
+        {
+            return name;
+        }
     }
 }
