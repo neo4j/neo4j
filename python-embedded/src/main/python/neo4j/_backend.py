@@ -20,12 +20,16 @@
 
 """Neo4j backend selection for Python."""
 
-import sys, neo4j, inspect
-
+import sys, inspect
+#, 'FinalTraversalBranch','AsOneStartBranch', 
 NEO4J_JAVA_CLASSES = (
     ('org.neo4j.kernel.impl.core',      ('NodeProxy', 'RelationshipProxy',)),
-    ('org.neo4j.kernel',                ('Uniqueness', 'Traversal', 'EmbeddedGraphDatabase',)),
-    ('org.neo4j.kernel.impl.traversal', ('TraversalDescriptionImpl', 'TraverserImpl', 'TraversalPath',)),
+    ('org.neo4j.kernel',                ('Uniqueness', 'Traversal', 'EmbeddedGraphDatabase',\
+                                         'BidirectionalTraversalBranchPath','ExtendedPath',)),
+    ('org.neo4j.kernel.impl.traversal', ('TraversalDescriptionImpl', 'TraverserImpl',\
+                                         'TraversalBranchImpl', 'FinalTraversalBranch',\
+                                         'AsOneStartBranch', 'StartNodeTraversalBranch',)),
+    ('org.neo4j.kernel.impl.util',      ('SingleNodePath',)),
     ('org.neo4j.graphdb',               ('Direction', 'DynamicRelationshipType', 'PropertyContainer',\
                                          'Transaction', 'GraphDatabaseService', 'Node', 'Relationship',\
                                          'Path', 'NotFoundException',)),
@@ -179,6 +183,7 @@ except: # this isn't jython (and doesn't have the java module)
             _add_jvm_connection_boilerplate_to_class(cls)
             globals()[class_name] = cls
     
+    
     # If JPype cannot find a class, it returns
     # package instances. Make sure we were able to load
     # classes.
@@ -240,6 +245,7 @@ except: # this isn't jython (and doesn't have the java module)
         
     def create_embedded_db(*args):
         return EmbeddedGraphDatabase(*args)
+    
       
 else:
     # Import java classes

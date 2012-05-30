@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from _backend import extends, implements, rel_type,\
-    TraversalPath, TraverserImpl, Traversal,\
-    TraversalDescriptionImpl, strings,\
-    Evaluation, Evaluator, Uniqueness
+from _backend import extends, implements, rel_type, TraverserImpl,\
+                     Traversal, TraversalDescriptionImpl, strings,\
+                     Evaluation, Evaluator, Uniqueness,\
+                     TraversalBranchImpl, BidirectionalTraversalBranchPath,\
+                     ExtendedPath, SingleNodePath, FinalTraversalBranch,\
+                     AsOneStartBranch, StartNodeTraversalBranch
         
 from util import PythonicIterator
         
@@ -43,32 +45,40 @@ class DynamicEvaluator(implements(Evaluator)):
 # Pythonification of the traversal API
 #
 
-class TraversalPath(extends(TraversalPath)):
+# This is a messy hack, but will only have to be here until
+# 1.9, when the traversal support in python is dropped.
 
-    @property
-    def start(self): return self.startNode()
-    
-    @property
-    def end(self):   return self.endNode()
-    
-    @property
-    def last_relationship(self): return self.lastRelationship()
-    
-    @property
-    def nodes(self): return self._super__nodes()
-    
-    @property
-    def relationships(self): return self._super__relationships()
-    
-    def __repr__(self): return self.toString()
-    
-    def __len__(self):  return self.length()
-    
-    def __iter__(self):
-        it = self.iterator()
-        while it.hasNext():
-            yield it.next() 
+for PathClass in [TraversalBranchImpl,BidirectionalTraversalBranchPath,\
+                  ExtendedPath,SingleNodePath,FinalTraversalBranch,\
+                  AsOneStartBranch,StartNodeTraversalBranch]:
 
+    class IrrelevantClassName(extends(PathClass)):
+
+        @property
+        def start(self): return self.startNode()
+        
+        @property
+        def end(self):   return self.endNode()
+        
+        @property
+        def last_relationship(self): return self.lastRelationship()
+        
+        @property
+        def nodes(self): return self._super__nodes()
+        
+        @property
+        def relationships(self): return self._super__relationships()
+        
+        def __repr__(self): return self.toString()
+        
+        def __len__(self):  return self.length()
+        
+        def __iter__(self):
+            it = self.iterator()
+            while it.hasNext():
+                yield it.next() 
+
+del IrrelevantClassName
       
 class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
     
@@ -85,6 +95,9 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
         if hasattr(ev, '__call__'):
             ev = DynamicEvaluator(ev)
         return self._super__evaluator(ev)
+
+    def traverse(self, *start_nodes):
+        return self._super__traverse(start_nodes)
         
 class TraverserImpl(extends(TraverserImpl)):
     
