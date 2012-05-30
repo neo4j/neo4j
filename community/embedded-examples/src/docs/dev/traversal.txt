@@ -6,7 +6,7 @@ For reading about traversals, see <<tutorial-traversal>>.
 
 For more examples of traversals, see <<domain-modeling-gallery>>.
 
-=== The Matrix ===
+== The Matrix ==
 
 The traversals from the Matrix example above, this time using the new traversal API:
 
