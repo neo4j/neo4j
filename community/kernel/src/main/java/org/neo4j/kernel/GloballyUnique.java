@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class GloballyUnique extends AbstractUniquenessFilter
@@ -36,5 +37,14 @@ class GloballyUnique extends AbstractUniquenessFilter
     public boolean check( TraversalBranch branch )
     {
         return visited.add( type.getId( branch ) );
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        // Since this is for bidirectional uniqueness checks and
+        // uniqueness is enforced through the shared "visited" set
+        // this uniqueness contract is fulfilled automatically.
+        return true;
     }
 }

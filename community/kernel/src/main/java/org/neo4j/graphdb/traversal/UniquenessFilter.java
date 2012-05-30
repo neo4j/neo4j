@@ -19,6 +19,15 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.graphdb.Path;
+
+/**
+ * Filter for {@link Path}s to make sure that a specific uniqueness contract
+ * is fulfilled. Only paths that fulfill the uniqueness contract will be let
+ * through. For example a uniqueness contract that for any given {@link Path}
+ * "there cannot be any node occurring more than once", or that "the end node
+ * being visited right now must not have been visited before".
+ */
 public interface UniquenessFilter
 {
     /**
@@ -41,4 +50,13 @@ public interface UniquenessFilter
      * visited in this traversal.
      */
     boolean check( TraversalBranch branch );
+    
+    /**
+     * Checks {@link Path} alone to see if it follows the uniqueness contract
+     * provided by this {@link UniquenessFilter}.
+     * @param path the {@link Path} to examine.
+     * @return {@code true} if the {@code path} fulfills the uniqueness contract,
+     * otherwise {@code false}.
+     */
+    boolean checkFull( Path path );
 }

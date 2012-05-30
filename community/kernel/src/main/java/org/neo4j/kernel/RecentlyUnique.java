@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.cache.LruCache;
 
@@ -46,5 +47,12 @@ class RecentlyUnique extends AbstractUniquenessFilter
             recentlyVisited.put( id, PLACE_HOLDER );
         }
         return add;
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        // See GloballyUnique for comments.
+        return true;
     }
 }

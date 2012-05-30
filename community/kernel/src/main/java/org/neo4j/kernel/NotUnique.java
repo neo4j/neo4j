@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class NotUnique extends AbstractUniquenessFilter
@@ -30,6 +31,13 @@ class NotUnique extends AbstractUniquenessFilter
 
     public boolean check( TraversalBranch source )
     {
+        return true;
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        // Where we have no uniqueness, everything is unique.
         return true;
     }
 }

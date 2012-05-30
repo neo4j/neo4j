@@ -1,3 +1,19 @@
+1.8.M04 (2012-06-07)
+--------------------
+o Additions to the traversal framework:
+  + Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
+    uses this feature and are now faster due to less relationships being traversed.
+  + Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
+  + PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
+    just the end node of the path. It can also see and modify a user defined traversal branch state.
+  + Metadata about the traversal, for the time being: number of relationships traversal and
+    number paths returned.
+  + Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
+    a path in reverse order (starting from the end node going back to the start node). More relevant
+	in many scenarios as well as allowing for a more efficient implementation.
+  + Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
+  + Some measure to reduce memory consumption and garbage generation during traversals.
+
 1.8.M03 (2012-05-24)
 --------------------
 o Changed array map to CHM in property index manager, better multithreaded performance

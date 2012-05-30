@@ -167,6 +167,7 @@ public abstract class Neo4jAlgoTestCase
     public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
         List<String> pathDefs = new ArrayList<String>( Arrays.asList( pathDefinitions ) );
+        List<String> unexpectedDefs = new ArrayList<String>();
         for ( Path path : paths )
         {
             String pathDef = getPathDef( path );
@@ -177,9 +178,10 @@ public abstract class Neo4jAlgoTestCase
             }
             else
             {
-                fail( "Unexpected path " + pathDef );
+                unexpectedDefs.add( getPathDef( path ) );
             }
         }
+        assertTrue( "These unexpected paths were found: " + unexpectedDefs + ". In addition these expected paths weren't found:" + pathDefs, unexpectedDefs.isEmpty() );
         assertTrue( "These were expected, but not found: " + pathDefs.toString(), pathDefs.isEmpty() );
     }
 }

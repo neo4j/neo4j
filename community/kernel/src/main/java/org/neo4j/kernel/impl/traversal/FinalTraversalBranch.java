@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.Iterator;
+
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 public final class FinalTraversalBranch implements TraversalBranch
 {
@@ -36,7 +40,7 @@ public final class FinalTraversalBranch implements TraversalBranch
         this.path = path;
     }
 
-    public int depth()
+    public int length()
     {
         // TODO Auto-generated method stub
         return 0;
@@ -46,12 +50,25 @@ public final class FinalTraversalBranch implements TraversalBranch
      * Returns <code>null</code> since {@link FinalTraversalBranch} does not
      * expand.
      */
-    public TraversalBranch next()
+    @Override
+    public TraversalBranch next( PathExpander expander, TraversalContext metadata )
     {
         return null;
     }
+    
+    @Override
+    public void prune()
+    {
+    }
 
-    public Node node()
+    public Node endNode()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    @Override
+    public Node startNode()
     {
         // TODO Auto-generated method stub
         return null;
@@ -63,13 +80,7 @@ public final class FinalTraversalBranch implements TraversalBranch
         return null;
     }
 
-    public Path position()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public Relationship relationship()
+    public Relationship lastRelationship()
     {
         // TODO Auto-generated method stub
         return null;
@@ -79,13 +90,60 @@ public final class FinalTraversalBranch implements TraversalBranch
     {
         return 0;
     }
-
-    public Evaluation evaluation()
+    
+    @Override
+    public boolean includes()
     {
+        return true;
+    }
+    
+    @Override
+    public boolean continues()
+    {
+        return false;
+    }
+
+    @Override
+    public void evaluation( Evaluation eval )
+    {
+    }
+    
+    public void initialize( PathExpander expander, TraversalContext metadata )
+    {
+    }
+
+    @Override
+    public Iterable<Relationship> relationships()
+    {
+        // TODO Auto-generated method stub
         return null;
     }
     
-    public void initialize()
+    @Override
+    public Iterable<Relationship> reverseRelationships()
     {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Iterable<Node> nodes()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    @Override
+    public Iterable<Node> reverseNodes()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Iterator<PropertyContainer> iterator()
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

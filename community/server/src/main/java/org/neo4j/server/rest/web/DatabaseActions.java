@@ -616,6 +616,7 @@ public class DatabaseActions
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     public ListRepresentation getNodeRelationships( long nodeId,
             RelationshipDirection direction, Collection<String> types )
             throws NodeNotFoundException

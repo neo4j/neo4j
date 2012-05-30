@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.InitialStateFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
@@ -42,33 +45,37 @@ public final class TraversalDescriptionImpl implements TraversalDescription
 {
     public TraversalDescriptionImpl()
     {
-        this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
-                Evaluators.all(), Traversal.preorderDepthFirst() );
+        this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
+                Evaluators.all(), InitialStateFactory.NO_STATE, Traversal.preorderDepthFirst(), null, null );
     }
 
-    final Expander expander;
+    final PathExpander expander;
+    final InitialStateFactory initialState;
     final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
     final Evaluator evaluator;
-    final BranchOrderingPolicy branchSelector;
+    final BranchOrderingPolicy branchOrdering;
+    final Comparator<? super Path> sorting;
+    final Collection<Node> endNodes;
 
-    private TraversalDescriptionImpl( Expander expander,
+    private TraversalDescriptionImpl( PathExpander expander,
             UniquenessFactory uniqueness, Object uniquenessParameter,
-            Evaluator evaluator, BranchOrderingPolicy branchSelector )
+            Evaluator evaluator, InitialStateFactory<?> initialState, BranchOrderingPolicy branchOrdering,
+            Comparator<? super Path> sorting, Collection<Node> endNodes )
     {
         this.expander = expander;
         this.uniqueness = uniqueness;
         this.uniquenessParameter = uniquenessParameter;
         this.evaluator = evaluator;
-        this.branchSelector = branchSelector;
+        this.branchOrdering = branchOrdering;
+        this.sorting = sorting;
+        this.endNodes = endNodes;
+        this.initialState = initialState;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#traverse(org.neo4j.graphdb.Node)
-     */
-    public Traverser traverse( Node startNode )
+    public Traverser traverse( Node... startNodes )
     {
-        return new TraverserImpl( this, startNode );
+        return new TraverserImpl( this, Arrays.asList( startNodes ) );
     }
 
     /* (non-Javadoc)
@@ -77,7 +84,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
         return new TraversalDescriptionImpl( expander, uniqueness, null,
-                evaluator, branchSelector );
+                evaluator, initialState, branchOrdering, sorting, endNodes );
     }
 
     /* (non-Javadoc)
@@ -96,31 +103,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
 
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,
-                evaluator, branchSelector );
-    }
-    
-    public TraversalDescription prune( PruneEvaluator pruning )
-    {
-        return evaluator( pruning == PruneEvaluator.NONE ? Evaluators.all() :
-                new WrappedPruneEvaluator( pruning ) );
-    }
-    
-    public TraversalDescription filter( Predicate<Path> filter )
-    {
-        Evaluator evaluator = null;
-        if ( filter == Traversal.returnAll() )
-        {
-            evaluator = Evaluators.all();
-        }
-        else if ( filter == Traversal.returnAllButStartNode() )
-        {
-            evaluator = Evaluators.excludeStartPosition();
-        }
-        else
-        {
-            evaluator = new WrappedFilter( filter );
-        }
-        return evaluator( evaluator );
+                evaluator, initialState, branchOrdering, sorting, endNodes );
     }
     
     public TraversalDescription evaluator( Evaluator evaluator )
@@ -131,30 +114,23 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
         nullCheck( evaluator, Evaluator.class, "RETURN_ALL" );
         return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
-                addBlaEvaluator( evaluator ), branchSelector );
+                addEvaluator( this.evaluator, evaluator ), initialState, branchOrdering, sorting, endNodes );
     }
     
-    private Evaluator addBlaEvaluator( Evaluator evaluator )
+    protected static Evaluator addEvaluator( Evaluator existing, Evaluator toAdd )
     {
-        if ( this.evaluator instanceof MultiEvaluator )
+        if ( existing instanceof MultiEvaluator )
         {
-            return ((MultiEvaluator) this.evaluator).add( evaluator );
+            return ((MultiEvaluator) existing).add( toAdd );
         }
         else
         {
-            if ( this.evaluator == Evaluators.all() )
-            {
-                return evaluator;
-            }
-            else
-            {
-                return new MultiEvaluator( new Evaluator[] { this.evaluator, evaluator } );
-            }
+            return existing == Evaluators.all() ? toAdd :
+                new MultiEvaluator( new Evaluator[] { existing, toAdd } );
         }
     }
     
-    private static <T> void nullCheck( T parameter, Class<T> parameterType,
-            String defaultName )
+    protected static <T> void nullCheck( T parameter, Class<T> parameterType, String defaultName )
     {
         if ( parameter == null )
         {
@@ -169,14 +145,14 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#order(org.neo4j.graphdb.traversal.Order)
      */
-    public TraversalDescription order( BranchOrderingPolicy selector )
+    public TraversalDescription order( BranchOrderingPolicy order )
     {
-        if ( this.branchSelector == selector )
+        if ( this.branchOrdering == order )
         {
             return this;
         }
         return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
-                evaluator, selector );
+                evaluator, initialState, order, sorting, endNodes );
     }
 
     public TraversalDescription depthFirst()
@@ -203,55 +179,43 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription relationships( RelationshipType type,
             Direction direction )
     {
-        return expand( expander.add( type, direction ) );
+        if ( expander instanceof Expander )
+            return expand( ((Expander)expander).add( type, direction ) );
+        throw new IllegalStateException( "The current expander cannot be added to" );
+    }
+    
+    public TraversalDescription expand( RelationshipExpander expander )
+    {
+        return expand( StandardExpander.toPathExpander( expander ) );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#expand(org.neo4j.graphdb.RelationshipExpander)
-     */
-    public TraversalDescription expand(RelationshipExpander expander)
+    public TraversalDescription expand( PathExpander<?> expander )
     {
         if ( expander.equals( this.expander ) )
         {
             return this;
         }
-        return new TraversalDescriptionImpl( Traversal.expander( expander ), uniqueness,
-                uniquenessParameter, evaluator, branchSelector );
+        return new TraversalDescriptionImpl( expander, uniqueness,
+                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes );
     }
     
-    private static class WrappedPruneEvaluator implements Evaluator
+    public <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState )
     {
-        private final PruneEvaluator pruning;
-
-        WrappedPruneEvaluator( PruneEvaluator pruning )
-        {
-            this.pruning = pruning;
-        }
-
-        public Evaluation evaluate( Path path )
-        {
-            // Before the Evaluator, when PruneEvaluator was used individually a PruneEvaluator
-            // was never called with the start node as argument. This condition mimics that behaviour.
-            if ( path.length() == 0 )
-            {
-                return Evaluation.INCLUDE_AND_CONTINUE;
-            }
-            return pruning.pruneAfter( path ) ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
-        }
+        return new TraversalDescriptionImpl( expander, uniqueness,
+                uniquenessParameter, evaluator, initialState, branchOrdering, sorting, endNodes );
     }
     
-    private static class WrappedFilter implements Evaluator
+    @Override
+    public TraversalDescription sort( Comparator<? super Path> sorting )
     {
-        private final Predicate<Path> filter;
-
-        WrappedFilter( Predicate<Path> filter )
-        {
-            this.filter = filter;
-        }
-
-        public Evaluation evaluate( Path path )
-        {
-            return filter.accept( path ) ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
-        }
+        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter, evaluator,
+                initialState, branchOrdering, sorting, endNodes );
+    }
+    
+    @Override
+    public TraversalDescription reverse()
+    {
+        return new TraversalDescriptionImpl( expander.reverse(), uniqueness, uniquenessParameter,
+                evaluator, initialState, branchOrdering, sorting, endNodes );
     }
 }

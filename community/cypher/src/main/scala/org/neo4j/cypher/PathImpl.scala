@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import java.util.{Iterator => JavaIterator}
-import java.lang.{Iterable => JavaIterable}
 import scala.collection.JavaConverters._
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
+import java.lang.{Iterable => JavaIterable}
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
@@ -80,4 +80,8 @@ case class PathImpl(pathEntities: PropertyContainer*)
 
     that.asScala.toList == pathEntities.toList
   }
+
+  def reverseNodes(): JavaIterable[Node] = entities[Node].reverse.toIterable.asJava
+
+  def reverseRelationships(): JavaIterable[Relationship] = entities[Relationship].reverse.toIterable.asJava
 }

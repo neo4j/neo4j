@@ -21,6 +21,7 @@ package org.neo4j.graphdb.traversal;
 
 import static java.util.Arrays.asList;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -86,7 +87,8 @@ public abstract class Evaluators
         {
             public Evaluation evaluate( Path path )
             {
-                return path.length() < depth ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.INCLUDE_AND_PRUNE;
+                int pathLength = path.length();
+                return Evaluation.of( pathLength <= depth, pathLength < depth );
             }
         };
     }
@@ -171,12 +173,26 @@ public abstract class Evaluators
      * in a {@link Path} to a given set of relationship types.
      */
     public static Evaluator lastRelationshipTypeIs( final Evaluation evaluationIfMatch,
-            final Evaluation evaluationIfNoMatch, RelationshipType type,
-            RelationshipType... orAnyOfTheseTypes )
+            final Evaluation evaluationIfNoMatch, RelationshipType... anyOfTheseTypes )
     {
+        if ( anyOfTheseTypes.length == 1 )
+        {
+            final RelationshipType type = anyOfTheseTypes[0];
+            
+            return new Evaluator()
+            {
+                @Override
+                public Evaluation evaluate( Path path )
+                {
+                    Relationship rel = path.lastRelationship();
+                    if ( rel == null ) return evaluationIfNoMatch;
+                    return rel.isType( type ) ? evaluationIfMatch : evaluationIfNoMatch;
+                }
+            };
+        }
+        
         final Set<String> expectedTypes = new HashSet<String>();
-        expectedTypes.add( type.name() );
-        for ( RelationshipType otherType : orAnyOfTheseTypes )
+        for ( RelationshipType otherType : anyOfTheseTypes )
         {
             expectedTypes.add( otherType.name() );
         }
@@ -203,18 +219,15 @@ public abstract class Evaluators
      * Uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
      * and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      * 
-     * @param type the (first) type (of possibly many) to match the last relationship
-     * in paths with.
-     * @param orAnyOfTheseTypes additional types to match the last relationship in
-     * paths with.
+     * @param anyOfTheseTypes types to match the last relationship in paths with. If any matches
+     * it's considered a match.
      * @return an {@link Evaluator} which compares the type of the last relationship
      * in a {@link Path} to a given set of relationship types.
      */
-    public static Evaluator returnWhereLastRelationshipTypeIs( RelationshipType type,
-            RelationshipType... orAnyOfTheseTypes )
+    public static Evaluator includeWhereLastRelationshipTypeIs( RelationshipType... anyOfTheseTypes )
     {
         return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE,
-                type, orAnyOfTheseTypes );
+                anyOfTheseTypes );
     }
     
     /**
@@ -222,31 +235,28 @@ public abstract class Evaluators
      * Uses {@link Evaluation#INCLUDE_AND_PRUNE} for {@code evaluationIfMatch}
      * and {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      * 
-     * @param type the (first) type (of possibly many) to match the last relationship
-     * in paths with.
-     * @param orAnyOfTheseTypes additional types to match the last relationship in
-     * paths with.
+     * @param anyOfTheseTypes types to match the last relationship in paths with. If any matches
+     * it's considered a match.
      * @return an {@link Evaluator} which compares the type of the last relationship
      * in a {@link Path} to a given set of relationship types.
      */
-    public static Evaluator pruneWhereLastRelationshipTypeIs( RelationshipType type,
-            RelationshipType... orAnyOfTheseTypes )
+    public static Evaluator pruneWhereLastRelationshipTypeIs( RelationshipType... anyOfTheseTypes )
     {
         return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE,
-                type, orAnyOfTheseTypes );
+                anyOfTheseTypes );
     }
     
     /**
-     * Returns an {@link Evaluator} which looks at each {@link Path} and includes those
-     * where the {@link Path#endNode()} is one of {@code possibleEndNodes}.
-     * 
-     * @param evaluationIfMatch the {@link Evaluation} to return for those paths which
-     * have a matching end node.
-     * @param evaluationIfNoMatch  the {@link Evaluation} to return for those paths which
-     * doesn't have a matching end node.
-     * @param possibleEndNodes end nodes for paths to be included in the result.
-     * @return an {@link Evaluator} which looks at each {@link Path} and includes those
-     * where the {@link Path#endNode()} is one of {@code possibleEndNodes}.
+     * An {@link Evaluator} which will return {@code evaluationIfMatch} if {@link Path#endNode()}
+     * for a given path is any of {@code nodes}, else {@code evaluationIfNoMatch}.
+     * @param evaluationIfMatch the {@link Evaluation} to return if the {@link Path#endNode()}
+     * is any of the nodes in {@code nodes}.
+     * @param evaluationIfNoMatch the {@link Evaluation} to return if the {@link Path#endNode()}
+     * doesn't match any of the nodes in {@code nodes}.
+     * @param nodes a set of nodes to match to end nodes in paths.
+     * @return an {@link Evaluator} which will return {@code evaluationIfMatch} if
+     * {@link Path#endNode()} for a given path is any of {@code nodes},
+     * else {@code evaluationIfNoMatch}.
      */
     public static Evaluator endNodeIs( final Evaluation evaluationIfMatch,
             final Evaluation evaluationIfNoMatch, Node... possibleEndNodes )
@@ -281,8 +291,84 @@ public abstract class Evaluators
      * and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      * @param possibleEndNodes end nodes for paths to be included in the result.
      */
-    public static Evaluator returnWhereEndNodeIs( Node... possibleEndNodes )
+    public static Evaluator includeWhereEndNodeIs( Node... nodes )
     {
-        return endNodeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE, possibleEndNodes );
+        return endNodeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE, nodes );
+    }
+
+    public static Evaluator pruneWhereEndNodeIs( Node... nodes )
+    {
+        return endNodeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE, nodes );
+    }
+    
+    /**
+     * Evaluator which decides to include a {@link Path} if all the
+     * {@code nodes} exist in it.
+     * 
+     * @param nodes {@link Node}s that must exist in a {@link Path} for it
+     * to be included.
+     * @return {@link Evaluation#INCLUDE_AND_CONTINUE} if all {@code nodes}
+     * exist in a given {@link Path}, otherwise
+     * {@link Evaluation#EXCLUDE_AND_CONTINUE}.
+     */
+    public static Evaluator includeIfContainsAll( final Node... nodes )
+    {
+        if ( nodes.length == 1 )
+        {
+            return new Evaluator()
+            {
+                @Override
+                public Evaluation evaluate( Path path )
+                {
+                    for ( Node node : path.reverseNodes() )
+                        if ( node.equals( nodes[0] ) )
+                            return Evaluation.INCLUDE_AND_CONTINUE;
+                    return Evaluation.EXCLUDE_AND_CONTINUE;
+                }
+            };
+        }
+        else
+        {
+            final Set<Node> fullSet = new HashSet<Node>( Arrays.asList( nodes  ) );
+            return new Evaluator()
+            {
+                @Override
+                public Evaluation evaluate( Path path )
+                {
+                    Set<Node> set = new HashSet<Node>( fullSet );
+                    for ( Node node : path.reverseNodes() )
+                        if ( set.remove( node ) && set.isEmpty() )
+                            return Evaluation.INCLUDE_AND_CONTINUE;
+                    return Evaluation.EXCLUDE_AND_CONTINUE;
+                }
+            };
+        }
+    }
+    
+    /**
+     * Whereas adding {@link Evaluator}s to a {@link TraversalDescription} puts those
+     * evaluators in {@code AND-mode} this can group many evaluators in {@code OR-mode}.
+     * @param evaluators represented as one evaluators. If any of the evaluators decides
+     * to include a path it will be included.
+     * @return an {@link Evaluator} which decides to include a path if any of the supplied
+     * evaluators wants to include it.
+     */
+    public static Evaluator includeIfAcceptedByAny( final Evaluator... evaluators )
+    {
+        return new Evaluator()
+        {
+            @Override
+            public Evaluation evaluate( Path path )
+            {
+                for ( Evaluator evaluator : evaluators )
+                {
+                    if ( evaluator.evaluate( path ).includes() )
+                    {
+                        return Evaluation.INCLUDE_AND_CONTINUE;
+                    }
+                }
+                return Evaluation.EXCLUDE_AND_CONTINUE;
+            }
+        };
     }
 }

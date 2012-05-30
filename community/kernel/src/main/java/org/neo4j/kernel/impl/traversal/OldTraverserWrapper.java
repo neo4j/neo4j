@@ -35,9 +35,9 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
@@ -146,7 +146,7 @@ public class OldTraverserWrapper
     }
 
     private static final TraversalDescription BASE_DESCRIPTION =
-            Traversal.description().uniqueness( Uniqueness.NODE_GLOBAL );
+            Traversal.traversal().uniqueness( Uniqueness.NODE_GLOBAL );
 
     public static org.neo4j.graphdb.Traverser traverse( Node node, Order traversalOrder,
             StopEvaluator stopEvaluator,
@@ -232,14 +232,13 @@ public class OldTraverserWrapper
                                                 + order );
         }
 
-        description = description.prune( new Pruner( traverser, stopEvaluator ) );
-        description = description.filter( new Filter( traverser,
-                returnableEvaluator ) );
+        description = description.evaluator( new Pruner( traverser, stopEvaluator ) );
+        description = description.evaluator( new Filter( traverser, returnableEvaluator ) );
 
         return description;
     }
 
-    private static class Pruner implements PruneEvaluator
+    private static class Pruner implements Evaluator
     {
         private final TraverserImpl traverser;
         private final StopEvaluator evaluator;
@@ -249,14 +248,15 @@ public class OldTraverserWrapper
             this.traverser = traverser;
             this.evaluator = stopEvaluator;
         }
-
-        public boolean pruneAfter( Path position )
+        
+        @Override
+        public Evaluation evaluate( Path path )
         {
-            return evaluator.isStopNode( new PositionImpl( traverser, position ) );
+            return Evaluation.ofContinues( !evaluator.isStopNode( new PositionImpl( traverser, path ) ) );
         }
     }
 
-    private static class Filter implements Predicate<Path>
+    private static class Filter implements Evaluator
     {
         private final TraverserImpl traverser;
         private final ReturnableEvaluator evaluator;
@@ -267,10 +267,11 @@ public class OldTraverserWrapper
             this.evaluator = returnableEvaluator;
         }
 
-        public boolean accept( Path position )
+        @Override
+        public Evaluation evaluate( Path path )
         {
-            return evaluator.isReturnableNode( new PositionImpl( traverser,
-                    position ) );
+            return Evaluation.ofIncludes( evaluator.isReturnableNode(
+                    new PositionImpl( traverser, path ) ) );
         }
     }
 }

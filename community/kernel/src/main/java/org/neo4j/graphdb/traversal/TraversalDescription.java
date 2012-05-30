@@ -19,13 +19,14 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import java.util.Comparator;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 /**
@@ -76,44 +77,6 @@ public interface TraversalDescription
     TraversalDescription uniqueness( UniquenessFactory uniqueness, Object parameter );
 
     /**
-     * Adds {@code pruning} to the list of {@link PruneEvaluator}s which
-     * are used to prune the traversal. The semantics for many prune evaluators
-     * is that if any one of the added prune evaluators returns {@code true}
-     * it's considered OK to prune there.
-     *
-     * @param pruning the {@link PruneEvaluator} to add to the list of prune
-     * evaluators to use.
-     * @return a new traversal description with the new modifications.
-     * @deprecated because of the introduction of {@link Evaluator}. Use
-     * {@link #evaluator(Evaluator)} instead which combines
-     * {@link #filter(Predicate)} and {@link #prune(PruneEvaluator)}. The supplied
-     * {@link PruneEvaluator} will be wrapped by an {@link Evaluator} internally.
-     */
-    TraversalDescription prune( PruneEvaluator pruning );
-
-    /**
-     * Adds {@code filter} to the list of filters to use, i.e. a filter to
-     * decide which positions are OK to return or not.
-     * Each position is represented by a {@link Path} from the start node of the
-     * traversal to the current node. The current node is the
-     * {@link Path#endNode()} of the path. Each {@link Path} must be accepted
-     * by all added filter for it to be returned from the traverser. For adding
-     * a filter which returns paths accepted by any filters, see
-     * {@link Traversal#returnAcceptedByAny(Predicate...)} for convenience.
-     *
-     * @param filter the {@link Predicate} to add to the list of filters.
-     * @return a new traversal description with the new modifications.
-     * @deprecated because of the introduction of {@link Evaluator}. Use
-     * {@link #evaluator(Evaluator)} instead which combines
-     * {@link #filter(Predicate)} and {@link #prune(PruneEvaluator)}. The supplied
-     * {@link Predicate} will be wrapped by an {@link Evaluator} internally.
-     */
-    TraversalDescription filter( Predicate<Path> filter );
-
-    /**
-     * NOTE: Replaces {@link #filter(Predicate)} and
-     * {@link #prune(PruneEvaluator)}.
-     *
      * Adds {@code evaluator} to the list of evaluators which will control the
      * behaviour of the traversal. Each {@link Evaluator} can decide whether or
      * not to include a position in the traverser result, i.e. return it from
@@ -190,25 +153,66 @@ public interface TraversalDescription
             Direction direction );
 
     /**
+     * Sets the {@link PathExpander} as the expander of relationships,
+     * discarding all previous calls to
+     * {@link #relationships(RelationshipType)} and
+     * {@link #relationships(RelationshipType, Direction)} or any other expand method.
+     *
+     * @param expander the {@link PathExpander} to use.
+     * @return a new traversal description with the new modifications.
+     */
+    TraversalDescription expand( PathExpander<?> expander );
+    
+    /**
+     * Sets the {@link PathExpander} as the expander of relationships,
+     * discarding all previous calls to
+     * {@link #relationships(RelationshipType)} and
+     * {@link #relationships(RelationshipType, Direction)} or any other expand method.
+     * The supplied {@link InitialStateFactory} will provide the initial traversal branches
+     * with state values which flows down throughout the traversal and can be changed
+     * for child branches by the {@link PathExpander} at any level.
+     *
+     * @param expander the {@link PathExpander} to use.
+     * @param initialState factory for supplying the initial traversal branches with
+     * state values potentially used by the {@link PathExpander}.
+     * @return a new traversal description with the new modifications.
+     */
+    <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState );
+    
+    /**
      * Sets the {@link RelationshipExpander} as the expander of relationships,
      * discarding all previous calls to
      * {@link #relationships(RelationshipType)} and
-     * {@link #relationships(RelationshipType, Direction)}.
+     * {@link #relationships(RelationshipType, Direction)} or any other expand method.
      *
      * @param expander the {@link RelationshipExpander} to use.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription expand( RelationshipExpander expander );
+    
+    /**
+     * @param comparator the {@link Comparator} to use for sorting the paths.
+     * @return the paths from this traversal sorted according to {@code comparator}.
+     */
+    TraversalDescription sort( Comparator<? super Path> comparator );
+    
+    /**
+     * Creates an identical {@link TraversalDescription}, although reversed in
+     * how it traverses the graph.
+     * 
+     * @return a new traversal description with the new modifications.
+     */
+    TraversalDescription reverse();
 
     /**
-     * Traverse from {@code startNode} based on all the rules and behavior
+     * Traverse from a set of start nodes based on all the rules and behavior
      * in this description. A {@link Traverser} is returned which is
      * used to step through the graph and getting results back. The traversal
      * is not guaranteed to start before the Traverser is used.
      *
-     * @param startNode the {@link Node} to start the traversal from.
+     * @param startNodes {@link Node}s to start traversing from.
      * @return a {@link Traverser} used to step through the graph and to get
-     *         results from.
+     * results from.
      */
-    Traverser traverse( Node startNode );
+    Traverser traverse( Node... startNode );
 }

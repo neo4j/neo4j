@@ -26,6 +26,7 @@ import java.util.Date;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -59,7 +60,7 @@ public class StatusUpdate
                 depthFirst().
                 relationships( NEXT, Direction.INCOMING ).
                 relationships( STATUS, Direction.INCOMING ).
-                filter( Traversal.returnWhereLastRelationshipTypeIs( STATUS ));
+                evaluator( Evaluators.includeWhereLastRelationshipTypeIs( STATUS ) );
 
         Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
 

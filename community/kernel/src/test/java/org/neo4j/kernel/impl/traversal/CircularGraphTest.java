@@ -24,7 +24,7 @@ import static org.junit.Assert.assertFalse;
 
 import java.util.Iterator;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -40,8 +40,8 @@ import org.neo4j.graphdb.Traverser.Order;
 
 public class CircularGraphTest extends AbstractTestBase
 {
-    @BeforeClass
-    public static void createTheGraph()
+    @Before
+    public void createTheGraph()
     {
         createGraph( "1 TO 2", "2 TO 3", "3 TO 1" );
     }

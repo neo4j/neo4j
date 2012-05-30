@@ -19,11 +19,16 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
  * A preorder depth first selector which detects "super nodes", i.e. nodes
@@ -38,14 +43,21 @@ public class LiteDepthFirstSelector implements BranchSelector
     private final Queue<TraversalBranch> superNodes = new LinkedList<TraversalBranch>();
     private TraversalBranch current;
     private final int threshold;
+    private final PathExpander expander;
     
-    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold )
+    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold, PathExpander expander )
     {
         this.current = startSource;
         this.threshold = startThreshold;
+        this.expander = expander;
     }
     
-    public TraversalBranch next()
+    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold, RelationshipExpander expander )
+    {
+        this( startSource, startThreshold, toPathExpander( expander ) );
+    }
+    
+    public TraversalBranch next( TraversalContext metadata )
     {
         TraversalBranch result = null;
         while ( result == null )
@@ -65,7 +77,7 @@ public class LiteDepthFirstSelector implements BranchSelector
                 continue;
             }
             
-            TraversalBranch next = current.next();
+            TraversalBranch next = current.next( expander, metadata );
             if ( next == null )
             {
                 current = current.parent();

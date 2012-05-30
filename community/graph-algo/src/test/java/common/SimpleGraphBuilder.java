@@ -34,7 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class SimpleGraphBuilder
 {
-    public static final String KEY_ID = "__simpleGraphBuilderId__";
+    public static final String KEY_ID = "name";
     
     GraphDatabaseService graphDb;
     HashMap<String,Node> nodes;

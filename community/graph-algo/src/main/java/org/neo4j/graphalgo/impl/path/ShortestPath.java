@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,11 +38,15 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.Traversal;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -57,53 +63,70 @@ public class ShortestPath implements PathFinder<Path>
 {
     private final int maxDepth;
     private final int maxResultCount;
-    private final RelationshipExpander relExpander;
+    private final PathExpander expander;
     private final HitDecider hitDecider;
+    private Metadata lastMetadata;
     
     /**
      * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
-     * @param relExpander the {@link RelationshipExpander} to use for deciding
+     * @param expander the {@link RelationshipExpander} to use for deciding
      * which relationships to expand for each {@link Node}.
      */
-    public ShortestPath( int maxDepth, RelationshipExpander relExpander )
+    public ShortestPath( int maxDepth, PathExpander expander )
     {
-        this( maxDepth, relExpander, Integer.MAX_VALUE, false );
+        this( maxDepth, expander, Integer.MAX_VALUE, false );
+    }
+    
+    public ShortestPath( int maxDepth, RelationshipExpander expander )
+    {
+        this( maxDepth, toPathExpander( expander ), Integer.MAX_VALUE, false );
     }
     
     /**
      * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
-     * @param relExpander the {@link RelationshipExpander} to use for deciding
+     * @param expander the {@link RelationshipExpander} to use for deciding
      * which relationships to expand for each {@link Node}.
      * @param maxResultCount the maximum number of hits to return. If this number
      * of hits are encountered the traversal will stop.
      */
-    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount )
+    public ShortestPath( int maxDepth, PathExpander expander, int maxResultCount )
     {
-        this( maxDepth, relExpander, maxResultCount, false );
+        this( maxDepth, expander, maxResultCount, false );
+    }
+    
+    public ShortestPath( int maxDepth, RelationshipExpander expander, int maxResultCount )
+    {
+        this( maxDepth, toPathExpander( expander ), maxResultCount );
     }
     
     /**
      * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
-     * @param relExpander the {@link RelationshipExpander} to use for deciding
+     * @param expander the {@link RelationshipExpander} to use for deciding
      * which relationships to expand for each {@link Node}.
      * @param maxResultCount the maximum number of hits to return. If this number
      * of hits are encountered the traversal will stop.
      * @param findPathsOnMaxDepthOnly if {@code true} then it will only try to
      * find paths on that particular depth ({@code maxDepth}).
      */
-    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount,
+    public ShortestPath( int maxDepth, PathExpander expander, int maxResultCount,
             boolean findPathsOnMaxDepthOnly )
     {
         this.maxDepth = maxDepth;
-        this.relExpander = relExpander;
+        this.expander = expander;
         this.maxResultCount = maxResultCount;
         this.hitDecider = findPathsOnMaxDepthOnly ? new DepthHitDecider( maxDepth ) : YES_HIT_DECIDER;
+    }
+    
+    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount,
+            boolean findPathsOnMaxDepthOnly )
+    {
+        this( maxDepth, toPathExpander( relExpander ), maxResultCount, findPathsOnMaxDepthOnly );
     }
     
     public Iterable<Path> findAllPaths( Node start, Node end )
@@ -119,6 +142,7 @@ public class ShortestPath implements PathFinder<Path>
 
     private Iterable<Path> internalPaths( Node start, Node end, boolean stopAsap )
     {
+        lastMetadata = new Metadata();
         if ( start.equals( end ) )
         {
             return Arrays.asList( PathImpl.singular( start ) );
@@ -131,10 +155,10 @@ public class ShortestPath implements PathFinder<Path>
         MutableInteger sharedCurrentDepth = new MutableInteger( 0 );
         final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, relExpander );
+                sharedCurrentDepth, expander );
         final DirectionData endData = new DirectionData( end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, relExpander.reversed() );
+                sharedCurrentDepth, expander.reverse() );
         
         while ( startData.hasNext() || endData.hasNext() )
         {
@@ -144,6 +168,12 @@ public class ShortestPath implements PathFinder<Path>
         
         Collection<Hit> least = hits.least();
         return least != null ? hitsToPaths( least, start, end ) : Collections.<Path>emptyList();
+    }
+    
+    @Override
+    public TraversalMetadata metadata()
+    {
+        return lastMetadata;
     }
 
     // Few long-lived instances
@@ -218,6 +248,7 @@ public class ShortestPath implements PathFinder<Path>
                 {
                     directionData.stop = true;
                     otherSide.stop = true;
+                    lastMetadata.paths++;
                 }
                 else if ( stopAsap )
                 {   // This side found a hit, but wait for the other side to complete its current depth
@@ -229,7 +260,7 @@ public class ShortestPath implements PathFinder<Path>
     }
     
     // Two long-lived instances
-    protected class DirectionData extends PrefetchingIterator<Node>
+    protected class DirectionData extends PrefetchingIterator<Node> implements Path
     {
         private final Node startNode;
         private int currentDepth;
@@ -243,11 +274,11 @@ public class ShortestPath implements PathFinder<Path>
         private final MutableInteger sharedCurrentDepth;
         private boolean haveFoundSomething;
         private boolean stop;
-        private final RelationshipExpander expander;
+        private final PathExpander expander;
         
         DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
                 MutableInteger sharedFrozenDepth, MutableBoolean sharedStop,
-                MutableInteger sharedCurrentDepth, RelationshipExpander expander )
+                MutableInteger sharedCurrentDepth, PathExpander expander )
         {
             this.startNode = startNode;
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
@@ -280,7 +311,7 @@ public class ShortestPath implements PathFinder<Path>
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
-                    return expander.expand( node ).iterator();
+                    return expander.expand( DirectionData.this, Traversal.NO_BRANCH_STATE ).iterator();
                 }
             };
             this.currentDepth++;
@@ -297,6 +328,7 @@ public class ShortestPath implements PathFinder<Path>
                 {
                     return null;
                 }
+                lastMetadata.rels++;
                 if ( !hitDecider.canVisitRelationship( sharedVisitedRels, nextRel ) )
                 {
                     continue;
@@ -357,6 +389,60 @@ public class ShortestPath implements PathFinder<Path>
                 }
             }
             return this.nextRelationships.hasNext() ? this.nextRelationships.next() : null;
+        }
+
+        @Override
+        public Node startNode()
+        {
+            return startNode;
+        }
+
+        @Override
+        public Node endNode()
+        {
+            return lastParentTraverserNode;
+        }
+
+        @Override
+        public Relationship lastRelationship()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<Relationship> relationships()
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public Iterable<Relationship> reverseRelationships()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<Node> nodes()
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public Iterable<Node> reverseNodes()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int length()
+        {
+            return currentDepth;
+        }
+
+        @Override
+        public Iterator<PropertyContainer> iterator()
+        {
+            throw new UnsupportedOperationException();
         }
     }
     
@@ -584,6 +670,24 @@ public class ShortestPath implements PathFinder<Path>
         public boolean canVisitRelationship( Collection<Long> rels, Relationship rel )
         {
             return rels.add( rel.getId() );
+        }
+    }
+    
+    private static class Metadata implements TraversalMetadata
+    {
+        private int rels;
+        private int paths;
+        
+        @Override
+        public int getNumberOfPathsReturned()
+        {
+            return paths;
+        }
+        
+        @Override
+        public int getNumberOfRelationshipsTraversed()
+        {
+            return rels;
         }
     }
 }

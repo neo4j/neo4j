@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class PathUnique extends AbstractUniquenessFilter
@@ -31,13 +32,20 @@ class PathUnique extends AbstractUniquenessFilter
     public boolean check( TraversalBranch source )
     {
         long idToCompare = type.getId( source );
-        while ( (source = source.parent()) != null )
+        while ( source.length() > 0 )
         {
+            source = source.parent();
             if (type.idEquals(source, idToCompare))
             {
                 return false;
             }
         }
         return true;
+    }
+    
+    @Override
+    public boolean checkFull( Path path )
+    {
+        return !type.containsDuplicates( path );
     }
 }

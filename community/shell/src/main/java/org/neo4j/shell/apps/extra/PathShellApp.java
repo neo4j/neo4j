@@ -28,7 +28,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;
@@ -77,7 +77,7 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
         fromString = fromString != null ? fromString : String.valueOf( this.getCurrent( session ).getId() );
         
         Map<String, Object> filter = parseFilter( parser.options().get( "f" ), out );
-        RelationshipExpander expander = toExpander( getServer().getDb(), Direction.BOTH, filter,
+        PathExpander expander = toExpander( getServer().getDb(), Direction.BOTH, filter,
                 caseInsensitiveFilters, looseFilters );
         PathFinder<Path> finder = expander != null ? getPathFinder( algo, expander, maxDepth, out ) : null;
         if ( finder != null )
@@ -96,12 +96,12 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private PathFinder<Path> getPathFinder( String algo, RelationshipExpander expander, int maxDepth, Output out ) throws Exception
+    private PathFinder<Path> getPathFinder( String algo, PathExpander expander, int maxDepth, Output out ) throws Exception
     {
         Method method;
         try
         {
-            method = GraphAlgoFactory.class.getDeclaredMethod( algo, RelationshipExpander.class, Integer.TYPE );
+            method = GraphAlgoFactory.class.getDeclaredMethod( algo, PathExpander.class, Integer.TYPE );
         }
         catch ( Exception e )
         {

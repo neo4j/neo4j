@@ -21,6 +21,7 @@ package org.neo4j.graphalgo;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.traversal.TraversalMetadata;
 
 /**
  * Interface of algorithms that finds paths in between two nodes.
@@ -54,4 +55,6 @@ public interface PathFinder<P extends Path>
      * @return all {@link Path}s between {@code start} and {@code end}.
      */
     Iterable<P> findAllPaths( Node start, Node end );
+    
+    TraversalMetadata metadata();
 }

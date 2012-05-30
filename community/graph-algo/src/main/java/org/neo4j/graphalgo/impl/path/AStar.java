@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,17 +42,28 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.Traversal;
 
 public class AStar implements PathFinder<WeightedPath>
 {
-    private final RelationshipExpander expander;
+    private final PathExpander<?> expander;
     private final CostEvaluator<Double> lengthEvaluator;
     private final EstimateEvaluator<Double> estimateEvaluator;
+    private Metadata lastMetadata;
     
     public AStar( RelationshipExpander expander,
+            CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
+    {
+        this( toPathExpander( expander ), lengthEvaluator, estimateEvaluator );
+    }
+    
+    public AStar( PathExpander<?> expander,
             CostEvaluator<Double> lengthEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
         this.expander = expander;
@@ -60,6 +73,7 @@ public class AStar implements PathFinder<WeightedPath>
     
     public WeightedPath findSinglePath( Node start, Node end )
     {
+        lastMetadata = new Metadata();
         Doer doer = new Doer( start, end );
         while ( doer.hasNext() )
         {
@@ -79,6 +93,7 @@ public class AStar implements PathFinder<WeightedPath>
                     rel = nextRelId == null ? null : graphDb.getRelationshipById( nextRelId );
                 }
                 Path path = toPath( start, rels );
+                lastMetadata.paths++;
                 return new WeightedPathImpl( weight, path );
             }
         }
@@ -89,6 +104,12 @@ public class AStar implements PathFinder<WeightedPath>
     {
         WeightedPath path = findSinglePath( node, end );
         return path != null ? Arrays.asList( path ) : Collections.<WeightedPath>emptyList();
+    }
+    
+    @Override
+    public TraversalMetadata metadata()
+    {
+        return lastMetadata;
     }
     
     private Path toPath( Node start, LinkedList<Relationship> rels )
@@ -112,7 +133,7 @@ public class AStar implements PathFinder<WeightedPath>
         }
     }
 
-    private class Doer extends PrefetchingIterator<Node>
+    private class Doer extends PrefetchingIterator<Node> implements Path
     {
         private final Node end;
         private Node lastNode;
@@ -123,9 +144,11 @@ public class AStar implements PathFinder<WeightedPath>
                 new TreeMap<Double, Collection<Node>>();
         private final Map<Long, Long> cameFrom = new HashMap<Long, Long>();
         private final Map<Long, Data> score = new HashMap<Long, Data>();
+        private final Node start;
         
         Doer( Node start, Node end )
         {
+            this.start = start;
             this.end = end;
             
             Data data = new Data();
@@ -194,10 +217,12 @@ public class AStar implements PathFinder<WeightedPath>
             return node;
         }
 
+        @SuppressWarnings( "unchecked" )
         private void expand()
         {
-            for ( Relationship rel : expander.expand( this.lastNode ) )
+            for ( Relationship rel : expander.expand( this, Traversal.NO_BRANCH_STATE ) )
             {
+                lastMetadata.rels++;
                 Node node = rel.getOtherNode( this.lastNode );
                 if ( this.visitedNodes.contains( node.getId() ) )
                 {
@@ -228,6 +253,78 @@ public class AStar implements PathFinder<WeightedPath>
                     this.score.put( node.getId(), data );
                 }
             }
+        }
+
+        @Override
+        public Node startNode()
+        {
+            return start;
+        }
+
+        @Override
+        public Node endNode()
+        {
+            return lastNode;
+        }
+
+        @Override
+        public Relationship lastRelationship()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<Relationship> relationships()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<Relationship> reverseRelationships()
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public Iterable<Node> nodes()
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public Iterable<Node> reverseNodes()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int length()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterator<PropertyContainer> iterator()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+    
+    private static class Metadata implements TraversalMetadata
+    {
+        private int rels;
+        private int paths;
+        
+        @Override
+        public int getNumberOfPathsReturned()
+        {
+            return paths;
+        }
+
+        @Override
+        public int getNumberOfRelationshipsTraversed()
+        {
+            return rels;
         }
     }
 }

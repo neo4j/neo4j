@@ -23,117 +23,23 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.graphdb.traversal.UniquenessFilter;
-import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 
-class TraverserImpl implements Traverser
+class TraverserImpl extends AbstractTraverser
 {
-    private final TraversalDescriptionImpl description;
-    private final Node startNode;
+    final TraversalDescriptionImpl description;
+    final Iterable<Node> startNodes;
 
-    TraverserImpl( TraversalDescriptionImpl description, Node startNode )
+    TraverserImpl( TraversalDescriptionImpl description, Iterable<Node> startNodes )
     {
         this.description = description;
-        this.startNode = startNode;
+        this.startNodes = startNodes;
     }
 
-    public Iterator<Path> iterator()
+    protected Iterator<Path> instantiateIterator()
     {
-        return new TraverserIterator();
-    }
-
-    public Iterable<Node> nodes()
-    {
-        return new IterableWrapper<Node, Path>( this )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Path position )
-            {
-                return position.endNode();
-            }
-        };
-    }
-
-    public Iterable<Relationship> relationships()
-    {
-        return new IterableWrapper<Relationship, Path>( this )
-        {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                Iterator<Relationship> iter = super.iterator();
-                if ( iter.hasNext() )
-                {
-                    Relationship first = iter.next();
-                    // If the first position represents the start node, the
-                    // first relationship will be null, in that case skip it.
-                    if ( first == null ) return iter;
-                    // Otherwise re-include it.
-                    return new CombiningIterator<Relationship>( first, iter );
-                }
-                else
-                {
-                    return iter;
-                }
-            }
-
-            @Override
-            protected Relationship underlyingObjectToObject( Path position )
-            {
-                return position.lastRelationship();
-            }
-        };
-    }
-
-    class TraverserIterator extends PrefetchingIterator<Path>
-    {
-        final UniquenessFilter uniquness;
-        private final BranchSelector sourceSelector;
-        final TraversalDescriptionImpl description;
-        final Node startNode;
-
-        TraverserIterator()
-        {
-            this.description = TraverserImpl.this.description;
-            this.uniquness = description.uniqueness.create( description.uniquenessParameter );
-            this.startNode = TraverserImpl.this.startNode;
-            this.sourceSelector = description.branchSelector.create(
-                    new StartNodeTraversalBranch( this, startNode,
-                            description.expander ) );
-        }
-
-        boolean okToProceedFirst( TraversalBranch source )
-        {
-            return this.uniquness.checkFirst( source );
-        }
-
-        boolean okToProceed( TraversalBranch source )
-        {
-            return this.uniquness.check( source );
-        }
-
-        @Override
-        protected Path fetchNextOrNull()
-        {
-            TraversalBranch result = null;
-            while ( true )
-            {
-                result = sourceSelector.next();
-                if ( result == null )
-                {
-                    return null;
-                }
-                if ( result.evaluation().includes() )
-                {
-                    return result.position();
-                }
-            }
-        }
+        TraverserIterator iterator = new TraverserIterator( description.uniqueness.create( description.uniquenessParameter ),
+                description.expander, description.branchOrdering, description.evaluator,
+                startNodes, description.initialState );
+        return description.sorting != null ? new SortingTraverserIterator( this, iterator ) : iterator;
     }
 }

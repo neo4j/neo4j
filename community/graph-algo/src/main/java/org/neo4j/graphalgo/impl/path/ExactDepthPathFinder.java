@@ -19,26 +19,22 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
+import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_GLOBAL;
 
-import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
-import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 
 /**
  * Tries to find paths in a graph from a start node to an end node where the
@@ -52,149 +48,44 @@ import org.neo4j.kernel.Uniqueness;
  * @author Mattias Persson
  * @author Tobias Ivarsson
  */
-public class ExactDepthPathFinder implements PathFinder<Path>
+public class ExactDepthPathFinder extends TraversalPathFinder
 {
-    private final RelationshipExpander expander;
+    private final PathExpander expander;
     private final int onDepth;
     private final int startThreshold;
 
     public ExactDepthPathFinder( RelationshipExpander expander, int onDepth,
             int startThreshold )
     {
+        this( toPathExpander( expander ), onDepth, startThreshold );
+    }
+
+    public ExactDepthPathFinder( PathExpander expander, int onDepth, int startThreshold )
+    {
         this.expander = expander;
         this.onDepth = onDepth;
         this.startThreshold = startThreshold;
     }
 
-    public Iterable<Path> findAllPaths( final Node start, final Node end )
+    @Override
+    protected Traverser instantiateTraverser( Node start, Node end )
     {
-        return new Iterable<Path>()
-        {
-            public Iterator<Path> iterator()
-            {
-                return paths( start, end );
-            }
-        };
-    }
-
-    public Path findSinglePath( Node start, Node end )
-    {
-        Iterator<Path> paths = paths( start, end );
-        return paths.hasNext() ? paths.next() : null;
-    }
-
-    private Iterator<Path> paths( final Node start, final Node end )
-    {
-        TraversalDescription base = Traversal.description().uniqueness(
-                Uniqueness.RELATIONSHIP_PATH ).order(
+        TraversalDescription side = traversal().breadthFirst().expand( expander ).uniqueness( RELATIONSHIP_GLOBAL ).order(
                 new BranchOrderingPolicy()
                 {
-                    public BranchSelector create( TraversalBranch startSource )
+                    public BranchSelector create( TraversalBranch startSource, PathExpander expander )
                     {
                         return new LiteDepthFirstSelector( startSource,
-                                startThreshold );
+                                startThreshold, expander );
                     }
                 } );
-        final int firstHalf = onDepth / 2;
-        Traverser startTraverser = base.prune(
-                Traversal.pruneAfterDepth( firstHalf ) ).expand(
-                expander ).filter( new Predicate<Path>()
-        {
-            public boolean accept( Path item )
-            {
-                return item.length() == firstHalf;
-            }
-        } ).traverse( start );
-        final int secondHalf = onDepth - firstHalf;
-        Traverser endTraverser = base.prune(
-                Traversal.pruneAfterDepth( secondHalf ) ).expand(
-                expander.reversed() ).filter( new Predicate<Path>()
-        {
-            public boolean accept( Path item )
-            {
-                return item.length() == secondHalf;
-            }
-        } ).traverse( end );
-
-        final Iterator<Path> startIterator = startTraverser.iterator();
-        final Iterator<Path> endIterator = endTraverser.iterator();
-
-        final Map<Node, Visit> visits = new HashMap<Node, Visit>();
-        return new PrefetchingIterator<Path>()
-        {
-            @Override
-            protected Path fetchNextOrNull()
-            {
-                Path[] found = null;
-                while ( found == null
-                        && ( startIterator.hasNext() || endIterator.hasNext() ) )
-                {
-                    found = goOneStep( start, startIterator, visits );
-                    if ( found == null )
-                    {
-                        found = goOneStep( end, endIterator, visits );
-                    }
-                }
-                return found != null ? toPath( found, start ) : null;
-            }
-        };
-    }
-
-    private Path toPath( Path[] found, Node start )
-    {
-        Path startPath = found[0];
-        Path endPath = found[1];
-        if ( !startPath.startNode().equals( start ) )
-        {
-            Path tmpPath = startPath;
-            startPath = endPath;
-            endPath = tmpPath;
-        }
-        return toBuilder( startPath ).build( toBuilder( endPath ) );
-    }
-
-    private Builder toBuilder( Path path )
-    {
-        Builder builder = new Builder( path.startNode() );
-        for ( Relationship rel : path.relationships() )
-        {
-            builder = builder.push( rel );
-        }
-        return builder;
-    }
-
-    private Path[] goOneStep( Node node, Iterator<Path> visitor,
-            Map<Node, Visit> visits )
-    {
-        if ( !visitor.hasNext() )
-        {
-            return null;
-        }
-        Path position = visitor.next();
-        Visit visit = visits.get( position.endNode() );
-        if ( visit != null )
-        {
-            if ( visitor != visit.visitor )
-            {
-                return new Path[] { visit.position, position };
-            }
-        }
-        else
-        {
-            visits.put( position.endNode(), new Visit( position, visitor ) );
-        }
-        return null;
-    }
-
-    private static class Visit
-    {
-        private final Path position;
-        private final Iterator<Path> visitor;
-
-        Visit( Path position, Iterator<Path> visitor )
-        {
-            this.position = position;
-            this.visitor = visitor;
-        }
+        
+        return bidirectionalTraversal()
+                .startSide( side.evaluator( toDepth( onDepth/2 ) ) )
+                .endSide( side.evaluator( toDepth( onDepth-onDepth/2 ) ) )
+                .collisionEvaluator( atDepth( onDepth ) )
+                // TODO Level side selector will make the traversal return wrong result, why? 
+//                .sideSelector( SideSelectorPolicies.LEVEL, onDepth )
+                .traverse( start, end );
     }
 }

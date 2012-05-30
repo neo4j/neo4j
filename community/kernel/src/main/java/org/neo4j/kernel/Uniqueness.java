@@ -70,6 +70,19 @@ public enum Uniqueness implements UniquenessFactory
         }
     },
     /**
+     * Entities on the same level are guaranteed to be unique.
+     */
+    NODE_LEVEL
+    {
+        @Override
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new LevelUnique( PrimitiveTypeFetcher.NODE );
+        }
+    },
+
+    /**
      * A relationship cannot be traversed more than once, whereas nodes can.
      */
     RELATIONSHIP_GLOBAL
@@ -103,6 +116,19 @@ public enum Uniqueness implements UniquenessFactory
             return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
         }
     },
+    /**
+     * Entities on the same level are guaranteed to be unique.
+     */
+    RELATIONSHIP_LEVEL
+    {
+        @Override
+        public UniquenessFilter create( Object optionalParameter )
+        {
+            acceptNull( optionalParameter );
+            return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
+        }
+    },
+    
     /**
      * No restriction (the user will have to manage it).
      */

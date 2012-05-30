@@ -23,15 +23,34 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 
+/**
+ * Evaluator which can hold multiple {@link Evaluator}s and delegate to them
+ * all for evaluation requests.
+ */
 public class MultiEvaluator implements Evaluator
 {
     private final Evaluator[] evaluators;
 
-    MultiEvaluator( Evaluator... prunings )
+    MultiEvaluator( Evaluator... evaluators )
     {
-        this.evaluators = prunings;
+        this.evaluators = evaluators;
     }
 
+    /**
+     * Returns whether or not the {@code position} is to be included and also
+     * if it's going to be continued.
+     * 
+     * The include/exclude part of the returned {@link Evaluation} will be
+     * {@code include} if all of the internal evaluators think it's going to be
+     * included, otherwise it will be excluded.
+     * 
+     * The continue/prune part of the returned {@link Evaluation} will be
+     * {@code continue} if all of the internal evaluators think it's going to be
+     * continued, otherwise it will be pruned.
+     * 
+     * @param position the {@link Path} to evaluate.
+     * @see Evaluator
+     */
     public Evaluation evaluate( Path position )
     {
         boolean includes = true;
@@ -42,19 +61,29 @@ public class MultiEvaluator implements Evaluator
             if ( !bla.includes() )
             {
                 includes = false;
+                if ( !continues )
+                    return Evaluation.EXCLUDE_AND_PRUNE;
             }
             if ( !bla.continues() )
             {
                 continues = false;
-            }
-            if ( !continues && !includes )
-            {
-                return Evaluation.EXCLUDE_AND_PRUNE;
+                if ( !includes )
+                    return Evaluation.EXCLUDE_AND_PRUNE;
             }
         }
         return Evaluation.of( includes, continues );
     }
 
+    /**
+     * Adds {@code evaluator} to the list of evaluators wrapped by the returned
+     * evaluator. A new {@link MultiEvaluator} instance additionally containing
+     * the supplied {@code evaluator} is returned and this instance will be
+     * left intact.
+     * 
+     * @param evaluator the {@link Evaluator} to add to this multi evaluator.
+     * @return a new instance containing the current list of evaluator plus
+     * the supplied one.
+     */
     public MultiEvaluator add( Evaluator evaluator )
     {
         Evaluator[] newArray = new Evaluator[this.evaluators.length+1];

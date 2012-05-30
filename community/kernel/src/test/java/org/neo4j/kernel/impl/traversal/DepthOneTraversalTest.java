@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.BeforeClass;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.kernel.Traversal.traversal;
+
+import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
 
 public class DepthOneTraversalTest extends AbstractTestBase
 {
-    @BeforeClass
-    public static void createTheGraph()
+    @Before
+    public void createTheGraph()
     {
         createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
                 "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );
@@ -36,19 +37,19 @@ public class DepthOneTraversalTest extends AbstractTestBase
     
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )
     {
-        description = description.evaluator( Evaluators.atDepth( 1 ) );
+        description = description.evaluator( atDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "3" ) ), "1", "2" );
     }
     
     @Test
     public void shouldGetBothNodesOnDepthOneForDepthFirst()
     {
-        shouldGetBothNodesOnDepthOne( Traversal.description().depthFirst() );
+        shouldGetBothNodesOnDepthOne( traversal().depthFirst() );
     }
 
     @Test
     public void shouldGetBothNodesOnDepthOneForBreadthFirst()
     {
-        shouldGetBothNodesOnDepthOne( Traversal.description().breadthFirst() );
+        shouldGetBothNodesOnDepthOne( traversal().breadthFirst() );
     }
 }

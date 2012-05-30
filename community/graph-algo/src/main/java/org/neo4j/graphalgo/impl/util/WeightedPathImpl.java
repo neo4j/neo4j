@@ -80,10 +80,22 @@ public class WeightedPathImpl implements WeightedPath
     {
         return path.nodes();
     }
+    
+    @Override
+    public Iterable<Node> reverseNodes()
+    {
+        return path.reverseNodes();
+    }
 
     public Iterable<Relationship> relationships()
     {
         return path.relationships();
+    }
+    
+    @Override
+    public Iterable<Relationship> reverseRelationships()
+    {
+        return path.reverseRelationships();
     }
 
     @Override
