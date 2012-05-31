@@ -30,7 +30,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Vivek Prahlad |https://github.com/vivekprahlad[vivekprahlad]
 |Andriano Almeida |https://github.com/adrianoalmeida7[adrianoalmeida7]
 |Kevin Moore |https://github.com/kevmoo[kevmoo]
-|BGehrels |https://github.com/BGehrels[BGehrels]
+|Benjamin Gehrels |https://github.com/BGehrels[BGehrels]
 |Christopher Schmidt |https://github.com/FaKod[FaKod]
 |Pascal Rehfeldt |https://github.com/prehfeldt[prehfeldt]
 |Björn Söderqvist |https://github.com/cybear[cybear]
