@@ -22,8 +22,8 @@ else
 		SYMLINKVERSION=stable
 	fi
 fi
-
-ROOTPATHDOCS=public_html/docs
+DOCS_SERVER='neo@static.neo4j.org'
+ROOTPATHDOCS='/var/www/docs.neo4j.org'
 hostname=$(uname -n)
 
 # If you're not a Jenkins node, don't deploy the docs
@@ -33,27 +33,27 @@ echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
 
 # Create initial directories
-ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
-#ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
+ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
+#ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 
 # Copy artifacts
-rsync -r $DIR/target/text/ docs-server:$ROOTPATHDOCS/text/$VERSION/
-#rsync -r --delete $DIR/target/annotated/ docs-server:$ROOTPATHDOCS/annotated/
-rsync -r --delete $DIR/target/chunked/ docs-server:$ROOTPATHDOCS/chunked/$VERSION/
-scp $DIR/target/pdf/neo4j-manual.pdf docs-server:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
+rsync -r $DIR/target/text/ $DOCS_SERVER:$ROOTPATHDOCS/text/$VERSION/
+#rsync -r --delete $DIR/target/annotated/ $DOCS_SERVER:$ROOTPATHDOCS/annotated/
+rsync -r --delete $DIR/target/chunked/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
+scp $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
 # Symlink this version to a generic url
-#ssh docs-server "cd $ROOTPATHDOCS/text/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
-#ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
-#ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
+#ssh $DOCS_SERVER "cd $ROOTPATHDOCS/text/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
+#ssh $DOCS_SERVER "cd $ROOTPATHDOCS/chunked/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
+#ssh $DOCS_SERVER "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
 
 #if [[ $SYMLINKVERSION == stable ]]
 #then
-  #ssh docs-server "cd $ROOTPATHDOCS/text/ && (rm milestone || true); ln -s $VERSION milestone"
-  #ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm milestone || true); ln -s $VERSION milestone"
-  #ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-milestone.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-milestone.pdf"
+  #ssh $DOCS_SERVER "cd $ROOTPATHDOCS/text/ && (rm milestone || true); ln -s $VERSION milestone"
+  #ssh $DOCS_SERVER "cd $ROOTPATHDOCS/chunked/ && (rm milestone || true); ln -s $VERSION milestone"
+  #ssh $DOCS_SERVER "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-milestone.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-milestone.pdf"
 #fi
 
 
-echo Apparently, successfully published to docs-server.
+echo Apparently, successfully published to $DOCS_SERVER.
 
