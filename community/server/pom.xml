@@ -411,30 +411,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
-                <configuration>
-                    <strictCheck>true</strictCheck>
-                    <header>${license-text.header}</header>
-                    <includes>
-                        <include>src/**/*.java</include>
-                        <include>src/**/*.js</include>
-                        <include>src/**/*.scala</include>
-                        <include>src/**/*.xml</include>
-                    </includes>
-                    <excludes>
-                        <exclude>**/lib/*.js</exclude>
-                        <exclude>**/lib/**/*.js</exclude>
-                        <exclude>**/webadmin-html/**</exclude>
-                    </excludes>
-                    <mapping>
-                        <scala>JAVADOC_STYLE</scala>
-                    </mapping>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
