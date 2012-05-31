@@ -1,9 +1,0 @@
-apply plugin: GenerateVersionClass
-
-dependencies {
-    compile "org.apache.geronimo.specs:geronimo-jta_1.1_spec:$jtaSpecVersion"
-
-    //TODO mark osgi optional
-    compile "org.osgi:osgi_R4_core:$osgiVersion",
-            "org.osgi:osgi_R4_compendium:$osgiVersion"
-}
