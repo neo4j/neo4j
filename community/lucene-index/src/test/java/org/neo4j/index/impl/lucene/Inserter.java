@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -27,7 +30,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class Inserter
 {
-	public static void main( String[] args )
+	public static void main( String[] args ) throws IOException
 	{
 		String path = args[0];
 		final GraphDatabaseService db = new EmbeddedGraphDatabase( path );
@@ -66,5 +69,6 @@ public class Inserter
 				}
 			}.start();
 		}
+		new File( path, "started" ).createNewFile();
 	}
 }

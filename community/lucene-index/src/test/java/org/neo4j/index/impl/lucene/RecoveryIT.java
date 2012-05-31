@@ -19,9 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,6 +46,7 @@ public class RecoveryIT
         } );
         
         // Let it run for a while and then kill it, and wait for it to die
+        awaitFile( new File( path, "started" ) );
         Thread.sleep( 5000 );
         process.destroy();
         process.waitFor();
@@ -73,5 +76,14 @@ public class RecoveryIT
             }
         }
         db.shutdown();
+    }
+
+    private void awaitFile( File file ) throws InterruptedException
+    {
+        long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
+        while ( !file.exists() && System.currentTimeMillis() < end )
+            Thread.sleep( 100 );
+        if ( !file.exists() )
+            fail( "The inserter doesn't seem to have run properly" );
     }
 }
