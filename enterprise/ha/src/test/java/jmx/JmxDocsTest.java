@@ -356,6 +356,14 @@ public class JmxDocsTest
             {
                 newType = getLinkedType( getType( (String) originalType ),
                         nonHtml );
+                if ( nonHtml )
+                {
+                    newType += " as CompositeData[]";
+                }
+                else
+                {
+                    newType += " as http://docs.oracle.com/javase/6/docs/api/javax/management/openmbean/CompositeData.html[CompositeData][]";
+                }
             }
         }
         return newType;
