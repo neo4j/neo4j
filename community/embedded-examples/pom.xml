@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>34</version>
+    <version>35</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.examples</groupId>
