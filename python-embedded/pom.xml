@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>org.neo4j.build</groupId>
 		<artifactId>parent-central</artifactId>
-		<version>34</version>
+		<version>35</version>
 		<relativePath />
 	</parent>
 
@@ -339,7 +339,7 @@ the relevant Commercial Agreement.
 	<distributionManagement>
 		<site>
 			<id>neo4j-site</id>
-			<url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+			<url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
 		</site>
 	</distributionManagement>
 
