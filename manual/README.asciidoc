@@ -31,7 +31,7 @@ Note that this profile can't be used together with the `package` goal.
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install asciidoc docbook fop graphviz w3m
+  sudo apt-get install asciidoc docbook fop graphviz w3m maven libxml2-utils
 
 
 
