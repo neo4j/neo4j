@@ -68,6 +68,16 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "count(*)" -> 2)))
   }
 
+  @Test def shouldReturnZeroForEmptyInput() {
+    val source = new FakePipe(List(), createSymbolTableFor("name"))
+
+    val returnItems = List()
+    val grouping = List(CountStar())
+    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
+
+    assertThat(getResults(aggregationPipe), hasItems(Map[String, Any]("count(*)" -> 0)))
+  }
+
   @Test def shouldCountNonNullValues() {
     val source = new FakePipe(List(
       Map("name" -> "Andres", "age" -> 36),

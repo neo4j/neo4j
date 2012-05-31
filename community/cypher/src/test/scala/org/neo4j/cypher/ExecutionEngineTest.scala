@@ -1992,4 +1992,8 @@ RETURN x0.name?
     println(result)
   }
 
+  @Test def zero_matching_subgraphs_yield_correct_count_star() {
+    val result = parseAndExecute("start n=node(*) where 1 = 0 return count(*)").toList
+    assert(List(Map("count(*)" -> 0)) === result)
+  }
 }
