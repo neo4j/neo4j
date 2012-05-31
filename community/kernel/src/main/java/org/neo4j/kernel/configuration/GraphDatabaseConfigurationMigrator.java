@@ -32,7 +32,6 @@ import org.neo4j.helpers.Args;
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator 
 {
     {
-        // TODO: This should be in enterprise configuration migration
         add(new SpecificPropertyMigration("enable_online_backup", "enable_online_backup has been replaced with online_backup_enabled and online_backup_port")
         {
             @Override

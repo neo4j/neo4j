@@ -75,6 +75,28 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
         public abstract void setValueWithOldSetting(String value, Map<String, String> rawConfiguration);
     }
     
+    public static class PropertyRenamed extends SpecificPropertyMigration
+    {
+
+        private String newKey;
+
+		public PropertyRenamed(String oldKey, String newKey, String deprecationMessage)
+        {
+            super(oldKey, deprecationMessage);
+            this.newKey = newKey;
+        }
+		
+        public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
+        {
+        	rawConfiguration.put(newKey, value);
+        }
+    }
+    
+    public static Migration propertyRenamed(String oldKey, String newKey, String deprecationMessage)
+    {
+    	return new PropertyRenamed(oldKey, newKey, deprecationMessage);
+    }
+    
     private List<Migration> migrations = new ArrayList<Migration>();
     
     public void add(Migration migration) 
