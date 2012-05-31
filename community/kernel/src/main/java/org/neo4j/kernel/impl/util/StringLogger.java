@@ -402,11 +402,11 @@ public abstract class StringLogger
         }
     }
 
-    private static final class LineLoggerImpl implements LineLogger
+    protected static final class LineLoggerImpl implements LineLogger
     {
         private final StringLogger target;
 
-        LineLoggerImpl( StringLogger target )
+        public LineLoggerImpl( StringLogger target )
         {
             this.target = target;
         }

@@ -76,9 +76,9 @@ public class LogbackService
                 JoranConfigurator configurator = new JoranConfigurator();
                 configurator.setContext( loggerContext );
                 loggerContext.putProperty( "neo_store", storeDir );
-                loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings.remote_logging_enabled ) );
+                loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings.remote_logging_enabled ).toString() );
                 loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings.remote_logging_host ) );
-                loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings.remote_logging_port ) );
+                loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings.remote_logging_port ).toString() );
                 try
                 {
                     configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );

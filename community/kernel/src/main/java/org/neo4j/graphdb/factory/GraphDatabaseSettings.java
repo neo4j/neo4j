@@ -20,8 +20,21 @@
 
 package org.neo4j.graphdb.factory;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 
 /**
  * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.
@@ -29,6 +42,9 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 @Description( "Settings for the Community edition of Neo4j" )
 public abstract class GraphDatabaseSettings
 {
+    @Migrator
+    public static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+    
     @Title( "Read only database" )
     @Description("Only allow read operations from this Neo4j instance")
     @Default( FALSE)
@@ -67,7 +83,7 @@ public abstract class GraphDatabaseSettings
     // Remote logging
     @Description( "Whether to enable logging to a remote server or not" )
     @Default(FALSE)
-    public static GraphDatabaseSetting remote_logging_enabled = new BooleanSetting( "remote_logging_enabled" );
+    public static BooleanSetting remote_logging_enabled = new BooleanSetting( "remote_logging_enabled" );
 
     @Description( "Host for remote logging using LogBack SocketAppender" )
     @Default("127.0.0.1")
@@ -77,6 +93,11 @@ public abstract class GraphDatabaseSettings
     @Default("4560")
     public static final PortSetting remote_logging_port = new PortSetting( "remote_logging_port" );
 
+    // TODO: Turn this into ByteSizeSetting, and make sure this applies to all logging providers
+    @Description( "Threshold in bytes for when database logs (text logs, for debugging, that is) are rotated." )
+    @Default(""+(100 * 1024 * 1024))
+    public static final GraphDatabaseSetting.IntegerSetting threshold_for_logging_rotation = new GraphDatabaseSetting.IntegerSetting( "logging.threshold_for_rotation", "Must be valid number", 1, null );
+    
     // Indexing
     @Description( "Controls the auto indexing feature for nodes. Setting to false shuts it down unconditionally, while true enables it for every property, "+
                   "subject to restrictions in the configuration." )
@@ -121,31 +142,31 @@ public abstract class GraphDatabaseSettings
 
     @Description( "The size to allocate for memory mapping the node store" )
     @Default("20M")
-    public static final StringSetting nodestore_mapped_memory = new StringSetting("neostore.nodestore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting nodestore_mapped_memory = new NumberOfBytesSetting("neostore.nodestore.db.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the property value store" )
     @Default("90M")
-    public static final StringSetting nodestore_propertystore_mapped_memory = new StringSetting("neostore.propertystore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting nodestore_propertystore_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the store for property key indexes" )
     @Default("1M")
-    public static final StringSetting nodestore_propertystore_index_mapped_memory = new StringSetting("neostore.propertystore.db.index.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting nodestore_propertystore_index_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.index.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the store for property key strings" )
     @Default("1M")
-    public static final StringSetting nodestore_propertystore_index_keys_mapped_memory = new StringSetting("neostore.propertystore.db.index.keys.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting nodestore_propertystore_index_keys_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.index.keys.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the string property store" )
     @Default("130M")
-    public static final StringSetting strings_mapped_memory = new StringSetting("neostore.propertystore.db.strings.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting strings_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.strings.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the array property store" )
     @Default("130M")
-    public static final StringSetting arrays_mapped_memory = new StringSetting("neostore.propertystore.db.arrays.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting arrays_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.arrays.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the relationship store" )
     @Default("100M")
-    public static final StringSetting relationshipstore_mapped_memory = new StringSetting("neostore.relationshipstore.db.mapped_memory",SIZE,"Invalid value %s, must be e.g. 20M");
+    public static final NumberOfBytesSetting relationshipstore_mapped_memory = new NumberOfBytesSetting("neostore.relationshipstore.db.mapped_memory");
 
     @Default("100")
     public static final IntegerSetting relationship_grab_size = new IntegerSetting( "relationship_grab_size", "Must be a number" );
@@ -169,13 +190,21 @@ public abstract class GraphDatabaseSettings
     @Description( "Mark this database as a backup slave" )
     @Default( FALSE )
     public static final BooleanSetting backup_slave = new BooleanSetting( "backup_slave" );
+    
+    // TODO: This should be in enterprise, but we currently have code depending on this in community
+    @Default( FALSE)
+    public static final GraphDatabaseSetting.BooleanSetting online_backup_enabled = new GraphDatabaseSetting.BooleanSetting( "online_backup_enabled" );
 
+    // TODO: This should be in enterprise, but we currently have code depending on this in community
+    @Default("6362")
+    public static final GraphDatabaseSetting.PortSetting online_backup_port = new GraphDatabaseSetting.PortSetting( "online_backup_port" );
+    
     // GCR settings
     @Description( "The amount of memory to use for the node cache (when using the 'gcr' cache)" )
-    public static final StringSetting node_cache_size = new StringSetting( "node_cache_size",SIZE,"Must be a valid size" );
+    public static final NumberOfBytesSetting node_cache_size = new NumberOfBytesSetting( "node_cache_size");
 
     @Description( "The amount of memory to use for the relationship cache (when using the 'gcr' cache)" )
-    public static final StringSetting relationship_cache_size = new StringSetting( "relationship_cache_size",SIZE,"Must be a valid size" );
+    public static final NumberOfBytesSetting relationship_cache_size = new NumberOfBytesSetting( "relationship_cache_size");
 
     @Description( "The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache)" )
     @Default( "1.0" )
@@ -187,19 +216,30 @@ public abstract class GraphDatabaseSettings
 
     @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)" )
     @Default( "60s" )
-    public static final StringSetting gcr_cache_min_log_interval = new StringSetting( "gcr_cache_min_log_interval", DURATION, "Must be a valid interval" );
+    public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
 
     @Default( FALSE )
-    public static BooleanSetting execution_guard_enabled = new BooleanSetting( "execution_guard_enabled" );
+    public static final BooleanSetting execution_guard_enabled = new BooleanSetting( "execution_guard_enabled" );
 
     @Description( "Amount of time in ms the GC monitor thread will wait before taking another measurement." )
     @Default( "100ms" )
-    public static StringSetting gc_monitor_wait_time = new StringSetting( "gc_monitor_wait_time", DURATION, "Must be a valid duration" );
+    public static final TimeSpanSetting gc_monitor_wait_time = new TimeSpanSetting( "gc_monitor_wait_time" );
 
     @Description( "The amount of time in ms the monitor thread has to be blocked before logging a message it was blocked." )
     @Default( "200ms" )
-    public static StringSetting gc_monitor_threshold = new StringSetting( "gc_monitor_threshold", DURATION, "Must be a valid duration" );
+    public static final TimeSpanSetting gc_monitor_threshold = new TimeSpanSetting( "gc_monitor_threshold" );
 
+    @Description("The directory where the database files are located.")
+    public static final GraphDatabaseSetting.DirectorySetting store_dir = new GraphDatabaseSetting.DirectorySetting( "store_dir", true, true);
+    
+    @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
+    @Default("neostore")
+    public static final GraphDatabaseSetting.FileSetting neo_store = new GraphDatabaseSetting.FileSetting( "neo_store", store_dir, true, true);
+    
+    @Description("The base name for the logical log files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
+    @Default("nioneo_logical.log")
+    public static final GraphDatabaseSetting.FileSetting logical_log = new GraphDatabaseSetting.FileSetting( "logical_log", store_dir, true, true);
+    
     // Specialized settings
     public static class CacheTypeSetting
         extends OptionsSetting

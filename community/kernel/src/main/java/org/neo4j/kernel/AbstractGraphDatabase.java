@@ -135,9 +135,9 @@ public abstract class AbstractGraphDatabase
         public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
 
-        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
-        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
-        public static final GraphDatabaseSetting.StringSetting logical_log = new GraphDatabaseSetting.StringSetting( "logical_log",".*","TODO" );
+        public static final GraphDatabaseSetting.DirectorySetting store_dir = GraphDatabaseSettings.store_dir;
+        public static final GraphDatabaseSetting.FileSetting neo_store = GraphDatabaseSettings.neo_store;
+        public static final GraphDatabaseSetting.FileSetting logical_log = GraphDatabaseSettings.logical_log;
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -200,11 +200,16 @@ public abstract class AbstractGraphDatabase
     {
         this.params = params;
         this.cacheProviders = mapCacheProviders( cacheProviders );
-        this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
 
         // SPI - provided services
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
+
+        // Setup configuration
+        config = new Config( params, getSettingsClasses() );
+        config.set(Configuration.store_dir, storeDir);
+        
+        this.storeDir = config.get(Configuration.store_dir);
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -236,53 +241,25 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
-        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
-        String separator = System.getProperty( "file.separator" );
-        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
-        params.put( Configuration.store_dir.name(), this.storeDir );
-        params.put( Configuration.neo_store.name(), store );
-        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-        params.put( Configuration.logical_log.name(), logicalLog );
-        // END SMELL
 
         fileSystem = life.add(createFileSystemAbstraction());
-
-        // Get the list of settings classes for extensions
-        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
-        settingsClasses.add( GraphDatabaseSettings.class );
-        for( KernelExtension kernelExtension : kernelExtensions )
-        {
-            Class settingsClass = kernelExtension.getSettingsClass();
-            if( settingsClass != null )
-            {
-                settingsClasses.add( settingsClass );
-            }
-        }
-
-        // Apply defaults to configuration just for logging purposes
-        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( settingsClasses );
-
-        // Setup configuration
-        config = new Config( configurationDefaults.apply( new SystemPropertiesConfiguration(settingsClasses).apply( params ) ) );
 
         // Create logger
         this.logging = createStringLogger();
 
-        // Collect system properties, migrate settings and then apply defaults again
-        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
-        Map<String,String> configParams = configurationDefaults.apply(configurationMigrator.migrateConfiguration( new SystemPropertiesConfiguration(settingsClasses).apply( params )));
-
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                                                                   config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                                                                  config.getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ),
-                                                                  config.getBoolean( GraphDatabaseSettings.dump_configuration ) );
+                                                                  config.get( GraphDatabaseSettings.use_memory_mapped_buffers ),
+                                                                  config.get( GraphDatabaseSettings.dump_configuration ) );
+        Map<String, String> configParams = config.getParams();
         Map<String,String> autoConfiguration = autoConfigurator.configure( );
         for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
         {
             // Don't override explicit settings
             if( !params.containsKey( autoConfig.getKey() ) )
             {
+            	String key = autoConfig.getKey();
                 configParams.put( autoConfig.getKey(), autoConfig.getValue() );
             }
         }
@@ -290,9 +267,11 @@ public abstract class AbstractGraphDatabase
         config.applyChanges( configParams );
 
         this.msgLog = logging.getLogger( Loggers.NEO4J );
+        
+        config.setLogger(msgLog);
 
         // Instantiate all services - some are overridable by subclasses
-        boolean readOnly = config.getBoolean( Configuration.read_only );
+        boolean readOnly = config.get( Configuration.read_only );
 
         String cacheTypeName = config.get( Configuration.cache_type );
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
@@ -310,7 +289,7 @@ public abstract class AbstractGraphDatabase
 
         xaDataSourceManager = life.add( new XaDataSourceManager( logging.getLogger( Loggers.DATASOURCE )) );
 
-        guard = config.getBoolean( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
+        guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 
@@ -397,7 +376,7 @@ public abstract class AbstractGraphDatabase
 
         extensions = life.add(createKernelData());
 
-        if ( config.getBoolean( Configuration.load_kernel_extensions ))
+        if ( config.get( Configuration.load_kernel_extensions ))
         {
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
@@ -1026,6 +1005,21 @@ public abstract class AbstractGraphDatabase
     {
         return kernelPanicEventGenerator;
     }
+    
+	private List<Class<?>> getSettingsClasses() {
+		// Get the list of settings classes for extensions
+        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
+        settingsClasses.add( GraphDatabaseSettings.class );
+        for( KernelExtension<?> kernelExtension : kernelExtensions )
+        {
+            Class<?> settingsClass = kernelExtension.getSettingsClass();
+            if( settingsClass != null )
+            {
+                settingsClasses.add( settingsClass );
+            }
+        }
+		return settingsClasses;
+	}
 
     private String canonicalize( String path )
     {

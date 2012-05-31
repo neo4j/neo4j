@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.collection.Iterables;
@@ -33,21 +34,25 @@ import org.neo4j.helpers.collection.Iterables;
  */
 public class ConfigurationDefaults
 {
-    public static String getDefault(GraphDatabaseSetting realSetting, Class<?> settingsClass)
+    public static String getDefault(GraphDatabaseSetting<?> realSetting, Class<?> settingsClass)
     {
         for( Field field : settingsClass.getFields() )
         {
             try
             {
-                GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                if (setting == realSetting)
+                Object fieldValue = field.get( null );
+                if(fieldValue instanceof GraphDatabaseSetting<?>) 
                 {
-                    if (setting instanceof GraphDatabaseSetting.DefaultValue)
+                    GraphDatabaseSetting<?> setting = (GraphDatabaseSetting<?>) fieldValue;
+                    if (setting == realSetting)
                     {
-                        return ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                    } else
-                    {
-                        return getDefaultValue( field );
+                        if (setting instanceof GraphDatabaseSetting.DefaultValue)
+                        {
+                            return ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
+                        } else
+                        {
+                            return getDefaultValue( field );
+                        }
                     }
                 }
             }
@@ -87,25 +92,29 @@ public class ConfigurationDefaults
         Map<String, String> configuration = new HashMap<String,String>(config);
         
         // Go through all settings and apply defaults
-        for( Class settingsClass : settingsClasses )
+        for( Class<?> settingsClass : settingsClasses )
         {
             for( Field field : settingsClass.getFields() )
             {
                 try
                 {
-                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                    if (!configuration.containsKey( setting.name() ))
+                    Object fieldValue = field.get( null );
+                    if(fieldValue instanceof GraphDatabaseSetting<?>) 
                     {
-                        if (setting instanceof GraphDatabaseSetting.DefaultValue)
+                        GraphDatabaseSetting<?> setting = (GraphDatabaseSetting<?>) fieldValue;
+                        if (!configuration.containsKey( setting.name() ))
                         {
-                            String defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                            if (defaultValue != null)
-                                configuration.put( setting.name(), defaultValue );
-                        } else
-                        {
-                            String defaultValue = getDefaultValue( field );
-                            if (defaultValue != null)
-                                configuration.put( setting.name(), defaultValue );
+                            if (setting instanceof GraphDatabaseSetting.DefaultValue)
+                            {
+                                String defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
+                                if (defaultValue != null)
+                                    configuration.put( setting.name(), defaultValue );
+                            } else
+                            {
+                                String defaultValue = getDefaultValue( field );
+                                if (defaultValue != null)
+                                    configuration.put( setting.name(), defaultValue );
+                            }
                         }
                     }
                 }
