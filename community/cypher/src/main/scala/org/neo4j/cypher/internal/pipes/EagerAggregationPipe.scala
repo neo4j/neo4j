@@ -52,9 +52,10 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
       functions.foreach(func => func(ctx))
     })
 
-    result.map {
-      case (key, (ctx,aggregator)) => {
-
+    if (result.isEmpty && keyNames.isEmpty) {
+      createEmptyResult(aggregationNames)
+    } else result.map {
+      case (key, (ctx,aggregator)) =>
         val newMap = MutableMaps.create
 
         //add key values
@@ -64,8 +65,18 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Seq[Expression], ag
         aggregationNames.zip(aggregator.map(_.result)).foreach( newMap += _ )
 
         ctx.newFrom(newMap)
-      }
     }
+  }
+
+
+  private def createEmptyResult(aggregationNames: Seq[String]): Traversable[ExecutionContext] = {
+    val newMap = MutableMaps.create
+    val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_.createAggregationFunction.result)
+    aggregationNamesAndFunctions.toMap
+      .foreach {
+      case (name, zeroValue) => newMap += name -> zeroValue
+    }
+    Traversable(ExecutionContext(newMap))
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + keyExpressions.map(_.identifier.name).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
