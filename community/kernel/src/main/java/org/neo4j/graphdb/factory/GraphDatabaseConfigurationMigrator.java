@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration;
+package org.neo4j.graphdb.factory;
 
 import static java.util.regex.Pattern.quote;
 
@@ -25,9 +25,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.BaseConfigurationMigrator.SpecificPropertyMigration;
 
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator 
 {

@@ -24,34 +24,23 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.Migrator;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 
 public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator {
 
     private ArrayList<ConfigurationMigrator> migrators = new ArrayList<ConfigurationMigrator>();
+    private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
     
     public AnnotationBasedConfigurationMigrator(
             Iterable<Class<?>> settingsClasses)
     {
         for( Class<?> settingsClass : settingsClasses )
         {
-            for( Field field : settingsClass.getFields() )
+            for( Pair<Field,ConfigurationMigrator> field : fieldHarvester.findStatic(settingsClass, ConfigurationMigrator.class, Migrator.class) )
             {
-                try
-                {
-                    Object fieldValue = field.get( null );
-                    if(fieldValue instanceof ConfigurationMigrator && field.getAnnotation(Migrator.class) != null) 
-                    {
-                        migrators.add((ConfigurationMigrator)fieldValue);
-                    }
-                } catch( IllegalAccessException e )
-                {
-                    assert false : "Field "+field.getName()+" is not public";
-                } catch( NullPointerException npe )
-                {
-                    throw new IllegalArgumentException(settingsClass.getName() + "#" + field.getName() + " needs to be static to be used as configuration meta data.");
-                }
+                migrators.add(field.other());
             }
         }
     }

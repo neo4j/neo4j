@@ -576,7 +576,7 @@ public abstract class GraphDatabaseSetting<T>
         extends GraphDatabaseSetting<Long>
     {
         // Regular expression that matches a size e.g. 512M or 2G
-        private Pattern sizeRegex = Pattern.compile("\\d+[kmgKMG]");
+        private Pattern sizeRegex = Pattern.compile("\\d+ *[kmgKMG]?");
     
         public NumberOfBytesSetting( String name )
         {
@@ -614,7 +614,7 @@ public abstract class GraphDatabaseSetting<T>
                 mem = mem.substring( 0, mem.length() - 1 );
             }
     
-            return Long.parseLong( mem ) * multiplier;
+            return Long.parseLong( mem.trim() ) * multiplier;
         }
     }
     

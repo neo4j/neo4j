@@ -51,7 +51,6 @@ import org.neo4j.kernel.logging.BufferingLogger;
  */
 public class Config implements DiagnosticsProvider
 {
-    
     private List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
     private Map<String, String> params = new HashMap<String, String>();
     private ConfigurationMigrator migrator;
@@ -59,6 +58,7 @@ public class Config implements DiagnosticsProvider
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
     private StringLogger log = new BufferingLogger();
+	private ConfigurationValidator validator;
     
     public Config()
     {
@@ -78,6 +78,7 @@ public class Config implements DiagnosticsProvider
     public Config(Map<String, String> inputParams, Iterable<Class<?>> settingsClasses)
     {
         this.migrator = new AnnotationBasedConfigurationMigrator(settingsClasses);
+        this.validator = new ConfigurationValidator(settingsClasses);
         this.applyChanges(new ConfigurationDefaults(settingsClasses).apply(inputParams));
     }
 
@@ -153,17 +154,11 @@ public class Config implements DiagnosticsProvider
         modifier.applyTo(session);
         
         // Modify a copy of the original param map
-        Map<String, String> newConfiguration = new HashMap<String,String>();
-        newConfiguration.putAll(params);
+        Map<String, String> newConfiguration = new HashMap<String,String>(params);
         
         for(ConfigModifier.Modification modification : session.getModifications())
         {
-            if(modification.getValue() == null)
-            {
-                newConfiguration.remove(modification.getSetting().name());
-            } else {
-                newConfiguration.put(modification.getSetting().name(), modification.getValue());
-            }
+            newConfiguration.put(modification.getSetting().name(), modification.getValue());
         }
         
         applyChanges(newConfiguration);
@@ -176,6 +171,10 @@ public class Config implements DiagnosticsProvider
     public synchronized void applyChanges(Map<String,String> newConfiguration)
     {
         newConfiguration = migrator.apply(newConfiguration, log);
+        
+        // Make sure all changes are valid
+        validator.validate(newConfiguration);
+        
         // Figure out what changed
         if (listeners.isEmpty())
         {

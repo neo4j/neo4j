@@ -30,7 +30,7 @@ public interface ConfigModifier {
     // Modifier helpers
     
     /**
-     * A builder interface for performing multiple simple
+     * A builder api for performing multiple simple
      * modifications in one go.
      */
     public static class Modifications implements ConfigModifier
@@ -49,12 +49,6 @@ public interface ConfigModifier {
         public <T> Modifications set(GraphDatabaseSetting<T> setting, String value)
         {
             modifications.add(new Modification(setting, value));
-            return this;
-        }
-        
-        public <T> Modifications delete(GraphDatabaseSetting<T> setting)
-        {
-            set(setting, null);
             return this;
         }
     }
@@ -122,11 +116,6 @@ public interface ConfigModifier {
         public <T> void set(GraphDatabaseSetting<T> setting, String value)
         {
             modifications.add(new Modification(setting, value));
-        }
-        
-        public void delete(GraphDatabaseSetting<?> setting)
-        {
-            set(setting, null);
         }
 
         protected Set<Modification> getModifications()

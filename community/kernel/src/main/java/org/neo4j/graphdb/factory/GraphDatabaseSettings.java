@@ -34,7 +34,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 
 /**
  * Settings for the Community edition of Neo4j. Use this with GraphDatabaseBuilder.

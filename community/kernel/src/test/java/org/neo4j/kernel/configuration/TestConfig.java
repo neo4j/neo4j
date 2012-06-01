@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,9 @@ public class TestConfig {
 		@Default("Hello, World!")
 		public static GraphDatabaseSetting.StringSetting hello = new GraphDatabaseSetting.StringSetting("hello", ".*", "");
 		
+		@Default("true")
+		public static GraphDatabaseSetting.BooleanSetting boolSetting = new GraphDatabaseSetting.BooleanSetting("bool_setting");
+		
 	}
 	
 	@Test
@@ -75,6 +79,34 @@ public class TestConfig {
 		
 		Config config = new Config(params, MyMigratingSettings.class);
 		assertThat(config.get(MyMigratingSettings.newer), is("hello!"));
+	}
+	
+	@Test
+	public void shouldNotAllowSettingInvalidValues()
+	{
+		Config config = new Config(new HashMap<String,String>(), MySettingsWithDefaults.class);
+		
+		try {
+			config.set(MySettingsWithDefaults.boolSetting, "asd");
+			fail("Expected validation to fail.");
+		} catch(IllegalArgumentException e)
+		{
+		}
+	}
+	
+	@Test
+	public void shouldNotAllowInvalidValuesInConstructor()
+	{
+		try {
+			Config config = new Config(new HashMap<String,String>(){{
+				put(MySettingsWithDefaults.boolSetting.name(), "asd");
+				}}, 
+				MySettingsWithDefaults.class);
+			
+			fail("Expected validation to fail.");
+		} catch(IllegalArgumentException e)
+		{
+		}
 	}
 	
 }
