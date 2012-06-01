@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_array_fraction;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_array_fraction;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_size;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -43,7 +47,8 @@ public class HaCaches implements Caches
         this.logger = logger;
     }
     
-    public void configure( CacheProvider newType, Config config )
+    @Override
+	public void configure( CacheProvider newType, Config config )
     {
         if ( !cacheConfigSame( newType, config ) )
         {
@@ -67,31 +72,33 @@ public class HaCaches implements Caches
                 // Only reuse array caches, since the other ones are cheap to recreate
                 GCResistantCacheProvider.NAME.equals( this.type.getName() ) &&
                 
-                this.config.getFloat( GraphDatabaseSettings.node_cache_array_fraction ) == config.getFloat( GraphDatabaseSettings.node_cache_array_fraction ) &&
-                this.config.getFloat( GraphDatabaseSettings.relationship_cache_array_fraction ) == config.getFloat( GraphDatabaseSettings.relationship_cache_array_fraction ) &&
-                stringSettingSame( config, GraphDatabaseSettings.node_cache_size ) &&
-                stringSettingSame( config, GraphDatabaseSettings.relationship_cache_size );
-                
-    }
-    
-    private boolean stringSettingSame( Config otherConfig, StringSetting setting )
-    {
-        String myValue = this.config.get( setting );
-        String otherValue = config.get( setting );
-        return myValue == otherValue || (myValue != null && myValue.equals( otherValue ) );
+                mySettingIsSameAs(config, node_cache_array_fraction ) &&
+                mySettingIsSameAs(config, relationship_cache_array_fraction ) &&
+                mySettingIsSameAs(config, node_cache_size) &&
+        		mySettingIsSameAs(config, relationship_cache_size);
     }
 
-    public Cache<NodeImpl> node()
+    private boolean mySettingIsSameAs(Config otherConfig, GraphDatabaseSetting<?> setting) {
+		Object myValue = config.get(setting);
+		Object otherValue = otherConfig.get(setting);
+		
+		return myValue.equals(otherValue);
+	}
+
+	@Override
+	public Cache<NodeImpl> node()
     {
         return node;
     }
     
-    public Cache<RelationshipImpl> relationship()
+    @Override
+	public Cache<RelationshipImpl> relationship()
     {
         return relationship;
     }
     
-    public void invalidate()
+    @Override
+	public void invalidate()
     {
         type = null;
         config = null;
