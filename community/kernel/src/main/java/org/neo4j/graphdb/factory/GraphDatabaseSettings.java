@@ -197,25 +197,6 @@ public abstract class GraphDatabaseSettings
     // TODO: This should be in enterprise, but we currently have code depending on this in community
     @Default("6362")
     public static final GraphDatabaseSetting.PortSetting online_backup_port = new GraphDatabaseSetting.PortSetting( "online_backup_port" );
-    
-    // GCR settings
-    @Description( "The amount of memory to use for the node cache (when using the 'gcr' cache)" )
-    public static final NumberOfBytesSetting node_cache_size = new NumberOfBytesSetting( "node_cache_size");
-
-    @Description( "The amount of memory to use for the relationship cache (when using the 'gcr' cache)" )
-    public static final NumberOfBytesSetting relationship_cache_size = new NumberOfBytesSetting( "relationship_cache_size");
-
-    @Description( "The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache)" )
-    @Default( "1.0" )
-    public static final FloatSetting node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
-
-    @Description( "The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache)" )
-    @Default( "1.0" )
-    public static final FloatSetting relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
-
-    @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)" )
-    @Default( "60s" )
-    public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
 
     @Default( FALSE )
     public static final BooleanSetting execution_guard_enabled = new BooleanSetting( "execution_guard_enabled" );
@@ -238,6 +219,29 @@ public abstract class GraphDatabaseSettings
     @Description("The base name for the logical log files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
     @Default("nioneo_logical.log")
     public static final GraphDatabaseSetting.FileSetting logical_log = new GraphDatabaseSetting.FileSetting( "logical_log", store_dir, true, true);
+    
+    // GCR Settings
+    // TODO: These should be part of a settings class specifically for GCR, and loaded
+    // the same way settings for kernel extensions are loaded.
+    @Description( "The amount of memory to use for the node cache (when using the 'gcr' cache)" )
+    public static final GCRMemoryUsageSetting node_cache_size = new GCRMemoryUsageSetting( "node_cache_size");
+
+    @Description( "The amount of memory to use for the relationship cache (when using the 'gcr' cache)" )
+    public static final GCRMemoryUsageSetting relationship_cache_size = new GCRMemoryUsageSetting( "relationship_cache_size");
+
+    @Description( "The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache)" )
+    @Default( "1.0" )
+    public static final FloatSetting node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
+
+    @Description( "The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache)" )
+    @Default( "1.0" )
+    public static final FloatSetting relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
+
+    @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)" )
+    @Default( "60s" )
+    public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
+    
+    
     
     // Specialized settings
     public static class CacheTypeSetting
@@ -321,5 +325,21 @@ public abstract class GraphDatabaseSettings
                 return TRUE;
             }
         }
+    }
+    
+    public static final class GCRMemoryUsageSetting extends NumberOfBytesSetting implements org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue
+    {
+
+		public GCRMemoryUsageSetting(String name) {
+			super(name);
+		}
+
+		@Override
+		public String getDefaultValue() {
+			long available = Runtime.getRuntime().maxMemory();
+	        long defaultMem = ( available / 4);
+			return ""+defaultMem;
+		}
+    	
     }
 }

@@ -109,14 +109,15 @@ public abstract class GraphDatabaseSetting<T>
             this.max = max;
         }
         
-        protected void rangeCheck(Comparable value)
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+		protected void rangeCheck(Locale locale, Comparable value)
         {
             // Check range
             if (min != null && value.compareTo( min ) < 0)
-                throw new IllegalArgumentException( "Minimum allowed value is:"+min );
+                throw illegalValue(locale, value+"", "Minimum allowed value is: %s", new String[]{min+""} );
 
             if (max != null && value.compareTo( max ) > 0)
-                throw new IllegalArgumentException( "Maximum allowed value is:"+max );
+            	throw illegalValue(locale, value+"", "Maximum allowed value is: %s", new String[]{max+""} );
         }
 
         public T getMin()
@@ -159,7 +160,7 @@ public abstract class GraphDatabaseSetting<T>
                 throw illegalValue( locale, value );
             }
 
-            rangeCheck( val );
+            rangeCheck(locale, val );
         }
 
         @Override
@@ -198,7 +199,7 @@ public abstract class GraphDatabaseSetting<T>
                 throw illegalValue( locale, value );
             }
 
-            rangeCheck( val );
+            rangeCheck(locale, val );
         }
         
         @Override
@@ -237,7 +238,7 @@ public abstract class GraphDatabaseSetting<T>
                 throw illegalValue( locale, value );
             }
 
-            rangeCheck( val );
+            rangeCheck(locale, val );
         }
         
         @Override
@@ -276,7 +277,7 @@ public abstract class GraphDatabaseSetting<T>
                 throw illegalValue( locale, value );
             }
 
-            rangeCheck( val );
+            rangeCheck(locale, val );
         }
         
         @Override
@@ -299,7 +300,7 @@ public abstract class GraphDatabaseSetting<T>
     {
 
         // Regular expression that matches a duration e.g. 10ms or 5s
-        private Pattern timeSpanRegex = Pattern.compile("\\d+(ms|s|m)"); 
+        private final Pattern timeSpanRegex = Pattern.compile("\\d+(ms|s|m)"); 
         
         public TimeSpanSetting( String name )
         {
@@ -382,7 +383,7 @@ public abstract class GraphDatabaseSetting<T>
             return stringValues;
         }
 
-        private Class<ET> backingEnum;
+        private final Class<ET> backingEnum;
         
         public EnumerableSetting(String name, Class<ET> theEnum)
         {
@@ -576,7 +577,7 @@ public abstract class GraphDatabaseSetting<T>
         extends GraphDatabaseSetting<Long>
     {
         // Regular expression that matches a size e.g. 512M or 2G
-        private Pattern sizeRegex = Pattern.compile("\\d+ *[kmgKMG]?");
+        private final Pattern sizeRegex = Pattern.compile("\\d+ *[kmgKMG]?");
     
         public NumberOfBytesSetting( String name )
         {
@@ -686,7 +687,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if(value == null)
-                illegalValue(locale,"");
+                throw illegalValue(locale,"");
             
             try
             {
@@ -694,7 +695,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch ( URISyntaxException e )
             {
-                illegalValue(locale, value);
+                throw illegalValue(locale, value);
             }
         }
         
@@ -729,8 +730,8 @@ public abstract class GraphDatabaseSetting<T>
     //
     
 
-    private String name;
-    private String validationMessage;
+    private final String name;
+    private final String validationMessage;
 
     protected GraphDatabaseSetting( String name, String validationMessage )
     {
@@ -789,14 +790,23 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
-    protected IllegalArgumentException illegalValue(Locale locale, String... args)
+    protected IllegalArgumentException illegalValue(Locale locale, String value, Object... args)
         throws IllegalArgumentException
     {
-        String message = getMessage( locale, validationMessage );
-        Formatter formatter = new Formatter(locale);
-        formatter.format( message, args );
-        return new IllegalArgumentException( formatter.toString() );
+        return illegalValue(locale, value, validationMessage, args);
     }
+    
+    protected IllegalArgumentException illegalValue(Locale locale, String value, String rawMessage, Object [] args)
+            throws IllegalArgumentException
+        {
+            String message = getMessage( locale, rawMessage );
+            String errorMessage = new Formatter(locale).format( message, args ).toString();
+            
+            String settingNameMessage = getMessage( locale, "Invalid value %s for config property '%s': " );
+            String settingMessage = new Formatter(locale).format( settingNameMessage, value == null?"[null]":"'"+value+"'", name() ).toString();
+            
+            return new IllegalArgumentException( settingMessage + errorMessage );
+        }
 
     public static boolean osIsWindows()
     {

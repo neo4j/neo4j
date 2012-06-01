@@ -98,7 +98,7 @@ public class TestConfig {
 	public void shouldNotAllowInvalidValuesInConstructor()
 	{
 		try {
-			Config config = new Config(new HashMap<String,String>(){{
+			new Config(new HashMap<String,String>(){{
 				put(MySettingsWithDefaults.boolSetting.name(), "asd");
 				}}, 
 				MySettingsWithDefaults.class);
