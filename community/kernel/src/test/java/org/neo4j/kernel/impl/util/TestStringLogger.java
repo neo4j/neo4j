@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileReader;
 
 import org.junit.Test;
+import org.neo4j.test.TargetDirectory;
 
 public class TestStringLogger
 {
@@ -43,7 +44,7 @@ public class TestStringLogger
         assertFalse( oldFile.exists() );
         int counter = 0;
         String prefix = "Bogus message ";
-        
+
         // First rotation
         while ( !oldFile.exists() )
         {
@@ -54,7 +55,7 @@ public class TestStringLogger
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + "0" ) );
         assertTrue( lastLineOfFile( oldFile ).contains( prefix + mark1 ) );
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
-        
+
         // Second rotation
         while ( !oldestFile.exists() )
         {
@@ -67,7 +68,7 @@ public class TestStringLogger
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + (mark1+1) ) );
         assertTrue( lastLineOfFile( oldFile ).contains( prefix + mark2 ) );
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
-        
+
         // Third rotation, assert .2 file is now what used to be .1 used to be and
         // .3 doesn't exist
         long previousSize = 0;
@@ -82,6 +83,28 @@ public class TestStringLogger
         assertTrue( lastLineOfFile( oldestFile ).contains( prefix + mark2 ) );
     }
 
+    @Test
+    public void makeSureRotationDoesNotRecurse() throws Exception
+    {
+        final String baseMessage = "base message";
+        File target = TargetDirectory.forTest( TestStringLogger.class ).directory( "recursionTest", true );
+        final StringLogger logger = StringLogger.logger( target.getAbsolutePath(), baseMessage.length() /*rotation threshold*/);
+
+        /*
+         * The trigger that will log more than the threshold during rotation, possibly causing another rotation
+         */
+        Runnable trigger = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                logger.logMessage( baseMessage + " from trigger", true );
+            }
+        };
+        logger.addRotationListener( trigger );
+        logger.logMessage( baseMessage + " from main", true );
+    }
+
     private String firstLineOfFile( File file ) throws Exception
     {
         BufferedReader reader = new BufferedReader( new FileReader( file ) );
@@ -89,7 +112,7 @@ public class TestStringLogger
         reader.close();
         return result;
     }
-    
+
     private String lastLineOfFile( File file ) throws Exception
     {
         BufferedReader reader = new BufferedReader( new FileReader( file ) );

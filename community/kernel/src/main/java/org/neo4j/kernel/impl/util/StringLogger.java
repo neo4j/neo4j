@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,10 +30,9 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
-
-import static org.neo4j.helpers.collection.IteratorUtil.*;
 
 public abstract class StringLogger
 {
@@ -341,9 +342,11 @@ public abstract class StringLogger
 //            }
 //        }
 
+        private volatile boolean doingRotation = false;
+
         private void checkRotation()
         {
-            if ( rotationThreshold != null && file.length() > rotationThreshold.intValue() )
+            if ( rotationThreshold != null && file.length() > rotationThreshold.intValue() && !doingRotation )
             {
                 doRotation();
             }
@@ -351,6 +354,7 @@ public abstract class StringLogger
 
         private void doRotation()
         {
+            doingRotation = true;
             out.close();
             moveAwayFile();
             try
@@ -360,6 +364,10 @@ public abstract class StringLogger
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                doingRotation = false;
             }
         }
 
