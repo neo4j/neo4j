@@ -394,7 +394,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testAll(
-      "start a = NODE(1) match a -[r]-> (b) return r",
+      "start a = NODE(1) match a-[r]->b return r",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True())).
@@ -402,11 +402,20 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def relatedToTheOtherWay() {
-    testAll(
+    testOlderParsers(
       "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", Seq("KNOWS"), Direction.INCOMING, false, True())).
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+  }
+
+  @Test def relatedToTheOtherWay1_8() {
+    testFrom_1_8(
+      "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("b", "a", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, false, True())).
         returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
   }
 
@@ -758,7 +767,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def simplePathExample() {
     testAll(
-      "start a = node(0) match p = ( a-->b ) return a",
+      "start a = node(0) match p = a-->b return a",
       Query.
         start(NodeById("a", 0)).
         namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True()))).
@@ -1138,11 +1147,20 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def supportsHasRelationshipInTheWhereClause() {
-    test_1_6(
+    testAll(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(HasRelationshipTo(Entity("a"), Entity("b"), Direction.OUTGOING, Seq()))
+        returns (ReturnItem(Entity("a"), "a")))
+  }
+
+  @Test def supportsNotHasRelationshipInTheWhereClause() {
+    testAll(
+      """start a=node(0), b=node(1) where not(a-->()) return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(Not(HasRelationship(Entity("a"), Direction.OUTGOING, Seq()))).
         returns (ReturnItem(Entity("a"), "a")))
   }
 
@@ -1182,7 +1200,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Entity("a"), "a")))
   }
 
-  @Test def shouldAcceptRelationshipWithPredicate() {
+  @Ignore @Test def shouldAcceptRelationshipWithPredicate() {
     testFrom_1_7(
       "start a = node(1) match a-[r WHERE r.foo = 'bar']->b return b",
       Query.
@@ -1713,7 +1731,7 @@ create a-[r:REL]->b
     val secondQ = Query.
       relate(
       RelateLink("a", "b", "  UNNAMED1", "X", Direction.OUTGOING),
-      RelateLink("b", "c", "  UNNAMED2", "X", Direction.INCOMING)).
+      RelateLink("c", "b", "  UNNAMED2", "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
@@ -1778,7 +1796,7 @@ create a-[r:REL]->b
   @Test def relate_with_two_rels_to_same_node() {
     val returns = Query.
       updates(RelateAction(
-      RelateLink("x", "root", "r1", "X", Direction.INCOMING),
+      RelateLink("root", "x", "r1", "X", Direction.OUTGOING),
       RelateLink("root", "x", "r2", "Y", Direction.OUTGOING)))
       .returns(ReturnItem(Entity("x"), "x"))
 
@@ -1787,6 +1805,17 @@ create a-[r:REL]->b
     testFrom_1_8(
       "start root=node(0) relate x<-[r1:X]-root-[r2:Y]->x return x",
       q
+    )
+  }
+  @Test def optional_shortest_path() {
+    testFrom_1_8(
+      """start a  = node(1), x = node(2,3)
+         match p = shortestPath(a -[?*]-> x)
+         return *""",
+      Query.
+        start(NodeById("a", 1),NodeById("x", 2,3)).
+        matches(ShortestPath("p", "a", "x", Seq(), Direction.OUTGOING, None, optional = true, single = true, relIterator = None)).
+        returns(AllIdentifiers())
     )
   }
 

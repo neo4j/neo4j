@@ -72,7 +72,7 @@ abstract class Base extends JavaTokenParsers {
 
   def number: Parser[String] = """-?(\d+(\.\d*)?|\d*\.\d+)""".r
 
-  def optParens[U](q: => Parser[U]): Parser[U] = parens(q) | q
+  def optParens[U](q: => Parser[U]): Parser[U] = q | parens(q)
 
   def parens[U](inner: => Parser[U]) =
     ("(" ~> inner <~ ")"
@@ -98,6 +98,8 @@ abstract class Base extends JavaTokenParsers {
   def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => ParameterExpression(x))
 
   override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
+
+  def failure(msg:String, input:Input) = Failure("INNER" + msg, input)
 }
 class NodeNamer {
   var lastNodeNumber = 0

@@ -33,16 +33,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
 
   @Test def badNodeIdentifier() {
     expectError(
-      "START a = node(0) MATCH a-[WORKED_ON]-[30] return a",
-      "expected node identifier")
+      "START a = node(0) MATCH a-[WORKED_ON]-, return a",
+      "expected an expression that is a node")
   }
 
-  //TODO Fix this
-  @Ignore("Revisit when all start tokens are finished")
   @Test def badStart() {
     expectError(
       "starta = node(0) return a",
-      "expected 'START'")
+      "expected START or CREATE")
   }
 
   @Test def functionDoesNotExist() {
@@ -83,18 +81,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       44)
   }
 
-  @Test def extraGTSymbol() {
-    expectSyntaxError(
-      "start p=node(2) match p->[:IS_A]->dude return dude.name",
-      "expected [ or -", 24)
-  }
-
-  @Test def badMatch() {
-    expectSyntaxError(
-      "start p=node(2) match p-[:IS_A]-!dude return dude.name",
-      "expected node identifier", 32)
-  }
-
   @Test def badMatch2() {
     expectSyntaxError(
       "start p=node(2) match p-[:IS_A]>dude return dude.name",
@@ -113,17 +99,10 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "expected relationship information", 25)
   }
 
-  @Ignore
   @Test def badMatch5() {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
-      "`-' expected but `>' found", 24)
-  }
-
-  @Test def badMatch6() {
-    expectSyntaxError(
-      "start p=node(2) match p-(:likes)->dude return dude.name",
-      "expected [ or -", 24)
+      "failed to parse MATCH pattern", 23)
   }
 
   @Test def badMatch7() {
@@ -138,16 +117,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "expected [ or -", 24)
   }
 
-  @Ignore
-  @Test def missingComaBetweenColumns() {
+  @Ignore @Test def missingComaBetweenColumns() {
     expectSyntaxError(
       "start p=node(2) return sum wo.months",
       "Expected comma separated list of returnable values",
       22)
   }
 
-  @Ignore
-  @Test def missingComaBetweenStartNodes() {
+  @Ignore @Test def missingComaBetweenStartNodes() {
     expectSyntaxError(
       "start a=node(0) b=node(1) return a",
       "Expected comma separated list of returnable values",
@@ -193,13 +170,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
       "expected identifier assignment",
       50)
-  }
-
-  @Test def noPredicatesInWhereClause() {
-    expectSyntaxError(
-      "START a=node(0) where return a",
-      "reserved keyword",
-      29)
   }
 
   @Test def functions_and_stuff_have_to_be_renamed_when_sent_through_with() {
