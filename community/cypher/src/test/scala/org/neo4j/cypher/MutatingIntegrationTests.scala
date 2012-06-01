@@ -24,6 +24,7 @@ import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{NotFoundException, Relationship, Node}
+import java.util.HashMap
 
 class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
@@ -383,10 +384,41 @@ return distinct center""")
   }
 
   @Test
+  def create_node_from_map_with_array_value_from_java() {
+    val list = new java.util.ArrayList[String]()
+    list.add("foo")
+    list.add("bar")
+
+    val map = new java.util.HashMap[String, Object]()
+    map.put("arrayProp", list)
+
+    val q = "create a={param} return a.arrayProp"
+    val result =  executeScalar[Array[String]](q, "param" -> map)
+
+    assertStats(parseAndExecute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
+    assert(result === Array("foo","bar"))
+  }
+
+  @Test
   def failed_query_should_not_leave_dangling_transactions() {
     intercept[NotFoundException](parseAndExecute("START left=node(1), right=node(3,4) RELATE left-[r:KNOWS]->right RETURN r"))
 
     assertNull("Did not expect to be in a transaction now", graph.getTxManager.getTransaction)
+  }
+
+  @Test
+  def relate_twice_with_param_map() {
+    createNode()
+    createNode()
+
+    val map1 = Map("name" -> "Anders")
+    val map2 = new HashMap[String, Any]()
+    map2.put("name", "Anders")
+
+    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) relate a-[r:FOO {param}]->b return r", "param" -> map1)
+    val r2 = executeScalar[Relationship]("start a=node(1), b=node(2) relate a-[r:FOO {param}]->b return r", "param" -> map2)
+
+    assert(r1 === r2)
   }
 }
 

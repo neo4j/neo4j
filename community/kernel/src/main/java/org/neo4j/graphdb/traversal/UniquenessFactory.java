@@ -19,7 +19,22 @@
  */
 package org.neo4j.graphdb.traversal;
 
+/**
+ * Factory for {@link UniquenessFilter} filters, it can supply the
+ * created {@link UniquenessFilter} with an optional parameter which is
+ * up to the filter itself to validate and make sense of.
+ */
 public interface UniquenessFactory
 {
+    /**
+     * Creates a new {@link UniquenessFilter} optionally with a parameter
+     * to it, otherwise null if no parameter should be handed to it.
+     * 
+     * @param optionalParameter an optional parameter to control the behavior
+     * of the returned {@link UniquenessFilter}. It's up to each filter implementation
+     * to decide what values are OK and what they mean and the caller of this
+     * method need to know that and pass in the correct parameter type.
+     * @return a new {@link UniquenessFilter} of the type that this factory creates.
+     */
     UniquenessFilter create( Object optionalParameter );
 }

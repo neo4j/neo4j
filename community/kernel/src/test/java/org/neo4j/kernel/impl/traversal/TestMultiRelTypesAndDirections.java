@@ -20,22 +20,23 @@
 package org.neo4j.kernel.impl.traversal;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.Traversal.expanderForTypes;
+import static org.neo4j.kernel.Traversal.traversal;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
 
 public class TestMultiRelTypesAndDirections extends AbstractTestBase
 {
-    private static final RelationshipType ONE = DynamicRelationshipType.withName( "ONE" );
+    private static final RelationshipType ONE = withName( "ONE" );
 
-    @BeforeClass
-    public static void setupGraph()
+    @Before
+    public void setupGraph()
     {
         createGraph( "A ONE B", "B ONE C", "A TWO C" );
     }
@@ -43,18 +44,18 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
     @Test
     public void testCIsReturnedOnDepthTwoDepthFirst()
     {
-        testCIsReturnedOnDepthTwo( Traversal.description().depthFirst() );
+        testCIsReturnedOnDepthTwo( traversal().depthFirst() );
     }
 
     @Test
     public void testCIsReturnedOnDepthTwoBreadthFirst()
     {
-        testCIsReturnedOnDepthTwo( Traversal.description().breadthFirst() );
+        testCIsReturnedOnDepthTwo( traversal().breadthFirst() );
     }
 
     private void testCIsReturnedOnDepthTwo( TraversalDescription description )
     {
-        description = description.relationships(ONE, Direction.OUTGOING);
+        description = description.expand( expanderForTypes( ONE, OUTGOING ) );
         int i = 0;
         for ( Path position : description.traverse( node( "A" ) ) )
         {

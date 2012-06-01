@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -27,8 +27,8 @@ import org.neo4j.kernel.Traversal;
 
 public class DepthZeroTraversalTest extends AbstractTestBase
 {
-    @BeforeClass
-    public static void createTheGraph()
+    @Before
+    public void createTheGraph()
     {
         createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
                 "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );

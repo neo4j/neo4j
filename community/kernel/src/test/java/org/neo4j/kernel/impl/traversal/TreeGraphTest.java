@@ -19,24 +19,26 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.Traversal.postorderBreadthFirst;
+import static org.neo4j.kernel.Traversal.postorderDepthFirst;
+import static org.neo4j.kernel.Traversal.traversal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
 
 public class TreeGraphTest extends AbstractTestBase
 {
@@ -52,8 +54,8 @@ public class TreeGraphTest extends AbstractTestBase
             "1 TO 2", "1 TO 3", "1 TO 4", "2 TO 5", "2 TO 6", "2 TO 7",
             "3 TO 8", "3 TO 9", "3 TO A", "4 TO B", "4 TO C", "4 TO D", };
 
-    @BeforeClass
-    public static void setupGraph()
+    @Before
+    public void setupGraph()
     {
         createGraph( THE_WORLD_AS_WE_KNOWS_IT );
     }
@@ -61,7 +63,7 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void nodesIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = Traversal.description().traverse( node( "1" ) );
+        Traverser traverser = traversal().traverse( node( "1" ) );
         int count = 0;
         for ( Node node : traverser.nodes() )
         {
@@ -75,7 +77,7 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void relationshipsIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = Traversal.description().traverse( node( "1" ) );
+        Traverser traverser = traversal().traverse( node( "1" ) );
         int count = 0;
         for ( Relationship relationship : traverser.relationships() )
         {
@@ -90,7 +92,7 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void pathsIteratorReturnAllNodes() throws Exception
     {
-        Traverser traverser = Traversal.description().traverse( node( "1" ) );
+        Traverser traverser = traversal().traverse( node( "1" ) );
         int count = 0;
         for ( Path path : traverser )
         {
@@ -104,13 +106,12 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void testBreadthFirst() throws Exception
     {
-        Traverser traverser = Traversal.description().breadthFirst().traverse(
-                node( "1" ) );
+        Traverser traverser = traversal().breadthFirst().traverse( node( "1" ) );
         Stack<Set<String>> levels = new Stack<Set<String>>();
-        levels.push( new HashSet<String>( Arrays.asList( "5", "6", "7", "8",
+        levels.push( new HashSet<String>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
-        levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );
-        levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );
+        levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
+        levels.push( new HashSet<String>( asList( "1" ) ) );
         assertLevels( traverser, levels );
     }
 
@@ -118,8 +119,7 @@ public class TreeGraphTest extends AbstractTestBase
     public void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
             throws Exception
     {
-        Traverser traverser = Traversal.description().depthFirst().traverse(
-                node( "1" ) );
+        Traverser traverser = traversal().depthFirst().traverse( node( "1" ) );
         int i = 0;
         for ( Path pos : traverser )
         {
@@ -131,9 +131,7 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = Traversal.description().order(
-                Traversal.postorderDepthFirst() ).traverse(
-                        node( "1" ) );
+        Traverser traverser = traversal().order( postorderDepthFirst() ).traverse( node( "1" ) );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
         for ( Path pos : traverser )
@@ -160,12 +158,11 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = Traversal.description().order(
-                Traversal.postorderBreadthFirst() ).traverse( node( "1" ) );
+        Traverser traverser = traversal().order( postorderBreadthFirst() ).traverse( node( "1" ) );
         Stack<Set<String>> levels = new Stack<Set<String>>();
-        levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );
-        levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );
-        levels.push( new HashSet<String>( Arrays.asList( "5", "6", "7", "8",
+        levels.push( new HashSet<String>( asList( "1" ) ) );
+        levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
+        levels.push( new HashSet<String>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
         assertLevels( traverser, levels );
     }

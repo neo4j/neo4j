@@ -19,59 +19,54 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.io.File;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.junit.After;
+import org.junit.Before;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.*;
 
 public abstract class AbstractTestBase
 {
-    private static final String TARGET_NEODB = "target/neodb";
-    private static GraphDatabaseService graphdb;
+    private static ImpermanentGraphDatabase graphdb;
     private static Map<String, Node> nodes;
 
-    @BeforeClass
-    public static final void beforeSuite()
+    @Before
+    public final void createDb()
     {
-        deleteFileOrDirectory( new File( TARGET_NEODB ) );
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( TARGET_NEODB );
+        graphdb = new ImpermanentGraphDatabase();
     }
 
-    @AfterClass
-    public static final void afterSuite()
+    @After
+    public final void afterSuite()
     {
-        if ( graphdb != null ) graphdb.shutdown();
-        graphdb = null;
-        nodes = null;
+        graphdb.shutdown();
     }
 
     protected static final Node node( String name )
     {
         return nodes.get( name );
-    }
-
-    private static final Node referenceNode()
-    {
-        return graphdb.getReferenceNode();
     }
 
     protected static final Node getNode( long id )
@@ -82,32 +77,6 @@ public abstract class AbstractTestBase
     protected static final Transaction beginTx()
     {
         return graphdb.beginTx();
-    }
-
-    protected static void removeAllNodes( boolean removeReference )
-    {
-        Transaction tx = graphdb.beginTx();
-        try
-        {
-            Node reference = removeReference ? null
-                    : graphdb.getReferenceNode();
-            for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
-            {
-                for ( Relationship rel : node.getRelationships() )
-                {
-                    rel.delete();
-                }
-                if ( !node.equals( reference ) )
-                {
-                    node.delete();
-                }
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     protected static void createGraph( String... description )
@@ -130,7 +99,7 @@ public abstract class AbstractTestBase
         }
     }
 
-    protected Node getNodeWithName( String name )
+    protected static Node getNodeWithName( String name )
     {
         for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
         {
@@ -162,28 +131,7 @@ public abstract class AbstractTestBase
         assertTrue( "Should be empty", current.isEmpty() );
     }
 
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : file.listFiles() )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        else
-        {
-            file.delete();
-        }
-    }
-
-    protected static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation(
-            "name" );
+    protected static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
 
     protected static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION = new Representation<Relationship>()
     {
@@ -292,7 +240,7 @@ public abstract class AbstractTestBase
 
         if ( !expected.isEmpty() )
         {
-            fail( "The exepected elements " + expected + " were not returned. These were: " + encounteredItems );
+            fail( "The exepected elements " + expected + " were not returned. Returned were: " + encounteredItems );
         }
     }
 
@@ -318,22 +266,59 @@ public abstract class AbstractTestBase
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
     }
+    
+    protected static void expectPath( Path path, String pathAsString )
+    {
+        expect( asList( path ), new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION ),
+                pathAsString );
+    }
 
-//    private static String relationshipRepresentation( Relationship relationship )
-//    {
-//        return relationship.getStartNode().getProperty( "name" ) + " "
-//               + relationship.getType().name() + " "
-//               + relationship.getEndNode().getProperty( "name" );
-//    }
-//
-//    private static String nodePathRepresention( Path path )
-//    {
-//        StringBuilder builder = new StringBuilder();
-//        for ( Node node : path.nodes() )
-//        {
-//            builder.append( builder.length() > 0 ? "," : "" );
-//            builder.append( node.getProperty( "name" ) );
-//        }
-//        return builder.toString();
-//    }
+    public static <E> void assertContains( Iterable<E> actual, E... expected )
+    {
+        Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
+        for ( E element : actual )
+        {
+            if ( !expectation.remove( element ) )
+            {
+                fail( "unexpected element <" + element + ">" );
+            }
+        }
+        if ( !expectation.isEmpty() )
+        {
+            fail( "the expected elements <" + expectation
+                  + "> were not contained" );
+        }
+    }
+
+    public static <T> void assertContainsInOrder( Collection<T> collection,
+            T... expectedItems )
+    {
+        String collectionString = join( ", ", collection.toArray() );
+        assertEquals( collectionString, expectedItems.length, collection.size() );
+        Iterator<T> itr = collection.iterator();
+        for ( int i = 0; itr.hasNext(); i++ )
+        {
+            assertEquals( expectedItems[i], itr.next() );
+        }
+    }
+    
+    public static <T> void assertContainsInOrder( Iterable<T> collection,
+            T... expectedItems )
+    {
+        assertContainsInOrder( IteratorUtil.asCollection( collection ), expectedItems );
+    }
+
+    public static <T> String join( String delimiter, T... items )
+    {
+        StringBuffer buffer = new StringBuffer();
+        for ( T item : items )
+        {
+            if ( buffer.length() > 0 )
+            {
+                buffer.append( delimiter );
+            }
+            buffer.append( item.toString() );
+        }
+        return buffer.toString();
+    }
 }

@@ -58,4 +58,10 @@ public interface Traverser extends Iterable<Path>
      * @return the traversal in the form of {@link Path} objects.
      */
     Iterator<Path> iterator();
+    
+    /**
+     * @return the {@link TraversalMetadata} from the last traversal performed,
+     * or being performed by this traverser.
+     */
+    TraversalMetadata metadata();
 }

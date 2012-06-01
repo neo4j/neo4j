@@ -6,10 +6,6 @@ The Traversal Framework
 The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/package-summary.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java.
 Some traversal examples are collected under <<tutorials-java-embedded-traversal>>. 
 
-There is also a more restricted way to perform traversals,
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html#traverse%28org.neo4j.graphdb.Traverser.Order,%20org.neo4j.graphdb.StopEvaluator,%20org.neo4j.graphdb.ReturnableEvaluator,%20java.lang.Object...%29[Node.traverse()]
-is a good starting point to read more about that.
-
 Other options to traverse or query graphs in Neo4j are <<cypher-query-lang,Cypher>> and <<gremlin-plugin,Gremlin>>.
 
 [[tutorial-traversal-concepts]]
@@ -21,7 +17,7 @@ Here follows a short explanation of all different methods that can modify or add
 * _Order_ -- for example depth-first or breadth-first.
 * _Uniqueness_ -- visit nodes (relationships, paths) only once.
 * _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
-* A _starting node_ where the traversal will begin.
+* _Starting nodes_ where the traversal will begin.
 
 ["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
 ----
@@ -74,7 +70,7 @@ See <<tutorial-traversal-java-api>> for more details.
 
 The traversal framework consists of a few main interfaces in addition to +Node+ and +Relationship+: +TraversalDescription+, +Evaluator+, +Traverser+ and +Uniqueness+ are the main ones.
 The +Path+ interface also has a special purpose in traversals, since it is used to represent a position in the graph when evaluating that position.
-Furthermore the +RelationshipExpander+ and +Expander+ interfaces are central to traversals, but users of the API rarely need to implement them.
+Furthermore the +PathExpander+ (replacing +RelationshipExpander+) and +Expander+ interfaces are central to traversals, but users of the API rarely need to implement them.
 There are also a set of interfaces for advanced use, when explicit control over the traversal order is required: +BranchSelector+, +BranchOrderingPolicy+ and +TraversalBranch+.
 
 === TraversalDescription ===
@@ -171,9 +167,9 @@ In the traversal API of Neo4j the use of Paths are twofold.
 Traversers can return their results in the form of the Paths of the visited positions in the graph that are marked for being returned.
 Path objects are also used in the evaluation of positions in the graph, for determining if the traversal should continue from a certain point or not, and whether a certain position should be included in the result set or not.
 
-=== RelationshipExpander ===
+=== PathExpander/RelationshipExpander ===
 
-The traversal framework use RelationshipExpanders to discover the relationships that should be followed from a particular node to further branches in the traversal.
+The traversal framework use PathExpanders (replacing RelationshipExpander) to discover the relationships that should be followed from a particular path to further branches in the traversal.
 
 === Expander ===
 
@@ -184,7 +180,7 @@ The +Expander+ interface is an extension of the +RelationshipExpander+ interface
 The implementation of +TraversalDescription+ uses this to provide methods for defining which relationship types to traverse, this is the usual way a user of the API would define a +RelationshipExpander+ -- by building it internally in the +TraversalDescription+.
 
 All the RelationshipExpanders provided by the Neo4j traversal framework also implement the Expander interface.
-For a user of the traversal API it is easier to implement the RelationshipExpander interface, since it only contains one method -- the method for getting the relationships from a node, the methods that the Expander interface adds are just for building new Expanders.
+For a user of the traversal API it is easier to implement the PathExpander/RelationshipExpander interface, since it only contains one method -- the method for getting the relationships from a path/node, the methods that the Expander interface adds are just for building new Expanders.
 
 :leveloffset: 3
 

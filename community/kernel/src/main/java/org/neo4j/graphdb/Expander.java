@@ -66,19 +66,12 @@ public interface Expander extends RelationshipExpander
     Expander addNodeFilter( Predicate<? super Node> filter );
 
     /**
-     * Add a {@link Relationship} filter.
-     * 
-     * @deprecated because of typo, use {@link Expander#addRelationshipFilter(Predicate)} instead
-     * @param filter filter to use
-     * @return new instance
-     */
-    Expander addRelationsipFilter( Predicate<? super Relationship> filter );
-    
-    /**
       * Add a {@link Relationship} filter.
       * 
       * @param filter filter to use
       * @return new instance
       */	
     Expander addRelationshipFilter( Predicate<? super Relationship> filter );
+    
+    Expander addFilter( Predicate<? super Path> filter );
 }

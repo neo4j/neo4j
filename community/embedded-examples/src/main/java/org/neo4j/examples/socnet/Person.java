@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -198,8 +199,7 @@ public class Person
         // START SNIPPET: getStatusTraversal
         TraversalDescription traversal = Traversal.description().
                 depthFirst().
-                relationships( NEXT ).
-                filter( Traversal.returnAll() );
+                relationships( NEXT );
         // END SNIPPET: getStatusTraversal
 
 
@@ -335,8 +335,8 @@ public class Person
                 .breadthFirst()
                 .relationships( FRIEND )
                 .uniqueness( Uniqueness.NODE_GLOBAL )
-                .prune( Traversal.pruneAfterDepth( depth ) )
-                .filter( Traversal.returnAllButStartNode() );
+                .evaluator( Evaluators.toDepth( depth ) )
+                .evaluator( Evaluators.excludeStartPosition() );
 
         return createPersonsFromPath( travDesc.traverse( underlyingNode ) );
     }

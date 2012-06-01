@@ -1960,4 +1960,40 @@ RETURN x0.name?
 
     assert(result === List(Map("sqrt(12.96)"->3.6)))
   }
+
+  @Test def maths_inside_aggregation() {
+    val andres = createNode("name"->"Andres")
+    val michael = createNode("name"->"Michael")
+    val peter = createNode("name"->"Peter")
+    val bread = createNode("type"->"Bread")
+    val veg = createNode("type"->"Veggies")
+    val meat = createNode("type"->"Meat")
+
+    relate(andres, bread, "ATE", Map("times"->10))
+    relate(andres, veg, "ATE", Map("times"->8))
+
+    relate(michael, veg, "ATE", Map("times"->4))
+    relate(michael, bread, "ATE", Map("times"->6))
+    relate(michael, meat, "ATE", Map("times"->9))
+
+    relate(peter, veg, "ATE", Map("times"->7))
+    relate(peter, bread, "ATE", Map("times"->7))
+    relate(peter, meat, "ATE", Map("times"->4))
+
+    val result = parseAndExecute(
+      """    start me=node(1)
+    match me-[r1:ATE]->food<-[r2:ATE]-you
+
+    with me,count(distinct r1) as H1,count(distinct r2) as H2,you
+    match me-[r1:ATE]->food<-[r2:ATE]-you
+
+    return me,you,sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2))""").dumpToString()
+
+    println(result)
+  }
+
+  @Test def zero_matching_subgraphs_yield_correct_count_star() {
+    val result = parseAndExecute("start n=node(*) where 1 = 0 return count(*)").toList
+    assert(List(Map("count(*)" -> 0)) === result)
+  }
 }

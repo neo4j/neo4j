@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.traversal;
 import static org.neo4j.graphdb.traversal.Evaluation.EXCLUDE_AND_CONTINUE;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_PRUNE;
+import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.Evaluators.lastRelationshipTypeIs;
-import static org.neo4j.graphdb.traversal.Evaluators.returnWhereEndNodeIs;
 import static org.neo4j.kernel.Traversal.description;
+import static org.neo4j.kernel.Traversal.traversal;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,8 +40,8 @@ public class TestEvaluators extends AbstractTestBase
         A,B,C;
     }
     
-    @BeforeClass
-    public static void createGraph()
+    @Before
+    public void createGraph()
     {
         /*
          * (a)--[A]->(b)--[B]-->(c)--[B]-->(d)--[C]-->(e)--[A]-->(j)
@@ -59,11 +60,11 @@ public class TestEvaluators extends AbstractTestBase
     public void lastRelationshipTypeEvaluator() throws Exception
     {
         Node a = getNodeWithName( "a" );
-        expectPaths( description().evaluator( lastRelationshipTypeIs(
+        expectPaths( traversal().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_PRUNE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h" );
 
-        expectPaths( description().evaluator( lastRelationshipTypeIs(
+        expectPaths( traversal().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_CONTINUE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h", "a,b,h,i,k" );
     }
@@ -76,19 +77,19 @@ public class TestEvaluators extends AbstractTestBase
         Node h = getNodeWithName( "h" );
         Node g = getNodeWithName( "g" );
         
-        expectPaths( description().evaluator( returnWhereEndNodeIs( c, h, g ) ).traverse( a ),
+        expectPaths( description().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
                 "a,b,c", "a,b,h", "a,f,g" );
-        expectPaths( description().evaluator( returnWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
+        expectPaths( description().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
     }
     
     @Test
     public void depths() throws Exception
     {
         Node a = getNodeWithName( "a" );
-        expectPaths( description().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
-        expectPaths( description().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
+        expectPaths( traversal().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
+        expectPaths( traversal().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
                 "a,b,h", "a,b,h,i", "a,b,h,i,k", "a,b,c", "a,b,c,d", "a,b,c,d,e", "a,b,c,d,e,j" );
-        expectPaths( description().evaluator( Evaluators.toDepth( 2 ) ).traverse( a ), "a", "a,b", "a,b,c",
+        expectPaths( traversal().evaluator( Evaluators.toDepth( 2 ) ).traverse( a ), "a", "a,b", "a,b,c",
                 "a,b,h", "a,f", "a,f,g" );
     }
 }

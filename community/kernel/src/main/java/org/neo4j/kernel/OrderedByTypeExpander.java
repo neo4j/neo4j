@@ -26,8 +26,10 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.NestingIterator;
@@ -69,8 +71,9 @@ public final class OrderedByTypeExpander extends
     }
 
     @Override
-    Iterator<Relationship> doExpand( final Node start )
+    Iterator<Relationship> doExpand( final Path path, BranchState state )
     {
+        final Node node = path.endNode();
         return new NestingIterator<Relationship, Pair<RelationshipType, Direction>>(
                 orderedTypes.iterator() )
         {
@@ -80,8 +83,8 @@ public final class OrderedByTypeExpander extends
             {
                 RelationshipType type = entry.first();
                 Direction dir = entry.other();
-                return ( ( dir == Direction.BOTH ) ? start.getRelationships( type ) :
-                        start.getRelationships( type, dir ) ).iterator();
+                return ( ( dir == Direction.BOTH ) ? node.getRelationships( type ) :
+                        node.getRelationships( type, dir ) ).iterator();
             }
         };
     }

@@ -37,7 +37,7 @@ trait UpdateAction {
   def filter(f: Expression => Boolean): Seq[Expression]
 }
 
-trait GraphElementPropertyFunctions {
+trait GraphElementPropertyFunctions extends IterableSupport {
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
@@ -49,7 +49,7 @@ trait GraphElementPropertyFunctions {
 
   def rewrite(props: Map[String, Expression], f: (Expression) => Expression): Map[String, Expression] = props.map{ case (k,v) => k->v.rewrite(f) }
 
-  private def getMapFromExpression(v: Any): Map[String, Any] = v match {
+  def getMapFromExpression(v: Any): Map[String, Any] = v match {
     case m: collection.Map[String, Any] => m.toMap
     case m: JavaMap[String, Any] => m.asScala.toMap
     case x => throw new CypherTypeException("Don't know how to extract parameters from this type: " + x.getClass.getName)
@@ -71,8 +71,8 @@ trait GraphElementPropertyFunctions {
     state.propertySet.increase()
   }
 
-  def makeValueNeoSafe(a: Any): Any = if (a.isInstanceOf[Traversable[_]]) {
-    transformTraversableToArray(a)
+  def makeValueNeoSafe(a: Any): Any = if (isCollection(a)) {
+    transformTraversableToArray(makeTraversable(a))
   } else {
     a
   }

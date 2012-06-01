@@ -21,32 +21,40 @@ package org.neo4j.kernel.impl.traversal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
+import static org.neo4j.kernel.Traversal.traversal;
 
-import java.util.Iterator;
-
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Uniqueness;
 
 public class TestPath extends AbstractTestBase
 {
-    @BeforeClass
-    public static void setup()
+    private static Node a,b,c,d,e;
+    
+    @Before
+    public void setup()
     {
         createGraph( "A TO B", "B TO C", "C TO D", "D TO E" );
+        a = getNodeWithName( "A" );
+        b = getNodeWithName( "B" );
+        c = getNodeWithName( "C" );
+        d = getNodeWithName( "D" );
+        e = getNodeWithName( "E" );
     }
     
     @Test
     public void testPathIterator()
     {
-        Path path = Traversal.description().evaluator( Evaluators.atDepth( 4 ) ).traverse(
-                node( "A" ) ).iterator().next();
+        Path path = traversal().evaluator( atDepth( 4 ) ).traverse( node( "A" ) ).iterator().next();
         
         assertPathIsCorrect( path );
     }
@@ -67,31 +75,67 @@ public class TestPath extends AbstractTestBase
         assertEquals( e, path.endNode() );
         assertEquals( to4, path.lastRelationship() );
         
-        Iterator<PropertyContainer> pathEntities = path.iterator();
-        assertEquals( a, pathEntities.next() );
-        assertEquals( to1, pathEntities.next() );
-        assertEquals( b, pathEntities.next() );
-        assertEquals( to2, pathEntities.next() );
-        assertEquals( c, pathEntities.next() );
-        assertEquals( to3, pathEntities.next() );
-        assertEquals( d, pathEntities.next() );
-        assertEquals( to4, pathEntities.next() );
-        assertEquals( e, pathEntities.next() );
-        assertFalse( pathEntities.hasNext() );
+        assertContainsInOrder( path, a, to1, b, to2, c, to3, d, to4, e );
+        assertContainsInOrder( path.nodes(), a, b, c, d, e );
+        assertContainsInOrder( path.relationships(), to1, to2, to3, to4 );
+        assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
+        assertContainsInOrder( path.reverseRelationships(), to4, to3, to2, to1 );
+    }
+    
+    @Test
+    public void reverseNodes() throws Exception
+    {
+        Path path = first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        assertContains( path.reverseNodes(), a );
         
-        Iterator<Node> nodes = path.nodes().iterator();
-        assertEquals( a, nodes.next() );
-        assertEquals( b, nodes.next() );
-        assertEquals( c, nodes.next() );
-        assertEquals( d, nodes.next() );
-        assertEquals( e, nodes.next() );
-        assertFalse( nodes.hasNext() );
+        path = first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
+    }
+
+    @Test
+    public void reverseRelationships() throws Exception
+    {
+        Path path = first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        assertFalse( path.reverseRelationships().iterator().hasNext() );
         
-        Iterator<Relationship> relationships = path.relationships().iterator();
-        assertEquals( to1, relationships.next() );
-        assertEquals( to2, relationships.next() );
-        assertEquals( to3, relationships.next() );
-        assertEquals( to4, relationships.next() );
-        assertFalse( relationships.hasNext() );
+        path = first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        Node[] expectedNodes = new Node[] { e, d, c, b, a };
+        int index = 0;
+        for ( Relationship rel : path.reverseRelationships() )
+            assertEquals( "For index " + index, expectedNodes[index++], rel.getEndNode() );
+        assertEquals( 4, index );
+    }
+    
+    @Test
+    public void testBidirectionalPath() throws Exception
+    {
+        TraversalDescription side = traversal().uniqueness( Uniqueness.NODE_PATH );
+        BidirectionalTraversalDescription bidirectional = bidirectionalTraversal().mirroredSides( side );
+        Path bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        assertPathIsCorrect( bidirectionalPath );
+        
+        assertEquals( a, first( bidirectional.traverse( a, e ) ).startNode() );
+        
+        // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
+        // does cache the start node if not already cached, so just make sure they to it properly.
+        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath.relationships();
+        assertEquals( a, bidirectionalPath.startNode() );
+
+        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath.nodes();
+        assertEquals( a, bidirectionalPath.startNode() );
+
+        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath.reverseRelationships();
+        assertEquals( a, bidirectionalPath.startNode() );
+
+        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath.reverseNodes();
+        assertEquals( a, bidirectionalPath.startNode() );
+
+        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath.iterator();
+        assertEquals( a, bidirectionalPath.startNode() );
     }
 }

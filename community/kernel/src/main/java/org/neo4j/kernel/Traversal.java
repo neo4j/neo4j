@@ -25,48 +25,38 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.InitialStateFactory;
+import org.neo4j.graphdb.traversal.BranchCollisionDetector;
+import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.graphdb.traversal.UniquenessFactory;
+import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.FinalTraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
- * method {@link #description()} for creating a new
+ * method {@link #traversal()} for creating a new
  * {@link TraversalDescription}, methods for creating new
  * {@link TraversalBranch} instances and more.
  */
 public class Traversal
 {
-    private static final Predicate<Path> RETURN_ALL = new Predicate<Path>()
-    {
-        public boolean accept( Path item )
-        {
-            return true;
-        }
-    };
-    private static final Predicate<Path> RETURN_ALL_BUT_START_NODE = new Predicate<Path>()
-    {
-        public boolean accept( Path item )
-        {
-            return item.length() > 0;
-        }
-    };
-
     /**
      * Creates a new {@link TraversalDescription} with default value for
      * everything so that it's OK to call
      * {@link TraversalDescription#traverse(org.neo4j.graphdb.Node)} without
      * modification. But it isn't a very useful traversal, instead you should
-     * add rules and behaviours to it before traversing.
+     * add rules and behaviors to it before traversing.
      *
      * @return a new {@link TraversalDescription} with default values.
      */
@@ -75,6 +65,71 @@ public class Traversal
         return new TraversalDescriptionImpl();
     }
 
+    /**
+     * More convenient name than {@link #description()} when using static imports.
+     * Does the same thing.
+     * 
+     * @see #description()
+     */
+    public static TraversalDescription traversal()
+    {
+        return new TraversalDescriptionImpl();
+    }
+    
+    public static TraversalDescription traversal( UniquenessFactory uniqueness )
+    {
+        return new TraversalDescriptionImpl().uniqueness( uniqueness );
+    }
+    
+    public static TraversalDescription traversal( UniquenessFactory uniqueness, Object optionalUniquenessParameter )
+    {
+        return new TraversalDescriptionImpl().uniqueness( uniqueness, optionalUniquenessParameter );
+    }
+    
+    public static BidirectionalTraversalDescription bidirectionalTraversal()
+    {
+        return new BidirectionalTraversalDescriptionImpl();
+    }
+    
+    @SuppressWarnings( "rawtypes" )
+    public static final BranchState NO_BRANCH_STATE = new BranchState()
+    {
+        @Override
+        public Object getState()
+        {
+            throw new UnsupportedOperationException( "Branch state disabled, pass in an initial state to enable it" );
+        }
+        
+        @Override
+        public void setState( Object state )
+        {
+            throw new UnsupportedOperationException( "Branch state disabled, pass in an initial state to enable it" );
+        }
+    };
+    
+    public static <STATE> BranchState<STATE> noBranchState()
+    {
+        return NO_BRANCH_STATE;
+    }
+    
+    /**
+     * {@link InitialStateFactory} which always returns the supplied {@code initialState}.
+     * @param initialState the initial state for a traversal branch.
+     * @return an {@link InitialStateFactory} which always will return the supplied
+     * {@code initialState}.
+     */
+    public static <STATE> InitialStateFactory<STATE> initialState( final STATE initialState )
+    {
+        return new InitialStateFactory<STATE>()
+        {
+            @Override
+            public STATE initialState( Path branch )
+            {
+                return initialState;
+            }
+        };
+    }
+    
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with {@code type} and {@code direction}.
@@ -85,6 +140,20 @@ public class Traversal
      */
     public static Expander expanderForTypes( RelationshipType type,
             Direction dir )
+    {
+        return StandardExpander.create( type, dir );
+    }
+    
+    /**
+     * Creates a new {@link PathExpander} which is set to expand
+     * relationships with {@code type} and {@code direction}.
+     *
+     * @param type the {@link RelationshipType} to expand.
+     * @param dir the {@link Direction} to expand.
+     * @return a new {@link PathExpander}.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type, Direction dir )
     {
         return StandardExpander.create( type, dir );
     }
@@ -102,6 +171,19 @@ public class Traversal
     }
 
     /**
+     * Creates a new {@link PathExpander} which is set to expand
+     * relationships with {@code type} in any direction.
+     *
+     * @param type the {@link RelationshipType} to expand.
+     * @return a new {@link PathExpander}.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type )
+    {
+        return StandardExpander.create( type, Direction.BOTH );
+    }
+    
+    /**
      * Returns an empty {@link Expander} which, if not modified, will expand
      * all relationships when asked to expand a {@link Node}. Criterias
      * can be added to narrow the {@link Expansion}.
@@ -113,6 +195,19 @@ public class Traversal
         return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
     }
 
+    /**
+     * Returns an empty {@link PathExpander} which, if not modified, will expand
+     * all relationships when asked to expand a {@link Node}. Criterias
+     * can be added to narrow the {@link Expansion}.
+     * @return an empty {@link PathExpander} which, if not modified, will expand
+     * all relationship for {@link Path}s.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> emptyPathExpander()
+    {
+        return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
+    }
+    
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with two different types and directions.
@@ -129,6 +224,23 @@ public class Traversal
         return StandardExpander.create( type1, dir1, type2, dir2 );
     }
 
+    /**
+     * Creates a new {@link PathExpander} which is set to expand
+     * relationships with two different types and directions.
+     *
+     * @param type1 a {@link RelationshipType} to expand.
+     * @param dir1 a {@link Direction} to expand.
+     * @param type2 another {@link RelationshipType} to expand.
+     * @param dir2 another {@link Direction} to expand.
+     * @return a new {@link PathExpander}.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
+            Direction dir1, RelationshipType type2, Direction dir2 )
+    {
+        return StandardExpander.create( type1, dir1, type2, dir2 );
+    }
+    
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with multiple types and directions.
@@ -148,6 +260,25 @@ public class Traversal
     }
 
     /**
+     * Creates a new {@link PathExpander} which is set to expand
+     * relationships with multiple types and directions.
+     *
+     * @param type1 a {@link RelationshipType} to expand.
+     * @param dir1 a {@link Direction} to expand.
+     * @param type2 another {@link RelationshipType} to expand.
+     * @param dir2 another {@link Direction} to expand.
+     * @param more additional pairs or type/direction to expand.
+     * @return a new {@link PathExpander}.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
+            Direction dir1, RelationshipType type2, Direction dir2,
+            Object... more )
+    {
+        return StandardExpander.create( type1, dir1, type2, dir2, more );
+    }
+    
+    /**
      * Returns a {@link RelationshipExpander} which expands relationships
      * of all types and directions.
      * @return a relationship expander which expands all relationships.
@@ -159,6 +290,16 @@ public class Traversal
 
     /**
      * Returns a {@link RelationshipExpander} which expands relationships
+     * of all types and directions.
+     * @return a relationship expander which expands all relationships.
+     */
+    public static <STATE> PathExpander<STATE> pathExpanderForAllTypes()
+    {
+        return pathExpanderForAllTypes( Direction.BOTH );
+    }
+    
+    /**
+     * Returns a {@link RelationshipExpander} which expands relationships
      * of all types in the given {@code direction}.
      * @return a relationship expander which expands all relationships in
      * the given {@code direction}.
@@ -167,7 +308,28 @@ public class Traversal
     {
         return StandardExpander.create( direction );
     }
-
+    
+    /**
+     * Returns a {@link PathExpander} which expands relationships
+     * of all types in the given {@code direction}.
+     * @return a path expander which expands all relationships in
+     * the given {@code direction}.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <STATE> PathExpander<STATE> pathExpanderForAllTypes( Direction direction )
+    {
+        return StandardExpander.create( direction );
+    }
+    
+    public static Expander expander( PathExpander expander )
+    {
+        if ( expander instanceof Expander )
+        {
+            return (Expander) expander;
+        }
+        return StandardExpander.wrap( expander );
+    }
+    
     /**
      * Returns a {@link RelationshipExpander} wrapped as an {@link Expander}.
      * @param expander {@link RelationshipExpander} to wrap.
@@ -184,7 +346,7 @@ public class Traversal
 
     /**
      * Combines two {@link TraversalBranch}s with a common
-     * {@link TraversalBranch#node() head node} in order to obtain an
+     * {@link TraversalBranch#endNode() head node} in order to obtain an
      * {@link TraversalBranch} representing a path from the start node of the
      * <code>source</code> {@link TraversalBranch} to the start node of the
      * <code>target</code> {@link TraversalBranch}. The resulting
@@ -194,7 +356,7 @@ public class Traversal
      *
      * @param source the {@link TraversalBranch} where the resulting path starts
      * @param target the {@link TraversalBranch} where the resulting path ends
-     * @throws IllegalArgumentException if the {@link TraversalBranch#node()
+     * @throws IllegalArgumentException if the {@link TraversalBranch#endNode()
      *             head nodes} of the supplied {@link TraversalBranch}s does not
      *             match
      * @return an {@link TraversalBranch} that represents the path from the
@@ -204,12 +366,12 @@ public class Traversal
     public static TraversalBranch combineSourcePaths( TraversalBranch source,
             TraversalBranch target )
     {
-        if ( !source.node().equals( target.node() ) )
+        if ( !source.endNode().equals( target.endNode() ) )
         {
             throw new IllegalArgumentException(
                     "The nodes of the head and tail must match" );
         }
-        Path headPath = source.position(), tailPath = target.position();
+        Path headPath = source, tailPath = target;
         Relationship[] relationships = new Relationship[headPath.length()
                                                         + tailPath.length()];
         Iterator<Relationship> iter = headPath.relationships().iterator();
@@ -223,75 +385,6 @@ public class Traversal
             relationships[i] = iter.next();
         }
         return new FinalTraversalBranch( tailPath.startNode(), relationships );
-    }
-
-    /**
-     * A {@link PruneEvaluator} which prunes everything beyond {@code depth}.
-     * @param depth the depth to prune beyond (after).
-     * @return a {@link PruneEvaluator} which prunes everything after
-     * {@code depth}.
-     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
-     * is {@link Evaluators#toDepth(int)}.
-     */
-    public static PruneEvaluator pruneAfterDepth( final int depth )
-    {
-        return new PruneEvaluator()
-        {
-            public boolean pruneAfter( Path position )
-            {
-                return position.length() >= depth;
-            }
-        };
-    }
-
-    /**
-     * A traversal return filter which returns all {@link Path}s it encounters.
-     *
-     * @return a return filter which returns everything.
-     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
-     * is {@link Evaluators#all()}.
-     */
-    public static Predicate<Path> returnAll()
-    {
-        return RETURN_ALL;
-    }
-
-    /**
-     * Returns a filter which accepts items accepted by at least one of the
-     * supplied filters.
-     *
-     * @param filters to group together.
-     * @return a {@link Predicate} which accepts if any of the filters accepts.
-     */
-    public static Predicate<Path> returnAcceptedByAny( final Predicate<Path>... filters )
-    {
-        return new Predicate<Path>()
-        {
-            public boolean accept( Path item )
-            {
-                for ( Predicate<Path> filter : filters )
-                {
-                    if ( filter.accept( item ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
-    /**
-     * A traversal return filter which returns all {@link Path}s except the
-     * position of the start node.
-     *
-     * @return a return filter which returns everything except the start node.
-     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
-     * is {@link Evaluators#excludeStartPosition()}.
-     */
-    public static Predicate<Path> returnAllButStartNode()
-    {
-        return RETURN_ALL_BUT_START_NODE;
     }
 
     /**
@@ -347,6 +440,21 @@ public class Traversal
     {
         return CommonBranchOrdering.POSTORDER_BREADTH_FIRST;
     }
+    
+    public static SideSelectorPolicy alternatingSelectorOrdering()
+    {
+        return SideSelectorPolicies.ALTERNATING;
+    }
+    
+    public static SideSelectorPolicy levelSelectorOrdering()
+    {
+        return SideSelectorPolicies.LEVEL;
+    }
+    
+    public static BranchCollisionDetector shortestPathsCollisionDetector( int maxDepth )
+    {
+        return new ShortestPathsBranchCollisionDetector( Evaluators.toDepth( maxDepth ) );
+    }
 
     /**
      * Provides hooks to help build a string representation of a {@link Path}.
@@ -375,7 +483,7 @@ public class Traversal
         String relationshipRepresentation( T path, Node from,
                 Relationship relationship );
     }
-
+    
     /**
      * The default {@link PathDescriptor} used in common toString()
      * representations in classes implementing {@link Path}.
@@ -485,36 +593,9 @@ public class Traversal
             }
         } );
     }
-
-    public static Predicate<Path> returnWhereLastRelationshipTypeIs(
-            final RelationshipType firstRelationshipType,
-            final RelationshipType... relationshipTypes )
+    
+    public static PathDescription path()
     {
-        return new Predicate<Path>()
-        {
-            public boolean accept( Path p )
-            {
-                Relationship lastRel = p.lastRelationship();
-                if ( lastRel == null )
-                {
-                    return false;
-                }
-
-                if ( lastRel.isType( firstRelationshipType ) )
-                {
-                    return true;
-                }
-
-                for ( RelationshipType currentType : relationshipTypes )
-                {
-                    if ( lastRel.isType( currentType ) )
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        };
+        return new PathDescription();
     }
 }

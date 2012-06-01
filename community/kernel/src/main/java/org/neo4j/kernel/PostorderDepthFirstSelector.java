@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder depth first pattern,
@@ -29,13 +31,15 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 class PostorderDepthFirstSelector implements BranchSelector
 {
     private TraversalBranch current;
+    private final PathExpander expander;
     
-    PostorderDepthFirstSelector( TraversalBranch startSource )
+    PostorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
     {
         this.current = startSource;
+        this.expander = expander;
     }
     
-    public TraversalBranch next()
+    public TraversalBranch next( TraversalContext metadata )
     {
         TraversalBranch result = null;
         while ( result == null )
@@ -45,7 +49,7 @@ class PostorderDepthFirstSelector implements BranchSelector
                 return null;
             }
             
-            TraversalBranch next = current.next();
+            TraversalBranch next = current.next( expander, metadata );
             if ( next != null )
             {
                 current = next;

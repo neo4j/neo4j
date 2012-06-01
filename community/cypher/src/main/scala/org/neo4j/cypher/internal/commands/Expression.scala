@@ -129,7 +129,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-  val identifier = Identifier("%s %s %s".format(left.identifier.name, operand, right.identifier.name), ScalarType())
+  val identifier = Identifier("%s %s %s".format(left.identifier.name, operand, right.identifier.name), NumberType())
   def operand: String
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
     throw new CypherTypeException("Don't know how to " + verb + " `" + name(bVal) + "` with `" + name(aVal) + "`")

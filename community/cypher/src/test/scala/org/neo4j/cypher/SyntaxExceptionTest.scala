@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.{Test}
 
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
@@ -72,12 +72,10 @@ class SyntaxExceptionTest extends JUnitSuite {
       "Non-mutating queries must return data")
   }
 
-  //TODO Fix this
-  @Ignore("Revisit when all start tokens are finished")
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",
-      "expected 'START'")
+      "expected START or CREATE")
   }
 
   @Test def shouldComplainAboutWholeNumbers() {
@@ -89,13 +87,13 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def matchWithoutIdentifierHasToHaveParenthesis() {
     expectError(
       "start a = node(0) match a--b, --> a return a",
-      "expected identifier")
+      "expected an expression that is a node")
   }
 
   @Test def matchWithoutIdentifierHasToHaveParenthesis2() {
     expectError(
       "start a = node(0) match (a) -->, a-->b return a",
-      "expected node identifier")
+      "expected an expression that is a node")
   }
 
 
@@ -170,12 +168,6 @@ class SyntaxExceptionTest extends JUnitSuite {
     expectError(
       "start a=node(0) return foo(a)",
       "unknown function")
-  }
-
-  @Test def nodeParenthesisMustBeClosed() {
-    expectError(
-      "start s=node(1) match s-->(x return x",
-      "Unclosed parenthesis")
   }
 
   @Test def handlesMultilineQueries() {

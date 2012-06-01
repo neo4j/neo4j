@@ -20,7 +20,7 @@
 package org.neo4j.shell.kernel.apps;
 
 import static java.lang.Integer.parseInt;
-import static org.neo4j.kernel.Traversal.pruneAfterDepth;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
 
 import java.rmi.RemoteException;
@@ -144,7 +144,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
         String depthLimit = parser.options().get( "d" );
         if ( depthLimit != null )
         {
-            description = description.prune( pruneAfterDepth( parseInt( depthLimit ) ) );
+            description = description.evaluator( toDepth( parseInt( depthLimit ) ) );
         }
         
         // Custom evaluator

@@ -23,8 +23,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder breadth first
@@ -36,28 +38,30 @@ class PostorderBreadthFirstSelector implements BranchSelector
 {
     private Iterator<TraversalBranch> sourceIterator;
     private TraversalBranch current;
+    private final PathExpander expander;
     
-    PostorderBreadthFirstSelector( TraversalBranch startSource )
+    PostorderBreadthFirstSelector( TraversalBranch startSource, PathExpander expander )
     {
         this.current = startSource;
+        this.expander = expander;
     }
 
-    public TraversalBranch next()
+    public TraversalBranch next( TraversalContext metadata )
     {
         if ( sourceIterator == null )
         {
-            sourceIterator = gatherSourceIterator();
+            sourceIterator = gatherSourceIterator( metadata );
         }
         return sourceIterator.hasNext() ? sourceIterator.next() : null;
     }
 
-    private Iterator<TraversalBranch> gatherSourceIterator()
+    private Iterator<TraversalBranch> gatherSourceIterator( TraversalContext metadata )
     {
         LinkedList<TraversalBranch> queue = new LinkedList<TraversalBranch>();
-        queue.add( current.next() );
+        queue.add( current.next( expander, metadata ) );
         while ( true )
         {
-            List<TraversalBranch> level = gatherOneLevel( queue );
+            List<TraversalBranch> level = gatherOneLevel( queue, metadata );
             if ( level.isEmpty() )
             {
                 break;
@@ -68,7 +72,7 @@ class PostorderBreadthFirstSelector implements BranchSelector
     }
 
     private List<TraversalBranch> gatherOneLevel(
-            List<TraversalBranch> queue )
+            List<TraversalBranch> queue, TraversalContext metadata )
     {
         List<TraversalBranch> level = new LinkedList<TraversalBranch>();
         Integer depth = null;
@@ -76,16 +80,16 @@ class PostorderBreadthFirstSelector implements BranchSelector
         {
             if ( depth == null )
             {
-                depth = source.depth();
+                depth = source.length();
             }
-            else if ( source.depth() != depth )
+            else if ( source.length() != depth )
             {
                 break;
             }
             
             while ( true )
             {
-                TraversalBranch next = source.next();
+                TraversalBranch next = source.next( expander, metadata );
                 if ( next == null )
                 {
                     break;

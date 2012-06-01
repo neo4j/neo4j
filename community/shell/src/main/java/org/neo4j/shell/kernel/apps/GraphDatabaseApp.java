@@ -37,11 +37,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
@@ -693,7 +694,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return matches.isEmpty() ? null : matches;
     }
     
-    protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
+    protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
             Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
@@ -706,10 +707,10 @@ public abstract class GraphDatabaseApp extends AbstractApp
             expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return expander;
+        return (PathExpander) expander;
     }
     
-    protected static RelationshipExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
+    protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
             Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
@@ -721,19 +722,19 @@ public abstract class GraphDatabaseApp extends AbstractApp
             expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
-        return expander;
+        return (PathExpander) expander;
     }
-
-    private static final RelationshipExpander EMPTY_EXPANDER = new RelationshipExpander()
+    
+    private static final PathExpander EMPTY_EXPANDER = new PathExpander()
     {
         @Override
-        public RelationshipExpander reversed()
+        public PathExpander reverse()
         {
             return this;
         }
         
         @Override
-        public Iterable<Relationship> expand( Node node )
+        public Iterable<Relationship> expand( Path path, BranchState state )
         {
             return Collections.emptyList();
         }

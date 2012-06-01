@@ -61,13 +61,24 @@ public interface Path extends Iterable<PropertyContainer>
 
     /**
      * Returns all the relationships in between the nodes which this path
-     * consists of.
+     * consists of. For a path with {@link #length()} 0 this will be an
+     * empty {@link Iterable}.
      * @return the relationships in this path.
      */
     Iterable<Relationship> relationships();
 
     /**
-     * Returns all the nodes in this path. The first node is the same as
+     * Returns all the relationships in between the nodes which this path
+     * consists of in reverse order, i.e. starting from the {@link #lastRelationship()}
+     * going backwards towards the first relationship in the path.
+     * For a path with {@link #length()} 0 this will be an empty {@link Iterable}.
+     * @return the relationships in this path in reverse order.
+     */
+    Iterable<Relationship> reverseRelationships();
+    
+    /**
+     * Returns all the nodes in this path starting from the start node going
+     * forward towards the end node. The first node is the same as
      * {@link #startNode()} and the last node is the same as {@link #endNode()}.
      * In between those nodes there can be an arbitrary number of nodes. The
      * shortest path possible is just one node, where also the the start node is
@@ -76,7 +87,20 @@ public interface Path extends Iterable<PropertyContainer>
      * @return the nodes in this path.
      */
     Iterable<Node> nodes();
-
+    
+    /**
+     * Returns all the nodes in this path in reversed order, i.e. starting from the
+     * end node going backwards instead of from the start node going forwards.
+     * The first node is the same as {@link #endNode()} and the last node is the
+     * same as {@link #startNode()}. In between those nodes there can be an arbitrary
+     * number of nodes. The shortest path possible is just one node, where also the
+     * the start node is the same as the end node.
+     * 
+     * @return the nodes in this path starting from the end node going backwards
+     * towards the start node.
+     */
+    Iterable<Node> reverseNodes();
+    
     /**
      * Returns the length of this path. That is the number of relationships
      * (which is the same as the number of nodes minus one). The shortest path
