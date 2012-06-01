@@ -31,7 +31,7 @@ class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
   def runThroughPipeAndGetPath(a: Node, b: Node): Traversable[Path] = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
-    val pipe = new AllShortestPathsPipe(source, ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), true, false, None))
+    val pipe = new ShortestPathPipe(source, ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = false, relIterator = None))
     pipe.createResults(QueryState()).map(m => m("p").asInstanceOf[Path])
   }
 

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.ShortestPath
-import org.neo4j.cypher.internal.pipes.{SingleShortestPathPipe, AllShortestPathsPipe, Pipe}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import collection.Seq
+import org.neo4j.cypher.internal.pipes.{ShortestPathPipe, Pipe}
 
 class ShortestPathBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -32,10 +32,7 @@ class ShortestPathBuilder extends PlanBuilder {
     val item = q.patterns.filter(yesOrNo(p, _)).head
     val shortestPath = item.token.asInstanceOf[ShortestPath]
 
-    val pipe = if (shortestPath.single)
-      new SingleShortestPathPipe(p, shortestPath)
-    else
-      new AllShortestPathsPipe(p, shortestPath)
+    val pipe = new ShortestPathPipe(p, shortestPath)
 
     plan.copy(pipe = pipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }

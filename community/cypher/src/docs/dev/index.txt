@@ -22,6 +22,10 @@ include::transactions.txt[]
 
 :leveloffset: 2
 
+include::ql/pattern/patterns.txt[]
+
+:leveloffset: 2
+
 include::ql/start/index.txt[]
 
 :leveloffset: 2

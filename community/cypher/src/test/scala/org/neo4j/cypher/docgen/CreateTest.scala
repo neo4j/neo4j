@@ -78,6 +78,19 @@ class CreateTest extends DocumentingTestBase {
     )
   }
 
+  @Test def using_expressions_as_nodes() {
+    val (aId, bId) = createTwoNodes
+
+    testQuery(
+      title = "Using expressions for nodes end points",
+      text = "You can use any expression as a node, as long as it returns a node. Just make sure to encase your " +
+        "expression in parenthesis.",
+      queryText = "start a=node(" + aId + ") with collect(a) as nodes start b=node(" +bId + ") create (head(nodes))-[r:REL]->b return r",
+      returns = "The created relationship is returned.",
+      assertions = (p) => assert(p.size === 1)
+    )
+  }
+
   @Test def set_property_to_an_iterable() {
     val (aId, bId) = db.inTx(() => {
       val a = db.createNode()

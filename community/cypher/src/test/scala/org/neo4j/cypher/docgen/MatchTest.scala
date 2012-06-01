@@ -297,23 +297,11 @@ RETURN p"""
   
   @Test def intro() {
     testQuery(
-      title = "introduction",
+      title = "Introduction",
       text = """Pattern matching is one of the pillars of Cypher. The pattern is used to describe the shape of the data that we are
 looking for. Cypher will then try to find patterns in the graph -- these are called matching subgraphs.
 
-The description of the pattern is made up of one or more paths, separated by commas. A path is a sequence of nodes and
-relationships that always start and end in nodes. An example path would be:
-+`(a)-->(b)`+
 
-Paths can be of arbitrary length, and the same node may appear in multiple places in the path. Node identifiers can be
-used with or without surrounding parenthesis. The following two match clauses are semantically identical -- the difference is
-purely aesthetic.
-
-+`MATCH (a)-->(b)`+
-
-and 
-
-+`MATCH a-->b`+
 
 
 Patterns have bound points, or start points. They are the parts of the pattern that are already ``bound'' to a set of
@@ -385,42 +373,11 @@ As a simple example, let's take the following query, executed on the graph pictu
     )
   }
   
-  @Test def introQ2() {
-      testQuery(
-              title = "q2",
-              text = "",
-              queryText = intro_q2,
-              returns = "",
-              assertions = p => assertTrue(true)
-              )
-  }
-  
-  @Test def introQ3() {
-      testQuery(
-              title = "q3",
-              text = "",
-              queryText = intro_q3,
-              returns = "",
-              assertions = p => assertTrue(true)
-              )
-  }
-  @Test def introQ4() {
-      testQuery(
-              title = "q4",
-              text = "",
-              queryText = intro_q4,
-              returns = "",
-              assertions = p => assertTrue(true)
-              )
-  }
-  @Test def introQ5() {
-      testQuery(
-              title = "q5",
-              text = "",
-              queryText = intro_q5,
-              returns = "",
-              assertions = p => assertTrue(true)
-              )
+  @Test def runQueries() {
+    testWithoutDocs(intro_q2)
+    testWithoutDocs(intro_q3)
+    testWithoutDocs(intro_q4)
+    testWithoutDocs(intro_q5)
   }
 
 }

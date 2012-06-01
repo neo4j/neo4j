@@ -82,13 +82,7 @@ trait Predicates extends Base with ParserPattern {
     NullablePredicate(pred, map  )
   }
 
-  private def translate(abstractPattern: AbstractPattern): Maybe[Predicate] = abstractPattern match {
-    case ParsedRelation(name, props, ParsedEntity(from, startProps, True()), ParsedEntity(Entity(endName), endProps, True()), typ, dir, map, True()) if name.startsWith("  UNNAMED") && endName.startsWith("  UNNAMED") => Yes(HasRelationship(from, dir, typ))
-    case ParsedRelation(name, props, ParsedEntity(from, startProps, True()), ParsedEntity(to, endProps, True()), typ, dir, map, True()) if name.startsWith("  UNNAMED")  => Yes(HasRelationshipTo(from, to, dir, typ))
-    case _ => No("")
-  }
-
-  def patternPredicate = usePattern(translate, (x:Seq[Predicate]) => x.size == 1) ^^ (x => x.head)
+  def patternPredicate = pathExpression ^^ (NonEmpty(_))
 
   def expressionOrEntity = expression | entity
 
@@ -96,4 +90,5 @@ trait Predicates extends Base with ParserPattern {
   def aggregateFunctionNames:Parser[String]
   def property: Parser[Expression]
   def entity: Parser[Entity]
+  def pathExpression: Parser[Expression]
 }
