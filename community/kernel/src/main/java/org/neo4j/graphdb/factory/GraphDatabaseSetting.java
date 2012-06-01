@@ -334,7 +334,7 @@ public abstract class GraphDatabaseSetting<T>
         
         protected BaseOptionsSetting( String name, String... options)
         {
-            super( name, "Value '%s' is not valid. Valid options are:%s");
+            super( name, "Invalid option. Valid options are:%s");
             
             this.options  = options;
         }

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import java.util.HashMap;
 
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
 import org.neo4j.kernel.configuration.Config;
 
 public class TestGraphDatabaseSetting
@@ -84,9 +83,9 @@ public class TestGraphDatabaseSetting
         catch( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Minimum allowed value is:3" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value '2' for config property 'foo_bar': Minimum allowed value is: 3" ) );
         }
-
+        
         try
         {
             integerSetting.validate( "11" );
@@ -117,8 +116,9 @@ public class TestGraphDatabaseSetting
         catch( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Value 'option4' is not valid. Valid options are:[option1, option2, option3]" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value 'option4' for config property 'foo_bar': Invalid option. Valid options are:[option1, option2, option3]" ) );
         }
+        
     }
     
     @Test
@@ -137,7 +137,7 @@ public class TestGraphDatabaseSetting
         catch( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Must be a valid file path." ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value [null] for config property 'myfile': Must be a valid file path." ) );
         }
     }
 
