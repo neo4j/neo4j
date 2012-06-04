@@ -71,7 +71,7 @@ public class PagingTraversalTest
     }
 
     @After
-    public void shutdownDatabase() throws IOException
+    public void shutdownDatabase() throws Throwable
     {
         this.database.shutdown();
     }

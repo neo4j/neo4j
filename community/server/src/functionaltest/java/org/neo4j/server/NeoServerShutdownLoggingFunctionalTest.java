@@ -54,7 +54,7 @@ public class NeoServerShutdownLoggingFunctionalTest extends ExclusiveServerTestB
     @Test
     public void shouldLogShutdown() throws Exception
     {
-        InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
+        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
         server.stop();
         assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database." ) );
     }

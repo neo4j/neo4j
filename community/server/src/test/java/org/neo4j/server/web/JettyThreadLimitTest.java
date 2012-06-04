@@ -34,7 +34,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveSensibleDefaultJettyThreadPoolSize() throws Exception
     {
-        WebServer server = new Jetty6WebServer();
+    	Jetty6WebServer server = new Jetty6WebServer();
         server.init();
         QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
                 .getThreadPool();
@@ -48,7 +48,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-        WebServer server = new Jetty6WebServer();
+    	Jetty6WebServer server = new Jetty6WebServer();
         final int maxThreads = 7;
         server.setMaxThreads( maxThreads );
         server.init();

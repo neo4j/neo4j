@@ -96,7 +96,7 @@ public class MonitorServiceTest implements JobScheduler
     }
 
     @After
-    public void shutdownDatabase()
+    public void shutdownDatabase() throws Throwable
     {
         try
         {
@@ -109,7 +109,8 @@ public class MonitorServiceTest implements JobScheduler
         this.database.shutdown();
     }
 
-    public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
+    @Override
+	public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
     {
     }
 }

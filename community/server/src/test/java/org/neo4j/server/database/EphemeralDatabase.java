@@ -19,21 +19,40 @@
  */
 package org.neo4j.server.database;
 
-/**
- * This is never thrown, it will be removed in version 1.10
- */
-@Deprecated
-public class DatabaseBlockedException extends RuntimeException
-{
+import java.util.HashMap;
 
-    /**
-     * Serial #
-     */
-    private static final long serialVersionUID = 3214317342541677412L;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-    public DatabaseBlockedException( String message )
-    {
-        super( message );
-    }
+public class EphemeralDatabase extends CommunityDatabase {
+
+	public EphemeralDatabase() {
+		this( new MapConfiguration(new HashMap<String,String>()) );
+	}
+	
+	public EphemeralDatabase(Configuration serverConfig) {
+		super(serverConfig);
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public void start()
+	{
+		this.graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+			.newImpermanentDatabaseBuilder()
+			.setConfig( loadNeo4jProperties() )
+			.newGraphDatabase();
+	}
+	
+	@Override
+	public void shutdown()
+	{
+		if(this.graph != null)
+		{
+			this.graph.shutdown();
+		}
+	}
 
 }

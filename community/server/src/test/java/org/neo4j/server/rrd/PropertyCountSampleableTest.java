@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -66,7 +67,8 @@ public class PropertyCountSampleableTest
         myNewNode.setProperty( "id", UUID.randomUUID().toString() );
         myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
         {
-            public String name()
+            @Override
+			public String name()
             {
                 return "knows_about";
             }
@@ -88,13 +90,13 @@ public class PropertyCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new Database( new ImpermanentGraphDatabase() );
+        db = new WrappingDatabase( new ImpermanentGraphDatabase() );
         sampleable = new PropertyCountSampleable( db.graph );
     }
 
     @After
-    public void shutdownDatabase()
+    public void shutdownDatabase() throws Throwable
     {
-        db.shutdown();
+        db.getGraph().shutdown();
     }
 }

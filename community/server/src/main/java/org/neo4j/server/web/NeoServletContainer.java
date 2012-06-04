@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerProvider;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.AbstractInjectableProvider;
 import org.neo4j.server.database.DatabaseProvider;
@@ -74,9 +74,9 @@ public class NeoServletContainer extends ServletContainer
                     .rrdDb() ) );
         }
 
-        if ( server instanceof NeoServerWithEmbeddedWebServer )
+        if ( server instanceof CommunityNeoServer )
         {
-            singletons.add( new WebServerProvider( ( (NeoServerWithEmbeddedWebServer) server ).getWebServer() ) );
+            singletons.add( new WebServerProvider( ( (CommunityNeoServer) server ).getWebServer() ) );
         }
 
         RepresentationFormatRepository repository = new RepresentationFormatRepository( server.getExtensionManager() );

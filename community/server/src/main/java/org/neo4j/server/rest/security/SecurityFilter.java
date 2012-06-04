@@ -34,10 +34,25 @@ public class SecurityFilter implements Filter
 {
 
     private final SecurityRule rule;
+	private final UriPathWildcardMatcher pathMatcher;
 
     public SecurityFilter( SecurityRule rule )
     {
         this.rule = rule;
+        
+        // For backwards compatibility
+        String rulePath = rule.forUriPath();
+        if(!rulePath.endsWith("*"))
+        {
+        	rulePath = rulePath + "*";
+        }
+        
+        this.pathMatcher = new UriPathWildcardMatcher( rulePath );
+    }
+    
+    public SecurityRule getRule() 
+    {
+    	return rule;
     }
 
     @Override
@@ -52,8 +67,13 @@ public class SecurityFilter implements Filter
 
         validateRequestType( request );
         validateResponseType( response );
-
-        if ( rule.isAuthorized( (HttpServletRequest) request ) )
+        
+        HttpServletRequest httpReq = (HttpServletRequest) request;
+        String path = httpReq.getContextPath() + (httpReq.getPathInfo() == null ? "" : httpReq.getPathInfo());
+        
+        pathMatcher.matches(path);
+        
+        if ( !pathMatcher.matches(path) || rule.isAuthorized( httpReq ) )
         {
             chain.doFilter( request, response );
         }

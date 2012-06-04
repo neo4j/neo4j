@@ -39,7 +39,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 public class ServerConfigTest extends ExclusiveServerTestBase
 {
 
-    private NeoServerWithEmbeddedWebServer server;
+    private CommunityNeoServer server;
 
     @After
     public void stopTheServer()

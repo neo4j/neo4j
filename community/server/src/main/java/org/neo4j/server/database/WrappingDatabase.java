@@ -17,19 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.security;
+package org.neo4j.server.database;
 
-public class UriPathWildcardMatcher
-{
-    private final String uriPath;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
-    public UriPathWildcardMatcher(String uriPath)
-    {
-        this.uriPath = uriPath.replace("*", ".*");
-    }
+public class WrappingDatabase extends Database {
 
-    public boolean matches(String uri)
-    {	
-        return uri.matches(uriPath);
-    }
+	public WrappingDatabase(GraphDatabaseAPI db) {
+		super(db);
+	}
+	
+	@Override
+	public void init() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void start() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void stop() throws Throwable 
+	{
+		
+	}
+	
+	@Override
+	public void shutdown() throws Throwable
+	{
+		
+	}
+
 }

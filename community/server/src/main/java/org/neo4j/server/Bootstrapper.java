@@ -21,20 +21,13 @@ package org.neo4j.server;
 
 import java.io.File;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
 
 public abstract class Bootstrapper
 {
@@ -42,9 +35,10 @@ public abstract class Bootstrapper
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
-    private static Logger log = Logger.getLogger( NeoServerBootstrapper.class );
+    private static Logger log = Logger.getLogger( CommunityBootstrapper.class );
 
-    protected NeoServerWithEmbeddedWebServer server;
+    protected NeoServer server;
+	private Configurator configurator;
 
     public static void main( String[] args )
     {
@@ -58,7 +52,7 @@ public abstract class Bootstrapper
 
     public static Bootstrapper loadMostDerivedBootstrapper()
     {
-        Bootstrapper winner = new NeoServerBootstrapper();
+        Bootstrapper winner = new CommunityBootstrapper();
         for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
         {
             if ( candidate.isMoreDerivedThan( winner ) ) winner = candidate;
@@ -80,10 +74,8 @@ public abstract class Bootstrapper
     {
         try
         {
-            StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
-            Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServerWithEmbeddedWebServer( this, startupHealthCheck,
-                    getConfigurator(), webServer, getServerModules() );
+        	configurator = createConfigurator();
+            server = createNeoServer();
             server.start();
 
             addShutdownHook();
@@ -93,7 +85,8 @@ public abstract class Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             log.error(tfe);
-            log.error( String.format( "Failed to start Neo Server on port [%d], because ", server.getWebServerPort() )
+            log.error( String.format( "Failed to start Neo Server on port [%d], because ", 
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) )
                        + tfe + ". Another process may be using database location " + server.getDatabase()
                                .getLocation() );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
@@ -101,12 +94,15 @@ public abstract class Bootstrapper
         catch ( Exception e )
         {
             log.error(e);
-            log.error( "Failed to start Neo Server on port [%s]", server.getWebServerPort() );
+            log.error( "Failed to start Neo Server on port [%s]", 
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
 
-    public void stop()
+    protected abstract NeoServer createNeoServer();
+
+	public void stop()
     {
         stop( 0 );
     }
@@ -120,28 +116,23 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.info( "Successfully shutdown Neo Server on port [%d], database [%s]", server.getWebServerPort(),
+            log.info( "Successfully shutdown Neo Server on port [%d], database [%s]", 
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT),
                     location );
             return 0;
         }
         catch ( Exception e )
         {
             log.error( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
-                    server.getWebServerPort(), location, e.getMessage() );
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT), location, e.getMessage() );
             return 1;
         }
     }
 
-    public NeoServerWithEmbeddedWebServer getServer()
+    public NeoServer getServer()
     {
         return server;
     }
-
-    protected abstract GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration );
-
-    protected abstract Iterable<StartupHealthCheckRule> getHealthCheckRules();
-
-    protected abstract Iterable<Class<? extends ServerModule>> getServerModules();
 
     protected void addShutdownHook()
     {
@@ -160,7 +151,7 @@ public abstract class Bootstrapper
                 } );
     }
 
-    protected Configurator getConfigurator()
+    protected Configurator createConfigurator()
     {
         File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY,
                 Configurator.DEFAULT_CONFIG_DIR ) );
@@ -172,11 +163,5 @@ public abstract class Bootstrapper
         // Default implementation just checks if this is a subclass of other
         return other.getClass()
                 .isAssignableFrom( getClass() );
-    }
-
-    private StartupHealthCheckRule[] rules()
-    {
-        return IteratorUtil.asCollection( getHealthCheckRules() )
-                .toArray( new StartupHealthCheckRule[0] );
     }
 }

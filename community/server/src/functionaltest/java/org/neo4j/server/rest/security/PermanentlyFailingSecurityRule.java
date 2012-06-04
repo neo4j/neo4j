@@ -37,7 +37,7 @@ public class PermanentlyFailingSecurityRule implements SecurityRule
     @Override
     public String forUriPath()
     {
-        return SecurityRule.DEFAULT_DATABASE_PATH;
+        return "/*";
     }
 
     @Override

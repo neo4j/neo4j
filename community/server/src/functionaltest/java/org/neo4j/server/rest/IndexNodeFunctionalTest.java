@@ -49,7 +49,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -411,7 +410,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws DatabaseBlockedException,
+    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws 
             JsonParseException
     {
         final long nodeId = helper.createNode();
@@ -429,7 +428,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
+    public void shouldGetNodeRepresentationFromIndexUri() throws  JsonParseException
     {
         long nodeId = helper.createNode();
         String key = "key2";
@@ -456,7 +455,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet404WhenRequestingIndexUriWhichDoesntExist() throws DatabaseBlockedException
+    public void shouldGet404WhenRequestingIndexUriWhichDoesntExist()
     {
         String key = "key3";
         String value = "value";
@@ -468,7 +467,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet404WhenDeletingNonExtistentIndex() throws DatabaseBlockedException
+    public void shouldGet404WhenDeletingNonExtistentIndex()
     {
         String indexName = "nosuchindex";
         String indexUri = functionalTestHelper.nodeIndexUri() + indexName;
@@ -547,7 +546,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldReturn204WhenRemovingNodeIndexes() throws DatabaseBlockedException, JsonParseException
+    public void shouldReturn204WhenRemovingNodeIndexes() throws  JsonParseException
     {
         String indexName = "kvnode";
         helper.createNodeIndex( indexName );
@@ -566,7 +565,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingById() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveIndexingById() throws  JsonParseException
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -598,7 +597,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingByIdAndKey() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveIndexingByIdAndKey() throws  JsonParseException
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -630,7 +629,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws JsonParseException
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";

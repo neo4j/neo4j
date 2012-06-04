@@ -61,7 +61,6 @@ import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
@@ -454,7 +453,7 @@ public class DatabaseActions
     }
 
     public boolean nodeIsIndexed( String indexName, String key, Object value,
-            long nodeId ) throws DatabaseBlockedException
+            long nodeId )
     {
 
         Index<Node> index = graphDb.index().forNodes( indexName );
@@ -474,7 +473,7 @@ public class DatabaseActions
     }
 
     public boolean relationshipIsIndexed( String indexName, String key,
-            Object value, long relationshipId ) throws DatabaseBlockedException
+            Object value, long relationshipId )
     {
 
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
@@ -942,7 +941,8 @@ public class DatabaseActions
 
             final IterableWrapper<Representation, Node> results = new IterableWrapper<Representation, Node>(indexHits)
             {
-                protected Representation underlyingObjectToObject(Node node)
+                @Override
+				protected Representation underlyingObjectToObject(Node node)
                 {
                     return new IndexedEntityRepresentation( node, key, value, indexRepresentation);
                 }

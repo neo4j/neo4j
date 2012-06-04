@@ -30,7 +30,6 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -49,7 +48,6 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     @Title( "Remove properties from a relationship" )
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
-            throws DatabaseBlockedException
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
@@ -77,7 +75,6 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     @Title( "Remove property from a relationship" )
     public void shouldReturn204WhenPropertyIsRemovedFromRelationship()
-            throws DatabaseBlockedException
     {
         data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();

@@ -39,7 +39,8 @@ import org.junit.Test;
 import org.neo4j.jmx.JmxUtils;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
@@ -51,7 +52,7 @@ public class WebAdminModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
@@ -75,8 +76,8 @@ public class WebAdminModuleTest
 
         setStaticFinalField( JmxUtils.class.getDeclaredField( "mbeanServer" ), mbeanServer );
 
-        WebAdminModule module = new WebAdminModule();
-        module.start( neoServer, null );
+        WebAdminModule module = new WebAdminModule(webServer, neoServer.getConfiguration(), db);
+        module.start(StringLogger.DEV_NULL);
 
         verify( db ).setRrdDb( any( RrdDb.class ) );
     }

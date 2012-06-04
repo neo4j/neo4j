@@ -33,13 +33,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class DatabaseMetadataServiceTest
 {
     @Test
-    public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws JsonParseException
+    public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws Throwable
     {
         AbstractGraphDatabase db = new ImpermanentGraphDatabase();
         Transaction tx = db.beginTx();
@@ -59,6 +58,6 @@ public class DatabaseMetadataServiceTest
         List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
                 .toString() );
         assertEquals( 3, jsonList.size() );
-        database.shutdown();
+        database.stop();
     }
 }

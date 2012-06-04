@@ -20,31 +20,49 @@
 package org.neo4j.server.modules;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.web.WebServer;
 
 public class RESTApiModule implements ServerModule
 {
     private static final Logger log = Logger.getLogger( RESTApiModule.class );
     private PluginManager plugins;
+	private final Configuration config;
+	private final WebServer webServer;
+	private final Database database;
+	private GuardingRequestFilter requestTimeLimitFilter;
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
+    public RESTApiModule(WebServer webServer, Database database, Configuration config)
+    {
+    	this.webServer = webServer;
+    	this.config = config;
+    	this.database = database;
+    }
+    
+    @Override
+	public void start( StringLogger logger )
     {
         try
         {
-            URI restApiUri = restApiUri( neoServer );
+            URI restApiUri = restApiUri( );
 
-            neoServer.getWebServer()
-                    .addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
+            webServer.addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
                             restApiUri.toString() );
-            loadPlugins( neoServer, logger );
+            loadPlugins( logger );
+            
+            setupRequestTimeLimit();
 
             log.info( "Mounted REST API at [%s]", restApiUri.toString() );
             if ( logger != null ) logger.logMessage( "Mounted REST API at: " + restApiUri.toString() );
@@ -55,21 +73,59 @@ public class RESTApiModule implements ServerModule
         }
     }
 
-    public void stop()
+	@Override
+	public void stop()
     {
-        // Do nothing.
+        try
+        {
+			webServer.removeJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
+	                restApiUri().toString() );
+
+			tearDownRequestTimeLimit();
+			unloadPlugins();
+	    }
+	    catch ( URISyntaxException e )
+	    {
+	        log.warn( e );
+	    }
     }
 
-    private URI restApiUri( NeoServerWithEmbeddedWebServer neoServer ) throws URISyntaxException
+	private void tearDownRequestTimeLimit() {
+		if(requestTimeLimitFilter != null)
+		{
+			webServer.removeFilter(requestTimeLimitFilter, "/*");
+		}
+	}
+
+	private void setupRequestTimeLimit() {
+    	Integer limit = config.getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+        if ( limit != null )
+        {
+        	Guard guard = database.getGraph().getGuard();
+        	if ( guard == null )
+            {
+                //TODO enable guard and restart EmbeddedGraphdb
+                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties" );
+            }
+        	
+        	this.requestTimeLimitFilter = new GuardingRequestFilter( guard, limit );
+            webServer.addFilter(requestTimeLimitFilter , "/*" );
+        }
+	}
+
+    private URI restApiUri() throws URISyntaxException
     {
-        return new URI( neoServer.getConfiguration()
-                .getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) );
+        return new URI( config.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) );
     }
 
-    private void loadPlugins( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
+    private void loadPlugins( StringLogger logger )
     {
-        plugins = new PluginManager( neoServer.getConfiguration(), logger );
+        plugins = new PluginManager( config, logger );
     }
+
+    private void unloadPlugins() {
+		// TODO
+	}
 
     public PluginManager getPlugins()
     {

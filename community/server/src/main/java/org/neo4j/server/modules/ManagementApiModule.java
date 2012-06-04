@@ -25,25 +25,35 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.web.WebServer;
 
 public class ManagementApiModule implements ServerModule
 {
     private final Logger log = Logger.getLogger( ManagementApiModule.class );
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
+	private final Configuration config;
+	private final WebServer webServer;
+
+    public ManagementApiModule(WebServer webServer, Configuration config)
+    {
+    	this.webServer = webServer;
+    	this.config = config;
+    }
+    
+    @Override
+	public void start( StringLogger logger )
     {
         try
         {
-            neoServer.getWebServer()
-                    .addJAXRSPackages( listFrom( new String[] { Configurator.MANAGEMENT_API_PACKAGE } ),
-                            managementApiUri( neoServer ).toString() );
-            log.info( "Mounted management API at [%s]", managementApiUri( neoServer ).toString() );
+            webServer.addJAXRSPackages( listFrom( new String[] { Configurator.MANAGEMENT_API_PACKAGE } ),
+                            managementApiUri(  ).toString() );
+            log.info( "Mounted management API at [%s]", managementApiUri(  ).toString() );
             if ( logger != null )
-                logger.logMessage( "Mounted management API at: " + managementApiUri( neoServer ).toString() );
+                logger.logMessage( "Mounted management API at: " + managementApiUri( ).toString() );
         }
         catch ( UnknownHostException e )
         {
@@ -51,17 +61,25 @@ public class ManagementApiModule implements ServerModule
         }
     }
 
-    public void stop()
-    {
-        // Do nothing.
-    }
-
-    private URI managementApiUri( NeoServerWithEmbeddedWebServer neoServer ) throws UnknownHostException
+    @Override
+	public void stop()
     {
         try
         {
-            return new URI( neoServer.getConfiguration()
-                    .getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
+	    	webServer.removeJAXRSPackages( listFrom( new String[] { Configurator.MANAGEMENT_API_PACKAGE } ),
+	                managementApiUri(  ).toString() );
+    	}
+	    catch ( UnknownHostException e )
+	    {
+	        log.warn( e );
+	    }
+    }
+
+    private URI managementApiUri( ) throws UnknownHostException
+    {
+        try
+        {
+            return new URI( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
         }
         catch ( URISyntaxException e )
         {

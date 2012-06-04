@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.GremlinSession;
@@ -90,14 +91,14 @@ public class GremlinConsoleServiceTest implements SessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new Database( new ImpermanentGraphDatabase() );
+        this.database = new WrappingDatabase( new ImpermanentGraphDatabase() );
         this.consoleService = new ConsoleService( this, database, new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
     @After
     public void shutdownDatabase()
     {
-        this.database.shutdown();
+        this.database.getGraph().shutdown();
     }
 
     @Override

@@ -39,6 +39,8 @@ public interface Configurator
     String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
     String DB_MODE_KEY = "org.neo4j.server.database.mode";
+    
+    String DEFAULT_DATABASE_LOCATION_PROPERTY_KEY = "data/graph.db";
 
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";

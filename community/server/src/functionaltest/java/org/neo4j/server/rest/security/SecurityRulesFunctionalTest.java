@@ -32,7 +32,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -46,7 +46,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
-    private NeoServerWithEmbeddedWebServer server;
+    private CommunityNeoServer server;
 
     private FunctionalTestHelper functionalTestHelper;
 

@@ -19,31 +19,31 @@
  */
 package org.neo4j.server.modules;
 
-import org.mortbay.jetty.Server;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
-import org.neo4j.server.statistic.StatisticStartupListener;
+import org.neo4j.server.web.WebServer;
 
 public class StatisticModule implements ServerModule
 {
-    private StatisticStartupListener listener;
-
-    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
+    private final StatisticFilter filter;
+	private final WebServer webServer;
+    
+    public StatisticModule(WebServer webServer, StatisticCollector requestStatistics)
     {
-        Server jetty = neoServer.getWebServer().getJetty();
-
-        StatisticCollector statisticCollector =
-                neoServer.getDatabase().statisticCollector();
-
-        listener = new StatisticStartupListener( jetty,
-                new StatisticFilter( statisticCollector ) );
-        jetty.addLifeCycleListener( listener );
+    	this.webServer = webServer;
+    	this.filter = new StatisticFilter( requestStatistics );
     }
 
-    public void stop()
+	@Override
+	public void start(StringLogger logger)
     {
-        listener.stop();
+        webServer.addFilter(filter, "/*");
+    }
+
+    @Override
+	public void stop()
+    {
+    	webServer.removeFilter(filter, "/*");
     }
 }

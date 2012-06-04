@@ -57,7 +57,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -105,9 +104,9 @@ public class RestfulGraphDatabaseTest
     }
 
     @AfterClass
-    public static void shutdownDatabase() throws IOException
+    public static void shutdownDatabase() throws Throwable
     {
-        database.shutdown();
+        database.stop();
     }
 
     private static UriInfo uriInfo()
@@ -208,7 +207,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData()
     {
         Response response = service.createNode( FORCE, "{\"foo\" : {\"bar\" : \"baz\"}}" );
 
@@ -216,7 +215,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON()
     {
         Response response = service.createNode( FORCE, "this:::isNot::JSON}" );
 
@@ -307,7 +306,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204OnSuccessfulDelete() throws DatabaseBlockedException
+    public void shouldRespondWith204OnSuccessfulDelete()
     {
         long id = helper.createNode();
 
@@ -317,7 +316,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith409IfNodeCannotBeDeleted() throws DatabaseBlockedException
+    public void shouldRespondWith409IfNodeCannotBeDeleted()
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
@@ -328,7 +327,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist() throws DatabaseBlockedException
+    public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist()
     {
         long nonExistentId = 999999;
         Response response = service.deleteNode( FORCE, nonExistentId );
@@ -337,7 +336,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForSetNodeProperty() throws DatabaseBlockedException
+    public void shouldRespondWith204ForSetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -347,7 +346,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldSetRightValueForSetNodeProperty() throws DatabaseBlockedException
+    public void shouldSetRightValueForSetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -359,7 +358,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForSetNodePropertyOnNonExistingNode() throws DatabaseBlockedException
+    public void shouldRespondWith404ForSetNodePropertyOnNonExistingNode()
     {
         String key = "foo";
         String json = "\"bar\"";
@@ -368,7 +367,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400ForSetNodePropertyWithInvalidJson() throws DatabaseBlockedException
+    public void shouldRespondWith400ForSetNodePropertyWithInvalidJson()
     {
         String key = "foo";
         String json = "{invalid json";
@@ -377,7 +376,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException
+    public void shouldRespondWith404ForGetNonExistentNodeProperty()
     {
         long nodeId = helper.createNode();
         Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
@@ -385,7 +384,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode()
     {
         long nodeId = 999999;
         Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
@@ -393,7 +392,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperty() throws DatabaseBlockedException
+    public void shouldRespondWith200ForGetNodeProperty()
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -418,7 +417,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties()
-            throws DatabaseBlockedException
+           
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -432,7 +431,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties()
-            throws DatabaseBlockedException
+           
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -463,7 +462,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode()
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( FORCE, nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
@@ -472,7 +471,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode()
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( FORCE, nodeId, "{\"to\" : \"" + BASE_URI + ( nodeId * 1000 )
@@ -481,7 +480,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf() throws DatabaseBlockedException
+    public void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf()
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( FORCE, nodeId, "{\"to\" : \"" + BASE_URI + nodeId
@@ -490,7 +489,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson()
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -501,7 +500,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties()
-            throws DatabaseBlockedException
+           
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -512,7 +511,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForRemoveNodeProperties() throws DatabaseBlockedException
+    public void shouldRespondWith204ForRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -524,7 +523,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperties() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -537,7 +536,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode() throws DatabaseBlockedException
+    public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode()
     {
         long nodeId = 999999;
         Response response = service.deleteAllNodeProperties( FORCE, nodeId );
@@ -545,7 +544,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperty() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveNodeProperty()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -558,7 +557,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistingProperty() throws DatabaseBlockedException
+    public void shouldGet404WhenRemovingNonExistingProperty()
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -570,7 +569,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingPropertyFromNonExistingNode() throws DatabaseBlockedException
+    public void shouldGet404WhenRemovingPropertyFromNonExistingNode()
     {
         long nodeId = 999999;
         Response response = service.deleteNodeProperty( FORCE, nodeId, "foo" );
@@ -578,7 +577,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenRetrievingARelationshipFromANode() throws DatabaseBlockedException
+    public void shouldGet200WhenRetrievingARelationshipFromANode()
     {
         long relationshipId = helper.createRelationship( "BEATS" );
         Response response = service.getRelationship( relationshipId );
@@ -588,7 +587,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws DatabaseBlockedException
+    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist()
     {
         Response response = service.getRelationship( 999999 );
         assertEquals( 404, response.getStatus() );
@@ -610,7 +609,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204ForGetNoRelationshipProperties() throws DatabaseBlockedException
+    public void shouldRespondWith204ForGetNoRelationshipProperties()
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.getAllRelationshipProperties( relationshipId );
@@ -618,8 +617,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException,
-            PropertyValueException
+    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship()
+    		 throws Exception
     {
 
         long relationshipId = helper.createRelationship( "knows" );
@@ -636,7 +635,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws DatabaseBlockedException
+    public void shouldGet404WhenCannotResolveAPropertyOnRelationship()
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.getRelationshipProperty( relationshipId, "some-key" );
@@ -644,7 +643,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet204WhenRemovingARelationship() throws DatabaseBlockedException
+    public void shouldGet204WhenRemovingARelationship()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -653,7 +652,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistentRelationship() throws DatabaseBlockedException
+    public void shouldGet404WhenRemovingNonExistentRelationship()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -663,7 +662,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode()
-            throws DatabaseBlockedException, JsonParseException
+    		 throws Exception
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -699,8 +698,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException,
-            PropertyValueException
+    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws Exception
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -722,7 +720,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingRelationshipsForANodeWithoutRelationships()
-            throws DatabaseBlockedException, JsonParseException
+    		 throws Exception
     {
         long nodeId = helper.createNode();
 
@@ -736,7 +734,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode()
-            throws DatabaseBlockedException
+           
     {
         Response response = service.getNodeRelationships( 999999, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "" ) );
@@ -745,7 +743,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperties()
-            throws DatabaseBlockedException
+           
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
@@ -758,7 +756,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name: \"Mattias\", \"age\": 30}";
@@ -768,7 +766,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship()
-            throws DatabaseBlockedException
+           
     {
         long relationshipId = 99999999;
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
@@ -777,7 +775,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperty() throws DatabaseBlockedException
+    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String key = "name";
@@ -790,7 +788,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "}Mattias";
@@ -800,7 +798,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship()
-            throws DatabaseBlockedException
+           
     {
         long relationshipId = 99999999;
         String json = "\"Mattias\"";
@@ -809,7 +807,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties() throws DatabaseBlockedException
+    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
@@ -820,7 +818,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipPropertiesWhichAreEmpty()
-            throws DatabaseBlockedException
+           
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -829,7 +827,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -838,7 +836,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenRemovingRelationshipProperty() throws DatabaseBlockedException
+    public void shouldRespondWith204WhenRemovingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
@@ -849,7 +847,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         Response response = service.deleteRelationshipProperty( FORCE, relationshipId, "foo" );
@@ -857,7 +855,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -924,7 +922,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws JsonParseException
+    public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws Exception
     {
         helper.deleteNode( 0l );
 
@@ -945,7 +943,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToIndexNode()
     {
         Response response = service.createNode( FORCE, null );
         URI nodeUri = (URI) response.getMetadata()
@@ -964,7 +962,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNodeUniquely() throws Exception
+    public void shouldBeAbleToIndexNodeUniquely()
     {
         Map<String, String> postBody = new HashMap<String, String>();
         postBody.put( "key", "mykey" );
@@ -1203,7 +1201,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeIndex() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveNodeIndex()
     {
         String indexName = "myFancyIndex";
 
@@ -1220,7 +1218,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveRelationshipIndex() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveRelationshipIndex()
     {
         String indexName = "myFancyIndex";
 
@@ -1237,7 +1235,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws Exception
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -1256,8 +1254,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException,
-            JsonParseException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws Exception
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -1280,8 +1277,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException,
-            PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1307,8 +1303,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException,
-            PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1343,8 +1338,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey()
-            throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws Exception
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
@@ -1378,8 +1372,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException,
-            PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1416,8 +1409,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws DatabaseBlockedException,
-            PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1456,8 +1448,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey()
-            throws DatabaseBlockedException, PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey() throws Exception
     {
         String key = "key_get";
         String value = "value";
@@ -1496,8 +1487,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException,
-            PropertyValueException
+    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws Exception
     {
         String indexName = "nothing-in-this-index";
         helper.createNodeIndex( indexName );
@@ -1512,7 +1502,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndex() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveNodeFromIndex()
     {
         long nodeId = helper.createNode();
         String key = "key_remove";
@@ -1527,7 +1517,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveRelationshipFromIndex() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveRelationshipFromIndex()
     {
         long startNodeId = helper.createNode();
         long endNodeId = helper.createNode();
@@ -1546,28 +1536,28 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404IfRemovingNonExistentNodeIndexing() throws DatabaseBlockedException
+    public void shouldGet404IfRemovingNonExistentNodeIndexing()
     {
         Response response = service.deleteFromNodeIndex( FORCE, "nodes", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet404IfRemovingNonExistentRelationshipIndexing() throws DatabaseBlockedException
+    public void shouldGet404IfRemovingNonExistentRelationshipIndexing()
     {
         Response response = service.deleteFromRelationshipIndex( FORCE, "relationships", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet404WhenTraversingFromNonExistentNode() throws DatabaseBlockedException
+    public void shouldGet404WhenTraversingFromNonExistentNode()
     {
         Response response = service.traverse( 9999999, TraverserReturnType.node, "{}" );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet200WhenNoHitsReturnedFromTraverse() throws DatabaseBlockedException, BadInputException
+    public void shouldGet200WhenNoHitsReturnedFromTraverse()
     {
         long startNode = helper.createNode();
         Response response = service.traverse( startNode, TraverserReturnType.node, "" );
@@ -1579,7 +1569,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws DatabaseBlockedException
+    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
     {
         long startNode = helper.createNode();
         long child1_l1 = helper.createNode();
@@ -1598,7 +1588,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToDescribeTraverser() throws DatabaseBlockedException
+    public void shouldBeAbleToDescribeTraverser()
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1622,7 +1612,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetOtherResultTypesWhenTraversing() throws DatabaseBlockedException
+    public void shouldBeAbleToGetOtherResultTypesWhenTraversing()
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1701,8 +1691,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException,
-            JsonParseException
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws Exception
     {
         Response response = service.createNode( FORCE, markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );

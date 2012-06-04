@@ -29,22 +29,24 @@ import java.net.URL;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.WrappingNeoServerBootstrapper;
+import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 /**
- * @author mh
- * @since 24.04.12
+ * Ignored performance test.
+ * TODO: Move this into performance-regression project.
  */
+@Ignore
 public class StreamingJsonFormatPerformanceTest {
 
     public static final String QUERY = "start n=node(*) match p=n-[r:TYPE]->m return n,r,m,p";
     private ImpermanentGraphDatabase gdb;
-    private WrappingNeoServerBootstrapper server;
+    private WrappingNeoServer server;
 
     @Before
     public void setUp() {
@@ -52,7 +54,7 @@ public class StreamingJsonFormatPerformanceTest {
         for (int i=0;i<10;i++) {
             createData();
         }
-        server = new WrappingNeoServerBootstrapper(gdb);
+        server = new WrappingNeoServer(gdb);
         server.start();
     }
 
@@ -68,7 +70,7 @@ public class StreamingJsonFormatPerformanceTest {
     }
 
     private long measureQueryTime(String query) throws IOException {
-        final URI baseUri = server.getServer().baseUri();
+        final URI baseUri = server.baseUri();
         final URL url = new URL(baseUri.toURL(), "db/data/cypher");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setDoOutput(true);

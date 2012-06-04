@@ -17,30 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.server.database;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
-import org.neo4j.server.database.DatabaseBlockedException;
+public class WrappedDatabase extends Database {
 
-/**
- * Map DatabaseBlockedException to a HTTP service not available response.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
- */
-@Provider
-public class DatabaseBlockedExceptionMapper implements ExceptionMapper<DatabaseBlockedException>
-{
+	@SuppressWarnings("deprecation")
+	public WrappedDatabase(GraphDatabaseAPI db) {
+		this.graph = db;
+	}
+	
+	@Override
+	public void init() throws Throwable 
+	{
+		
+	}
 
-    public Response toResponse( DatabaseBlockedException e )
+	@Override
+	public void start() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void stop() throws Throwable 
+	{
+		
+	}
+
+    @Override
+	public void shutdown()
     {
-        return Response.status( Status.SERVICE_UNAVAILABLE )
-                .entity( "Database is temporarily unavailable, please try again in a moment." )
-                .build();
+        
+    }
+    
+    @Override
+	public String getLocation()
+    {
+        return graph.getStoreDir();
     }
 
 }

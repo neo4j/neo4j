@@ -34,7 +34,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
@@ -42,7 +41,6 @@ import org.neo4j.test.GraphDescription.NODE;
 
 public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
 {
-
 
     @Test
     public void shouldGet404WhenTraversingFromNonExistentNode()
@@ -54,7 +52,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Graph( nodes = {@NODE(name="I")} )
     public void shouldGet200WhenNoHitsFromTraversing()
-            throws DatabaseBlockedException
     {
         assertSize( 0,gen.get().expectedStatus( 200 ).payload( "" ).post(
                 getTraverseUriNodes( getNode( "I" ) ) ).entity());
@@ -67,7 +64,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Graph( {"I know you", "I own car"} )
     public void return_relationships_from_a_traversal()
-            throws DatabaseBlockedException
     {
         assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriRelationships( getNode( "I" ) ) ).entity());
@@ -81,7 +77,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Graph( {"I know you", "I own car"} )
     public void return_paths_from_a_traversal()
-            throws DatabaseBlockedException
     {
         assertSize( 3, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriPaths( getNode( "I" ) ) ).entity());
@@ -191,7 +186,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Graph( "I know you" )
     public void shouldGet400WhenSupplyingInvalidTraverserDescriptionFormat()
-            throws DatabaseBlockedException
     {
         gen.get().expectedStatus( Status.BAD_REQUEST.getStatusCode() ).payload(
                 "::not JSON{[ at all" ).post(

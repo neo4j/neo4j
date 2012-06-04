@@ -24,13 +24,12 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
 public class WebHelper
 {
     private final URI baseUri;
-    private GraphDbHelper helper;
+    private final GraphDbHelper helper;
 
     public WebHelper( URI baseUri, Database database )
     {
@@ -39,7 +38,7 @@ public class WebHelper
 
     }
 
-    public URI createNode() throws DatabaseBlockedException
+    public URI createNode()
     {
         long nodeId = helper.createNode();
         try
@@ -52,14 +51,14 @@ public class WebHelper
         }
     }
 
-    public URI createNodeWithProperties( Map<String, Object> props ) throws DatabaseBlockedException
+    public URI createNodeWithProperties( Map<String, Object> props )
     {
         URI nodeUri = createNode();
         setNodeProperties( nodeUri, props );
         return nodeUri;
     }
 
-    private void setNodeProperties( URI nodeUri, Map<String, Object> props ) throws DatabaseBlockedException
+    private void setNodeProperties( URI nodeUri, Map<String, Object> props )
     {
         helper.setNodeProperties( extractNodeId( nodeUri ), props );
     }
