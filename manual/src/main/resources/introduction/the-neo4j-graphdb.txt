@@ -148,6 +148,7 @@ Value -> Primitive [label="can be an array of"]
 Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|double|char|<String>String}"]
 ----
 
+[[property-value-types]]
 .Property value types
 [options="header", cols="15m,45,40"]
 |========================================================
