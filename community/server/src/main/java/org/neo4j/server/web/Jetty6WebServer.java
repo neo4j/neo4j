@@ -122,6 +122,12 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void init()
     {
+    }
+    
+    @Override
+    public void start()
+    {
+
         if ( jetty == null )
         {
             jetty = new Server();
@@ -147,6 +153,14 @@ public class Jetty6WebServer implements WebServer
 
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
+        
+        MovedContextHandler redirector = new MovedContextHandler();
+
+        jetty.addHandler( redirector );
+
+        loadAllMounts();
+
+        startJetty();
     }
 
     @Override
@@ -234,22 +248,6 @@ public class Jetty6WebServer implements WebServer
     public void setNeoServer( NeoServer server )
     {
         this.server = server;
-    }
-
-    @Override
-    public void start()
-    {
-        if ( jetty == null )
-        {
-            throw new IllegalStateException( "Jetty not initialized." );
-        }
-        MovedContextHandler redirector = new MovedContextHandler();
-
-        jetty.addHandler( redirector );
-
-        loadAllMounts();
-
-        startJetty();
     }
 
 	@Override

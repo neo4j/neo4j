@@ -1,13 +1,17 @@
 package org.neo4j.server.web;
 
+import static org.mockito.Mockito.mock;
+
+import java.util.Arrays;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
-
-import scala.actors.threadpool.Arrays;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.server.WrappingNeoServer;
 
 @Path("/")
 public class TestJetty6WebServer {
@@ -22,7 +26,15 @@ public class TestJetty6WebServer {
 	@Test
 	public void shouldBeAbleToRestart() throws Throwable
 	{
-		WebServer server = new Jetty6WebServer();
+		// TODO: This is needed because WebServer has a cyclic
+		// dependency to NeoServer, which should be removed.
+		// Once that is done, we should instantiate WebServer 
+		// here directly.
+		GraphDatabaseAPI db = mock(GraphDatabaseAPI.class);
+		WrappingNeoServer neoServer = new WrappingNeoServer(db);
+		
+		WebServer server = neoServer.getWebServer();
+		
 		try 
 		{
 			server.setAddress("127.0.0.1");
@@ -35,7 +47,13 @@ public class TestJetty6WebServer {
 			server.start();
 		} finally 
 		{
-			server.stop();
+			try 
+			{
+				server.stop();
+			} catch(Throwable t)
+			{	
+				
+			}
 		}
 		
 	}

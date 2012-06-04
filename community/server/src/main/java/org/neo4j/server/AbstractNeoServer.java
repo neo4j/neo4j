@@ -78,7 +78,10 @@ public abstract class AbstractNeoServer implements NeoServer
     	this.startupHealthCheck = createHealthCheck();
         this.database = createDatabase();
         this.webServer = createWebServer();
+        
+        pluginInitializer = new PluginInitializer( this );
 
+        // TODO: Cyclic dependency
         webServer.setNeoServer( this );
         for ( ServerModule moduleClass : createServerModules() )
         {
@@ -106,8 +109,6 @@ public abstract class AbstractNeoServer implements NeoServer
 	
 	        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 	
-	        startExtensionInitialization();
-	
 	        startModules( logger );
 	
 	        startWebServer( logger );
@@ -123,15 +124,6 @@ public abstract class AbstractNeoServer implements NeoServer
 				throw new RuntimeException("Starting neo server failed, see nested exception.",t);
 			}
 		}
-    }
-
-    /**
-     * Initializes individual plugins using the mechanism provided via {@link PluginInitializer} and the java service
-     * locator
-     */
-    protected void startExtensionInitialization()
-    {
-        pluginInitializer = new PluginInitializer( this );
     }
 
     /**
