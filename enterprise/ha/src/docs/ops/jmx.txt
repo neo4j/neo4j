@@ -1,6 +1,10 @@
 
 include::jmx-list.txt[]
 
+[NOTE]
+For additional information on the primitive datatypes (+int+, +long+ etc.) used in the JMX attributes,
+please see <<property-value-types>>.
+
 include::jmx-branched-store.txt[]
 
 include::jmx-cache-nodecache.txt[]

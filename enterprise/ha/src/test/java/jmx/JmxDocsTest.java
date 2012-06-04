@@ -73,11 +73,9 @@ public class JmxDocsTest
     private static final Map<String, String> TYPES = new HashMap<String, String>()
     {
         {
-            put( "java.lang.String", "string" );
-            put( "long", "integer (64-bit, long)" );
-            put( "int", "integer (32-bit, int)" );
-            put( "java.util.List", "list (java.util.List)" );
-            put( "java.util.Date", "date (java.util.Date)" );
+            put( "java.lang.String", "String" );
+            put( "java.util.List", "List (java.util.List)" );
+            put( "java.util.Date", "Date (java.util.Date)" );
         }
     };
     private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocsTest.class );
@@ -328,16 +326,21 @@ public class JmxDocsTest
             beanInfo.append( type );
             beanInfo.append( '|' );
             MBeanParameterInfo[] params = operInfo.getSignature();
-            for ( int i = 0; i < params.length; i++ )
+            if ( params.length > 0 )
             {
-                MBeanParameterInfo param = params[i];
-                beanInfo.append( param.getName() );
-                beanInfo.append( ':' );
-                beanInfo.append( param.getType() );
-                if ( i != ( params.length - 1 ) )
+                for ( int i = 0; i < params.length; i++ )
                 {
-                    beanInfo.append( ',' );
+                    MBeanParameterInfo param = params[i];
+                    beanInfo.append( param.getType() );
+                    if ( i != ( params.length - 1 ) )
+                    {
+                        beanInfo.append( ',' );
+                    }
                 }
+            }
+            else
+            {
+                beanInfo.append( "(no parameters)" );
             }
             beanInfo.append( '\n' );
         }
