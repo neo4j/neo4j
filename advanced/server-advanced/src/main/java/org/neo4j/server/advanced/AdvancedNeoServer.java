@@ -32,6 +32,11 @@ public class AdvancedNeoServer extends CommunityNeoServer {
 
     private ServerManagement serverManagement;
 
+    protected AdvancedNeoServer()
+    {
+    	
+    }
+    
 	public AdvancedNeoServer( Configurator configurator )
     {
         this.configurator = configurator;
