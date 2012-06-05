@@ -98,7 +98,7 @@ public abstract class AbstractNeoServer implements NeoServer
 	        // container
 	        startupHealthCheck();
 	
-	        initWebServer();
+	        configureWebServer();
 	
 	        database.start();
 	        
@@ -168,32 +168,16 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-//    private DiagnosticsManager startDatabase()
-//    {
-//        String dbLocation = new File( configurator.configuration()
-//            .getString(
-//                Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
-//        GraphDatabaseFactory dbFactory = getGraphDatabaseFactory( );
-//
-//        Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-//        if ( databaseTuningProperties != null )
-//        {
-//            this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
-//        }
-//        else
-//        {
-//            this.database = new Database( dbFactory, dbLocation );
-//        }
-//        return database.graph.getDiagnosticsManager();
-//    }
-
 	@Override
     public Configuration getConfiguration()
     {
         return configurator.configuration();
     }
 
-    private void initWebServer()
+	// TODO: Once WebServer is fully implementing LifeCycle,
+	// it should manage all but static (eg. unchangeable during runtime)
+	// configuration itself.
+    private void configureWebServer()
     {
         int webServerPort = getWebServerPort();
         String webServerAddr = getWebServerAddress();
@@ -215,8 +199,6 @@ public abstract class AbstractNeoServer implements NeoServer
             log.info( "Enabling HTTPS on port [%s]", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
-
-        webServer.init();
     }
 
     private int getMaxThreads()

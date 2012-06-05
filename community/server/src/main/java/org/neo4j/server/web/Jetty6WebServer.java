@@ -118,6 +118,7 @@ public class Jetty6WebServer implements WebServer
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
+	private File requestLoggingConfiguration;
 
     @Override
     public void init()
@@ -127,7 +128,6 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start()
     {
-
         if ( jetty == null )
         {
             jetty = new Server();
@@ -170,6 +170,7 @@ public class Jetty6WebServer implements WebServer
         {
             jetty.stop();
             jetty.join();
+            jetty = null;
         }
         catch ( Exception e )
         {
@@ -272,13 +273,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void setHttpLoggingConfiguration( File logbackConfigFile )
     {
-        final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.setFileName( logbackConfigFile.getAbsolutePath() );
-
-        final RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog( requestLog );
-
-        jetty.addHandler( requestLogHandler );
+    	this.requestLoggingConfiguration = logbackConfigFile;
     }
 
     @Override
@@ -334,6 +329,11 @@ public class Jetty6WebServer implements WebServer
                 return o2.compareTo( o1 );
             }
         } );
+        
+        if(requestLoggingConfiguration != null)
+        {
+        	loadRequestLogging();
+        }
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
@@ -363,7 +363,17 @@ public class Jetty6WebServer implements WebServer
         }
     }
     
-    private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
+    private void loadRequestLogging() {
+        final RequestLogImpl requestLog = new RequestLogImpl();
+        requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
+
+        final RequestLogHandler requestLogHandler = new RequestLogHandler();
+        requestLogHandler.setRequestLog( requestLog );
+
+        jetty.addHandler( requestLogHandler );
+	}
+
+	private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
         if ( mountPoint.equals( "/" ) )
         {
