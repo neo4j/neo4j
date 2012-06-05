@@ -27,14 +27,24 @@ import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.{RelatePathNotUnique, CypherTypeException}
 
-case class NamedExpectation(name: String, properties: Map[String, Expression]) extends GraphElementPropertyFunctions {
+case class NamedExpectation(name: String, properties: Map[String, Expression])
+  extends GraphElementPropertyFunctions
+  with IterableSupport {
   def this(name: String) = this(name, Map.empty)
 
   def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = properties.forall {
     case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
       case (k, value) => pc.hasProperty(k) && pc.getProperty(k) == value
     }
-    case (k, exp) => pc.hasProperty(k) && exp(ctx) == pc.getProperty(k)
+    case (k, exp) =>
+      if (!pc.hasProperty(k)) false
+      else {
+        val expectationValue = exp(ctx)
+        val elementValue = pc.getProperty(k)
+
+        if (expectationValue == elementValue) true
+        else isCollection(expectationValue) && isCollection(elementValue) && makeTraversable(expectationValue).toList == makeTraversable(elementValue).toList
+      }
   }
 }
 
