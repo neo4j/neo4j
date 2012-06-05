@@ -287,6 +287,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
+    // TODO: This is jetty-specific, move to Jetty6WebServer
     /**
      * Jetty wants certificates stored in a key store, which is nice, but
      * to make it easier for non-java savvy users, we let them put
@@ -429,6 +430,10 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
+    // TODO: This is called by a class inside WebServer to get a list of 
+    // injectables to be made available to JAX-RS classes. This is not how
+    // plugins should be initialized. Reverse the direction of this such that
+    // injectables are pushed into webServer (preferrably via the addJaxRSPackage-method
     @Override
     public Collection<Injectable<?>> getInjectables( List<String> packageNames )
     {

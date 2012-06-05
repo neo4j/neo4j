@@ -45,6 +45,7 @@ public interface NeoServer
 
     PluginManager getExtensionManager();
 
+    @Deprecated
     Collection<Injectable<?>> getInjectables( List<String> packageNames );
 
     URI baseUri();

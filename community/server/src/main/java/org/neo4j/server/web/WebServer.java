@@ -36,8 +36,6 @@ public interface WebServer
 {
     void init();
 
-    void setNeoServer( NeoServer server );
-
     void setPort( int portNo );
 
     void setAddress( String addr );
@@ -68,6 +66,9 @@ public interface WebServer
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException;
 
+    @Deprecated
+    void setNeoServer( NeoServer server );
+    
     /** 
      * Please use {@link #addFilter instead}, this will be removed
      * in version 1.10
