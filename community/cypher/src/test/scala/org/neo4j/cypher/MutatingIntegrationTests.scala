@@ -420,6 +420,17 @@ return distinct center""")
 
     assert(r1 === r2)
   }
+
+  @Test
+  def relate_twice_with_array_prop() {
+    createNode()
+    createNode()
+
+    parseAndExecute("start a=node(1) relate a-[:X]->({foo:[1,2,3]})")
+    val result = parseAndExecute("start a=node(1) relate a-[:X]->({foo:[1,2,3]})")
+
+    assertFalse("Should not have created node", result.queryStatistics().containsUpdates)
+  }
 }
 
 trait StatisticsChecker extends Assertions {
