@@ -20,29 +20,18 @@
 
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.util.Map;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.JobScheduler;
-import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
-import org.rrd4j.core.RrdDb;
-
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.server.enterprise.ServerTestUtils.*;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.*;
 
 public class TestHaDatabaseWithRrd
 {
@@ -64,19 +53,22 @@ public class TestHaDatabaseWithRrd
     @Ignore
     public void startHaGraphDatabaseWithRrd() throws Exception
     {
-        String dir = TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath();
-        Map<String, String> config = stringMap(
-                HaSettings.server_id.name(), "1",
-                HaSettings.coordinators.name(), zoo.getConnectionString() );
-        Database db = new Database( HA_GRAPH_DATABASE_FACTORY.createDatabase( dir, config ) );
-        Configuration dbConfig = new MapConfiguration( stringMap(
-                Configurator.RRDB_LOCATION_PROPERTY_KEY, new File( dir, "rrd" ).getAbsolutePath() ) );
-        RrdDb rrd = new RrdFactory( dbConfig ).createRrdDbAndSampler( db, noScheduling() );
-        db.setRrdDb( rrd );
-        
-        doTransaction( db );
-        
-        db.shutdown();
+//        String dir = TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath();
+//        Map<String, String> config = stringMap(
+//                HaSettings.server_id.name(), "1",
+//                HaSettings.coordinators.name(), zoo.getConnectionString() );
+//        
+//        Configuration serverConfig = new MapConfiguration( stringMap(
+//                Configurator.RRDB_LOCATION_PROPERTY_KEY, new File( dir, "rrd" ).getAbsolutePath() ) );
+//        
+//        Database db = new EnterpriseDatabase(  );
+//        
+//        RrdDb rrd = new RrdFactory( serverConfig ).createRrdDbAndSampler( db, noScheduling() );
+//        db.setRrdDb( rrd );
+//        
+//        doTransaction( db );
+//        
+//        db.shutdown();
     }
 
     private void doTransaction( Database db )
