@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.configuration.Configurator;
@@ -36,13 +37,13 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
     protected boolean validateProperties( Properties configProperties )
     {
         String dbMode = configProperties.getProperty( Configurator.DB_MODE_KEY,
-                EnterpriseNeoServerBootstrapper.DatabaseMode.SINGLE.name() );
+        		EnterpriseDatabase.DatabaseMode.SINGLE.name() );
         dbMode = dbMode.toUpperCase();
-        if( dbMode.equals( EnterpriseNeoServerBootstrapper.DatabaseMode.SINGLE.name() ) )
+        if( dbMode.equals( EnterpriseDatabase.DatabaseMode.SINGLE.name() ) )
         {
             return true;
         }
-        if ( !dbMode.equals( EnterpriseNeoServerBootstrapper.DatabaseMode.HA.name() ) )
+        if ( !dbMode.equals( EnterpriseDatabase.DatabaseMode.HA.name() ) )
         {
             failureMessage = String.format( "Illegal value for %s \"%s\" in %s", Configurator.DB_MODE_KEY, dbMode,
                     Configurator.NEO_SERVER_CONFIG_FILE_KEY );
