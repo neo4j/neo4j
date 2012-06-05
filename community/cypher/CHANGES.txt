@@ -1,7 +1,10 @@
 1.8.M04 (2012-06-07)
 --------------------
 o Fixes bug where RELATE fails to compare array properties
-o fixes issue #563: COUNT(*) does not return zero from empty result
+o Fixes #573: Arithmetics operations have wrong type
+o Fixes #567: Parameter maps coming through REST are not parsed correctly
+o Fixes #563: COUNT(*) does not return 0 for empty result
+o Fixes #561: RELATE doesn't work as expected with map-parameters
 
 1.8.M03 (2012-05-24)
 --------------------
