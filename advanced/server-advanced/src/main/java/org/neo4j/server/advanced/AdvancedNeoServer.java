@@ -21,41 +21,34 @@ package org.neo4j.server.advanced;
 
 import java.lang.management.ManagementFactory;
 
-import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.neo4j.server.NeoServerBootstrapper;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.jmx.ServerManagement;
+import org.neo4j.server.configuration.Configurator;
 
-public class AdvancedNeoServerBootstrapper extends NeoServerBootstrapper
-{
+public class AdvancedNeoServer extends CommunityNeoServer {
+
+    private ServerManagement serverManagement;
+
+	public AdvancedNeoServer( Configurator configurator )
+    {
+        this.configurator = configurator;
+        init();
+    }
     
-    public Integer start( String[] args )
+    @Override
+	public void init()
     {
-        
-        int result =  super.start( args );
-        registerJMX();
-        return result;
+    	super.init();
+        try {
+	    	serverManagement = new ServerManagement( this );
+	        MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+			beanServer.registerMBean( serverManagement, new ObjectName( "org.neo4j.ServerManagement" , "restartServer", "lifecycle" ));
+		} catch (Exception e) {
+			throw new RuntimeException("Unable to initialize advanced Neo4j server, see nested exception.", e);
+		}
     }
-    private void registerJMX()
-    {
-        ServerManagement bean;
-        try
-        {
-            bean = new ServerManagement( this );
-            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
-            beanServer.registerMBean( bean, new ObjectName( "org.neo4j.ServerManagement" , "restartServer", "lifecycle" ));
-        }
-        catch ( InstanceAlreadyExistsException e )
-        {
-            // this is ok on restart
-        }
-        catch ( Exception e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
+	
 }

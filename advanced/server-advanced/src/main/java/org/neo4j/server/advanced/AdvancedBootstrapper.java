@@ -17,41 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.advanced.jmx;
+package org.neo4j.server.advanced;
 
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 
-public final class ServerManagement implements ServerManagementMBean
+public class AdvancedBootstrapper extends CommunityBootstrapper
 {
-    private final NeoServer server;
+	
+	@Override
+	protected NeoServer createNeoServer() 
+	{
+		return new AdvancedNeoServer( createConfigurator());
+	}
 
-    public ServerManagement(NeoServer bs)
-    {
-        this.server = bs;
-    }
-    
-    @Override
-	public synchronized void restartServer()
-    {
-        Thread thread = new Thread( "restart thread" )
-        {
-            @Override
-            public void run()
-            {
-                server.stop();
-                server.start();
-            }
-        };
-        thread.setDaemon( false );
-        thread.start();
-        System.out.println("restarting server");
-        try
-        {
-            thread.join();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
 }
