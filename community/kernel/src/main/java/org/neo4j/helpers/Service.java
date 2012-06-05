@@ -32,11 +32,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterable;
@@ -278,24 +282,48 @@ public abstract class Service
 
 	private static <T> Iterable<T> java6Loader( Class<T> type )
     {
-        try
-        {
-            @SuppressWarnings( "unchecked" ) Iterable<T> result = (Iterable<T>)
-                    Class.forName( "java.util.ServiceLoader" )
-                    .getMethod( "load", Class.class )
-                    .invoke( null, type );
-            return filterExceptions( result );
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-        catch ( LinkageError e )
-        {
-            return null;
-        }
+		try {
+			Class<?> serviceLoaderClass = Class
+					.forName("java.util.ServiceLoader");
+			Iterable<T> contextClassLoaderServices = (Iterable<T>) serviceLoaderClass
+					.getMethod("load", Class.class).invoke(null, type);
+			// Jboss 7 does not export content of META-INF/services to context
+			// class loader,
+			// so this call adds implementations defined in Neo4j libraries from
+			// the same module.
+			Iterable<T> currentClassLoaderServices = (Iterable<T>) serviceLoaderClass
+					.getMethod("load", Class.class, ClassLoader.class).invoke(
+							null, type, Service.class.getClassLoader());
+			// Combine services loaded by both context and module classloaders.
+			// Service instances compared by full class name ( we cannot use
+			// equals for instances or classes because they can came from
+			// different classloaders ).
+			HashMap<String, T> services = new HashMap<String, T>();
+			putAllInstancesToMap(currentClassLoaderServices, services);
+			// Services from context class loader have higher precedence
+			putAllInstancesToMap(contextClassLoaderServices, services);
+			return services.values();
+		} catch (Exception e) {
+			return null;
+		} catch (LinkageError e) {
+			return null;
+		}
     }
 
+	/**
+	 * 
+	 * @param services
+	 * @param servicesMap
+	 */
+	private static <T> void putAllInstancesToMap(Iterable<T> services,
+			Map<String, T> servicesMap) {
+		for (T instance : filterExceptions(services)) {
+			if (null != instance) {
+				servicesMap.put(instance.getClass().getName(), instance);
+			}
+		}
+	}
+	
     private static <T> Iterable<T> sunJava5Loader( final Class<T> type )
     {
         final Method providers;
