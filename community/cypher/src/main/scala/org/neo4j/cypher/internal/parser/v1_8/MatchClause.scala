@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.cypher.internal.commands._
 
 trait MatchClause extends Base with ParserPattern {
-  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> usePattern(translate) ^^ {
+  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
     case matching =>
       val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
       val unnamedPaths = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
@@ -37,9 +37,9 @@ trait MatchClause extends Base with ParserPattern {
     case (x, y) => No("MATCH end points have to be node identifiers - found: " + x + " and " + y)
   }
 
-  private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
+  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
-      val namedPathPatterns = patterns.map(translate)
+      val namedPathPatterns = patterns.map(matchTranslator)
 
       val find = namedPathPatterns.find(!_.success)
       find match {

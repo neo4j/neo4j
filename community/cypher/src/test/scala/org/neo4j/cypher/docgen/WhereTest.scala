@@ -121,8 +121,8 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_null() {
     testQuery(
       title = "Filter on null values",
-      text = "Sometimes you might want to test if a value or an identifier is null. This is done just like SQL does it, with IS NULL." +
-        " Also like SQL, the negative is IS NOT NULL, althought NOT(IS NULL x) also works.",
+      text = "Sometimes you might want to test if a value or an identifier is null. This is done just like SQL does it, " +
+        "with IS NULL. Also like SQL, the negative is `IS NOT NULL`, althought `NOT(IS NULL x)` also works.",
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
       returns = "Nodes that Tobias is not connected to",
       assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
@@ -130,21 +130,19 @@ class WhereTest extends DocumentingTestBase {
 
   @Test def has_relationship_to() {
     testQuery(
-      title = "Filter on relationships",
-      text = """To filter out subgraphs based on relationships between nodes, you use a limited part of the iconigraphy in the match clause. You can only describe the relationship with direction and optional type. These are all valid expressions:
-[source,cypher]
-----
-WHERE a-->b
-WHERE a<--b
-WHERE a<-[:KNOWS]-b
-WHERE a-[:KNOWS]-b
-----
+      title = "Filter on patterns",
+      text = """Patterns are expressions in Cypher, expressions that return a collection of paths. Collection
+expressions are also predicates - an empty collection represents `false`, and a non-empty represents `true`.
 
-Note that you can not introduce new identifiers here. Although it might look very similar to the `MATCH` clause, the
-`WHERE` clause is all about eliminating matched subgraphs. `MATCH a-->b` is very different from `WHERE a-->b`; the first will
-produce a subgraph for every relationship between `a` and `b`, and the latter will eliminate any matched subgraphs where `a` and `b`
-do not have a relationship between them.
-      """,
+So, patterns are not only expressions, they are also predicates. The only limitation to your pattern is that you must be
+able to express it in a single path. You can't use comas between multiple paths like you do in MATCH. You can achieve
+the same effect by combining multiple patterns with AND.
+
+Note that you can not introduce new identifiers here. Although it might look very similar to the `MATCH` patterns, the
+`WHERE` clause is all about eliminating matched subgraphs. `MATCH a-[*]->b` is very different from `WHERE a-[*]->b`; the
+first will produce a subgraph for every path it can find between `a` and `b`, and the latter will eliminate any matched
+subgraphs where `a` and `b` do not have a directed relationship chain between them.
+             """,
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) where a<--b return b""",
       returns = "Nodes that Tobias is not connected to",
       assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))

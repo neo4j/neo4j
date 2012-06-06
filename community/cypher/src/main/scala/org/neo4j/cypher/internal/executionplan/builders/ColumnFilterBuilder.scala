@@ -30,18 +30,25 @@ class ColumnFilterBuilder extends PlanBuilder {
     val p = plan.pipe
     val isLastPipe = q.tail.isEmpty
 
-    val returnItems = getReturnItems(q.returns, p.symbols)
-    val filterPipe = new ColumnFilterPipe(p, returnItems, isLastPipe)
+    if (!isLastPipe && q.returns == Seq(Unsolved(AllIdentifiers()))) {
+      val resultQ = q.copy(returns = q.returns.map(_.solve))
 
-    val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
-      filterPipe
+      plan.copy(query = resultQ)
     } else {
-      p
+
+      val returnItems = getReturnItems(q.returns, p.symbols)
+      val filterPipe = new ColumnFilterPipe(p, returnItems, isLastPipe)
+
+      val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
+        filterPipe
+      } else {
+        p
+      }
+
+      val resultQ = q.copy(returns = q.returns.map(_.solve))
+
+      plan.copy(pipe = resultPipe, query = resultQ)
     }
-
-    val resultQ = q.copy(returns = q.returns.map(_.solve))
-
-    plan.copy(pipe = resultPipe, query = resultQ)
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
@@ -57,6 +64,9 @@ class ColumnFilterBuilder extends PlanBuilder {
 
   private def getReturnItems(q: Seq[QueryToken[ReturnColumn]], symbols: SymbolTable): Seq[ReturnItem] = q.map(_.token).flatMap {
     case x: ReturnItem => Seq(x)
-    case x: AllIdentifiers => x.expressions(symbols).map(e => ReturnItem(e, e.identifier.name))
+    case x: AllIdentifiers =>
+      val expressions = x.expressions(symbols)
+      val map = expressions.map(e => ReturnItem(e, e.identifier.name))
+      map
   }
 }

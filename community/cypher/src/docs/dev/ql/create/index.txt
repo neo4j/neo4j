@@ -10,7 +10,7 @@ include::create-single-node-and-set-properties.txt[]
 include::return-created-node.txt[]
 include::create-a-relationship-between-two-nodes.txt[]
 include::create-a-relationship-and-set-properties.txt[]
-
+include::create-a-full-path.txt[]
 
 [[create-create-single-node-from-map]]
 == Create single node from map ==

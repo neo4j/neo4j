@@ -44,6 +44,7 @@ with ActualParser {
           throw new SyntaxException(message.substring(5), text, input.offset)
         else
           throw new SyntaxException(message + """
+
 Think we should have better error message here? Help us by sending this query to cypher@neo4j.org.
 
 Thank you, the Neo4j Team.

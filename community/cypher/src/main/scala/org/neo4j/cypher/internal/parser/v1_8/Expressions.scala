@@ -20,43 +20,40 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.graphdb.Direction
 
 trait Expressions extends Base with ParserPattern with Predicates {
-  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
-    case head ~ rest => {
+  def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {
+    case head ~ rest =>
       var result = head
       rest.foreach {
         case "+" ~ f => result = Add(result, f)
         case "-" ~ f => result = Subtract(result, f)
       }
 
-      result
-    }
+    result
   }
 
   def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor | "%" ~ factor | "^" ~ factor) ^^ {
-    case head ~ rest => {
+    case head ~ rest =>
       var result = head
       rest.foreach {
-        case "*" ~ f => result = Multiply(result,f)
-        case "/" ~ f => result = Divide(result,f)
-        case "%" ~ f => result = Modulo(result,f)
-        case "^" ~ f => result = Pow(result,f)
+        case "*" ~ f => result = Multiply(result, f)
+        case "/" ~ f => result = Divide(result, f)
+        case "%" ~ f => result = Modulo(result, f)
+        case "^" ~ f => result = Pow(result, f)
       }
 
       result
-    }
   }
 
   def factor: Parser[Expression] =
-    ( ignoreCase("true")    ^^^ Literal(true)
+  (ignoreCase("true") ^^^ Literal(true)
       | ignoreCase("false") ^^^ Literal(false)
-      | ignoreCase("null")  ^^^ Literal(null)
+      | ignoreCase("null") ^^^ Literal(null)
+      | pathExpression
       | extract
       | function
       | aggregateExpression
-      | identity~>parens(expression | entity)~>failure("unknown function")
       | coalesceFunc
       | filterFunc
       | nullableProperty
@@ -67,33 +64,33 @@ trait Expressions extends Base with ParserPattern with Predicates {
       | parameter
       | entity
       | parens(expression)
-      | failure("illegal start of value") )
+      | failure("illegal start of value"))
 
 
-  def stringLit:Parser[Expression] = string ^^ (x=>Literal(x))
+  def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
 
-  def numberLiteral:Parser[Expression] = number ^^ (x => {
-    val value:Any = if(x.contains("."))
+  def numberLiteral: Parser[Expression] = number ^^ (x => {
+    val value: Any = if (x.contains("."))
       x.toDouble
     else
       x.toLong
 
     Literal(value)
-  } )
+  })
 
   def entity: Parser[Entity] = identity ^^ (x => Entity(x))
 
-  def collectionLiteral:Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq:_*))
+  def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => createProperty(v, p)
   }
 
-  def createProperty(entity:String, propName:String):Expression
+  def createProperty(entity: String, propName: String): Expression
 
   def nullableProperty: Parser[Expression] = (
     property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
-    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
+      property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
 
   def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
@@ -114,8 +111,8 @@ trait Expressions extends Base with ParserPattern with Predicates {
       inner(in) match {
 
         case Success(name ~ args, rest) => functions.get(name.toLowerCase) match {
-          case None => Failure("No such function found", rest)
-          case Some(func) if !func.acceptsTheseManyArguments(args.size) => Failure("Wrong number of parameters for function " + name, rest)
+          case None => failure("unknown function", rest)
+          case Some(func) if !func.acceptsTheseManyArguments(args.size) => failure("Wrong number of parameters for function " + name, rest)
           case Some(func) => Success(func.create(args), rest)
         }
 
@@ -127,7 +124,9 @@ trait Expressions extends Base with ParserPattern with Predicates {
 
 
   private def func(numberOfArguments: Int, create: List[Expression] => Expression) = new Function(x => x == numberOfArguments, create)
+
   case class Function(acceptsTheseManyArguments: Int => Boolean, create: List[Expression] => Expression)
+
   val functions = Map(
     "type" -> func(1, args => RelationshipTypeFunction(args.head)),
     "id" -> func(1, args => IdFunction(args.head)),
@@ -142,7 +141,8 @@ trait Expressions extends Base with ParserPattern with Predicates {
     "head" -> func(1, args => HeadFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
-    "range" -> Function(x => x == 2||x == 3, args => {
+    "shortestpath" -> Function(x => false, args => null),
+    "range" -> Function(x => x == 2 || x == 3, args => {
       val step = if (args.size == 2) Literal(1) else args(2)
       RangeFunction(args(0), args(1), step)
     })
@@ -150,7 +150,7 @@ trait Expressions extends Base with ParserPattern with Predicates {
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames:Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect")
 
   def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
@@ -174,9 +174,24 @@ trait Expressions extends Base with ParserPattern with Predicates {
   }
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
+
+  def pathExpression: Parser[Expression] = usePath(translate) ^^ {//(pathPattern => PathExpression(pathPattern))
+    case Seq(x:ShortestPath) => ShortestPathExpression(x)
+    case patterns => PathExpression(patterns)
+  }
+
+  private def translate(abstractPattern: AbstractPattern): Maybe[Pattern] = matchTranslator(abstractPattern) match {
+    case Yes(x: NamedPath) => No("Can't assign to an identifier in a pattern expression")
+    case Yes(pattern: Pattern) => Yes(pattern)
+    case n: No => n
+  }
+
+  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
+
 }
 
 trait DefaultTrue
+
 trait DefaultFalse
 
 

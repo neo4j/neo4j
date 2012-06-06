@@ -73,11 +73,6 @@ class SematicErrorTest extends ExecutionEngineHelper {
       "Unknown identifier `b`")
   }
 
-  @Test def create_relationships_missing_end_nodes() {
-    expectedError("create a-[r:REL]->b return r",
-      "Unknown identifier `a`\nUnknown identifier `b`")
-  }
-
   def expectedError(query: String, message: String) {
     try {
       val result = parseAndExecute(query)

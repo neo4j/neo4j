@@ -1,5 +1,7 @@
 1.8.M04 (2012-06-07)
 --------------------
+o CREATE now accepts full paths and not only single nodes and relationships
+o Path patterns can now be used as expressions and as predicates
 o Fixes bug where RELATE fails to compare array properties
 o Fixes #573: Arithmetics operations have wrong type
 o Fixes #567: Parameter maps coming through REST are not parsed correctly

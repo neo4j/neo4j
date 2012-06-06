@@ -94,7 +94,17 @@ case class CreateRelationshipStartItem(key: String, from: Expression, to: Expres
   with GraphElementPropertyFunctions {
   private lazy val relationshipType = DynamicRelationshipType.withName(typ)
 
-  def dependencies = from.dependencies(NodeType()) ++ to.dependencies(NodeType()) ++ propDependencies(props)
+  def dependencies = {
+    val fromDeps = nodeDependencies(from)
+    val toDeps = nodeDependencies(to)
+    val propDeps = propDependencies(props)
+    fromDeps ++ toDeps ++ propDeps
+  }
+
+  private def nodeDependencies(e:Expression):Seq[Identifier] = e match {
+    case Entity(_) => Seq()
+    case x => x.dependencies(NodeType())
+  }
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = from.filter(f) ++ props.values.flatMap(_.filter(f))
 

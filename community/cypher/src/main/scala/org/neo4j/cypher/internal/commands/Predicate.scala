@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.pipes.Dependant
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import collection.Map
+import org.neo4j.cypher.SyntaxException
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)
@@ -225,4 +226,26 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
     case other => RegularExpression(a.rewrite(f), other)
   }
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ regex.filter(f)
+}
+
+case class NonEmpty(inner:Expression) extends Predicate with IterableSupport {
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val collection = inner(m)
+    if (this.isCollection(collection)) {
+      this.makeTraversable(inner(m)).nonEmpty
+    } else if(collection == null) {
+      false
+    } else    {
+      throw new SyntaxException("wut")
+    }
+
+  }
+
+  def dependencies: Seq[Identifier] = inner.dependencies(AnyIterableType())
+  def atoms: Seq[Predicate] = Seq(this)
+  override def toString: String = "nonEmpty(" + inner.identifier.name + ")"
+  def containsIsNull = false
+  def exists(f: (Expression) => Boolean) = inner.exists(f)
+  def rewrite(f: (Expression) => Expression) = NonEmpty(inner.rewrite(f))
+  def filter(f: (Expression) => Boolean) = inner.filter(f)
 }

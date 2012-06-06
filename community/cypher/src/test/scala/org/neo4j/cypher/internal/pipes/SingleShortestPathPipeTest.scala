@@ -34,7 +34,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
 
-    val pipe = new SingleShortestPathPipe(source, path)
+    val pipe = new ShortestPathPipe(source, path)
     pipe.createResults(QueryState()).head("p").asInstanceOf[Path]
   }
 

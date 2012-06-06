@@ -113,10 +113,9 @@ _Graph_
   }
 
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
+    val r = testWithoutDocs(queryText, assertions:_*)
+    val result: ExecutionResult = r._1
+    var query: String = r._2
 
     val dir = new File(path + nicefy(section))
     if (!dir.exists()) {
@@ -129,6 +128,15 @@ _Graph_
     val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
     val graphViz = new PrintWriter(new File(dir, graphFileName + ".txt"), "UTF-8")
     dumpGraphViz(graphViz, graphFileName)
+  }
+
+
+  def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
+    var query = queryText
+    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+    val result = engine.execute(query)
+    assertions.foreach(_.apply(result))
+    (result, query)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
