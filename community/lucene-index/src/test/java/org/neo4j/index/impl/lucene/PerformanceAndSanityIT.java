@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,6 +46,9 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TargetDirectory;
 
 public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 {
@@ -125,13 +131,18 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
     public void makeSureFilesAreClosedProperly() throws Exception
     {
         commitTx();
+
+        graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "filesClosedProperty",
+                true ).getAbsolutePath() );
         final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
         final long time = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch( 30 );
-        for ( int t = 0; t < latch.getCount(); t++ ) 
+        int coreCount = Runtime.getRuntime().availableProcessors();
+        ExecutorService pool = Executors.newFixedThreadPool( coreCount );
+        for ( int t = 0; t < latch.getCount(); t++ )
         {
             final int thread = t;
-            new Thread()
+            pool.execute( new Runnable()
             {
                 public void run()
                 {
@@ -197,11 +208,13 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                             }
                         }
                     }
-                    latch.countDown();
                 }
-            }.start();
+            } );
         }
-        latch.await();
+        pool.shutdown();
+        pool.awaitTermination( 10, TimeUnit.DAYS );
+        graphDb.shutdown();
+        graphDb = new ImpermanentGraphDatabase();
     }
 
     @Ignore
@@ -216,12 +229,13 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         final AtomicInteger id = new AtomicInteger();
         final AtomicBoolean halt = new AtomicBoolean();
         long t = System.currentTimeMillis();
-        
+
         for ( int h = 0; h < threads; h++ )
         {
             final int threadId = h;
             Thread thread = new Thread()
             {
+                @Override
                 public void run()
                 {
                     try
@@ -262,7 +276,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
             aThread.join();
         }
         long t1 = System.currentTimeMillis()-t;
-        
+
 //        System.out.println( "2" );
 //        t = System.currentTimeMillis();
 //        for ( int i = 0; i < count; i++ )
@@ -281,7 +295,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 //            if ( i%100 == 0 && i > 0 ) System.out.println( i );
 //        }
 //        long t2 = System.currentTimeMillis()-t;
-        
+
         System.out.println( t1 + ", " + (double)t1/(double)count );
     }
 }
