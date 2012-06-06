@@ -431,6 +431,15 @@ return distinct center""")
 
     assertFalse("Should not have created node", result.queryStatistics().containsUpdates)
   }
+
+  @Test
+  def full_path_in_one_create() {
+    createNode()
+    createNode()
+    val result = parseAndExecute("start a=node(1), b=node(2) create a-[:KNOWS]->()<-[:LOVES]->b")
+
+    assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
+  }
 }
 
 trait StatisticsChecker extends Assertions {

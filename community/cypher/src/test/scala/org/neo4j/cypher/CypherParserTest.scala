@@ -1848,13 +1848,30 @@ create a-[r:REL]->b
     )
   }
 
-  @Test def   return_paths() {
+  @Test def return_paths() {
     testFrom_1_8("start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
         returns(ReturnItem(PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq(), Direction.OUTGOING, optional = false, predicate = True()))), "a-->()"))
     )
   }
+
+  @Test def full_path_in_create() {
+    val secondQ = Query.
+      start(
+        CreateRelationshipStartItem("r1", Entity("a"), Entity("  UNNAMED1"), "KNOWS", Map()),
+        CreateRelationshipStartItem("r2", Entity("b"), Entity("  UNNAMED1"), "LOVES", Map())).
+      returns()
+             //CreateRelationshipStartItem(r1,a,  UNNAMED1,KNOWS,Map()), CreateRelationshipStartItem(r2,b,  UNNAMED1,LOVES,Map()))
+    val q = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      tail(secondQ).
+      returns(AllIdentifiers())
+
+
+    testFrom_1_8("start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b", q)
+  }
+
 
 
   def test_1_8(query: String, expectedQuery: Query) {

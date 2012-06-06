@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.cypher.QueryStatistics
 
 class CreateTest extends DocumentingTestBase {
   def graphDescription = List()
@@ -85,7 +86,7 @@ class CreateTest extends DocumentingTestBase {
       title = "Using expressions for nodes end points",
       text = "You can use any expression as a node, as long as it returns a node. Just make sure to encase your " +
         "expression in parenthesis.",
-      queryText = "start a=node(" + aId + ") with collect(a) as nodes start b=node(" +bId + ") create (head(nodes))-[r:REL]->b return r",
+      queryText = "start a=node(" + aId + ") with collect(a) as nodes start b=node(" + bId + ") create (head(nodes))-[r:REL]->b return r",
       returns = "The created relationship is returned.",
       assertions = (p) => assert(p.size === 1)
     )
@@ -116,6 +117,17 @@ for this to work.""",
     )
   }
 
+  @Test def create_full_path_in_one_go() {
+    testQuery(
+      title = "Create a full path",
+      text =
+        """When you use CREATE and a pattern, all parts of the pattern that are not already in scope at this time
+will be created. """,
+      queryText = "create andres-[:WORKS_AT]->neo<-[:WORKS_AT]-michael return andres,michael",
+      returns = "This query creates three nodes and two relationships in one go, and returns the end point " +
+        "of the created path",
+      assertions = (p) => p.queryStatistics() == QueryStatistics.empty.copy(nodesCreated = 3, relationshipsCreated = 2))
+  }
 
   @Test def create_relationship_with_properties() {
     val (aId, bId) = db.inTx(() => {
