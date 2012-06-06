@@ -127,6 +127,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
      * during a long period of time just to make sure that number of file handles doesn't grow.
      * @throws Exception
      */
+    @Ignore
     @Test
     public void makeSureFilesAreClosedProperly() throws Exception
     {
