@@ -1124,8 +1124,7 @@ return foaf""")
     val result = parseAndExecute( """
 start a  = node(1,2,3,1)
 return distinct a
-order by a.name
-                                  """)
+order by a.name""")
 
     assert(List(a, b, c) === result.columnAs[Node]("a").toList)
   }
@@ -1140,8 +1139,7 @@ order by a.name
     val result = parseAndExecute( """
 start a  = node(1)
 match p = a -[*]-> b
-return b, avg(length(p))
-                                  """)
+return b, avg(length(p))""")
 
     assert(Set(b, c) === result.columnAs[Node]("b").toSet)
   }
@@ -1155,8 +1153,7 @@ return b, avg(length(p))
     val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = a -[?]-> x
-return x, p
-                                  """)
+return x, p""")
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1173,8 +1170,7 @@ return x, p
     val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = shortestPath(a -[?*]-> x)
-return x, p
-                                  """)
+return x, p""")
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1190,8 +1186,7 @@ return x, p
     val result = parseAndExecute( """
 start a  = node(1)
 match p = a-->b-[?*]->c
-return p
-                                  """)
+return p""")
 
     assert(List(
       Map("p" -> null)
@@ -1207,8 +1202,7 @@ return p
     val result = parseAndExecute( """
 start a  = node(1), x = node(2,3)
 match p = a -[?*]-> x
-return x, p
-                                  """)
+return x, p""")
 
     assert(List(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
@@ -1222,8 +1216,7 @@ return x, p
     val result = parseAndExecute( """
 start a  = node(1)
 where a.name =~ /And.*/ AND a.name =~ /And.*/
-return a
-                                  """)
+return a""")
 
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
@@ -1233,8 +1226,7 @@ return a
 
     val result: ExecutionResult = parseAndExecute( """
 start a  = node(1)
-return a as OneLove
-                                                   """)
+return a as OneLove""")
 
     assert(List(a) === result.columnAs[Node]("OneLove").toList)
   }
@@ -1244,8 +1236,7 @@ return a as OneLove
 
     val result = parseAndExecute( """
 start a  = node(1)
-return count(*) as OneLove
-                                  """)
+return count(*) as OneLove""")
 
     assert(List(1) === result.columnAs[Node]("OneLove").toList)
   }
@@ -1262,8 +1253,7 @@ return count(*) as OneLove
 
     val result = parseAndExecute( """
 start a  = node:numericIndex(number = 13)
-return a
-                                  """)
+return a""")
 
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
@@ -1276,8 +1266,7 @@ return a
     val result = parseAndExecute( """
 start a  = node(1,2,3,1)
 return distinct a.name
-order by a.age
-                                  """)
+order by a.age""")
 
     result.toList
   }
@@ -1294,8 +1283,7 @@ order by a.age
 start a  = node(1)
 match a-->b
 return distinct b
-order by b.name
-                                  """)
+order by b.name""")
 
     assert(List(b, c) === result.columnAs[Node]("b").toList)
   }
@@ -1305,8 +1293,7 @@ order by b.name
 
     val result = parseAndExecute( """
 start a  = node(1)
-return coalesce(a.title?, a.name?)
-                                  """)
+return coalesce(a.title?, a.name?)""")
 
     assert(List(Map("coalesce(a.title?, a.name?)" -> "A")) === result.toList)
   }
@@ -1321,8 +1308,7 @@ return coalesce(a.title?, a.name?)
     val result = parseAndExecute( """
 start a  = node(1)
 match a-[r*2]->c
-return r
-                                  """)
+return r""")
 
     assert(List(Map("r" -> List(r1, r2))) === result.toList)
   }
@@ -1333,8 +1319,7 @@ return r
     val result = parseAndExecute( """
 start a  = node(1), d = node(4)
 match p = allShortestPaths( a-[*]->d )
-return p
-                                  """)
+return p""")
 
     assert(2 === result.toList.size)
   }

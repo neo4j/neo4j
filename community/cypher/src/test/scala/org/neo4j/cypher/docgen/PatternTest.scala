@@ -117,9 +117,9 @@ This allows you to write queries like this:
 
 [source,cypher]
 ----
-             """
+"""
         + optionalExample +
-        """
+"""
 ----
 
 The query above says ``give me all my friends, and their children, if they have any.''
@@ -135,34 +135,34 @@ In these examples, `b` and `p` are all optional and can contain `null`:
 
 [source,cypher]
 ----
-        """
+"""
         + optionalQ1 +
 
-        """
+"""
 ----
 
 [source,cypher]
 ----
-        """
+"""
         + optionalQ2 +
 
-        """
+"""
 ----
 
 [source,cypher]
 ----
-        """
+"""
         + optionalQ3 +
 
-        """
+"""
 ----
 
 [source,cypher]
 ----
-        """
+"""
         + optionalQ4 +
 
-        """
+"""
 ----
 
 A pattern relationship can span multiple graph relationships. These are called variable length relationships, and are
@@ -196,5 +196,4 @@ As a simple example, let's take the following query, executed on the graph pictu
     testWithoutDocs(optionalQ3)
     testWithoutDocs(optionalQ4)
   }
-
 }
