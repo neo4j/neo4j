@@ -2008,4 +2008,11 @@ RETURN x0.name?
     assertEquals(result.startNode(), a)
     assertEquals(result.length(), 2)
   }
+
+  @Test
+  def in_against_non_existing_collection() {
+    val result = parseAndExecute("start a=node(0) where 'z' in a.array_prop? return a")
+    assert(result.toList === List(Map("a" -> refNode)))
+  }
+
 }
