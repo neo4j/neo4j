@@ -185,16 +185,16 @@ trait Expressions extends Base {
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-")))
+    case checkee ~ in ~ collection => nullable(AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-"))), collection)
   }
   
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInIterable(x._1, x._2, x._3), x._1))
 
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInIterable(x._1, x._2, x._3))
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInIterable(x._1, x._2, x._3), x._1))
 
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => NoneInIterable(x._1, x._2, x._3))
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInIterable(x._1, x._2, x._3), x._1))
 
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInIterable(x._1, x._2, x._3), x._1))
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
@@ -207,14 +207,13 @@ trait Expressions extends Base {
       expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) } |
       expression ~> "!" ~> failure("The exclamation symbol is used as a nullable property operator in Cypher. The 'not equal to' operator is <>"))
 
-  private def nullable(pred:Predicate, e:Expression*):Predicate = if(!e.exists(_.isInstanceOf[Nullable]))
+  private def nullable(pred: Predicate, e: Expression*): Predicate = if (!e.exists(_.isInstanceOf[Nullable]))
     pred
-  else
-  {
+  else {
     val map = e.filter(x => x.isInstanceOf[Nullable]).
-      map( x => (x, x.isInstanceOf[DefaultTrue]))
+      map(x => (x, x.isInstanceOf[DefaultTrue]))
 
-    NullablePredicate(pred, map  )
+    NullablePredicate(pred, map)
   }
 
   def expressionOrEntity = expression | entity
