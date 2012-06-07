@@ -159,13 +159,9 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
 case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head
 
-  private def myType = {
-    println(collection.identifier.typ)
-
-    collection.identifier.typ match {
-      case x: IterableType => x.iteratedType
-      case _ => ScalarType()
-    }
+  private def myType = collection.identifier.typ match {
+    case x: IterableType => x.iteratedType
+    case _ => ScalarType()
   }
 
   override def dependencies(extectedType: AnyType): Seq[Identifier] = declareDependencies(extectedType)
