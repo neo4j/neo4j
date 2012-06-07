@@ -26,8 +26,9 @@ define(
    './models/ServerStatistics'
    './models/DashboardState'
    './models/KernelBean'
+   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
    'ribcage/Router'],
-  (DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState, KernelBean, Router) ->
+  (DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState, KernelBean, MainMenuModel, Router) ->
   
     class DashboardRouter extends Router
       routes : 
@@ -35,6 +36,11 @@ define(
 
       init : (appState) =>
         @appState = appState
+        
+        @menuItem = new MainMenuModel.Item 
+          title : "Dashboard",
+          subtitle:"Overview",
+          url : "#"
 
       dashboard : =>
         @saveLocation()
@@ -63,5 +69,12 @@ define(
       
       getDashboardState : =>
         @dashboardState ?= new DashboardState( server : @appState.getServer() )
+
+      #
+      # Bootstrapper SPI
+      #
+
+      getMenuItems : ->
+        [@menuItem]
 
 )
