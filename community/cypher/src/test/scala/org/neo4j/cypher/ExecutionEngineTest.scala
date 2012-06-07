@@ -1866,4 +1866,10 @@ RETURN x0.name?
     assert(parseAndExecute(q).toList === List(Map("x"->null)))
   }
 
+  @Test
+  def in_against_non_existing_collection() {
+    val result = parseAndExecute("start a=node(0) where 'z' in a.array_prop? return a")
+    assert(result.toList === List(Map("a" -> refNode)))
+  }
+
 }
