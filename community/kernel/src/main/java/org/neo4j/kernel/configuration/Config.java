@@ -32,7 +32,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.ConfigModifier.Modifications;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -51,14 +50,14 @@ import org.neo4j.kernel.logging.BufferingLogger;
  */
 public class Config implements DiagnosticsProvider
 {
-    private List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
-    private Map<String, String> params = new HashMap<String, String>();
-    private ConfigurationMigrator migrator;
+    private final List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
+    private final Map<String, String> params = new HashMap<String, String>();
+    private final ConfigurationMigrator migrator;
     
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
     private StringLogger log = new BufferingLogger();
-	private ConfigurationValidator validator;
+	private final ConfigurationValidator validator;
     
     public Config()
     {
@@ -112,56 +111,6 @@ public class Config implements DiagnosticsProvider
         if (string != null)
             string = string.trim();
         return setting.valueOf(string, this);
-    }
-    
-    /**
-     * Set a configuration value. 
-     * 
-     * Please note that each time you call this method, events will be 
-     * fired that may cause the database to internally restart.
-     * 
-     * If you are going to be modifying multiple values, take
-     * a look {@link #modifyWith(ConfigModifier)}, that way you will
-     * only trigger one restart, rather than one per property changed.
-     *  
-     * @param setting
-     * @param value
-     */
-    public <T> void set(GraphDatabaseSetting<T> setting, String value) 
-    {
-        modifyWith(new Modifications().set(setting, value));
-    }
-
-    /**
-     * Apply some set of modifications to this configuration instance,
-     * eventually triggering a configuration change event with a list 
-     * of the modifications made.
-     * 
-     * An easy way to use this is to use the {@link Modifications} helper
-     * class, like so:
-     * 
-     * <code>
-     * modifyWith(new Modifications()
-     *   .set(setting, value)
-     *   .delete(someOtherSetting)
-     *   .set(aThirdSetting, anotherValue));
-     * </code>
-     * @param modifier
-     */
-    public void modifyWith(ConfigModifier modifier)
-    {
-        ConfigModifier.Session session = new ConfigModifier.Session(this);
-        modifier.applyTo(session);
-        
-        // Modify a copy of the original param map
-        Map<String, String> newConfiguration = new HashMap<String,String>(params);
-        
-        for(ConfigModifier.Modification modification : session.getModifications())
-        {
-            newConfiguration.put(modification.getSetting().name(), modification.getValue());
-        }
-        
-        applyChanges(newConfiguration);
     }
 
     /**
@@ -224,23 +173,27 @@ public class Config implements DiagnosticsProvider
         listeners.remove( listener );
     }
     
-    public String getDiagnosticsIdentifier()
+    @Override
+	public String getDiagnosticsIdentifier()
     {
         return getClass().getName();
     }
 
-    public void acceptDiagnosticsVisitor( Object visitor )
+    @Override
+	public void acceptDiagnosticsVisitor( Object visitor )
     {
         // nothing visits configuration
     }
 
-    public void dump( DiagnosticsPhase phase, StringLogger log )
+    @Override
+	public void dump( DiagnosticsPhase phase, StringLogger log )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
             log.logLongMessage("Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>, String>()
             {
-                public String map( Map.Entry<String, String> stringStringEntry )
+                @Override
+				public String map( Map.Entry<String, String> stringStringEntry )
                 {
                     return stringStringEntry.getKey()+"="+stringStringEntry.getValue();
                 }

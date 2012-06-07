@@ -87,7 +87,12 @@ public class TestConfig {
 		Config config = new Config(new HashMap<String,String>(), MySettingsWithDefaults.class);
 		
 		try {
-			config.set(MySettingsWithDefaults.boolSetting, "asd");
+			
+			Map<String,String> params = config.getParams();
+			params.put(MySettingsWithDefaults.boolSetting.name(), "asd");
+			
+			config.applyChanges(params);
+			
 			fail("Expected validation to fail.");
 		} catch(IllegalArgumentException e)
 		{

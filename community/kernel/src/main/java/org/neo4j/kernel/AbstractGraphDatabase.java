@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -33,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,9 +58,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -81,7 +82,6 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -104,7 +104,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -116,8 +115,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.neo4j.helpers.Exceptions.*;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -145,7 +142,7 @@ public abstract class AbstractGraphDatabase
 
     protected String storeDir;
     protected Map<String, String> params;
-    private Iterable<KernelExtension> kernelExtensions;
+    private final Iterable<KernelExtension> kernelExtensions;
     protected StoreId storeId;
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
@@ -206,8 +203,8 @@ public abstract class AbstractGraphDatabase
         this.kernelExtensions = kernelExtensions;
 
         // Setup configuration
+        params.put(Configuration.store_dir.name(), storeDir);
         config = new Config( params, getSettingsClasses() );
-        config.set(Configuration.store_dir, storeDir);
         
         this.storeDir = config.get(Configuration.store_dir);
     }
@@ -712,7 +709,8 @@ public abstract class AbstractGraphDatabase
         }
     }
 
-    public final String getStoreDir()
+    @Override
+	public final String getStoreDir()
     {
         return storeDir;
     }
@@ -779,7 +777,8 @@ public abstract class AbstractGraphDatabase
         return getSingleManagementBean( type );
     }
 
-    public final <T> T getSingleManagementBean( Class<T> type )
+    @Override
+	public final <T> T getSingleManagementBean( Class<T> type )
     {
         Iterator<T> beans = getManagementBeans( type ).iterator();
         if ( beans.hasNext() )
@@ -817,36 +816,42 @@ public abstract class AbstractGraphDatabase
         return GlobalGraphOperations.at( this ).getAllRelationshipTypes();
     }
 
-    public KernelEventHandler registerKernelEventHandler(
+    @Override
+	public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
         return kernelEventHandlers.registerKernelEventHandler( handler );
     }
 
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
+    @Override
+	public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.registerTransactionEventHandler( handler );
     }
 
-    public KernelEventHandler unregisterKernelEventHandler(
+    @Override
+	public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         return kernelEventHandlers.unregisterKernelEventHandler( handler );
     }
 
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+    @Override
+	public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.unregisterTransactionEventHandler( handler );
     }
 
-    public Node createNode()
+    @Override
+	public Node createNode()
     {
         return nodeManager.createNode();
     }
 
-    public Node getNodeById( long id )
+    @Override
+	public Node getNodeById( long id )
     {
         if ( id < 0 || id > MAX_NODE_ID )
         {
@@ -855,7 +860,8 @@ public abstract class AbstractGraphDatabase
         return nodeManager.getNodeById( id );
     }
 
-    public Relationship getRelationshipById( long id )
+    @Override
+	public Relationship getRelationshipById( long id )
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
@@ -864,12 +870,14 @@ public abstract class AbstractGraphDatabase
         return nodeManager.getRelationshipById( id );
     }
 
-    public Node getReferenceNode()
+    @Override
+	public Node getReferenceNode()
     {
         return nodeManager.getReferenceNode();
     }
 
-    public TransactionBuilder tx()
+    @Override
+	public TransactionBuilder tx()
     {
         return defaultTxBuilder;
     }
@@ -880,7 +888,8 @@ public abstract class AbstractGraphDatabase
         return guard;
     }
 
-    public <T> Collection<T> getManagementBeans( Class<T> beanClass )
+    @Override
+	public <T> Collection<T> getManagementBeans( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
         if ( jmx != null )
@@ -931,12 +940,14 @@ public abstract class AbstractGraphDatabase
         throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
     }
 
-    public KernelData getKernelData()
+    @Override
+	public KernelData getKernelData()
     {
         return extensions;
     }
 
-    public IndexManager index()
+    @Override
+	public IndexManager index()
     {
         return indexManager;
     }
@@ -947,27 +958,32 @@ public abstract class AbstractGraphDatabase
         return config;
     }
 
-    public NodeManager getNodeManager()
+    @Override
+	public NodeManager getNodeManager()
     {
         return nodeManager;
     }
 
-    public LockReleaser getLockReleaser()
+    @Override
+	public LockReleaser getLockReleaser()
     {
         return lockReleaser;
     }
 
-    public LockManager getLockManager()
+    @Override
+	public LockManager getLockManager()
     {
         return lockManager;
     }
 
-    public XaDataSourceManager getXaDataSourceManager()
+    @Override
+	public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDataSourceManager;
     }
 
-    public TransactionManager getTxManager()
+    @Override
+	public TransactionManager getTxManager()
     {
         return txManager;
     }
@@ -978,7 +994,8 @@ public abstract class AbstractGraphDatabase
         return relationshipTypeHolder;
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory()
+    @Override
+	public IdGeneratorFactory getIdGeneratorFactory()
     {
         return idGeneratorFactory;
     }
@@ -995,7 +1012,8 @@ public abstract class AbstractGraphDatabase
         return persistenceSource;
     }
 
-    public final StringLogger getMessageLog()
+    @Override
+	public final StringLogger getMessageLog()
     {
         return msgLog;
     }
@@ -1379,7 +1397,7 @@ public abstract class AbstractGraphDatabase
     private class ConfigurationChangedRestarter
         extends LifecycleAdapter
     {
-        private ConfigurationChangeListener listener = new ConfigurationChangeListener()
+        private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
                     {
                         Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
 
