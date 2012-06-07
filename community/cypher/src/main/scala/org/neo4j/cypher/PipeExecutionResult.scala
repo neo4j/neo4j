@@ -129,7 +129,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     stringWriter.getBuffer.toString
   }
 
-  private def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + text(x.getProperty(key))).mkString("{", ",", "}")
+  private def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + ":" + text(x.getProperty(key))).mkString("{", ",", "}")
 
   private def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
