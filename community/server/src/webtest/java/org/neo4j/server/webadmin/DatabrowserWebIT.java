@@ -32,26 +32,19 @@ public class DatabrowserWebIT extends AbstractWebadminTest {
     //
     // NODE MANAGEMENT
     //
-    
-    @Test
-    public void referenceNodeIsDefaultViewTest() {
-        wl.goToWebadminStartPage();
-        wl.clickOnTab("Data browser");
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/node/0");
-    }
 
     @Test
     public void canFindNodeByNodePredicatedIdTest() {
         long nodeId = wl.createNodeInDataBrowser();
         wl.searchForInDataBrowser("node:" + nodeId);
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/node/" + nodeId);
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/node/" + nodeId);
     }
         
     @Test
     public void canFindNodeByIdTest() {
         wl.createNodeInDataBrowser();
         wl.searchForInDataBrowser("0");
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/node/0");   
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/node/0");   
     }
 
     @Test
@@ -59,15 +52,16 @@ public class DatabrowserWebIT extends AbstractWebadminTest {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Data browser");
         wl.clickOnButton("Node");
-        wl.getDataBrowserItemHeadline().waitForTextToChangeFrom(".+/db/data/node/0");
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/node/[0-9]+");   
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeFrom(".+/db/data/node/0");
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/node/[0-9]+");   
     }
 
         
     @Test
     public void canSetNodePropertyTest() {
         wl.goToWebadminStartPage();
-        wl.clickOnTab("Data browser");
+        wl.createNodeInDataBrowser();
+        
         wl.clickOnButton("Add property");
         
         wl.waitForElementToAppear(By.xpath("//li[1]/ul/li//input[@class='property-key']"));
@@ -95,7 +89,7 @@ public class DatabrowserWebIT extends AbstractWebadminTest {
         wl.writeTo(By.xpath("//input[@id='create-relationship-to']"), "0");
         wl.clickOnButton("Create");
        
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/relationship/[0-9]+");
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/relationship/[0-9]+");
     }
 
     @Test
@@ -107,7 +101,7 @@ public class DatabrowserWebIT extends AbstractWebadminTest {
         
         wl.searchForInDataBrowser("rel:" + relId);
         
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/relationship/" + relId);
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/relationship/" + relId);
     }
 
     @Test
@@ -143,7 +137,7 @@ public class DatabrowserWebIT extends AbstractWebadminTest {
     public void cypherResultHasClickableNodes() {
         wl.searchForInDataBrowser("start n=node(0) return n,ID(n)");
         wl.clickOn(By.xpath("id('data-area')/div/div/table/tbody/tr[2]/td[1]/a"));
-        wl.getDataBrowserItemHeadline().waitForTextToChangeTo(".+/db/data/node/0");
+        wl.getDataBrowserItemSubtitle().waitForTextToChangeTo(".+/db/data/node/0");
     }
     
     private void propertyShouldHaveValue(String expectedKey, String expectedValue) {

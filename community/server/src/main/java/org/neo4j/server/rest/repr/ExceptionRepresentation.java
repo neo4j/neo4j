@@ -40,7 +40,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         {
             serializer.putString( "message", message );
         }
-        serializer.putString( "exception", exception.toString() );
+        serializer.putString( "exception", exception.getClass().getSimpleName() );
         StackTraceElement[] trace = exception.getStackTrace();
         if ( trace != null )
         {

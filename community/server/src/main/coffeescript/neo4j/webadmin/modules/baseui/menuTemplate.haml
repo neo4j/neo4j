@@ -1,0 +1,10 @@
+:each item in menuitems
+  %li.title-button
+    :if item === current
+      %a.current(href="#{htmlEscape(item.getUrl())}")
+        %span.subtitle= htmlEscape(item.getSubtitle())
+        %span= htmlEscape(item.getTitle())
+    :if item !== current
+      %a(href="#{htmlEscape(item.getUrl())}")
+        %span.subtitle= htmlEscape(item.getSubtitle())
+        %span= htmlEscape(item.getTitle())

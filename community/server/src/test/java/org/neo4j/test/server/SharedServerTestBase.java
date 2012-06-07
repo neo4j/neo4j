@@ -28,6 +28,10 @@ import org.neo4j.server.helpers.ServerHelper;
 
 public class SharedServerTestBase
 {
+	
+	private static boolean useExternal = Boolean.valueOf(System.getProperty("neo-server.external","false"));
+	private static String externalURL = System.getProperty("neo-server.external.url","http://localhost:7474");
+	
     protected static final NeoServer server()
     {
         return server;
@@ -44,15 +48,34 @@ public class SharedServerTestBase
 
     protected final void cleanDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
+    	if(useExternal) 
+    	{
+    		// TODO
+    	} else
+    	{
+    		ServerHelper.cleanTheDatabase( server );
+    	}
     }
 
     private static NeoServer server;
+	private static String serverUrl;
+	
+	public static String getServerURL()
+	{
+		return serverUrl;
+	}
 
     @BeforeClass
     public static void allocateServer() throws IOException
     {
-        server = ServerHolder.allocate();
+    	if(useExternal) 
+    	{
+    		serverUrl = externalURL;
+    	} else 
+    	{
+    		server = ServerHolder.allocate();
+    		serverUrl = server.baseUri().toString();
+    	}
     }
     
     
@@ -60,13 +83,16 @@ public class SharedServerTestBase
     @AfterClass
     public static final void releaseServer()
     {
-        try
-        {
-            ServerHolder.release( server );
-        }
-        finally
-        {
-            server = null;
-        }
+    	if(!useExternal) 
+    	{
+	        try
+	        {
+	            ServerHolder.release( server );
+	        }
+	        finally
+	        {
+	            server = null;
+	        }
+    	}
     }
 }

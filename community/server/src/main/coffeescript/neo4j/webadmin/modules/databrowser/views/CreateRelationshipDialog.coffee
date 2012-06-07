@@ -20,12 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
+   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'
    './createRelationship',
    'ribcage/View',
    'neo4j/webadmin/utils/FormHelper',
    'lib/amd/jQuery'], 
-  (ItemUrlResolver, template, View, FormHelper, $) ->
-  
+  (ItemUrlResolver, DataBrowserState, template, View, FormHelper, $) ->
+
     class CreateRelationshipDialog extends View
 
       className: "popout"
@@ -47,7 +48,7 @@ define(
         @urlResolver = new ItemUrlResolver(@server)
 
         @type = "RELATED_TO"
-        if @dataModel.dataIsSingleNode()
+        if @dataModel.getState() is DataBrowserState.State.SINGLE_NODE
           @from = @dataModel.getData().getId()
         else
           @from = ""
@@ -73,8 +74,9 @@ define(
 
       saveSuccessful : (relationship) =>
         id = @urlResolver.extractRelationshipId(relationship.getSelf())
-        @dataModel.setData( relationship, true) 
-        @dataModel.setQuery( "rel:#{id}", true)
+        #@dataModel.setData( relationship, true) 
+        @dataModel.setQuery( "rel:#{id}" )
+        @dataModel.executeCurrentQuery()
         @closeCallback()
 
       saveFailed : (error) =>

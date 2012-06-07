@@ -28,13 +28,13 @@ define(
 
       render : =>
         $(@el).html(template(
-          result : @dataModel.getData(),
+          result : @queryResult,
           id : (entity) ->
             entity.self.substr(entity.self.lastIndexOf("/")+1)
         ))
         return this
       
-      setDataModel : (dataModel) =>
-        @dataModel = dataModel
+      setData : (queryResult) =>
+        @queryResult = queryResult
 
 )
