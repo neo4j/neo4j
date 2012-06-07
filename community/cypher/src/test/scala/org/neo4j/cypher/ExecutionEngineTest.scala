@@ -2015,4 +2015,42 @@ RETURN x0.name?
     assert(result.toList === List(Map("a" -> refNode)))
   }
 
+  @Ignore @Test
+  def array_prop_output() {
+    createNode("foo"->Array(1,2,3))
+    val result = parseAndExecute("start n=node(1) return n").dumpToString()
+    assertThat(result, containsString("[1,2,3]"))
+  }
+
+  @Test
+  def var_length_expression() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b)
+
+    val result = parseAndExecute("START a=node(1), b=node(2) match a-->b RETURN a-[*]->b").toList
+    assert(result === List(Map("a-[*]->b" -> List(PathImpl(a, r, b)))))
+  }
+
+  @Test
+  def optional_expression() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a,b)
+
+    val result = parseAndExecute("START a=node(1) match a-->b RETURN a-[?]->b").toList
+    assert(result === List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
+  }
+
+  @Test
+  def pattern_expression_deep_in_function_call() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a,b)
+    relate(a,c)
+
+    val result = parseAndExecute("START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
+    println(result)
+  }
 }

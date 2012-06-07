@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Path
 case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with PathExtractor {
   val symbols = new SymbolTable(declareDependencies(AnyType()).distinct: _*)
   val matchingContext = new MatchingContext(pathPattern, symbols, Seq())
+  val interestingPoints = pathPattern.flatMap(_.possibleStartPoints.map(_.name)).distinct
 
   def compute(m: Map[String, Any]): Any = {
     val returnNull = declareDependencies(AnyType()).map(_.name).exists(key => m.get(key) match {
@@ -39,10 +40,9 @@ case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with Pat
     if (returnNull) {
       null
     } else {
-      getMatches(m)
-    }
+      getMatches(m.filterKeys(interestingPoints.contains)) //Only pass on to the pattern matcher
+    }                                                      //the points it should care about, nothing else.
   }
-
 
   def getMatches(v1: Map[String, Any]): Traversable[Path] = {
     val matches = matchingContext.getMatches(v1)
