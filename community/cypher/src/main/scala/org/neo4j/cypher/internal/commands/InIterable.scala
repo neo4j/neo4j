@@ -87,7 +87,7 @@ case class SingleInIterable(iterable: Expression, symbolName: String, inner: Pre
 }
 
 object IsIterable extends IterableSupport {
-  def unapply(x: Any) = if (isCollection(x)) {
+  def unapply(x: Any):Option[Traversable[Any]] = if (isCollection(x)) {
     Some(castToTraversable(x))
   } else {
     None

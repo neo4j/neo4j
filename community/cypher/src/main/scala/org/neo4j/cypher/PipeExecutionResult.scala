@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.pipes.QueryState
+import internal.commands.{IterableSupport, IsIterable}
 import internal.StringExtras
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
@@ -31,7 +31,8 @@ import collection.immutable.{Map => ImmutableMap}
 
 class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
   extends ExecutionResult
-  with StringExtras {
+  with StringExtras
+  with IterableSupport {
 
   lazy val immutableResult = r.map(m => m.toMap)
 
@@ -125,24 +126,18 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     val writer = new PrintWriter(stringWriter)
     dumpToString(writer)
     writer.close()
-    stringWriter.getBuffer.toString;
+    stringWriter.getBuffer.toString
   }
 
-  private def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
+  private def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + text(x.getProperty(key))).mkString("{", ",", "}")
 
   private def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
     case x: Relationship => ":" + x.getType.toString + "[" + x.getId + "] " + props(x)
-    case x: Traversable[_] => x.map(text).mkString("[", ",", "]")
-    case x: Array[_] => x.map(text).mkString("[", ",", "]")
+    case IsIterable(coll) => coll.map(text).mkString("[", ",", "]")
     case x: String => "\"" + x + "\""
     case Some(x) => x.toString
     case null => "<null>"
-    case x => x.toString
-  }
-
-  private def quoteString(in: Any): String = in match {
-    case x: String => "\"" + x + "\""
     case x => x.toString
   }
 

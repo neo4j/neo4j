@@ -2015,7 +2015,7 @@ RETURN x0.name?
     assert(result.toList === List(Map("a" -> refNode)))
   }
 
-  @Ignore @Test
+  @Test
   def array_prop_output() {
     createNode("foo"->Array(1,2,3))
     val result = parseAndExecute("start n=node(1) return n").dumpToString()
