@@ -1,3 +1,34 @@
+1.8.M04 (2012-06-07)
+--------------------
+Kernel:
+ o Additions to the traversal framework:
+   + Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
+     uses this feature and are now faster due to less relationships being traversed.
+   + Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
+   + PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
+     just the end node of the path. It can also see and modify a user defined traversal branch state.
+   + Metadata about the traversal, for the time being: number of relationships traversal and
+     number paths returned.
+   + Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
+    a path in reverse order (starting from the end node going back to the start node). More relevant
+  	in many scenarios as well as allowing for a more efficient implementation.
+   + Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
+   + Some measure to reduce memory consumption and garbage generation during traversals.
+
+Graph-algo:
+ o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
+  Less relationships now needs to be traversed to find the requested paths.
+ o Added an implementation of the shortest path algorithm with the bidirectional traversal feature.
+
+Cypher:
+ o CREATE now accepts full paths and not only single nodes and relationships
+ o Path patterns can now be used as expressions and as predicates
+ o Fixes bug where RELATE fails to compare array properties
+ o Fixes #573: Arithmetics operations have wrong type
+ o Fixes #567: Parameter maps coming through REST are not parsed correctly
+ o Fixes #563: COUNT(*) does not return 0 for empty result
+ o Fixes #561: RELATE doesn't work as expected with map-parameters
+
 1.8.M03 (2012-05-24)
 --------------------
 Kernel:
