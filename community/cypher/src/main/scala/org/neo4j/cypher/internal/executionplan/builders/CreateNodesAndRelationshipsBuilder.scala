@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, Transac
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, SymbolTable}
 import org.neo4j.cypher.internal.commands._
+import collection.Map
 
 
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
@@ -58,7 +59,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     missingCreateNodeActions.distinct ++ commands
   }
 
-  private def alsoCreateNode(e: Expression, symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[UpdateAction] = e match {
+  private def alsoCreateNode(e: (Expression, Map[String,Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[UpdateAction] = e._1 match {
     case Entity(name) =>
       val nodeFromUnderlyingPipe = symbols.satisfies(Seq(Identifier(name, NodeType())))
       val nodeFromOtherCommand = commands.exists {
@@ -67,7 +68,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
       }
 
       if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
-        Seq(CreateNodeStartItem(name, Map()))
+        Seq(CreateNodeStartItem(name, e._2))
       else
         Seq()
 

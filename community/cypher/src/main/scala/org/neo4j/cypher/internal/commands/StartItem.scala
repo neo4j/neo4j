@@ -87,7 +87,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
 }
 
-case class CreateRelationshipStartItem(key: String, from: Expression, to: Expression, typ: String, props: Map[String, Expression])
+case class CreateRelationshipStartItem(key: String, from: (Expression, Map[String, Expression]), to: (Expression, Map[String, Expression]), typ: String, props: Map[String, Expression])
   extends NodeStartItem(key)
   with Mutator
   with UpdateAction
@@ -95,8 +95,8 @@ case class CreateRelationshipStartItem(key: String, from: Expression, to: Expres
   private lazy val relationshipType = DynamicRelationshipType.withName(typ)
 
   def dependencies = {
-    val fromDeps = nodeDependencies(from)
-    val toDeps = nodeDependencies(to)
+    val fromDeps = nodeDependencies(from._1)
+    val toDeps = nodeDependencies(to._1)
     val propDeps = propDependencies(props)
     fromDeps ++ toDeps ++ propDeps
   }
@@ -106,13 +106,13 @@ case class CreateRelationshipStartItem(key: String, from: Expression, to: Expres
     case x => x.dependencies(NodeType())
   }
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = from.filter(f) ++ props.values.flatMap(_.filter(f))
+  def filter(f: (Expression) => Boolean): Seq[Expression] = from._1.filter(f) ++ props.values.flatMap(_.filter(f))
 
-  def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(key, f(from), f(to), typ, props.map(mapRewrite(f)))
+  def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(key, (f(from._1), from._2), (f(to._1), to._2), typ, props.map(mapRewrite(f)))
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val f = from(context).asInstanceOf[Node]
-    val t = to(context).asInstanceOf[Node]
+    val f = from._1(context).asInstanceOf[Node]
+    val t = to._1(context).asInstanceOf[Node]
     val relationship = f.createRelationshipTo(t, relationshipType)
     state.createdRelationships.increase()
     setProperties(relationship, props, context, state)

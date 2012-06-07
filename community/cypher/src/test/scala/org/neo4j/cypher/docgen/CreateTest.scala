@@ -22,9 +22,9 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.QueryStatistics
+import org.neo4j.cypher.{StatisticsChecker, QueryStatistics}
 
-class CreateTest extends DocumentingTestBase {
+class CreateTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List()
 
   def section = "Create"
@@ -123,10 +123,10 @@ for this to work.""",
       text =
         """When you use CREATE and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
-      queryText = "create andres-[:WORKS_AT]->neo<-[:WORKS_AT]-michael return andres,michael",
+      queryText = "create (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return andres,michael",
       returns = "This query creates three nodes and two relationships in one go, and returns the end point " +
         "of the created path",
-      assertions = (p) => p.queryStatistics() == QueryStatistics.empty.copy(nodesCreated = 3, relationshipsCreated = 2))
+      assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }
 
   @Test def create_relationship_with_properties() {

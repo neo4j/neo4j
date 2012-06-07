@@ -37,7 +37,7 @@ trait StartClause extends Base with Expressions {
         (a, b)
       else
         (b, a)
-      Yes(CreateRelationshipStartItem(name, from, to, relType.head, props))
+      Yes(CreateRelationshipStartItem(name, (from, startProps), (to, endProps), relType.head, props))
 
     case ParsedEntity(Entity(name), props, True()) =>
       Yes(CreateNodeStartItem(name, props))

@@ -89,7 +89,7 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     }).toList
 
     rels match {
-      case List() => Update(UpdateWrapper(Seq(), CreateRelationshipStartItem(rel.name, Literal(startNode), Literal(endNode), relType, rel.properties)))
+      case List() => Update(UpdateWrapper(Seq(), CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Literal(endNode),Map()), relType, rel.properties)))
       case List(r) => Traverse(rel.name -> r)
       case _ => throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
@@ -113,9 +113,9 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   private def createUpdateActions(dir: Direction, startNode: Node, end: NamedExpectation): Seq[UpdateWrapper] = {
     val createRel = if (dir == Direction.OUTGOING) {
-      CreateRelationshipStartItem(rel.name, Literal(startNode), Entity(end.name), relType, rel.properties)
+      CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Entity(end.name),Map()), relType, rel.properties)
     } else {
-      CreateRelationshipStartItem(rel.name, Entity(end.name), Literal(startNode), relType, rel.properties)
+      CreateRelationshipStartItem(rel.name, (Entity(end.name),Map()), (Literal(startNode),Map()), relType, rel.properties)
     }
 
     val relUpdate = UpdateWrapper(Seq(end.name), createRel)

@@ -90,7 +90,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val a = createNode()
     val b = createNode()
 
-    val createRel = CreateRelationshipStartItem("r", getNode("a", a), getNode("b", b), "REL", Map("I" -> Literal("was here")))
+    val createRel = CreateRelationshipStartItem("r", (getNode("a", a),Map()), (getNode("b", b),Map()), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
     val txBeginPipe = new TransactionStartPipe(startPipe, graph)
