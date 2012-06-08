@@ -26,6 +26,8 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
   def graphDescription = List()
   def section = "cookbook"
+  generateInitialGraphForConsole = false
+
 
   @Test def completeGraph() {
     testQuery(

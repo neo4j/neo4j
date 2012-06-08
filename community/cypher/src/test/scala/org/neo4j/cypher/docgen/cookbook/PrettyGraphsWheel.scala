@@ -26,6 +26,7 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 class PrettyGraphsWheelTest extends DocumentingTestBase {
   def graphDescription = List()
   def section = "cookbook"
+  generateInitialGraphForConsole = false
 
   @Test def completeGraph() {
     testQuery(
@@ -38,8 +39,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
 - select 2 leafs from the center node and conenct them.
 - find the minimum and maximum leaf and connect these.
 - return the center node.""",
-      queryText = """//First we create the center
-CREATE center
+      queryText = """CREATE center
 foreach( x in range(1,10) : 
    CREATE leaf={count:x}, center-[:X]->leaf
 )
