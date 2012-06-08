@@ -96,6 +96,53 @@ include::who-follows-or-loves-me-back.txt[]
 
 :leveloffset: 1
 
+[[cypher-cookbook-pretty-graphs]]
+== Pretty graphs in Cypher ==
+
+This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].
+
+The graph visualizations look best using a Force Directed Layout, while the current layout below is different. For better results,
+use the live demos in http://docs.neo4j.org[the online version of this manual].
+
+:leveloffset: 2
+
+include::star-graph.txt[]
+
+include::cypher-prettygraphsstar-graph.txt[]
+
+:leveloffset: 2
+
+include::wheel-graph.txt[]
+
+include::cypher-prettygraphswheel-graph.txt[]
+
+:leveloffset: 2
+
+include::complete-graph.txt[]
+
+include::cypher-prettygraphscompletegraph-graph.txt[]
+
+:leveloffset: 2
+
+include::friendship-graph.txt[]
+
+include::cypher-prettygraphsfriendshipgraph-graph.txt[]
+
+:leveloffset: 1
+
+[[cypher-cookbook-complex-updates]]
+== Complex updates ==
+
+This section is showing some graph-related update operations that require advanced graph manipulations.
+
+:leveloffset: 2
+
+include::insert-a-new-value-into-a-linked-list.txt[]
+
+include::cypher-linkedlist-graph.txt[]
+
+:leveloffset: 1
+
 [[cypher-cookbook-path-tree]]
 == A multilevel indexing structure (path tree) ==
 
@@ -122,7 +169,18 @@ include::return-the-full-range.txt[]
 
 include::return-partly-shared-path-ranges.txt[]
 
-//:leveloffset: 1
+:leveloffset: 1
+
+[[cypher-cookbook-similarity-calc]]
+== More complex similarity computations ==
+
+:leveloffset: 2
+
+include::calculate-similarities-by-complex-calculations.txt[]
+
+include::cypher-complexsimilarity-graph.txt[]
+
+
 
 //== Activity Streams ==
 
