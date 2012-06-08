@@ -40,6 +40,7 @@ ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
 rsync -r $DIR/target/text/ $DOCS_SERVER:$ROOTPATHDOCS/text/$VERSION/
 #rsync -r --delete $DIR/target/annotated/ $DOCS_SERVER:$ROOTPATHDOCS/annotated/
 rsync -r --delete $DIR/target/chunked/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
+ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
 scp $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
 # Symlink this version to a generic url
