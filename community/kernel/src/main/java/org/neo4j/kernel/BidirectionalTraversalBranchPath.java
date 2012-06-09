@@ -174,10 +174,10 @@ public class BidirectionalTraversalBranchPath implements Path
         entities.addFirst( branch.endNode() );
         if ( cachedStartNode == null )
             cachedStartNode = branch.endNode();
-        entities.add( end.lastRelationship() );
-        branch = end.parent();
-        if ( branch != null )
+        if ( end.length() > 0 )
         {
+            entities.add( end.lastRelationship() );
+            branch = end.parent();
             while ( branch.length() > 0 )
             {
                 entities.add( branch.endNode() );

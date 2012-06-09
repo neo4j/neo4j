@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.traversal;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.pathExpanderForTypes;
 import static org.neo4j.kernel.Traversal.traversal;
@@ -31,11 +33,15 @@ import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.SideSelectorPolicies;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
@@ -138,5 +144,31 @@ public class TestBidirectionalTraversal extends AbstractTestBase
                     asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
                     asList( getNodeWithName( "f" ), getNodeWithName( "g" ) ) ),
                     "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
+    }
+    
+    @Test
+    public void ensureCorrectPathEntitiesInShortPath() throws Exception
+    {
+        /*
+         * (a)-->(b)
+         */
+        createGraph( "a TO b" );
+        
+        Node a = getNodeWithName( "a" );
+        Node b = getNodeWithName( "b" );
+        Relationship r = a.getSingleRelationship( to, OUTGOING );
+        Path path = single( bidirectionalTraversal()
+            .mirroredSides( traversal().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
+            .collisionEvaluator( Evaluators.atDepth( 1 ) )
+            .sideSelector( SideSelectorPolicies.LEVEL, 1 )
+            .traverse( a, b ) );
+        assertContainsInOrder( path.nodes(), a, b );
+        assertContainsInOrder( path.reverseNodes(), b, a );
+        assertContainsInOrder( path.relationships(), r );
+        assertContainsInOrder( path.reverseRelationships(), r );
+        assertContainsInOrder( path, a, r, b );
+        assertEquals( a, path.startNode() );
+        assertEquals( b, path.endNode() );
+        assertEquals( r, path.lastRelationship() );
     }
 }
