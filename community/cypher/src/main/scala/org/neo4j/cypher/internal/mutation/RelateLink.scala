@@ -57,7 +57,7 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   extends GraphElementPropertyFunctions {
   lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
-  def exec(context: ExecutionContext, state: QueryState): RelateResult = {
+  def exec(context: ExecutionContext, state: QueryState): Option[(RelateLink, RelateResult)] = {
     // We haven't yet figured out if we already have both elements in the context
     // so let's start by finding that first
 
@@ -65,14 +65,14 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     val e = getNode(context, end.name)
 
     (s, e) match {
-      case (None, None) => CanNotAdvance()
+      case (None, None) => Some(this->CanNotAdvance())
 
       case (Some(startNode), None) => oneNode(startNode, context, dir, state, end)
       case (None, Some(startNode)) => oneNode(startNode, context, dir.reverse(), state, start)
 
       case (Some(startNode), Some(endNode)) => {
         if (context.contains(rel.name))
-          Done() //We've already solved this pattern.
+          None //We've already solved this pattern.
         else
           twoNodes(startNode, endNode, context, state)
       }
@@ -82,15 +82,20 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   // This method sees if a matching relationship already exists between two nodes
   // If any matching rels are found, they are returned. Otherwise, a new one is
   // created and returned.
-  private def twoNodes(startNode: Node, endNode: Node, ctx: ExecutionContext, state: QueryState): RelateResult = {
+  private def twoNodes(startNode: Node, endNode: Node, ctx: ExecutionContext, state: QueryState): Option[(RelateLink, RelateResult)] = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.
       filter(r => {
       r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, ctx)
     }).toList
 
     rels match {
-      case List() => Update(UpdateWrapper(Seq(), CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Literal(endNode),Map()), relType, rel.properties)))
-      case List(r) => Traverse(rel.name -> r)
+      case List() =>
+        val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
+
+        Some(this->Update(Seq(UpdateWrapper(Seq(), CreateRelationshipStartItem(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, rel.properties))), () => {
+          Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
+        }))
+      case List(r) => Some(this->Traverse(rel.name -> r))
       case _ => throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
   }
@@ -98,14 +103,18 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   // When only one node exists in the context, we'll traverse all the relationships of that node
   // and try to find a matching node/rel. If matches are found, they are returned. If nothing is
   // found, we'll create it and return it
-  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: NamedExpectation): RelateResult = {
+  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: NamedExpectation): Option[(RelateLink, RelateResult)] = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.filter(r => {
       rel.compareWithExpectations(r, ctx) && end.compareWithExpectations(r.getOtherNode(startNode), ctx)
     }).toList
 
     rels match {
-      case List() => Update(createUpdateActions(dir, startNode, end): _*)
-      case List(r) => Traverse(rel.name -> r, end.name -> r.getOtherNode(startNode))
+      case List() =>
+        val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
+        Some(this ->Update(createUpdateActions(dir, startNode, end), () => {
+          Seq(tx.acquireWriteLock(startNode))
+        }))
+      case List(r) => Some(this->Traverse(rel.name -> r, end.name -> r.getOtherNode(startNode)))
       case _ => throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
   }
