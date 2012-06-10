@@ -22,30 +22,26 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.cypher.internal.commands._
 
 trait MatchClause extends Base with ParserPattern {
-  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
     case matching =>
       val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
       val unnamedPaths = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
 
-      (Match(unnamedPaths: _*), NamedPaths(namedPaths: _*))
+      (unnamedPaths, namedPaths)
   }
 
   private def successIfEntities[T](l: Expression, r: Expression)(f: (String, String) => T): Maybe[T] = (l, r) match {
-    case (Entity(lName), Entity(rName)) => Yes(f(lName, rName))
-    case (x, Entity(_)) => No("MATCH end points have to be node identifiers - found: " + x)
-    case (Entity(_), x) => No("MATCH end points have to be node identifiers - found: " + x)
-    case (x, y) => No("MATCH end points have to be node identifiers - found: " + x + " and " + y)
+    case (Entity(lName), Entity(rName)) => Yes(Seq(f(lName, rName)))
+    case (x, Entity(_)) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
+    case (Entity(_), x) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
+    case (x, y) => No(Seq("MATCH end points have to be node identifiers - found: " + x + " and " + y))
   }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
       val namedPathPatterns = patterns.map(matchTranslator)
-
-      val find = namedPathPatterns.find(!_.success)
-      find match {
-        case None => Yes(NamedPath(name, namedPathPatterns.map(_.value.asInstanceOf[Pattern]): _*))
-        case Some(No(msg)) => No(msg)
-      }
+      val result = namedPathPatterns.reduce(_ ++ _)
+      result.seqMap(p => Seq(NamedPath(name, p.map(_.asInstanceOf[Pattern]):_*)))
 
     case ParsedRelation(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate) =>
       successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
@@ -56,6 +52,6 @@ trait MatchClause extends Base with ParserPattern {
     case ParsedShortestPath(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate, max, single, relIterator) =>
       successIfEntities(left, right)((l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
 
-    case x => No("failed to parse MATCH pattern")
+    case x => No(Seq("failed to parse MATCH pattern"))
   }
 }

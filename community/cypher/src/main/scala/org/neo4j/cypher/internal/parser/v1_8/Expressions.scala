@@ -181,13 +181,12 @@ trait Expressions extends Base with ParserPattern with Predicates {
   }
 
   private def translate(abstractPattern: AbstractPattern): Maybe[Pattern] = matchTranslator(abstractPattern) match {
-    case Yes(x: NamedPath) => No("Can't assign to an identifier in a pattern expression")
-    case Yes(pattern: Pattern) => Yes(pattern)
-    case n: No => n
-  }
+      case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
+      case Yes(p@Seq(pattern:Pattern)) => Yes(p.asInstanceOf[Seq[Pattern]])
+      case n: No => n
+    }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
-
 }
 
 trait DefaultTrue

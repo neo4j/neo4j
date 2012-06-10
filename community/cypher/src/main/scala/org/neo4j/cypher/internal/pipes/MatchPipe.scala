@@ -26,10 +26,12 @@ import org.neo4j.cypher.internal.commands.{Predicate, Pattern}
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
   val symbols = matchingContext.symbols
+  val keysToKeep = (patterns.flatMap(_.possibleStartPoints.map(_.name)) ++ predicates.flatMap(_.dependencies.map(_.name))).distinct
 
   def createResults(state: QueryState) =
     source.createResults(state).flatMap(ctx => {
-      matchingContext.getMatches(ctx.toMap).map(pm => ctx.newWith( pm ) )
+      val matches = matchingContext.getMatches(ctx.filterKeys(key => keysToKeep.contains(key) || key.startsWith("-=PARAMETER=-")))
+      matches.map(pm => ctx.newWith( pm ) )
     })
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"

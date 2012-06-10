@@ -38,16 +38,16 @@ trait ReturnClause extends Base with Expressions {
       | ignoreCase("return") ~> failure("return column list expected")
       | failure("expected return clause"))
 
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> columnList
+  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> columnList
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-  def columnList:Parser[(Return, Option[Aggregation])]  = opt(ignoreCase("distinct")) ~ commaList(column) ^^ {
+  def columnList:Parser[(Return, Option[Seq[AggregationExpression]])]  = opt(ignoreCase("distinct")) ~ commaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.name).toList
 
-      val none: Option[Aggregation] = distinct match {
-        case Some(x) => Some(Aggregation())
+      val none = distinct match {
+        case Some(x) => Some(Seq())
         case None => None
       }
 
@@ -57,7 +57,7 @@ trait ReturnClause extends Base with Expressions {
 
       val aggregation = aggregationExpressions match {
         case List() => none
-        case _ => Some(Aggregation(aggregationExpressions: _*))
+        case _ => Some(aggregationExpressions)
       }
 
       (Return(columnName, returnItems: _*), aggregation)
@@ -66,7 +66,7 @@ trait ReturnClause extends Base with Expressions {
 
   def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
 
-  def WITH: Parser[(Return, Option[Aggregation])] = withSyntax ^^ (columns => {
+  def WITH: Parser[(Return, Option[Seq[AggregationExpression]])] = withSyntax ^^ (columns => {
 
     val problemColumns = columns._1.returnItems.flatMap {
       case ReturnItem(_, _, true) => None

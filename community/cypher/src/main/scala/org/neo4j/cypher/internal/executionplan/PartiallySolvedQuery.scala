@@ -31,19 +31,19 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val patterns = q.matching.toSeq.flatMap(_.patterns.map(Unsolved(_))) ++
-      q.namedPaths.toSeq.flatMap(_.paths.flatMap(_.pathPattern.map(Unsolved(_))))
+    val patterns = q.matching.map(Unsolved(_)) ++
+      q.namedPaths.flatMap(_.pathPattern.map(Unsolved(_)))
 
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
-      start = q.start.startItems.map(Unsolved(_)),
+      start = q.start.map(Unsolved(_)),
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
       where = q.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
-      aggregation = q.aggregation.toSeq.flatMap(_.aggregationItems.map(Unsolved(_))),
-      sort = q.sort.toSeq.flatMap(_.sortItems.map(Unsolved(_))),
+      aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
+      sort = q.sort.map(Unsolved(_)),
       slice = q.slice.toSeq.map(Unsolved(_)),
-      namedPaths = q.namedPaths.toSeq.flatMap(_.paths.map(Unsolved(_))),
+      namedPaths = q.namedPaths.map(Unsolved(_)),
       aggregateQuery = if (q.aggregation.isDefined)
         Unsolved(true)
       else

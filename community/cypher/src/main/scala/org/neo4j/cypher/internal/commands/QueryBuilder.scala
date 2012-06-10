@@ -23,18 +23,18 @@ import org.neo4j.cypher.internal.mutation.UpdateAction
 
 class QueryBuilder(startItems: Seq[StartItem]) {
   var updates = Seq[UpdateAction]()
-  var matching: Option[Match] = None
+  var matching: Seq[Pattern] = Seq()
   var where: Option[Predicate] = None
-  var aggregation: Option[Aggregation] = None
-  var orderBy: Option[Sort] = None
+  var aggregation: Option[Seq[AggregationExpression]] = None
+  var orderBy: Seq[SortItem] = Seq()
   var skip: Option[Expression] = None
   var limit: Option[Expression] = None
-  var namedPaths: Option[NamedPaths] = None
+  var namedPaths: Seq[NamedPath] = Seq()
   var tail: Option[Query] = None
   var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
 
   def matches(patterns: Pattern*): QueryBuilder = store {
-    matching = Some(Match(patterns: _*))
+    matching = patterns
   }
 
   def updates(cmds: UpdateAction*): QueryBuilder = store {
@@ -46,11 +46,11 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def aggregation(aggregationItems: AggregationExpression*): QueryBuilder = store {
-    aggregation = Some(Aggregation(aggregationItems: _*))
+    aggregation = Some(aggregationItems)
   }
 
   def orderBy(sortItems: SortItem*): QueryBuilder = store {
-    orderBy = Some(Sort(sortItems: _*))
+    orderBy = sortItems
   }
 
   def skip(skipTo: Int): QueryBuilder = store {
@@ -70,7 +70,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store {
-    namedPaths = Some(NamedPaths(paths: _*))
+    namedPaths = paths
   }
 
   def columns(columnList: String*): QueryBuilder = store {
@@ -92,5 +92,5 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def returns(returnItems: ReturnColumn*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), Start(startItems: _*), updates, matching, where, aggregation, orderBy, slice, namedPaths, tail)
+    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, where, aggregation, orderBy, slice, namedPaths, tail)
 }

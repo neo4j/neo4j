@@ -1871,7 +1871,6 @@ create a-[r:REL]->b
         CreateRelationshipStartItem("r1", (Entity("a"),Map()), (Entity("  UNNAMED1"),Map()), "KNOWS", Map()),
         CreateRelationshipStartItem("r2", (Entity("b"),Map()), (Entity("  UNNAMED1"),Map()), "LOVES", Map())).
       returns()
-             //CreateRelationshipStartItem(r1,a,  UNNAMED1,KNOWS,Map()), CreateRelationshipStartItem(r2,b,  UNNAMED1,LOVES,Map()))
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
@@ -1882,6 +1881,41 @@ create a-[r:REL]->b
   }
 
 
+  @Test def create_and_assign_to_path_identifier() {
+    testFrom_1_8(
+      "create p = a-[r:KNOWS]->() return p",
+      Query.
+      start(CreateRelationshipStartItem("r", (Entity("a"), Map()), (Entity("  UNNAMED1"), Map()), "KNOWS", Map())).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      returns(ReturnItem(Entity("p"), "p")))
+  }
+
+  @Test def relate_and_assign_to_path_identifier() {
+    val q2 = Query.
+      updates(RelateAction(RelateLink("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      returns(ReturnItem(Entity("p"), "p"))
+
+    val q = Query.
+      start(NodeById("a", 0)).
+      tail(q2).
+      returns(AllIdentifiers())
+
+    testFrom_1_8("start a=node(0) relate p = a-[r:KNOWS]->() return p", q)
+  }
+
+  @Test(expected = classOf[SyntaxException]) def assign_to_path_inside_foreach_should_work() {
+    testFrom_1_8(
+"""start n=node(0)
+foreach(x in [1,2,3] :
+  create p = ({foo:x})-[:X]->()
+  foreach( i in p :
+    set i.touched = true))""",
+      Query.
+      start(CreateRelationshipStartItem("r", (Entity("a"), Map()), (Entity("  UNNAMED1"), Map()), "KNOWS", Map())).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      returns(ReturnItem(Entity("p"), "p")))
+  }
 
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)

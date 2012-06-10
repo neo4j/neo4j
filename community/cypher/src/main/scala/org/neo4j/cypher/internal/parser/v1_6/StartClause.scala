@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands._
 
 
 trait StartClause extends Base {
-  def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("expected 'START'")
+  def start: Parser[Seq[StartItem]] = ignoreCase("start") ~> comaList(startBit) | failure("expected 'START'")
 
   def startBit =
     (identity ~ "=" ~ lookup ^^ { case id ~ "=" ~ l => l(id)  }

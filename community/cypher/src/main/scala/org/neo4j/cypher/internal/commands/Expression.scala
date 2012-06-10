@@ -225,7 +225,7 @@ case class Property(entity: String, property: String) extends CastableExpression
 }
 
 case class Entity(entityName: String) extends CastableExpression {
-  def compute(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
+  def compute(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException("Failed to find `" + entityName + "`"))
   val identifier: Identifier = Identifier(entityName, AnyType())
   override def toString(): String = entityName
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entityName, extectedType))

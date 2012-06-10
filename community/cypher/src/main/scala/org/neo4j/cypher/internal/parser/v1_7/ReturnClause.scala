@@ -42,12 +42,12 @@ trait ReturnClause extends Base with Expressions {
     case col ~ None => col
   }
 
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
+  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.columnName).toList
 
-      val none: Option[Aggregation] = distinct match {
-        case Some(x) => Some(Aggregation())
+      val none = distinct match {
+        case Some(x) => Some(Seq())
         case None => None
       }
 
@@ -57,9 +57,8 @@ trait ReturnClause extends Base with Expressions {
 
       val aggregation = aggregationExpressions match {
         case List() => none
-        case _ => Some(Aggregation(aggregationExpressions: _*))
+        case _ => Some(aggregationExpressions)
       }
-
 
       (Return(columnName, returnItems: _*), aggregation)
     }

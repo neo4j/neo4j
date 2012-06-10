@@ -44,14 +44,12 @@ with ActualParser {
         case (s, l) => Some(Slice(s, l))
       }
 
-      val (pattern: Option[Match], namedPaths: Option[NamedPaths]) = matching match {
-        case Some((p, NamedPaths())) => (Some(p), None)
-        case Some((Match(), nP)) => (None, Some(nP))
-        case Some((p, nP)) => (Some(p), Some(nP))
-        case None => (None, None)
+      val (pattern: Seq[Pattern], namedPaths: Seq[NamedPath]) = matching match {
+        case Some((a,b)) => (a,b)
+        case None => (Seq(), Seq())
       }
 
-      (queryText: String) => Query(returns._1, start, Seq(), pattern, where, returns._2, order, slice, namedPaths, None, queryText)
+      (queryText: String) => Query(returns._1, start, Seq(), pattern, where, returns._2, order.toSeq.flatten, slice, namedPaths, None, queryText)
     }
   }
 

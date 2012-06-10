@@ -29,14 +29,14 @@ object Query {
 }
 
 case class Query(returns: Return,
-                 start: Start,
+                 start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
-                 matching: Option[Match],
+                 matching: Seq[Pattern],
                  where: Option[Predicate],
-                 aggregation: Option[Aggregation],
-                 sort: Option[Sort],
+                 aggregation: Option[Seq[AggregationExpression]],
+                 sort: Seq[SortItem],
                  slice: Option[Slice],
-                 namedPaths: Option[NamedPaths],
+                 namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
                  queryString: String = "") {
   override def equals(p1: Any): Boolean =
@@ -57,18 +57,33 @@ case class Query(returns: Return,
         namedPaths == other.namedPaths &&
         tail == other.tail
     }
+
+  override def toString: String =
+"""
+start  : %s
+updates: %s
+match  : %s
+paths  : %s
+where  : %s
+aggreg : %s
+return : %s
+order  : %s
+slice  : %s
+next   : %s
+""".format(
+  start.mkString,
+  updatedCommands.mkString,
+  matching,
+  namedPaths,
+  where,
+  aggregation,
+  returns.returnItems.mkString,
+  sort,
+  slice,
+  tail
+)
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)
-
-case class Start(startItems: StartItem*)
-
-case class Match(patterns: Pattern*)
-
-case class NamedPaths(paths: NamedPath*)
-
-case class Aggregation(aggregationItems: AggregationExpression*)
-
-case class Sort(sortItems: SortItem*)
 
 case class Slice(from: Option[Expression], limit: Option[Expression])

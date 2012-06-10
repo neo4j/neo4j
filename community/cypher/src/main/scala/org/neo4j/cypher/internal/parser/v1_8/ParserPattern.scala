@@ -41,7 +41,7 @@ trait ParserPattern extends Base {
     case in => translate(in, translator, pattern(in))
   }
 
-  def usePath[T](translator: AbstractPattern => Maybe[T]):Parser[Seq[T]] = Parser {
+  def usePath[T](translator: AbstractPattern => Maybe[T]): Parser[Seq[T]] = Parser {
     case in => translate(in, translator, path(in))
   }
 
@@ -51,8 +51,8 @@ trait ParserPattern extends Base {
         val concretePattern = abstractPattern.map(p => translator(p))
 
         concretePattern.find(!_.success) match {
-          case Some(No(msg)) => Failure(msg, rest)
-          case None => Success(concretePattern.map(_.value), rest)
+          case Some(No(msg)) => Failure(msg.mkString("\n"), rest)
+          case None => Success(concretePattern.flatMap(_.values), rest)
         }
 
       case Failure(msg, rest) => Failure(msg, rest)
@@ -77,9 +77,9 @@ trait ParserPattern extends Base {
   }
 
   private def node: Parser[ParsedEntity] =
-    parens(nodeFromExpression) |  // whatever expression, but inside parenthesis
+    parens(nodeFromExpression) | // whatever expression, but inside parenthesis
       singleNodeEqualsMap | // x = {}
-      nodeIdentifier |    // x
+      nodeIdentifier | // x
       nodeInParenthesis | // (x {})
       failure("expected an expression that is a node")
 
@@ -220,19 +220,37 @@ trait ParserPattern extends Base {
                           optional: Boolean)
 
   abstract sealed class Maybe[+T] {
-    def value: T
-
+    def values: Seq[T]
     def success: Boolean
+    def ++[B >: T](other: Maybe[B]): Maybe[B]
+    def map[B](f: T => B): Maybe[B]
+    def seqMap[B](f:Seq[T]=>Seq[B]): Maybe[B]
   }
 
-  case class Yes[T](value: T) extends Maybe[T] {
+  case class Yes[T](values: Seq[T]) extends Maybe[T] {
     def success = true
+
+    def ++[B >: T](other: Maybe[B]): Maybe[B] = other match {
+      case Yes(otherStuff) => Yes(values ++ otherStuff)
+      case No(msg) => No(msg)
+    }
+
+    def map[B](f: T => B): Maybe[B] = Yes(values.map(f))
+
+    def seqMap[B](f: (Seq[T]) => Seq[B]): Maybe[B] = Yes(f(values))
   }
 
-  case class No(msg: String) extends Maybe[Nothing] {
-    def value = throw new Exception()
-
+  case class No(messages: Seq[String]) extends Maybe[Nothing] {
+    def values = throw new Exception("No values exists")
     def success = false
-  }
 
+    def ++[B >: Nothing](other: Maybe[B]): Maybe[B] = other match {
+      case Yes(_) => this
+      case No(otherMessages) => No(messages ++ otherMessages)
+    }
+
+    def map[B](f: Nothing => B): Maybe[B] = this
+
+    def seqMap[B](f: (Seq[Nothing]) => Seq[B]): Maybe[B] = this
+  }
 }

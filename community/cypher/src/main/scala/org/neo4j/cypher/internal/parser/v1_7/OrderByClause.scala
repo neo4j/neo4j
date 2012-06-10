@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.v1_7
 
-import org.neo4j.cypher.internal.commands.{Sort, SortItem}
+import org.neo4j.cypher.internal.commands.SortItem
 
 
 trait OrderByClause extends Base with Expressions  {
@@ -34,8 +34,8 @@ trait OrderByClause extends Base with Expressions  {
 
   def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
 
-  def order: Parser[Sort] = 
-    (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }
+  def order: Parser[Seq[SortItem]] =
+    (ignoreCase("order by") ~> comaList(sortItem)
       | ignoreCase("order") ~> failure("expected by"))
 }
 

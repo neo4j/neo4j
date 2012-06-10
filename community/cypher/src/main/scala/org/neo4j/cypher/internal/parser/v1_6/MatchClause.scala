@@ -26,16 +26,16 @@ import org.neo4j.cypher.internal.commands._
 trait MatchClause extends Base {
   val namer = new NodeNamer
 
-  def matching: Parser[(Match, NamedPaths)] = 
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath])] =
     correctMatch |
   ignoreCase("match") ~> failure("invalid pattern")
 
   def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
     case matching => {
-      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
-      val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val unamedPaths: Seq[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
+      val namedPaths: Seq[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
 
-      (Match(unamedPaths: _*), NamedPaths(namedPaths: _*))
+      (unamedPaths, namedPaths)
     }
   }
 
