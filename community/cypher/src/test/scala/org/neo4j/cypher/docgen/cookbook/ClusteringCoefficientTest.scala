@@ -52,11 +52,13 @@ http://mypetprojects.blogspot.se/2012/06/social-network-analysis-with-neo4j.html
 the graph in question is showing the 2-hop relationships of a sample person as nodes with `KNOWS` relationships.
         
 The http://en.wikipedia.org/wiki/Clustering_coefficient[clustering coefficient] of a selected node is defined as probability that two randomly selected neighbors are connected to each other. 
-aving number of neighbors `n` and number of mutual connections `r` we can calculate:
+With the number of neighbors as `n` and the number of mutual connections between the neigbors`r` the calculation is:
 
 The number of possible connections between two neighbors is `n!/(2!(n-2)!) = 4!/(2!(4-2)!) = 24/4 = 6`,
 where `n` is the number of neighbors `n = 4` and the actual number `r` of connections is `1`. 
-Therefore the clustering coefficient of node 1 is `1/6`""",
+Therefore the clustering coefficient of node 1 is `1/6`.
+        
+`n` and `r` are quite simple to retrieve via the follwoing query:""",
               queryText = "START a = node(1)  " +
       		"MATCH (a)--(b)  " +
       		"==== a, b as neighbours ====" +
