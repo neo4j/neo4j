@@ -8,14 +8,14 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-backup</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M04</version>
   <name>Neo4j - Backup Tool</name>
   <description>Command line tool for grabbing backups from a running Neo4j instance</description>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.8.M04</neo4j.version>
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-backup.html</docs.url>
@@ -49,7 +49,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>1.8.M04</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
