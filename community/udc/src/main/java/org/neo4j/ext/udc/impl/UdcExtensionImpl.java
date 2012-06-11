@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.regex.Pattern;
 
+import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Service;

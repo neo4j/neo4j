@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
-import static org.neo4j.ext.udc.impl.UdcConstants.*;
+import static org.neo4j.ext.udc.UdcConstants.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;

@@ -24,7 +24,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
-import static org.neo4j.ext.udc.impl.UdcConstants.PING;
+import static org.neo4j.ext.udc.UdcConstants.PING;
 
 public class Pinger {
 
