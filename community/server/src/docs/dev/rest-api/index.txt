@@ -9,6 +9,8 @@ include::introduction.txt[]
 
 include::get-service-root.txt[]
 
+include::get-service-root-streaming.txt[]
+
 [[rest-api-nodes]]
 == Nodes ==
 
