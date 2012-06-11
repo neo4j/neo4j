@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TimerTask;
 
+import static org.neo4j.ext.udc.impl.UdcConstants.*;
+
 public class UdcTimerTask extends TimerTask
 {
 
@@ -37,7 +39,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac, String tags)
+    public UdcTimerTask(String host, String version, String revision, String storeId, String source, boolean crashPing, String registration, String mac, String tags, Edition edition, Integer clusterNameHash)
     {
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
@@ -45,29 +47,28 @@ public class UdcTimerTask extends TimerTask
         this.storeId = storeId;
 
         Map<String, String> udcFields = new HashMap<String, String>();
-        udcFields.put( "id", storeId );
-        udcFields.put( "v", version );
 
-        if (tags!=null && !tags.isEmpty())
-        {
-            udcFields.put( "tags", tags);
-        }
+        add(udcFields, ID, storeId);
+        add(udcFields, VERSION, version);
+        add(udcFields, REVISION, revision);
+
+        add(udcFields, EDITION, edition);
+        add(udcFields, TAGS, tags);
+        add(udcFields, CLUSTER_HASH, clusterNameHash);
+        add(udcFields, SOURCE, source);
+        add(udcFields, REGISTRATION, registration);
+        add(udcFields, MAC, mac);
 
         Map<String, String> params = mergeSystemPropertiesWith( udcFields );
-        if ( source != null )
-        {
-            params.put( "source", source );
-        }
-        if ( registration != null )
-        {
-            params.put( "reg", registration );
-        }
-        if (mac != null) 
-        {
-            params.put( "mac", mac );
-        }
 
         pinger = new Pinger( host, params, crashPing );
+    }
+
+    private void add(Map<String, String> udcFields, String name, Object value) {
+        if ( value == null ) return;
+        String str = value.toString().trim();
+        if (str.isEmpty()) return;
+        udcFields.put(name, str);
     }
 
     private Map<String, String> mergeSystemPropertiesWith( Map<String, String> udcFields )

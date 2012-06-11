@@ -1,3 +1,10 @@
+1.8 (2012-06-??)
+----------------
+o Added edition information (community, advanced, enterprise)
+o Added a cluster-name hash so that stores originating from the same cluster can be aggregated
+o Fixed release version and revision
+
+
 1.7 (2012-04-18)
 ----------------
 o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279

@@ -33,6 +33,7 @@ import java.util.Timer;
 import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelData;
@@ -88,18 +89,38 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         String hostAddress = config.get( UdcSettings.udc_host );
         String source = config.get( UdcSettings.udc_source );
         String registration = config.get( UdcSettings.udc_registration_key );
-
+        Integer clusterNameHash = determineClusterNameHash(config);
         NeoStoreXaDataSource ds = kernel.graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
         boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
-        String storeId = Long.toHexString( ds.getRandomIdentifier() );
-        String version = kernel.version().getRevision();
-        if ( version.equals( "" ) ) version = kernel.version().getVersion();
-        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration, formattedMacAddy(), determineTags() );
+        String storeId = Long.toHexString(ds.getRandomIdentifier());
+        String version = kernel.version().getReleaseVersion();
+        String revision = kernel.version().getRevision();
+        String classPath = getClassPath();
+        String tags = determineTags(jarNamesForTags, classPath);
+        Edition edition = determineEdition(classPath);
+        UdcTimerTask task = new UdcTimerTask( hostAddress, version, revision, storeId, source, crashPing, registration, formattedMacAddy(), tags, edition,clusterNameHash);
         
         timer = new Timer( "Neo4j UDC Timer", /*isDaemon=*/true );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
         
         return task;
+    }
+
+    private Integer determineClusterNameHash(Config config) {
+        try {
+            Class<?> haSettings = Class.forName("org.neo4j.kernel.ha.HaSettings");
+            GraphDatabaseSetting.StringSetting setting = (GraphDatabaseSetting.StringSetting) haSettings.getField("cluster_name").get(null);
+            String name = config.get(setting);
+            return name!=null ? Math.abs(name.hashCode()) : null;
+        } catch(Exception e) {
+            return null;
+        }
+    }
+
+    private Edition determineEdition(String classPath) {
+        if (classPath.contains("neo4j-ha")) return Edition.enterprise;
+        if (classPath.contains("neo4j-jmx")) return Edition.advanced;
+        return Edition.community;
     }
 
     private final Map<String,String> jarNamesForTags = MapUtil.stringMap("spring-", "spring", "(javax.ejb|ejb-jar)","ejb", "(weblogic|glassfish|websphere|jboss)","appserver",
@@ -108,9 +129,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
             "jruby", "ruby","clojure","clojure","jython","python","groovy","groovy",
             "(tomcat|jetty)","web");
 
-    private String determineTags() {
-        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-        final String classPath = runtime.getClassPath();
+    private String determineTags(Map<String, String> jarNamesForTags, String classPath) {
         StringBuilder result=new StringBuilder();
         for (Map.Entry<String, String> entry : jarNamesForTags.entrySet())
         {
@@ -122,6 +141,11 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         }
         if (result.length() == 0) return null;
         return result.substring(1);
+    }
+
+    private String getClassPath() {
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        return runtime.getClassPath();
     }
 
     @Override
