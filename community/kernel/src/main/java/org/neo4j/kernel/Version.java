@@ -81,6 +81,11 @@ public class Version extends Service
         }
     }
 
+    public String getReleaseVersion() {
+        return version;
+    }
+
+
     /**
      * Returns the build revision of the running neo4j kernel.
      *

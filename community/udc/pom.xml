@@ -188,6 +188,12 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>1.8-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
  </dependencies>
 
   <distributionManagement>

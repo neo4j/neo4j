@@ -23,15 +23,11 @@ package org.neo4j.ext.udc.impl;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import static org.neo4j.ext.udc.impl.UdcConstants.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +43,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HaSettings;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -140,7 +137,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals("test", handler.getQueryMap().get("source"));
+        assertEquals("test", handler.getQueryMap().get(SOURCE));
 
         destroy( graphdb );
     }
@@ -171,7 +168,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "marketoid", handler.getQueryMap().get( "reg" ) );
+        assertEquals( "marketoid", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
@@ -181,15 +178,34 @@ public class UdcExtensionImplTest
     {
         setupServer();
 
-        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-        final String classPath = runtime.getClassPath();
-        for (String jar : classPath.split(":")) {
-            System.out.println(jar);
-        }
-
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test", handler.getQueryMap().get( "tags" ) );
+        assertEquals( "test", handler.getQueryMap().get( TAGS ) );
+
+
+        destroy( graphdb );
+    }
+    @Test
+    public void shouldBeAbleToDetermineEditionFromClasspath() throws Exception
+    {
+        setupServer();
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( Edition.enterprise.name(), handler.getQueryMap().get( EDITION ) );
+
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldBeAbleToDetermineClusterFromSettings() throws Exception
+    {
+        setupServer();
+        config.put(HaSettings.cluster_name.name(),"udc-test");
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String clusterHash = ((Integer) Math.abs("udc-test".hashCode())).toString();
+        assertEquals(clusterHash, handler.getQueryMap().get(CLUSTER_HASH));
 
 
         destroy( graphdb );
@@ -203,9 +219,22 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertNotNull(handler.getQueryMap().get("mac"));
+        assertNotNull(handler.getQueryMap().get(MAC));
 
         destroy( graphdb );
+    }
+
+    @Test
+    public void shouldIncludeVersionInConfig() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String version = handler.getQueryMap().get(VERSION);
+        assertTrue(version.matches("\\d.\\d(M0\\d|-SNAPSHOT)?"));
+
+        destroy(graphdb);
     }
 
     private static interface Condition<T>
