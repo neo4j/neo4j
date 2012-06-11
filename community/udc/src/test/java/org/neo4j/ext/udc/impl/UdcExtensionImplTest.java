@@ -43,7 +43,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ha.HaSettings;
+// import org.neo4j.kernel.ha.HaSettings;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -191,12 +191,13 @@ public class UdcExtensionImplTest
         setupServer();
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( Edition.enterprise.name(), handler.getQueryMap().get( EDITION ) );
+        assertEquals( Edition.community.name(), handler.getQueryMap().get( EDITION ) );
 
 
         destroy( graphdb );
     }
 
+    /*
     @Test
     public void shouldBeAbleToDetermineClusterFromSettings() throws Exception
     {
@@ -210,7 +211,7 @@ public class UdcExtensionImplTest
 
         destroy( graphdb );
     }
-
+    */
 
     @Test
     public void shouldIncludeMacAddressInConfig() throws Exception
