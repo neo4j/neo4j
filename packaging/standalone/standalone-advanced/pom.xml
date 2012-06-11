@@ -1,0 +1,178 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.neo4j.assembly</groupId>
+    <artifactId>neo4j-standalone</artifactId>
+    <version>1.8-SNAPSHOT</version>
+    <relativePath>..</relativePath>
+  </parent>
+
+  <groupId>org.neo4j.assembly</groupId>
+  <artifactId>neo4j-advanced-standalone</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Neo4j Advanced - Server Assembler</name>
+
+  <version>1.8-SNAPSHOT</version>
+  <description>This project assembles the Neo4j Advanced stand-alone distribution,
+    pulling together all the deliverable artifacts and packaging them 
+      into a downloadable installer.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <url>https://github.com/neo4j/packaging/tree/master/standalone/standalone-advanced</url>
+  </scm>
+
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+third parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 and you may use the Software solely pursuant to the
+terms of the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.parent.basedir}/document.properties</file>
+                <file>${project.parent.basedir}/permalinks.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <attach>false</attach>
+          <finalName>${server.shortname}-advanced-${project.version}</finalName>
+          <appendAssemblyId>true</appendAssemblyId>
+          <outputDirectory>${project.parent.build.directory}</outputDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>advanced-unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-unix-dist.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>advanced-windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-windows-dist.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>unpack-manpages</id>
+            <phase>generate-resources</phase>
+            <goals><goal>unpack</goal></goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                  <groupId>org.neo4j.doc</groupId>
+                  <artifactId>neo4j-manual</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>manpages</classifier>
+                  <type>jar</type>
+                  <outputDirectory>${project.build.directory}/manpages</outputDirectory>
+                  <includes>*.txt,**/*.txt</includes>
+                  <excludes>META-INF/**</excludes>
+                 </artifactItem>
+               </artifactItems>
+             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server-advanced</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <!-- Ugly addition just to make the download package contain the same jars. -->
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.6.1</version>
+      <!-- Remove conflicting version (why do we have this conflict?) -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    
+
+  </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
+

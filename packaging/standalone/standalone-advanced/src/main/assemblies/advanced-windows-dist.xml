@@ -21,9 +21,9 @@
 
 -->
 <assembly>
-  <id>unix</id>
+  <id>windows</id>
   <formats>
-    <format>tar.gz</format>
+    <format>zip</format>
   </formats>
   <fileSets>
 
@@ -31,24 +31,8 @@
     <fileSet>
       <directory>src/main/distribution/text/advanced</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
-      <excludes>
-        <exclude>conf/jmx.*</exclude>
-      </excludes>
-      <directoryMode>0755</directoryMode>
-      <fileMode>0644</fileMode>
-    </fileSet>
-    <!-- password files -->
-    <fileSet>
-      <directory>src/main/distribution/text/advanced</directory>
-      <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <filtered>true</filtered>
-      <includes>
-        <include>conf/jmx.*</include>
-      </includes>
-      <fileMode>0600</fileMode>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
@@ -59,36 +43,25 @@
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
-    <!-- filter and chmod 755 shell scripts -->
     <fileSet>
-      <directory>src/main/distribution/shell-scripts</directory>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <fileMode>0755</fileMode>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>**/*.bat</include>
+      </includes>
       <excludes>
-        <exclude>bin/neo4j</exclude>
-        <exclude>**/*.bat</exclude>
-        <exclude>**/neo4j-backup*</exclude>
-        <exclude>**/neo4j-coord*</exclude>
+        <exclude>**/Neo4jBackup*</exclude>
+        <exclude>**/Neo4jCoord*</exclude>
       </excludes>
       <filtered>true</filtered>
-    </fileSet>
-    <!-- treat the neo4j script as special so we don't filter shell variables -->
-    <fileSet>
-      <directory>src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <fileMode>0755</fileMode>
-      <includes>
-        <include>**/neo4j</include>
-      </includes>
-      <filtered>false</filtered>
     </fileSet>
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
       <outputDirectory>/</outputDirectory>
       <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
       <includes>
         <include>UPGRADE.txt</include>
       </includes>
@@ -98,17 +71,24 @@
       <directory>target/manpages</directory>
       <outputDirectory>/doc</outputDirectory>
       <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
       <includes>
         <include>*.txt</include>
       </includes>
     </fileSet>
   </fileSets>
+  
 
   <dependencySets>
+  	<dependencySet>
+  	<outputDirectory>/bin</outputDirectory>
+  	<unpack>false</unpack>
+  	<includes>
+  		<include>*:windows-service-wrapper:*</include>
+  	</includes>
+  	</dependencySet>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
-      <directoryMode>0755</directoryMode>
-      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
@@ -128,7 +108,7 @@
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-advanced:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
 
         <exclude>org.neo4j:neo4j-backup</exclude>
         <exclude>org.neo4j:neo4j-com</exclude>
@@ -140,8 +120,6 @@
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
-      <directoryMode>0755</directoryMode>
-      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
@@ -188,7 +166,6 @@
         <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
       </excludes>
     </dependencySet>
- </dependencySets>
-
+  </dependencySets>
 </assembly>
 

@@ -1,0 +1,453 @@
+1.8.M03 (2012-05-24)
+--------------------
+Kernel:
+ o Changed array map to CHM in property index manager, better multithreaded performance
+Shell:
+ o Added BEGIN TRANSACTION/COMMIT/ROLLBACK
+ o Sessions now live on the server side instead of on the client, which means that not just
+  serializable values can be set there. Paves the way for Cypher making use of it.
+Server:
+ o keep_logical_logs is now respected if set to false - default is still true
+Cypher:
+ o Added RELATE
+ o Changed the CREATE syntax, so it looks more like RELATE
+ o Fixes #506: delete head(rels) doesn't work
+ o Fixes #508: length function on array properties doesn't work
+ o Fixes #512: start n=node(*) match n-[r?]->() delete n,r not working
+ o Fixes #514: Extract doesn't work with array properties
+ o Fixes #523: String literals not parsed correctly in CREATE statement
+ o Fixes #526: cypher filter in return clause
+ o Fixes #536: SQRT only returns an integer
+ o Fixes #543: Appending elements to collections
+High Availability:
+ o Fixed possible but benign NPE when pulling updates
+ o Really old instances when attempting to join but the tx is not in the master's log will now copy the store
+
+ 
+1.8.M02 (2012-05-11)
+--------------------
+Kernel:
+ o Optimized short string and short array encoding algorithms
+ o Fixed problem with SpringTransactionManager during HA master switch
+Shell:
+ o Shell can now be exited with Ctrl-D
+Server:
+ o Support for streaming results for http batch operations.
+ o Proper encoding of Index URI key/value pairs.
+ o Fixed Swedish character problem in webadmin string properties.
+ o Webadmin chart labels have nice formatting now.
+Cypher:
+ o Added the possibility to create nodes from an iterable of maps
+
+1.8.M01 (2012-04-26)
+--------------------
+o Byte array properties are handled in a more optimized way, increasing performance by a couple of times at least.
+o Fix for an issue where update of cache when creating a relationship on a very dense node would take longer and longer time.
+o Fix for an issue where a recovery would sometimes fail with it reporting that a start record already had been injected.
+o Added "create" shell app for Cypher queries only doing creations.
+Server:
+  o Added streaming to REST API. All representation implementations have been adapted to produce their data lazily.
+  o Added HTTP logging.
+Cypher:
+  o Added the possibility to return all graph elements using RETURN *
+  o Added CREATE, SET, DELETE, FOREACH, WITH
+  o Fixes issue #432, #446
+High Availability and Backup:
+  o Fix for a rare race condition in initialization code of zoo keeper client which could make
+    a database unable to join its cluster sometimes.
+
+1.7 (2012-04-18)
+----------------
+o Moved BatchInserter to a different package.
+o Fixed 'Record Not In Use' issue with creating and setting Node properties with the BatchInserter.
+Cypher:
+  o Added the possibility to use multiple relationship types on patterns
+  o Fixed bug when aggregation is used in ORDER BY and not listed in the RETURN clause
+Server:
+  o Added scored index results to REST API
+  o Improvements to installation docs for the server
+  o Added auto index management API to REST, fixing #399
+  o Fixed unicode issues in batch operations API in windows and OS X
+  o Server now disallows creating indexes with empty names. Closes #311
+  o Attempting to delete a non-existing index now returns 404, closes #349
+High Availability and Backup:
+  o Changed so branched data directories end up in a sub-directory.
+  o Changed so informative log messages are not logged as errors.
+  o Fixed issue with relationship types not being created via master if performed on a slave.
+  o Improvements to shell script messages and documentation
+Management:
+o Now contains management information for the new Garbage Collection Resistant Cache
+UDC:
+  o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279
+  o UDC now sends the machines MAC adress to Neo Technology, to separate between instances behind firewalls
+  o UDC now sends database registration ID to Neo Technology, if one is available
+  o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language, web-container, app-container, spring, ejb
+
+1.7.M03 (2012-04-11)
+--------------------
+o Removed old OSGi support in favor of the new and better one.
+o Added possibility to use logback for logging.
+o Renamed array cache to GC resistant cache (GCR) and moved it to enterprise.
+o Fixed problem with GCR cache that could cause it to calculate incorrect size.
+o Fixed problem with closing of messages.log on windows
+High Availablity and Backup:
+  o Fixed problem with "Transaction already active" getting logged because of lock timeout.
+  o Added GCR cache.
+  o GCR cache arrays are now reused between restarts HA restarts.
+
+1.7.M02 (2012-03-26)
+--------------------
+o Added lock free atomic array cache that avoids triggering full GCs.
+o Added GC monitor that will keep track on how much the JVM blocks application threads.
+o Fix for an issue where upgrading indices with an unclean shutdown.
+High Availablity and Backup:
+  o Fixed issue with message log not getting closed properly.
+
+1.7.M01 (2012-03-12)
+--------------------
+o Fixed bug in PropertyStore that during recovery would throw exception if the last record was incomplete.
+o Fixes to transaction log start position caching which mitigates a performance issue and fixes a caching issue during rotation.
+o Fixed a couple of issue around copying incomplete transaction to new log during a log rotation.
+o Fixed a property cache poisoning bug and some stale references leaking.
+o Fixed a data race issue between threads removing the same property while the node is evicted from cache.
+o Fixed an issue where a property record in the logical log was missing its owner.
+o Log messages in messages.log are now printed in UTC time zone so that it's the same across servers.
+o Fix for an issue where a full rebuild of an id generator (rebuild_idgenerators_fast=false) could result
+  in exception when adding free ids.
+o Fix for issue which would close an id generator as clean if a startup failed at the wrong time, which would make
+  the id generator diverge from the store it held ids for and possible truncate that store file the next clean shutdown.
+Indexing:
+  o Added LowerCaseKeywordAnalyzer and a clear test for it which shows how to configure a case-insensitive exact index.
+Cypher:
+  o Added literal collections and the IN predicate
+  o Added HEAD, TAIL, LAST and FILTER
+  o Added ! so that missing property can evaluate to false
+  o BREAKING CHANGE: To check whether a property exists on a node, use the HAS(...) function
+  o Arithmetic & string concatenation
+  o An identifier can now be assigned all the nodes/rels in the graph - START a=node(*)
+  o Predicates can be specified inside of a pattern relationship description
+Server:
+  o Fixed a NPE in guarded database for the result of Index#putIfAbsent.
+  o Added SSL support in the server.
+  o SecurityRule implementations can now use simple wildcards to allow whole sub paths of URIs to be covered by the rule.
+  o Added an "order" parameter to index REST queries to control result ordering.
+Shell:
+  o dbinfo command now able to print simple values as well as arrays and compound values as JSON output.
+  o A shell server which isn't remotely avaiable doesn't touch RMI, neither does a client which connects
+    to a server within the same JVM. This makes for less RMI garbage when forgetting to call shutdown().
+  o Fixes problem with eval command in that it couldn't execute a single-line command, which made it impossible
+    to do ./shell -c 'eval ...' from outside
+UDC:
+  o Added MAC address to pings.
+High Availablity and Backup:
+  o Added config option for ha.max_concurrent_transactions_on_master. There was already
+    an equivalent for clients, so those two go hand in hand.
+  o Failure to rotate logical log is treated as a kernel panic event (just as expected in this case).
+  o While copying a store from the master the broker is shut down to cancel out any noisy events from it during copy.
+  o Added Broker#restart and implemented in ZooKeeperBroker to handle ZK session expirations.
+  o Made ZK session timeout configurable.
+  o Removed a retry/wait which held a monitor on HighlyAvailableGraphDatabase which could delay a master switch by 'read timeout' seconds.
+  o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+    added proper life cycle support for services and lots and lots of other cleanups. This also removes the need for wrapping
+    an entire HA graphdb in a wrapper to have the entities survive an internal restart.
+  o Now full and incremental backup fetches and writes to disk the latest transaction if not present,
+    allowing for an HA cluster to bootstrap itself.
+
+1.6 (2012-01-19)
+----------------
+o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
+o It is no longer required to run an update puller to trigger a master election when the master goes down abruptly.
+o Multiple retries on store copy operations during startup, so that long copies that get interrupted have a chance to complete.
+o Backup rotates messages.log with the timestamp of the backup operation
+o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
+
+1.6.M03 (2012-01-12)
+--------------------
+o Corrected ZK Expired event handling. Now, instead of restarting the zookeeper client, the whole broker is restarted and newMaster is called.
+  This leads to proper reconnect to the ZK quorum and parsing of the possibly updated cluster state.
+o Added support for having one ZK cluster managing many HA clusters (controlled by ha.cluster_name config).
+o Fixed issues with update puller being shutdown incorrectly and sometimes having references to stale objects.
+o Added support for creating unique entities via Index#putIfAbsent.
+
+1.6.M02 (2011-12-16)
+--------------------
+o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
+o [cypher] BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
+o [server] DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated.
+o [com] Now closes connections if either side dies during streaming
+o [ha] Added entry about HAProxy in manual.
+o [ha] Fixed an issue where pulling updates would fail if no master had been elected. Now it tries to find a new master instead.
+o [ha] Exposes information about branched (and stashed) stores through JMX. 
+o [server] Webadmin data browser now supports cypher queries
+o [server] Updated to gremlin 1.4
+o [server] Fixed bug in how auto indexes are represented
+o [server] Max request execution time can now be limited
+o [server] Hypermedia URLs returned by the server now set their host based on the HTTP host header
+o [kernel] Lower memory usage of ImpermanentGraphDatabase.
+o [kernel] Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
+o [kernel] Fixed a race condition in the property cache which cuold poison the cache.
+o [kernel] Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical log without
+  incrementing the logVersion, making the next log rename fail.
+o [kernel] Start records in the logical log aren't written until the transaction starts preparing/committing. This fixes an issue
+  with the logical log not being rotated sometimes.
+o [kernel] Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction to be "unforced"
+  meaning that logical logs won't be forced when committing. Means better performance for small non-critical transactions.
+o [kernel] Reduced number of proxy object instantiation and node record loading in general.
+o [kernel] Added a wrapping graphdb abstraction, which makes instances survive even if the underlying db restarts.
+o [cypher] Added allShortestPaths
+o [cypher] Added COALESCE
+o [cypher] Added column aliasing with AS
+o [cypher] Fixed problems with optional graph elements
+
+1.6.M01 (2011-11-24)
+--------------------
+o Added entry about HAProxy in manual.
+o Fixed an issue where pulling updates would fail if no master had been elected. Now it tries to find a new master instead.
+o Exposes information about branched (and stashed) stores through JMX.
+
+1.5 (2011-10-18)
+----------------
+o Added default remote JMX access configuration and security setup options
+o Added protocol version to com protocol to be able to fail fast and predictably if two different
+  version tries to communicate with each other.
+
+1.5.M02 (2011-10-10)
+--------------------
+o Performance improvements in extraction of logs sent from master to slave in HA.
+o Some deadlock scenarios in HA fixed.
+o Performance improvements in coordinator communication in HA.
+
+1.5.M01 (2011-08-31)
+--------------------
+o Fixed some issues regarding monitoring of open channels and what resources they map to and occupy.
+
+1.4.M04 (2011-06-09)
+--------------------
+o First iteration of the Cypher Query Language included,
+  with a section in the manual.
+o Experimental support for batch operations in REST
+o The Neo4j Manual now includes some examples, and the
+  section on REST has been extended.   
+
+1.4.M01 (2011-04-28)
+--------------------
+o Server logging has been changed, see the Server Configuration chapter in
+  the manual for further information.
+
+1.3 (2011-04-11)
+----------------
+o Neo4j Community now licensed under GPL
+o All known Windows problems in Neo4j fixed.
+o rewritten Webadmin interface with graph visualization support
+o Short string support in kernel for better
+o 256 Billion database primitives
+o support for Gremlin 0.9 and related Tinkerpop projects
+o Better JMX and monitoring support (Neo4j Advanced)
+o New backup solution with support
+
+1.3.M05 (2011-03-24)
+--------------------
+o New look and feel of the webadmin
+o New visual data browser
+o Updated to Gremlin 0.8
+o Added docs for server plugin initialization.
+
+1.3.M04 (2011-03-10)
+--------------------
+o All manpages are included in the manual.
+o Some fixes to be more Windows friendly.
+o Added Dijkstra to the list of graph algorithms to be used when finding paths.
+o Support for advanced index queries through REST.
+
+
+1.3.M03 (2011-02-24)
+--------------------
+
+o Numerous updates to the Webadmin tool to make it more usable and to fix some visual bugs.
+o Removal of the properties service, replaced with a discovery service to allow third-party apps to bind to the server at runtime and discover what services are offered and where.
+o Changed the configuration file format to make it simpler and less error prone (but it is *not*) backwards compatible with earlier versions.
+o Separated out the server plugin API for easier development, making only the only development dependency for server a very thin layer and small jar.
+
+1.3.M02 (2011-02-10)
+--------------------
+
+o Gremlin updated to 0.7 and trimmed down to bare bones dependencies.
+o Webadmin minor improvements in Console, Data browser and monitoring.
+o better REST JSON property support in Arrays.
+o server started in High Availability mode.
+
+1.3.M01 (2011-01-27)
+--------------------
+
+o Full online backup (no need to copy store files before hand) in HA and general support for requests with unlimited size.
+o A couple of bugs fixed in lucene index.
+o More memory efficient handling of transaction streams (extracting and applying).
+o New 'eval' shell command which lets you execute JavaScript on the database.
+
+- Server
+o Ability to start the server in HA mode.
+o Excludes the neo4j-index component (not used anyhow) to enable HA mode.
+
+- Examples
+o Added an example of an ordered traversal.
+
+1.2 (2010-12-29)
+----------------
+
+- New components:
+o Neo4j Server, including Web Admin
+o Neo4j High Availability
+o Neo4j Graph Database Monitoring and Management tools moved to its own component
+o Neo4j Index API integrated in the GraphDatabaseService API
+o Neo4j Usage Data Collection
+
+- Other changes:
+o Additional services (extensions) for the Neo4j kernel are loaded automatically or can be injected in a running instance.
+o Improved memory footprint and read performance.
+o A weak reference cache is now available for high load low latency workloads.
+o The old index API has been deprecated (but still included and have been updated to use Lucene version 3.0.1).
+o There is a new index API based on Lucene supporting multiple indexes both for nodes and relationships.
+o Path algos can now be performed using the shell.
+
+o All known bugs have been fixed. For more details see the individual milestone releases below.
+
+1.2.M06 (2010-12-21)
+--------------------
+
+- Kernel
+o Fixed an issues with PruneEvaluators getting invoked with the start node as argument.
+  PruneEvaluators was never invoked with the start node before the arrival of Evaluator interface.
+o Added logging of recovery completion.
+o Added TransactionData#isDeleted(Node) and #isDeleted(Relationship) and also made
+  the collection to hold these a HashSet instead of ArrayList. This allows fast
+  lookups for asking if a node/relationship is deleted in a transaction.
+o More flexible caching (can instantiate an arbitrary Cache object).
+
+- Shell
+o Fixed a problem where ShellServerExtension assumed the shell was enabled during shutdown, which could result in NPE.
+
+- Lucene-index
+o More flexible caching (can instantiate an arbitrary Cache object).
+o Merged the fast-writes branch. Basically it makes committing changes to lucene indexes
+  faster and more throughput-friendly for multiple threads. The performance improvement
+  for committing lucene transactions shows best for small transactions, but will improve
+  all modifying operations to lucene indexes.
+o Fixed bug which could close an IndexSearcher before it was supposed to when
+  there was exactly one item in the result set, two or more threads did this at
+  the same time as there was another thread doing an update... AND the reading
+  threads all called IndexHits#getSingle() on the result.
+
+- HA
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
+  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o Adding Log4j and Netty license information.
+o Also closes the executor containing the connections.
+o Changed dependency scopes.
+o Shuts down databases after verifying them.
+
+- Server
+o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
+o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
+  org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
+o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
+o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
+o Webadmin: Moved charts into tabbed box, minor UI updates.
+o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is needed.
+o Webadmin: Added proper tab-like styling to chart tabs and scale selectors.
+o Fixed bug in RRD memory usage sampler, making rounding happen at end of calculations, instead of in the midst of.
+o Webadmin: Made 30minutes the default view in charts.
+o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible under certain conditions).
+o Webadmin: Disallow self relationships in UI, and show error message explaining this.
+o Can now load 3rd party JAX-RS jars from the classpath.
+o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and ships properly down to neo4j-standalone.
+o Webadmin: Made the current node show up by default when adding new relations in webadmin.
+o Webadmin: Dashboard shows charts with tabs, and allows switching between charts.
+o Added a basic readme with instructions for building, running, and functional testing.
+o Updating the way to create temporary files to solve the functional test problem where lots of files stick around.
+o re-implemented REST to expose indexing of nodes and relationships (new index API)
+o single path algo works in RestfulGraphDatabase now
+o fixed duplicate paths for delete node or relationship from index
+o Http DELETE requires the proper mediatype to accept
+o All indexes must be created to use them.
+o Added the ability extend the REST API with server plugins.
+o Added back links to the first page in the HTML format.
+o updating to Gremlin 0.6
+o Updated the component site documentation with the new index API.
+
+1.2.M05 (2010-12-02)
+--------------------
+
+-New components
+o neo4j-ha, providing high availability
+
+-Important changes, server
+o updated to Jersey 1.4
+o integrated index is now supported by the shell
+o new Evaluator interface improves the traversal API
+o support for index hit scores in neo4j-lucene-index
+o index caching support added to BatchInserter
+
+
+1.2.M04 (2010-11-18)
+--------------------
+
+o added a server packaging as part of neo4j
+o added more configuration options to neo4j-lucene-index
+o generating javadocs for all components automatically to components.neo4j.org/{component-name}
+o Added ImpermanentGraphDatabase to aid in testing
+
+1.2.M03 (2010-11-04)
+--------------------
+
+o Monitoring/management over JMX was moved to the new neo4j-management component.
+o Added ability to get the name and configuration of existing integrated indexes.
+
+1.2.M02 (2010-10-21)
+--------------------
+
+-New components
+o Lucene index, an implementation of the integrated index framework
+  using lucene as backend. Planned to replace current index service.
+
+-Important changes
+o Fixed shutdown issue regarding UDC leaving a thread running.
+o A new index framework integrated into the kernel API.
+o Getting relationships is faster due to less cache lookups.
+
+1.2.M01 (2010-10-08)
+--------------------
+
+-New components
+o Udc
+
+-Important changes
+o Index:
+   - Lucene version upgraded to 3.0.1
+o Shell:
+   - Apps discoverable with service locator
+   - Added read-only mode on server
+   - 'host' and 'config' options
+o Graph-algo:
+   - Find paths of certain length
+o Kernel:
+   - Lower memory footprint
+   - Higher throughput/concurrency for reads
+   - Common interface for loading kernel extensions (f.ex. shell)
+
+1.1 (2010-07-29)
+----------------
+
+-New components
+o Graph-algo
+o Online-backup
+
+1.0 (2010-02-16)
+----------------
+
+-Initial components
+o Kernel
+o Index
+o Remote-graphdb
+o Shell

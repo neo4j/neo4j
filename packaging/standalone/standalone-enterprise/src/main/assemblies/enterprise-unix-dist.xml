@@ -21,18 +21,34 @@
 
 -->
 <assembly>
-  <id>windows</id>
+  <id>unix</id>
   <formats>
-    <format>zip</format>
+    <format>tar.gz</format>
   </formats>
   <fileSets>
 
     <!-- filter plain text -->
     <fileSet>
-      <directory>src/main/distribution/text/community</directory>
+      <directory>src/main/distribution/text/enterprise</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>dos</lineEnding>
+      <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
+      <excludes>
+        <exclude>conf/jmx.*</exclude>
+      </excludes>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
+    </fileSet>
+    <!-- password files -->
+    <fileSet>
+      <directory>src/main/distribution/text/enterprise</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <filtered>true</filtered>
+      <includes>
+        <include>conf/jmx.*</include>
+      </includes>
+      <fileMode>0600</fileMode>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
@@ -43,25 +59,37 @@
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
+    <!-- chmod 755 for unix bins -->
+    <!-- filter and chmod 755 shell scripts -->
     <fileSet>
-      <directory>src/main/distribution/shell-scripts</directory>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>dos</lineEnding>
-      <includes>
-        <include>**/*.bat</include>
-      </includes>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
       <excludes>
-        <exclude>**/Neo4jBackup*</exclude>
-        <exclude>**/Neo4jCoord*</exclude>
+        <exclude>bin/neo4j</exclude>
+        <exclude>bin/neo4j-*</exclude>
+        <exclude>**/*.bat</exclude>
       </excludes>
       <filtered>true</filtered>
+    </fileSet>
+    <!-- treat the neo4j script as special so we don't filter shell variables -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <includes>
+        <include>**/neo4j</include>
+        <include>**/neo4j-*</include>
+      </includes>
+      <filtered>false</filtered>
     </fileSet>
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
       <outputDirectory>/</outputDirectory>
       <fileMode>0644</fileMode>
-      <lineEnding>dos</lineEnding>
       <includes>
         <include>UPGRADE.txt</include>
       </includes>
@@ -71,7 +99,6 @@
       <directory>target/manpages</directory>
       <outputDirectory>/doc</outputDirectory>
       <fileMode>0644</fileMode>
-      <lineEnding>dos</lineEnding>
       <includes>
         <include>*.txt</include>
       </includes>
@@ -79,15 +106,10 @@
   </fileSets>
 
   <dependencySets>
-   <dependencySet>
-  	<outputDirectory>/bin</outputDirectory>
-  	<unpack>false</unpack>
-  	<includes>
-  		<include>*:windows-service-wrapper:*</include>
-  	</includes>
-  	</dependencySet>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
@@ -95,8 +117,12 @@
         <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</include>
         <include>org.apache.lucene:lucene-core</include>
+        <include>org.apache.zookeeper:zookeeper</include>
+        <include>org.slf4j:slf4j-api</include>
         <include>org.scala-lang:scala-library</include>
+        <!-- include>org.slf4j:log4j-over-slf4j</include-->
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -105,20 +131,18 @@
         <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
+        <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         
         <exclude>org.neo4j:neo4j-advanced</exclude>
-        <exclude>org.neo4j:neo4j-backup</exclude>
-        <exclude>org.neo4j:neo4j-com</exclude>
-        <exclude>org.neo4j:neo4j-enterprise</exclude>
-        <exclude>org.neo4j:neo4j-ha</exclude>
-        <exclude>org.neo4j:neo4j-management</exclude>
-        <exclude>org.apache.zookeeper:zookeeper</exclude>
+        <exclude>org.neo4j:neo4j-community</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
@@ -134,13 +158,22 @@
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>org.apache.zookeeper:zookeeper</exclude>
         <exclude>log4j:log4j</exclude>
-        <exclude>org.neo4j:neo4j-advanced</exclude>
-        <exclude>*:neo4j-server-advanced</exclude>
-        <exclude>org.neo4j:neo4j-enterprise</exclude>
-        <exclude>*:neo4j-server-enterprise</exclude>
+        <exclude>org.slf4j:slf4j-api</exclude>
+        <exclude>org.slf4j:log4j-over-slf4j</exclude>
+        <exclude>commons-logging:*</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/coordinator/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>log4j:log4j</include>
+      </includes>
     </dependencySet>
     <!-- java api docs -->
     <dependencySet>
@@ -150,13 +183,14 @@
       <fileMode>0444</fileMode>
       <directoryMode>0777</directoryMode>
       <includes>
-        <include>org.neo4j:neo4j:*:javadoc</include>
+        <include>org.neo4j:neo4j-enterprise:*:javadoc</include>
       </includes>
     </dependencySet>
     <!-- der manual -->
     <dependencySet>
       <outputDirectory>doc/manual/</outputDirectory>
       <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
       <fileMode>0444</fileMode>
       <directoryMode>0777</directoryMode>
       <includes>
@@ -167,7 +201,7 @@
         <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
       </excludes>
     </dependencySet>
-  </dependencySets>
+
+ </dependencySets>
 
 </assembly>
-
