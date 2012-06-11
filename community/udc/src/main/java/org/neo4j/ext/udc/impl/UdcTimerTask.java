@@ -20,6 +20,8 @@
 package org.neo4j.ext.udc.impl;
 
 
+import org.neo4j.ext.udc.Edition;
+
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -27,7 +29,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TimerTask;
 
-import static org.neo4j.ext.udc.impl.UdcConstants.*;
+import static org.neo4j.ext.udc.UdcConstants.*;
 
 public class UdcTimerTask extends TimerTask
 {
