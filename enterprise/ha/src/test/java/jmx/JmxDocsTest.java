@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
@@ -113,7 +115,8 @@ public class JmxDocsTest
                          + "|Name|Description\n" );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        SortedMap<String, ObjectName> neo4jBeans = new TreeMap<String, ObjectName>();
+        SortedMap<String, ObjectName> neo4jBeans = new TreeMap<String, ObjectName>(
+                String.CASE_INSENSITIVE_ORDER );
 
         for ( String query : QUERIES )
         {
@@ -271,12 +274,15 @@ public class JmxDocsTest
                         + "|Name|Description|Type|Read|Write\n" + "5.1+^e|" )
                 .append( description )
                 .append( '\n' );
+        SortedSet<String> attributeInfo = new TreeSet<String>(
+                String.CASE_INSENSITIVE_ORDER );
         for ( MBeanAttributeInfo attrInfo : attributes )
         {
+            StringBuilder attributeRow = new StringBuilder( 512 );
             String type = getType( attrInfo.getType() );
             Descriptor descriptor = attrInfo.getDescriptor();
             type = getCompositeType( type, descriptor, nonHtml );
-            beanInfo.append( '|' )
+            attributeRow.append( '|' )
                     .append( makeBreakable( attrInfo.getName(), nonHtml ) )
                     .append( '|' )
                     .append( attrInfo.getDescription()
@@ -288,6 +294,11 @@ public class JmxDocsTest
                     .append( '|' )
                     .append( attrInfo.isWritable() ? "yes" : "no" )
                     .append( '\n' );
+            attributeInfo.add( attributeRow.toString() );
+        }
+        for ( String row : attributeInfo )
+        {
+            beanInfo.append( row );
         }
         beanInfo.append( "|===\n" );
         beanInfo.append( ENDIF );
@@ -312,37 +323,45 @@ public class JmxDocsTest
         beanInfo.append( "[options=\"header\", cols=\"20m,40,20m,20m\"]\n"
                          + "|===\n"
                          + "|Name|Description|ReturnType|Signature\n" );
+        SortedSet<String> operationInfo = new TreeSet<String>(
+                String.CASE_INSENSITIVE_ORDER );
         for ( MBeanOperationInfo operInfo : operations )
         {
+            StringBuilder operationRow = new StringBuilder( 512 );
             String type = getType( operInfo.getReturnType() );
             Descriptor descriptor = operInfo.getDescriptor();
             type = getCompositeType( type, descriptor, nonHtml );
-            beanInfo.append( '|' );
-            beanInfo.append( operInfo.getName() );
-            beanInfo.append( '|' );
-            beanInfo.append( operInfo.getDescription()
-                    .replace( '\n', ' ' ) );
-            beanInfo.append( '|' );
-            beanInfo.append( type );
-            beanInfo.append( '|' );
+            operationRow.append( '|' )
+                    .append( operInfo.getName() )
+                    .append( '|' )
+                    .append( operInfo.getDescription()
+                            .replace( '\n', ' ' ) )
+                    .append( '|' )
+                    .append( type )
+                    .append( '|' );
             MBeanParameterInfo[] params = operInfo.getSignature();
             if ( params.length > 0 )
             {
                 for ( int i = 0; i < params.length; i++ )
                 {
                     MBeanParameterInfo param = params[i];
-                    beanInfo.append( param.getType() );
+                    operationRow.append( param.getType() );
                     if ( i != ( params.length - 1 ) )
                     {
-                        beanInfo.append( ',' );
+                        operationRow.append( ',' );
                     }
                 }
             }
             else
             {
-                beanInfo.append( "(no parameters)" );
+                operationRow.append( "(no parameters)" );
             }
-            beanInfo.append( '\n' );
+            operationRow.append( '\n' );
+            operationInfo.add( operationRow.toString() );
+        }
+        for ( String row : operationInfo )
+        {
+            beanInfo.append( row );
         }
         beanInfo.append( "|===\n" );
         beanInfo.append( ENDIF );
