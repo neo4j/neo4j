@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>25</version>
+    <version>35</version>
     <relativePath />
   </parent>
 
@@ -26,7 +26,7 @@
 
   <properties>
     <short-name>installer-linux</short-name>
-    <neo4j.version>1.8.M04</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>
