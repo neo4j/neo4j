@@ -25,8 +25,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
+import javax.ws.rs.core.MediaType;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -94,5 +97,20 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(" + referenceNodeId + ") RETURN n\"}" );
         assertEquals( 200, response.getStatus() );
         response.close();
+    }
+    
+    /**
+     * The whole REST API can be transmitted as JSON streams,
+     * resulting in better performance and lower memory overhead at the server side.
+     * To use it, adjust your accept headers on the request for every call.
+     */
+    @Documented
+    @Test
+    @Graph("I know you")
+    public void get_service_root_streaming() throws Exception
+    {
+        data.get();
+        String body = gen.get().expectedType( new MediaType("application","json",MapUtil.stringMap("stream","true") )).expectedStatus( 200 ).get( getDataUri() ).entity();
+        body.toString();
     }
 }
