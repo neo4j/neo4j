@@ -24,6 +24,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
+import static org.neo4j.ext.udc.impl.UdcConstants.PING;
+
 public class Pinger {
 
     private final String address;
@@ -53,12 +55,12 @@ public class Pinger {
         // append counts
         if ( pingCount == 0 )
         {
-            uri.append( "p=-1" );
+            uri.append( PING+"=-1" );
             pingCount++;
         }
         else
         {
-            uri.append( "p=" ).append( pingCount );
+            uri.append( PING+"=" ).append( pingCount );
         }
 
         URL url = new URL(uri.toString());

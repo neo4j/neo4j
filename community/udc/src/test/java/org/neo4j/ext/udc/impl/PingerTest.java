@@ -25,6 +25,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.ext.udc.impl.UdcConstants.ID;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,8 +96,8 @@ public class PingerTest {
     public void shouldPingServer() {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String,String> udcFields = new HashMap<String, String>();
-        udcFields.put("id", EXPECTED_STORE_ID);
-        udcFields.put("v", EXPTECTED_KERNEL_VERSION);
+        udcFields.put(ID, EXPECTED_STORE_ID);
+        udcFields.put(UdcConstants.VERSION, EXPTECTED_KERNEL_VERSION);
 
         Pinger p = new Pinger( hostURL, udcFields, false );
         Exception thrownException = null;
@@ -110,7 +111,7 @@ public class PingerTest {
 
         Map<String, String> actualQueryMap = handler.getQueryMap();
         assertThat(actualQueryMap, notNullValue());
-        assertThat(actualQueryMap.get("id"), is(EXPECTED_STORE_ID));
+        assertThat(actualQueryMap.get(ID), is(EXPECTED_STORE_ID));
 
     }
 
@@ -128,7 +129,7 @@ public class PingerTest {
         assertThat(p.getPingCount(), is(equalTo(EXPECTED_PING_COUNT)));
 
         Map<String, String> actualQueryMap = handler.getQueryMap();
-        assertThat(actualQueryMap.get("p"), is(Integer.toString(EXPECTED_PING_COUNT)));
+        assertThat(actualQueryMap.get(UdcConstants.PING), is(Integer.toString(EXPECTED_PING_COUNT)));
     }
 
     @Test
@@ -142,7 +143,7 @@ public class PingerTest {
         for ( int i = 0; i < expectedSequence.length; i++ )
         {
             p.ping();
-            int count = Integer.parseInt( handler.getQueryMap().get( "p" ) );
+            int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
             assertEquals( expectedSequence[i], count );
         }
     }
@@ -158,7 +159,7 @@ public class PingerTest {
         for ( int i = 0; i < expectedSequence.length; i++ )
         {
             p.ping();
-            int count = Integer.parseInt( handler.getQueryMap().get( "p" ) );
+            int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
             assertEquals( expectedSequence[i], count );
         }
     }

@@ -29,4 +29,5 @@ public class UdcConstants {
     public static final String SOURCE = "source";
     public static final String REGISTRATION = "reg";
     public static final String MAC = "mac";
+    public static final String PING = "p";
 }
