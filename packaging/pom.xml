@@ -128,6 +128,7 @@ terms of the relevant Commercial Agreement.
                     <include>org.neo4j.build:*</include>
                     <include>org.neo4j.doc:*</include>
                     <include>org.neo4j.app:*</include>
+                    <include>org.neo4j.server.plugin:*</include>
                     <include>org.neo4j.examples:*</include>
                   </includes>
                 </configuration>
