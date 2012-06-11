@@ -135,6 +135,9 @@ To avoid port clashes when starting the servers, adjust the ports for the REST e
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
 ...
+# https port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.https.port=7473
+...
 # Allowed values:
 # HA - High Availability
 # SINGLE - Single mode, default.
@@ -150,6 +153,9 @@ org.neo4j.server.database.mode=HA
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7475
 ...
+# https port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.https.port=7472
+...
 # Allowed values:
 # HA - High Availability
 # SINGLE - Single mode, default.
@@ -164,6 +170,9 @@ org.neo4j.server.database.mode=HA
 ...
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476
+...
+# https port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.https.port=7471
 ...
 # Allowed values:
 # HA - High Availability
