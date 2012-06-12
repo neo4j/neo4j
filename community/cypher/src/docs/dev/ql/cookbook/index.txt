@@ -96,6 +96,28 @@ include::who-follows-or-loves-me-back.txt[]
 
 :leveloffset: 1
 
+[[cypher-cookbook-boostingrecommendations]]
+== Boosting recommendation results ==
+
+:leveloffset: 2
+
+include::cypher-boostingrecommendationresults-graph.txt[]
+
+include::boosting-with-properties-on-relationships.txt[]
+
+:leveloffset: 1
+
+[[cypher-cookbook-clustering-coefficient]]
+== Calculating the clustering coefficient of a network ==
+
+:leveloffset: 2
+
+include::cypher-clusteringcoefficient-graph.txt[]
+
+include::calculating-the-clustering-coefficient-of-a-friend-network.txt[]
+
+:leveloffset: 1
+
 [[cypher-cookbook-pretty-graphs]]
 == Pretty graphs in Cypher ==
 
