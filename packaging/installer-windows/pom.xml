@@ -3,8 +3,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>30</version>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
     <relativePath />
   </parent>
 
