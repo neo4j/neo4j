@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,7 +62,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
                 serialization = serializations.get( type );
                 if ( serialization == null )
                 {
-                    serialization = new LinkedHashMap<String, PropertyGetter>();
+                    serialization = new HashMap<String, PropertyGetter>();
                     for ( Method method : type.getMethods() )
                     {
                         Mapping property = method.getAnnotation( Mapping.class );
