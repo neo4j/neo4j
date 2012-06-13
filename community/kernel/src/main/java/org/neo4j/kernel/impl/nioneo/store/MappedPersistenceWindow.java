@@ -63,25 +63,21 @@ class MappedPersistenceWindow extends LockableWindow
         }
     }
 
-    @Override
     public Buffer getBuffer()
     {
         return buffer;
     }
     
-    @Override
     public int getRecordSize()
     {
         return recordSize;
     }
 
-    @Override
     public long position()
     {
         return position;
     }
 
-    @Override
     public int size()
     {
         return windowSize;
@@ -93,7 +89,6 @@ class MappedPersistenceWindow extends LockableWindow
         ((java.nio.MappedByteBuffer) buffer.getBuffer()).force();
     }
 
-    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof MappedPersistenceWindow) )
@@ -103,18 +98,18 @@ class MappedPersistenceWindow extends LockableWindow
         return position() == ((MappedPersistenceWindow) o).position();
     }
 
-    @Override
-    protected synchronized void writeOutAndClose()
+    protected void writeOut()
     {
-        ((java.nio.MappedByteBuffer) buffer.getBuffer()).force();
-        buffer.close();
-        position = -1;
-        closed = true;
+        if ( buffer != null )
+        {
+            ((java.nio.MappedByteBuffer) buffer.getBuffer()).force();
+            buffer.close();
+            position = -1;
+        }
     }
 
     private volatile int hashCode = 0;
 
-    @Override
     public int hashCode()
     {
         if ( hashCode == 0 )
@@ -124,7 +119,6 @@ class MappedPersistenceWindow extends LockableWindow
         return hashCode;
     }
 
-    @Override
     public String toString()
     {
         return "MappedPersistenceWindow[p=" + position + ",rs=" + recordSize
@@ -132,13 +126,11 @@ class MappedPersistenceWindow extends LockableWindow
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
         buffer.close();
-        closed = true;
     }
 
-    @Override
     public Buffer getOffsettedBuffer( long id )
     {
         int offset = (int) (id - buffer.position()) * recordSize;

@@ -48,19 +48,16 @@ class PersistenceRow extends LockableWindow
         // this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
     }
 
-    @Override
     public Buffer getBuffer()
     {
         return buffer;
     }
     
-    @Override
     public int getRecordSize()
     {
         return recordSize;
     }
 
-    @Override
     public Buffer getOffsettedBuffer( long id )
     {
         if ( id != buffer.position() )
@@ -71,13 +68,12 @@ class PersistenceRow extends LockableWindow
         return buffer;
     }
     
-    @Override
     public long position()
     {
         return position;
     }
 
-    void readFullWindow()
+    void readPosition()
     {
         try
         {
@@ -107,7 +103,7 @@ class PersistenceRow extends LockableWindow
         }
     }
     
-    private void writeContents()
+    protected void writeOut()
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
         if ( getOperationType() == OperationType.WRITE )
@@ -127,27 +123,17 @@ class PersistenceRow extends LockableWindow
         }
         byteBuffer.clear();
     }
-    
-    @Override
-    protected synchronized void writeOutAndClose()
-    {
-        writeContents();
-        closed = true;
-    }
 
-    @Override
     public int size()
     {
         return 1;
     }
 
-    @Override
     public void force()
     {
-        writeContents();
+        writeOut();
     }
 
-    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof PersistenceRow) )
@@ -157,22 +143,18 @@ class PersistenceRow extends LockableWindow
         return position() == ((PersistenceRow) o).position();
     }
 
-    @Override
     public int hashCode()
     {
         return (int) this.position;
     }
 
-    @Override
     public String toString()
     {
         return "PersistenceRow[" + position + "]";
     }
 
-    @Override
-    public synchronized void close()
+    public void close()
     {
         buffer.close();
-        closed = true;
     }
 }

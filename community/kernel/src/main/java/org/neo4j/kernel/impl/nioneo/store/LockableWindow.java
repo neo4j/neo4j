@@ -31,6 +31,16 @@ import org.neo4j.kernel.impl.transaction.LockException;
  */
 abstract class LockableWindow implements PersistenceWindow
 {
+    public abstract Buffer getBuffer();
+
+    public abstract long position();
+
+    public abstract int size();
+
+    public abstract void force();
+
+    public abstract void close();
+
     private OperationType type = null;
     private final FileChannel fileChannel;
 
@@ -39,7 +49,6 @@ abstract class LockableWindow implements PersistenceWindow
         new LinkedList<LockElement>();
     private int lockCount = 0;
     private int marked = 0;
-    protected boolean closed;
 
     LockableWindow( FileChannel fileChannel )
     {
@@ -61,27 +70,21 @@ abstract class LockableWindow implements PersistenceWindow
         return type;
     }
     
-    /**
-     * Writes out any changes to the underlying {@link FileChannel} and is then
-     * considered unusable.
-     */
-    protected abstract void writeOutAndClose();
+    protected abstract void writeOut();
 
     void setOperationType( OperationType type )
     {
         this.type = type;
     }
 
-    /**
-     * @return {@code true} if marked, or {@code false} if this window has been
-     * closed and couldn't be marked.
-     */
-    synchronized boolean markAsInUse()
+    synchronized void mark()
     {
-        if ( closed )
-            return false;
         this.marked++;
-        return true;
+    }
+
+    synchronized boolean isMarked()
+    {
+        return marked > 0;
     }
 
     private static class LockElement
@@ -140,28 +143,8 @@ abstract class LockableWindow implements PersistenceWindow
         }
     }
 
-    synchronized boolean isFree()
+    synchronized int getWaitingThreadsCount()
     {
-        return waitingThreadList.isEmpty() && marked == 0;
-    }
-
-    synchronized boolean writeOutAndCloseIfFree( boolean readOnly )
-    {
-        if ( isFree() )
-        {
-            if ( !readOnly )
-                writeOutAndClose();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Accepts and applies contents from a {@link PersistenceRow}.
-     * @param dpw the {@link PersistenceRow} to accept changes from.
-     */
-    void acceptContents( PersistenceRow dpw )
-    {
-        throw new UnsupportedOperationException( "Should not be called on " + this + " which is a " + getClass() );
+        return waitingThreadList.size();
     }
 }

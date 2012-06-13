@@ -85,17 +85,4 @@ public class WindowPoolStats
     {
         return oomCount;
     }
-    
-    @Override
-    public String toString()
-    {
-        return "WindowPoolStats[" +
-                "mem available:" + memAvail + " " +
-                "mem used:" + memUsed + " " +
-                "windows:" + windowCount + " " +
-                "win size:" + windowSize + " " +
-                "hits:" + hitCount + " " +
-                "misses:" + missCount + " " +
-                "ooms:" + oomCount + "]";
-    }
 }
