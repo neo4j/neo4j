@@ -200,7 +200,7 @@ except: # this isn't jython (and doesn't have the java module)
         for pyType, jType in conversions:
             if isinstance(obj, pyType):
                 return jType
-        raise TypeError("I don't know how to convert this value to a java primitive.")
+        raise TypeError("I don't know how to convert this to a java primitive: %s" % repr(obj))
 
     def from_java(value):
         global from_java

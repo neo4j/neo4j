@@ -2,7 +2,7 @@
 A sample app using traversals and indexes
 =========================================
 
-For detailed documentation on the concepts use here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-traversal>>.
+For detailed documentation on the concepts used here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-traversal>>.
 
 This example shows you how to get started building something like a simple invoice tracking application with Neo4j.
 
