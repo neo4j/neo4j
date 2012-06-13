@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<project name="webadmin_branding" default="brand_webadmin" basedir=".">
+  <description>
+  </description>
+
+  <property name="codename-properties-file" value="src/main/metadata/codenames.properties" />
+
+  <target name="determine_base_version" 
+          description="Determines the major and minor version (1.0,1.1 etc) from the current project version (which could be more complex, like 1.1.1, 1.0-SNAPSHOT and so on).">    
+    <!-- Select first match group from the regex -->    
+    <propertyregex property="base.version"
+               input="${project.version}"
+               regexp="(\d+\.\d+)([^\d].*)?"
+               select="\1" 
+               override="true"
+               global="true" />
+    <echo>Determined base version: ${base.version}</echo>
+  </target>
+
+  <target name="define_codename" depends="determine_base_version">
+    <property 
+      file="${codename-properties-file}"
+      prefix="codename"/>
+    
+    <propertycopy 
+      name="neo4j.codename" 
+      from="codename.${base.version}"
+      silent="true" />
+
+    <fail unless="neo4j.codename"
+          message="No codename for version '${base.version}', please add a codename in ${codename-properties-file} for the build to continue."/>
+
+    <echo>Determined codename: ${neo4j.codename}</echo>
+    
+  </target>
+
+  <target name="define_icon" depends="determine_base_version">
+
+    <property 
+      name="splash.icon"
+      value="img/icons/branding/${base.version}.png"/>
+
+
+    <available file="src/main/resources/webadmin-html//${splash.icon}" property="iconFound" />
+    <fail unless="iconFound" message="There is no icon for the current version, expected to find an icon matching the project codename at 'src/main/resources/webadmin-html/${splash.icon}'" />
+    
+  </target>
+
+  <target name="brand_webadmin" depends="define_icon,define_codename"
+        description="Replaces a set of placeholders in webadmin with values for this specific version of Neo4j." >
+
+    <replace dir="${project.build.outputDirectory}/webadmin-html/">
+      <replacefilter token="@@neo4j1.codename@@" value="${neo4j.codename}" />
+      <replacefilter token="@@neo4j.version@@" value="${project.version}" />
+      <replacefilter token="@@splash.icon@@" value="${splash.icon}" />
+    </replace>
+  </target>
+
+</project>
