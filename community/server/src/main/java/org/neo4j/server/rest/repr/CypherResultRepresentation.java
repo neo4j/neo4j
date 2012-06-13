@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
-public class CypherResultRepresentation extends ObjectRepresentation
+public class CypherResultRepresentation extends MappingRepresentation
 {
-    private final Representation resultRepresentation;
+    private final ListRepresentation resultRepresentation;
     private final ListRepresentation columns;
 
 
@@ -43,20 +43,14 @@ public class CypherResultRepresentation extends ObjectRepresentation
         columns = ListRepresentation.string( result.columns() );
     }
 
-    @Mapping( "columns" )
-    public Representation columns()
+    @Override
+    protected void serialize( MappingSerializer serializer )
     {
-        return columns;
+        serializer.putList( "columns", columns );
+        serializer.putList( "data", resultRepresentation );
     }
 
-    @Mapping( "data" )
-    public Representation data()
-    {
-        return resultRepresentation;
-
-    }
-
-    private Representation createResultRepresentation(ExecutionResult executionResult) {
+    private ListRepresentation createResultRepresentation(ExecutionResult executionResult) {
         final List<String> columns = executionResult.columns();
         final Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<Map<String,Object>>(executionResult);
         return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {

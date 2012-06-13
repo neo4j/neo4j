@@ -30,6 +30,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -74,7 +75,25 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, not( containsString( "\"x\"" ) ) );
     }
 
+    /**
+     * Ensure that order of data and column is ok.
+     */
+    @Test
+    @Graph( nodes = {
+            @NODE( name = "I", setNameProperty = true ),
+            @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = {
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) },
+            relationships = {
+                    @REL( start = "I", end = "him", type = "know", properties = { } ),
+                    @REL( start = "I", end = "you", type = "know", properties = { } ) } )
+    public void testDataColumnOrder() throws UnsupportedEncodingException {
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
 
+        String response = cypherRestCall( script, Status.OK );
+
+        assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), CoreMatchers.is( true ));
+    }
 
     /**
      * Errors on the server will be reported as a JSON-formatted stacktrace and
