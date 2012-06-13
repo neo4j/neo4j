@@ -37,6 +37,7 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -48,6 +49,7 @@ import org.junit.Test;
  * 
  * @author Mattias Persson
  */
+@Ignore( "Not a proper test really, merely a contention measurement" )
 public class TestPersistenceWindowPoolContention
 {
     private static final int recordSize = 30;
