@@ -61,3 +61,16 @@ Available profiles are:
 * `-Pchrome-mac` for chrome on Mac.
   
 Please note that the chrome driver requires an binary managed outside of maven.  If not already downloaded, the tests will attempt to download and extract the binary to `server/webdriver-binaries/` 
+
+## Codenames and icons
+
+Each version of the neo4j server has a codename and a corresponding icon. 
+The build system is set up such that the build fails if a codename and an icon is not defined for the current version.
+
+Codenames for each version is defined here:
+
+    src/main/metadata/codenames.properties
+
+Icons are located here:
+
+    src/main/resources/webadmin-html/img/icons/branding
