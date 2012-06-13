@@ -259,36 +259,47 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     luceneTx.getRemovedIds( this, keyForDirectLookup, valueForDirectLookup ) :
                     luceneTx.getRemovedIds( this, query );
         }
+        service.dataSource().getReadLock();
         IndexHits<Long> idIterator = null;
-        IndexSearcherRef searcher = service.dataSource().getIndexSearcher( identifier, true );
-        if ( searcher != null )
+        IndexSearcherRef searcher = null;
+        try
         {
-            boolean foundInCache = false;
-            LruCache<String, Collection<Long>> cachedIdsMap = null;
-            if ( keyForDirectLookup != null )
+            searcher = service.dataSource().getIndexSearcher( identifier, true );
+            if ( searcher != null )
             {
-                cachedIdsMap = service.dataSource().getFromCache(
-                        identifier, keyForDirectLookup );
-                foundInCache = fillFromCache( cachedIdsMap, ids,
-                        keyForDirectLookup, valueForDirectLookup.toString(), removedIds );
-            }
+                boolean foundInCache = false;
+                LruCache<String, Collection<Long>> cachedIdsMap = null;
+                if ( keyForDirectLookup != null )
+                {
+                    cachedIdsMap = service.dataSource().getFromCache(
+                            identifier, keyForDirectLookup );
+                    foundInCache = fillFromCache( cachedIdsMap, ids,
+                            keyForDirectLookup, valueForDirectLookup.toString(), removedIds );
+                }
 
-            if ( !foundInCache )
-            {
-                DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
-                        query, additionalParametersOrNull, additionsSearcher, removedIds ), removedIds, searcher );
-                if ( ids.isEmpty() )
+                if ( !foundInCache )
                 {
-                    idIterator = searchedIds;
-                }
-                else
-                {
-                    Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>();
-                    iterators.add( searchedIds );
-                    iterators.add( new ConstantScoreIterator<Long>( ids, Float.NaN ) );
-                    idIterator = new CombinedIndexHits<Long>( iterators );
+                    DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
+                            query, additionalParametersOrNull, additionsSearcher, removedIds ), removedIds, searcher );
+                    if ( ids.isEmpty() )
+                    {
+                        idIterator = searchedIds;
+                    }
+                    else
+                    {
+                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>();
+                        iterators.add( searchedIds );
+                        iterators.add( new ConstantScoreIterator<Long>( ids, Float.NaN ) );
+                        idIterator = new CombinedIndexHits<Long>( iterators );
+                    }
                 }
             }
+        }
+        finally
+        {
+            // The DocToIdIterator closes the IndexSearchRef instance anyways,
+            // or the LazyIterator if it's a lazy one. So no need here.
+            service.dataSource().releaseReadLock();
         }
 
         idIterator = idIterator == null ? new ConstantScoreIterator<Long>( ids, 0 ) : idIterator;
