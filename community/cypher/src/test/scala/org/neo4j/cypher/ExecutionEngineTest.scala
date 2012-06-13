@@ -2053,4 +2053,13 @@ RETURN x0.name?
     val result = parseAndExecute("START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
     println(result)
   }
+
+  @Test
+  def double_optional_with_no_matches() {
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("START a=node(1),b=node(2) MATCH a-[?]->X<-[?]-b return X").toList
+    assert(result === List(Map("X"->null)))
+  }
 }

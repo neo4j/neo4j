@@ -24,6 +24,13 @@ import collection.immutable.Set
 import collection.Seq
 import collection.Map
 
+/*
+Normally, when we encounter an optional relationship, we can try with null and see if that's enough. But for
+double optional patterns ( a -[?]-> X <-[?]- b ), we have to try to get to X both from a and from b
+to find all combinations.
+
+This class takes care of double optional patterns
+ */
 class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    predicates: Seq[Predicate],
                                    includeOptionals: Boolean,
@@ -31,41 +38,55 @@ class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    doubleOptionalPaths: Seq[DoubleOptionalPath])
   extends PatternMatcher(bindings, predicates, includeOptionals, source) {
 
+  private lazy val optionalRels: Seq[String] = doubleOptionalPaths.map(_.relationshipName)
+
   override protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                                      history: History,
                                                      yielder: (Map[String, Any]) => U,
                                                      current: MatchingPair,
                                                      leftToDoAfterThisOne: Set[MatchingPair],
                                                      alreadyInExtraWork: Boolean): Boolean = {
-    val result = super.traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, false)
+    val initialResult = super.traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, alreadyInExtraWork = false)
 
+    // To prevent going around for infinity, we check that we are not already checking for double optionals
     if (includeOptionals && !alreadyInExtraWork) {
-      val work = shouldDoExtraWork(current, remaining)
-      work.foldLeft(result)((last, next) => {
+      val pathsToCheck = shouldDoExtraWork(current, remaining)
+
+      val extendedCheck = pathsToCheck.foldLeft(initialResult)((last, next) => {
         val (newHead, newRemaining) = remaining.partition(p => p.patternNode.key == next.endNode)
         val remainingPlusCurrent = newRemaining + current
 
-        val myYielder = (m: Map[String, Any]) => {
-          m.get(next.relationshipName) match {
-            case Some(null) => yielder(m)
-            case _ =>
-          }
-        }
+        val myYielder = createYielder(yielder, next.relationshipName) _
 
-        traverseNextSpecificNode(remaining, history, myYielder, newHead.head, remainingPlusCurrent, true) || last
+        traverseNextSpecificNode(remaining, history, myYielder, newHead.head, remainingPlusCurrent, alreadyInExtraWork = true) || last
       })
+
+      extendedCheck
     }
     else
-      result
+      initialResult
   }
 
-  def shouldDoExtraWork(current: MatchingPair, remaining: Set[MatchingPair]): Seq[DoubleOptionalPath] = doubleOptionalPaths.filter(
-    dop => {
-      val b = dop.startNode == current.patternNode.key
-      val sdf = remaining.exists(_.patternNode.key == dop.endNode)
-      b && sdf
+
+  private def shouldDoExtraWork(current: MatchingPair, remaining: Set[MatchingPair]): Seq[DoubleOptionalPath] = doubleOptionalPaths.filter(
+    optionalPath => {
+      val standingOnOptionalPath = optionalPath.startNode == current.patternNode.key
+      val endPointStillToDo = remaining.exists(_.patternNode.key == optionalPath.endNode)
+      standingOnOptionalPath && endPointStillToDo
+    })
+
+  private def createYielder[A](inner: Map[String, Any] => A, relName: String)(m: Map[String, Any]) {
+    m.get(relName) match {
+      case Some(null) if !allOptionalRelsAreNull(m) => inner(m) /*We should only yield if we have found a null for
+                                                                  this relationship, and not all optional relationships
+                                                                  are null*/
+      case _                                        =>
     }
-  )
+  }
+
+  private def allOptionalRelsAreNull[A](m: Map[String, Any]): Boolean = {
+    optionalRels.flatMap(m.get(_)).forall(_ == null)
+  }
 }
 
-case class DoubleOptionalPath(startNode:String, endNode:String, relationshipName:String)
+case class DoubleOptionalPath(startNode: String, endNode: String, relationshipName: String)
