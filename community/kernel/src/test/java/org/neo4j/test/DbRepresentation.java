@@ -22,7 +22,9 @@ package org.neo4j.test;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
 import org.neo4j.graphdb.Direction;
@@ -81,7 +83,30 @@ public class DbRepresentation implements Serializable
     @Override
     public boolean equals( Object obj )
     {
-        return ((DbRepresentation)obj).nodes.equals( nodes );
+        return compareWith( (DbRepresentation) obj ).isEmpty();
+    }
+    
+    public Collection<String> compareWith( DbRepresentation other )
+    {
+        Collection<String> diffList = new ArrayList<String>();
+        DiffReport diff = new CollectionDiffReport( diffList );
+        for ( NodeRep node : nodes.values() )
+        {
+            NodeRep otherNode = other.nodes.get( node.id );
+            if ( otherNode == null )
+            {
+                diff.add( "I have node " + node.id + " which other don't" );
+                continue;
+            }
+            node.compareWith( otherNode, diff );
+        }
+        
+        for ( Long id : other.nodes.keySet() )
+        {
+            if ( !nodes.containsKey( id ) )
+                diff.add( "Other has node " + id + " which I don't" );
+        }
+        return diffList;
     }
 
     @Override
@@ -101,17 +126,17 @@ public class DbRepresentation implements Serializable
         private final PropertiesRep properties;
         private final Map<Long, PropertiesRep> outRelationships = new HashMap<Long, PropertiesRep>();
         private final long highestRelationshipId;
-        private final long myId;
+        private final long id;
         private final Map<String, Map<String, Serializable>> index;
 
         NodeRep( GraphDatabaseService db, Node node )
         {
-            myId = node.getId();
-            properties = new PropertiesRep( node );
+            id = node.getId();
+            properties = new PropertiesRep( node, node.getId() );
             long highestRel = 0;
             for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
             {
-                outRelationships.put( rel.getId(), new PropertiesRep( rel ) );
+                outRelationships.put( rel.getId(), new PropertiesRep( rel, rel.getId() ) );
                 highestRel = Math.max( highestRel, rel.getId() );
             }
             this.highestRelationshipId = highestRel;
@@ -132,7 +157,7 @@ public class DbRepresentation implements Serializable
                     {
                         for (Node hit : content)
                         {
-                            if (hit.getId() == myId)
+                            if (hit.getId() == id)
                             {
                                 thisIndex.put( property.getKey(), property.getValue() );
                                 break;
@@ -150,43 +175,74 @@ public class DbRepresentation implements Serializable
          * happened. If you feel strongly about this, feel free to change.
          * Admittedly, the implementation could use some cleanup.
          */
-        private boolean checkEqualsForIndex( NodeRep other )
+        private void compareIndex( NodeRep other, DiffReport diff )
         {
             if ( other.index == index )
+                return;
+            Collection<String> allIndexes = new HashSet<String>();
+            allIndexes.addAll( index.keySet() );
+            allIndexes.addAll( other.index.keySet() );
+            for ( String indexName : allIndexes )
             {
-                return true;
-            }
-            for ( Map.Entry<String, Map<String, Serializable>> entry : index.entrySet() )
-            {
-                if ( other.index.get( entry.getKey() ) == null )
+                if ( !index.containsKey( indexName ) )
                 {
-                    return false;
+                    diff.add( this + " isn't indexed in " + indexName + " for mine" );
+                    continue;
                 }
-                Map<String, Serializable> thisIndex = entry.getValue();
-                Map<String, Serializable> otherIndex = other.index.get( entry.getKey() );
+                if ( !other.index.containsKey( indexName ) )
+                {
+                    diff.add( this + " isn't indexed in " + indexName + " for other" );
+                    continue;
+                }
+                        
+                Map<String, Serializable> thisIndex = index.get( indexName );
+                Map<String, Serializable> otherIndex = other.index.get( indexName );
+                
                 if ( thisIndex.size() != otherIndex.size() )
                 {
-                    return false;
+                    diff.add( "other index had a different mapping count than me for node " + this + " mine:" + thisIndex + ", other:" + otherIndex );
+                    continue;
                 }
+                
                 for (Map.Entry<String, Serializable> indexEntry : thisIndex.entrySet())
                 {
                     if ( !indexEntry.getValue().equals(
                             otherIndex.get( indexEntry.getKey() ) ) )
                     {
-                        return false;
+                        diff.add( "other index had a different value indexed for " + indexEntry.getKey() + "=" +
+                                indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) + " for " + this );
                     }
                 }
             }
-            return true;
+        }
+        
+        protected void compareWith( NodeRep other, DiffReport diff )
+        {
+            if ( other.id != id )
+                diff.add( "Id differs mine:" + id + ", other:" + other.id );
+            properties.compareWith( other.properties, diff );
+            compareIndex( other, diff );
+            compareRelationships( other, diff );
         }
 
-        @Override
-        public boolean equals( Object obj )
+        private void compareRelationships( NodeRep other, DiffReport diff )
         {
-            NodeRep o = (NodeRep) obj;
-            return o.myId == myId && o.properties.equals( properties )
-                   && o.outRelationships.equals( outRelationships )
-                   && checkEqualsForIndex( o );
+            for ( PropertiesRep rel : outRelationships.values() )
+            {
+                PropertiesRep otherRel = other.outRelationships.get( rel.entityId );
+                if ( otherRel == null )
+                {
+                    diff.add( "I have relationship " + rel.entityId + " which other don't" );
+                    continue;
+                }
+                rel.compareWith( otherRel, diff );
+            }
+            
+            for ( Long id : other.outRelationships.keySet() )
+            {
+                if ( !outRelationships.containsKey( id ) )
+                    diff.add( "Other has relationship " + id + " which I don't" );
+            }
         }
 
         @Override
@@ -195,7 +251,7 @@ public class DbRepresentation implements Serializable
             int result = 7;
             result += properties.hashCode()*7;
             result += outRelationships.hashCode()*13;
-            result += myId * 17;
+            result += id * 17;
             result += index.hashCode() * 19;
             return result;
         }
@@ -203,16 +259,20 @@ public class DbRepresentation implements Serializable
         @Override
         public String toString()
         {
-            return "<props: " + properties + ", rels: " + outRelationships + ">";
+            return "<id: " + id + " props: " + properties + ", rels: " + outRelationships + ">";
         }
     }
 
     private static class PropertiesRep implements Serializable
     {
         private final Map<String, Serializable> props = new HashMap<String, Serializable>();
+        private final PropertyContainer entity;
+        private final long entityId;
 
-        PropertiesRep( PropertyContainer entity )
+        PropertiesRep( PropertyContainer entity, long id )
         {
+            this.entityId = id;
+            this.entity = entity;
             for ( String key : entity.getPropertyKeys() )
             {
                 Serializable value = (Serializable) entity.getProperty( key, null );
@@ -231,10 +291,12 @@ public class DbRepresentation implements Serializable
             }
         }
 
-        @Override
-        public boolean equals( Object obj )
+        protected boolean compareWith( PropertiesRep other, DiffReport diff )
         {
-            return ((PropertiesRep)obj).props.equals( props );
+            boolean equals = props.equals( other.props );
+            if ( !equals )
+                diff.add( "Properties diff for " + entity + " mine:" + props + ", other:" + other.props );
+            return equals;
         }
 
         @Override
@@ -247,6 +309,38 @@ public class DbRepresentation implements Serializable
         public String toString()
         {
             return props.toString();
+        }
+    }
+    
+    private static interface DiffReport
+    {
+        void add( String report );
+    }
+    
+    private static class EqualsDiffReport implements DiffReport
+    {
+        private boolean diffing;
+        
+        @Override
+        public void add( String report )
+        {
+            diffing = true;
+        }
+    };
+    
+    private static class CollectionDiffReport implements DiffReport
+    {
+        private final Collection<String> collection;
+
+        public CollectionDiffReport( Collection<String> collection )
+        {
+            this.collection = collection;
+        }
+        
+        @Override
+        public void add( String report )
+        {
+            collection.add( report );
         }
     }
 }
