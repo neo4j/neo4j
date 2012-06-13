@@ -91,7 +91,7 @@ public class Buffer
         {
 //            logger.severe( "Illegal buffer position: Pos=" + position()
 //                + " off=" + offset + " capacity=" + buf.capacity() );
-            throw e;
+            throw new IllegalArgumentException( "Illegal position " + offset, e );
         }
         return this;
     }
@@ -244,7 +244,7 @@ public class Buffer
     {
         buf.limit( 0 );
     }
-
+    
     public String toString()
     {
         return "Buffer[[" + buf.position() + "," + buf.capacity() + "]," + 
