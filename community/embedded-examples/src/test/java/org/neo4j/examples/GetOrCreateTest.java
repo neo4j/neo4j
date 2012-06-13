@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -68,7 +69,6 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
             this.impl = impl;
         }
 
-
         private Node createNode()
         {
             Transaction tx = graphdb().beginTx();
@@ -90,6 +90,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
             final Node lockNode = createNode();
             final List<List<Node>> results = new ArrayList<List<Node>>();
             final List<Thread> threads = new ArrayList<Thread>();
+            final AtomicReference<RuntimeException> failure = new AtomicReference<RuntimeException>();
             for ( int i = 0; i < 10; i++ )
             {
                 threads.add( new Thread( GetOrCreateTest.class.getSimpleName() + " thread " + i )
@@ -97,12 +98,20 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
                     @Override
                     public void run()
                     {
-                        List<Node> subresult = new ArrayList<Node>();
-                        for ( int j = 0; j < NUM_USERS; j++ )
+                        try
                         {
-                            subresult.add( impl.getOrCreateUser( getUsername( j ), graphdb(), lockNode ) );
+                            List<Node> subresult = new ArrayList<Node>();
+                            for ( int j = 0; j < NUM_USERS; j++ )
+                            {
+                                subresult.add( impl.getOrCreateUser( getUsername( j ), graphdb(), lockNode ) );
+                            }
+                            results.add( subresult );
                         }
-                        results.add( subresult );
+                        catch ( RuntimeException e )
+                        {
+                            failure.compareAndSet( null, e );
+                            throw e;
+                        }
                     }
                 } );
             }
@@ -121,7 +130,10 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
                     e.printStackTrace();
                 }
             }
-
+            
+            if ( failure.get() != null )
+                throw failure.get();
+            
             List<Node> first = results.remove( 0 );
             for ( List<Node> subresult : results )
             {
