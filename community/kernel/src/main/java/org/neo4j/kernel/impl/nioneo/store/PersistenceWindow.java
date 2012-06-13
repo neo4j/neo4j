@@ -26,32 +26,50 @@ package org.neo4j.kernel.impl.nioneo.store;
 public interface PersistenceWindow
 {
     /**
-     * Returns the underlying buffer to this persistence window.
+     * Returns the underlying buffer to this persistence window. Since a window
+     * may hold many records this gives access to all these records in one buffer.
+     * Changes to the returned buffer are applied when calling {@link #force()}.
      * 
-     * @return The underlying buffer
+     * @return the underlying buffer.
      */
     public Buffer getBuffer();
     
+    /**
+     * Returns the underlying buffer set at a specific record ({@code id}}.
+     * The id is the absolute record/block id of the whole underlying channel, which this
+     * window just provides its limited view of.
+     * Changes to the returned buffer are applied when calling {@link #force()}.
+     * 
+     * @param id the record/block to offset the buffer to before returning it.
+     * @return the underlying buffer.
+     */
     public Buffer getOffsettedBuffer( long id );
 
+    /**
+     * @return the record size for each record. A window can hold many records.
+     */
     public int getRecordSize();
     
     /**
-     * Returns the current record/block position.
-     * 
-     * @return The current position
+     * @return the current absolute record/block position of the first record
+     * in this window.
      */
     public long position();
 
     /**
-     * Returns the size of this window meaning the number of records/blocks it
+     * @return the size of this window meaning the number of records/blocks it
      * encapsulates.
-     * 
-     * @return The window size
      */
     public int size();
 
+    /**
+     * Force (write) changes to the underlying buffer returned from {@link #getBuffer()}
+     * and {@link #getOffsettedBuffer(long)}.
+     */
     public void force();
 
+    /**
+     * Just closes the window without writing any potential changes made to it.
+     */
     public void close();
 }

@@ -48,16 +48,19 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         // this.buffer.setByteBuffer( byteBuffer );
     }
 
+    @Override
     public Buffer getBuffer()
     {
         return buffer;
     }
     
+    @Override
     public int getRecordSize()
     {
         return recordSize;
     }
 
+    @Override
     public Buffer getOffsettedBuffer( long id )
     {
         int offset = (int) (id - buffer.position()) * recordSize;
@@ -65,12 +68,13 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         return buffer;
     }
     
+    @Override
     public long position()
     {
         return position;
     }
 
-    void readPosition()
+    void readFullWindow()
     {
         try
         {
@@ -95,7 +99,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
     }
     
-    protected void writeOut()
+    private void writeContents()
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
         byteBuffer.clear();
@@ -111,17 +115,27 @@ abstract class AbstractPersistenceWindow extends LockableWindow
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
+    
+    @Override
+    protected synchronized void writeOutAndClose()
+    {
+        writeContents();
+        closed = true;
+    }
 
+    @Override
     public int size()
     {
         return windowSize;
     }
 
+    @Override
     public void force()
     {
-        writeOut();
+        writeContents();
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof AbstractPersistenceWindow) )
@@ -131,19 +145,37 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         return position() == ((AbstractPersistenceWindow) o).position();
     }
 
+    @Override
     public int hashCode()
     {
         return (int) this.position;
     }
 
+    @Override
     public String toString()
     {
         return "PersistenceRow[" + position + "]";
     }
 
-    public void close()
+    @Override
+    public synchronized void close()
     {
         // close called after flush all so no need to write out here
         buffer.close();
+        closed = true;
+    }
+    
+    @Override
+    void acceptContents( PersistenceRow dpw )
+    {
+        ByteBuffer sourceBuffer = dpw.getBuffer().getBuffer();
+        ByteBuffer targetBuffer = getBuffer().getBuffer();
+        
+        // The position of the row is the record to accept,
+        // whereas the position of this window is the first record
+        // in this window.
+        targetBuffer.position( (int) ((dpw.position() - position()) * getRecordSize()) );
+        sourceBuffer.clear();
+        targetBuffer.put( sourceBuffer );
     }
 }
