@@ -241,7 +241,6 @@ class LuceneTransaction extends XaTransaction
     @Override
     protected void doCommit()
     {
-        dataSource.getWriteLock();
         try
         {
             for ( Map.Entry<IndexIdentifier, CommandList> entry :
@@ -275,10 +274,6 @@ class LuceneTransaction extends XaTransaction
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            dataSource.releaseWriteLock();
         }
     }
 
