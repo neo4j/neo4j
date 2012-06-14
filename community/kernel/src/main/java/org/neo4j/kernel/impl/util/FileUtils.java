@@ -23,7 +23,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
+import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -302,6 +304,24 @@ public class FileUtils
             {
                 copyFile( fromFile, toFile );
             }
+        }
+    }
+    
+    public static void writeToFile( File target, String text, boolean append) throws IOException
+    {
+    	if(!target.exists()) 
+    	{
+    		target.getParentFile().mkdirs();
+    		target.createNewFile();
+    	}
+    	
+    	Writer out = new OutputStreamWriter(new FileOutputStream(target, append), "UTF-8");
+        try 
+        {
+          out.write(text);
+        }
+        finally {
+          out.close();
         }
     }
 }
