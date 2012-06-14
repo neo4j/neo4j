@@ -19,22 +19,19 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
+
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.server.advanced.AdvancedNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
-public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapper
-{
-    enum DatabaseMode implements GraphDatabaseFactory
+public class EnterpriseDatabase extends CommunityDatabase {
+
+	enum DatabaseMode implements GraphDatabaseFactory
     {
         SINGLE
         {
@@ -59,18 +56,29 @@ public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapp
         public abstract GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties );
     }
+	
+	public EnterpriseDatabase(Configuration serverConfig) {
+		super(serverConfig);
+	}
+	
+	@Override
+	@SuppressWarnings("deprecation")
+	public void start() throws Throwable
+	{
+		try
+        {
+			GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfig.getString( Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
+			
+			this.graph = factory.createDatabase(
+					serverConfig.getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY, Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY), 
+					loadNeo4jProperties());
+			
+            log.info( "Successfully started database" );
+        } catch(Exception e)
+        {
+            log.error( "Failed to start database.", e);
+            throw e;
+        }
+	}
 
-    @SuppressWarnings( "unchecked" )
-    @Override
-    public Iterable<StartupHealthCheckRule> getHealthCheckRules()
-    {
-        return new CombiningIterable<StartupHealthCheckRule>( Arrays.asList( super.getHealthCheckRules(),
-                Collections.<StartupHealthCheckRule>singleton( new Neo4jHAPropertiesMustExistRule() ) ) );
-    }
-
-    @Override
-    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
-    {
-        return DatabaseMode.valueOf( configuration.getString( Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
-    }
 }
