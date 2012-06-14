@@ -29,13 +29,13 @@ public class BootstrapperTest
     @Test
     public void shouldFindTheMostDerivedType() throws Exception
     {
-        Bootstrapper bs = new NeoServerBootstrapper();
+        Bootstrapper bs = new CommunityBootstrapper();
         Bootstrapper other = new MoreDerivedBootstrapper();
         assertFalse( bs.isMoreDerivedThan( other ) );
         assertTrue( other.isMoreDerivedThan( bs ) );
     }
 
-    private static class MoreDerivedBootstrapper extends NeoServerBootstrapper
+    private static class MoreDerivedBootstrapper extends CommunityBootstrapper
     {
     }
 }

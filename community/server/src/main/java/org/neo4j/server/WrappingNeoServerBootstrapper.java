@@ -19,23 +19,10 @@
  */
 package org.neo4j.server;
 
-import java.util.Arrays;
-import java.util.Map;
-
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.logging.Logger;
-import org.neo4j.server.modules.DiscoveryModule;
-import org.neo4j.server.modules.ManagementApiModule;
-import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
@@ -69,7 +56,6 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
     private final GraphDatabaseAPI db;
     private final Configurator configurator;
-    private static Logger log = Logger.getLogger( WrappingNeoServerBootstrapper.class );
 
     /**
      * Create an instance with default settings.
@@ -96,64 +82,13 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    public Iterable<StartupHealthCheckRule> getHealthCheckRules()
-    {
-        return Arrays.asList();
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public Iterable<Class<? extends ServerModule>> getServerModules()
-    {
-        return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class,
-                ThirdPartyJAXRSModule.class, WebAdminModule.class );
-    }
-
-    @Override
-    public int stop( int stopArg )
-    {
-        try
-        {
-            if ( server != null )
-            {
-                server.stopServerOnly();
-                server.getDatabase()
-                        .rrdDb()
-                        .close();
-            }
-            return 0;
-        }
-        catch ( Exception e )
-        {
-            log.error( "Failed to cleanly shutdown Neo Server on port [%d]. Reason [%s] ", server.getWebServerPort(),
-                    e.getMessage() );
-            return 1;
-        }
-    }
-
-    @Override
-    protected void addShutdownHook()
-    {
-        // No-op
-    }
-
-    @Override
-    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
-    {
-        return new GraphDatabaseFactory()
-        {
-            @Override
-            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                    Map<String, String> databaseProperties )
-            {
-                return db;
-            }
-        };
-    }
-
-    @Override
-    protected Configurator getConfigurator()
+    protected Configurator createConfigurator()
     {
         return configurator;
     }
+
+	@Override
+	protected NeoServer createNeoServer() {
+		return new WrappingNeoServer(db, configurator);
+	}
 }

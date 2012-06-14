@@ -29,13 +29,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class RelationshipCountSampleableTest
 {
-    public Database db;
+    public ImpermanentGraphDatabase db;
     public RelationshipCountSampleable sampleable;
 
     @Test
@@ -47,7 +46,7 @@ public class RelationshipCountSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp()
     {
-        createARelationship( db.graph );
+        createARelationship( db );
 
         assertThat( sampleable.getValue(), is( 1d ) );
     }
@@ -65,8 +64,8 @@ public class RelationshipCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new Database( new ImpermanentGraphDatabase() );
-        sampleable = new RelationshipCountSampleable( db.graph );
+        db = new ImpermanentGraphDatabase();
+        sampleable = new RelationshipCountSampleable( db );
     }
 
     @After

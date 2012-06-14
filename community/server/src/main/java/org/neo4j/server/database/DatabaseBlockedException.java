@@ -20,12 +20,9 @@
 package org.neo4j.server.database;
 
 /**
- * Thrown when database instantiation has been purposfully blocked and someone
- * tries to instantiate it.
- * 
- * This will occur during server shutdown, or when other actions are performed
- * that need a guarantee that the database is turned off.
+ * This is never thrown, it will be removed in version 1.10
  */
+@Deprecated
 public class DatabaseBlockedException extends RuntimeException
 {
 

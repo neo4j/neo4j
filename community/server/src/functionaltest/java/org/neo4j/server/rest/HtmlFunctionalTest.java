@@ -32,7 +32,6 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
@@ -83,7 +82,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
         helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
     }
 
-    private long createAndIndexNode( String name ) throws DatabaseBlockedException
+    private long createAndIndexNode( String name )
     {
         long id = helper.createNode();
         helper.setNodeProperties( id, Collections.singletonMap( "name", (Object) name ) );

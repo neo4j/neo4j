@@ -17,36 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.database;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+import org.apache.commons.configuration.MapConfiguration;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-public interface NeoServer
-{
-	void init();
+public class EphemeralDatabase extends CommunityDatabase {
+
+	public EphemeralDatabase() {
+		this( new MapConfiguration(new HashMap<String,String>()) );
+	}
 	
-    void start();
+	public EphemeralDatabase(Configuration serverConfig) {
+		super(serverConfig);
+	}
 
-    void stop();
+	@Override
+	@SuppressWarnings("deprecation")
+	public void start()
+	{
+		this.graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+			.newImpermanentDatabaseBuilder()
+			.setConfig( loadNeo4jProperties() )
+			.newGraphDatabase();
+	}
+	
+	@Override
+	public void shutdown()
+	{
+		if(this.graph != null)
+		{
+			this.graph.shutdown();
+		}
+	}
 
-    Configuration getConfiguration();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    @Deprecated
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
-
-    URI baseUri();
 }

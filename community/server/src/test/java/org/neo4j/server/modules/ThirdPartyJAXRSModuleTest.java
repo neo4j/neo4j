@@ -30,7 +30,8 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.junit.Test;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
@@ -43,7 +44,7 @@ public class ThirdPartyJAXRSModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
@@ -55,8 +56,8 @@ public class ThirdPartyJAXRSModuleTest
 
         when( neoServer.getConfigurator() ).thenReturn( configurator );
 
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule();
-        module.start( neoServer, null );
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator);
+        module.start(StringLogger.DEV_NULL);
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }

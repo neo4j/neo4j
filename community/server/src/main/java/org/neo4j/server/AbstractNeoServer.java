@@ -19,100 +19,111 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 
-public class NeoServerWithEmbeddedWebServer implements NeoServer
+public abstract class AbstractNeoServer implements NeoServer
 {
-    public static final Logger log = Logger.getLogger( NeoServerWithEmbeddedWebServer.class );
+    public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
 
-    private Database database;
-    private final Configurator configurator;
-    private final WebServer webServer;
-    private final StartupHealthCheck startupHealthCheck;
+    protected Database database;
+    protected Configurator configurator;
+    protected WebServer webServer;
+    
+	protected final StatisticCollector statisticsCollector = new StatisticCollector();
+	
+    private StartupHealthCheck startupHealthCheck;
+    private PluginInitializer pluginInitializer;
 
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
-    private PluginInitializer pluginInitializer;
-    private final Bootstrapper bootstrapper;
 
-    private SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
+    private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
+    
 
-    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper,
-                                           StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
-                                           Iterable<Class<? extends ServerModule>> moduleClasses )
+    protected abstract StartupHealthCheck createHealthCheck();
+
+	protected abstract Iterable<ServerModule> createServerModules();
+
+    protected abstract Database createDatabase();
+    
+    protected abstract WebServer createWebServer();
+    
+    
+    @Override
+	public void init() 
     {
+    	this.startupHealthCheck = createHealthCheck();
+        this.database = createDatabase();
+        this.webServer = createWebServer();
+        
+        pluginInitializer = new PluginInitializer( this );
 
-        this.bootstrapper = bootstrapper;
-        this.startupHealthCheck = startupHealthCheck;
-        this.configurator = configurator;
-        this.webServer = webServer;
-
+        // TODO: Cyclic dependency
         webServer.setNeoServer( this );
-        for ( Class<? extends ServerModule> moduleClass : moduleClasses )
+        for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
         }
     }
 
-    @Override
+	@Override
     public void start()
     {
-        // Start at the bottom of the stack and work upwards to the Web
-        // container
-        startupHealthCheck();
-
-        initWebServer();
-
-        DiagnosticsManager diagnosticsManager = startDatabase();
-
-        StringLogger logger = diagnosticsManager.getTargetLog();
-        logger.logMessage( "--- SERVER STARTUP START ---" );
-
-        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
-
-        startExtensionInitialization();
-
-        startModules( logger );
-
-        startWebServer( logger );
-
-        logger.logMessage( "--- SERVER STARTUP END ---", true );
-    }
-
-    /**
-     * Initializes individual plugins using the mechanism provided via {@link PluginInitializer} and the java service
-     * locator
-     */
-    protected void startExtensionInitialization()
-    {
-        pluginInitializer = new PluginInitializer( this );
+		try 
+		{
+	        // Start at the bottom of the stack and work upwards to the Web
+	        // container
+	        startupHealthCheck();
+	
+	        configureWebServer();
+	
+	        database.start();
+	        
+	        DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
+	
+	        StringLogger logger = diagnosticsManager.getTargetLog();
+	        logger.logMessage( "--- SERVER STARTUP START ---" );
+	
+	        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
+	
+	        startModules( logger );
+	
+	        startWebServer( logger );
+	
+	        logger.logMessage( "--- SERVER STARTUP END ---", true );
+		} catch(Throwable t)
+		{
+			if(t instanceof RuntimeException)
+			{
+				throw (RuntimeException)t;
+			} else 
+			{
+				throw new RuntimeException("Starting neo server failed, see nested exception.",t);
+			}
+		}
     }
 
     /**
@@ -120,23 +131,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
      *
      * @param clazz
      */
-    protected final void registerModule( Class<? extends ServerModule> clazz )
+    protected final void registerModule( ServerModule module )
     {
-        try
-        {
-            serverModules.add( clazz.newInstance() );
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage() );
-        }
+        serverModules.add( module );
     }
 
     private void startModules( StringLogger logger )
     {
         for ( ServerModule module : serverModules )
         {
-            module.start( this, logger );
+            module.start(logger);
         }
     }
 
@@ -164,32 +168,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
     }
 
-    private DiagnosticsManager startDatabase()
-    {
-        String dbLocation = new File( configurator.configuration()
-            .getString(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
-        GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory( configurator.configuration() );
-
-        Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        if ( databaseTuningProperties != null )
-        {
-            this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
-        }
-        else
-        {
-            this.database = new Database( dbFactory, dbLocation );
-        }
-        return database.graph.getDiagnosticsManager();
-    }
-
-    @Override
+	@Override
     public Configuration getConfiguration()
     {
         return configurator.configuration();
     }
 
-    private void initWebServer()
+	// TODO: Once WebServer is fully implementing LifeCycle,
+	// it should manage all but static (eg. unchangeable during runtime)
+	// configuration itself.
+    private void configureWebServer()
     {
         int webServerPort = getWebServerPort();
         String webServerAddr = getWebServerAddress();
@@ -211,28 +199,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             log.info( "Enabling HTTPS on port [%s]", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
-
-        webServer.init();
-    }
-
-    private SecurityRule[] createSecurityRulesFrom( Configuration configuration )
-    {
-        ArrayList<SecurityRule> rules = new ArrayList<SecurityRule>();
-
-        for ( String classname : configuration.getStringArray( Configurator.SECURITY_RULES_KEY ) )
-        {
-            try
-            {
-                rules.add( (SecurityRule) Class.forName( classname ).newInstance() );
-            }
-            catch ( Exception e )
-            {
-                log.error( "Could not load server security rule [%s], exception details: ", classname, e.getMessage() );
-                e.printStackTrace();
-            }
-        }
-
-        return rules.toArray( new SecurityRule[0] );
     }
 
     private int getMaxThreads()
@@ -252,19 +218,9 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         try
         {
-            SecurityRule[] securityRules = createSecurityRulesFrom( configurator.configuration() );
-            webServer.addSecurityRules( securityRules );
-
-            Integer limit = getConfiguration().getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
-            if ( limit != null )
-            {
-                webServer.addExecutionLimitFilter( limit );
-            }
-
-
             if ( httpLoggingProperlyConfigured() )
             {
-                webServer.enableHTTPLoggingForWebadmin(
+                webServer.setHttpLoggingConfiguration(
                     new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ) );
             }
 
@@ -331,6 +287,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
                 Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
+    // TODO: This is jetty-specific, move to Jetty6WebServer
     /**
      * Jetty wants certificates stored in a key store, which is nice, but
      * to make it easier for non-java savvy users, we let them put
@@ -380,7 +337,15 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     /**
      * Stops everything but the database.
+     * 
+     * This is deprecated. If you would like to disconnect the database
+     * life cycle from server control, then use {@link WrappingNeoServer}.
+     * 
+     * To stop the server, please use {@link #stop()}.
+     * 
+     * This will be removed in 1.10
      */
+    @Deprecated
     public void stopServerOnly()
     {
         try
@@ -416,7 +381,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         if ( database != null )
         {
-            database.shutdown();
+            try {
+				database.stop();
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
         }
     }
 
@@ -461,6 +430,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
     }
 
+    // TODO: This is called by a class inside WebServer to get a list of 
+    // injectables to be made available to JAX-RS classes. This is not how
+    // plugins should be initialized. Reverse the direction of this such that
+    // injectables are pushed into webServer (preferrably via the addJaxRSPackage-method
     @Override
     public Collection<Injectable<?>> getInjectables( List<String> packageNames )
     {

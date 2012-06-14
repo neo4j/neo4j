@@ -22,23 +22,27 @@ package org.neo4j.server.database;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 
-public class DatabaseTest
+public class TestCommunityDatabase
 {
     private File databaseDirectory;
     private Database theDatabase;
@@ -48,13 +52,15 @@ public class DatabaseTest
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
-        theDatabase = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, databaseDirectory.getAbsolutePath() );
+        Configuration conf = new MapConfiguration(new HashMap<String,String>());
+        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
+        theDatabase = new CommunityDatabase( conf );
     }
 
     @After
-    public void shutdownDatabase() throws IOException
+    public void shutdownDatabase() throws Throwable
     {
-        this.theDatabase.shutdown();
+        this.theDatabase.stop();
 
         try
         {
@@ -73,56 +79,72 @@ public class DatabaseTest
     }
 
     @Test
-    public void shouldLogOnSuccessfulStartup()
+    public void shouldLogOnSuccessfulStartup() throws Throwable
     {
         InMemoryAppender appender = new InMemoryAppender( Database.log );
 
-        theDatabase.startup();
+        theDatabase.start();
 
         assertThat( appender.toString(), containsString( "Successfully started database" ) );
     }
 
     @Test
-    public void shouldShutdownCleanly()
+    public void shouldShutdownCleanly() throws Throwable
     {
         InMemoryAppender appender = new InMemoryAppender( Database.log );
 
-        theDatabase.startup();
-        theDatabase.shutdown();
+        theDatabase.start();
+        theDatabase.stop();
 
-        assertThat( appender.toString(), containsString( "Successfully shutdown database" ) );
+        assertThat( appender.toString(), containsString( "Successfully stopped database" ) );
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldComplainIfDatabaseLocationIsAlreadyInUse()
+    public void shouldComplainIfDatabaseLocationIsAlreadyInUse() throws Throwable
     {
         deletionFailureOk = true;
-        new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, theDatabase.getLocation() );
+        theDatabase.start();
+        
+        Configuration conf = new MapConfiguration(new HashMap<String,String>());
+        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
+        CommunityDatabase db = new CommunityDatabase( conf );
+        db.start();
     }
 
     @Test
-    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Exception
+    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
+    	theDatabase.start();
         ShellLobby.newClient()
                 .shutdown();
     }
 
     @Test
-    public void shouldBeAbleToOverrideShellConfig() throws Exception
+    public void shouldBeAbleToOverrideShellConfig()  throws Throwable
     {
         int customPort = findFreeShellPortToUse( 8881 );
         File tempDir = createTempDir();
-        Database otherDb = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, tempDir.getAbsolutePath(), stringMap(
+        File tuningProperties = new File(tempDir, "neo4j.properties");
+        tuningProperties.createNewFile();
+        
+        ServerTestUtils.writePropertiesToFile(stringMap(
             ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
-            ShellSettings.remote_shell_port.name(), ""+customPort ) );
-        otherDb.startup();
+            ShellSettings.remote_shell_port.name(), ""+customPort ), 
+            tuningProperties);
+        
+        Configuration conf = new MapConfiguration(new HashMap<String,String>());
+        conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath());
+        conf.addProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningProperties.getAbsolutePath());
+        
+        Database otherDb = new CommunityDatabase( conf );
+        otherDb.start();
 
         // Try to connect with a shell client to that custom port.
         // Throws exception if unable to connect
         ShellLobby.newClient( customPort )
                 .shutdown();
 
-        otherDb.shutdown();
+        otherDb.stop();
         FileUtils.forceDelete( tempDir );
     }
 

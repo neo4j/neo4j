@@ -39,7 +39,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
@@ -56,7 +56,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 {
 
-    private static NeoServerWithEmbeddedWebServer server;
+    private static CommunityNeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     private Node theStartNode;

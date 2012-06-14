@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.GraphDescription.Graph;
@@ -91,7 +90,6 @@ public class CreateRelationshipFunctionalTest extends
     @Test
     @Graph( "Joe knows Sara" )
     public void shouldRespondWith404WhenStartNodeDoesNotExist()
-            throws DatabaseBlockedException
     {
         String jsonString = "{\"to\" : \""
                             + getDataUri()
@@ -106,7 +104,6 @@ public class CreateRelationshipFunctionalTest extends
     @Test
     @Graph( "Joe knows Sara" )
     public void creating_a_relationship_to_a_nonexisting_end_node()
-            throws DatabaseBlockedException
     {
         String jsonString = "{\"to\" : \""
                             + getDataUri()
@@ -137,7 +134,6 @@ public class CreateRelationshipFunctionalTest extends
     @Test
     @Graph( "Joe knows Sara" )
     public void providing_bad_JSON()
-            throws DatabaseBlockedException
     {
         String jsonString = "{\"to\" : \""
                             + getNodeUri( data.get().get( "Joe" ) )

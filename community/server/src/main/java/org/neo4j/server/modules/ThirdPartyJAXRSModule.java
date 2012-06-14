@@ -21,22 +21,36 @@ package org.neo4j.server.modules;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
+import java.util.Set;
+
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.web.WebServer;
 
 public class ThirdPartyJAXRSModule implements ServerModule
 {
     private final Logger log = Logger.getLogger( ThirdPartyJAXRSModule.class );
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
+	private final Configurator configurator;
+	private final WebServer webServer;
+
+	private Set<ThirdPartyJaxRsPackage> packages;
+
+    public ThirdPartyJAXRSModule(WebServer webServer, Configurator configurator)
     {
-        for ( ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator()
-                .getThirdpartyJaxRsClasses() )
+    	this.webServer = webServer;
+    	this.configurator = configurator;
+    }
+    
+    @Override
+	public void start(StringLogger logger)
+    {
+    	this.packages = configurator.getThirdpartyJaxRsClasses();
+        for ( ThirdPartyJaxRsPackage tpp : packages )
         {
-            neoServer.getWebServer()
-                    .addJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
+            webServer.addJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
             log.info( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
             if ( logger != null )
                 logger.logMessage( String.format( "Mounted third-party JAX-RS package [%s] at [%s]",
@@ -44,8 +58,15 @@ public class ThirdPartyJAXRSModule implements ServerModule
         }
     }
 
-    public void stop()
+    @Override
+	public void stop()
     {
-        // Do nothing.
+    	if(packages != null)
+    	{
+	    	for ( ThirdPartyJaxRsPackage tpp : packages )
+	    	{
+	    		webServer.removeJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
+	    	}
+    	}
     }
 }

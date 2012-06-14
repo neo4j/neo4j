@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
@@ -57,7 +56,7 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
     }
 
     @Test
-    public void shouldReturn204WhenPropertiesAreRemoved() throws DatabaseBlockedException
+    public void shouldReturn204WhenPropertiesAreRemoved()
     {
         long nodeId = helper.createNode();
         Map<String, Object> map = new HashMap<String, Object>();
@@ -73,7 +72,7 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
      */
     @Documented
     @Test
-    public void shouldReturn204WhenAllPropertiesAreRemoved() throws DatabaseBlockedException
+    public void shouldReturn204WhenAllPropertiesAreRemoved()
     {
         long nodeId = helper.createNode();
         Map<String, Object> map = new HashMap<String, Object>();
@@ -102,7 +101,7 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
     */
     @Documented
     @Test
-    public void delete_a_named_property_from_a_node() throws DatabaseBlockedException
+    public void delete_a_named_property_from_a_node()
     {
         long nodeId = helper.createNode();
         Map<String, Object> map = new HashMap<String, Object>();
@@ -115,7 +114,7 @@ public class RemoveNodePropertiesFunctionalTest extends AbstractRestFunctionalTe
     }
 
     @Test
-    public void shouldReturn404WhenRemovingNonExistingNodeProperty() throws DatabaseBlockedException
+    public void shouldReturn404WhenRemovingNonExistingNodeProperty()
     {
         long nodeId = helper.createNode();
         Map<String, Object> map = new HashMap<String, Object>();

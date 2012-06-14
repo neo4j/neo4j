@@ -25,6 +25,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class GremlinSessionTest
@@ -77,13 +78,13 @@ public class GremlinSessionTest
     @BeforeClass
     public static void setUp() throws Exception
     {
-        database = new Database( new ImpermanentGraphDatabase() );
+        database = new WrappingDatabase( new ImpermanentGraphDatabase() );
         session = new GremlinSession( database );
     }
 
     @AfterClass
     public static void shutdownDatabase()
     {
-        database.shutdown();
+        database.getGraph().shutdown();
     }
 }

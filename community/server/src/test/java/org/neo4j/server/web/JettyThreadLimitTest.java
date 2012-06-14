@@ -34,31 +34,41 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveSensibleDefaultJettyThreadPoolSize() throws Exception
     {
-        WebServer server = new Jetty6WebServer();
-        server.init();
-        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
-                .getThreadPool();
-        threadPool.start();
-        loadThreadPool( threadPool );
-        assertEquals( 10 * Runtime.getRuntime()
-                .availableProcessors(), threadPool.getThreads() );
-        threadPool.stop();
+    	Jetty6WebServer server = new Jetty6WebServer();
+        server.setPort( 7480 );
+    	try {
+	        server.start();
+	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
+	                .getThreadPool();
+	        threadPool.start();
+	        loadThreadPool( threadPool );
+	        assertEquals( 10 * Runtime.getRuntime()
+	                .availableProcessors(), threadPool.getThreads() );
+	    } finally 
+	    {
+	    	server.stop();
+	    }
     }
 
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-        WebServer server = new Jetty6WebServer();
+    	Jetty6WebServer server = new Jetty6WebServer();
         final int maxThreads = 7;
         server.setMaxThreads( maxThreads );
-        server.init();
-        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
-                .getThreadPool();
-        threadPool.start();
-        loadThreadPool( threadPool );
-        int threads = threadPool.getThreads();
-        assertTrue( threads <= maxThreads );
-        threadPool.stop();
+        server.setPort( 7480 );
+        try {
+	        server.start();
+	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
+	                .getThreadPool();
+	        threadPool.start();
+	        loadThreadPool( threadPool );
+	        int threads = threadPool.getThreads();
+	        assertTrue( threads <= maxThreads );
+        } finally 
+        {
+        	server.stop();
+        }
     }
 
     private void loadThreadPool( QueuedThreadPool threadPool )

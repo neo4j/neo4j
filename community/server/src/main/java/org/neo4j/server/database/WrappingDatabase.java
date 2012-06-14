@@ -17,36 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.database;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+public class WrappingDatabase extends Database {
 
-public interface NeoServer
-{
-	void init();
+	public WrappingDatabase(GraphDatabaseAPI db) {
+		super(db);
+	}
 	
-    void start();
+	@Override
+	public void init() throws Throwable 
+	{
+		
+	}
 
-    void stop();
+	@Override
+	public void start() throws Throwable 
+	{
+		
+	}
 
-    Configuration getConfiguration();
+	@Override
+	public void stop() throws Throwable 
+	{
+		
+	}
+	
+	@Override
+	public void shutdown() throws Throwable
+	{
+		
+	}
 
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    @Deprecated
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
-
-    URI baseUri();
 }

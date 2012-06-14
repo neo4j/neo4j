@@ -22,7 +22,6 @@ package org.neo4j.server.rest.paging;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.junit.After;
@@ -36,8 +35,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.EphemeralDatabase;
 
 public class PagedTraverserTest
 {
@@ -46,10 +45,17 @@ public class PagedTraverserTest
     private Node startNode;
 
     @Before
-    public void clearDb() throws IOException
+    public void clearDb() throws Throwable
     {
-        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
+        database = new EphemeralDatabase();
+        database.start();
         createLinkedList( LIST_LENGTH, database );
+    }
+
+    @After
+    public void shutdownDatabase() throws Throwable
+    {
+        database.getGraph().shutdown();
     }
 
     private void createLinkedList( int listLength, Database db )
@@ -79,12 +85,6 @@ public class PagedTraverserTest
         {
             tx.finish();
         }
-    }
-
-    @After
-    public void shutdownDatabase() throws IOException
-    {
-        database.shutdown();
     }
 
     @Test

@@ -51,14 +51,12 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
@@ -83,19 +81,19 @@ public class DatabaseActionsTest
     }
 
     @AfterClass
-    public static void shutdownDatabase() throws IOException
+    public static void shutdownDatabase() throws Throwable
     {
-        database.shutdown();
+        database.stop();
     }
 
-    private long createNode( Map<String, Object> properties ) throws DatabaseBlockedException
+    private long createNode( Map<String, Object> properties )
     {
 
         long nodeId;
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.createNode();
+            Node node = database.getGraph().createNode();
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -115,10 +113,10 @@ public class DatabaseActionsTest
     {
         NodeRepresentation noderep = actions.createNode( Collections.<String, Object>emptyMap() );
 
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            assertNotNull( database.graph.getNodeById( noderep.getId() ) );
+            assertNotNull( database.getGraph().getNodeById( noderep.getId() ) );
         }
         finally
         {
@@ -127,14 +125,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void nodeInDatabaseShouldBeRetreivable() throws DatabaseBlockedException, NodeNotFoundException
+    public void nodeInDatabaseShouldBeRetreivable() throws NodeNotFoundException
     {
         long nodeId = new GraphDbHelper( database ).createNode();
         assertNotNull( actions.getNode( nodeId ) );
     }
 
     @Test
-    public void shouldBeAbleToStorePropertiesInAnExistingNode() throws DatabaseBlockedException,
+    public void shouldBeAbleToStorePropertiesInAnExistingNode() throws
             PropertyValueException, NodeNotFoundException
     {
         long nodeId = graphdbHelper.createNode();
@@ -143,10 +141,10 @@ public class DatabaseActionsTest
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
 
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.getNodeById( nodeId );
+            Node node = database.getGraph().getNodeById( nodeId );
             assertHasProperties( node, properties );
         }
         finally
@@ -170,15 +168,15 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldOverwriteExistingProperties() throws DatabaseBlockedException, PropertyValueException,
+    public void shouldOverwriteExistingProperties() throws PropertyValueException,
             NodeNotFoundException
     {
 
         long nodeId;
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.createNode();
+            Node node = database.getGraph().createNode();
             node.setProperty( "remove me", "trash" );
             nodeId = node.getId();
             tx.success();
@@ -191,10 +189,10 @@ public class DatabaseActionsTest
         properties.put( "foo", "bar" );
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
-        tx = database.graph.beginTx();
+        tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.getNodeById( nodeId );
+            Node node = database.getGraph().getNodeById( nodeId );
             assertHasProperties( node, properties );
             assertNull( node.getProperty( "remove me", null ) );
         }
@@ -205,7 +203,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPropertiesOnNode() throws DatabaseBlockedException, NodeNotFoundException
+    public void shouldBeAbleToGetPropertiesOnNode() throws NodeNotFoundException
     {
 
         long nodeId;
@@ -213,10 +211,10 @@ public class DatabaseActionsTest
         properties.put( "foo", "bar" );
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.createNode();
+            Node node = database.getGraph().createNode();
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -234,14 +232,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveNodeWithNoRelationsFromDBOnDelete() throws DatabaseBlockedException, NodeNotFoundException,
+    public void shouldRemoveNodeWithNoRelationsFromDBOnDelete() throws NodeNotFoundException,
             OperationFailureException
     {
         long nodeId;
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.createNode();
+            Node node = database.getGraph().createNode();
             nodeId = node.getId();
             tx.success();
         }
@@ -256,8 +254,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetPropertyOnNode() throws DatabaseBlockedException, PropertyValueException,
-            NodeNotFoundException
+    public void shouldBeAbleToSetPropertyOnNode() throws Exception
     {
         long nodeId = createNode( Collections.<String, Object>emptyMap() );
         String key = "foo";
@@ -267,8 +264,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPropertyOnNode() throws DatabaseBlockedException, NodeNotFoundException,
-            NoSuchPropertyException, BadInputException
+    public void shouldBeAbleToGetPropertyOnNode() throws Exception
     {
         String key = "foo";
         Object value = "bar";
@@ -277,7 +273,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperties() throws DatabaseBlockedException, NodeNotFoundException
+    public void shouldBeAbleToRemoveNodeProperties() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );
@@ -285,10 +281,10 @@ public class DatabaseActionsTest
         long nodeId = createNode( properties );
         actions.removeAllNodeProperties( nodeId );
 
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.getNodeById( nodeId );
+            Node node = database.getGraph().getNodeById( nodeId );
             assertEquals( false, node.getPropertyKeys()
                     .iterator()
                     .hasNext() );
@@ -319,10 +315,10 @@ public class DatabaseActionsTest
                 properties )
                 .getId();
 
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Relationship rel = database.graph.getRelationshipById( relId );
+            Relationship rel = database.getGraph().getRelationshipById( relId );
             for ( String key : rel.getPropertyKeys() )
             {
                 assertTrue( "extra property stored", properties.containsKey( key ) );
@@ -374,8 +370,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeProperty() throws DatabaseBlockedException, NodeNotFoundException,
-            NoSuchPropertyException
+    public void shouldBeAbleToRemoveNodeProperty() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );
@@ -383,10 +378,10 @@ public class DatabaseActionsTest
         long nodeId = createNode( properties );
         actions.removeNodeProperty( nodeId, "foo" );
 
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.graph.getNodeById( nodeId );
+            Node node = database.getGraph().getNodeById( nodeId );
             assertEquals( 15, node.getProperty( "number" ) );
             assertEquals( false, node.hasProperty( "foo" ) );
             tx.success();
@@ -398,8 +393,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldReturnTrueIfNodePropertyRemoved() throws DatabaseBlockedException, NodeNotFoundException,
-            NoSuchPropertyException
+    public void shouldReturnTrueIfNodePropertyRemoved() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );
@@ -409,8 +403,7 @@ public class DatabaseActionsTest
     }
 
     @Test( expected = NoSuchPropertyException.class )
-    public void shouldReturnFalseIfNodePropertyNotRemoved() throws DatabaseBlockedException, NodeNotFoundException,
-            NoSuchPropertyException
+    public void shouldReturnFalseIfNodePropertyNotRemoved() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );
@@ -420,15 +413,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveARelationship() throws DatabaseBlockedException, RelationshipNotFoundException
+    public void shouldBeAbleToRetrieveARelationship() throws Exception
     {
         long relationship = graphdbHelper.createRelationship( "ENJOYED" );
         assertNotNull( actions.getRelationship( relationship ) );
     }
 
     @Test
-    public void shouldBeAbleToGetPropertiesOnRelationship() throws DatabaseBlockedException,
-            RelationshipNotFoundException
+    public void shouldBeAbleToGetPropertiesOnRelationship() throws Exception
     {
 
         long relationshipId;
@@ -436,11 +428,11 @@ public class DatabaseActionsTest
         properties.put( "foo", "bar" );
         properties.put( "neo", "Thomas A. Anderson" );
         properties.put( "number", 15L );
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node startNode = database.graph.createNode();
-            Node endNode = database.graph.createNode();
+            Node startNode = database.getGraph().createNode();
+            Node endNode = database.getGraph().createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
                     DynamicRelationshipType.withName( "knows" ) );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
@@ -460,8 +452,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveASinglePropertyFromARelationship() throws DatabaseBlockedException,
-            NoSuchPropertyException, RelationshipNotFoundException, BadInputException
+    public void shouldBeAbleToRetrieveASinglePropertyFromARelationship() throws Exception
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );
@@ -476,7 +467,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToDeleteARelationship() throws DatabaseBlockedException, RelationshipNotFoundException
+    public void shouldBeAbleToDeleteARelationship() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "LOVES" );
 
@@ -492,7 +483,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveRelationshipsFromNode() throws DatabaseBlockedException, NodeNotFoundException
+    public void shouldBeAbleToRetrieveRelationshipsFromNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         graphdbHelper.createRelationship( "LIKES", nodeId, graphdbHelper.createNode() );
@@ -523,8 +514,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotGetAnyRelationshipsWhenRetrievingFromNodeWithoutRelationships()
-            throws DatabaseBlockedException, NodeNotFoundException
+    public void shouldNotGetAnyRelationshipsWhenRetrievingFromNodeWithoutRelationships() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
 
@@ -537,8 +527,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetRelationshipProperties() throws DatabaseBlockedException, PropertyValueException,
-            RelationshipNotFoundException
+    public void shouldBeAbleToSetRelationshipProperties() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -549,8 +538,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToSetRelationshipProperty() throws DatabaseBlockedException, PropertyValueException,
-            RelationshipNotFoundException
+    public void shouldBeAbleToSetRelationshipProperty() throws Exception
     {
         long relationshipId = graphdbHelper.createRelationship( "KNOWS" );
         String key = "foo";
@@ -560,7 +548,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveRelationProperties() throws DatabaseBlockedException, RelationshipNotFoundException
+    public void shouldRemoveRelationProperties() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
         Map<String, Object> map = new HashMap<String, Object>();
@@ -575,8 +563,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldRemoveRelationshipProperty() throws DatabaseBlockedException, RelationshipNotFoundException,
-            NoSuchPropertyException
+    public void shouldRemoveRelationshipProperty() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
         Map<String, Object> map = new HashMap<String, Object>();
@@ -609,7 +596,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException
+    public void shouldBeAbleToIndexNode()
     {
         String key = "mykey";
         String value = "myvalue";
@@ -625,7 +612,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToFulltextIndex() throws DatabaseBlockedException
+    public void shouldBeAbleToFulltextIndex()
     {
         String key = "key";
         String value = "the value with spaces";
@@ -647,14 +634,14 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetReferenceNode() throws DatabaseBlockedException, NodeNotFoundException
+    public void shouldBeAbleToGetReferenceNode() throws Exception
     {
         NodeRepresentation rep = actions.getReferenceNode();
         actions.getNode( rep.getId() );
     }
 
     @Test
-    public void shouldGetExtendedNodeRepresentationsWhenGettingFromIndex() throws DatabaseBlockedException
+    public void shouldGetExtendedNodeRepresentationsWhenGettingFromIndex()
     {
         String key = "mykey3";
         String value = "value";
@@ -674,7 +661,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndex() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveNodeFromIndex()
     {
         String key = "mykey2";
         String value = "myvalue";
@@ -700,7 +687,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveNodeFromIndexWithoutKeyValue() throws DatabaseBlockedException
+    public void shouldBeAbleToRemoveNodeFromIndexWithoutKeyValue()
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
@@ -740,7 +727,7 @@ public class DatabaseActionsTest
                 .size() );
     }
 
-    private long createBasicTraversableGraph() throws DatabaseBlockedException
+    private long createBasicTraversableGraph()
     {
         // (Root)
         // / \
@@ -762,7 +749,7 @@ public class DatabaseActionsTest
         return startNode;
     }
 
-    private long[] createMoreComplexGraph() throws DatabaseBlockedException
+    private long[] createMoreComplexGraph()
     {
         // (a)
         // / \
@@ -798,7 +785,7 @@ public class DatabaseActionsTest
         graphdbHelper.setRelationshipProperties( rel, properties );
     }
 
-    private long[] createDijkstraGraph( boolean includeOnes ) throws DatabaseBlockedException
+    private long[] createDijkstraGraph( boolean includeOnes )
     {
         /* Layout:
          *                       (y)
@@ -840,7 +827,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseWithDefaultParameters() throws DatabaseBlockedException
+    public void shouldBeAbleToTraverseWithDefaultParameters()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
@@ -849,7 +836,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseDepthTwo() throws DatabaseBlockedException
+    public void shouldBeAbleToTraverseDepthTwo()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2 ),
@@ -858,7 +845,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseEverything() throws DatabaseBlockedException
+    public void shouldBeAbleToTraverseEverything()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse(
@@ -873,7 +860,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToUseCustomReturnFilter() throws DatabaseBlockedException
+    public void shouldBeAbleToUseCustomReturnFilter()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "prune_evaluator", MapUtil.map(
@@ -883,7 +870,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined() throws DatabaseBlockedException
+    public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode,
@@ -897,7 +884,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipsIfSpecified() throws DatabaseBlockedException
+    public void shouldBeAbleToGetRelationshipsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
         ListRepresentation traverse = actions.traverse( startNode, new HashMap<String, Object>(),
@@ -910,7 +897,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsIfSpecified() throws DatabaseBlockedException
+    public void shouldBeAbleToGetPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
@@ -926,7 +913,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetFullPathsIfSpecified() throws DatabaseBlockedException
+    public void shouldBeAbleToGetFullPathsIfSpecified()
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),

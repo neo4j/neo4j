@@ -89,7 +89,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAllownModifyingProperties()
+    public void shouldAllowModifyingProperties()
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper

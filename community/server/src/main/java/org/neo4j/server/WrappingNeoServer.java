@@ -19,34 +19,37 @@
  */
 package org.neo4j.server;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.commons.configuration.Configuration;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.database.WrappedDatabase;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 
-public interface NeoServer
-{
-	void init();
+public class WrappingNeoServer extends CommunityNeoServer {
+
+	private final GraphDatabaseAPI db;
+
+	public WrappingNeoServer(GraphDatabaseAPI db) 
+	{
+		this(db, new ServerConfigurator(db));
+	}
 	
-    void start();
+	public WrappingNeoServer(GraphDatabaseAPI db, Configurator configurator) 
+	{
+		this.configurator = configurator;
+		this.db = db;
+		
+		init();
+	}
 
-    void stop();
+	@Override
+	protected StartupHealthCheck createHealthCheck() {
+		return new StartupHealthCheck();
+	}
 
-    Configuration getConfiguration();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    @Deprecated
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
-
-    URI baseUri();
+	@Override
+	protected Database createDatabase() {
+		return new WrappedDatabase(db);
+	}
 }

@@ -31,34 +31,25 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.Bootstrapper;
-import org.neo4j.server.EphemeralNeoServerBootstrapper;
-import org.neo4j.server.NeoServerBootstrapper;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.modules.DiscoveryModule;
-import org.neo4j.server.modules.ManagementApiModule;
-import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.database.CommunityDatabase;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManagerProvider;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
 
 public class ServerBuilder
 {
@@ -69,7 +60,7 @@ public class ServerBuilder
     private String webAdminDataUri = "/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
-    private Properties arbitraryProperties = new Properties();
+    private final Properties arbitraryProperties = new Properties();
 
     private static enum WhatToDo
     {
@@ -79,7 +70,6 @@ public class ServerBuilder
     }
 
     private WhatToDo action;
-    private List<Class<? extends ServerModule>> serverModules = null;
     private Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
@@ -93,26 +83,20 @@ public class ServerBuilder
         return new ServerBuilder();
     }
 
-    @SuppressWarnings("unchecked")
-    public NeoServerWithEmbeddedWebServer build() throws IOException
+    public CommunityNeoServer build() throws IOException
     {
         if ( dbDir == null )
         {
             this.dbDir = createTempDir().getAbsolutePath();
         }
         File configFile = createPropertiesFiles();
-
-        if ( serverModules == null )
-        {
-            withSpecificServerModulesOnly( RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class,
-                ThirdPartyJAXRSModule.class, DiscoveryModule.class );
-        }
-
+        
         if ( startupHealthCheck == null )
         {
             startupHealthCheck = new StartupHealthCheck()
             {
-                public boolean run()
+                @Override
+				public boolean run()
                 {
                     return true;
                 }
@@ -124,14 +108,21 @@ public class ServerBuilder
             LeaseManagerProvider.setClock( clock );
         }
 
-        return new NeoServerWithEmbeddedWebServer( createBootstrapper(), startupHealthCheck,
-            new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
-            new Jetty6WebServer(), serverModules );
-    }
+        return new CommunityNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
+	    {
+        	@Override
+        	protected StartupHealthCheck createHealthCheck() {
+        		return startupHealthCheck;
+        	}
 
-    protected Bootstrapper createBootstrapper()
-    {
-        return persistent ? new NeoServerBootstrapper() : new EphemeralNeoServerBootstrapper();
+        	@Override
+        	protected Database createDatabase() {
+        		return persistent ? 
+        				new CommunityDatabase(configurator.configuration()) :
+    					new EphemeralDatabase(configurator.configuration());
+        		
+        	}
+	    };
     }
 
     public File createPropertiesFiles() throws IOException
@@ -332,22 +323,26 @@ public class ServerBuilder
     {
         startupHealthCheck = new StartupHealthCheck()
         {
-            public boolean run()
+            @Override
+			public boolean run()
             {
                 return false;
             }
 
-            public StartupHealthCheckRule failedRule()
+            @Override
+			public StartupHealthCheckRule failedRule()
             {
                 return new StartupHealthCheckRule()
                 {
 
-                    public String getFailureMessage()
+                    @Override
+					public String getFailureMessage()
                     {
                         return "mockFailure";
                     }
 
-                    public boolean execute( Properties properties )
+                    @Override
+					public boolean execute( Properties properties )
                     {
                         return false;
                     }
@@ -378,12 +373,6 @@ public class ServerBuilder
     public ServerBuilder withThirdPartyJaxRsPackage( String packageName, String mountPoint )
     {
         thirdPartyPackages.put( packageName, mountPoint );
-        return this;
-    }
-
-    public ServerBuilder withSpecificServerModulesOnly( Class<? extends ServerModule>... modules )
-    {
-        serverModules = Arrays.asList( modules );
         return this;
     }
 

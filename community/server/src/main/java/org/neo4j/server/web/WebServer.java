@@ -23,11 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.security.KeyStoreInformation;
@@ -35,8 +35,6 @@ import org.neo4j.server.security.KeyStoreInformation;
 public interface WebServer
 {
     void init();
-
-    void setNeoServer( NeoServer server );
 
     void setPort( int portNo );
 
@@ -48,25 +46,42 @@ public interface WebServer
 
     void setHttpsCertificateInformation( KeyStoreInformation config );
 
+    void setHttpLoggingConfiguration( File logbackConfig );
+
+    void setMaxThreads( int maxThreads );
+
     void start();
 
     void stop();
 
-    void setMaxThreads( int maxThreads );
-
     void addJAXRSPackages( List<String> packageNames, String serverMountPoint );
+    void removeJAXRSPackages( List<String> packageNames, String serverMountPoint );
 
+    void addFilter(Filter filter, String pathSpec);
+    void removeFilter(Filter filter, String pathSpec);
+    
     void addStaticContent( String contentLocation, String serverMountPoint );
+    void removeStaticContent( String contentLocation, String serverMountPoint );
 
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException;
 
+    @Deprecated
+    void setNeoServer( NeoServer server );
+    
+    /** 
+     * Please use {@link #addFilter instead}, this will be removed
+     * in version 1.10
+     * @param rules
+     */
+    @Deprecated
     void addSecurityRules( SecurityRule... rules );
 
-    void addExecutionLimitFilter( int timeout );
-
-    void enableHTTPLoggingForWebadmin( File logbackConfig );
-
+    /** 
+     * Please use {@link #addFilter instead}, this will be removed
+     * in version 1.10
+     * @param rules
+     */
     @Deprecated
-    Server getJetty();
+    void addExecutionLimitFilter( int timeout );
 }

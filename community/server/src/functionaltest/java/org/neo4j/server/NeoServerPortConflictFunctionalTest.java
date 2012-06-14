@@ -40,8 +40,8 @@ public class NeoServerPortConflictFunctionalTest extends ExclusiveServerTestBase
     {
         int contestedPort = 9999;
         ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty6WebServer.DEFAULT_ADDRESS) );
-        InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
-        NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
+        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
+        CommunityNeoServer server = ServerBuilder.server()
                 .onPort( contestedPort )
                 .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .build();

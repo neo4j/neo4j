@@ -27,7 +27,6 @@ import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -38,12 +37,12 @@ public class DatabasePrimitivesSampleableBaseTest
     public void sampleTest() throws MalformedObjectNameException, IOException
     {
         AbstractGraphDatabase db = new ImpermanentGraphDatabase();
-        Database database = new Database( db );
+        
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db );
 
         assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
 
-        database.shutdown();
+        db.shutdown();
 
         /*
         this makes no sense using direct object-references instead of jmx

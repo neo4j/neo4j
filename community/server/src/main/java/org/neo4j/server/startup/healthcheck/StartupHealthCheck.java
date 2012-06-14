@@ -30,7 +30,7 @@ public class StartupHealthCheck
     private final StartupHealthCheckRule[] rules;
 
     private StartupHealthCheckRule failedRule = null;
-    private Properties properties;
+    private final Properties properties;
 
     public StartupHealthCheck( Properties properties , StartupHealthCheckRule... rules)
     {

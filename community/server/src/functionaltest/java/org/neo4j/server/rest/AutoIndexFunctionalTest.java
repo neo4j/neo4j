@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -84,7 +83,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Title( "Relationship AutoIndex is not removable" )
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
-    public void Relationship_AutoIndex_is_not_removable() throws DatabaseBlockedException, JsonParseException
+    public void Relationship_AutoIndex_is_not_removable()
     {
         data.get();
         gen.get()
@@ -100,7 +99,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Title( "Node AutoIndex is not removable" )
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
-    public void AutoIndex_is_not_removable() throws DatabaseBlockedException, JsonParseException
+    public void AutoIndex_is_not_removable() throws  JsonParseException
     {
         gen.get()
                 .expectedStatus( 405 )
@@ -169,7 +168,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
     @Title( "Automatically indexed nodes cannot be removed from the index manually" )
-    public void autoindexed_items_cannot_be_removed_manually() throws DatabaseBlockedException, JsonParseException
+    public void autoindexed_items_cannot_be_removed_manually() throws  JsonParseException
     {
         long id = data.get()
                 .get( "I" )
@@ -199,7 +198,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
     @Title( "Automatically indexed relationships cannot be removed from the index manually" )
-    public void autoindexed_relationships_cannot_be_removed_manually() throws DatabaseBlockedException,
+    public void autoindexed_relationships_cannot_be_removed_manually() throws 
             JsonParseException
     {
         long id = data.get()

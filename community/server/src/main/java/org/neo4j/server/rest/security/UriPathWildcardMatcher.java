@@ -29,7 +29,7 @@ public class UriPathWildcardMatcher
     }
 
     public boolean matches(String uri)
-    {
+    {	
         return uri.matches(uriPath);
     }
 }

@@ -30,27 +30,61 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.shell.ShellSettings;
 import org.rrd4j.core.RrdDb;
 
-public class Database
+/**
+ * NOTICE: This class to be replaced by a corresponding
+ * interface in 1.10, please use available subclasses instead
+ * of directly instantiating this.
+ */
+public class Database implements Lifecycle
 {
     public static Logger log = Logger.getLogger( Database.class );
 
+    /**
+     * Please use {@link #getGraph()} instead. This will be removed in
+     * version 1.10
+     */
+    @Deprecated
     public GraphDatabaseAPI graph;
 
-    private final String databaseStoreDirectory;
+    private String databaseStoreDirectory;
     private RrdDb rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
+    /**
+     * This constructor should not be used, 
+     * please use a subclass of this class instead.
+     * @param db
+     */
+    @Deprecated
+    public Database()
+    {
+        
+    }
+    
+    /**
+     * This constructor should not be used, 
+     * please use {@link WrappingDatabase} instead.
+     * @param db
+     */
+    @Deprecated
     public Database( GraphDatabaseAPI db )
     {
         this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
     }
 
+    /**
+     * This constructor should not be used, 
+     * please use {@link CommunityDatabase} instead.
+     * @param db
+     */
+    @Deprecated
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory )
     {
         this( createDatabase( factory, databaseStoreDirectory, null ) );
@@ -59,6 +93,12 @@ public class Database
                 System.getProperty( "org.neo4j.server.properties" ) );
     }
 
+    /**
+     * This constructor should not be used, 
+     * please use {@link CommunityDatabase} instead.
+     * @param db
+     */
+    @Deprecated
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory,
             Map<String, String> databaseTuningProperties )
     {
@@ -90,39 +130,6 @@ public class Database
         }
     }
 
-    public void startup()
-    {
-        if ( graph != null )
-        {
-            log.info( "Successfully started database" );
-        }
-        else
-        {
-            log.error( "Failed to start database. GraphDatabaseService has not been properly initialized." );
-        }
-    }
-
-    public void shutdown()
-    {
-        try
-        {
-            if ( rrdDb != null )
-            {
-                rrdDb.close();
-            }
-            if ( graph != null )
-            {
-                graph.shutdown();
-            }
-            log.info( "Successfully shutdown database" );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Database did not shut down cleanly. Reason [%s]", e.getMessage() );
-            throw new RuntimeException( e );
-        }
-    }
-
     public String getLocation()
     {
         return databaseStoreDirectory;
@@ -149,24 +156,83 @@ public class Database
         }
         return index;
     }
-
-    public RrdDb rrdDb()
-    {
-        return rrdDb;
-    }
-
-    public void setRrdDb( RrdDb rrdDb )
-    {
-        this.rrdDb = rrdDb;
-    }
-
+    
     public IndexManager getIndexManager()
     {
         return graph.index();
     }
 
+	public GraphDatabaseAPI getGraph() {
+		return graph;
+	}
+
+    /**
+     * This should be assigned to you via your constructor,
+     * or via a DependencyResolver.
+     * @return
+     */
+    @Deprecated
+    public RrdDb rrdDb()
+    {
+        return rrdDb;
+    }
+    
+    /**
+     * This should be assigned to you via your constructor,
+     * or via a DependencyResolver.
+     * @return
+     */
+    @Deprecated
+    public void setRrdDb( RrdDb rrdDb )
+    {
+        this.rrdDb = rrdDb;
+    }
+
+    /**
+     * This should be assigned to you via your constructor,
+     * or via a DependencyResolver.
+     * @return
+     */
+    @Deprecated
     public StatisticCollector statisticCollector()
     {
         return statisticCollector;
+    }
+
+	@Override
+	public void init() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void start() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void stop() throws Throwable 
+	{
+		
+	}
+
+    @Override
+	public void shutdown() throws Throwable
+    {
+        
+    }
+
+    /**
+     * Will be removed in 1.10
+     */
+	@Deprecated
+    public void startup()
+    {
+        try {
+			start();
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
     }
 }

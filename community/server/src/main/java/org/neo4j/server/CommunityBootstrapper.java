@@ -19,14 +19,11 @@
  */
 package org.neo4j.server;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.database.GraphDatabaseFactory;
 
-public class EphemeralNeoServerBootstrapper extends NeoServerBootstrapper
+public class CommunityBootstrapper extends Bootstrapper
 {
-    @Override
-    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
-    {
-        return ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY;
-    }
+	@Override
+	protected NeoServer createNeoServer() {
+		return new CommunityNeoServer( createConfigurator());
+	}
 }

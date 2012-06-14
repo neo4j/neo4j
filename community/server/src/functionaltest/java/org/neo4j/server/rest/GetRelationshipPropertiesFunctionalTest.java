@@ -32,7 +32,6 @@ import javax.ws.rs.core.MediaType;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -65,7 +64,7 @@ public class GetRelationshipPropertiesFunctionalTest extends AbstractRestFunctio
     }
 
     @Test
-    public void shouldGet204ForNoProperties() throws DatabaseBlockedException {
+    public void shouldGet204ForNoProperties() {
         long relId = helper.createRelationship("LIKES");
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId
                 + "/properties");
@@ -74,7 +73,7 @@ public class GetRelationshipPropertiesFunctionalTest extends AbstractRestFunctio
     }
 
     @Test
-    public void shouldGet200AndContentLengthForProperties() throws DatabaseBlockedException {
+    public void shouldGet200AndContentLengthForProperties() {
         long relId = helper.createRelationship("LIKES");
         helper.setRelationshipProperties(relId, Collections.<String, Object>singletonMap("foo", "bar"));
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId
@@ -93,7 +92,7 @@ public class GetRelationshipPropertiesFunctionalTest extends AbstractRestFunctio
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertiesResponse() throws DatabaseBlockedException {
+    public void shouldBeJSONContentTypeOnPropertiesResponse() {
         long relId = helper.createRelationship("LIKES");
         helper.setRelationshipProperties(relId, Collections.<String, Object>singletonMap("foo", "bar"));
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "relationship/" + relId

@@ -31,7 +31,8 @@ import java.util.List;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
 
@@ -42,7 +43,7 @@ public class ManagementApiModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
@@ -52,8 +53,8 @@ public class ManagementApiModuleTest
 
         when( neoServer.getConfiguration() ).thenReturn( config );
 
-        ManagementApiModule module = new ManagementApiModule();
-        module.start( neoServer, null );
+        ManagementApiModule module = new ManagementApiModule(webServer, config);
+        module.start(StringLogger.DEV_NULL);
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }

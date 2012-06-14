@@ -32,7 +32,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.HtmlHelper;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ListWriter;
@@ -72,20 +71,13 @@ public class HtmlFormat extends RepresentationFormat
                 builder.append( "</select>\n" );
                 builder.append( "<label for='types'>for type(s)</label><select id='types' multiple='multiple'>" );
 
-                try
+                for ( String relationshipType : (List<String>) serialized.get( "relationship_types" ) )
                 {
-                    for ( String relationshipType : (List<String>) serialized.get( "relationship_types" ) )
-                    {
-                        builder.append( "<option selected='selected' value='" )
-                                .append( relationshipType )
-                                .append( "'>" );
-                        builder.append( relationshipType )
-                                .append( "</option>" );
-                    }
-                }
-                catch ( DatabaseBlockedException e )
-                {
-                    throw new RuntimeException( "Unable to render, database is blocked, see nested exception.", e );
+                    builder.append( "<option selected='selected' value='" )
+                            .append( relationshipType )
+                            .append( "'>" );
+                    builder.append( relationshipType )
+                            .append( "</option>" );
                 }
                 builder.append( "</select>\n" );
                 builder.append( "<button>Get</button>\n" );

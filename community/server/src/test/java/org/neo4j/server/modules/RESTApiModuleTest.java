@@ -31,7 +31,8 @@ import java.util.List;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
 
@@ -42,7 +43,7 @@ public class RESTApiModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
@@ -52,8 +53,8 @@ public class RESTApiModuleTest
 
         when( neoServer.getConfiguration() ).thenReturn( config );
 
-        RESTApiModule module = new RESTApiModule();
-        module.start( neoServer, null );
+        RESTApiModule module = new RESTApiModule(webServer, neoServer.getDatabase(), config);
+        module.start(StringLogger.DEV_NULL);
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }
