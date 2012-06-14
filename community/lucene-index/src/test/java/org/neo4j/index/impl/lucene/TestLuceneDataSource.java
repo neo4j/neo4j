@@ -20,9 +20,15 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterAccessor;
 import org.junit.After;
@@ -45,8 +51,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 public class TestLuceneDataSource
 {
@@ -106,8 +110,8 @@ public class TestLuceneDataSource
                                            new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexWriter( identifier );
-        IndexSearcherRef searcher = dataSource.getIndexSearcher( identifier, false );
-        assertSame( searcher, dataSource.getIndexSearcher( identifier, false ) );
+        IndexSearcherRef searcher = dataSource.getIndexSearcher( identifier );
+        assertSame( searcher, dataSource.getIndexSearcher( identifier ) );
     }
 
     @Test
@@ -143,10 +147,10 @@ public class TestLuceneDataSource
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
-        IndexSearcherRef fooSearcher = dataSource.getIndexSearcher( fooIdentifier, false );
-        IndexSearcherRef barSearcher = dataSource.getIndexSearcher( barIdentifier, false );
+        IndexSearcherRef fooSearcher = dataSource.getIndexSearcher( fooIdentifier );
+        IndexSearcherRef barSearcher = dataSource.getIndexSearcher( barIdentifier );
         assertFalse( fooSearcher.isClosed() );
-        IndexSearcherRef bazSearcher = dataSource.getIndexSearcher( bazIdentifier, false );
+        IndexSearcherRef bazSearcher = dataSource.getIndexSearcher( bazIdentifier );
         assertTrue( fooSearcher.isClosed() );
     }
 
@@ -163,10 +167,10 @@ public class TestLuceneDataSource
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
-        IndexSearcherRef oldFooSearcher = dataSource.getIndexSearcher( fooIdentifier, false );
-        IndexSearcherRef barSearcher = dataSource.getIndexSearcher( barIdentifier, false );
-        IndexSearcherRef bazSearcher = dataSource.getIndexSearcher( bazIdentifier, false );
-        IndexSearcherRef newFooSearcher = dataSource.getIndexSearcher( bazIdentifier, false );
+        IndexSearcherRef oldFooSearcher = dataSource.getIndexSearcher( fooIdentifier );
+        IndexSearcherRef barSearcher = dataSource.getIndexSearcher( barIdentifier );
+        IndexSearcherRef bazSearcher = dataSource.getIndexSearcher( bazIdentifier );
+        IndexSearcherRef newFooSearcher = dataSource.getIndexSearcher( bazIdentifier );
         assertNotSame( oldFooSearcher, newFooSearcher );
         assertFalse( newFooSearcher.isClosed() );
     }
@@ -200,9 +204,9 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
             new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID) );
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
-        IndexSearcherRef oldSearcher = dataSource.getIndexSearcher( identifier, false );
+        IndexSearcherRef oldSearcher = dataSource.getIndexSearcher( identifier );
         dataSource.invalidateIndexSearcher( identifier );
-        IndexSearcherRef newSearcher = dataSource.getIndexSearcher( identifier, false );
+        IndexSearcherRef newSearcher = dataSource.getIndexSearcher( identifier );
         assertNotSame( oldSearcher, newSearcher );
         assertTrue( oldSearcher.isClosed() );
         assertFalse( newSearcher.isClosed() );
