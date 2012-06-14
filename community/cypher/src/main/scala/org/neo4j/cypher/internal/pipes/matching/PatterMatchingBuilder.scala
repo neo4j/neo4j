@@ -91,18 +91,18 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
   }
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
-    case (key, value: PropertyContainer) => {
+    case (key, value: PropertyContainer) if patternGraph.contains(key) =>
       val element = patternGraph(key)
 
       value match {
-        case node: Node => Seq(key -> MatchingPair(element, node))
+        case node: Node        => Seq(key -> MatchingPair(element, node))
         case rel: Relationship => {
           val pr = element.asInstanceOf[PatternRelationship]
 
           val x = pr.dir match {
             case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
             case Direction.INCOMING => Some((pr.endNode, pr.startNode))
-            case Direction.BOTH => None
+            case Direction.BOTH     => None
           }
 
           //We only want directed bound relationships. Undirected relationship patterns
@@ -115,13 +115,12 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
 
               Seq(t1, t2, t3)
             }
-            case None => Seq()
+            case None         => Seq()
           }
         }
       }
 
 
-    }
     case _ => Seq()
   }
 }

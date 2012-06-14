@@ -19,20 +19,18 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import matching.MatchingContext
+import matching.{PatternGraph, MatchingContext}
 import java.lang.String
-import org.neo4j.cypher.internal.commands.{Predicate, Pattern}
+import org.neo4j.cypher.internal.commands.Predicate
 
-class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
-  val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
+class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternGraph) extends Pipe {
+  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph)
   val symbols = matchingContext.symbols
-  val keysToKeep = (patterns.flatMap(_.possibleStartPoints.map(_.name)) ++ predicates.flatMap(_.dependencies.map(_.name))).distinct
 
   def createResults(state: QueryState) =
     source.createResults(state).flatMap(ctx => {
-      val matches = matchingContext.getMatches(ctx.filterKeys(key => keysToKeep.contains(key) || key.startsWith("-=PARAMETER=-")))
-      matches.map(pm => ctx.newWith( pm ) )
+      matchingContext.getMatches(ctx.toMap).map(pm => ctx.newWith(pm))
     })
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"
+  override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patternGraph + ")"
 }

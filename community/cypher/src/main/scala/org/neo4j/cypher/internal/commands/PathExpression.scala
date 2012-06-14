@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
+import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 
-case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with PathExtractor {
+case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with PathExtractor with PatternGraphBuilder {
   val symbols = new SymbolTable(declareDependencies(AnyType()).distinct: _*)
-  val matchingContext = new MatchingContext(pathPattern, symbols, Seq())
+  val matchingContext = new MatchingContext(symbols, Seq(), buildPatternGraph(symbols, pathPattern))
   val interestingPoints = pathPattern.flatMap(_.possibleStartPoints.map(_.name)).distinct
 
   def compute(m: Map[String, Any]): Any = {

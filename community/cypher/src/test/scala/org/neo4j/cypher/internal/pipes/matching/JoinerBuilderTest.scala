@@ -23,7 +23,6 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands.True
 
 
@@ -32,12 +31,11 @@ class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
     val pR = pA.relateTo("r", pB, Seq(), Direction.BOTH, false, True())
-    val symbols = new SymbolTable(Identifier("a", NodeType()))
 
     val nodes = Map("a" -> pA, "b" -> pB)
     val rels = Map("r" -> pR)
 
-    val patternGraph = new PatternGraph(nodes, rels, symbols)
+    val patternGraph = new PatternGraph(nodes, rels, Seq("a"))
 
     val builder = new JoinerBuilder(patternGraph, Seq(True()))
 

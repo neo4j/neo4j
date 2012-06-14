@@ -23,11 +23,13 @@ abstract class PatternElement(val key: String) {
   def traverse[T](shouldFollow: (PatternElement) => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
-                  data: T)
+                  data: T,
+                  path: Seq[PatternElement])
 
   def traverse[T](shouldFollow: (PatternElement) => Boolean,
                   visit: (PatternElement, T) => T,
-                  data: T) {
-    traverse(shouldFollow, visit, visit, data)
+                  data: T,
+                  path: Seq[PatternElement]) {
+    traverse(shouldFollow, visit, visit, data, path)
   }
 }

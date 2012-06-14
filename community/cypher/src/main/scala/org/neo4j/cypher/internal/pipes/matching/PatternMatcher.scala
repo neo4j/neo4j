@@ -38,9 +38,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
                                             history: History,
                                             yielder: (Map[String, Any]) => U,
                                             current: MatchingPair,
-                                            leftToDoAfterThisOne: Set[MatchingPair],
                                             alreadyInExtraWork: Boolean): Boolean = {
-    debug(current, history, leftToDoAfterThisOne)
+    debug(current, history, remaining)
 
     if (!current.matchesBoundEntity(boundNodes)) {
       debug("Didn't match bound node")
@@ -56,8 +55,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     val notYetVisited: List[PatternRelationship] = getPatternRelationshipsNotYetVisited(current.patternNode, history)
 
     notYetVisited match {
-      case List() => traverseNextNodeOrYield(leftToDoAfterThisOne, newHistory, yielder)
-      case List(single) => traverseRelationship(current, single, newHistory, leftToDoAfterThisOne, yielder)
+      case List() => traverseNextNodeOrYield(remaining - current, newHistory, yielder)
+      case List(single) => traverseRelationship(current, single, newHistory, remaining - current, yielder)
       case _ => traverseRelationship(current, notYetVisited.head, newHistory, remaining, yielder)
     }
   }
@@ -67,9 +66,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
                               yielder: Map[String, Any] => U): Boolean = {
 
     val current = remaining.head
-    val leftToDoAfterThisOne = remaining.tail
 
-    traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, false)
+    traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
   }
 
   private def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {
@@ -83,11 +81,11 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     } else {
 
       val newHistory = history.add(current)
-      
+
       currentRel.predicate match {
         case True() =>
         case p => if(!p.isMatch(newHistory.toMap)) return false
-      } 
+      }
 
       if (isMatchSoFar(newHistory)) {
         val nextNode = rel.getOtherNode(gNode)
@@ -183,7 +181,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
   private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] =
     history.filter(patternNode.relationships).filter(_.optional == false || includeOptionals == true).toList
 
-  val isDebugging = false
+  protected val isDebugging = false
 
   private def debug[U](history: History, remaining: Set[MatchingPair]) {
     if (isDebugging)

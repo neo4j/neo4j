@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.symbols.RelationshipType
 import org.neo4j.cypher.internal.commands.{True, And, Predicate}
 import collection.Map
 
@@ -28,9 +27,8 @@ object JoinerBuilder {
   def canHandlePatter(patternGraph: PatternGraph): Boolean =
     !(patternGraph.containsOptionalElements ||
       patternGraph.containsLoops ||
-      patternGraph.bindings.identifiers.exists(_.typ == RelationshipType()) ||
-      patternGraph.patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
-      )
+      patternGraph.hasBoundRelationships ||
+      patternGraph.hasVarLengthPaths)
 }
 
 class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {

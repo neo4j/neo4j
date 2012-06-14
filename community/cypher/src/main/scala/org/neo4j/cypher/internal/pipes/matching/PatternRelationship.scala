@@ -24,6 +24,10 @@ import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.symbols.Identifier
+import scala.Some
+import org.neo4j.cypher.internal.symbols.RelationshipType
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
@@ -34,16 +38,18 @@ class PatternRelationship(key: String,
                           val predicate: Predicate)
   extends PatternElement(key) {
 
+  def identifiers : Seq[Identifier] = Seq(Identifier(startNode.key, NodeType()), Identifier(endNode.key, NodeType()), Identifier(key, RelationshipType()))
+
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
-  lazy val neo4jRelTypes = relTypes.map(t=>DynamicRelationshipType.withName(t))
+  lazy val neo4jRelTypes = relTypes.map(t => DynamicRelationshipType.withName(t))
 
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    
-    val result = (if(relTypes.isEmpty) {
+
+    val result = (if (relTypes.isEmpty) {
       realNode.getRelationships(getDirection(node))
     } else {
-      realNode.getRelationships(getDirection(node), neo4jRelTypes:_*)
+      realNode.getRelationships(getDirection(node), neo4jRelTypes: _*)
     }).asScala.toStream.map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
@@ -56,13 +62,13 @@ class PatternRelationship(key: String,
     dir match {
       case Direction.OUTGOING => if (node == startNode) Direction.OUTGOING else Direction.INCOMING
       case Direction.INCOMING => if (node == endNode) Direction.OUTGOING else Direction.INCOMING
-      case Direction.BOTH => Direction.BOTH
+      case Direction.BOTH     => Direction.BOTH
     }
   }
 
   override def equals(other: Any): Boolean = other match {
     case that: PatternRelationship => this.key == that.key
-    case _ => false
+    case _                         => false
   }
 
   override def toString = key
@@ -71,25 +77,29 @@ class PatternRelationship(key: String,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
                   data: T,
-                  comingFrom: PatternNode) {
+                  comingFrom: PatternNode,
+                  path: Seq[PatternElement]) {
+    if (!path.contains(this)) {
+      val moreData = visitRelationship(this, data)
 
-    val moreData = visitRelationship(this, data)
+      val otherNode = getOtherNode(comingFrom)
 
-    val otherNode = getOtherNode(comingFrom)
-
-    if (shouldFollow(otherNode)) {
-      otherNode.traverse(shouldFollow, visitNode, visitRelationship, moreData)
+      if (shouldFollow(otherNode)) {
+        otherNode.traverse(shouldFollow, visitNode, visitRelationship, moreData, path :+ this)
+      }
     }
   }
 
   def traverse[T](shouldFollow: (PatternElement) => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
-                  data: T) {
+                  data: T,
+                  path: Seq[PatternElement]) {
+    if (!path.contains(this)) {
+      val moreData = visitRelationship(this, data)
 
-    val moreData = visitRelationship(this, data)
-
-    Seq(startNode, endNode).filter(shouldFollow).foreach(n => n.traverse(shouldFollow, visitNode, visitRelationship, moreData))
+      Seq(startNode, endNode).filter(shouldFollow).foreach(n => n.traverse(shouldFollow, visitNode, visitRelationship, moreData, path :+ this))
+    }
   }
 }
 
@@ -106,13 +116,18 @@ class VariableLengthPatternRelationship(pathName: String,
   extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
 
 
+  override def identifiers : Seq[Identifier] = Seq(
+    Identifier(startNode.key, NodeType()),
+    Identifier(endNode.key, NodeType()),
+    Identifier(key, new IterableType(RelationshipType()))) ++
+                                               relIterable.toSeq.map(Identifier(_, new IterableType(RelationshipType())))
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
 
     val depthEval = (minHops, maxHops) match {
-      case (None, None) => Evaluators.fromDepth(1)
-      case (Some(min), None) => Evaluators.fromDepth(min)
-      case (None, Some(max)) => Evaluators.includingDepths(1, max)
+      case (None, None)           => Evaluators.fromDepth(1)
+      case (Some(min), None)      => Evaluators.fromDepth(min)
+      case (None, Some(max))      => Evaluators.includingDepths(1, max)
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
@@ -120,12 +135,14 @@ class VariableLengthPatternRelationship(pathName: String,
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
-    val traversalDescription = if(relType.isEmpty) {
+    val traversalDescription = if (relType.isEmpty) {
       baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
     } else {
       val emptyExpander = Traversal.emptyExpander()
       val dir = getDirection(node)
-      val expander = relType.foldLeft(emptyExpander){ case (e,t) => e.add(DynamicRelationshipType.withName(t), dir) }
+      val expander = relType.foldLeft(emptyExpander) {
+        case (e, t) => e.add(DynamicRelationshipType.withName(t), dir)
+      }
       baseTraversalDescription.expand(expander)
     }
 

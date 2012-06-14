@@ -105,4 +105,15 @@ class MatchBuilderTest extends BuilderTest {
 
     assertFalse(builder.canWorkWith(plan(inP, inQ)))
   }
+
+  @Test
+  def should_accept_non_optional_parts_of_the_query_first() {
+    val inQ = PartiallySolvedQuery().
+      copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
+      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, None))))
+
+    val inP = createPipe(nodes = Seq("l"))
+
+    assertFalse(builder.canWorkWith(plan(inP, inQ)))
+  }
 }

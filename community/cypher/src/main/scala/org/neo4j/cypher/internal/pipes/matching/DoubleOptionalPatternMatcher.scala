@@ -38,27 +38,24 @@ class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    doubleOptionalPaths: Seq[DoubleOptionalPath])
   extends PatternMatcher(bindings, predicates, includeOptionals, source) {
 
-  private lazy val optionalRels: Seq[String] = doubleOptionalPaths.map(_.relationshipName)
-
   override protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                                      history: History,
                                                      yielder: (Map[String, Any]) => U,
                                                      current: MatchingPair,
-                                                     leftToDoAfterThisOne: Set[MatchingPair],
                                                      alreadyInExtraWork: Boolean): Boolean = {
-    val initialResult = super.traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, alreadyInExtraWork = false)
+    val initialResult = super.traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
 
     // To prevent going around for infinity, we check that we are not already checking for double optionals
     if (includeOptionals && !alreadyInExtraWork) {
-      val pathsToCheck = shouldDoExtraWork(current, remaining)
+      val pathsToCheck: List[DoubleOptionalPath] = shouldDoExtraWork(current, remaining).toList
 
       val extendedCheck = pathsToCheck.foldLeft(initialResult)((last, next) => {
-        val (newHead, newRemaining) = remaining.partition(p => p.patternNode.key == next.endNode)
-        val remainingPlusCurrent = newRemaining + current
+        val (newRemaining: Set[MatchingPair], newCurrent: MatchingPair) = swap(remaining, current, next)
 
-        val myYielder = createYielder(yielder, next.relationshipName) _
+        val myYielder = createYielder(yielder, next, newCurrent) _
 
-        traverseNextSpecificNode(remaining, history, myYielder, newHead.head, remainingPlusCurrent, alreadyInExtraWork = true) || last
+        debug(newRemaining, newCurrent, history, next)
+        traverseNextSpecificNode(newRemaining, history, myYielder, newCurrent, alreadyInExtraWork = true) || last
       })
 
       extendedCheck
@@ -67,26 +64,42 @@ class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
       initialResult
   }
 
+  private def debug(remaining: Set[MatchingPair], current: MatchingPair, history: History, dop: DoubleOptionalPath) {
+    if (isDebugging) {
 
-  private def shouldDoExtraWork(current: MatchingPair, remaining: Set[MatchingPair]): Seq[DoubleOptionalPath] = doubleOptionalPaths.filter(
-    optionalPath => {
-      val standingOnOptionalPath = optionalPath.startNode == current.patternNode.key
-      val endPointStillToDo = remaining.exists(_.patternNode.key == optionalPath.endNode)
-      standingOnOptionalPath && endPointStillToDo
-    })
-
-  private def createYielder[A](inner: Map[String, Any] => A, relName: String)(m: Map[String, Any]) {
-    m.get(relName) match {
-      case Some(null) if !allOptionalRelsAreNull(m) => inner(m) /*We should only yield if we have found a null for
-                                                                  this relationship, and not all optional relationships
-                                                                  are null*/
-      case _                                        =>
+      println(String.format("""DoubleOptionalPatternMatcher.traverseNextSpecificNode -- Extra check
+remaining = %s
+current   = %s
+history   = %s
+DoubleOP  = %s
+    """, remaining, current, history, dop))
     }
   }
 
-  private def allOptionalRelsAreNull[A](m: Map[String, Any]): Boolean = {
-    optionalRels.flatMap(m.get(_)).forall(_ == null)
+  private def swap(remaining: Set[MatchingPair], current: MatchingPair, dop: DoubleOptionalPath): (Set[MatchingPair], MatchingPair) =
+    (remaining, remaining.find(_.patternElement.key == dop.otherNode(current.patternElement.key)).get)
+
+  private def shouldDoExtraWork(current: MatchingPair, remaining: Set[MatchingPair]): Seq[DoubleOptionalPath] =
+    doubleOptionalPaths.filter(_.shouldDoWork(current.patternNode.key, remaining))
+
+
+  /*
+  We're only looking for paths that we would not find during our normal pattern matching. This yielder protects us
+  from yielding subgraphs that have already been found.
+   */
+  private def createYielder[A](inner: Map[String, Any] => A, dop: DoubleOptionalPath, current: MatchingPair)(m: Map[String, Any]) {
+    val Relationships(closestRel, oppositeRel) = dop.relationshipsSeenFrom(current.patternElement.key)
+
+    val weShouldYield = m.get(closestRel) != Some(null) && m.get(oppositeRel) == Some(null)
+
+    if (weShouldYield) {
+      inner(m)
+
+      if (isDebugging) println(String.format("""optional extra yield:
+      m=%s
+""", m))
+
+    }
+
   }
 }
-
-case class DoubleOptionalPath(startNode: String, endNode: String, relationshipName: String)

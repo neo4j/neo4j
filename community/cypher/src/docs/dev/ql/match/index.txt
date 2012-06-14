@@ -27,4 +27,5 @@ include::shortest-path.txt[]
 include::all-shortest-paths.txt[]
 include::named-path.txt[]
 include::matching-on-a-bound-relationship.txt[]
+include::match-with-or.txt[]
 
