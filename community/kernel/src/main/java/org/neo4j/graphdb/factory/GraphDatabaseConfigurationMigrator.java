@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
-import org.neo4j.kernel.configuration.BaseConfigurationMigrator.SpecificPropertyMigration;
 
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator 
 {
