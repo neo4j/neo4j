@@ -156,10 +156,21 @@ public class TestGraphDatabaseSetting
         assertThat(fileSetting.valueOf("baa", config), equalTo(new File("/home/jake/baa").getCanonicalPath()));
         
         // Absolute paths
-        assertThat(fileSetting.valueOf("/baa", config), equalTo(new File("/baa").getCanonicalPath()));
-        
-        // Path with incorrect directory separator
-        assertThat(fileSetting.valueOf("\\baa\\boo", config), equalTo(new File("/baa/boo").getCanonicalPath()));
+        if (GraphDatabaseSetting.osIsWindows())
+        {
+            assertThat(fileSetting.valueOf("\\\\baa", config), equalTo(new File("\\\\baa").getAbsolutePath()));
+
+            // Path with incorrect directory separator
+            assertThat(fileSetting.valueOf("/baa/boo", config), equalTo(new File("\\\\baa\\boo").getCanonicalPath()));
+        }
+        else
+        {
+            assertThat(fileSetting.valueOf("/baa", config), equalTo(new File("/baa").getAbsolutePath()));
+
+            // Path with incorrect directory separator
+            assertThat(fileSetting.valueOf("\\baa\\boo", config), equalTo(new File("/baa/boo").getCanonicalPath()));
+        }
+
     }
 
     @Test
