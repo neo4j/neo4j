@@ -466,19 +466,13 @@ public abstract class GraphDatabaseSetting<T>
             
             File path = new File(rawValue);
 
-            System.out.println( "After separator fix:"+path );
-            System.out.println( "Is absolute:"+path.isAbsolute() );
-
-            if(!path.isAbsolute() && relativeTo != null) 
+            if(!path.isAbsolute() && relativeTo != null)
             {
                 File baseDir = new File(config.get(relativeTo));
                 path = new File(baseDir, rawValue);
-                System.out.println( "Relativised:"+path );
             }
 
-            System.out.println( "Is absolute2:"+path.isAbsolute() );
-
-            if(makeCanonical)   
+            if(makeCanonical)
             {
                 try
                 {
