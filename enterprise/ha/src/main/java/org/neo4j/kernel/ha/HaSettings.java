@@ -28,12 +28,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.graphdb.factory.Migrator;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
 
 /**
  * Settings for high availability mode
  */
 public class HaSettings
 {
+	@Migrator
+	public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
+	
     public static final GraphDatabaseSetting.StringSetting coordinators = new GraphDatabaseSetting.StringSetting( "ha.coordinators", ANY, "Must be valid list of host names" );
     
     @Default("20")

@@ -202,22 +202,16 @@ public class HighlyAvailableGraphDatabase
         if ( !config.containsKey( GraphDatabaseSettings.cache_type.name() ) )
             config.put( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME );
 
-        // Apply defaults to configuration just for logging purposes
-        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( GraphDatabaseSettings.class );
-
         // Setup configuration
-        configuration = new Config( configurationDefaults.apply( config ) );
+        configuration = new Config( config, GraphDatabaseSettings.class, HaSettings.class, OnlineBackupSettings.class );
 
         // Create logger
         this.logging = createLogging();
 
-        // Migrate settings and then apply defaults again
-        EnterpriseConfigurationMigrator configurationMigrator = new EnterpriseConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
-
-        config = new ConfigurationDefaults( GraphDatabaseSettings.class, HaSettings.class, OnlineBackupSettings.class ).apply( configurationMigrator.migrateConfiguration( config ) );
-        configuration.applyChanges( config );
-
         messageLog = logging.getLogger( Loggers.NEO4J );
+        
+        configuration.setLogger(messageLog);
+        
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
         caches = new HaCaches( messageLog );

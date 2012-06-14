@@ -67,7 +67,7 @@ public abstract class AbstractHaTest
     static final File PARENT_PATH = new File( "target"+File.separator+"havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
-    protected static final int TEST_READ_TIMEOUT = 3;
+    protected static final int TEST_READ_TIMEOUT = 5;
 
     private boolean expectsResults;
     private int nodeCount;

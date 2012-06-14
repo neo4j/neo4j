@@ -35,14 +35,14 @@ import static org.hamcrest.CoreMatchers.*;
  */
 public class EnterpriseConfigurationMigratorTest
 {
-    ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator( StringLogger.SYSTEM);
+    ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
     
     @Test
     public void testOnlineBackupMigration()
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "true" );
-        Map<String, String> migrated = migrator.migrateConfiguration( original );
+        Map<String, String> migrated = migrator.apply( original, StringLogger.SYSTEM );
         Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
         Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
         Assert.assertThat( migrated.get( "online_backup_port" ), is( Integer.toString( Server.DEFAULT_BACKUP_PORT ) ) );
@@ -53,7 +53,7 @@ public class EnterpriseConfigurationMigratorTest
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "port=123" );
-        Map<String, String> migrated = migrator.migrateConfiguration( original );
+        Map<String, String> migrated = migrator.apply( original, StringLogger.SYSTEM );
         Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
         Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
         Assert.assertThat( migrated.get( "online_backup_port" ), is( "123" ) );
@@ -64,7 +64,7 @@ public class EnterpriseConfigurationMigratorTest
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "ha.machine_id", "123" );
-        Map<String, String> migrated = migrator.migrateConfiguration( original );
+        Map<String, String> migrated = migrator.apply( original, StringLogger.SYSTEM );
         Assert.assertThat( migrated.containsKey( "ha.machine_id" ), is( false ) );
         Assert.assertThat( migrated.get( "ha.server_id" ), is( "123" ) );
     }

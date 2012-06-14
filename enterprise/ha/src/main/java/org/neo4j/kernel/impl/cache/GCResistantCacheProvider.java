@@ -44,27 +44,24 @@ public class GCResistantCacheProvider extends CacheProvider
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        long available = Runtime.getRuntime().maxMemory();
-        long defaultMem = ( available / 4);
-        long node = config.isSet( node_cache_size ) ? config.getSize( node_cache_size ) : defaultMem;
-        long rel = config.isSet( relationship_cache_size ) ? config.getSize( relationship_cache_size ) : defaultMem;
-        checkMemToUse( logger, node, rel, available );
-        return new GCResistantCache<NodeImpl>( node, config.getFloat( node_cache_array_fraction ), config.getDuration( gcr_cache_min_log_interval ),
+        long node = config.get( node_cache_size );
+        long rel = config.get( relationship_cache_size );
+        checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
+        return new GCResistantCache<NodeImpl>( node, config.get( node_cache_array_fraction ), config.get( gcr_cache_min_log_interval ),
                 NODE_CACHE_NAME, logger );
     }
 
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
     {
-        long available = Runtime.getRuntime().maxMemory();
-        long defaultMem = ( available / 4);
-        long node = config.isSet( node_cache_size ) ? config.getSize( node_cache_size ) : defaultMem;
-        long rel = config.isSet( relationship_cache_size ) ? config.getSize( relationship_cache_size ) : defaultMem;
-        checkMemToUse( logger, node, rel, available );
-        return new GCResistantCache<RelationshipImpl>( rel, config.getFloat( relationship_cache_array_fraction ), config.getDuration( gcr_cache_min_log_interval ),
+        long node = config.get( node_cache_size );
+        long rel = config.get( relationship_cache_size );
+        checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
+        return new GCResistantCache<RelationshipImpl>( rel, config.get( relationship_cache_array_fraction ), config.get( gcr_cache_min_log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger );
     }
 
+    // TODO: Move into validation method of config setting?
     @SuppressWarnings( "boxing" )
     private void checkMemToUse( StringLogger logger, long node, long rel, long available )
     {
