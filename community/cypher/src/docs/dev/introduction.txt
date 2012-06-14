@@ -1,7 +1,7 @@
 _Cypher_ is a declarative graph query language that allows for expressive and efficient querying and updating of the
 graph store without having to write traversals through the graph structure in code. Cypher is still growing and
 maturing, and that means that there probably will be breaking syntax changes. It also means that it has not undergone
-the same rigorous performance testing as the other components.
+the same rigorous performance testing as other Neo4j components.
 
 Cypher is designed to be a humane query language, suitable for both developers and (importantly, we think) operations
 professionals who want to make ad-hoc queries on the database. Our guiding goal is to make the simple things simple,

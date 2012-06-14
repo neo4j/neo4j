@@ -8,10 +8,10 @@ The mathematical operators are `+`, `-`, `*`, `/` and `%`. Of these, only the pl
 
 The equality operators are `=`, `<>`, `<`, `>`, `<=`, `>=`.
 
-Since Neo4j is a schema-less graph database, Cypher has two special operators -- `?` and `!`.
+Since Neo4j is a schema-free graph database, Cypher has two special operators -- `?` and `!`.
 
 They are used on properties, and are used to deal with missing values. A comparison on a property
-that does not exist will cause an error. Instead of having to always check if the property exists
+that does not exist would normally cause an error. Instead of having to always check if the property exists
 before comparing its value with something else, the question mark make the comparison always return
 true if the property is missing, and the exclamation mark makes the comparator return false.
 
@@ -23,7 +23,7 @@ This predicate will evaluate to false if +n.prop+ is missing.
 
 +WHERE n.prop! = "foo"+
 
-Warning: Mixing the two in the same comparison will lead to unpredictable results.
+WARNING: Mixing the two in the same comparison will lead to unpredictable results.
 
 This is really syntactic sugar that expands to this:
 

@@ -56,7 +56,7 @@ public class IntroExamplesTest implements GraphHolder
     {
         Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
-        fw.append( "\nImagine an example graph like\n\n" );
+        fw.append( "\nImagine an example graph like the following one:\n\n" );
         fw.append( AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
                 graphdb(),
                 "cypher-intro" ) );
@@ -66,10 +66,10 @@ public class IntroExamplesTest implements GraphHolder
         String query = "START john=node:node_auto_index(name = 'John') "
                        + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
         fw.append( createCypherSnippet( query ) );
-        fw.append( "\nResulting in \n" );
+        fw.append( "\nResulting in:\n" );
         fw.append( createQueryResultSnippet( engine.execute( query  ).toString() ) );
 
-        fw.append( "Next up we will add filtering to set all four parts "
+        fw.append( "Next up we will add filtering to set more parts "
                    + "in motion:\n\nIn this next example, we take a list of users "
                    + "(by node ID) and traverse the graph looking for those other "
                    + "users that have an outgoing +friend+ relationship, returning "
