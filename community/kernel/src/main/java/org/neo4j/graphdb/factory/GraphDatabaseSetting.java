@@ -462,13 +462,6 @@ public abstract class GraphDatabaseSetting<T>
             if(fixIncorrectPathSeparators) 
             {
                 rawValue = FileUtils.fixSeparatorsInPath(rawValue);
-
-                if (GraphDatabaseSetting.osIsWindows())
-                {
-                    // Absolute paths on Windows have to start with double \\
-                    if (rawValue.startsWith( "\\" ) && !rawValue.startsWith( "\\\\" ))
-                        rawValue = "\\"+rawValue;
-                }
             }
             
             File path = new File(rawValue);
@@ -492,6 +485,11 @@ public abstract class GraphDatabaseSetting<T>
                     return path.getCanonicalPath();
                 } catch (IOException e)
                 {
+                    if (path.isAbsolute())
+                    {
+                        return path.getAbsolutePath();
+                    }
+
                     throw new IllegalArgumentException(name() + ": unable to resolve canonical path for " + rawValue + ".", e);
                 }
             } else if( path.isAbsolute()) 
