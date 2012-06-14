@@ -1,0 +1,9 @@
+[[match-introduction]]
+== Introduction ==
+In the `MATCH` clause, patterns are used a lot.
+Read <<pattern-patterns>> for an introduction.
+
+The following graph is used for the examples below:
+
+include::cypher-match-graph.txt[]
+

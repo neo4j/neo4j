@@ -15,4 +15,4 @@ An expression in Cypher can be:
 * A function call -- `length(p)`, `nodes(p)`
 * An aggregate function -- `avg(x.prop)`, `count(*)`
 * Relationship types -- `:REL_TYPE`, +:\`REL TYPE`+, `:REL1|REL2`
-* A path-pattern: a-->()<--b
+* A path-pattern: `a-->()<--b`
