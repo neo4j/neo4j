@@ -43,9 +43,11 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
-import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.advanced.jmx.ServerManagement;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.helpers.ServerBuilder;
 
 public class BootstrapperTest
@@ -54,19 +56,36 @@ public class BootstrapperTest
     public void shouldBeAbleToRestartServer() throws Exception
     {
         String dbDir1 = new File("target/db1").getAbsolutePath();
-        Bootstrapper bs = new AdvancedNeoServerBootstrapper();
-        System.setProperty( "org.neo4j.server.properties",  ServerBuilder.server().usingDatabaseDir( dbDir1 )
-                .createPropertiesFiles().getAbsolutePath() );
-        bs.start( null );
-        assertNotNull( bs.getServer().getDatabase().graph );
-        assertEquals( dbDir1, bs.getServer().getDatabase().graph.getStoreDir() );
+        
+        // TODO: This needs to be here because of a startuphealthcheck
+        // that requires this system property. Look into moving
+        // startup health checks into bootstrapper to avoid this.
+        File irellevant = new File("target/irellevant");
+        irellevant.createNewFile();
+        System.setProperty( "org.neo4j.server.properties", irellevant.getAbsolutePath());
+        
+        
+        Configurator config = new PropertyFileConfigurator(
+        		ServerBuilder
+	        		.server()
+	        		.usingDatabaseDir( dbDir1 )
+	                .createPropertiesFiles());
+        
+        AdvancedNeoServer server = new AdvancedNeoServer(config);
+        
+        server.start( );
+        
+        assertNotNull( server.getDatabase().getGraph() );
+        assertEquals( dbDir1, server.getDatabase().getGraph().getStoreDir() );
 
+        // Change the database location
         String dbDir2 = new File("target/db2").getAbsolutePath();
-        System.setProperty( "org.neo4j.server.properties",  ServerBuilder.server().usingDatabaseDir( dbDir2 )
-                .createPropertiesFiles().getAbsolutePath() );
-        ServerManagement bean = new ServerManagement( bs );
+        Configuration conf = config.configuration();
+        conf.setProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2);
+        
+        ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
-        assertEquals( dbDir2, bs.getServer().getDatabase().graph.getStoreDir() );
+        assertEquals( dbDir2, server.getDatabase().getGraph().getStoreDir() );
  
     }
 }

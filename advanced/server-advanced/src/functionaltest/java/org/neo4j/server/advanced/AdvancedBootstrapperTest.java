@@ -25,11 +25,11 @@ import static org.junit.Assert.assertThat;
 import org.junit.Test;
 import org.neo4j.server.Bootstrapper;
 
-public class AdvancedNeoServerBootstrapperTest
+public class AdvancedBootstrapperTest
 {
     @Test
     public void bootstrapperLoadsAdvancedServerBootstrapper() throws Exception
     {
-        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( AdvancedNeoServerBootstrapper.class ) );
+        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( AdvancedBootstrapper.class ) );
     }
 }
