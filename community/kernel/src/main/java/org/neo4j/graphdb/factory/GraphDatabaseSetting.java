@@ -462,6 +462,13 @@ public abstract class GraphDatabaseSetting<T>
             if(fixIncorrectPathSeparators) 
             {
                 rawValue = FileUtils.fixSeparatorsInPath(rawValue);
+
+                if (GraphDatabaseSetting.osIsWindows())
+                {
+                    // Absolute paths on Windows have to start with double \\
+                    if (rawValue.startsWith( "\\" ) && !rawValue.startsWith( "\\\\" ))
+                        rawValue = "\\"+rawValue;
+                }
             }
             
             File path = new File(rawValue);
