@@ -30,8 +30,8 @@ public class MonitorGc implements Lifecycle
 {
     public static class Configuration
     {
-        public static final GraphDatabaseSetting.StringSetting gc_monitor_wait_time = GraphDatabaseSettings.gc_monitor_wait_time;
-        public static final GraphDatabaseSetting.StringSetting gc_monitor_threshold = GraphDatabaseSettings.gc_monitor_threshold;
+        public static final GraphDatabaseSetting.TimeSpanSetting gc_monitor_wait_time = GraphDatabaseSettings.gc_monitor_wait_time;
+        public static final GraphDatabaseSetting.TimeSpanSetting gc_monitor_threshold = GraphDatabaseSettings.gc_monitor_threshold;
     }
     
     private final Config config;
@@ -52,7 +52,7 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.getDuration( Configuration.gc_monitor_wait_time ), config.getDuration( Configuration.gc_monitor_threshold ) );
+        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.get( Configuration.gc_monitor_wait_time ), config.get( Configuration.gc_monitor_threshold ) );
         monitorGc.start();
     }
 

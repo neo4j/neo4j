@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -33,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,9 +58,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -81,7 +82,6 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -104,7 +104,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -116,8 +115,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.neo4j.helpers.Exceptions.*;
 
 /**
  * Exposes the methods {@link #getManagementBeans(Class)}() a.s.o.
@@ -135,9 +132,9 @@ public abstract class AbstractGraphDatabase
         public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
         public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting("ephemeral");
 
-        public static final GraphDatabaseSetting.StringSetting store_dir = new GraphDatabaseSetting.StringSetting( "store_dir",".*","TODO" );
-        public static final GraphDatabaseSetting.StringSetting neo_store = new GraphDatabaseSetting.StringSetting( "neo_store",".*","TODO" );
-        public static final GraphDatabaseSetting.StringSetting logical_log = new GraphDatabaseSetting.StringSetting( "logical_log",".*","TODO" );
+        public static final GraphDatabaseSetting.DirectorySetting store_dir = GraphDatabaseSettings.store_dir;
+        public static final GraphDatabaseSetting.FileSetting neo_store = GraphDatabaseSettings.neo_store;
+        public static final GraphDatabaseSetting.FileSetting logical_log = GraphDatabaseSettings.logical_log;
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -145,7 +142,7 @@ public abstract class AbstractGraphDatabase
 
     protected String storeDir;
     protected Map<String, String> params;
-    private Iterable<KernelExtension> kernelExtensions;
+    private final Iterable<KernelExtension> kernelExtensions;
     protected StoreId storeId;
     private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
@@ -200,11 +197,16 @@ public abstract class AbstractGraphDatabase
     {
         this.params = params;
         this.cacheProviders = mapCacheProviders( cacheProviders );
-        this.storeDir = FileUtils.fixSeparatorsInPath( canonicalize( storeDir ));
 
         // SPI - provided services
         this.indexProviders = indexProviders;
         this.kernelExtensions = kernelExtensions;
+
+        // Setup configuration
+        params.put(Configuration.store_dir.name(), storeDir);
+        config = new Config( params, getSettingsClasses() );
+        
+        this.storeDir = config.get(Configuration.store_dir);
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -236,53 +238,25 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
-        // TODO THIS IS A SMELL - SHOULD BE AVAILABLE THROUGH OTHER MEANS!
-        String separator = System.getProperty( "file.separator" );
-        String store = this.storeDir + separator + NeoStore.DEFAULT_NAME;
-        params.put( Configuration.store_dir.name(), this.storeDir );
-        params.put( Configuration.neo_store.name(), store );
-        String logicalLog = this.storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-        params.put( Configuration.logical_log.name(), logicalLog );
-        // END SMELL
 
         fileSystem = life.add(createFileSystemAbstraction());
-
-        // Get the list of settings classes for extensions
-        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
-        settingsClasses.add( GraphDatabaseSettings.class );
-        for( KernelExtension kernelExtension : kernelExtensions )
-        {
-            Class settingsClass = kernelExtension.getSettingsClass();
-            if( settingsClass != null )
-            {
-                settingsClasses.add( settingsClass );
-            }
-        }
-
-        // Apply defaults to configuration just for logging purposes
-        ConfigurationDefaults configurationDefaults = new ConfigurationDefaults( settingsClasses );
-
-        // Setup configuration
-        config = new Config( configurationDefaults.apply( new SystemPropertiesConfiguration(settingsClasses).apply( params ) ) );
 
         // Create logger
         this.logging = createStringLogger();
 
-        // Collect system properties, migrate settings and then apply defaults again
-        ConfigurationMigrator configurationMigrator = new ConfigurationMigrator( logging.getLogger( Loggers.CONFIG ) );
-        Map<String,String> configParams = configurationDefaults.apply(configurationMigrator.migrateConfiguration( new SystemPropertiesConfiguration(settingsClasses).apply( params )));
-
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                                                                   config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                                                                  config.getBoolean( GraphDatabaseSettings.use_memory_mapped_buffers ),
-                                                                  config.getBoolean( GraphDatabaseSettings.dump_configuration ) );
+                                                                  config.get( GraphDatabaseSettings.use_memory_mapped_buffers ),
+                                                                  config.get( GraphDatabaseSettings.dump_configuration ) );
+        Map<String, String> configParams = config.getParams();
         Map<String,String> autoConfiguration = autoConfigurator.configure( );
         for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
         {
             // Don't override explicit settings
             if( !params.containsKey( autoConfig.getKey() ) )
             {
+            	String key = autoConfig.getKey();
                 configParams.put( autoConfig.getKey(), autoConfig.getValue() );
             }
         }
@@ -290,9 +264,11 @@ public abstract class AbstractGraphDatabase
         config.applyChanges( configParams );
 
         this.msgLog = logging.getLogger( Loggers.NEO4J );
+        
+        config.setLogger(msgLog);
 
         // Instantiate all services - some are overridable by subclasses
-        boolean readOnly = config.getBoolean( Configuration.read_only );
+        boolean readOnly = config.get( Configuration.read_only );
 
         String cacheTypeName = config.get( Configuration.cache_type );
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
@@ -310,7 +286,7 @@ public abstract class AbstractGraphDatabase
 
         xaDataSourceManager = life.add( new XaDataSourceManager( logging.getLogger( Loggers.DATASOURCE )) );
 
-        guard = config.getBoolean( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
+        guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         xaDataSourceManager = life.add(new XaDataSourceManager(msgLog));
 
@@ -397,7 +373,7 @@ public abstract class AbstractGraphDatabase
 
         extensions = life.add(createKernelData());
 
-        if ( config.getBoolean( Configuration.load_kernel_extensions ))
+        if ( config.get( Configuration.load_kernel_extensions ))
         {
             life.add(new DefaultKernelExtensionLoader( extensions ));
         }
@@ -733,7 +709,8 @@ public abstract class AbstractGraphDatabase
         }
     }
 
-    public final String getStoreDir()
+    @Override
+	public final String getStoreDir()
     {
         return storeDir;
     }
@@ -800,7 +777,8 @@ public abstract class AbstractGraphDatabase
         return getSingleManagementBean( type );
     }
 
-    public final <T> T getSingleManagementBean( Class<T> type )
+    @Override
+	public final <T> T getSingleManagementBean( Class<T> type )
     {
         Iterator<T> beans = getManagementBeans( type ).iterator();
         if ( beans.hasNext() )
@@ -838,36 +816,42 @@ public abstract class AbstractGraphDatabase
         return GlobalGraphOperations.at( this ).getAllRelationshipTypes();
     }
 
-    public KernelEventHandler registerKernelEventHandler(
+    @Override
+	public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
         return kernelEventHandlers.registerKernelEventHandler( handler );
     }
 
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
+    @Override
+	public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.registerTransactionEventHandler( handler );
     }
 
-    public KernelEventHandler unregisterKernelEventHandler(
+    @Override
+	public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         return kernelEventHandlers.unregisterKernelEventHandler( handler );
     }
 
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+    @Override
+	public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return transactionEventHandlers.unregisterTransactionEventHandler( handler );
     }
 
-    public Node createNode()
+    @Override
+	public Node createNode()
     {
         return nodeManager.createNode();
     }
 
-    public Node getNodeById( long id )
+    @Override
+	public Node getNodeById( long id )
     {
         if ( id < 0 || id > MAX_NODE_ID )
         {
@@ -876,7 +860,8 @@ public abstract class AbstractGraphDatabase
         return nodeManager.getNodeById( id );
     }
 
-    public Relationship getRelationshipById( long id )
+    @Override
+	public Relationship getRelationshipById( long id )
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
@@ -885,12 +870,14 @@ public abstract class AbstractGraphDatabase
         return nodeManager.getRelationshipById( id );
     }
 
-    public Node getReferenceNode()
+    @Override
+	public Node getReferenceNode()
     {
         return nodeManager.getReferenceNode();
     }
 
-    public TransactionBuilder tx()
+    @Override
+	public TransactionBuilder tx()
     {
         return defaultTxBuilder;
     }
@@ -901,7 +888,8 @@ public abstract class AbstractGraphDatabase
         return guard;
     }
 
-    public <T> Collection<T> getManagementBeans( Class<T> beanClass )
+    @Override
+	public <T> Collection<T> getManagementBeans( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
         if ( jmx != null )
@@ -952,12 +940,14 @@ public abstract class AbstractGraphDatabase
         throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
     }
 
-    public KernelData getKernelData()
+    @Override
+	public KernelData getKernelData()
     {
         return extensions;
     }
 
-    public IndexManager index()
+    @Override
+	public IndexManager index()
     {
         return indexManager;
     }
@@ -968,27 +958,32 @@ public abstract class AbstractGraphDatabase
         return config;
     }
 
-    public NodeManager getNodeManager()
+    @Override
+	public NodeManager getNodeManager()
     {
         return nodeManager;
     }
 
-    public LockReleaser getLockReleaser()
+    @Override
+	public LockReleaser getLockReleaser()
     {
         return lockReleaser;
     }
 
-    public LockManager getLockManager()
+    @Override
+	public LockManager getLockManager()
     {
         return lockManager;
     }
 
-    public XaDataSourceManager getXaDataSourceManager()
+    @Override
+	public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDataSourceManager;
     }
 
-    public TransactionManager getTxManager()
+    @Override
+	public TransactionManager getTxManager()
     {
         return txManager;
     }
@@ -999,7 +994,8 @@ public abstract class AbstractGraphDatabase
         return relationshipTypeHolder;
     }
 
-    public IdGeneratorFactory getIdGeneratorFactory()
+    @Override
+	public IdGeneratorFactory getIdGeneratorFactory()
     {
         return idGeneratorFactory;
     }
@@ -1016,7 +1012,8 @@ public abstract class AbstractGraphDatabase
         return persistenceSource;
     }
 
-    public final StringLogger getMessageLog()
+    @Override
+	public final StringLogger getMessageLog()
     {
         return msgLog;
     }
@@ -1026,6 +1023,21 @@ public abstract class AbstractGraphDatabase
     {
         return kernelPanicEventGenerator;
     }
+    
+	private List<Class<?>> getSettingsClasses() {
+		// Get the list of settings classes for extensions
+        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
+        settingsClasses.add( GraphDatabaseSettings.class );
+        for( KernelExtension<?> kernelExtension : kernelExtensions )
+        {
+            Class<?> settingsClass = kernelExtension.getSettingsClass();
+            if( settingsClass != null )
+            {
+                settingsClasses.add( settingsClass );
+            }
+        }
+		return settingsClasses;
+	}
 
     private String canonicalize( String path )
     {
@@ -1385,7 +1397,7 @@ public abstract class AbstractGraphDatabase
     private class ConfigurationChangedRestarter
         extends LifecycleAdapter
     {
-        private ConfigurationChangeListener listener = new ConfigurationChangeListener()
+        private final ConfigurationChangeListener listener = new ConfigurationChangeListener()
                     {
                         Executor executor = Executors.newSingleThreadExecutor( new DaemonThreadFactory( "Database configuration restart" ) );
 

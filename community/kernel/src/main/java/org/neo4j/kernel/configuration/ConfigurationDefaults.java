@@ -24,8 +24,10 @@ import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -33,27 +35,22 @@ import org.neo4j.helpers.collection.Iterables;
  */
 public class ConfigurationDefaults
 {
-    public static String getDefault(GraphDatabaseSetting realSetting, Class<?> settingsClass)
+	private static AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
+	
+    @SuppressWarnings("rawtypes")
+	public static String getDefault(GraphDatabaseSetting<?> realSetting, Class<?> settingsClass)
     {
-        for( Field field : settingsClass.getFields() )
+        for( Pair<Field, GraphDatabaseSetting> field : fieldHarvester.findStatic(settingsClass, GraphDatabaseSetting.class) )
         {
-            try
+            if (field.other() == realSetting)
             {
-                GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                if (setting == realSetting)
+                if (field.other() instanceof GraphDatabaseSetting.DefaultValue)
                 {
-                    if (setting instanceof GraphDatabaseSetting.DefaultValue)
-                    {
-                        return ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                    } else
-                    {
-                        return getDefaultValue( field );
-                    }
+                    return ((GraphDatabaseSetting.DefaultValue)field.other()).getDefaultValue();
+                } else
+                {
+                    return getDefaultValue( field.first() );
                 }
-            }
-            catch( IllegalAccessException e )
-            {
-                assert false : "Field "+field.getName()+" is not public";
             }
         }
         throw new IllegalArgumentException( MessageFormat.format("Setting {0} not found in settings-class {1}", realSetting.name(), settingsClass.getName() ));
@@ -82,36 +79,29 @@ public class ConfigurationDefaults
         this.settingsClasses = settingsClasses;
     }
 
-    public Map<String,String> apply(Map<String,String> config)
+    @SuppressWarnings("rawtypes")
+	public Map<String,String> apply(Map<String,String> config)
     {
         Map<String, String> configuration = new HashMap<String,String>(config);
         
         // Go through all settings and apply defaults
-        for( Class settingsClass : settingsClasses )
+        for( Class<?> settingsClass : settingsClasses )
         {
-            for( Field field : settingsClass.getFields() )
+        	for( Pair<Field, GraphDatabaseSetting> field : fieldHarvester.findStatic(settingsClass, GraphDatabaseSetting.class) )
             {
-                try
+        		String defaultValue;
+        		GraphDatabaseSetting setting = field.other();
+                if (setting instanceof GraphDatabaseSetting.DefaultValue)
                 {
-                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                    if (!configuration.containsKey( setting.name() ))
-                    {
-                        if (setting instanceof GraphDatabaseSetting.DefaultValue)
-                        {
-                            String defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                            if (defaultValue != null)
-                                configuration.put( setting.name(), defaultValue );
-                        } else
-                        {
-                            String defaultValue = getDefaultValue( field );
-                            if (defaultValue != null)
-                                configuration.put( setting.name(), defaultValue );
-                        }
-                    }
+                	defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
+                } else
+                {
+                	defaultValue = getDefaultValue( field.first() );
                 }
-                catch( IllegalAccessException e )
+
+                if (defaultValue != null && !configuration.containsKey(setting.name()))
                 {
-                    assert false : "Field "+field.getName()+" is not public";
+                    configuration.put( setting.name(), defaultValue );
                 }
             }
         }
