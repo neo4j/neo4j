@@ -19,12 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.neo4j.index.impl.lucene.LuceneTransaction.CommandList;
 
 /**
@@ -39,10 +39,10 @@ class CommitContext
     final Map<Long, DocumentContext> documents = new HashMap<Long, DocumentContext>();
     final CommandList commandList;
     final boolean recovery;
-    
+
     IndexWriter writer;
-    IndexSearcher searcher;
-    
+    IndexSearcherRef searcher;
+
     CommitContext( LuceneDataSource dataSource, IndexIdentifier identifier, IndexType indexType, CommandList commandList )
     {
         this.dataSource = dataSource;
@@ -51,26 +51,26 @@ class CommitContext
         this.commandList = commandList;
         this.recovery = commandList.isRecovery();
     }
-    
+
     void ensureWriterInstantiated()
     {
         if ( writer == null )
         {
             writer = dataSource.getIndexWriter( identifier );
-            searcher = dataSource.getIndexSearcher( identifier, false ).getSearcher();
+            searcher = dataSource.getIndexSearcher( identifier );
         }
     }
-    
+
     DocumentContext getDocument( Object entityId, boolean allowCreate )
     {
-        long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
+        long id = entityId instanceof Long ? (Long) entityId : ( (RelationshipId) entityId ).id;
         DocumentContext context = documents.get( id );
         if ( context != null )
         {
             return context;
         }
-        
-        Document document = LuceneDataSource.findDocument( indexType, searcher, id );
+
+        Document document = LuceneDataSource.findDocument( indexType, searcher.getSearcher(), id );
         if ( document != null )
         {
             context = new DocumentContext( document, true, id );
@@ -82,6 +82,19 @@ class CommitContext
             documents.put( id, context );
         }
         return context;
+    }
+
+    public void close()
+    {
+        try
+        {
+            if ( searcher != null )
+            searcher.close();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     static class DocumentContext

@@ -60,7 +60,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
 
     class ThreadRunner implements Runnable
     {
-        public static final int NUM_USERS = 10;
+        public static final int NUM_USERS = 1000;
         final GetOrCreate impl;
 
         ThreadRunner( GetOrCreate impl )
@@ -92,7 +92,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
             final List<Thread> threads = new ArrayList<Thread>();
             for ( int i = 0; i < 10; i++ )
             {
-                threads.add( new Thread()
+                threads.add( new Thread( GetOrCreateTest.class.getSimpleName() + " thread " + i )
                 {
                     @Override
                     public void run()
@@ -121,6 +121,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
                     e.printStackTrace();
                 }
             }
+
             List<Node> first = results.remove( 0 );
             for ( List<Node> subresult : results )
             {
@@ -191,7 +192,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
     {
         new ThreadRunner( new UniqueFactoryGetOrCreate() ).run();
     }
-    
+
     // START SNIPPET: getOrCreate
     public Node getOrCreateUserWithUniqueFactory( String username, GraphDatabaseService graphDb )
     {
@@ -203,7 +204,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
                 created.setProperty( "name", properties.get( "name" ) );
             }
         };
-        
+
         return factory.getOrCreate( "name", username );
     }
     // END SNIPPET: getOrCreate

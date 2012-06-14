@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -264,7 +265,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         IndexSearcherRef searcher = null;
         try
         {
-            searcher = service.dataSource().getIndexSearcher( identifier, true );
+            searcher = service.dataSource().getIndexSearcher( identifier );
             if ( searcher != null )
             {
                 boolean foundInCache = false;
