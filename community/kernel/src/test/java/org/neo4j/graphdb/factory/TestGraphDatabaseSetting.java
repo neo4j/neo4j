@@ -25,6 +25,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -142,7 +144,8 @@ public class TestGraphDatabaseSetting
     }
 
     @Test
-    public void testRelativeFileSetting() 
+    public void testRelativeFileSetting()
+        throws IOException
     {
         GraphDatabaseSetting.DirectorySetting baseDir = new GraphDatabaseSetting.DirectorySetting("myDirectory");
         GraphDatabaseSetting.FileSetting fileSetting = new GraphDatabaseSetting.FileSetting("myfile", baseDir, true, true);
@@ -150,13 +153,13 @@ public class TestGraphDatabaseSetting
         Config config = new Config(new HashMap<String,String>(){{put("myDirectory","/home/jake");}});
         
         // Relative paths
-        assertThat(fileSetting.valueOf("baa", config), equalTo("/home/jake/baa"));
+        assertThat(fileSetting.valueOf("baa", config), equalTo(new File("/home/jake/baa").getCanonicalPath()));
         
         // Absolute paths
-        assertThat(fileSetting.valueOf("/baa", config), equalTo("/baa"));
+        assertThat(fileSetting.valueOf("/baa", config), equalTo(new File("/baa").getCanonicalPath()));
         
         // Path with incorrect directory separator
-        assertThat(fileSetting.valueOf("\\baa\\boo", config), equalTo("/baa/boo"));
+        assertThat(fileSetting.valueOf("\\baa\\boo", config), equalTo(new File("/baa/boo").getCanonicalPath()));
     }
 
     @Test
