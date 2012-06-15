@@ -88,3 +88,7 @@ include::ql/functions/index.txt[]
 
 include::compatibility.txt[]
 
+:leveloffset: 2
+
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/from-sql-to-cypher.txt[]
+
