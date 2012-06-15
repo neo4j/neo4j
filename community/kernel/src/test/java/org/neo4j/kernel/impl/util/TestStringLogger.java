@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.FileReader;
 
 import org.junit.Test;
+import org.neo4j.helpers.Pair;
+import org.neo4j.test.TargetDirectory;
 
 public class TestStringLogger
 {
@@ -43,7 +45,7 @@ public class TestStringLogger
         assertFalse( oldFile.exists() );
         int counter = 0;
         String prefix = "Bogus message ";
-        
+
         // First rotation
         while ( !oldFile.exists() )
         {
@@ -52,9 +54,9 @@ public class TestStringLogger
         int mark1 = counter-1;
         logger.logMessage( prefix + counter++, true );
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + "0" ) );
-        assertTrue( lastLineOfFile( oldFile ).contains( prefix + mark1 ) );
+        assertTrue( lastLineOfFile( oldFile ).first().contains( prefix + mark1 ) );
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
-        
+
         // Second rotation
         while ( !oldestFile.exists() )
         {
@@ -63,11 +65,11 @@ public class TestStringLogger
         int mark2 = counter-1;
         logger.logMessage( prefix + counter++, true );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + "0" ) );
-        assertTrue( lastLineOfFile( oldestFile ).contains( prefix + mark1 ) );
+        assertTrue( lastLineOfFile( oldestFile ).first().contains( prefix + mark1 ) );
         assertTrue( firstLineOfFile( oldFile ).contains( prefix + (mark1+1) ) );
-        assertTrue( lastLineOfFile( oldFile ).contains( prefix + mark2 ) );
+        assertTrue( lastLineOfFile( oldFile ).first().contains( prefix + mark2 ) );
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
-        
+
         // Third rotation, assert .2 file is now what used to be .1 used to be and
         // .3 doesn't exist
         long previousSize = 0;
@@ -79,7 +81,42 @@ public class TestStringLogger
         }
         assertFalse( new File( path, StringLogger.DEFAULT_NAME + ".3" ).exists() );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + (mark1+1) ) );
-        assertTrue( lastLineOfFile( oldestFile ).contains( prefix + mark2 ) );
+        assertTrue( lastLineOfFile( oldestFile ).first().contains( prefix + mark2 ) );
+    }
+
+    @Test
+    public void makeSureRotationDoesNotRecurse() throws Exception
+    {
+        final String baseMessage = "base message";
+        File target = TargetDirectory.forTest( TestStringLogger.class ).directory( "recursionTest", true );
+        final StringLogger logger = StringLogger.logger( target.getAbsolutePath(), baseMessage.length() /*rotation threshold*/);
+
+        /*
+         * The trigger that will log more than the threshold during rotation, possibly causing another rotation
+         */
+        Runnable trigger = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                logger.logMessage( baseMessage + " from trigger", true );
+            }
+        };
+        logger.addRotationListener( trigger );
+        logger.logMessage( baseMessage + " from main", true );
+
+        File rotated = new File( target, "messages.log.1" );
+        assertTrue( "rotated file not present, should have been created", rotated.exists() );
+
+        Pair<String, Integer> rotatedInfo = lastLineOfFile( rotated );
+        assertTrue( "rotated file should have only stuff from main", rotatedInfo.first().endsWith( " from main" )
+                                                                     && rotatedInfo.other() == 1 );
+
+        File current = new File( target, "messages.log" );
+        assertTrue( "should have created a new messages.log file", current.exists() );
+        Pair<String, Integer> currentInfo = lastLineOfFile( current );
+        assertTrue( "current file should have only stuff from trigger", currentInfo.first().endsWith( " from trigger" )
+                                                                        && currentInfo.other() == 1 );
     }
 
     private String firstLineOfFile( File file ) throws Exception
@@ -89,17 +126,23 @@ public class TestStringLogger
         reader.close();
         return result;
     }
-    
-    private String lastLineOfFile( File file ) throws Exception
+
+    /*
+     * Returns a Pair of the last line in the file and the number of lines in the file, so the
+     * other part from a one line file will be 1  and the other part from an empty file 0.
+     */
+    private Pair<String, Integer> lastLineOfFile( File file ) throws Exception
     {
+        int count = 0;
         BufferedReader reader = new BufferedReader( new FileReader( file ) );
         String line = null;
         String result = null;
         while ( (line = reader.readLine()) != null )
         {
             result = line;
+            count++;
         }
         reader.close();
-        return result;
+        return Pair.of( result, count );
     }
 }
