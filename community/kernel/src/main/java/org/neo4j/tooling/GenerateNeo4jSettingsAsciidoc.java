@@ -20,90 +20,31 @@
 
 package org.neo4j.tooling;
 
-import java.util.Arrays;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.io.File;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
+import org.neo4j.kernel.configuration.ConfigAsciiDocGenerator;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
- * Generates Asciidoc by using the {@link org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle}.
- * Format
- * <pre>
- * .Title
- * [configsetting]
- * ----
- * key: default_value
- * description
- * value1: (description1)
- * value2: (description2)
- * ----
- * </pre>
+ * Generates Asciidoc for the GraphDatabaseSettings class.
  */
 public class GenerateNeo4jSettingsAsciidoc
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws Exception
     {
-        ResourceBundle bundle = ResourceBundle.getBundle( GraphDatabaseSettingsResourceBundle.class.getName() );
-
-        Set<String> keys = bundle.keySet();
-        for( String property : keys )
+        ConfigAsciiDocGenerator generator = new ConfigAsciiDocGenerator();
+        String doc = generator.generateDocsFor(GraphDatabaseSettingsResourceBundle.class);
+        
+        if(args.length > 0)
         {
-            if (property.endsWith( ".description" ))
-            {
-                String name = property.substring( 0, property.lastIndexOf( "." ) );
-                System.out.println("."+bundle.getString( name+".title" ));
-                
-                String minmax = "";
-                if (bundle.containsKey( name+".min" ) && bundle.containsKey( name+".max" ))
-                    minmax=",\"minmax\"";
-                else if (bundle.containsKey( name+".min" ))
-                    minmax=",\"minmax\"";
-                else if (bundle.containsKey( name+".max" ))
-                    minmax=",\"minmax\"";
-
-                System.out.println( "[\"configsetting\""+minmax+"]" );
-                System.out.println( "----" );
-
-                String defaultKey = name + ".default";
-                if (bundle.containsKey( defaultKey ))
-                {
-                    System.out.println( name+": "+bundle.getString( defaultKey ) );
-                } else
-                {
-                    System.out.println( name );
-                }
-
-                System.out.println( bundle.getString( property ) );
-                
-                // Output optional options
-                String optionsKey = name+".options";
-                if (bundle.containsKey( optionsKey ))
-                {
-                    String[] options = bundle.getString( optionsKey ).split( "," );
-                    if (bundle.containsKey( name+".option."+options[0] ))
-                    {
-                        for( String option : options )
-                        {
-                            String description = bundle.getString( name + ".option." + option );
-                            char[] spaces = new char[ option.length() + 2 ];
-                            Arrays.fill( spaces,' ' );
-                            description = description.replace( "\n", " ");
-                            System.out.println(option+": "+ description );
-                        }
-                    } else
-                    {
-                        System.out.println(bundle.getString( optionsKey ).replace( ","," \n" ));
-                    }
-                }
-
-                if (bundle.containsKey( name+".min" ))
-                    System.out.println(bundle.getString( name+".min" ));
-                if (bundle.containsKey( name+".max" ))
-                    System.out.println(bundle.getString( name+".max" ));
-
-                System.out.println( "----" );
-                System.out.println( "" );
-            }
+        	File output = new File(args[0]);
+        	System.out.println("Saving docs for '"+GraphDatabaseSettings.class.getName()+"' in '" + output.getAbsolutePath() + "'.");
+        	FileUtils.writeToFile(output, doc, false);
+        } else 
+        {
+        	System.out.println(doc);
         }
     }
 }
