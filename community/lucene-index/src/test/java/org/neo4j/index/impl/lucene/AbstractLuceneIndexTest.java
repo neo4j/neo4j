@@ -25,6 +25,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +43,7 @@ public abstract class AbstractLuceneIndexTest
 {
     protected static GraphDatabaseService graphDb;
     protected Transaction tx;
+    public final @Rule TestName testname = new TestName();
 
     @BeforeClass
     public static void setUpStuff()
@@ -162,13 +165,28 @@ public abstract class AbstractLuceneIndexTest
         }
     }
     
+    protected Index<Node> nodeIndex( Map<String, String> config )
+    {
+        return nodeIndex( currentIndexName(), config );
+    }
+    
     protected Index<Node> nodeIndex( String name, Map<String, String> config )
     {
         return graphDb.index().forNodes( name, config );
     }
     
+    protected RelationshipIndex relationshipIndex( Map<String, String> config )
+    {
+        return relationshipIndex( currentIndexName(), config );
+    }
+    
     protected RelationshipIndex relationshipIndex( String name, Map<String, String> config )
     {
         return graphDb.index().forRelationships( name, config );
+    }
+    
+    protected String currentIndexName()
+    {
+        return testname.getMethodName();
     }
 }
