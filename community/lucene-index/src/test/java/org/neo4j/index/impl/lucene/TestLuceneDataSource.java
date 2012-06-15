@@ -103,7 +103,7 @@ public class TestLuceneDataSource
     }
 
     @Test
-    public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException
+    public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException, IOException
     {
         Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config()) );
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
@@ -112,6 +112,7 @@ public class TestLuceneDataSource
         IndexWriter writer = dataSource.getIndexWriter( identifier );
         IndexSearcherRef searcher = dataSource.getIndexSearcher( identifier );
         assertSame( searcher, dataSource.getIndexSearcher( identifier ) );
+        searcher.close();
     }
 
     @Test
@@ -135,7 +136,7 @@ public class TestLuceneDataSource
     }
 
     @Test
-    public void testClosesOldestIndexSearcherWhenCacheSizeIsExceeded() throws InstantiationException
+    public void testClosesOldestIndexSearcherWhenCacheSizeIsExceeded() throws InstantiationException, IOException
     {
         addIndex( "bar" );
         addIndex( "baz" );
@@ -152,10 +153,12 @@ public class TestLuceneDataSource
         assertFalse( fooSearcher.isClosed() );
         IndexSearcherRef bazSearcher = dataSource.getIndexSearcher( bazIdentifier );
         assertTrue( fooSearcher.isClosed() );
+        barSearcher.close();
+        bazSearcher.close();
     }
 
     @Test
-    public void testRecreatesSearcherWhenRequestedAgain() throws InstantiationException
+    public void testRecreatesSearcherWhenRequestedAgain() throws InstantiationException, IOException
     {
         addIndex( "bar" );
         addIndex( "baz" );
@@ -173,6 +176,10 @@ public class TestLuceneDataSource
         IndexSearcherRef newFooSearcher = dataSource.getIndexSearcher( bazIdentifier );
         assertNotSame( oldFooSearcher, newFooSearcher );
         assertFalse( newFooSearcher.isClosed() );
+        oldFooSearcher.close();
+        barSearcher.close();
+        bazSearcher.close();
+        newFooSearcher.close();
     }
 
     @Test
@@ -194,11 +201,12 @@ public class TestLuceneDataSource
         IndexWriter newFooIndexWriter = dataSource.getIndexWriter( fooIdentifier );
         assertNotSame( oldFooIndexWriter, newFooIndexWriter );
         assertFalse( IndexWriterAccessor.isClosed( newFooIndexWriter ) );
+
     }
 
     @Ignore( "No longer valid since Lucene 3.5" )
     @Test
-    public void testInvalidatingSearcherCreatesANewOne() throws InstantiationException
+    public void testInvalidatingSearcherCreatesANewOne() throws InstantiationException, IOException
     {
         Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config()) );
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
@@ -211,6 +219,7 @@ public class TestLuceneDataSource
         assertTrue( oldSearcher.isClosed() );
         assertFalse( newSearcher.isClosed() );
         assertNotSame( oldSearcher.getSearcher(), newSearcher.getSearcher() );
+        newSearcher.close();
     }
 
     private Map<String,String> config()
