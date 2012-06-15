@@ -22,6 +22,7 @@ package org.neo4j.visualization.asciidoc;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -32,7 +33,13 @@ import org.neo4j.walk.Walker;
 
 public class AsciidocHelper
 {
-
+    /**
+     * Cut to max 123 chars for PDF layout compliance.
+     */
+    private static final int MAX_CHARS_PER_LINE = 123;
+    /**
+     * Characters to remove from the title.
+     */
     private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]";
 
     public static String createGraphViz( String title,
@@ -122,11 +129,32 @@ public class AsciidocHelper
     public static String createCypherSnippet( final String query )
     {
         String[] keywordsToBreakOn = new String[] {"start", "create", "set", "delete", "foreach",
-		"match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-		"desc", "descending", "relate"};
+        "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
+        "desc", "descending", "relate"};
+        return createLanguageSnippet( query, "cypher", keywordsToBreakOn );
+    }
 
-        String result = "[source,cypher]\n----\n" + query + "\n----\n";
+    public static String createSqlSnippet( final String query )
+    {
+        String[] keywordsToBreakOn = new String[] { "select", "from", "where",
+                "skip", "limit", "order by", "asc", "ascending", "desc",
+                "descending", "join", "group by" };
+        return createLanguageSnippet( query, "sql", keywordsToBreakOn );
+    }
 
+    private static String createLanguageSnippet( String query,
+            String language, String[] keywordsToBreakOn )
+    {
+        String formattedQuery = breakOnKeywords( query, keywordsToBreakOn );
+        String result = "[source," + language + "]\n----\n" + formattedQuery
+                        + "\n----\n";
+        return limitChars( result );
+    }
+
+    private static String breakOnKeywords( String query,
+            String[] keywordsToBreakOn )
+    {
+        String result = query;
         for ( String keyword : keywordsToBreakOn )
         {
             String upperKeyword = keyword.toUpperCase();
@@ -135,14 +163,17 @@ public class AsciidocHelper
                     replace(keyword+" ", upperKeyword+" ").
                     replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
         }
+        return result;
+    }
 
-        // cut to max 123 chars for PDF compliance
+    private static String limitChars( String result )
+    {
         String[] lines = result.split( "\n" );
         String finalRes = "";
         for ( String line : lines )
         {
             line = line.trim();
-            if ( line.length() > 123 )
+            if (line.length() > MAX_CHARS_PER_LINE )
             {
                 line = line.replaceAll( ", ", ",\n      " );
             }
