@@ -108,7 +108,12 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * In reality this is a named relationship in Cypher, so we're saying ``join `Person` to `Group` via `belongs_to`.'' 
      * To illustrate this, consider this image, comparing the SQL model and Neo4j/Cypher.
      * 
+     * ifdef::nonhtmloutput[]
      * image::RDBMSvsGraph.svg[scaledwidth="100%"]
+     * endif::nonhtmloutput[]
+     * ifndef::nonhtmloutput[]
+     * image::RDBMSvsGraph.svg.png[scaledwidth="100%"]
+     * endif::nonhtmloutput[]
      * 
      * And here's example queries:
      * 
