@@ -35,6 +35,7 @@ trait Predicates extends Base with ParserPattern {
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
+      | ignoreCase("not") ~> parens(predicate) ^^ ( inner => Not(inner) )
       | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
       | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
       | parens(predicate)
