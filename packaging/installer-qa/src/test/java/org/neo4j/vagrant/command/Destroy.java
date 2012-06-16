@@ -21,7 +21,7 @@ package org.neo4j.vagrant.command;
 
 public class Destroy extends SimpleBaseCommand {
 
-    private static final String DESTROY = "destroy";
+    private static final String DESTROY = "destroy --force";
 
     @Override
     public String arguments()
