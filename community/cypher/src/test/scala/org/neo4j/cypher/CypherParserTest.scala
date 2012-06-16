@@ -1856,6 +1856,15 @@ create a-[r:REL]->b
     )
   }
 
+  @Test def not_with_parenthesis() {
+    testFrom_1_8("start a  = node(1) where not(1=2) or 2=3 return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(Or(Not(Equals(Literal(1), Literal(2))), Equals(Literal(2), Literal(3)))).
+        returns(ReturnItem(Entity("a"), "a"))
+    )
+  }
+
   @Test def full_path_in_create() {
     val secondQ = Query.
       start(
