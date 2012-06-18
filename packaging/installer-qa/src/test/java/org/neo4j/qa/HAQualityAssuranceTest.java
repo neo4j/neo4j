@@ -47,7 +47,7 @@ public class HAQualityAssuranceTest {
         
         model.verifyThat(neo4jHAClusterWorks());
         
-//        model.apply(neo4jHABackup());
+        model.apply(neo4jHABackup());
         
         model.verifyThat(neo4jHAClusterWorks());
     }
