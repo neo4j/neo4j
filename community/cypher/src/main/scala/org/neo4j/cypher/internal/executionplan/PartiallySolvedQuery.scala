@@ -100,7 +100,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def readyToAggregate = !(start.exists(_.unsolved) ||
     patterns.exists(_.unsolved) ||
     where.exists(_.unsolved) ||
-    namedPaths.exists(_.unsolved))
+    namedPaths.exists(_.unsolved) ||
+    updates.exists(_.unsolved))
 
   def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
     this.copy(
