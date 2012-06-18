@@ -100,6 +100,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -394,7 +395,9 @@ public abstract class AbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
-        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem, logging.getLogger( Loggers.XAFACTORY), recoveryVerifier );
+        String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
+        xaFactory = new XaFactory(config, txIdGenerator, txManager, logBufferFactory, fileSystem,
+                logging.getLogger( Loggers.XAFACTORY), recoveryVerifier, LogPruneStrategies.fromConfigValue( fileSystem, keepLogicalLogsConfig ) );
 
         // Create DataSource
         List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );

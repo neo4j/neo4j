@@ -1,3 +1,9 @@
+1.8.M05
+--------------------
+o Configurable amount of logical logs to keep, by for example number of days or size on disk.
+  keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o.
+  Regardless of configuration there will always be at least the latest non-empty logical log left.
+
 1.8.M04 (2012-06-07)
 --------------------
 o Additions to the traversal framework:

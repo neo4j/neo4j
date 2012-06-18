@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.util.Map;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
-public interface ConfigurationMigrator
+public interface LogPruneStrategy
 {
-    public Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log);
+    void prune( LogLoader source );
 }

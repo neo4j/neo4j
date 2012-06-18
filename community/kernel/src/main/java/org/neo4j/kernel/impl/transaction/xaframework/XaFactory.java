@@ -21,6 +21,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.util.List;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -47,10 +48,11 @@ public class XaFactory
     private FileSystemAbstraction fileSystemAbstraction;
     private StringLogger stringLogger;
     private final RecoveryVerifier recoveryVerifier;
+    private final LogPruneStrategy pruneStrategy;
 
     public XaFactory(Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
             LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, RecoveryVerifier recoveryVerifier )
+            StringLogger stringLogger, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -59,6 +61,7 @@ public class XaFactory
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
         this.recoveryVerifier = recoveryVerifier;
+        this.pruneStrategy = pruneStrategy;
     }
 
     public XaContainer newXaContainer(XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
@@ -78,11 +81,12 @@ public class XaFactory
         if ( config.getBoolean( Configuration.intercept_deserialized_transactions )
                 && providers != null )
         {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, dependencyResolver, logBufferFactory, fileSystemAbstraction, stringLogger );
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, dependencyResolver, logBufferFactory,
+                    fileSystemAbstraction, stringLogger, pruneStrategy );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, stringLogger );
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, stringLogger, pruneStrategy );
         }
 
         // TODO These setters should be removed somehow

@@ -51,7 +51,8 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), DEV_NULL );
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), DEV_NULL,
+                LogPruneStrategies.NO_PRUNING );
         log.open();
         fail( "Shouldn't be able to start" );
     }

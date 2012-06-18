@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,9 +34,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -59,6 +65,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -67,8 +74,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
@@ -162,7 +167,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         ds = new NeoStoreXaDataSource(config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
-                        new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
+                        new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ), Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null );
 
         xaCon = ds.getXaConnection();
         pStore = xaCon.getPropertyStore();
@@ -1048,7 +1053,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         String storeDir = "target/test-data/set-version";
         FileUtils.deleteRecursively( new File( storeDir ) );
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
-        assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
+        assertEquals( 1, NeoStore.setVersion( storeDir, 10 ) );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
