@@ -7,15 +7,20 @@ label {
   font-weight:bold;
 }
 
-input {
+input, textarea {
   outline:none;
   height:24px;
   border: 1px solid #CCCCCC;
-  border-radius: 4px 4px 4px 4px;
+  border-radius: 3px 3px 3px 3px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
-  padding: 4px 2px;
+  padding: 4px 3px;
+}
+
+textarea 
+{
+  padding: 5px;
 }
 
 input.small {
