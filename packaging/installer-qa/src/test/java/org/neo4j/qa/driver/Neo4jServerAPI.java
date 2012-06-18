@@ -24,6 +24,8 @@ import java.util.Date;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 
+import static java.lang.System.*;
+
 public class Neo4jServerAPI {
 
     private String url;
@@ -47,7 +49,7 @@ public class Neo4jServerAPI {
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {
-                    System.out.println(r.getStatus());
+                    out.println(r.getStatus());
                     throw new RuntimeException(
                             "Waiting for node to disappear took longer than the timout specified.");
                 }
@@ -79,7 +81,7 @@ public class Neo4jServerAPI {
             {
                 String fullUrl = url + "/db/data/node/" + nodeId;
                 r = RestRequest.req().get(fullUrl);
-                System.out.printf("Asking for: %s and got: %d%n", fullUrl, r.getStatus());
+                out.printf("Asking for: %s and got: %d%n", fullUrl, r.getStatus());
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {
@@ -102,7 +104,9 @@ public class Neo4jServerAPI {
                     "Unable to create node. HTTP status was: " + r.getStatus());
         }
         String[] parts = r.getLocation().getPath().split("/");
-        return Long.valueOf(parts[parts.length - 1]);
+        Long nodeId = Long.valueOf(parts[parts.length - 1]);
+        out.println("NodeId is: " + nodeId.toString());
+        return nodeId;
     }
 
 }
