@@ -118,7 +118,10 @@ public class BufferingLogger extends StringLogger {
         
         for(LogMessage message : oldBuffer) 
         {
-            other.logMessage(message.message, message.throwable, message.flush);
+            if ( message.throwable != null )
+                other.logMessage(message.message, message.throwable, message.flush);
+            else
+                other.logMessage( message.message, message.flush );
         }
     }
     
