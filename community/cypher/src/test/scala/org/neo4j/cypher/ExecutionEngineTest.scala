@@ -2081,6 +2081,15 @@ RETURN x0.name?
   }
 
   @Test
+  def two_double_optional_with_no_matches() {
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("START a=node(1), b=node(2) MATCH a-[r1?]->X<-[r2?]-b, a<-[r3?]-Z-[r4?]->b return r1,r2,r3,r4").toSet
+    assert(result === Set(Map("r1" -> null, "r2" -> null, "r3" -> null, "r4" -> null)))
+  }
+
+  @Test
   def two_double_optional_with_four_halfs() {
     val a = createNode()
     val b = createNode()
