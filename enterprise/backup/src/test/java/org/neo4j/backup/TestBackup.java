@@ -20,11 +20,18 @@
 
 package org.neo4j.backup;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FilenameFilter;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,20 +50,22 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.junit.Assert.*;
-
 public class TestBackup
 {
-    private final String serverPath = "target/var/serverdb";
-    private final String otherServerPath = serverPath + "2";
-    private final String backupPath = "target/var/backuedup-serverdb";
+    private String serverPath;
+    private String otherServerPath;
+    private String backupPath;
+
+    @Rule
+    public TestName testName = new TestName();
 
     @Before
     public void before() throws Exception
     {
-        FileUtils.deleteDirectory( new File( serverPath ) );
-        FileUtils.deleteDirectory( new File( otherServerPath ) );
-        FileUtils.deleteDirectory( new File( backupPath ) );
+        File base = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        serverPath = new File( base, "server" ).getAbsolutePath();
+        otherServerPath = new File( base, "server2" ).getAbsolutePath();
+        backupPath = new File( base, "backuedup-serverdb" ).getAbsolutePath();
     }
 
     // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
@@ -105,31 +114,27 @@ public class TestBackup
         ServerInterface server = null;
         try
         {
-            String serverDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog-server", true ).getAbsolutePath();
-            String backupDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog-backup", true ).getAbsolutePath();
-            createInitialDataSet( serverDir );
-            server = startServer( serverDir );
+            createInitialDataSet( serverPath );
+            server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupDir );
+            backup.full( backupPath );
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupDir );
+            db = new EmbeddedGraphDatabase( backupPath );
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
             }
             db.shutdown();
 
-            addMoreData( serverDir );
-            server = startServer( serverDir );
-            backup.incremental( backupDir );
+            addMoreData( serverPath );
+            server = startServer( serverPath );
+            backup.incremental( backupPath );
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupDir );
+            db = new EmbeddedGraphDatabase( backupPath );
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
@@ -155,34 +160,30 @@ public class TestBackup
         ServerInterface server = null;
         try
         {
-            String serverDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog2-server", true ).getAbsolutePath();
-            String backupDir = TargetDirectory.forTest( getClass() ).directory(
-                    "txinlog2-backup", true ).getAbsolutePath();
-            createInitialDataSet( serverDir );
-            server = startServer( serverDir );
+            createInitialDataSet( serverPath );
+            server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupDir );
+            backup.full( backupPath );
             shutdownServer( server );
             server = null;
 
-            addMoreData( serverDir );
-            server = startServer( serverDir );
-            backup.incremental( backupDir );
+            addMoreData( serverPath );
+            server = startServer( serverPath );
+            backup.incremental( backupPath );
             shutdownServer( server );
             server = null;
 
             // do 2 rotations, add two empty logs
-            new EmbeddedGraphDatabase( backupDir ).shutdown();
-            new EmbeddedGraphDatabase( backupDir ).shutdown();
+            new EmbeddedGraphDatabase( backupPath ).shutdown();
+            new EmbeddedGraphDatabase( backupPath ).shutdown();
 
-            addMoreData( serverDir );
-            server = startServer( serverDir );
-            backup.incremental( backupDir );
+            addMoreData( serverPath );
+            server = startServer( serverPath );
+            backup.incremental( backupPath );
             shutdownServer( server );
             server = null;
 
-            int logsFound = new File( backupDir ).listFiles( new FilenameFilter()
+            int logsFound = new File( backupPath ).listFiles( new FilenameFilter()
             {
                 @Override
                 public boolean accept( File dir, String name )
@@ -195,7 +196,7 @@ public class TestBackup
             // 2 one the real and the other from the rotation of shutdown
             assertEquals( 2, logsFound );
 
-            db = new EmbeddedGraphDatabase( backupDir );
+            db = new EmbeddedGraphDatabase( backupPath );
 
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
