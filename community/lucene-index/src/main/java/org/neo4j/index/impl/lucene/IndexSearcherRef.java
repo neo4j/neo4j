@@ -62,6 +62,11 @@ class IndexSearcherRef
     {
         this.refCount.incrementAndGet();
     }
+    
+    void decRef()
+    {
+        this.refCount.decrementAndGet();
+    }
 
     public synchronized void dispose() throws IOException
     {
