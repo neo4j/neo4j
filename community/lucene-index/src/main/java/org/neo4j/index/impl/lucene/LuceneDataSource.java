@@ -554,6 +554,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         synchronized ( searcher )
         {
             /*
+             * Decrement the ref count because otherwise we'd fool the refresh code,
+             * don't worry we'll increment it below.
+             */
+            searcher.decRef();
+            /*
              * We need to get again a reference to the searcher because it might be so that
              * it was refreshed while we waited. Once in here though no one will mess with
              * our searcher
