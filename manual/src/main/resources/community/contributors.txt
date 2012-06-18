@@ -46,5 +46,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Taylor Buley |https://github.com/editor[editor]
 |Alex Smirnow |https://github.com/alexsmirnov[alexsmirnov]
 |Johannes Mockenhaupt |https://github.com/jotomo[jotomo]
+|Pablo Pareja |https://github.com/pablopareja[pablopareja]
 |=======
 
