@@ -77,8 +77,9 @@ public class Neo4jServerAPI {
         {
             do
             {
-                r = RestRequest.req().get(url + "/db/data/node/" + nodeId);
-                System.out.println(r.getStatus());
+                JaxRsResponse testUrl = RestRequest.req().get(url + "/db/data/node/" + nodeId);
+                r = testUrl;
+                System.out.printf("Asking for: %s and got: %d%n", testUrl, r.getStatus());
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {

@@ -27,12 +27,8 @@ public class VagrantIssueIdentifier {
     {
         System.out.println(e);
         System.out.println("CAUGHT ONE");
-        if (e instanceof ShellException)
-        {
-            return true;
-        }
-        
-        return false;
+        return e instanceof ShellException;
+
     }
 
 }
