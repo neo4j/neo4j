@@ -27,16 +27,18 @@ import org.neo4j.server.rest.RestRequest;
 public class Neo4jServerAPI {
 
     private String url;
+    private final long timeout;
 
     public Neo4jServerAPI(String url)
     {
         this.url = url;
+        timeout = 1000 * 120 * 1;
     }
 
     public void waitUntilNodeDoesNotExist(long nodeId)
     {
         JaxRsResponse r = null;
-        long start = new Date().getTime(), timeout = 1000 * 60 * 1;
+        long start = new Date().getTime();
         try
         {
             do
@@ -70,12 +72,13 @@ public class Neo4jServerAPI {
     public void waitUntilNodeExists(long nodeId)
     {
         JaxRsResponse r = null;
-        long start = new Date().getTime(), timeout = 1000 * 60;
+        long start = new Date().getTime();
         try
         {
             do
             {
                 r = RestRequest.req().get(url + "/db/data/node/" + nodeId);
+                System.out.println(r.getStatus());
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {
