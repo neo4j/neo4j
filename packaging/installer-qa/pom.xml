@@ -170,7 +170,7 @@
         <configuration>
           <systemPropertyVariables>
             <neo4j.version>${neo4j.version}</neo4j.version>
-            <java.util.logging.config.file>test-logging.properties</java.util.logging.config.file>
+            <java.util.logging.config.file>${project.build.directory}/test-classes/test-logging.properties</java.util.logging.config.file>
             
             <box-path-ubuntu-11.04-amd64-with-jre>${box-path-ubuntu-11.04-amd64-with-jre}</box-path-ubuntu-11.04-amd64-with-jre>
             <box-path-win2008-amd64>${box-path-win2008-amd64}</box-path-win2008-amd64>
