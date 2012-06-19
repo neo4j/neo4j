@@ -178,11 +178,37 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "These columns can't be listen in the WITH statement without renaming: count(*)")
   }
 
+  @Test def missing_relate_dependency_correctly_reported() {
+    expectError(
+      "START a=node(0) RELATE a-[:KNOWS]->(b {name:missing}) RETURN b",
+      "Unknown identifier `missing`")
+  }
+
+  @Test def missing_create_dependency_correctly_reported() {
+    expectError(
+      "START a=node(0) CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
+      "Unknown identifier `missing`")
+  }
+
+  @Test def missing_set_dependency_correctly_reported() {
+    expectError(
+      "START a=node(0) SET a.name = missing RETURN a",
+      "Unknown identifier `missing`")
+  }
+
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
 
-    val s = query + "\n" + error.toString()
-    assertTrue(s, error.getMessage.contains(expectedError))
+    val s = """
+Wrong error message produced: %s
+Expected: %s
+     Got: %s
+""".format(query, expectedError, error)
+
+
+    if(!error.getMessage.contains(expectedError)) {
+      fail(s)
+    }
 
     error
   }

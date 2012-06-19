@@ -24,7 +24,10 @@ import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 
 class ExtractBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = ExtractBuilder.extractIfNecessary(plan, plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)))
+  def apply(plan: ExecutionPlanInProgress) = {
+    val expressions = plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).distinct
+    ExtractBuilder.extractIfNecessary(plan, expressions)
+  }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query

@@ -45,4 +45,9 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.updates.exists(cmd => cmd.unsolved && plan.pipe.symbols.satisfies(cmd.token.dependencies))
 
   def priority = PlanBuilder.Mutation
+
+  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.updates.flatMap {
+    case Unsolved(cmd) => plan.pipe.symbols.missingDependencies(cmd.dependencies).map(_.name)
+    case _ => None
+  }
 }
