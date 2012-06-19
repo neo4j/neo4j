@@ -71,7 +71,7 @@
         description="Replaces a set of placeholders in webadmin with values for this specific version of Neo4j." >
 
     <replace dir="${project.build.outputDirectory}/webadmin-html/">
-      <replacefilter token="@@neo4j1.codename@@" value="${neo4j.codename}" />
+      <replacefilter token="@@neo4j.codename@@" value="${neo4j.codename}" />
       <replacefilter token="@@neo4j.version@@" value="${project.version}" />
       <replacefilter token="@@splash.icon@@" value="${splash.icon}" />
     </replace>
