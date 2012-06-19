@@ -28,11 +28,11 @@ define(
 
       render : =>
         $(@el).html(template(
-          nodeList : @list
+          nodeList : @dataModel.getData()    
         ))
         return this
       
-      setData : (list) =>
-        @list = list
+      setDataModel : (dataModel) =>
+        @dataModel = dataModel
 
 )

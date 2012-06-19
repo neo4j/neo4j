@@ -21,9 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./models/ServerInfo'
    './views/ServerInfoView'
-   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
    'ribcage/Router'],
-  (ServerInfo, ServerInfoView, MainMenuModel, Router) ->
+  (ServerInfo, ServerInfoView, Router) ->
     
     class ServerInfoRouter extends Router
       routes : 
@@ -31,12 +30,6 @@ define(
         "/info/:domain/:name/" : "bean",
 
       init : (@appState) =>
-        
-        @menuItem = new MainMenuModel.Item 
-          title : "Server info",
-          subtitle:"Details",
-          url : "#/info/"
-
         @serverInfo = new ServerInfo { server : @appState.get "server" } 
         @server = @appState.get "server"
 
@@ -54,11 +47,4 @@ define(
         @view ?= new ServerInfoView
           appState:@appState
           serverInfo:@serverInfo
-
-      #
-      # Bootstrapper SPI
-      #
-
-      getMenuItems : ->
-        [@menuItem]
 )

@@ -24,14 +24,11 @@ define(
    './RelationshipListView'
    './NodeListView'
    './CypherResultView'
-   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'
    'ribcage/View'
    './notfound'
    'lib/amd/jQuery'], 
-  (NodeView, RelationshipView, RelationshipListView, NodeListView, CypherResultView, DataBrowserState, View, notFoundTemplate, $) ->
+  (NodeView, RelationshipView, RelationshipListView, NodeListView, CypherResultView, View, notFoundTemplate, $) ->
   
-    State = DataBrowserState.State
-
     class SimpleView extends View
 
       initialize : (options)->
@@ -46,31 +43,26 @@ define(
         @dataModel.bind("change:data", @render)
 
       render : =>
-        state = @dataModel.getState()
-        switch state
-          when State.SINGLE_NODE
+        type = @dataModel.get("type")
+        switch type
+          when "node"
             view = @nodeView
-          when State.NODE_LIST
+          when "nodeList"
             view = @nodeListView
-          when State.SINGLE_RELATIONSHIP
+          when "relationship"
             view = @relationshipView
-          when State.RELATIONSHIP_LIST
+          when "relationshipList"
             view = @relationshipListView
-          when State.CYPHER_RESULT
+          when "cypher"
             view = @cypherResultView
-          when State.EMPTY
+          else
             $(@el).html(notFoundTemplate())
             return this
-          when State.NOT_EXECUTED
-            return this
-          when State.ERROR
-            return this
-
-        view.setData(@dataModel.getData())
+        view.setDataModel(@dataModel)
         $(@el).html(view.render().el)
         view.delegateEvents()
         return this
-
+      
       remove : =>
         @dataModel.unbind("change", @render)
         @nodeView.remove()

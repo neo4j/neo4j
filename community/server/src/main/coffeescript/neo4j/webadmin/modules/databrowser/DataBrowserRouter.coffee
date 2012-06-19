@@ -1,5 +1,4 @@
 
-# TODO: Split into one Module class and one Router class
 define(
   ['./search/QueuedSearch',
    './views/DataBrowserView',
@@ -7,36 +6,33 @@ define(
    './visualization/views/VisualizationProfileView',
    './models/DataBrowserState', 
    './DataBrowserSettings', 
-   'neo4j/webadmin/modules/baseui/models/MainMenuModel',
    'ribcage/Router'], 
-  (QueuedSearch, DataBrowserView, VisualizationSettingsView, VisualizationProfileView, DataBrowserState, DataBrowserSettings, MainMenuModel, Router) ->
+  (QueuedSearch, DataBrowserView, VisualizationSettingsView, VisualizationProfileView, DataBrowserState, DataBrowserSettings, Router) ->
 
     class DataBrowserRouter extends Router
 
       routes : 
+        "/data/" : "base"
+        "/data/search/*query" : "search"
         "/data/visualization/settings/" : "visualizationSettings"
         "/data/visualization/settings/profile/" : "createVisualizationProfile"
         "/data/visualization/settings/profile/:id/" : "editVisualizationProfile"
 
       shortcuts : 
-        "s" : "onEditorFocusShortcut"
-        "v" : "onViewTypeToggleShortcut"
+        "s" : "focusOnSearchField"
+        "v" : "switchDataView"
 
       init : (appState) =>
-        # Because we need to be able to match newlines, we need to define
-        # this route with our own regex
-        @route(/data\/search\/([\s\S]*)/i, 'search', @search)
-
         @appState = appState
-        @dataModel = new DataBrowserState( server : @appState.getServer() )
-        
-        @dataModel.bind "change:query", @onQueryChangedInModel
-        @dataModel.bind "change:data", @onDataChangedInModel
+        @server = appState.get "server"
+        @searcher = new QueuedSearch(@server)
 
-        @menuItem = new MainMenuModel.Item 
-          title : "Data browser",
-          subtitle:"Explore and edit",
-          url : @_getCurrentQueryURI()
+        @dataModel = new DataBrowserState( server : @server )
+
+        @dataModel.bind "change:query", @queryChanged
+
+      base : =>
+        @queryChanged()
 
       search : (query) =>
         @saveLocation()
@@ -46,9 +42,6 @@ define(
 
         @dataModel.setQuery query
         @appState.set( mainView : @getDataBrowserView() )
-
-        if @_looksLikeReadOnlyQuery(query)
-          @dataModel.executeCurrentQuery()
 
       visualizationSettings : () =>
         @saveLocation()
@@ -71,41 +64,38 @@ define(
         v.setProfileToManage profile
         @appState.set mainView : v
 
-      #
-      # Bootstrapper SPI
-      #
-
-      getMenuItems : ->
-        [@menuItem]
-
       # 
-      # Event handlers
+      # Keyboard shortcuts
       # 
 
-      onEditorFocusShortcut : (ev) =>
-        @search(@dataModel.getQuery())
-        setTimeout( (=> @getDataBrowserView().focusOnEditor()), 1)
+      focusOnSearchField : (ev) =>
+        @base()
+        setTimeout( () -> 
+          $("#data-console").focus()
+        1)
 
-      onViewTypeToggleShortcut : (ev) =>
+      switchDataView : (ev) =>
         @getDataBrowserView().switchView()
-
-      onQueryChangedInModel : =>
-        url = @_getCurrentQueryURI()
-
-        @menuItem.setUrl(url)
-
-        #if location.hash != url
-        #  location.hash = url
-
-      onDataChangedInModel : =>
-        url = @_getCurrentQueryURI()
-
-        if location.hash != url
-          location.hash = url
 
       #
       # Internals
       #
+
+      queryChanged : =>
+        query = @dataModel.get "query"
+        if query == null
+          return @search("0")
+
+        url = "#/data/search/#{encodeURIComponent(query)}/"
+
+        if location.hash != url
+          location.hash = url
+        
+        if @dataModel.get "queryOutOfSyncWithData"
+          @searcher.exec(@dataModel.get "query").then(@showResult, @showResult)
+
+      showResult : (result) =>
+        @dataModel.setData(result)
 
       getDataBrowserView : =>
         @view ?= new DataBrowserView
@@ -118,38 +108,4 @@ define(
           
       getDataBrowserSettings : ->
         @dataBrowserSettings ?= new DataBrowserSettings @appState.getSettings()
-
-
-      # We only auto-execute read-only queries,
-      # and we determine if a query is read-only here.
-      # Note: Since we execute queries from the current URL,
-      # this is a very real security issue. If modifying queries
-      # slip through here, attackers can redirect an adminstrator
-      # to a webadmin URL with a malicious Cypher query. Please
-      # opt for better-safe-than-sorry when updating this regex.
-      _looksLikeReadOnlyQuery : (query) ->
-        pattern = ///^(
-                    # Super basic cypher queries
-                    (start 
-                     \s+ 
-                     [a-z]+=node\(\d+\)
-                     \s+
-                     return \s+ [a-z]+)    | # or
- 
-                    # Direct node id lookups
-                    ((node:)?\d+)          | # or
-
-                    # Direct rel id lookups 
-                    (rel:\d+)              | # or
-
-                    # Direct rel id lookups
-                    (rels:\d+)
-                     )$
-                  ///i
-
-        pattern.test(query)
-
-      _getCurrentQueryURI : ->
-        query = @dataModel.getQuery()
-        return "#/data/search/#{encodeURIComponent(query)}/"
 )

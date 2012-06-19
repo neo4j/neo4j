@@ -119,8 +119,9 @@ define(
       getPropertyIdForElement : (element) =>
         $(element).closest("ul").find("input.property-id").val()
 
-      setData : (@propertyContainer) =>
+      setDataModel : (dataModel) =>
         @unbind()
+        @propertyContainer = dataModel.getData()
         @propertyContainer.bind "remove:property", @renderProperties
         @propertyContainer.bind "add:property", @renderProperties
         @propertyContainer.bind "change:status", @updateSaveState

@@ -27,7 +27,7 @@ define ["neo4j/webadmin/utils/ItemUrlResolver"], (ItemUrlResolver) ->
       @urlResolver = new ItemUrlResolver(server)
       @pattern = /// ^ 
                     (start|cypher|create) # Start with "start", "cypher" or "create"
-                    ([\s\S]+)  # followed by anything
+                    (.+)  # followed by anything
                     $
                  ///i
 

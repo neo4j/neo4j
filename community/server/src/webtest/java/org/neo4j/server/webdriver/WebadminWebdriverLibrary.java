@@ -34,17 +34,14 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private final ElementReference dataBrowserSearchField;
     private final ElementReference dataBrowserItemSubtitle;
     private final ElementReference dataBrowserSearchButton;
-	private final ElementReference dataBrowserTitle;
 
     public WebadminWebdriverLibrary(WebDriverFacade wf, String serverUrl) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
         
         setServerUrl( serverUrl );
-
-        dataBrowserTitle        = new ElementReference(this, By.xpath( "//div[@id='data-area']//h3" ));
-        dataBrowserItemSubtitle = new ElementReference(this, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
-        dataBrowserSearchField  = new ElementReference(this, By.xpath( "//div[@id='data-console']//textarea" ));
         
+        dataBrowserItemSubtitle = new ElementReference(this, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
+        dataBrowserSearchField = new ElementReference(this, By.id( "data-console" ));
         dataBrowserSearchButton = new ElementReference(this, By.id( "data-execute-console" ));
     }
     
@@ -73,17 +70,24 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         new Condition<ElementReference>( new ElementClickable(), tab ).waitUntilFulfilled();
     }
 
-    public void searchForInDataBrowser(String query) {
-    	dataBrowserSearchField.waitUntilVisible();
-    	executeScript("document.dataBrowserEditor.setValue(\""+query+"\")");
+    public void searchForInDataBrowser(CharSequence ... keysToSend) {
+        clearInput( dataBrowserSearchField );
+        dataBrowserSearchField.sendKeys( keysToSend );
         dataBrowserSearchButton.click();
+    }
+    
+    public String getCurrentDatabrowserItemSubtitle() {
+        return dataBrowserItemSubtitle.getText();
     }
     
     public long createNodeInDataBrowser() {
         goToWebadminStartPage();
         clickOnTab( "Data browser" );
+        String prevItemHeadline = getCurrentDatabrowserItemSubtitle();
         
         clickOnButton( "Node" );
+        
+        dataBrowserItemSubtitle.waitForTextToChangeFrom( prevItemHeadline );
         
         return extractEntityIdFromLastSegmentOfUrl(getCurrentDatabrowserItemSubtitle());
     }
@@ -101,18 +105,8 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         return extractEntityIdFromLastSegmentOfUrl(getCurrentDatabrowserItemSubtitle());
     }
     
-    public String getCurrentDatabrowserItemSubtitle() {
-        return getDataBrowserItemSubtitle().getText();
-    }
-    
-    public ElementReference getDataBrowserItemSubtitle() 
-    {
+    public ElementReference getDataBrowserItemHeadline() {
         return dataBrowserItemSubtitle;
-    }
-    
-    public ElementReference getDataBrowserItemTitle() 
-    {
-        return dataBrowserTitle;
     }
 
     public void waitForSingleElementToAppear( By xpath )

@@ -6,7 +6,17 @@
       %li
         %a.micro-button(target="_blank" href="http://docs.neo4j.org/chunked/@@neo4j.version@@/") Documentation
   %img#logo(src="img/logo.png")
-  #mainmenu
+  %ul#mainmenu
+    :each item in mainmenu
+      %li.title-button
+        :if item.current
+          %a.current(href="#{htmlEscape(item.url)}")
+            %span.subtitle= htmlEscape(item.subtitle)
+            %span= htmlEscape(item.label)
+        :if !item.current
+          %a(href="#{htmlEscape(item.url)}")
+            %span.subtitle= htmlEscape(item.subtitle)
+            %span= htmlEscape(item.label)
 
 #contents
   

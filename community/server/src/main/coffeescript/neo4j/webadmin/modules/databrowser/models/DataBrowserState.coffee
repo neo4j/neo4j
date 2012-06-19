@@ -19,53 +19,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/modules/databrowser/search/QueuedSearch',
-   './NodeProxy'
+  ['./NodeProxy'
    './NodeList'
    './RelationshipProxy'
    './RelationshipList'
-   'ribcage/time/Timer'
    'ribcage/Model'], 
-  (QueuedSearch, NodeProxy, NodeList, RelationshipProxy, RelationshipList, Timer, Model) ->
+  (NodeProxy, NodeList, RelationshipProxy, RelationshipList, Model) ->
   
     class DataBrowserState extends Model
-
-      @State :
-        ERROR               : -1
-        EMPTY               : 0
-        NOT_EXECUTED        : 1
-        SINGLE_NODE         : 2
-        SINGLE_RELATIONSHIP : 3
-        NODE_LIST           : 4
-        RELATIONSHIP_LIST   : 5
-        CYPHER_RESULT       : 6
-
-      class @QueryMetaData extends Model
-        
-        defaults : 
-          executionTime : 0
-          numberOfRows  : 0
-
-        getExecutionTime : -> @get "executionTime"
-        getNumberOfRows  : -> @get "numberOfRows"
-
-        setExecutionTime : (t) -> @set executionTime : t
-        setNumberOfRows  : (n) -> @set numberOfRows : n
-        
       
       defaults :
+        type : null
         data : null
-        query : "START root=node(0) // Start with the reference node\n" +
-                "RETURN root        // and return it.\n" +
-                "\n" +
-                "// Hit CTRL+ENTER to execute"
+        query : null
         queryOutOfSyncWithData : true
-        state : DataBrowserState.State.NOT_EXECUTED
-        querymeta : new DataBrowserState.QueryMetaData()
 
       initialize : (options) =>
-        @searcher = new QueuedSearch(options.server)
-        @_executionTimer = new Timer
+        @server = options.server
 
       getQuery : =>
         @get "query"
@@ -73,97 +43,42 @@ define(
       getData : =>
         @get "data"
       
-      getState : =>
-        @get "state"
-      
-      getQueryMetadata : =>
-        @get "querymeta"
+      getDataType : =>
+        @get "type"
+
+      dataIsSingleNode : () =>
+        return @get("type") == "node"
+     
+      dataIsSingleRelationship : () =>
+        return @get("type") == "relationship"
 
       setQuery : (val, isForCurrentData=false, opts={}) =>
-        if @getQuery() != val or opts.force is true
-          if not isForCurrentData
-            state = DataBrowserState.State.NOT_EXECUTED
-          else
-            state = @getState()
-          
-          @set {"query":val, "state":state, "queryOutOfSyncWithData": not isForCurrentData }, opts
-          if state is DataBrowserState.State.NOT_EXECUTED
-            @set {"data":null}, opts
-
-      executeCurrentQuery : =>
-        @_executionTimer.start()
-        @searcher.exec(@getQuery()).then(@setData,@setData)
+        if @get("query") != val or opts.force is true
+          @set {"queryOutOfSyncWithData": not isForCurrentData }, opts
+          @set {"query" : val }, opts
 
       setData : (result, basedOnCurrentQuery=true, opts={}) =>
-        @_executionTimer.stop()
-  
-        executionTime = @_executionTimer.getTimePassed()
-        originalState = @getState()
-
-        # These to be determined below
-        state = null
-        data = null
-        numberOfRows = null
+        @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
-          state = DataBrowserState.State.SINGLE_NODE
-          data = new NodeProxy(result)
+          return @set({type:"node","data":new NodeProxy(result)}, opts)
 
         else if result instanceof neo4j.models.Relationship
-          state = DataBrowserState.State.SINGLE_RELATIONSHIP
-          data = new RelationshipProxy(result)
+          return @set({type:"relationship","data":new RelationshipProxy(result)}, opts)
 
-        else if _(result).isArray() and result.length is 0 
-          state = DataBrowserState.State.EMPTY
+        else if _(result).isArray() and result.length > 0 
 
-        else if _(result).isArray() and result.length is 1
-          # If only showing one item, show it in single-item view
-          return @setData(result[0], basedOnCurrentQuery, opts)
-
-        else if _(result).isArray()
-          if result[0] instanceof neo4j.models.Relationship
-            state = DataBrowserState.State.RELATIONSHIP_LIST
-            data = new RelationshipList(result)
-
-          else if result[0] instanceof neo4j.models.Node
-            state = DataBrowserState.State.NODE_LIST
-            data = new NodeList(result)
-        
-        else if result instanceof neo4j.cypher.QueryResult and result.size() is 0
-          state = DataBrowserState.State.EMPTY
-
-        else if result instanceof neo4j.cypher.QueryResult
-          state = DataBrowserState.State.CYPHER_RESULT
-          data = result
-      
-        else if result instanceof neo4j.exceptions.NotFoundException
-          state = DataBrowserState.State.EMPTY
-
-        else
-          state = DataBrowserState.State.ERROR
-          data = result
-
-        # Query meta data
-        if state isnt DataBrowserState.State.ERROR
-          @_updateQueryMetaData(data,executionTime)
-
-        @set({"state":state, "data":data, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
-        if not opts.silent
-          @trigger "change:data"
-          @trigger "change:state" if originalState != state
-
-      _updateQueryMetaData : (data, executionTime) ->
-        if data?
-          if data instanceof neo4j.cypher.QueryResult
-            numberOfRows = data.data.length
+          if result.length is 1 # If only showing one item, show it in single-item view
+            return @setData(result[0], basedOnCurrentQuery, opts)
           else
-            numberOfRows = if data.length? then data.length else 1
-        else
-          numberOfRows = 0
-        meta = @getQueryMetadata()
-        meta.setNumberOfRows(numberOfRows)
-        meta.setExecutionTime(executionTime)
-        
-        @trigger "change:querymeta"
+            if result[0] instanceof neo4j.models.Relationship
+              return @set({type:"relationshipList", "data":new RelationshipList(result)}, opts)
+            else if result[0] instanceof neo4j.models.Node
+              return @set({type:"nodeList", "data":new NodeList(result)}, opts)
+        else if result instanceof neo4j.cypher.QueryResult and result.size() > 0
+          @set({type:"cypher"})
+          return @trigger "change:data"
+
+        @set({type:"not-found", "data":null}, opts)
 
 )

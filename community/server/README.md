@@ -12,26 +12,21 @@ Subsequent builds can simply:
 
     mvn clean package
 
-Run the server using:
+Finally, run the server using:
 
     mvn exec:java
 
 ## Webadmin development
 
-The web administration interface, webadmin, can be found in two places of the source tree:
+Webadmin builds during the compile and process-classes phases. If you are doing webadmin development work, you can make your changes auto-deploy, so you don't have to restart the server. Run the two commands below in separate consoles.
 
-    # This contains uncompiled coffeescript and haml files, including unit tests (under test/)
-    src/main/coffeescript
+Start the server (let this get the server started before issuing other commands):
 
-    # This contains static web resources, such as javascript libraries, css and images
-    src/main/resources/webadmin-html
-    
-Webadmin compiles as part of the normal server build. 
-If you are doing development work, you can start a server instance that automatically picks up
-changes in the two webadmin source folders, and deploys them into the running server. 
+    mvn clean compile exec:java -Pneodev
 
-    # Run this bash command while standing in the 'server'-folder
-    tools/webadmin-develop
+Auto-deploy changes to webadmin files:
+
+    mvn compile -Dbrew.watch=true -Pneodev
 
 Then go to [http://localhost:7474/webadmin/](http://localhost:7474/webadmin/)
 

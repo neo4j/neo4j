@@ -22,27 +22,22 @@ define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
    './TabularView'
    './VisualizedView'
-   './ConsoleView'
    './CreateRelationshipDialog'
-   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'
    'ribcage/View'
    './base'
-   './queryMetadataTemplate'
-   './notExecutedTemplate'
-   './errorTemplate'
    'lib/amd/jQuery'], 
-  (ItemUrlResolver, TabularView, VisualizedView, ConsoleView, CreateRelationshipDialog, DataBrowserState, View, template, queryMetadataTemplate, notExecutedTemplate, errorTemplate, $) ->
-
-    State = DataBrowserState.State
+  (ItemUrlResolver, TabularView, VisualizedView, CreateRelationshipDialog, View, template, $) ->
 
     class DataBrowserView extends View
       
       template : template
 
       events : 
+        "keypress #data-console" : "consoleKeyPressed"
         "click #data-create-node" : "createNode"
         "click #data-create-relationship" : "createRelationship"
         "click #data-switch-view" : "switchView"
+        "click #data-execute-console" : "search"
 
       initialize : (options)->
         @dataModel = options.dataModel
@@ -50,70 +45,28 @@ define(
         @server = options.state.getServer()
 
         @urlResolver = new ItemUrlResolver(@server)
-        @consoleView = new ConsoleView(options)        
-
-        @dataModel.bind("change:querymeta", @renderQueryMetadataView)
-        @dataModel.bind("change:state",     @renderQueryMetadataView)
-
+        
+        @dataModel.bind("change:query", @queryChanged)
         @switchToTabularView()
 
-      focusOnEditor : =>
-        if @consoleView?
-          @consoleView.focusOnEditor()
-
       render : =>
-        @detachConsoleView()
         $(@el).html @template( 
-          viewType : @viewType)
-        @renderConsoleView()
+          query : @dataModel.getQuery()
+          viewType : @viewType
+          dataType : @dataModel.getDataType() )
         @renderDataView()
-        @renderQueryMetadataView()
-
-      detachConsoleView : =>
-        @consoleView.detach()
-
-      renderConsoleView : =>
-        @consoleView.attach($("#data-console-area", @el))
-        if not @consoleViewRendered
-          @consoleViewRendered = true
-          @consoleView.render()
-        return this
-
-      renderQueryMetadataView : =>
-        metaBar = $("#data-query-metadata", @el)
-        switch @dataModel.getState() 
-          when State.NOT_EXECUTED
-            metaBar.html(notExecutedTemplate())
-            return this
-          when State.ERROR
-            @renderError(@dataModel.getData())
-            return this
-          else 
-            metaBar.html queryMetadataTemplate(
-              meta : @dataModel.getQueryMetadata())
-        return this
 
       renderDataView : =>
         @dataView.attach($("#data-area", @el).empty())
         @dataView.render()
         return this
 
-      renderError : (error)->
-        title = "Unknown error"
-        description = "An unknown error occurred, was unable to retrieve a result for you."
-        monospaceDescription = null
+      queryChanged : =>
+        $("#data-console",@el).val(@dataModel.getQuery())
 
-        if error instanceof neo4j.exceptions.HttpException
-          if error.data.exception = "SyntaxException"
-            title = "Invalid query"
-            description = null
-            monospaceDescription = error.data.message
-        
-        $("#data-query-metadata", @el).html(errorTemplate(
-          "title":title
-          "description":description
-          "monospaceDescription":monospaceDescription
-        ))
+      search : (ev) =>
+        @dataModel.setQuery( $("#data-console",@el).val(), false, { force:true, silent:true})
+        @dataModel.trigger("change:query")
 
       createNode : =>
         @server.node({}).then (node) =>
@@ -138,6 +91,11 @@ define(
           @createRelationshipDialog.remove()
           delete(@createRelationshipDialog)
           $("#data-create-relationship").removeClass("selected")
+
+      consoleKeyPressed : (ev) =>
+        if ev.which is 13# and ev.ctrlKey # ctrl + enter
+          ev.stopPropagation()
+          @search()
 
       switchView : (ev) =>
         if @viewType == "visualized"
@@ -165,14 +123,19 @@ define(
         @tabularView ?= new TabularView(dataModel:@dataModel, appState:@appState, server:@server)
         @viewType = "tabular"
         @dataView = @tabularView
+
+      unbind : ->
+        @dataModel.unbind("change:query", @queryChanged)
         
       detach : ->
+        @unbind()
         @hideCreateRelationshipDialog()
-        if @dataView? then @dataView.detach()
-        if @consoleView? then @consoleView.detach()
+        if @dataView?
+          @dataView.detach()
         super()
 
       remove : =>
+        @unbind()
         @hideCreateRelationshipDialog()
         @dataView.remove()
 

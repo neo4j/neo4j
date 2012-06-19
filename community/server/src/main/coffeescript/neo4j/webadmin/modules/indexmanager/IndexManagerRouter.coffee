@@ -21,9 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./views/IndexManagerView'
    './models/IndexManager'
-   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
    'ribcage/Router'],
-  (IndexManagerView, IndexManager, MainMenuModel, Router) ->
+  (IndexManagerView, IndexManager, Router) ->
   
     class IndexManagerRouter extends Router
       routes : 
@@ -31,12 +30,6 @@ define(
 
       init : (appState) =>
         @appState = appState
-        
-        @menuItem = new MainMenuModel.Item 
-          title : "Indexes",
-          subtitle:"Add and remove",
-          url : "#/index/"
-
         @idxMgr = new IndexManager(server:@appState.get("server"))
 
       idxManager : =>
@@ -47,11 +40,4 @@ define(
         @view ?= new IndexManagerView  
           state   : @appState
           idxMgr  : @idxMgr
-
-      #
-      # Bootstrapper SPI
-      #
-
-      getMenuItems : ->
-        [@menuItem]
 )

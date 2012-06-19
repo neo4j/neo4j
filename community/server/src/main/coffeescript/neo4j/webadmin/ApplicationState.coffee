@@ -20,15 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Settings'
-   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
    'ribcage/Model'], 
-  (Settings, MainMenuModel, Model) ->
+  (Settings,Model) ->
   
     class ApplicationState extends Model
       
-      getMainMenuModel : ->
-        @mainMenu ?= new MainMenuModel()
-
       getServer : ->
         @get "server"
 

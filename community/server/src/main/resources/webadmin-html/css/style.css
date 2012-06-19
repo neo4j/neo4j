@@ -7,7 +7,6 @@
 @import url(forms.css);
 @import url(grid.css);
 @import url(../lib/colorpicker/css/colorpicker.css);
-@import url(../js/lib/codemirror2/codemirror.css);
 
 body { 
   width:100%; 
@@ -95,7 +94,7 @@ body {
 #header { width:100%; height:50px; background:url("../img/tab_shade.png") repeat-x scroll center bottom #333333;  }
 #logo { float:left; margin: 4px 99px 0 10px; }
 
-  #mainmenu, #mainmenu ul {
+  #mainmenu {
     height: 50px;
     list-style: none outside none;
     margin: 0;
@@ -195,57 +194,14 @@ body {
 #data-console {
   color: #444444;
   font-size: 14px;
-  font-family:monospace;
   width: 85%;
   float:left;
-  outline:none;
-  border: 1px solid #CCCCCC;
-  border-radius: 3px 3px 3px 3px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
-  -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
-  padding: 4px 3px;
-}
-
-/** Overide codemirror defaults **/
-.CodeMirror-scroll {
-  overflow: hidden; /* Don't show scroll bars. */
-  /* This is needed to prevent an IE[67] bug where the scrolled content
-     is visible outside of the scrolling box. */
-  position: relative;
-  outline: none;
-}
-.CodeMirror-scrollbar {
-  display:none !important;
-}
-
-#data-query-metadata {
-  font-size:12px;
-  border-bottom:1px solid #ccc;
-  background:#efefef;
-}
-
-#data-query-metadata ul {
-  list-style:none;
-  margin:0;
-  padding:0;
-}
-
-#data-query-metadata ul li {
-  float:left;
-  padding:0.5em 10px 0.5em 0;
 }
 
 #data-area {
   background: none repeat scroll 0 0 #EEEEEE;
   border-bottom: 1px solid #DDDDDD;
   border-top: 1px solid #DDD;
-}
-
-.workarea .controls {
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.9) inset;
-  -moz-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.9) inset;
-  -webkit-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.9) inset;
 }
 
 .data-console-wrap .form-tooltip {

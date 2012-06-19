@@ -26,11 +26,8 @@ define(
    'ribcage/View'
    'ribcage/security/HtmlEscaper'
    './visualization'
-   'ribcage/ui/Dropdown'
-   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'],
-  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown, DataBrowserState) ->
-  
-    State = DataBrowserState.State
+   'ribcage/ui/Dropdown'],
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown) ->
 
     class ProfilesDropdown extends Dropdown
       
@@ -114,24 +111,15 @@ define(
         @vizEl = $("#visualization", @el)
         @getViz().attach(@vizEl)
 
-        switch @dataModel.getState()
-          when State.SINGLE_NODE
+        switch @dataModel.get("type")
+          when "node"
             @visualizeFromNode @dataModel.getData().getItem()
-          when State.NODE_LIST
+          when "nodeList"
             @visualizeFromNodes @dataModel.getData().getRawNodes()
-          when State.SINGLE_RELATIONSHIP
+          when "relationship"
             @visualizeFromRelationships [@dataModel.getData().getItem()]
-          when State.RELATIONSHIP_LIST
+          when "relationshipList"
             @visualizeFromRelationships @dataModel.getData().getRawRelationships()
-          when State.CYPHER_RESULT
-            # TODO
-            return this
-          when State.EMPTY
-            return this
-          when State.NOT_EXECUTED
-            return this
-          when State.ERROR
-            return this
 
         return this
         
