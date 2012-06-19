@@ -634,7 +634,9 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
+        System.out.println(response.getEntity( String.class ));
         assertEquals(200, response.getStatus());
+
         final String entity = response.getEntity();
         System.out.println("entity = " + entity);
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);

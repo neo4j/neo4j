@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.server.rest.web;
-
+ 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -118,7 +118,10 @@ public class RestfulGraphDatabase
 
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
-
+    
+    private static final String UNIQUENESS_MODE_GET_OR_CREATE = "get_or_create";
+	private static final String UNIQUENESS_MODE_CREATE_OR_FAIL = "create_or_fail";
+	
     // TODO Obviously change name/content on this
     private static final String HEADER_TRANSACTION = "Transaction";
 
@@ -130,6 +133,13 @@ public class RestfulGraphDatabase
     public static final String PATH_TO_CREATE_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}";
     public static final String PATH_TO_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}/{traverserId}";
 
+    private enum UniqueIndexType
+    {
+    	None,
+    	GetOrCreate,
+    	CreateOrFail
+    }
+    
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
             @Context OutputFormat output, @Context LeaseManager leaseManager )
     {
@@ -760,24 +770,34 @@ public class RestfulGraphDatabase
     @POST
     @Path( PATH_NAMED_NODE_INDEX )
     @Consumes( MediaType.APPLICATION_JSON )
-    public Response addToNodeIndex( @HeaderParam( HEADER_TRANSACTION ) ForceMode force, @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, String postBody )
+    public Response addToNodeIndex( @HeaderParam( HEADER_TRANSACTION ) ForceMode force, @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, @QueryParam( "uniqueness" ) String uniqueness, String postBody )
     {
         try
-        {
-            if ( unique( unique ) )
-            {
-                Map<String, Object> entityBody = input.readMap( postBody, "key", "value" );
-                Pair<IndexedEntityRepresentation, Boolean> result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
-                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-                return result.other().booleanValue() ? output.created( result.first() ) : output.ok(result.first(), true);
-            }
-            else
-            {
-                Map<String, Object> entityBody = input.readMap( postBody, "key", "value", "uri" );
-                return output.created( actions( force ).addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
-                        String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
-            }
-        }
+        {    	
+	       	Map<String, Object> entityBody;
+	    	Pair<IndexedEntityRepresentation, Boolean> result;
+	    	
+	    	switch (unique(unique, uniqueness))
+	    	{
+	        	case GetOrCreate:
+	        		entityBody = input.readMap( postBody, "key", "value" );
+	                result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
+	                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
+	                return result.other().booleanValue() ? output.created( result.first() ) : output.okIncludeLocation( result.first() );
+	
+	        	case CreateOrFail:
+	        		entityBody = input.readMap( postBody, "key", "value" );
+	                result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
+	                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
+	                return result.other().booleanValue() ? output.created( result.first() ) : output.conflict( result.first() );
+	
+	            default:
+	            	entityBody = input.readMap( postBody, "key", "value", "uri" );
+	                return output.created( actions( force ).addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+	                        String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
+	            	
+	    	}
+    	}
         catch ( UnsupportedOperationException e )
         {
             return output.methodNotAllowed( e );
@@ -803,25 +823,37 @@ public class RestfulGraphDatabase
 
     @POST
     @Path( PATH_NAMED_RELATIONSHIP_INDEX )
-    public Response addToRelationshipIndex( @HeaderParam( HEADER_TRANSACTION ) ForceMode force, @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, String postBody )
+    public Response addToRelationshipIndex( @HeaderParam( HEADER_TRANSACTION ) ForceMode force, @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, @QueryParam( "uniqueness" ) String uniqueness, String postBody )
     {
         try
         {
-            if ( unique( unique ) )
-            {
-                Map<String, Object> entityBody = input.readMap( postBody, "key", "value" );
-                Pair<IndexedEntityRepresentation, Boolean> result = actions( force ).getOrCreateIndexedRelationship( indexName, String.valueOf( entityBody.get( "key" ) ),
-                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
-                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
-                       getMapOrNull( entityBody, "properties" ) );
-                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
-            }
-            else
-            {
-                Map<String, Object> entityBody = input.readMap( postBody, "key", "value", "uri" );
-                return output.created( actions( force ).addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
-                        String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
-            }
+        	Map<String, Object> entityBody;
+        	Pair<IndexedEntityRepresentation, Boolean> result;
+        	
+        	switch (unique(unique, uniqueness))
+        	{
+	        	case GetOrCreate:
+	                entityBody = input.readMap( postBody, "key", "value" );
+	                result = actions( force ).getOrCreateIndexedRelationship( indexName, String.valueOf( entityBody.get( "key" ) ),
+	                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
+	                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
+	                       getMapOrNull( entityBody, "properties" ) );
+	                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
+	
+	        	case CreateOrFail:
+	                entityBody = input.readMap( postBody, "key", "value" );
+	                result = actions( force ).getOrCreateIndexedRelationship( indexName, String.valueOf( entityBody.get( "key" ) ),
+	                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
+	                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
+	                       getMapOrNull( entityBody, "properties" ) );
+	                return result.other().booleanValue() ? output.created( result.first() ) : output.conflict( result.first() );
+
+                default:
+                    entityBody = input.readMap( postBody, "key", "value", "uri" );
+                    return output.created( actions( force ).addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                            String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
+                	
+        	}
         }
         catch ( UnsupportedOperationException e )
         {
@@ -841,17 +873,23 @@ public class RestfulGraphDatabase
         }
     }
 
-    private boolean unique( String uniqueParam )
+    private UniqueIndexType unique( String uniqueParam, String uniquenessParam )
     {
-        boolean unique;
-        if ( uniqueParam == null )
-        {
-            unique = false;
-        } else if ("".equals( uniqueParam )) {
-            unique = true;
-        } else {
-            unique = Boolean.parseBoolean( uniqueParam );
+    	UniqueIndexType unique = UniqueIndexType.None;
+        if ( uniquenessParam == null || uniquenessParam.equals("") ){
+        	// Backward compatibility check
+        	if(unique != null && ("".equals( uniqueParam ) || Boolean.parseBoolean( uniqueParam ))){
+        		unique = UniqueIndexType.GetOrCreate;
+        	}
+        	
+        } else if (UNIQUENESS_MODE_GET_OR_CREATE.equalsIgnoreCase(uniquenessParam)) {
+            unique = UniqueIndexType.GetOrCreate;
+            
+        } else if(UNIQUENESS_MODE_CREATE_OR_FAIL.equalsIgnoreCase(uniquenessParam)){
+        	unique = UniqueIndexType.CreateOrFail;
+        	
         }
+        
         return unique;
     }
 

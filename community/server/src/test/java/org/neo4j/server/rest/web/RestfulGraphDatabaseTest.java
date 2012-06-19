@@ -954,7 +954,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "value", "my/key" );
         postBody.put( "uri", nodeUri.toString() );
 
-        response = service.addToNodeIndex( FORCE, "node", null, JsonHelper.createJsonFrom( postBody ) );
+        response = service.addToNodeIndex( FORCE, "node", null, null,JsonHelper.createJsonFrom( postBody ) );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -969,7 +969,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "value", "my/key" );
         for ( int i = 0; i < 2; i++ )
         {
-            Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+            Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "", JsonHelper.createJsonFrom( postBody ) );
 
             assertEquals( 201 - i, response.getStatus() );
             if ( i == 0 ) assertNotNull( response.getMetadata().getFirst( "Location" ) );
@@ -986,7 +986,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "uri", node.toString() );
         postBody.put( "properties", new HashMap<String, Object>() );
 
-        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "", JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -999,7 +999,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "key", key );
         postBody.put( "value", value );
 
-        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "", JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 201, response.getStatus() );
         Object node = response.getMetadata().getFirst( "Location" );
         assertNotNull( node );
@@ -1023,7 +1023,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "occupation", "crazy" );
         postBody.put( "properties", properties );
 
-        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "", JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 201, response.getStatus() );
         Object node = response.getMetadata().getFirst( "Location" );
         assertNotNull( node );
@@ -1046,11 +1046,11 @@ public class RestfulGraphDatabaseTest
         indexPostBody.put( "value", "myvalue" );
         
         indexPostBody.put( "uri", node.toString() );
-        Response response = service.addToNodeIndex( FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        Response response = service.addToNodeIndex( FORCE, "", "", "", JsonHelper.createJsonFrom( indexPostBody ) );
         assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
         
         indexPostBody.put( "uri", rel.toString() );
-        response = service.addToRelationshipIndex(FORCE, "", "", JsonHelper.createJsonFrom( indexPostBody ) );
+        response = service.addToRelationshipIndex(FORCE, "", "", "", JsonHelper.createJsonFrom( indexPostBody ) );
         assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
         
         Map<String,String> basicIndexCreation = new HashMap<String,String>();
@@ -1074,7 +1074,7 @@ public class RestfulGraphDatabaseTest
         {
             Map<String, Object> postBody = new HashMap<String, Object>( body );
             postBody.remove( key );
-            Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+            Response response = service.addToNodeIndex( FORCE, "unique-nodes", "", "", JsonHelper.createJsonFrom( postBody ) );
 
             assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
         }
@@ -1093,7 +1093,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "type", "knows" );
         for ( int i = 0; i < 2; i++ )
         {
-            Response response = service.addToNodeIndex( FORCE, "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+            Response response = service.addToNodeIndex( FORCE, "unique-relationships", "", "", JsonHelper.createJsonFrom( postBody ) );
 
             assertEquals( 201 - i, response.getStatus() );
             if ( i == 0 ) assertNotNull( response.getMetadata().getFirst( "Location" ) );
@@ -1114,7 +1114,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "end", end.toString() );
         postBody.put( "type", "knows" );
 
-        Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+        Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", "", JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 201, response.getStatus() );
         Object rel = response.getMetadata().getFirst( "Location" );
         assertNotNull( rel );
@@ -1143,7 +1143,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "occupation", "crazy" );
         postBody.put( "properties", properties );
 
-        Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+        Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", "", JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 201, response.getStatus() );
         Object rel = response.getMetadata().getFirst( "Location" );
         assertNotNull( rel );
@@ -1174,7 +1174,7 @@ public class RestfulGraphDatabaseTest
             postBody.put( "uri", rel.toString() );
             postBody.put( bad.getKey(), bad.getValue() );
 
-            Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+            Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", "", JsonHelper.createJsonFrom( postBody ) );
             assertEquals( "unexpected response code with \"" + bad.getKey() + "\".", 400, response.getStatus() );
         }
     }
@@ -1194,7 +1194,7 @@ public class RestfulGraphDatabaseTest
         {
             Map<String, Object> postBody = new HashMap<String, Object>( body );
             postBody.remove( key );
-            Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+            Response response = service.addToRelationshipIndex( FORCE, "unique-relationships", "", "", JsonHelper.createJsonFrom( postBody ) );
 
             assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
         }
@@ -1732,7 +1732,7 @@ public class RestfulGraphDatabaseTest
         assertEquals(
                 Status.CREATED.getStatusCode(),
                 service.addToNodeIndex(FORCE,
-                        "node", null,
+                        "node", null, null,
                         markWithUnicodeMarker( "{\"key\":\"foo\", \"value\":\"bar\", \"uri\": \"" + nodeLocation
                                                + "\"}" ) )
                         .getStatus() );

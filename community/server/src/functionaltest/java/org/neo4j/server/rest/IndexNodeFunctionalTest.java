@@ -706,11 +706,14 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a unique node in an index.
+     * Get or create unique node (create).
+     * 
+     * Node are created if they don't exist in the unique index
+     * already.
      */
     @Documented
     @Test
-    public void get_or_create_node() throws Exception
+    public void get_or_create_a_node_in_an_unique_index() throws Exception
     {
         final String index = "people", key = "name", value = "Tobias";
         helper.createNodeIndex( index );
@@ -720,7 +723,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                                      .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
                                                        + "\", \"properties\": {\"" + key + "\": \"" + value
                                                        + "\", \"sequence\": 1}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
 
         MultivaluedMap<String, String> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
@@ -731,11 +734,16 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a unique node in an index (the case where it exists).
+     * Get or create unique node (existing).
+     * 
+     * Here,
+     * a node is not created but the existing unique node returned, since another node 
+     * is indexed with the same data already. The node data returned is then that of the
+     * already existing node.
      */
     @Documented
     @Test
-    public void get_or_create_node_if_existing() throws Exception
+    public void get_or_create_unique_node_if_already_existing() throws Exception
     {
         final String index = "people", key = "name", value = "Peter";
 
@@ -762,7 +770,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                                      .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
                                                        + "\", \"properties\": {\"" + key + "\": \"" + value
                                                        + "\", \"sequence\": 2}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
 
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
@@ -771,11 +779,96 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Add a node to an index unless a node already exists for the given mapping.
+     * Create a unique node or return fail (create).
+     * 
+     * Here, in case
+     * of an already existing node, an error should be returned. In this
+     * example, no existing indexed node is found and a new node is created.
      */
     @Documented
     @Test
-    public void put_node_if_absent() throws Exception
+    public void create_a_unique_node_or_fail_create() throws Exception
+    {
+        final String index = "people", key = "name", value = "Tobias";
+        helper.createNodeIndex( index );
+        ResponseEntity response = gen.get()
+                                     .expectedStatus( 201 /* created */)
+                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
+                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
+                                                       + "\", \"sequence\": 1}}" )
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
+
+        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
+        assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
+        Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
+        assertEquals( value, data.get( key ) );
+        assertEquals( 1, data.get( "sequence" ) );
+    }
+
+    
+    /**
+     * Create a unique node or return fail (fail).
+     * 
+     * Here, in case
+     * of an already existing node, an error should be returned. In this
+     * example, an existing node indexed with the same data 
+     * is found and an error is returned.
+     */
+    @Documented
+    @Test
+    public void create_a_unique_node_or_return_fail___fail() throws Exception
+    {
+        final String index = "people", key = "name", value = "Peter";
+
+        GraphDatabaseService graphdb = graphdb();
+        helper.createNodeIndex( index );
+        
+        Transaction tx = graphdb.beginTx();
+        try
+        {
+            Node peter = graphdb.createNode();
+            peter.setProperty( key, value );
+            peter.setProperty( "sequence", 1 );
+            graphdb.index().forNodes( index ).add( peter, key, value );
+
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+       
+        final RestRequest request = RestRequest.req();
+        
+        ResponseEntity response = gen.get()
+                                    .expectedStatus( 409 /* conflict */)
+                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
+                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
+                                                       + "\", \"sequence\": 2}}" )
+                                    .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
+
+
+
+        Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
+        Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
+        assertEquals( value, data.get( key ) );
+        assertEquals( 1, data.get( "sequence" ) );
+    }
+
+    
+    /**
+     * Backward Compatibility Test (using old syntax ?unique)
+     * Put node if absent - Create. 
+     * 
+     * Add a node to an index unless a node already exists for the given index data. In
+     * this case, a new node is created since nothing existing is found in the index.
+     */
+    @Documented
+    @Test
+    public void put_node_if_absent___create() throws Exception
     {
         final String index = "people", key = "name", value = "Mattias";
         helper.createNodeIndex( index );
@@ -790,4 +883,6 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( type.isInstance( object ) );
         return type.cast( object );
     }
+    
+    
 }
