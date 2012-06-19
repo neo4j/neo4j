@@ -68,7 +68,7 @@ Now it's time to interact with the database.
 
 == Wrap mutating operations in a transaction ==
 
-All mutating transactions have to be performed in a transaction.
+All mutating operations (creating, deleting and updating any data) have to be performed in a transaction.
 This is a conscious design decision, since we believe transaction demarcation to be an important part of working with a real enterprise database.
 Now, transaction handling in Neo4j is very easy:
 
