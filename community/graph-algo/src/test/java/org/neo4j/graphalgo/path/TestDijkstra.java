@@ -24,14 +24,17 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
@@ -137,5 +140,68 @@ public class TestDijkstra extends Neo4jAlgoTestCase
             }
         }
         fail( path + " should've contained " + relationship );
+    }
+    
+    @Ignore( "See issue #627" )
+    @Test
+    public void determineLongestPath() throws Exception
+    {
+        /*
+         *      --------
+         *     |        \
+         *     |      --(0)-[-0.1]->(1)
+         *     |      |   \          |
+         *  [-0.1]    |  [-0.1]    [-0.1]
+         *     |      |     \        v
+         *     |   [-1.0]    ------>(2)
+         *     |       \             |
+         *     v        --v          |
+         *    (4)<-[-0.1]-(3)<-[-1.0]-
+         *    
+         *    Shortest path: 0->1->2->3->4
+         */
+        
+        RelationshipType type = DynamicRelationshipType.withName( "EDGE" );
+        graph.setCurrentRelType( type );
+        
+        graph.makeEdgeChain( "0,1,2,3,4" );
+        graph.makeEdge( "0", "2" );
+        graph.makeEdge( "0", "3" );
+        graph.makeEdge( "0", "4" );
+        
+        setWeight( "0", "1", -0.1 );
+        setWeight( "1", "2", -0.1 );
+        setWeight( "2", "3", -1.0 );
+        setWeight( "3", "4", -0.1 );
+        setWeight( "0", "2", -0.1 );
+        setWeight( "0", "3", -1.0 );
+        setWeight( "0", "4", -0.1 );
+        
+        Node node0 = graph.getNode( "0" );
+        Node node1 = graph.getNode( "1" );
+        Node node2 = graph.getNode( "2" );
+        Node node3 = graph.getNode( "3" );
+        Node node4 = graph.getNode( "4" );
+
+        PathFinder<WeightedPath> pathFinder = GraphAlgoFactory.dijkstra(
+                Traversal.expanderForTypes( type, Direction.OUTGOING ), "weight" );
+        WeightedPath wPath = pathFinder.findSinglePath( node0, node4 );
+
+        assertPath( wPath, node0, node1, node2, node3, node4 );
+    }
+
+    private void setWeight( String start, String end, double weight )
+    {
+        Node startNode = graph.getNode( start );
+        Node endNode = graph.getNode( end );
+        for ( Relationship rel : startNode.getRelationships() )
+        {
+            if ( rel.getOtherNode( startNode ).equals( endNode ) )
+            {
+                rel.setProperty( "weight", weight );
+                return;
+            }
+        }
+        throw new RuntimeException( "No relationship between nodes " + start + " and " + end );
     }
 }
