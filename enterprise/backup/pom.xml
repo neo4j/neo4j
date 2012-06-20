@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <neo4j.version>1.7.2-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.7.2</neo4j.version>
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-backup.html</docs.url>
