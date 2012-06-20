@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -957,5 +958,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public Guard getGuard()
     {
         return actual.getGuard();
+    }
+    
+    @Override
+    public StoreId getStoreId()
+    {
+        return actual.getStoreId();
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -90,5 +91,9 @@ public interface GraphDatabaseAPI
     @Deprecated
     KernelPanicEventGenerator getKernelPanicGenerator();
 
+    @Deprecated
     Guard getGuard();
+    
+    @Deprecated
+    StoreId getStoreId();
 }
