@@ -1,4 +1,4 @@
-1.7.2 (Not yet released)
+1.7.2 (2012-06-20)
 ------------------------
 o Fixes issue #432, #523
 o Fixes problem with optional properties and collection predicates
