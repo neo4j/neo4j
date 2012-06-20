@@ -198,7 +198,7 @@ abstract class IndexType
             // Use the built in alternatives... "exact" or "fulltext"
             if ( type.equals( "exact" ) )
             {
-                result = EXACT;
+                result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), toLowerCase, similarity ) : EXACT;
             }
             else if ( type.equals( "fulltext" ) )
             {
