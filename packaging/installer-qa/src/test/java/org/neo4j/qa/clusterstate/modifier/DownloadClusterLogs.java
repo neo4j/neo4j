@@ -40,4 +40,10 @@ public class DownloadClusterLogs implements ClusterModifier {
             machine.forceApply(downloadLogs);
         }
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Download logs";
+    }
 }

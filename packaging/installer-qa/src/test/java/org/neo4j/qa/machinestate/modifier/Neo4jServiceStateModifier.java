@@ -82,4 +82,10 @@ public class Neo4jServiceStateModifier implements MachineModifier {
         return new StateAtom[]{};
     }
     
+    @Override
+	public String toString()
+    {
+    	return command + " the neo4j server";
+    }
+    
 }

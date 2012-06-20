@@ -57,4 +57,10 @@ public class ZookeeperClusterInstallation implements ClusterModifier {
         }
         return clusterDescription;
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Install and configure zookeeper cluster";
+    }
 }

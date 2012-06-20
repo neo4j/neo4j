@@ -44,4 +44,10 @@ public class Neo4jUninstallation implements MachineModifier {
         };
     }
     
+    @Override
+	public String toString()
+    {
+    	return "Uninstall Neo4j";
+    }
+    
 }

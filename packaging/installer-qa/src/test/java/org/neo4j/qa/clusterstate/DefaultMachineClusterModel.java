@@ -37,18 +37,21 @@ public class DefaultMachineClusterModel implements MachineClusterModel {
     @Override
     public void forceApply(ClusterModifier modifier)
     {
+    	System.out.println("[Cluster] Force applying: '" + modifier + "' (" + modifier.getClass().getSimpleName() + ")");
         modifier.modify(machines, state);
     }
 
     @Override
     public void apply(ClusterModifier modifier)
     {
+    	System.out.println("[Cluster] Applying: '" + modifier + "' (" + modifier.getClass().getSimpleName() + ")");
         modifier.modify(machines, state);
     }
 
     @Override
     public void verifyThat(ClusterVerifier verifier)
     {
+    	System.out.println("[Cluster] Verifying: '" + verifier + "' (" + verifier.getClass().getSimpleName() + ")");
         verifier.verify(machines);
     }
 

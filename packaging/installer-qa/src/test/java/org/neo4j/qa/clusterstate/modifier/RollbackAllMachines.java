@@ -33,5 +33,11 @@ public class RollbackAllMachines implements ClusterModifier {
             machine.forceApply(rollbackMachine);
         }
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Roll back all VMs to clean state";
+    }
 
 }

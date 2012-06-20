@@ -71,5 +71,11 @@ public class ZookeeperInstallation implements MachineModifier {
     {
         return new StateAtom[] { ZookeeperInstallationState.INSTALLED };
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Install zookeeper";
+    }
 
 }

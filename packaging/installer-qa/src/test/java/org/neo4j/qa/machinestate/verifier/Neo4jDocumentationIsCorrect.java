@@ -43,4 +43,10 @@ public class Neo4jDocumentationIsCorrect implements Verifier {
         List<String> files = driver.listDir(driver.neo4jInstallDir() + "/doc/manual/text");
         assertThat(files, hasItem("neo4j-manual.txt"));
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "The documentation exists and has correct version";
+    }
 }

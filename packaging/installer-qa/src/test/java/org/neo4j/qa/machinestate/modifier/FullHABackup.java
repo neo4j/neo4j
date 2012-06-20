@@ -48,5 +48,11 @@ public class FullHABackup implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Perform full HA backup";
+    }
 
 }

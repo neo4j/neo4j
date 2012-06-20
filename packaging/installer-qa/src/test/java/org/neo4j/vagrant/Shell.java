@@ -19,11 +19,9 @@
  */
 package org.neo4j.vagrant;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +29,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
-public class Shell {
+public class Shell extends AbstractShell {
 
     public static class Result {
         private final int result;
@@ -65,27 +63,8 @@ public class Shell {
     private Map<String,String> env = new HashMap<String, String>();
     private String shellName;
     
-    public static String outputToString(String shellName, InputStream in) {
-        BufferedReader bre = new BufferedReader(new InputStreamReader(in));
-        StringBuilder builder = new StringBuilder();
-        String line;
-        try {
-            while ((line = bre.readLine()) != null) {
-                builder.append(line);
-                builder.append("\n");
-                logOutput(shellName + "> ", line);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return builder.toString();
-    }
-
-    protected static void logOutput(String prefix, String line) {
-        System.out.println(prefix + line);
-    }
-    
-    public Shell(String shellName, File workingDir) {
+    public Shell(String shellName, File workingDir, PrintWriter log) {
+    	super(log);
         this.shellName = shellName;
         this.workingDir = workingDir;
     }

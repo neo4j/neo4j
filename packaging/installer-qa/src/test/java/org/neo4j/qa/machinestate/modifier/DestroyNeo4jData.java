@@ -36,5 +36,11 @@ public class DestroyNeo4jData implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Delete data directory";
+    }
 
 }

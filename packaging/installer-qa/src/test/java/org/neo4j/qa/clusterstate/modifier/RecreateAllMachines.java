@@ -33,5 +33,11 @@ public class RecreateAllMachines implements ClusterModifier {
             machine.forceApply(recreateMachine);
         }
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Destroy and recreate all VMs";
+    }
 
 }

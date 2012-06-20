@@ -21,6 +21,7 @@ package org.neo4j.vagrant;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.command.AddBox;
@@ -54,17 +55,27 @@ public class VirtualMachine {
     private String scpPath;
     private VagrantExecutor vagrant;
     
-    public VirtualMachine(File projectFolder, VMDefinition config)
+    // TODO: Refactor how logging is passed to VirtualMachine
+    // such that we get one log of all commands on all servers *per test*.
+    private PrintWriter vmShellLog;
+    private PrintWriter hostShellLog;
+    
+    public VirtualMachine(File projectFolder, VMDefinition config, PrintWriter hostLog, PrintWriter vmLog)
     {
         this(projectFolder, 
              config, 
+             hostLog,
+             vmLog,
              System.getProperty(VAGRANT_PATH_KEY, DEFAULT_VAGRANT_PATH), 
              System.getProperty(SCP_PATH_KEY, DEFAULT_SCP_PATH));
     }
     
-    public VirtualMachine(File projectFolder, VMDefinition config, String vagrantPath, String scpPath)
+    private VirtualMachine(File projectFolder, VMDefinition config, PrintWriter hostLog, PrintWriter vmLog, String vagrantPath, String scpPath)
     {
-        this.sh = new Shell("host/" + config.vmName(), projectFolder);
+    	this.hostShellLog = hostLog;
+    	this.vmShellLog = vmLog;
+    	
+        this.sh = new Shell("host/" + config.vmName(), projectFolder, hostShellLog);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
         this.definition = config;
         this.scpPath = scpPath;
@@ -147,7 +158,7 @@ public class VirtualMachine {
 
     public SSHShell ssh()
     {
-        return new SSHShell(definition().vmName(), sshConfiguration());
+        return new SSHShell(definition().vmName(), sshConfiguration(), vmShellLog);
     }
 
     /**

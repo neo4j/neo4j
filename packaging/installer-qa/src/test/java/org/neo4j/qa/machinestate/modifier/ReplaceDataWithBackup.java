@@ -46,5 +46,11 @@ public class ReplaceDataWithBackup implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Replace data dir with backup";
+    }
 
 }

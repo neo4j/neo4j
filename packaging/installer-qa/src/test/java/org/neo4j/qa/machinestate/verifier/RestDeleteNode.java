@@ -44,5 +44,11 @@ public class RestDeleteNode implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Delete node("+nodeId+") via the REST API ";
+    }
 
 }

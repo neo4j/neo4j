@@ -70,5 +70,11 @@ public class Neo4jHAInstallation implements MachineModifier {
                 Neo4jInstallationState.INSTALLED,
                 Neo4jServiceState.RUNNING};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Install neo4j enterprise";
+    }
 
 }

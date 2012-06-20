@@ -39,6 +39,7 @@ public class DefaultMachineModelImpl implements MachineModel {
     @Override
     public void apply(MachineModifier modifier)
     {
+    	System.out.println("[Machine "+getVMDefinition().ip()+"] Applying: '" + modifier + "' (" + modifier.getClass().getSimpleName() + ")");
         if (stateModelDiffersFrom(modifier.stateModifications()))
         {
             modifier.modify(driver, state);
@@ -50,6 +51,7 @@ public class DefaultMachineModelImpl implements MachineModel {
     @Override
     public void forceApply(MachineModifier modifier)
     {
+    	System.out.println("[Machine "+getVMDefinition().ip()+"] Force applying: '" + modifier + "' (" + modifier.getClass().getSimpleName() + ")");
         modifier.modify(driver, state);
         updateStateModel(modifier);
     }
@@ -57,6 +59,7 @@ public class DefaultMachineModelImpl implements MachineModel {
     @Override
     public void verifyThat(Verifier verifier)
     {
+    	System.out.println("[Machine "+getVMDefinition().ip()+"] Verifying: '" + verifier + "' (" + verifier.getClass().getSimpleName() + ")");
         verifier.verify(driver);
     }
 

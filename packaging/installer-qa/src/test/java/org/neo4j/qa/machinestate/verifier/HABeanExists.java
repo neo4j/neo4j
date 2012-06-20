@@ -17,35 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.qa.machinestate.modifier;
+package org.neo4j.qa.machinestate.verifier;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.qa.driver.Neo4jDriver;
-import org.neo4j.qa.machinestate.StateAtom;
-import org.neo4j.qa.machinestate.StateRegistry;
-import org.neo4j.vagrant.command.GetState.VirtualMachineState;
+import org.neo4j.qa.machinestate.MachineModel;
 
-public class RollbackMachine implements MachineModifier {
+public class HABeanExists implements Verifier {
 
-    @Override
-    public void modify(Neo4jDriver driver, StateRegistry state)
-    {
-        if (driver.vm().state() != VirtualMachineState.RUNNING)
-            driver.vm().up();
-        driver.vm().rollback();
-        
-        state.clear();
-    }
+	public HABeanExists(MachineModel[] machines) {
+		// TODO Verify that the machines in this list 
+		// are listed as parts of the cluster
+	}
 
-    @Override
-    public StateAtom[] stateModifications()
-    {
-        return new StateAtom[] {};
-    }
-    
-    @Override
-	public String toString()
-    {
-    	return "Roll back the virtual machine to clean state";
-    }
+	@Override
+	public void verify(Neo4jDriver driver) 
+	{
+		List<Map<String, Object>> jmx = driver.neo4jClient().getNeo4jJmxBeans();
+		
+		for(Map<String, Object> bean : jmx)
+		{
+			String name = (String) bean.get("name");
+			if(name.contains("High Availability"))
+			{
+				return;
+			}
+		}
+		
+		throw new RuntimeException("Expected JMX to contain a High Availability bean, this seems to imply that the server is not in HA mode.");
+	}
 
 }

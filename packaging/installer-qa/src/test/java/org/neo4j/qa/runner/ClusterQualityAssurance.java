@@ -19,8 +19,6 @@
  */
 package org.neo4j.qa.runner;
 
-import static org.neo4j.vagrant.VMFactory.vm;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,16 +51,17 @@ import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
 import org.neo4j.qa.driver.UbuntuTarGzEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
 import org.neo4j.qa.machinestate.DefaultMachineModelImpl;
+import org.neo4j.vagrant.VMFactory;
 import org.neo4j.vagrant.VirtualMachine;
 
 public class ClusterQualityAssurance extends Suite {
 
+	private static final int MAX_HA_FAILS = Integer.valueOf(System.getProperty("qa-test.ha-retries","2"));
+	
     VagrantIssueIdentifier vagrantIssue = new VagrantIssueIdentifier();
 
     private class QualityAssuranceTestClassRunner extends
             BlockJUnit4ClassRunner {
-
-        private static final int MAX_HA_FAILS = 3;
         private ClusterTestPermutation testPermutation;
 
         QualityAssuranceTestClassRunner(Class<?> type,
@@ -105,10 +104,19 @@ public class ClusterQualityAssurance extends Suite {
                         throw e;
                     } catch (Throwable e)
                     {
-                        // Destroy vms and retry
-                        testPermutation.getMachineClusterModel()
-                                .forceApply(new RecreateAllMachines());
-                        runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
+                    	// TODO: Make a super class for the test runners to avoid this
+                    	// reference to StandaloneDatabaseQualityAssurance
+                    	if(StandaloneDatabaseQualityAssurance.DESTROY_AND_RETRY_ON_ERROR)
+                    	{
+                    		// Destroy vms and retry
+                            testPermutation.getMachineClusterModel()
+                                    .forceApply(new RecreateAllMachines());
+                            runTestCase(statement, testPermutation.getMachineClusterModel(), 0);
+                    	} else 
+                    	{
+                    		throw e;
+                    	}
+                        
                     }
 
                 } catch (AssumptionViolatedException e)
@@ -140,15 +148,23 @@ public class ClusterQualityAssurance extends Suite {
         private void runTestCase(Statement statement, MachineClusterModel machineClusterModel, int retryNumber) throws Throwable {
             try
             {
-                machineClusterModel.forceApply(
-                        new RollbackAllMachines());
-                statement.evaluate();
-            } catch(HAClusterDoesNotWorkException e) {
-                if(retryNumber < MAX_HA_FAILS) {
-                    runTestCase(statement, machineClusterModel, ++retryNumber);
-                } else {
-                    throw e;
-                }
+	        	try
+	            {
+	                machineClusterModel.forceApply(
+	                        new RollbackAllMachines());
+	                statement.evaluate();
+	            } catch(HAClusterDoesNotWorkException e) {
+	                if(retryNumber < MAX_HA_FAILS) {
+	                    runTestCase(statement, machineClusterModel, ++retryNumber);
+	                } else {
+	                    throw e;
+	                }
+	            }
+            } catch(Throwable e)
+            {
+            	System.out.println(" ^------- FAILED -------^");
+            	System.out.println();
+            	throw e;
             }
         }
 
@@ -217,7 +233,7 @@ public class ClusterQualityAssurance extends Suite {
     public ClusterQualityAssurance(Class<?> klass) throws Throwable
     {
         super(klass, Collections.<Runner> emptyList());
-
+        
         for (ClusterTestPermutation pm : getTestPermutations(getTestClass()))
         {
             runners.add(new QualityAssuranceTestClassRunner(getTestClass()
@@ -236,13 +252,15 @@ public class ClusterQualityAssurance extends Suite {
     {
         Map<String, ClusterTestPermutation> platforms = new HashMap<String, ClusterTestPermutation>();
 
-        VirtualMachine win1 = vm(Neo4jVM.WIN_1);
-        VirtualMachine win2 = vm(Neo4jVM.WIN_2);
-        VirtualMachine win3 = vm(Neo4jVM.WIN_3);
+        VMFactory vmf = new VMFactory();
+        
+        VirtualMachine win1 = vmf.vm(Neo4jVM.WIN_1);
+        VirtualMachine win2 = vmf.vm(Neo4jVM.WIN_2);
+        VirtualMachine win3 = vmf.vm(Neo4jVM.WIN_3);
 
-        VirtualMachine ubuntu1 = vm(Neo4jVM.UBUNTU_1);
-        VirtualMachine ubuntu2 = vm(Neo4jVM.UBUNTU_2);
-        VirtualMachine ubuntu3 = vm(Neo4jVM.UBUNTU_3);
+        VirtualMachine ubuntu1 = vmf.vm(Neo4jVM.UBUNTU_1);
+        VirtualMachine ubuntu2 = vmf.vm(Neo4jVM.UBUNTU_2);
+        VirtualMachine ubuntu3 = vmf.vm(Neo4jVM.UBUNTU_3);
 
         // Windows
         platforms.put(Platforms.WINDOWS, new ClusterTestPermutation(

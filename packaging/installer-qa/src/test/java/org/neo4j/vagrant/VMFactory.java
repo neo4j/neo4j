@@ -22,14 +22,35 @@ package org.neo4j.vagrant;
 import static org.neo4j.vagrant.UtilMethodsThatAreDuplicatedAThousandTimes.copyFolder;
 
 import java.io.File;
+import java.io.PrintWriter;
+
+import org.apache.commons.io.output.NullWriter;
 
 public class VMFactory {
 
     private static String workingDir = System.getProperty("jagrant.workingdir", System.getProperty("user.home") + "/jagrant/");
     private static String templateDir = System.getProperty("jagrant.templatedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/");
     private static String shareDir = System.getProperty("jagrant.templatesharedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/all/");
+    
+    private static Boolean printCommandsToConsole = Boolean.valueOf(System.getProperty("jagrant.printCommandsToConsole", "false"));
+	
+    private PrintWriter vmLog;
+	private PrintWriter hostLog;
 
-    public static VirtualMachine vm(VMDefinition config)
+	public VMFactory()
+	{
+		this(
+			printCommandsToConsole ? new PrintWriter(System.out) : new PrintWriter(new NullWriter()), 
+			printCommandsToConsole ? new PrintWriter(System.out) : new PrintWriter(new NullWriter()));
+	}
+	
+    public VMFactory(PrintWriter hostLog, PrintWriter vmLog)
+    {
+    	this.hostLog = hostLog;
+    	this.vmLog = vmLog;
+    }
+    
+    public VirtualMachine vm(VMDefinition config)
     {
         VirtualMachine v;
         File projectFolder = new File(workingDir + config.vmName());
@@ -51,9 +72,9 @@ public class VMFactory {
         return v;
     }
 
-    private static VirtualMachine vm(File projectFolder, File templateFolder, File sharedFolder, VMDefinition config)
+    private VirtualMachine vm(File projectFolder, File templateFolder, File sharedFolder, VMDefinition config)
     {
-        VirtualMachine v = new VirtualMachine(projectFolder, config);
+        VirtualMachine v = new VirtualMachine(projectFolder, config, hostLog, vmLog);
         
         if(templateFolder.exists()) {
             copyFolder(templateFolder, projectFolder);

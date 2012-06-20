@@ -30,7 +30,6 @@ public class RestCreateNode implements MachineModifier {
     @Override
     public void modify(Neo4jDriver driver, StateRegistry state)
     {
-        System.out.printf("Making a node on: %s%n", driver.vm().definition().ip());
         nodeId = driver.neo4jClient().createNode();
     }
 
@@ -43,5 +42,10 @@ public class RestCreateNode implements MachineModifier {
     public long getCreatedNodeId() {
         return nodeId;
     }
-
+    
+    @Override
+	public String toString()
+    {
+    	return "Create a node via REST API";
+    }
 }

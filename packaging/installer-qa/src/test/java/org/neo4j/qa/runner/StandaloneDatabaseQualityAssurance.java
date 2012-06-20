@@ -19,8 +19,6 @@
  */
 package org.neo4j.qa.runner;
 
-import static org.neo4j.vagrant.VMFactory.vm;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,10 +56,14 @@ import org.neo4j.qa.machinestate.MachineModel;
 import org.neo4j.qa.machinestate.modifier.DownloadLogs;
 import org.neo4j.qa.machinestate.modifier.RecreateMachine;
 import org.neo4j.qa.machinestate.modifier.RollbackMachine;
+import org.neo4j.vagrant.VMFactory;
 import org.neo4j.vagrant.VirtualMachine;
 
+// TODO: This should be removed, and ClusterQualityAssurance should
+// be modified to be easily used to run tests against just a single VM.
 public class StandaloneDatabaseQualityAssurance extends Suite {
 
+	protected static final boolean DESTROY_AND_RETRY_ON_ERROR = Boolean.valueOf(System.getProperty("qa-test.destroy-vm-and-retry-on-error","true"));
     VagrantIssueIdentifier vagrantIssue = new VagrantIssueIdentifier();
     
     private class QualityAssuranceTestClassRunner extends
@@ -100,13 +102,19 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
             try {
                 try {
                     testPermutation.getMachineModel().forceApply(new RollbackMachine());
-                    statement.evaluate();
+                    runTestCase(statement);
                 } catch (AssumptionViolatedException e) {
                     throw e;
                 } catch(Throwable e) {
-                    // Destroy vm and retry
-                    testPermutation.getMachineModel().forceApply(new RecreateMachine());
-                    statement.evaluate();
+                	if(DESTROY_AND_RETRY_ON_ERROR)
+                	{
+	                    // Destroy vm and retry
+	                    testPermutation.getMachineModel().forceApply(new RecreateMachine());
+	                    runTestCase(statement);
+                	} else 
+                	{
+                		throw e;
+                	}
                 }
             } catch (AssumptionViolatedException e) {
                 eachNotifier.addFailedAssumption(e);
@@ -121,6 +129,18 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
                 }
                 
                 eachNotifier.fireTestFinished();
+            }
+        }
+        
+        private void runTestCase(Statement statement) throws Throwable {
+            try
+            {
+                statement.evaluate();
+            } catch(Throwable e)
+            {
+            	System.out.println(" ^------- FAILED -------^");
+            	System.out.println();
+            	throw e;
             }
         }
 
@@ -188,7 +208,7 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
     public StandaloneDatabaseQualityAssurance(Class<?> klass) throws Throwable
     {
         super(klass, Collections.<Runner> emptyList());
-
+        
         for (TestPermutation pm : getTestPermutations(getTestClass()))
         {
             runners.add(new QualityAssuranceTestClassRunner(getTestClass()
@@ -209,8 +229,10 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
         Map<String, Neo4jDriver[]> platforms = new HashMap<String, Neo4jDriver[]>();
         List<TestPermutation> testParameters = new ArrayList<TestPermutation>();
         
-        VirtualMachine windows = vm(Neo4jVM.WIN_1);
-        VirtualMachine ubuntu = vm(Neo4jVM.UBUNTU_1);
+        VMFactory vmf = new VMFactory();
+        
+        VirtualMachine windows = vmf.vm(Neo4jVM.WIN_1);
+        VirtualMachine ubuntu = vmf.vm(Neo4jVM.UBUNTU_1);
         
         // Windows
         platforms.put(Platforms.WINDOWS, new Neo4jDriver[] {

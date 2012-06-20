@@ -41,5 +41,11 @@ public class RecreateMachine implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Destroy and re-create the virtual machine";
+    }
 
 }

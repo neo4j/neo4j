@@ -49,4 +49,10 @@ public class Neo4jInstallation implements MachineModifier {
         };
     }
     
+    @Override
+	public String toString()
+    {
+    	return "Install neo4j";
+    }
+    
 }

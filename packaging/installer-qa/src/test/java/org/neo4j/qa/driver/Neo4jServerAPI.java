@@ -19,17 +19,21 @@
  */
 package org.neo4j.qa.driver;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-
-import static java.lang.System.*;
 
 public class Neo4jServerAPI {
 
     private String url;
     private final long timeout;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public Neo4jServerAPI(String url)
     {
@@ -49,9 +53,8 @@ public class Neo4jServerAPI {
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {
-                    out.println(r.getStatus());
                     throw new RuntimeException(
-                            "Waiting for node to disappear took longer than the timout specified.");
+                            "Waiting for node to disappear took longer than than "+timeout+"ms.");
                 }
             } while (r.getStatus() == 200);
         } catch (InterruptedException e)
@@ -81,12 +84,11 @@ public class Neo4jServerAPI {
             {
                 String fullUrl = url + "/db/data/node/" + nodeId;
                 r = RestRequest.req().get(fullUrl);
-                out.printf("Asking for: %s and got: %d%n", fullUrl, r.getStatus());
                 Thread.sleep(100);
                 if (new Date().getTime() - start > timeout)
                 {
                     throw new RuntimeException(
-                            "Waiting for node to exist took longer than the timout specified.");
+                            "Waiting for node to exist took longer than "+timeout+"ms.");
                 }
             } while (r.getStatus() != 200);
         } catch (InterruptedException e)
@@ -105,8 +107,26 @@ public class Neo4jServerAPI {
         }
         String[] parts = r.getLocation().getPath().split("/");
         Long nodeId = Long.valueOf(parts[parts.length - 1]);
-        out.println("NodeId is: " + nodeId.toString());
         return nodeId;
     }
+
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> getNeo4jJmxBeans() {
+		JaxRsResponse r = RestRequest.req().get(url + "/db/manage/server/jmx/domain/org.neo4j/");
+        if (r.getStatus() != 200)
+        {
+            throw new RuntimeException(
+                    "Unable to fetch jmx data. HTTP status was: " + r.getStatus());
+        }
+        
+		try {
+			Map<String, Object> json = OBJECT_MAPPER.readValue( r.getEntity(), Map.class );
+			return (List<Map<String, Object>>) json.get("beans");
+		} catch (JsonMappingException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 }

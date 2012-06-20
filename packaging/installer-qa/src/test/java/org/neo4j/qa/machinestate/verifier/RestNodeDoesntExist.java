@@ -35,5 +35,11 @@ public class RestNodeDoesntExist implements Verifier {
     {
         driver.neo4jClient().waitUntilNodeDoesNotExist(nodeId);
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Wait until node("+nodeId+") disappears in the REST API";
+    }
 
 }

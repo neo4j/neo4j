@@ -34,5 +34,11 @@ public class RestNodeExists implements Verifier {
     {
         driver.neo4jClient().waitUntilNodeExists(nodeId);
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Wait until node("+nodeId+") appears in the REST API";
+    }
 
 }

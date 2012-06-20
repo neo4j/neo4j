@@ -87,6 +87,8 @@ public class UbuntuDebCommunityDriver extends AbstractPosixDriver {
         String ip = vm().definition().ip();
         downloadLog(neo4jInstallDir() + "/data/graph.db/messages.log", target + "/" + ip + "-messages.log");
         downloadLog(neo4jInstallDir() + "/data/log/neo4j.0.0.log", target + "/" + ip + "-neo4j.0.0.log");
+        downloadLog(neo4jInstallDir() + "/conf/neo4j-server.properties", target + "/" + ip + "-neo4j-server.properties");
+        downloadLog(neo4jInstallDir() + "/conf/neo4j.properties", target + "/" + ip + "-neo4j.properties");
     }
     
     protected void downloadLog(String from, String to)
@@ -96,7 +98,7 @@ public class UbuntuDebCommunityDriver extends AbstractPosixDriver {
         } else {
             try
             {
-                FileUtils.writeStringToFile(new File(to), "This log file did not exist on the VM.");
+                FileUtils.writeStringToFile(new File(to), "This file did not exist on the VM.");
             } catch (IOException e1)
             {   
                 throw new RuntimeException(e1);

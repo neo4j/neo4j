@@ -93,4 +93,10 @@ public class Neo4jRestAPIState implements Verifier {
         }
     }
     
+    @Override
+	public String toString()
+    {
+    	return "Ensure that REST API " + assertState;
+    }
+    
 }

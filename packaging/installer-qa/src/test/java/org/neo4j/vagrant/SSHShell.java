@@ -20,6 +20,7 @@
 package org.neo4j.vagrant;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.security.PublicKey;
 
 import net.schmizz.sshj.SSHClient;
@@ -31,18 +32,20 @@ import net.schmizz.sshj.transport.verification.HostKeyVerifier;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.vagrant.Shell.Result;
 
-public class SSHShell {
+public class SSHShell extends AbstractShell {
     
     private SSHClient client;
     private String vmName;
     private SSHConfig config;
     private static final HostKeyVerifier ALLOW_ALL = new HostKeyVerifier() {
-        public boolean verify(String arg0, int arg1, PublicKey arg2) {
+        @Override
+		public boolean verify(String arg0, int arg1, PublicKey arg2) {
             return true;
         }
     };
 
-    public SSHShell(String vmName, SSHConfig config) {
+    public SSHShell(String vmName, SSHConfig config, PrintWriter log) {
+    	super(log);
         this.vmName = vmName;
         this.config = config;
         connect();
@@ -53,10 +56,10 @@ public class SSHShell {
         String cmd = StringUtils.join(cmds, " ");
         try {
             session = startSession();
-            Shell.logOutput(vmName + " $ ", cmd);
+            logOutput(vmName + " $ ", cmd);
             Command command = session.exec(cmd);
             
-            String msg = Shell.outputToString(vmName, command.getInputStream()) + Shell.outputToString(vmName, command.getErrorStream());
+            String msg = outputToString(vmName, command.getInputStream()) + outputToString(vmName, command.getErrorStream());
             Integer x = command.getExitStatus();
             
             return new Result(x == null? -1 : 0,msg,cmd);

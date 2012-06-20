@@ -111,6 +111,8 @@ public class WindowsCommunityDriver extends AbstractPosixDriver {
         downloadLog(neo4jInstallDir() + "/data/log/neo4j.0.0.log", target + "/" + ip + "-neo4j.0.0.log");
         downloadLog("/home/vagrant/install.log", target + "/" + ip + "-install.log");
         downloadLog("/home/vagrant/uninstall.log", target + "/" + ip + "-uninstall.log");
+        downloadLog(neo4jInstallDir() + "/conf/neo4j-server.properties", target + "/" + ip + "-neo4j-server.properties");
+        downloadLog(neo4jInstallDir() + "/conf/neo4j.properties", target + "/" + ip + "-neo4j.properties");
     }
 
     @Override

@@ -33,6 +33,23 @@
     
     <vagrant.path>vagrant</vagrant.path>
     <scp.path>scp</scp.path>
+    
+    <!-- Print shell commands issued in the VMs and on the host machine to
+         standard out. -->
+    <jagrant.printCommandsToConsole>false</jagrant.printCommandsToConsole>
+    
+    <!-- The number of times HA failures should be retried, this is horrid, but is
+         a temporary workaround until we get rid of zookeeper.
+         The actual number will be two times this, since we destroy the VMs and retry
+         to verify that we have found a problem and not run into vagrant bugs (see below). -->
+    <ha-retries>1</ha-retries>
+    
+    <!-- If something fails, should we destroy the VMs to verify we have
+         encountered an actual issue, and not a vagrant bug?
+         Note: Running without this for prolonged periods (eg CI) will
+         lead to false positives as VirtualBox and Vagrant bugs eventually
+         corrupt the VMs, making them unresponsive. -->
+    <destroy-vm-and-retry-on-error>false</destroy-vm-and-retry-on-error>
   </properties>
 
   <dependencies>
@@ -177,6 +194,11 @@
             
             <vagrant.path>${vagrant.path}</vagrant.path>
             <scp.path>${scp.path}</scp.path>
+            
+            <qa-test.ha-retries>${ha-retries}</qa-test.ha-retries>
+            <qa-test.destroy-vm-and-retry-on-error>${destroy-vm-and-retry-on-error}</qa-test.destroy-vm-and-retry-on-error>
+            
+            <jagrant.printCommandsToConsole>${jagrant.printCommandsToConsole}</jagrant.printCommandsToConsole>
           </systemPropertyVariables>
         </configuration>
       </plugin>

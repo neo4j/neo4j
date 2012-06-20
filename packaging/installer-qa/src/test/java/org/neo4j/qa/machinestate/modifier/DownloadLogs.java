@@ -50,5 +50,11 @@ public class DownloadLogs implements MachineModifier {
     {
         return new StateAtom[] {};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Download logs";
+    }
 
 }

@@ -66,4 +66,10 @@ public class Neo4jHABackup implements ClusterModifier {
             machine.verifyThat(new RestNodeExists(nodeId));
         }
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Perform backup";
+    }
 }

@@ -55,4 +55,10 @@ public class VMStateModifier implements MachineModifier {
     {
         return new StateAtom[]{};
     }
+    
+    @Override
+	public String toString()
+    {
+    	return command + " the virtual machine";
+    }
 }

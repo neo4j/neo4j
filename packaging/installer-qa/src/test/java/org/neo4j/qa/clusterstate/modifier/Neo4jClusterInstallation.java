@@ -54,5 +54,11 @@ public class Neo4jClusterInstallation implements ClusterModifier {
         }
         return clusterDescription;
     }
+    
+    @Override
+	public String toString()
+    {
+    	return "Install and configure neo4j cluster";
+    }
 
 }
