@@ -20,10 +20,13 @@
 
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.com.Server.DEFAULT_BACKUP_PORT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
@@ -37,11 +40,10 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.com.Server.*;
-
 public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements ClusterClient
 {
     protected static final int SESSION_TIME_OUT = 5000;
+    public static final int CLUSTER_CLIENT_MACHINE_ID = -1;
 
     private final ZooKeeper zooKeeper;
     private String rootPath;
@@ -113,6 +115,12 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
         }
     }
 
+    @Override
+    protected int getMyMachineId()
+    {
+        return CLUSTER_CLIENT_MACHINE_ID;
+    }
+
     public int getBackupPort( int machineId )
     {
         int port = readHaServer( machineId, true ).other();
@@ -158,12 +166,6 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
             throw new RuntimeException( "Cluster '" + clusterName + "' not found" );
         }
         return asRootPath( storeId );
-    }
-
-    @Override
-    protected int getMyMachineId()
-    {
-        throw new UnsupportedOperationException();
     }
 
     /**

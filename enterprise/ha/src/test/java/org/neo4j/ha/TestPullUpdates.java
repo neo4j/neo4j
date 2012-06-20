@@ -42,7 +42,7 @@ public class TestPullUpdates
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
     private static final int PULL_INTERVAL = 100;
-    
+
     @Before
     public void doBefore() throws Exception
     {
@@ -69,7 +69,7 @@ public class TestPullUpdates
             if ( db != null )
                 db.shutdown();
     }
-    
+
     @Test
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Exception
     {
@@ -121,7 +121,7 @@ public class TestPullUpdates
         }
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
-    
+
     private void setProperty( int dbId, int i ) throws Exception
     {
         awaitHasMaster( dbId );

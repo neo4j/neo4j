@@ -20,7 +20,6 @@
 
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.ha.AsyncZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -43,7 +42,7 @@ public enum SlaveUpdateMode
         @Override
         public LastCommittedTxIdSetter createUpdater( Broker broker )
         {
-            return new AsyncZooKeeperLastCommittedTxIdSetter( broker );
+            return new ZooKeeperLastCommittedTxIdSetter( broker );
         }
     },
     none( false )
