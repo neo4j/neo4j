@@ -2111,4 +2111,55 @@ RETURN x0.name?
       Map("r1" -> null, "r2" -> r2, "r3" -> null, "r4" -> r4)), result().toSet)
     assert(result().toList.size === 4)
   }
+
+  @Ignore("This pattern is currently not supported. Revisit when we do support it.")
+  @Test
+  def two_double_optional_paths_with_shared_relationships() {
+    /* Given this pattern, with a, b and c bound
+                         a
+                         |
+                         ?
+                         |
+                         x
+                        / \
+                       ?   ?
+                       |   |
+                       b   x
+    */
+
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    val x1 = createNode()
+    val x2 = createNode()
+    val x3 = createNode()
+    val x4 = createNode()
+    val x5 = createNode()
+    val x6 = createNode()
+    val x7 = createNode()
+
+    relate(a, x1, "X", "r1")
+
+    relate(b, x2, "X", "r2")
+
+    relate(c, x3, "X", "r3")
+
+    relate(a, x4, "X", "r4")
+    relate(b, x4, "X", "r5")
+
+    relate(b, x5, "X", "r6")
+    relate(c, x5, "X", "r7")
+
+    relate(a, x6, "X", "r8")
+    relate(c, x6, "X", "r9")
+
+    relate(a, x7, "X", "r10")
+    relate(b, x7, "X", "r10")
+    relate(c, x7, "X", "r10")
+
+    val result = parseAndExecute("START a=node(1), b=node(2),c=node(3) MATCH a-[r1?]->X<-[r2?]-b, c-[r3?]->X return r1.name?,r2.name?,r3.name? order by id(r1),id(r2),id(r3)")
+
+    println(result.dumpToString())
+  }
 }

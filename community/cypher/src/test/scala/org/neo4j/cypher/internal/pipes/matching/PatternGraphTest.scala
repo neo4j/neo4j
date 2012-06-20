@@ -23,6 +23,7 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.True
 import org.junit.Test
+import org.neo4j.cypher.PatternException
 
 class PatternGraphTest extends Assertions {
 
@@ -132,10 +133,10 @@ class PatternGraphTest extends Assertions {
     val x = createNode("x")
     val b = createNode("b")
 
-    val r1 = relate(a, x, "r1")
-    val r2 = relate(b, x, "r2")
-    val r3 = relate(a, z, "r3")
-    val r4 = relate(b, z, "r4")
+    relate(a, x, "r1")
+    relate(b, x, "r2")
+    relate(a, z, "r3")
+    relate(b, z, "r4")
 
     val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
 
@@ -149,6 +150,57 @@ class PatternGraphTest extends Assertions {
     assert(optionals.size === 2)
 
     assert(optionals.map(_.patternRels.keys.toSet).toSet === Set(Set("r1", "r2"), Set("r3", "r4")))
+  }
+
+  @Test def double_optional_path_with_more_than_two_relationships_in_it() {
+    //given a-[r1?]->X-[r2]>-Z-[r3?]->b
+    val a = createNode("a")
+    val x = createNode("x")
+    val z = createNode("z")
+    val b = createNode("b")
+
+    relate(a, x, "r1")
+    relate(x, z, "r2", optional = false)
+    relate(z, b, "r3")
+
+    val graph = new PatternGraph(nodes, rels, Seq("a", "b"))
+
+    //when
+    val mandatory: PatternGraph = graph.mandatoryGraph
+    val optionals: Seq[PatternGraph] = graph.doubleOptionalPatterns()
+
+
+    //then
+    assert(mandatory.isEmpty)
+    assert(optionals.size === 1)
+
+    assert(optionals.map(_.patternRels.keys.toSet).toSet === Set(Set("r1", "r3")))
+  }
+
+  @Test def two_optional_sharing_some_relationships() {
+    /* Given this pattern, with a, b and c bound
+                          a
+                          |
+                          ?
+                          |
+                          x
+                         / \
+                        ?   ?
+                        |   |
+                        b   c
+     */
+
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val x = createNode("d")
+
+    relate(a, x, "r1")
+    relate(b, x, "r2")
+    relate(c, x, "r3")
+
+    //when
+    intercept[PatternException](new PatternGraph(nodes, rels, Seq("a", "b", "c")))
   }
 
   private def createNode(name: String): PatternNode = {
