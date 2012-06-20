@@ -55,10 +55,10 @@ public class ServerBuilder
 {
     private String portNo = "7474";
     private String maxThreads = null;
-    private String dbDir = null;
+    protected String dbDir = null;
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
-    private StartupHealthCheck startupHealthCheck;
+    protected StartupHealthCheck startupHealthCheck;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
     private final Properties arbitraryProperties = new Properties();
 
@@ -70,12 +70,12 @@ public class ServerBuilder
     }
 
     private WhatToDo action;
-    private Clock clock = null;
+    protected Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
     private String host = null;
     private String[] securityRuleClassNames;
-    private boolean persistent;
+    public boolean persistent;
     private Boolean httpsEnabled = false;
 
     public static ServerBuilder server()
