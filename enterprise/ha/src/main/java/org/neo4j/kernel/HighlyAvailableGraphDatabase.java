@@ -207,9 +207,9 @@ public class HighlyAvailableGraphDatabase
         this.logging = createLogging();
 
         messageLog = logging.getLogger( Loggers.NEO4J );
-        
+
         configuration.setLogger(messageLog);
-        
+
         fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
         caches = new HaCaches( messageLog );
@@ -551,7 +551,6 @@ public class HighlyAvailableGraphDatabase
 
         getMessageLog().logMessage( "Starting up highly available graph database '" + getStoreDir() + "'" );
 
-        StoreId storeId = null;
         if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for
             long endTime = System.currentTimeMillis()+60000;
@@ -596,7 +595,7 @@ public class HighlyAvailableGraphDatabase
             }
         }
         storeId = broker.getClusterStoreId(true);
-        newMaster( storeId, new InformativeStackTrace( "Starting up for the first time" ) );
+        newMaster( new InformativeStackTrace( "Starting up for the first time" ) );
         localGraph();
     }
 
@@ -902,17 +901,17 @@ public class HighlyAvailableGraphDatabase
                      */
                     messageLog.logMessage(
                             "ZooKeeper broker returned null master" );
-                    newMaster( storeId, new NullPointerException(
+                    newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
                 else if ( broker.getMaster().first() == null )
                 {
-                    newMaster( storeId, new NullPointerException(
+                    newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
-                
+
                 SlaveContext slaveContext = null;
-                
+
                 // If this method is called from the outside then we need to tell the caller
                 // that this update wasn't performed due to either a shutdown or an internal restart,
                 // so throw NoMasterException
@@ -926,7 +925,7 @@ public class HighlyAvailableGraphDatabase
                         return;
                     slaveContext = slaveOperations.getSlaveContext( -1 );
                 }
-                
+
                 // The above synchronization only guards for getting the SlaveContext,
                 // but an internal(shutdown) can still happen in the middle of receive.
                 // This is a general problem which should be taken care of in a general
@@ -936,12 +935,12 @@ public class HighlyAvailableGraphDatabase
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( storeId, e );
+            newMaster( e );
             throw e;
         }
         catch ( NoMasterException e )
         {
-            newMaster( storeId, e );
+            newMaster( e );
             throw e;
         }
         catch ( ComException e )
@@ -1056,7 +1055,7 @@ public class HighlyAvailableGraphDatabase
 //        }
 //    }
 
-    protected synchronized void reevaluateMyself( StoreId storeId )
+    protected synchronized void reevaluateMyself()
     {
         Pair<Master, Machine> master = broker.getMasterReally( true );
         boolean iAmCurrentlyMaster = masterServer != null;
@@ -1071,7 +1070,7 @@ public class HighlyAvailableGraphDatabase
                 if ( this.internalGraphDatabase == null || !iAmCurrentlyMaster )
                 { // I am currently a slave, so restart as master
                     internalShutdown( true );
-                    newDb = startAsMaster( storeId );
+                    newDb = startAsMaster();
                 }
                 // fire rebound event
                 broker.rebindMaster();
@@ -1083,7 +1082,7 @@ public class HighlyAvailableGraphDatabase
                 { // I am currently master, so restart as slave.
                     // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
                     internalShutdown( true );
-                    newDb = startAsSlave( storeId );
+                    newDb = startAsSlave();
                 }
                 else
                 { // I am already a slave, so just forget the ids I got from the previous master
@@ -1153,10 +1152,9 @@ public class HighlyAvailableGraphDatabase
         messageLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
 
-    private AbstractGraphDatabase startAsSlave( StoreId storeId)
+    private AbstractGraphDatabase startAsSlave()
     {
         messageLog.logMessage( "Starting[" + machineId + "] as slave", true );
-        this.storeId = storeId;
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, cacheProviders, caches );
@@ -1184,7 +1182,7 @@ public class HighlyAvailableGraphDatabase
         return slaveGraphDatabase;
     }
 
-    private AbstractGraphDatabase startAsMaster( StoreId storeId )
+    private AbstractGraphDatabase startAsMaster()
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
@@ -1447,7 +1445,7 @@ public class HighlyAvailableGraphDatabase
         }
     }
 
-    private synchronized void newMaster( StoreId storeId, Exception e )
+    private synchronized void newMaster( Exception e )
     {
         /* MP: This is from BranchDetectingTxVerifier which can report branched data via a
          * BranchedDataException embedded inside a ComException (just to pass through the usual
@@ -1466,7 +1464,7 @@ public class HighlyAvailableGraphDatabase
             try
             {
                 getMessageLog().logMessage( "newMaster called", e, true );
-                reevaluateMyself( storeId );
+                reevaluateMyself();
                 return;
             }
             catch ( ZooKeeperException zke )
@@ -1780,7 +1778,7 @@ public class HighlyAvailableGraphDatabase
         @Override
         public void newMaster( Exception e )
         {
-            HighlyAvailableGraphDatabase.this.newMaster( storeId, e );
+            HighlyAvailableGraphDatabase.this.newMaster( e );
         }
 
         /**
@@ -1829,7 +1827,7 @@ public class HighlyAvailableGraphDatabase
             {
                 messageLog.logMessage( "TxManager not ok, doing internal restart" );
                 internalShutdown( true );
-                newMaster( storeId, new InformativeStackTrace( "Tx manager not ok" ) );
+                newMaster( new InformativeStackTrace( "Tx manager not ok" ) );
             }
         }
 
