@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
-  <version>1.7.2</version>
+  <version>1.7.2-SNAPSHOT</version>
   <name>Neo4j - Lucene Index</name>
   <description>
 Integration layer between Neo4j and Lucene, providing one possible implementation of the Index API.
@@ -57,12 +57,12 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.2-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -74,7 +74,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.2-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
