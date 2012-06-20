@@ -21,12 +21,12 @@ package org.neo4j.graphdb.factory;
 
 import static java.util.regex.Pattern.quote;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Config;
 
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator 
 {
@@ -80,9 +80,6 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             @Override
             public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
             {
-                Map<String, Serializable> config = null;
-                boolean enable = false;
-
                 if ( configValueContainsMultipleParameters( value ) )
                 {
                     rawConfiguration.put( "remote_shell_enabled", GraphDatabaseSetting.TRUE );
@@ -101,6 +98,31 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 }
             }
         });
+        
+        add( new SpecificPropertyMigration( Config.KEEP_LOGICAL_LOGS, "multi-value configuration of keep_logical_logs has been removed, any configuration specified will apply to all data sources" )
+        {
+            @Override
+            public boolean appliesTo( Map<String, String> rawConfiguration )
+            {
+                return configValueContainsMultipleParameters( rawConfiguration.get( Config.KEEP_LOGICAL_LOGS ) );
+            }
+            
+            @Override
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+            {
+                boolean keep = false;
+                Args map = parseMapFromConfigValue( Config.KEEP_LOGICAL_LOGS, value );
+                for ( Map.Entry<String, String> entry : map.asMap().entrySet() )
+                {
+                    if ( Boolean.parseBoolean( entry.getValue() ) )
+                    {
+                        keep = true;
+                        break;
+                    }
+                }
+                rawConfiguration.put( Config.KEEP_LOGICAL_LOGS, String.valueOf( keep ) );
+            }
+        } );
     }
     
     @Deprecated

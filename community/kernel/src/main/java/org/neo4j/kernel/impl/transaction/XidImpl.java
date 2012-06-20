@@ -49,7 +49,7 @@ public class XidImpl implements Xid
     private static final Random r = new Random( System.currentTimeMillis() );
 
     // resourceId.length = 4, unique for each XAResource
-    static byte[] getNewGlobalId()
+    public static byte[] getNewGlobalId()
     {
         // create new global id ( [INSTANCE_ID][time][sequence] )
         byte globalId[] = new byte[INSTANCE_ID.length + 16];

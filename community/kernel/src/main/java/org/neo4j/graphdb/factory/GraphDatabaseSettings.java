@@ -128,8 +128,14 @@ public abstract class GraphDatabaseSettings
     @Default(FALSE)
     public static final BooleanSetting intercept_committing_transactions = new BooleanSetting( "intercept_committing_transactions" );
 
-    @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database" )
-    public static final StringSetting keep_logical_logs = new StringSetting( "keep_logical_logs", ANY, "No value=don't store,true=store all logs,comma separated list=store logs from listed sources" );
+    @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database." +
+    		"Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
+    		"prune logical logs that only contains transactions older than 10 days from the current time, " +
+    		"or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
+    @Default("true")
+    public static final StringSetting keep_logical_logs = new StringSetting( "keep_logical_logs", ANY,
+            "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for limiting logical log space on disk to 100Mb," +
+                    " or '200k txs' for limiting the number of transactions to keep to 200 000." );
 
     @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, but will limit the ability to reuse the space of deleted entities." )
     @Default(TRUE)
@@ -240,8 +246,6 @@ public abstract class GraphDatabaseSettings
     @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)" )
     @Default( "60s" )
     public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
-    
-    
     
     // Specialized settings
     public static class CacheTypeSetting

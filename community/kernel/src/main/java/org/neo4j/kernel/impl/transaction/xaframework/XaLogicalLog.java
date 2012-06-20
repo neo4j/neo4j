@@ -96,7 +96,6 @@ public class XaLogicalLog implements LogLoader
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
     private char currentLog = CLEAN;
-    private boolean keepLogs = false;
     private boolean autoRotate = true;
     private long rotateAtSize = 25 * 1024 * 1024; // 25MB
 
@@ -110,10 +109,12 @@ public class XaLogicalLog implements LogLoader
     private final LogPositionCache positionCache = new LogPositionCache();
     private final FileSystemAbstraction fileSystem;
 
+    private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
 
     public XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
-            XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger )
+            XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
+            StringLogger stringLogger, LogPruneStrategy pruneStrategy )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -121,17 +122,13 @@ public class XaLogicalLog implements LogLoader
         this.xaTf = xaTf;
         this.logBufferFactory = logBufferFactory;
         this.fileSystem = fileSystem;
+        this.pruneStrategy = pruneStrategy;
         this.logFiles = new XaLogicalLogFiles(fileName, fileSystem);
 
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
         msgLog = stringLogger;
-
-        // We should turn keep-logs on if there are previous logs around,
-        // this so that e.g. temporary shell sessions or operations don't create
-        // holes in the log history, because it's just annoying.
-        keepLogs = hasPreviousLogs();
     }
 
     synchronized void open() throws IOException
@@ -716,27 +713,15 @@ public class XaLogicalLog implements LogLoader
         {
             setActiveLog( CLEAN );
         }
-        if ( !keepLogs )
-        {
-            if ( logWas == CLEAN )
-            {
-                // special case going from old xa version with no log rotation
-                // and we started with a recovery
-                deleteLogFile( fileName );
-            }
-            else
-            {
-                deleteLogFile( fileName + "." + logWas );
-            }
-        }
-        else
-        {
-            renameLogFileToRightVersion( fileName + "." + logWas, endPosition );
-            xaTf.getAndSetNewVersion();
-        }
+        
+        String activeLogFileName = fileName + "." + logWas;
+        renameLogFileToRightVersion( activeLogFileName, endPosition );
+        xaTf.getAndSetNewVersion();
+        pruneStrategy.prune( this );
+        
         msgLog.logMessage( "Closed log " + fileName, true );
     }
-
+    
     static long[] readAndAssertLogHeader( ByteBuffer localBuffer,
             ReadableByteChannel channel, long expectedVersion ) throws IOException
     {
@@ -1439,20 +1424,16 @@ public class XaLogicalLog implements LogLoader
         newLog.force( false );
         releaseCurrentLogFile();
         setActiveLog( newActiveLog );
-        if ( keepLogs )
-        {
-            renameLogFileToRightVersion( currentLogFile, endPosition );
-        }
-        else
-        {
-            deleteLogFile( currentLogFile );
-        }
+        
+        renameLogFileToRightVersion( currentLogFile, endPosition );
         xaTf.getAndSetNewVersion();
+        
         this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != ( currentVersion + 1 ) )
         {
             throw new IOException( "version change failed" );
         }
+        pruneStrategy.prune( this );
         fileChannel = newLog;
         positionCache.putHeader( logVersion, lastTx );
         instantiateCorrectWriteBuffer();
@@ -1575,33 +1556,6 @@ public class XaLogicalLog implements LogLoader
         currentLog = c;
     }
 
-    /*
-     * Only call this is there's an explicit property set to control it.
-     * Other wise depend on the default behaviour.
-     */
-    public void setKeepLogs( boolean keep )
-    {
-        this.keepLogs = keep;
-    }
-
-    private boolean hasPreviousLogs()
-    {
-        File fileNameFile = new File( fileName );
-        File logDirectory = fileNameFile.getParentFile();
-        if ( !logDirectory.exists() ) return false;
-        Pattern logFilePattern = getHistoryFileNamePattern();
-        for ( File file : logDirectory.listFiles() )
-        {
-            if ( logFilePattern.matcher( file.getName() ).find() ) return true;
-        }
-        return false;
-    }
-
-    public boolean isLogsKept()
-    {
-        return this.keepLogs;
-    }
-
     public void setAutoRotateLogs( boolean autoRotate )
     {
         this.autoRotate = autoRotate;
@@ -1673,5 +1627,82 @@ public class XaLogicalLog implements LogLoader
     public long getHighestLogVersion()
     {
         return logVersion;
+    }
+    
+    @Override
+    public Long getFirstCommittedTxId( long version )
+    {
+        if ( version == 0 )
+            return 1L;
+        
+        // First committed tx for version V = last committed tx version V-1 + 1
+        Long header = positionCache.getHeader( version-1 );
+        if ( header != null )
+            // It existed in cache
+            return header+1;
+        
+        // Wasn't cached, go look for it
+        synchronized ( this )
+        {
+            if ( version > logVersion )
+            {
+                throw new IllegalArgumentException( "Too high version " + version + ", active is " + logVersion );
+            }
+            else if ( version == logVersion )
+            {
+                throw new IllegalArgumentException( "Last committed tx for the active log isn't determined yet" );
+            }
+            else if ( version == logVersion-1 )
+            {
+                return previousLogLastCommittedTx;
+            }
+            else
+            {
+                String file = getFileName( version );
+                if ( fileSystem.fileExists( file ) )
+                {
+                    try
+                    {
+                        long[] headerLongs = LogIoUtils.readLogHeader( fileSystem, new File( file ) );
+                        return headerLongs[1]+1;
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    @Override
+    public long getLastCommittedTxId()
+    {
+        return xaTf.getLastCommittedTx();
+    }
+
+    @Override
+    public Long getFirstStartRecordTimestamp( long version ) throws IOException
+    {
+        ReadableByteChannel log = null;
+        try
+        {
+            ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
+            log = getLogicalLog( version );
+            LogIoUtils.readLogHeader( buffer, log, true );
+            LogEntry entry = null;
+            while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
+            {
+                if ( entry instanceof LogEntry.Start )
+                    return ((LogEntry.Start) entry).getTimeWritten();
+            }
+            return -1L;
+        }
+        finally
+        {
+            if ( log != null )
+                log.close();
+        }
     }
 }

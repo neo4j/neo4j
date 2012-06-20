@@ -109,6 +109,29 @@ public class LogExtractor
         ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position ) throws IOException;
         
         long getHighestLogVersion();
+        
+        String getFileName( long version );
+        
+        /**
+         * @param version the log version to get first committed tx for.
+         * @return the first committed transaction id for the log with {@code version}.
+         * If that log doesn't exist {@code null} is returned.
+         */
+        Long getFirstCommittedTxId( long version );
+        
+        /**
+         * @param version the log version to get first committed tx for.
+         * @return the first committed transaction id for the log with {@code version}.
+         * If that log doesn't exist {@code null} is returned.
+         */
+        long getLastCommittedTxId();
+        
+        /**
+         * @param version the log version to get first tx timestamp for.
+         * @return the timestamp for the start record for the first encountered transaction
+         * in the log {@code version}.
+         */
+        Long getFirstStartRecordTimestamp( long version ) throws IOException;
     }
     
     static ByteBuffer newLogReaderBuffer()
@@ -540,7 +563,7 @@ public class LogExtractor
             public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
                     throws IOException
             {
-                String name = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v" + version ).getAbsolutePath();
+                String name = getFileName( version );
                 if ( !fileSystem.fileExists( name ) )
                 {
                     name = activeLogFiles.get( version );
@@ -570,11 +593,35 @@ public class LogExtractor
                 }
                 return result;
             }
+            
+            @Override
+            public String getFileName( long version )
+            {
+                return new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v" + version ).getAbsolutePath();
+            }
 
             @Override
             public long getHighestLogVersion()
             {
                 return highestLogVersion;
+            }
+            
+            @Override
+            public Long getFirstCommittedTxId( long version )
+            {
+                throw new UnsupportedOperationException();
+            }
+            
+            @Override
+            public Long getFirstStartRecordTimestamp( long version )
+            {
+                throw new UnsupportedOperationException();
+            }
+            
+            @Override
+            public long getLastCommittedTxId()
+            {
+                throw new UnsupportedOperationException();
             }
         };
         

@@ -20,6 +20,9 @@
 
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -27,10 +30,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -43,6 +48,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -59,8 +65,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -203,13 +207,13 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         @Override
         public long getAndSetNewVersion()
         {
-            return -1;
+            return 0;
         }
 
         @Override
         public long getCurrentVersion()
         {
-            return -1;
+            return 0;
         }
 
         @Override
@@ -343,7 +347,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -374,6 +378,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         }
         finally
         {
+            
             xaDsMgr.unregisterDataSource( "dummy_datasource" );
             if ( xaC != null )
             {
@@ -405,7 +410,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             Map<String,String> config = new HashMap<String,String>();
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID)) );
+            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

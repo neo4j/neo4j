@@ -244,7 +244,8 @@ public class Config implements DiagnosticsProvider
     
     /**
      * Make Neo4j keep the logical transaction logs for being able to backup the
-     * database
+     * database. Provides control over how much disk space logical logs are allowed
+     * to take per data source.
      */
     @Documented
     @Deprecated
@@ -514,25 +515,30 @@ public class Config implements DiagnosticsProvider
     @Deprecated
     public long getSize(GraphDatabaseSetting.StringSetting setting)
     {
-        String mem = get( setting ).toLowerCase();
+        return parseLongWithUnit( get( setting ) );
+    }
+    
+    public static long parseLongWithUnit( String numberWithPotentialUnit )
+    {
+        numberWithPotentialUnit = numberWithPotentialUnit.toLowerCase();
         long multiplier = 1;
-        if ( mem.endsWith( "k" ) )
+        if ( numberWithPotentialUnit.endsWith( "k" ) )
         {
             multiplier = 1024;
-            mem = mem.substring( 0, mem.length() - 1 );
+            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
         }
-        else if ( mem.endsWith( "m" ) )
+        else if ( numberWithPotentialUnit.endsWith( "m" ) )
         {
             multiplier = 1024 * 1024;
-            mem = mem.substring( 0, mem.length() - 1 );
+            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
         }
-        else if ( mem.endsWith( "g" ) )
+        else if ( numberWithPotentialUnit.endsWith( "g" ) )
         {
             multiplier = 1024 * 1024 * 1024;
-            mem = mem.substring( 0, mem.length() - 1 );
+            numberWithPotentialUnit = numberWithPotentialUnit.substring( 0, numberWithPotentialUnit.length() - 1 );
         }
 
-        return Long.parseLong( mem ) * multiplier;
+        return Long.parseLong( numberWithPotentialUnit ) * multiplier;
     }
 
     @Deprecated

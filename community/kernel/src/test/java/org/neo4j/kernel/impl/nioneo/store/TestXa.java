@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -32,8 +36,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -59,13 +65,12 @@ import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase
 public class TestXa extends AbstractNeo4jTestCase
@@ -419,15 +424,22 @@ public class TestXa extends AbstractNeo4jTestCase
         Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(MapUtil.stringMap(
             AbstractGraphDatabase.Configuration.store_dir.name(), path(),
             AbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
-            AbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log"))));
+            AbstractGraphDatabase.Configuration.logical_log.name(), file( LOGICAL_LOG_DEFAULT_NAME ))));
 
         StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 
         PlaceboTm txManager = new PlaceboTm();
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
+        
+        // Since these tests fiddle with copying logical logs and such themselves
+        // make sure all history logs are removed before opening the store
+        for ( File file : new File( path() ).listFiles() )
+            if ( file.isFile() && file.getName().startsWith( LOGICAL_LOG_DEFAULT_NAME + ".v" ) )
+                file.delete();
+        
         return new NeoStoreXaDataSource( config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
-                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID),
+                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ),
         Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null);
     }
 
@@ -803,7 +815,8 @@ public class TestXa extends AbstractNeo4jTestCase
     @Test
     public void testLogicalLogRotation() throws Exception
     {
-        ds.keepLogicalLogs( true );
+        // TODO fix somehow
+//        ds.keepLogicalLogs( true );
         Xid xid = new XidImpl( new byte[1], new byte[1] );
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );

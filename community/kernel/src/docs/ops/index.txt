@@ -19,6 +19,8 @@ include::configuration.txt[]
 
 include::cache.txt[]
 
+include::logical-logs.txt[]
+
 include::jvm.txt[]
 
 include::short-strings.txt[]
