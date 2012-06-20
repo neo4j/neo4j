@@ -26,13 +26,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
@@ -51,6 +52,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class AbstractZooKeeperManager
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
+    protected static final String FLUSH_REQUESTED_CHILD = "flush-requested";
+
+    protected static final int STOP_FLUSHING = -6;
 
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
@@ -63,15 +67,12 @@ public abstract class AbstractZooKeeperManager
     protected final int clientLockReadTimeout;
     private final long sessionTimeout;
 
-    private final StoreIdGetter storeIdGetter;
-
-    public AbstractZooKeeperManager( String servers, StoreIdGetter storeIdGetter, StringLogger msgLog,
+    public AbstractZooKeeperManager( String servers, StringLogger msgLog,
             int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave, int sessionTimeout )
     {
         assert msgLog != null;
 
         this.servers = servers;
-        this.storeIdGetter = storeIdGetter;
         this.msgLog = msgLog;
         this.clientLockReadTimeout = clientLockReadTimeout;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
@@ -82,6 +83,11 @@ public abstract class AbstractZooKeeperManager
     protected String asRootPath( StoreId storeId )
     {
         return "/" + storeId.getCreationTime() + "_" + storeId.getRandomId();
+    }
+
+    protected String getSequenceNr()
+    {
+        return "-1";
     }
 
     protected StoreId getClusterStoreId( ZooKeeper keeper, String clusterName )
@@ -181,10 +187,15 @@ public abstract class AbstractZooKeeperManager
                 // If there is a master and it is not me
                 masterClient = getMasterClientToMachine( master );
             }
-            cachedMaster = Pair.<Master, Machine>of( masterClient,
-                    (Machine) master );
+            cachedMaster = Pair.<Master, Machine>of( masterClient, (Machine) master );
         }
         return cachedMaster;
+    }
+    
+    protected StoreId getStoreId()
+    {
+        // TODO
+        return null;
     }
 
     protected Master getMasterClientToMachine( Machine master )
@@ -194,7 +205,7 @@ public abstract class AbstractZooKeeperManager
             return NO_MASTER;
         }
         return new MasterClient( master.getServer().first(),
-                master.getServer().other(), this.msgLog, storeIdGetter,
+                master.getServer().other(), this.msgLog, getStoreId(),
                 ConnectionLostHandler.NO_ACTION, clientReadTimeout,
                 clientLockReadTimeout, maxConcurrentChannelsPerSlave );
     }
@@ -261,12 +272,47 @@ public abstract class AbstractZooKeeperManager
 
     protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait, WaitMode mode )
     {
+        Map<Integer, ZooKeeperMachine> result = null;
+        while ( result == null )
+        {
+            result = getAllMachinesInner( wait, mode );
+        }
+        return result;
+    }
+
+    protected Map<Integer, ZooKeeperMachine> getAllMachinesInner( boolean wait, WaitMode mode )
+    {
         if ( wait )
         {
             waitForSyncConnected( mode );
         }
         try
         {
+            /*
+             * Optimization - we may have just connected (a fact known by no sequence number
+             * available). If we had just gone down we might be trying to read our own
+             * entry but that will never be updated. So instead of waiting for the node
+             * to expire, just skip it.
+             */
+            int mySequenceNumber = -1;
+            try
+            {
+                mySequenceNumber = Integer.parseInt( getSequenceNr() );
+            }
+            catch ( NumberFormatException e )
+            {
+                // ok, means we are not initialized yet
+            }
+
+            writeFlush( getMyMachineId() );
+            /*
+             * This is an optimization - we can go and check right away but we might get
+             * to the first machine before it manages to flush. So instead of going back
+             * and asking/trying again, we just wait a bit, makes the election finish faster
+             * on average.
+             */
+            Thread.sleep( 100 );
+
             Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
             String root = getRoot();
             List<String> children = getZooKeeper( true ).getChildren( root, false );
@@ -283,12 +329,22 @@ public abstract class AbstractZooKeeperManager
                     int id = parsedChild.first();
                     int seq = parsedChild.other();
                     Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
+                    long lastCommittedTxId = instanceData.first();
+                    int masterId = instanceData.other();
+                    if ( id == getMyMachineId() && mySequenceNumber == -1 )
+                    {
+                        continue;
+                    }
+                    if ( lastCommittedTxId == -2 )
+                    {
+                        msgLog.logMessage( "Couldn't read " + id + "_" + seq + ", retrying from scratch" );
+                        return null;
+                    }
                     if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
                     {
-                        result.put( id, new ZooKeeperMachine( id, seq,
-                                instanceData.first(), instanceData.other(),
-                                getHaServer( id, wait ), HA_SERVERS_CHILD + "/"
-                                                         + id ) );
+                        ZooKeeperMachine toAdd = new ZooKeeperMachine( id, seq, lastCommittedTxId, masterId,
+                                getHaServer( id, wait ), HA_SERVERS_CHILD + "/" + id );
+                        result.put( id, toAdd );
                     }
                 }
                 catch ( KeeperException inner )
@@ -309,6 +365,10 @@ public abstract class AbstractZooKeeperManager
         {
             Thread.interrupted();
             throw new ZooKeeperException( "Interrupted.", e );
+        }
+        finally
+        {
+            writeFlush( STOP_FLUSHING );
         }
     }
 
@@ -456,6 +516,67 @@ public abstract class AbstractZooKeeperManager
     public String getServers()
     {
         return servers;
+    }
+
+    private void writeFlush( int toWrite )
+    {
+        final String path = getRoot() + "/" + FLUSH_REQUESTED_CHILD;
+        byte[] data = new byte[4];
+        ByteBuffer buffer = ByteBuffer.wrap( data );
+        buffer.putInt( toWrite );
+        boolean created = false;
+        try
+        {
+            if ( getZooKeeper( true ).exists( path, false ) == null )
+            {
+                try
+                {
+                    getZooKeeper( true ).create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
+                    created = true;
+                }
+                catch ( KeeperException inner )
+                {
+                    /*
+                     *  While we checked, there could be a race and someone else created it
+                     *  after we checked but before we create it. That is acceptable.
+                     */
+                    if ( inner.code() != KeeperException.Code.NODEEXISTS )
+                    {
+                        throw inner;
+                    }
+                }
+            }
+            if ( !created )
+            {
+                int current = ByteBuffer.wrap( getZooKeeper( true ).getData( path, false, null ) ).getInt();
+                if ( current != STOP_FLUSHING && toWrite == STOP_FLUSHING && current != getMyMachineId() )
+                {
+                    /*
+                     *  Someone changed it from what we wrote, we can't just not reset, because that machine
+                     *  may be down for the count. Instead wait a bit to finish, then reset, so we don't fall
+                     *  into a livelock.
+                     */
+                    msgLog.logMessage( "Conflicted with " + current
+                                       + " on getAllMachines() - will reset but waiting a bit" );
+                    Thread.sleep( 300 );
+                }
+                if ( current != toWrite )
+                {
+                    msgLog.logMessage( "Writing at " + FLUSH_REQUESTED_CHILD + ": " + toWrite );
+                    getZooKeeper( true ).setData( path, data, -1 );
+                }
+            }
+            // Set the watch
+            getZooKeeper( true ).getData( path, true, null );
+        }
+        catch ( KeeperException e )
+        {
+            throw new ZooKeeperException( "Unable to write to " + FLUSH_REQUESTED_CHILD, e );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new ZooKeeperException( "Interrupted while trying to write to " + FLUSH_REQUESTED_CHILD, e );
+        }
     }
 
     protected static final Master NO_MASTER = new Master()

@@ -20,48 +20,22 @@
 
 package org.neo4j.kernel.ha;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.graphdb.factory.GraphDatabaseConfigurationMigrator;
 
-/**
- * TODO
- */
-public class EnterpriseConfigurationMigrator
-    extends ConfigurationMigrator
+// TODO: This shouldn't extend GraphDatabaseConfigurationMigrator,
+// the migrations there will be applied when we load config from GraphDatabaseSettings.
+// We need to move the migration of online backup settings out before this can be done.
+public class EnterpriseConfigurationMigrator extends GraphDatabaseConfigurationMigrator 
 {
-    public EnterpriseConfigurationMigrator( StringLogger messageLog )
     {
-        super(messageLog);
-    }
-
-    public Map<String, String> migrateConfiguration( Map< String, String> inputParams )
-    {
-        Map<String, String> migratedConfiguration = new HashMap<String, String>( );
+        add(propertyRenamed(
+        		"ha.machine_id", 
+        		"ha.server_id", 
+        		"ha.machine_id has been replaced with ha.server_id"));
         
-        for( Map.Entry<String, String> configEntry : super.migrateConfiguration( inputParams ).entrySet() )
-        {
-            String key = configEntry.getKey();
-            String value = configEntry.getValue();
-
-            if (key.equals( "ha.machine_id" ))
-            {
-                migratedConfiguration.put( "ha.server_id", value );
-                deprecationMessage( "ha.machine_id has been replaced with ha.server_id" );
-                continue;
-            }
-
-            if (key.equals( "ha.zoo_keeper_servers" ))
-            {
-                migratedConfiguration.put( "ha.coordinators", value );
-                deprecationMessage( "ha.zoo_keeper_servers has been replaced with ha.coordinators" );
-                continue;
-            }
-
-            migratedConfiguration.put( key, value );
-        }
-        
-        return migratedConfiguration;
+        add(propertyRenamed(
+        		"ha.zoo_keeper_servers", 
+        		"ha.coordinators", 
+        		"ha.zoo_keeper_servers has been replaced with ha.coordinators"));
     }
 }

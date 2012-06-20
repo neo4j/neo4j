@@ -114,7 +114,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 masterMachine.getServer().first(),
                 masterMachine.getServer().other(),
                 db.getMessageLog(),
-                db.getStoreIdGetter(),
+                AbstractBroker.storeId,
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, HaSettings.lock_read_timeout.name(), readTimeout ),
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);

@@ -45,7 +45,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TransactionStream;
@@ -86,12 +85,14 @@ public class MasterClient extends Client<Master> implements Master
     };
     private final int lockReadTimeout;
 
-    public MasterClient( String hostNameOrIp, int port, StringLogger stringLogger, StoreIdGetter storeIdGetter,ConnectionLostHandler connectionLostHandler,
-            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+    public MasterClient( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
+            ConnectionLostHandler connectionLostHandler, int readTimeoutSeconds,
+            int lockReadTimeout, int maxConcurrentChannels )
     {
-        super( hostNameOrIp, port, stringLogger, storeIdGetter,
+        super( hostNameOrIp, port, stringLogger, storeId,
                 MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
-                maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),connectionLostHandler );
+                maxConcurrentChannels, Math.min( maxConcurrentChannels,
+                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),connectionLostHandler );
         this.lockReadTimeout = lockReadTimeout;
     }
 
@@ -248,7 +249,7 @@ public class MasterClient extends Client<Master> implements Master
                  * This is effectively the use case of awaiting a lock that isn't granted
                  * within the lock read timeout period.
                  */
-                return new Response<Void>( null, getMyStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                return new Response<Void>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
             throw e;
         }

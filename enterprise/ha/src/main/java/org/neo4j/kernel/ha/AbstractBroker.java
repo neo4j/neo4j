@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class AbstractBroker implements Broker
 {
-    private static final StoreId storeId = new StoreId();
+    public static final StoreId storeId = new StoreId();
     protected Config config;
 
     public AbstractBroker( Config config)

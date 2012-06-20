@@ -44,10 +44,8 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.SlaveContext.Tx;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -70,31 +68,29 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final StringLogger msgLog;
     private final ExecutorService executor;
     private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
-    private StoreId myStoreId;
     private final int frameLength;
     private final int readTimeout;
     private final byte applicationProtocolVersion;
-    private final StoreIdGetter storeIdGetter;
+    private final StoreId storeId;
     private final ResourceReleaser resourcePoolReleaser;
 
     public Client( String hostNameOrIp, int port, StringLogger logger,
-            StoreIdGetter storeIdGetter, int frameLength,
-            byte applicationProtocolVersion, int readTimeout,
+            StoreId storeId, int frameLength, byte applicationProtocolVersion, int readTimeout,
             int maxConcurrentChannels, int maxUnusedPoolSize )
     {
-        this( hostNameOrIp, port, logger, storeIdGetter, frameLength,
+        this( hostNameOrIp, port, logger, storeId, frameLength,
                 applicationProtocolVersion, readTimeout, maxConcurrentChannels,
                 maxUnusedPoolSize, ConnectionLostHandler.NO_ACTION );
     }
 
     public Client( String hostNameOrIp, int port, StringLogger logger,
-            StoreIdGetter storeIdGetter, int frameLength,
+            StoreId storeId, int frameLength,
             byte applicationProtocolVersion, int readTimeout,
             int maxConcurrentChannels, int maxUnusedPoolSize,
             final ConnectionLostHandler connectionLostHandler )
     {
         this.msgLog = logger;
-        this.storeIdGetter = storeIdGetter;
+        this.storeId = storeId;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
@@ -213,7 +209,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             {
                 // specificStoreId is there as a workaround for then the graphDb isn't initialized yet
                 if ( specificStoreId != null ) assertCorrectStoreId( storeId, specificStoreId );
-                else assertCorrectStoreId( storeId, getMyStoreId() );
+                else assertCorrectStoreId( storeId, this.storeId );
             }
             TransactionStream txStreams = readTransactionStreams(
                     dechunkingBuffer, channelPool );
@@ -250,6 +246,11 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         return true;
     }
+    
+    protected StoreId getStoreId()
+    {
+        return storeId;
+    }
 
     private void assertCorrectStoreId( StoreId storeId, StoreId myStoreId )
     {
@@ -257,12 +258,6 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             throw new ComException( storeId + " from response doesn't match my " + myStoreId );
         }
-    }
-
-    protected StoreId getMyStoreId()
-    {
-        if ( myStoreId == null ) myStoreId = storeIdGetter.get();
-        return myStoreId;
     }
 
     private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
@@ -402,27 +397,6 @@ public abstract class Client<M> implements ChannelPipelineFactory
             buffer.resetReaderIndex();
         }
     }
-
-    public static StoreIdGetter storeIdGetterForDb( final GraphDatabaseService db )
-    {
-        return new StoreIdGetter()
-        {
-            @Override
-            public StoreId get()
-            {
-                return ((AbstractGraphDatabase) db).getStoreId();
-            }
-        };
-    }
-
-    public static final StoreIdGetter NO_STORE_ID_GETTER = new StoreIdGetter()
-    {
-        @Override
-        public StoreId get()
-        {
-            throw new UnsupportedOperationException();
-        }
-    };
 
     public interface ConnectionLostHandler
     {

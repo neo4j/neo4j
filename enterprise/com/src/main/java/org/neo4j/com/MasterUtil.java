@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
@@ -40,9 +41,6 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -303,9 +301,8 @@ public class MasterUtil
                         filter );
                 logExtractors.add( logExtractor );
             }
-            StoreId storeId = dsManager.getNeoStoreDataSource().getStoreId();
-            return new Response<T>( response, storeId, createTransactionStream( resourceNames, stream, logExtractors ),
-                    ResourceReleaser.NO_OP );
+            return new Response<T>( response, graphDb.getStoreId(), createTransactionStream( resourceNames,
+                    stream, logExtractors ), ResourceReleaser.NO_OP );
         }
         catch ( Throwable t )
         {   // If there's an error in here then close the log extractors, otherwise if we're
@@ -343,8 +340,7 @@ public class MasterUtil
         List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
                 getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, MasterUtil.ALL ) ) :
                 Collections.<LogExtractor>emptyList();
-        StoreId storeId = ( (NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ) ).getStoreId();
-        return new Response<Void>( null, storeId, createTransactionStream(
+        return new Response<Void>( null, graphDb.getStoreId(), createTransactionStream(
                         Collections.singletonList( dataSourceName ), stream,
                         extractors ), ResourceReleaser.NO_OP );
 
@@ -374,9 +370,7 @@ public class MasterUtil
     public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseAPI graphDb,
             SlaveContext context, T response )
     {
-        XaDataSource ds = graphDb.getXaDataSourceManager().getNeoStoreDataSource();
-        StoreId storeId = ((NeoStoreXaDataSource) ds).getStoreId();
-        return new Response<T>( response, storeId, TransactionStream.EMPTY,
+        return new Response<T>( response, graphDb.getStoreId(), TransactionStream.EMPTY,
                 ResourceReleaser.NO_OP );
     }
 

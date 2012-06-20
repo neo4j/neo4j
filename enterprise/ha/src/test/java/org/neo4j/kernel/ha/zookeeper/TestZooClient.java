@@ -63,7 +63,7 @@ public class TestZooClient
         stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( millisForSessionToExpire ) );
         Config config = new Config(new ConfigurationDefaults(OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ).apply( stringConfig ));
 
-        ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
+        ZooClient client = new ZooClient( "", StringLogger.SYSTEM, config, null, DummyClusterReceiver );
 
         final AtomicBoolean stop = new AtomicBoolean( false );
         Thread launchesZK = new Thread(new Runnable()
@@ -114,7 +114,7 @@ public class TestZooClient
         stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( secondsForSessionToExpire ) );
         Config config = new Config(new ConfigurationDefaults(OnlineBackupSettings.class, GraphDatabaseSettings.class, HaSettings.class ).apply( stringConfig ));
 
-        ZooClient client = new ZooClient( "", StringLogger.SYSTEM, null, config, null, DummyClusterReceiver );
+        ZooClient client = new ZooClient( "", StringLogger.SYSTEM, config, null, DummyClusterReceiver );
 
         final Thread me = Thread.currentThread();
         final AtomicBoolean allOk = new AtomicBoolean( false );
