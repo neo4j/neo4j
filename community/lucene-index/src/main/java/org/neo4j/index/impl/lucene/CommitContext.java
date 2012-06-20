@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,8 +39,8 @@ class CommitContext
     final CommandList commandList;
     final boolean recovery;
 
-    IndexWriter writer;
     IndexSearcherRef searcher;
+    IndexWriter writer;
 
     CommitContext( LuceneDataSource dataSource, IndexIdentifier identifier, IndexType indexType, CommandList commandList )
     {
@@ -54,10 +53,10 @@ class CommitContext
 
     void ensureWriterInstantiated()
     {
-        if ( writer == null )
+        if ( searcher == null )
         {
-            writer = dataSource.getIndexWriter( identifier );
             searcher = dataSource.getIndexSearcher( identifier );
+            writer = searcher.getWriter();
         }
     }
 
@@ -86,15 +85,8 @@ class CommitContext
 
     public void close()
     {
-        try
-        {
-            if ( searcher != null )
+        if ( searcher != null )
             searcher.close();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     static class DocumentContext

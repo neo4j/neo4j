@@ -99,7 +99,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
         extends LogBackedXaDataSource.Configuration
     {
         public static final GraphDatabaseSetting.IntegerSetting lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
-        public static final GraphDatabaseSetting.IntegerSetting lucene_writer_cache_size = GraphDatabaseSettings.lucene_writer_cache_size;
 
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
         public static final GraphDatabaseSetting.BooleanSetting allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
@@ -149,9 +148,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
 
-    private final IndexWriterClockCache indexWriters;
-    private final IndexSearcherClockCache indexSearchers;
-
+    private final IndexClockCache indexSearchers;
     private final XaContainer xaContainer;
     private final String baseStorePath;
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -175,8 +172,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public LuceneDataSource( Config config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction, XaFactory xaFactory)
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
-        indexWriters = new IndexWriterClockCache( config.getInteger( Configuration.lucene_writer_cache_size ) );
-        indexSearchers = new IndexSearcherClockCache( config.getInteger( Configuration.lucene_searcher_cache_size ) );
+        indexSearchers = new IndexClockCache( config.getInteger( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         String storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = getStoreDir( storeDir ).first();
@@ -302,7 +298,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 try
                 {
-                    searcher.dispose();
+                    searcher.dispose( true );
                 }
                 catch ( IOException e )
                 {
@@ -310,19 +306,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 }
             }
             indexSearchers.clear();
-
-            for ( Map.Entry<IndexIdentifier, IndexWriter> entry : indexWriters.entrySet() )
-            {
-                try
-                {
-                    entry.getValue().close( true );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Unable to close index writer " + entry.getKey(), e );
-                }
-            }
-            indexWriters.clear();
         }
 
         if ( xaContainer != null )
@@ -401,15 +384,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public void flushAll()
         {
-            for ( Map.Entry<IndexIdentifier, IndexWriter> entry : getAllIndexWriters() )
+            for ( IndexSearcherRef index : getAllIndexes() )
             {
                 try
                 {
-                    entry.getValue().commit();
+                    index.getWriter().commit();
                 }
                 catch ( IOException e )
                 {
-                    throw new RuntimeException( "unable to commit changes to " + entry.getKey(), e );
+                    throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
                 }
             }
         }
@@ -433,11 +416,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-
-    @SuppressWarnings( "rawtypes" )
-    private synchronized Map.Entry[] getAllIndexWriters()
+    private synchronized IndexSearcherRef[] getAllIndexes()
     {
-        return indexWriters.entrySet().toArray( new Map.Entry[indexWriters.size()] );
+        return indexSearchers.values().toArray( new IndexSearcherRef[indexSearchers.size()] );
     }
 
     void getReadLock()
@@ -473,22 +454,20 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * {@code null}.
      * @throws IOException if there's a problem with the index.
      */
-    private IndexSearcherRef refreshSearcher( IndexSearcherRef searcher, IndexWriter writer )
+    private IndexSearcherRef refreshSearcher( IndexSearcherRef searcher )
     {
         try
         {
-            synchronized ( searcher )
+            IndexReader reader = searcher.getSearcher().getIndexReader();
+            IndexWriter writer = searcher.getWriter();
+            IndexReader reopened = IndexReader.openIfChanged( reader, writer, true );
+            if ( reopened != null )
             {
-                IndexReader reader = searcher.getSearcher().getIndexReader();
-                IndexReader reopened = IndexReader.openIfChanged( reader, writer, true );
-                if ( reopened != null )
-                {
-                    IndexSearcher newSearcher = new IndexSearcher( reopened );
-                    searcher.detachOrClose();
-                    return new IndexSearcherRef( searcher.getIdentifier(), newSearcher );
-                }
-                return searcher;
+                IndexSearcher newSearcher = new IndexSearcher( reopened );
+                searcher.detachOrClose();
+                return new IndexSearcherRef( searcher.getIdentifier(), newSearcher, writer );
             }
+            return searcher;
         }
         catch ( IOException e )
         {
@@ -534,30 +513,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     IndexSearcherRef getIndexSearcher( IndexIdentifier identifier )
     {
+        assertNotClosed();
         IndexSearcherRef searcher = indexSearchers.get( identifier );
         if ( searcher == null )
         {
             return syncGetIndexSearcher( identifier );
         }
-        /*
-         * So, we increase the reference count first. After we check if it is closed. If no,
-         * then we can return, since no one will close it because we just updated the reference
-         * count and things are synchronized, hence properly ordered. If it is closed then we
-         *  have to synchronize.
-         */
-        searcher.incRef();
-        if ( !searcher.isClosed() && !searcher.isStale() )
-        {
-            // TODO can we get rid of the global lock when just stale?
-            return searcher;
-        }
+
         synchronized ( searcher )
         {
-            /*
-             * Decrement the ref count because otherwise we'd fool the refresh code,
-             * don't worry we'll increment it below.
-             */
-            searcher.decRef();
             /*
              * We need to get again a reference to the searcher because it might be so that
              * it was refreshed while we waited. Once in here though no one will mess with
@@ -568,18 +532,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 return syncGetIndexSearcher( identifier );
             }
-            if ( searcher.isStale() )
-            {
-                IndexWriter writer = getIndexWriter( identifier );
-                searcher = refreshSearcher( searcher, writer );
-                if ( searcher != null )
-                {
-                    indexSearchers.put( identifier, searcher );
-                }
-            }
+            searcher = refreshSearcherIfNeeded( searcher );
             searcher.incRef();
             return searcher;
         }
+    }
+
+    private void assertNotClosed()
+    {
+        if ( closed )
+            throw new IllegalStateException( "Lucene index provider has been shut down" );
     }
 
     synchronized IndexSearcherRef syncGetIndexSearcher( IndexIdentifier identifier )
@@ -587,26 +549,19 @@ public class LuceneDataSource extends LogBackedXaDataSource
         try
         {
             IndexSearcherRef searcher = indexSearchers.get( identifier );
-            IndexWriter writer = getIndexWriter( identifier );
             if ( searcher == null )
             {
+                IndexWriter writer = newIndexWriter( identifier );
                 IndexReader reader = IndexReader.open( writer, true );
                 IndexSearcher indexSearcher = new IndexSearcher( reader );
-                searcher = new IndexSearcherRef( identifier, indexSearcher );
+                searcher = new IndexSearcherRef( identifier, indexSearcher, writer );
                 indexSearchers.put( identifier, searcher );
             }
             else
             {
                 synchronized ( searcher )
                 {
-                    if ( searcher.checkAndSetStale() )
-                    {
-                        searcher = refreshSearcher( searcher, writer );
-                        if ( searcher != null )
-                        {
-                            indexSearchers.put( identifier, searcher );
-                        }
-                    }
+                    searcher = refreshSearcherIfNeeded( searcher );
                 }
             }
             searcher.incRef();
@@ -616,6 +571,19 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private IndexSearcherRef refreshSearcherIfNeeded( IndexSearcherRef searcher )
+    {
+        if ( searcher.checkAndClearStale() )
+        {
+            searcher = refreshSearcher( searcher );
+            if ( searcher != null )
+            {
+                indexSearchers.put( searcher.getIdentifier(), searcher );
+            }
+        }
+        return searcher;
     }
 
     XaTransaction createTransaction( int identifier,
@@ -628,17 +596,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         IndexSearcherRef searcher = indexSearchers.get( identifier );
         if ( searcher != null )
-        {
-            synchronized ( searcher )
-            {
-                searcher.setStale();
-            }
-        }
+            searcher.setStale();
     }
 
     void deleteIndex( IndexIdentifier identifier, boolean recovery )
     {
-        closeWriter( identifier );
+        closeIndex( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
         invalidateCache( identifier );
         boolean removeFromIndexStore = !recovery || (recovery &&
@@ -673,16 +636,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    synchronized IndexWriter getIndexWriter( IndexIdentifier identifier )
+    private /*synchronized elsewhere*/ IndexWriter newIndexWriter( IndexIdentifier identifier )
     {
-        if ( closed ) throw new IllegalStateException( "Index has been shut down" );
-
-        IndexWriter writer = indexWriters.get( identifier );
-        if ( writer != null )
-        {
-            return writer;
-        }
-
+        assertNotClosed();
         try
         {
             Directory dir = directoryGetter.getDirectory( baseStorePath, identifier ); //getDirectory( baseStorePath, identifier );
@@ -702,7 +658,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
             // reads/writes
 //            writer.setMergeFactor( 8 );
 
-            indexWriters.put( identifier, indexWriter );
             return indexWriter;
         }
         catch ( IOException e )
@@ -767,19 +722,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    private synchronized void closeWriter( IndexIdentifier identifier )
+    private synchronized void closeIndex( IndexIdentifier identifier )
     {
         try
         {
             IndexSearcherRef searcher = indexSearchers.remove( identifier );
-            IndexWriter writer = indexWriters.remove( identifier );
             if ( searcher != null )
             {
-                searcher.dispose();
-            }
-            if ( writer != null )
-            {
-                writer.close();
+                searcher.dispose( true );
             }
         }
         catch ( IOException e )
@@ -861,11 +811,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
         makeSureAllIndexesAreInstantiated();
-        for ( Map.Entry<IndexIdentifier, IndexWriter> writer : getAllIndexWriters() )
+        for ( IndexSearcherRef writer : getAllIndexes() )
         {
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
-                    writer.getValue().getConfig().getIndexDeletionPolicy();
-            File indexDirectory = getFileDirectory( baseStorePath, writer.getKey() );
+                    writer.getWriter().getConfig().getIndexDeletionPolicy();
+            File indexDirectory = getFileDirectory( baseStorePath, writer.getIdentifier() );
             try
             {
                 // Throws IllegalStateException if no commits yet
@@ -919,7 +869,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                getIndexWriter( new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, name ) );
+                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, name );
+                getIndexSearcher( identifier );
             }
         }
         for ( String name : indexStore.getNames( Relationship.class ) )
@@ -927,7 +878,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                getIndexWriter( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, name ) );
+                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, name );
+                getIndexSearcher( identifier );
             }
         }
     }

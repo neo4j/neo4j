@@ -44,11 +44,14 @@ public class IndexSearcherLruCache extends LruCache<IndexIdentifier, Pair<IndexS
     }
 
     @Override
-    public void elementCleaned(Pair<IndexSearcherRef, AtomicBoolean> searcher)
+    public void elementCleaned( Pair<IndexSearcherRef, AtomicBoolean> searcher )
     {
-        try {
-            searcher.first().dispose();
-        } catch (IOException e) {
+        try
+        {
+            searcher.first().dispose( true );
+        }
+        catch ( IOException e )
+        {
             throw new RuntimeException( e );
         }
     }

@@ -99,10 +99,6 @@ public abstract class GraphDatabaseSettings
     @Default(Integer.MAX_VALUE+"")
     public static IntegerSetting lucene_searcher_cache_size = new IntegerSetting( "lucene_searcher_cache_size", "Must be a number", 1, null );
 
-    @Description( "Integer value that sets the maximum number of open lucene index writers." )
-    @Default(Integer.MAX_VALUE+"")
-    public static IntegerSetting lucene_writer_cache_size = new IntegerSetting( "lucene_writer_cache_size", "Must be a number", 1, null );
-
     // NeoStore settings
     @Description( "Determines whether any TransactionInterceptors loaded will intercept prepared transactions before they reach the logical log" )
     @Default(FALSE)
