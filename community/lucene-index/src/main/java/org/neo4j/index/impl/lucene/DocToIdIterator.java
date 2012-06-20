@@ -72,7 +72,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
     {
         if ( !isClosed() )
         {
-            this.searcherOrNull.closeStrict();
+            this.searcherOrNull.close();
             this.searcherOrNull = null;
         }
     }

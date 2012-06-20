@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 
 class IndexSearcherRef
 {
     private final IndexIdentifier identifier;
+    private final IndexWriter writer;
     private final IndexSearcher searcher;
     private final AtomicInteger refCount = new AtomicInteger( 0 );
     private volatile boolean isClosed;
@@ -42,15 +44,21 @@ class IndexSearcherRef
 
     private final AtomicBoolean stale = new AtomicBoolean();
 
-    public IndexSearcherRef( IndexIdentifier identifier, IndexSearcher searcher )
+    public IndexSearcherRef( IndexIdentifier identifier, IndexSearcher searcher, IndexWriter writer )
     {
         this.identifier = identifier;
         this.searcher = searcher;
+        this.writer = writer;
     }
 
     public IndexSearcher getSearcher()
     {
         return this.searcher;
+    }
+    
+    public IndexWriter getWriter()
+    {
+        return writer;
     }
 
     public IndexIdentifier getIdentifier()
@@ -63,26 +71,23 @@ class IndexSearcherRef
         this.refCount.incrementAndGet();
     }
     
-    void decRef()
-    {
-        this.refCount.decrementAndGet();
-    }
-
-    public synchronized void dispose() throws IOException
+    public synchronized void dispose( boolean writerAlso ) throws IOException
     {
         if ( !this.isClosed )
         {
             this.searcher.close();
             this.searcher.getIndexReader().close();
+            if ( writerAlso )
+                this.writer.close();
             this.isClosed = true;
         }
     }
 
-    public synchronized void detachOrClose() throws IOException
+    public /*synchronized externally*/ void detachOrClose() throws IOException
     {
         if ( this.refCount.get() == 0 )
         {
-            dispose();
+            dispose( false );
         }
         else
         {
@@ -90,27 +95,22 @@ class IndexSearcherRef
         }
     }
 
-    public synchronized boolean close() throws IOException
-    {
-        if ( this.isClosed || this.refCount.get() == 0 )
-        {
-            return true;
-        }
-
-        boolean reallyClosed = false;
-        if ( this.refCount.decrementAndGet() <= 0 && this.detached )
-        {
-            dispose();
-            reallyClosed = true;
-        }
-        return reallyClosed;
-    }
-
-    synchronized boolean closeStrict()
+    synchronized boolean close()
     {
         try
         {
-            return close();
+            if ( this.isClosed || this.refCount.get() == 0 )
+            {
+                return true;
+            }
+
+            boolean reallyClosed = false;
+            if ( this.refCount.decrementAndGet() <= 0 && this.detached )
+            {
+                dispose( false );
+                reallyClosed = true;
+            }
+            return reallyClosed;
         }
         catch ( IOException e )
         {
@@ -118,22 +118,17 @@ class IndexSearcherRef
         }
     }
 
-    synchronized boolean isClosed()
+    /*synchronized externally*/ boolean isClosed()
     {
         return isClosed;
     }
 
-    synchronized boolean checkAndSetStale()
+    /*synchronized externally*/ boolean checkAndClearStale()
     {
         return stale.compareAndSet( true, false );
     }
 
-    synchronized boolean isStale()
-    {
-        return stale.get();
-    }
-
-    public void setStale()
+    public synchronized void setStale()
     {
         stale.set( true );
     }

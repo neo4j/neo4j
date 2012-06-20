@@ -91,7 +91,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
             final List<List<Node>> results = new ArrayList<List<Node>>();
             final List<Thread> threads = new ArrayList<Thread>();
             final AtomicReference<RuntimeException> failure = new AtomicReference<RuntimeException>();
-            for ( int i = 0; i < 10; i++ )
+            for ( int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++ )
             {
                 threads.add( new Thread( GetOrCreateTest.class.getSimpleName() + " thread " + i )
                 {

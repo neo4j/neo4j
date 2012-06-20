@@ -21,22 +21,21 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriter;
 import org.neo4j.kernel.impl.cache.ClockCache;
 
-public class IndexWriterClockCache extends ClockCache<IndexIdentifier, IndexWriter>
+public class IndexClockCache extends ClockCache<IndexIdentifier, IndexSearcherRef>
 {
-    public IndexWriterClockCache( int maxSize )
+    public IndexClockCache( int maxSize )
     {
-        super( "IndexWriterCache", maxSize );
+        super( "IndexSearcherCache", maxSize );
     }
 
     @Override
-    public void elementCleaned( IndexWriter writer )
+    public void elementCleaned( IndexSearcherRef searcher )
     {
         try
         {
-            writer.close( true );
+            searcher.dispose( true );
         }
         catch ( IOException e )
         {

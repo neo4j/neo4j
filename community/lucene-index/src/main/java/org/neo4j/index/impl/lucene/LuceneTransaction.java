@@ -273,7 +273,8 @@ class LuceneTransaction extends XaTransaction
                 }
                 finally
                 {
-                    if ( context != null ) context.close();
+                    if ( context != null )
+                        context.close();
                 }
             }
 

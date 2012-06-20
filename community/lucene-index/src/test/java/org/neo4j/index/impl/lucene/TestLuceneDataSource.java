@@ -99,8 +99,8 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(config() )), indexStore, new DefaultFileSystemAbstraction(),
                                           new XaFactory(new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( config()  )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
         IndexIdentifier identifier = identifier( "foo" );
-        IndexWriter writer = dataSource.getIndexWriter( identifier );
-        assertSame( writer, dataSource.getIndexWriter( identifier ) );
+        IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
+        assertSame( writer, dataSource.getIndexSearcher( identifier ).getWriter() );
     }
 
     @Test
@@ -110,7 +110,6 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
                                            new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
         IndexIdentifier identifier = identifier( "foo" );
-        IndexWriter writer = dataSource.getIndexWriter( identifier );
         IndexSearcherRef searcher = dataSource.getIndexSearcher( identifier );
         assertSame( searcher, dataSource.getIndexSearcher( identifier ) );
         searcher.close();
@@ -122,17 +121,17 @@ public class TestLuceneDataSource
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_writer_cache_size.name(), "2");
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
         Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                                            new XaFactory(config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
-        IndexWriter fooIndexWriter = dataSource.getIndexWriter( fooIdentifier );
-        dataSource.getIndexWriter( barIdentifier );
+        IndexWriter fooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
+        dataSource.getIndexSearcher( barIdentifier );
         assertFalse( IndexWriterAccessor.isClosed( fooIndexWriter ) );
-        dataSource.getIndexWriter( bazIdentifier );
+        dataSource.getIndexSearcher( bazIdentifier );
         assertTrue( IndexWriterAccessor.isClosed( fooIndexWriter ) );
     }
 
@@ -189,20 +188,19 @@ public class TestLuceneDataSource
         addIndex( "bar" );
         addIndex( "baz" );
         Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_writer_cache_size.name(), "2");
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
         Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                                            new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
-        IndexWriter oldFooIndexWriter = dataSource.getIndexWriter( fooIdentifier );
-        dataSource.getIndexWriter( barIdentifier );
-        dataSource.getIndexWriter( bazIdentifier );
-        IndexWriter newFooIndexWriter = dataSource.getIndexWriter( fooIdentifier );
+        IndexWriter oldFooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
+        dataSource.getIndexSearcher( barIdentifier );
+        dataSource.getIndexSearcher( bazIdentifier );
+        IndexWriter newFooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
         assertNotSame( oldFooIndexWriter, newFooIndexWriter );
         assertFalse( IndexWriterAccessor.isClosed( newFooIndexWriter ) );
-
     }
 
     @Ignore( "No longer valid since Lucene 3.5" )

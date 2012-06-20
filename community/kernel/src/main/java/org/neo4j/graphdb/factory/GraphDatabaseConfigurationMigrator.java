@@ -123,6 +123,14 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 rawConfiguration.put( Config.KEEP_LOGICAL_LOGS, String.valueOf( keep ) );
             }
         } );
+        
+        add( new SpecificPropertyMigration( "lucene_writer_cache_size", "cannot configure writers and searchers individually since they go together" )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+            {
+            }
+        } );
     }
     
     @Deprecated

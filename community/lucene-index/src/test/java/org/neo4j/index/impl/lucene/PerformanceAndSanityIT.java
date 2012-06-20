@@ -141,7 +141,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         ExecutorService pool = Executors.newFixedThreadPool( coreCount );
         for ( int t = 0; t < latch.getCount(); t++ )
         {
-            final int thread = t;
             pool.execute( new Runnable()
             {
                 public void run()
