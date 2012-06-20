@@ -165,4 +165,46 @@ public class DebugUtil
             return true;
         }
     }
+
+    public static class CallCounter<T>
+    {
+        private final Map<T, AtomicInteger> calls = new HashMap<T, AtomicInteger>();
+        private final String name;
+
+        public CallCounter( String name )
+        {
+            this.name = name;
+        }
+
+        public CallCounter<T> printAtShutdown( final PrintStream out )
+        {
+            Runtime.getRuntime().addShutdownHook( new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    print( out );
+                }
+            } );
+            return this;
+        }
+
+        public void inc( T key )
+        {
+            AtomicInteger count = calls.get( key );
+            if ( count == null )
+            {
+                count = new AtomicInteger();
+                calls.put( key, count );
+            }
+            count.incrementAndGet();
+        }
+
+        private void print( PrintStream out )
+        {
+            out.println( "Calls made regarding " + name + ":" );
+            for ( Map.Entry<T, AtomicInteger> entry : calls.entrySet() )
+                out.println( "\t" + entry.getKey() + ": " + entry.getValue() );
+        }
+    }
 }
