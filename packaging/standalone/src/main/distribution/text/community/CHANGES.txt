@@ -1,3 +1,7 @@
+1.7.2 (2012-06-20)
+-----------------
+o [lucene-index] Fixed and improved the less synchronization solution for getting index searchers
+
 1.7.1 (2012-05-21)
 -----------------
 o [kernel] Fixed bug where some transactions were applied to the store but not flushed to the log
