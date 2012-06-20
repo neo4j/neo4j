@@ -48,7 +48,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
   lazy val hasVarLengthPaths: Boolean = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
 
   lazy val mandatoryGraph: PatternGraph = {
-    val relationshipsNotInDoubleOptionalPaths = patternRels.values.filterNot(p => doubleOptionalPaths.exists(dop => dop.rel1 == p.key || dop.rel2 == p.key))
+    val relationshipsNotInDoubleOptionalPaths = patternRels.values.filterNot(p => doubleOptionalPaths.exists(dop => dop.path.exists(_.key == p.key)))
 
     if (relationshipsNotInDoubleOptionalPaths.size == patternRels.size)
       this
@@ -108,7 +108,6 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
     (elementsMap, optionalSet, hasLoops, doubleOptionals)
   }
 
-
   private def getDoubleOptionals(boundPatternElements: Seq[PatternElement], optionalElements: Set[String]): Seq[DoubleOptionalPath] = {
     var doubleOptionals = Seq[DoubleOptionalPath]()
 
@@ -163,10 +162,26 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
 
     //Before we return, let's remove all double optional paths that have a at least one node between the optional
     //relationships that is not optional.
-    doubleOptionals.distinct.filterNot(dop => {
+    val filteredDoubleOptionalPaths = doubleOptionals.distinct.filterNot(dop => {
       val optionalPartOfDop: Seq[PatternElement] = dop.path.tail.reverse.tail
       optionalPartOfDop.exists(x => !optionalElements.contains(x.key))
     })
+
+    checkForUnsupportedPatterns(filteredDoubleOptionalPaths)
+
+    filteredDoubleOptionalPaths
+  }
+
+  private def checkForUnsupportedPatterns(paths: Seq[DoubleOptionalPath]) {
+    paths.foreach {
+      case dop =>
+        val otherPatterns = paths.filterNot(_==dop).flatMap(_.path.tail.reverse.tail).distinct
+        val sharedPatterns = dop.path.filter(otherPatterns contains)
+        if (sharedPatterns.nonEmpty) {
+          throw new PatternException("This pattern is not supported right now. These pattern elements are part of " +
+                                     "multiple double optional paths, and that is not allowed.")
+        }
+    }
   }
 
   private def getOptionalElements(boundPatternElements: Seq[PatternElement], allPatternElements: Seq[PatternElement]): Set[String] = {
