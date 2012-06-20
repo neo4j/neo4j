@@ -175,11 +175,13 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
   private def checkForUnsupportedPatterns(paths: Seq[DoubleOptionalPath]) {
     paths.foreach {
       case dop =>
-        val otherPatterns = paths.filterNot(_==dop).flatMap(_.path.tail.reverse.tail).distinct
-        val sharedPatterns = dop.path.filter(otherPatterns contains)
+        val otherDoubleOptionalPaths = paths.filterNot(_ == dop)
+        val elementsInOtherPaths = otherDoubleOptionalPaths.flatMap(p => p.path.slice(1,p.path.size-2)).distinct
+
+        val sharedPatterns = dop.path.filter(elementsInOtherPaths.contains)
         if (sharedPatterns.nonEmpty) {
           throw new PatternException("This pattern is not supported right now. These pattern elements are part of " +
-                                     "multiple double optional paths, and that is not allowed.")
+                                     "multiple double optional paths, and that is not allowed. " + sharedPatterns.map(_.key).mkString(","))
         }
     }
   }
