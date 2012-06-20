@@ -19,34 +19,31 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer {
+import org.apache.commons.configuration.Configuration;
+import org.junit.Test;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.server.configuration.MapBasedConfiguration;
 
-	public EnterpriseNeoServer( Configurator configurator )
-    {
-        this.configurator = configurator;
-        init();
-    }
-	
-    @Override
-    protected StartupHealthCheck createHealthCheck() {
-		final StartupHealthCheck parentCheck = super.createHealthCheck();
-		return new StartupHealthCheck(
-				new Neo4jHAPropertiesMustExistRule() ){
-			@Override
-			public boolean run(){
-				return parentCheck.run() && super.run();
-			}
-		};
+
+public class TestEnterpriseDatabase {
+
+	@Test
+	public void shouldStartInSingleModeByDefault() throws Throwable
+	{
+		Configuration config = new MapBasedConfiguration();
+		EnterpriseDatabase db = new EnterpriseDatabase(config);
+		
+		try 
+		{
+			db.start();
+			
+			assertThat(db.getGraph(), is(EmbeddedGraphDatabase.class));
+		} finally {
+			db.stop();
+		}
 	}
-    
-    @Override
-	protected Database createDatabase() {
-    	return new EnterpriseDatabase(configurator.configuration());
-    }
-
+	
 }

@@ -19,34 +19,17 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer {
+import org.junit.Test;
+import org.neo4j.server.Bootstrapper;
 
-	public EnterpriseNeoServer( Configurator configurator )
+public class TestEnterpriseBootstrapper
+{
+    @Test
+    public void bootstrapperLoadsAdvancedServerBootstrapper() throws Exception
     {
-        this.configurator = configurator;
-        init();
+        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( EnterpriseBootstrapper.class ) );
     }
-	
-    @Override
-    protected StartupHealthCheck createHealthCheck() {
-		final StartupHealthCheck parentCheck = super.createHealthCheck();
-		return new StartupHealthCheck(
-				new Neo4jHAPropertiesMustExistRule() ){
-			@Override
-			public boolean run(){
-				return parentCheck.run() && super.run();
-			}
-		};
-	}
-    
-    @Override
-	protected Database createDatabase() {
-    	return new EnterpriseDatabase(configurator.configuration());
-    }
-
 }
