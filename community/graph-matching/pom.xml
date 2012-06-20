@@ -16,7 +16,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graph-matching</artifactId>
-  <version>1.7.2</version>
+  <version>1.7.2-SNAPSHOT</version>
   <name>Neo4j - Graph Matching</name>
   <description>A graph pattern matcher for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -49,12 +49,12 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.2-SNAPSHOT</version>
     </dependency>
       <dependency>
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j-kernel</artifactId>
-          <version>1.7.2</version>
+          <version>1.7.2-SNAPSHOT</version>
           <type>test-jar</type>
           <scope>test</scope>
       </dependency>
@@ -62,7 +62,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.2-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
