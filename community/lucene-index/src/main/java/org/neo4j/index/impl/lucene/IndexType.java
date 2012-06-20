@@ -19,6 +19,10 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -191,21 +195,28 @@ abstract class IndexType
         String type = config.get( LuceneIndexImplementation.KEY_TYPE );
         IndexType result = null;
         Similarity similarity = getCustomSimilarity( config );
-        boolean toLowerCase = parseBoolean( config.get( LuceneIndexImplementation.KEY_TO_LOWER_CASE ), true );
+        Boolean toLowerCaseUnbiased = config.get( KEY_TO_LOWER_CASE ) != null ?
+                parseBoolean( config.get( KEY_TO_LOWER_CASE ), true ) : null;
         Analyzer customAnalyzer = getCustomAnalyzer( config );
         if ( type != null )
         {
             // Use the built in alternatives... "exact" or "fulltext"
             if ( type.equals( "exact" ) )
             {
-                result = EXACT;
+                // In the exact case we default to false
+                boolean toLowerCase = TRUE.equals( toLowerCaseUnbiased ) ? true : false;
+                
+                result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), toLowerCase, similarity ) : EXACT;
             }
             else if ( type.equals( "fulltext" ) )
             {
+                // In the fulltext case we default to true
+                boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
+                
                 Analyzer analyzer = customAnalyzer;
                 if ( analyzer == null )
                 {
-                    analyzer = toLowerCase ? LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER :
+                    analyzer = TRUE.equals( toLowerCase ) ? LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER :
                             LuceneDataSource.WHITESPACE_ANALYZER;
                 }
                 result = new CustomType( analyzer, toLowerCase, similarity );
@@ -213,6 +224,9 @@ abstract class IndexType
         }
         else
         {
+            // In the custom case we default to true
+            boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
+            
             // Use custom analyzer
             if ( customAnalyzer == null )
             {

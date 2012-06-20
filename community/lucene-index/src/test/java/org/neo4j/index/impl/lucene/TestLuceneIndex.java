@@ -1389,10 +1389,22 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void exactIndexWithCaseInsensitive() throws Exception
     {
+        Index<Node> index = nodeIndex( stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        Node node = graphDb.createNode();
+        index.add( node, "name", "Thomas Anderson" );
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
+        restartTx();
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
+    }
+
+    @Test
+    public void exactIndexWithCaseInsensitiveWithBetterConfig() throws Exception
+    {
         // START SNIPPET: exact-case-insensitive
-        Index<Node> index = graphDb.index().forNodes( "my-case-insensitive-index",
-                stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
-        
+        Index<Node> index = graphDb.index().forNodes( "exact-case-insensitive",
+                stringMap( "type", "exact", "to_lower_case", "true" ) );
         Node node = graphDb.createNode();
         index.add( node, "name", "Thomas Anderson" );
         assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
@@ -1402,7 +1414,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
         assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
     }
-
+    
     @Test
     public void notAbleToRemoveWithForbiddenKey() throws Exception
     {
