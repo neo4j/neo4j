@@ -21,7 +21,7 @@
 	<groupId>org.neo4j.drivers</groupId>
 	<artifactId>neo4j-python-embedded</artifactId>
 
-	<version>1.7.2</version>
+	<version>1.7.3-SNAPSHOT</version>
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
 	<description>
