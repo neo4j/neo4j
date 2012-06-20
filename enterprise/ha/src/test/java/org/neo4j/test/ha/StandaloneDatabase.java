@@ -20,6 +20,8 @@
 
 package org.neo4j.test.ha;
 
+import static java.util.Arrays.asList;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
@@ -28,9 +30,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.Ignore;
-import org.neo4j.com.Client;
-import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -40,13 +41,11 @@ import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.test.subprocess.SubProcess;
-import slavetest.Job;
 
-import static java.util.Arrays.*;
+import slavetest.Job;
 
 @Ignore
 public class StandaloneDatabase
@@ -122,11 +121,7 @@ public class StandaloneDatabase
                             config.put( HaSettings.server_id.name(), Integer.toString( getMachineId() ) );
                             Config configuration = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( removeDashes(config) ));
 
-                            return new FakeSlaveBroker( new MasterClient( "localhost",
-                                    Protocol.PORT, getMessageLog(), storeIdGetter, Client.ConnectionLostHandler.NO_ACTION, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                                    Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                                    Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
-                                    masterId, configuration);
+                            return new FakeSlaveBroker( getMessageLog(), masterId, configuration);
                         }
                     }
                 };

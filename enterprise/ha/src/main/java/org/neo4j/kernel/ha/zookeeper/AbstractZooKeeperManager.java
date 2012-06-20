@@ -34,7 +34,6 @@ import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
@@ -68,15 +67,12 @@ public abstract class AbstractZooKeeperManager
     protected final int clientLockReadTimeout;
     private final long sessionTimeout;
 
-    private final StoreIdGetter storeIdGetter;
-
-    public AbstractZooKeeperManager( String servers, StoreIdGetter storeIdGetter, StringLogger msgLog,
+    public AbstractZooKeeperManager( String servers, StringLogger msgLog,
             int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave, int sessionTimeout )
     {
         assert msgLog != null;
 
         this.servers = servers;
-        this.storeIdGetter = storeIdGetter;
         this.msgLog = msgLog;
         this.clientLockReadTimeout = clientLockReadTimeout;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
@@ -195,6 +191,12 @@ public abstract class AbstractZooKeeperManager
         }
         return cachedMaster;
     }
+    
+    protected StoreId getStoreId()
+    {
+        // TODO
+        return null;
+    }
 
     protected Master getMasterClientToMachine( Machine master )
     {
@@ -203,7 +205,7 @@ public abstract class AbstractZooKeeperManager
             return NO_MASTER;
         }
         return new MasterClient( master.getServer().first(),
-                master.getServer().other(), this.msgLog, storeIdGetter,
+                master.getServer().other(), this.msgLog, getStoreId(),
                 ConnectionLostHandler.NO_ACTION, clientReadTimeout,
                 clientLockReadTimeout, maxConcurrentChannelsPerSlave );
     }

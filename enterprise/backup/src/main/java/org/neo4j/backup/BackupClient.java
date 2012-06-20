@@ -27,16 +27,16 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
-    public BackupClient( String hostNameOrIp, int port, StringLogger logger, StoreIdGetter storeIdGetter )
+    public BackupClient( String hostNameOrIp, int port, StringLogger logger, StoreId storeId )
     {
-        super( hostNameOrIp, port, logger, storeIdGetter, BackupServer.FRAME_LENGTH,
+        super( hostNameOrIp, port, logger, storeId, BackupServer.FRAME_LENGTH,
                 BackupServer.PROTOCOL_VERSION, 40,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );

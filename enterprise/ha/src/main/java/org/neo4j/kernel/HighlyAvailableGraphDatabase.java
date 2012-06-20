@@ -47,7 +47,6 @@ import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.SlaveContext.Tx;
-import org.neo4j.com.StoreIdGetter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -99,7 +98,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -126,7 +124,6 @@ public class HighlyAvailableGraphDatabase
 
     private final int localGraphWait;
     protected volatile StoreId storeId;
-    protected final StoreIdGetter storeIdGetter;
 
     private LifeSupport life = new LifeSupport();
 
@@ -233,19 +230,6 @@ public class HighlyAvailableGraphDatabase
         this.machineId = configuration.getInteger( HaSettings.server_id );
         this.branchedDataPolicy = configuration.getEnum( BranchedDataPolicy.class, HaSettings.branched_data_policy );
         this.localGraphWait = configuration.getInteger( HaSettings.read_timeout );
-
-        storeIdGetter = new StoreIdGetter()
-        {
-            @Override
-            public StoreId get()
-            {
-                if( storeId == null )
-                {
-                    throw new IllegalStateException( "No store ID" );
-                }
-                return storeId;
-            }
-        };
 
         // TODO The dependency from BrokerFactory to 'this' is completely broken. Needs rethinking
         this.broker = createBroker();
@@ -409,11 +393,6 @@ public class HighlyAvailableGraphDatabase
     public IdGeneratorFactory getIdGeneratorFactory()
     {
         return localGraph().getIdGeneratorFactory();
-    }
-
-    public StoreIdGetter getStoreIdGetter()
-    {
-        return storeIdGetter;
     }
 
     @Override
@@ -1254,7 +1233,7 @@ public class HighlyAvailableGraphDatabase
         Pair<Integer, Long> mastersMaster;
         try
         {
-            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, getStoreId( newDb ) );
+            response = master.first().getMasterIdForCommittedTx( myLastCommittedTx, newDb.getStoreId() );
             mastersMaster = response.response();
         }
         catch ( RuntimeException e )
@@ -1296,12 +1275,6 @@ public class HighlyAvailableGraphDatabase
         }
         getMessageLog().logMessage( "Master id for last committed tx ok with highestTxId=" +
             myLastCommittedTx + " with masterId=" + myMaster, true );
-    }
-
-    private StoreId getStoreId( AbstractGraphDatabase db )
-    {
-        XaDataSource ds = db.getXaDataSourceManager().getNeoStoreDataSource();
-        return ((NeoStoreXaDataSource) ds).getStoreId();
     }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
@@ -1534,7 +1507,7 @@ public class HighlyAvailableGraphDatabase
             @Override
             public ZooClient newZooClient()
             {
-                        return new ZooClient( storeDir, messageLog, storeIdGetter, configuration, /* as SlaveDatabaseOperations for extracting master for tx */
+                return new ZooClient( storeDir, messageLog, configuration, /* as SlaveDatabaseOperations for extracting master for tx */
                         slaveOperations, /* as ClusterEventReceiver */slaveOperations );
             }
         } );
@@ -1923,5 +1896,11 @@ public class HighlyAvailableGraphDatabase
     public Guard getGuard()
     {
         return localGraph().getGuard();
+    }
+    
+    @Override
+    public StoreId getStoreId()
+    {
+        return storeId;
     }
 }
