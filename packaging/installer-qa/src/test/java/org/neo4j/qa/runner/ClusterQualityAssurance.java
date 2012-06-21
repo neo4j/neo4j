@@ -108,6 +108,7 @@ public class ClusterQualityAssurance extends Suite {
                     	// reference to StandaloneDatabaseQualityAssurance
                     	if(StandaloneDatabaseQualityAssurance.DESTROY_AND_RETRY_ON_ERROR)
                     	{
+                    		System.out.println("[Test Runner] Destroying VMs and trying again.");
                     		// Destroy vms and retry
                             testPermutation.getMachineClusterModel()
                                     .forceApply(new RecreateAllMachines());
@@ -155,6 +156,9 @@ public class ClusterQualityAssurance extends Suite {
 	                statement.evaluate();
 	            } catch(HAClusterDoesNotWorkException e) {
 	                if(retryNumber < MAX_HA_FAILS) {
+	                	System.out.println("[Test Runner] ^------- FAILED -------^");
+	                	System.out.println();
+	                	System.out.println("[Test Runner] Trying again, retry " + (retryNumber+1) + "/" + MAX_HA_FAILS);
 	                    runTestCase(statement, machineClusterModel, ++retryNumber);
 	                } else {
 	                    throw e;
@@ -162,7 +166,7 @@ public class ClusterQualityAssurance extends Suite {
 	            }
             } catch(Throwable e)
             {
-            	System.out.println(" ^------- FAILED -------^");
+            	System.out.println("[Test Runner] ^------- FAILED -------^");
             	System.out.println();
             	throw e;
             }
