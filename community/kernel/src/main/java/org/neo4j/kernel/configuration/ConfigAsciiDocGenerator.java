@@ -45,7 +45,12 @@ public class ConfigAsciiDocGenerator {
 
 	public String generateDocsFor(Class<? extends SettingsResourceBundle> settingsResource)
 	{
-		ResourceBundle bundle = ResourceBundle.getBundle( settingsResource.getName() );
+		return generateDocsFor(settingsResource.getName());
+	}
+	
+	public String generateDocsFor(String settingsResource)
+	{
+		ResourceBundle bundle = ResourceBundle.getBundle( settingsResource );
 		
 		StringBuilder sb = new StringBuilder();
 		
