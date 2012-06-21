@@ -127,7 +127,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
 
     private Edition determineEdition(String classPath) {
         if (classPath.contains("neo4j-ha")) return Edition.enterprise;
-        if (classPath.contains("neo4j-jmx")) return Edition.advanced;
+        if (classPath.contains("neo4j-management")) return Edition.advanced;
         return Edition.community;
     }
 
