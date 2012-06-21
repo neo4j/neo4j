@@ -39,7 +39,7 @@ class CommitContext
     final CommandList commandList;
     final boolean recovery;
 
-    IndexSearcherRef searcher;
+    IndexReference searcher;
     IndexWriter writer;
 
     CommitContext( LuceneDataSource dataSource, IndexIdentifier identifier, IndexType indexType, CommandList commandList )

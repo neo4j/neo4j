@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.cache.LruCache;
  *
  * @see LuceneDataSource
  */
-public class IndexSearcherLruCache extends LruCache<IndexIdentifier, Pair<IndexSearcherRef, AtomicBoolean>>
+public class IndexSearcherLruCache extends LruCache<IndexIdentifier, Pair<IndexReference, AtomicBoolean>>
 {
     /**
      * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an
@@ -44,7 +44,7 @@ public class IndexSearcherLruCache extends LruCache<IndexIdentifier, Pair<IndexS
     }
 
     @Override
-    public void elementCleaned( Pair<IndexSearcherRef, AtomicBoolean> searcher )
+    public void elementCleaned( Pair<IndexReference, AtomicBoolean> searcher )
     {
         try
         {

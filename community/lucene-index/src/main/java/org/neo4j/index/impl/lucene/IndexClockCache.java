@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.cache.ClockCache;
 
-public class IndexClockCache extends ClockCache<IndexIdentifier, IndexSearcherRef>
+public class IndexClockCache extends ClockCache<IndexIdentifier, IndexReference>
 {
     public IndexClockCache( int maxSize )
     {
@@ -31,7 +31,7 @@ public class IndexClockCache extends ClockCache<IndexIdentifier, IndexSearcherRe
     }
 
     @Override
-    public void elementCleaned( IndexSearcherRef searcher )
+    public void elementCleaned( IndexReference searcher )
     {
         try
         {

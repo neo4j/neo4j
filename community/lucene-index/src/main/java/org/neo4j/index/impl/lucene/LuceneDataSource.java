@@ -293,7 +293,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return;
             }
             closed = true;
-            for ( IndexSearcherRef searcher : indexSearchers.values() )
+            for ( IndexReference searcher : indexSearchers.values() )
             {
                 try
                 {
@@ -383,7 +383,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public void flushAll()
         {
-            for ( IndexSearcherRef index : getAllIndexes() )
+            for ( IndexReference index : getAllIndexes() )
             {
                 try
                 {
@@ -415,9 +415,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    private synchronized IndexSearcherRef[] getAllIndexes()
+    private synchronized IndexReference[] getAllIndexes()
     {
-        return indexSearchers.values().toArray( new IndexSearcherRef[indexSearchers.size()] );
+        return indexSearchers.values().toArray( new IndexReference[indexSearchers.size()] );
     }
 
     void getReadLock()
@@ -453,7 +453,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * {@code null}.
      * @throws IOException if there's a problem with the index.
      */
-    private IndexSearcherRef refreshSearcher( IndexSearcherRef searcher )
+    private IndexReference refreshSearcher( IndexReference searcher )
     {
         try
         {
@@ -464,7 +464,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 IndexSearcher newSearcher = new IndexSearcher( reopened );
                 searcher.detachOrClose();
-                return new IndexSearcherRef( searcher.getIdentifier(), newSearcher, writer );
+                return new IndexReference( searcher.getIdentifier(), newSearcher, writer );
             }
             return searcher;
         }
@@ -510,10 +510,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return TopFieldCollector.create( sorting, n, false, true, false, true );
     }
 
-    IndexSearcherRef getIndexSearcher( IndexIdentifier identifier )
+    IndexReference getIndexSearcher( IndexIdentifier identifier )
     {
         assertNotClosed();
-        IndexSearcherRef searcher = indexSearchers.get( identifier );
+        IndexReference searcher = indexSearchers.get( identifier );
         if ( searcher == null )
         {
             return syncGetIndexSearcher( identifier );
@@ -543,17 +543,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
             throw new IllegalStateException( "Lucene index provider has been shut down" );
     }
 
-    synchronized IndexSearcherRef syncGetIndexSearcher( IndexIdentifier identifier )
+    synchronized IndexReference syncGetIndexSearcher( IndexIdentifier identifier )
     {
         try
         {
-            IndexSearcherRef searcher = indexSearchers.get( identifier );
+            IndexReference searcher = indexSearchers.get( identifier );
             if ( searcher == null )
             {
                 IndexWriter writer = newIndexWriter( identifier );
                 IndexReader reader = IndexReader.open( writer, true );
                 IndexSearcher indexSearcher = new IndexSearcher( reader );
-                searcher = new IndexSearcherRef( identifier, indexSearcher, writer );
+                searcher = new IndexReference( identifier, indexSearcher, writer );
                 indexSearchers.put( identifier, searcher );
             }
             else
@@ -572,7 +572,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    private IndexSearcherRef refreshSearcherIfNeeded( IndexSearcherRef searcher )
+    private IndexReference refreshSearcherIfNeeded( IndexReference searcher )
     {
         if ( searcher.checkAndClearStale() )
         {
@@ -593,7 +593,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     void invalidateIndexSearcher( IndexIdentifier identifier )
     {
-        IndexSearcherRef searcher = indexSearchers.get( identifier );
+        IndexReference searcher = indexSearchers.get( identifier );
         if ( searcher != null )
             searcher.setStale();
     }
@@ -725,7 +725,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         try
         {
-            IndexSearcherRef searcher = indexSearchers.remove( identifier );
+            IndexReference searcher = indexSearchers.remove( identifier );
             if ( searcher != null )
             {
                 searcher.dispose( true );
@@ -810,7 +810,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
         makeSureAllIndexesAreInstantiated();
-        for ( IndexSearcherRef writer : getAllIndexes() )
+        for ( IndexReference writer : getAllIndexes() )
         {
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
                     writer.getWriter().getConfig().getIndexDeletionPolicy();

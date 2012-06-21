@@ -26,13 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 
-class IndexSearcherRef
+class IndexReference
 {
     private final IndexIdentifier identifier;
     private final IndexWriter writer;
     private final IndexSearcher searcher;
     private final AtomicInteger refCount = new AtomicInteger( 0 );
-    private volatile boolean isClosed;
+    private boolean searcherIsClosed;
+    private boolean writerIsClosed;
 
     /**
      * We need this because we only want to close the reader/searcher if
@@ -44,7 +45,7 @@ class IndexSearcherRef
 
     private final AtomicBoolean stale = new AtomicBoolean();
 
-    public IndexSearcherRef( IndexIdentifier identifier, IndexSearcher searcher, IndexWriter writer )
+    public IndexReference( IndexIdentifier identifier, IndexSearcher searcher, IndexWriter writer )
     {
         this.identifier = identifier;
         this.searcher = searcher;
@@ -73,13 +74,17 @@ class IndexSearcherRef
     
     public synchronized void dispose( boolean writerAlso ) throws IOException
     {
-        if ( !this.isClosed )
+        if ( !searcherIsClosed )
         {
-            this.searcher.close();
-            this.searcher.getIndexReader().close();
-            if ( writerAlso )
-                this.writer.close();
-            this.isClosed = true;
+            searcher.close();
+            searcher.getIndexReader().close();
+            searcherIsClosed = true;
+        }
+        
+        if ( writerAlso && !writerIsClosed )
+        {
+            writer.close();
+            writerIsClosed = true;
         }
     }
 
@@ -99,7 +104,7 @@ class IndexSearcherRef
     {
         try
         {
-            if ( this.isClosed || this.refCount.get() == 0 )
+            if ( this.searcherIsClosed || this.refCount.get() == 0 )
             {
                 return true;
             }
@@ -120,7 +125,7 @@ class IndexSearcherRef
 
     /*synchronized externally*/ boolean isClosed()
     {
-        return isClosed;
+        return searcherIsClosed;
     }
 
     /*synchronized externally*/ boolean checkAndClearStale()

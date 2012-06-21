@@ -27,10 +27,10 @@ import org.neo4j.graphdb.index.IndexHits;
 class DocToIdIterator extends AbstractIndexHits<Long>
 {
     private final Collection<Long> exclude;
-    private IndexSearcherRef searcherOrNull;
+    private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
     
-    DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexSearcherRef searcherOrNull )
+    DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull )
     {
         this.source = source;
         this.exclude = exclude;

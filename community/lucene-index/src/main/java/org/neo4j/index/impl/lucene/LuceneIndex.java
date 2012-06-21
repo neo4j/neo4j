@@ -261,7 +261,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     luceneTx.getRemovedIds( this, query );
         }
         IndexHits<Long> idIterator = null;
-        IndexSearcherRef searcher = null;
+        IndexReference searcher = null;
         service.dataSource().getReadLock();
         try
         {
@@ -354,7 +354,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         return found;
     }
 
-    private IndexHits<Document> search( IndexSearcherRef searcherRef, Query query,
+    private IndexHits<Document> search( IndexReference searcherRef, Query query,
             QueryContext additionalParametersOrNull, IndexSearcher additionsSearcher, Collection<Long> removed )
     {
         try
