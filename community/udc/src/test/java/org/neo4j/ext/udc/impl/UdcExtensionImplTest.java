@@ -138,7 +138,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals("test", handler.getQueryMap().get(SOURCE));
+        assertEquals("unit-testing", handler.getQueryMap().get(SOURCE));
 
         destroy( graphdb );
     }
@@ -156,11 +156,10 @@ public class UdcExtensionImplTest
         config = new HashMap<String, String>();
         config.put(UdcSettings.first_delay.name(), "100");
         config.put(UdcSettings.udc_host.name(), serverAddress);
-        config.put(UdcSettings.udc_source.name(), "test");
     }
 
     @Test
-    public void shouldBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
+    public void shouldNotBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
     {
 
         setupServer();
@@ -169,7 +168,18 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "marketoid", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
+
+        destroy( graphdb );
+    }
+    @Test
+    public void shouldBeAbleToReadDefaultRegistration() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
