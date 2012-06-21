@@ -1,3 +1,29 @@
+1.8.M05 (2012-06-25)
+--------------------
+HA:
+ o Changed master election process, now writing of latest txid for cluster members happens on demand, removing zookeeper as a bottleneck
+
+Kernel:
+ o Configurable amount of logical logs to keep, by for example number of days or size on disk.
+   keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o.
+   Regardless of configuration there will always be at least the latest non-empty logical log left.
+ o Reduced synchronization while memory mapping files, leading to increased multithreaded performance
+
+Server:
+ o Added support for multi line Cypher queries in webadmin browser
+
+Lucene-index:
+o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide for both, since
+  it's doesn't make sense to have a writer w/o a searcher and isn't possible to have a searcher
+  w/o its writer.
+o Loosened contention regarding getting index searchers for querying.
+
+Cypher:
+ o CREATE and RELATE can now introduce path identifiers
+ o Fixes #600: Double optional with no matching relationships returns too many rows
+ o Fixes #613: Missing dependencies not reported correctly for queries with RELATE/SET/DELETE
+ o Fixes around optional paths
+
 1.8.M04 (2012-06-07)
 --------------------
 Kernel:
