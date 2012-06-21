@@ -1,3 +1,10 @@
+1.8.M05 (2012-06-21)
+--------------------
+o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide for both, since
+  it's doesn't make sense to have a writer w/o a searcher and isn't possible to have a searcher
+  w/o its writer.
+o Loosened contention regarding getting index searchers for querying.
+
 1.7.M01 (2012-03-12)
 --------------------
 o Added LowerCaseKeywordAnalyzer and a clear test for it which shows how to configure a case-insensitive exact index.
