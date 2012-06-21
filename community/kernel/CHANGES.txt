@@ -1,4 +1,4 @@
-1.8.M05 (2012-06-21)
+1.8.M05 (2012-06-25)
 --------------------
 o Configurable amount of logical logs to keep, by for example number of days or size on disk.
   keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o.

@@ -1,3 +1,7 @@
+1.8.M05 (2012-06-25)
+--------------------
+o Added support for multi line Cypher queries in webadmin browser
+
 1.8.M03 (2012-05-24)
 --------------------
 o keep_logical_logs is now respected if set to false - default is still true
