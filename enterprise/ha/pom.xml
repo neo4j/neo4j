@@ -10,7 +10,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-ha</artifactId>
   <name>Neo4j - High Availability</name>
-  <version>1.7.2</version>
+  <version>1.7.3-SNAPSHOT</version>
   <description>This component provides the means to set up a cluster of Neo4j instances that act together
     as a cluster, providing Master-Slave replication and other features.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
@@ -106,12 +106,12 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.3-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -138,7 +138,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
