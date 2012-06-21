@@ -20,9 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./base',
+   './MenuView',
    'ribcage/View',
    'lib/amd/jQuery'], 
-  (template, View, $) ->
+  (template, MenuView, View, $) ->
   
     class BaseView extends View
       
@@ -30,25 +31,19 @@ define(
       
       init : (@appState) =>
         $("body").append(@el)
-        @appState.bind 'change:mainView', @mainViewChanged
+        @appState.bind 'change:mainView', @onMainViewChanged
+        @menuView = new MenuView(@appState.getMainMenuModel())
 
-      mainViewChanged : (event) =>
+      onMainViewChanged : (event) =>
         if @mainView?
           @mainView.detach()
         @mainView = event.attributes.mainView
         @render()
 
       render : ->
-        $(@el).html @template( mainmenu : [ 
-          { label : "Dashboard",   subtitle:"Overview",url : "#",           current: location.hash is "" }
-          { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
-          { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash.indexOf("#/console/") is 0 }
-          { label : "Server info", subtitle:"Details",url : "#/info/" ,    current: location.hash is "#/info/" } 
-          { label : "Index manager", subtitle:"Indexing overview",url : "#/index/" ,    current: location.hash is "#/index/" } ] )
-
-        if @mainView?
-          @mainView.attach($("#contents"))
-          @mainView.render()
+        $(@el).html( @template() )
+        @_renderMainView()
+        @_renderMenu()
         return this
 
       remove : =>
@@ -56,4 +51,13 @@ define(
         if @mainView?
             @mainView.remove()
         super()
+
+      _renderMainView : ->
+        if @mainView?
+          @mainView.attach($("#contents"))
+          @mainView.render()
+
+      _renderMenu : ->
+        @menuView.attach($("#mainmenu"))
+        @menuView.render()
 )

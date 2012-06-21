@@ -58,11 +58,13 @@ public abstract class AbstractWebadminTest extends SharedServerTestBase {
 
     private static String deriveBaseUri()
     {
+    	// TODO: Deprecate "webdriver.override.neo-server.baseuri", SharedServerTestBase
+    	// supports external servers now.
         String overrideBaseUri = System.getProperty( "webdriver.override.neo-server.baseuri" );
         if ( StringUtils.isNotEmpty( overrideBaseUri )) {
             return overrideBaseUri;
         }
-        return server().baseUri().toString();
+        return getServerURL();
     }
 
     @After

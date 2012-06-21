@@ -28,7 +28,7 @@ public class IndexManagerWebIT extends AbstractWebadminTest {
     public void createNodeIndexTest() 
     {
         wl.goToWebadminStartPage();
-        wl.clickOnTab("Index manager");
+        wl.clickOnTab("Indexes");
         wl.writeTo(By.id( "create-node-index-name" ), "mynodeindex");
         wl.clickOn(By.xpath("//button[@class='create-node-index button']"));
         wl.waitForSingleElementToAppear(By.xpath("//*[@id='node-indexes']//td[contains(.,'mynodeindex')]"));
@@ -38,7 +38,7 @@ public class IndexManagerWebIT extends AbstractWebadminTest {
     public void createRelationshipIndexTest() 
     {
         wl.goToWebadminStartPage();
-        wl.clickOnTab("Index manager");
+        wl.clickOnTab("Indexes");
         wl.writeTo(By.id( "create-rel-index-name" ), "myrelindex");
         wl.clickOn(By.xpath("//button[@class='create-rel-index button']"));
         wl.waitForSingleElementToAppear(By.xpath("//*[@id='rel-indexes']//td[contains(.,'myrelindex')]"));

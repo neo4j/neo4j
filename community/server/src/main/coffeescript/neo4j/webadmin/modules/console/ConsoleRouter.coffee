@@ -24,8 +24,9 @@ define(
    './views/ShellConsoleView'
    './views/GremlinConsoleView'
    './views/HttpConsoleView'
+   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
    'ribcage/Router'], 
-  (Console, HttpConsole, ShellConsoleView, GremlinConsoleView, HttpConsoleView, Router) ->
+  (Console, HttpConsole, ShellConsoleView, GremlinConsoleView, HttpConsoleView, MainMenuModel, Router) ->
   
     class ConsoleRouter extends Router
       routes : 
@@ -36,6 +37,12 @@ define(
 
       init : (appState) =>
         @appState = appState
+
+        @menuItem = new MainMenuModel.Item 
+          title : "Console",
+          subtitle:"Power tool",
+          url : "#/console/"
+
         @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
         @shellState = new Console(server:@appState.get("server"), lang:"shell")
         @httpState = new HttpConsole(server:@appState.get("server"), lang:"http")
@@ -63,4 +70,11 @@ define(
 
       getConsoleView : (type) =>
         @views[type]
+
+      #
+      # Bootstrapper SPI
+      #
+
+      getMenuItems : ->
+        [@menuItem]
 )

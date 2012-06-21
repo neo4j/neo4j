@@ -38,11 +38,18 @@ define(
           timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
         })
 
-        appState = new ApplicationState
-        appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)
+        @appState = new ApplicationState
+        @appState.set server : new neo4js.GraphDatabase(location.protocol + "//" + location.host)
 
-        jQuery ->
-          m.init(appState) for m in modules
+        jQuery =>
+          @_initModule module for module in modules  
           Backbone.history.start()
+
+      _initModule : (module) ->        
+        mainMenu = @appState.getMainMenuModel()
+        module.init(@appState) 
+        if module.getMenuItems?
+          for item in module.getMenuItems() 
+            mainMenu.addMenuItem(item)
       
 )
