@@ -22,10 +22,10 @@ define(
   ['ribcage/View'
    'neo4j/webadmin/utils/Keys'
    'lib/amd/CodeMirror'
-   'neo4j/codemirror/cypher'
+   #'neo4j/codemirror/cypher' # Disabled awaiting a test suite for it
    './consoleTemplate'
    'lib/amd/jQuery.putCursorAtEnd'], 
-  (View, Keys, CodeMirror, cypherHighlighting, template, $) ->
+  (View, Keys, CodeMirror, template, $) ->
 
     class ConsoleView extends View
       
@@ -47,7 +47,8 @@ define(
         @_editor = CodeMirror($("#data-console").get(0),{
           value: @dataModel.getQuery()
           onKeyEvent: @onKeyEvent
-          mode: "text/x-cypher"
+          #mode: "text/x-cypher"
+          mode : "text"
         })
 
         # WebDriver functional tests are unable to enter
