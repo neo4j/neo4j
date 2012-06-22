@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
+package org.neo4j.server.rest.streaming;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -36,15 +37,18 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.PrettyJSON;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 
 public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {
-
-    public static final MediaType STREAMING_JSON = new MediaType( "application", "json", MapUtil.stringMap( "stream", "true" ) );
 
     /**
      * By specifying an extended header attribute in the HTTP request,
@@ -94,8 +98,9 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
 
 
         String entity = gen.get()
-        .expectedType( STREAMING_JSON )
-        .payload( jsonString )
+        .expectedType( APPLICATION_JSON_TYPE )
+        .withHeader(StreamingJsonFormat.STREAM_HEADER,"true")
+        .payload(jsonString)
         .expectedStatus(200)
         .post( batchUri() ).entity();
         System.out.println("entity = " + entity);
@@ -188,8 +193,9 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
             .endArray().toString();
 
         String entity = gen.get()
-        .expectedType( STREAMING_JSON )
-        .expectedStatus( 200 )
+        .expectedType(APPLICATION_JSON_TYPE)
+        .withHeader(StreamingJsonFormat.STREAM_HEADER, "true")
+        .expectedStatus(200)
         .payload( jsonString )
         .post( batchUri() )
         .entity();
@@ -201,12 +207,6 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
 //        String rels = gen.get()
 //                .expectedStatus( 200 ).get( getRelationshipIndexUri( "my_rels", "since", "2010")).entity();
 //        assertEquals(1, JsonHelper.jsonToList(  rels ).size());
-    }
-
-    private String batchUri()
-    {
-        return getDataUri()+"batch";
-        
     }
 
     @Test
@@ -226,7 +226,10 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
                 .endObject()
             .endArray().toString();
 
-        JaxRsResponse response = RestRequest.req().accept( STREAMING_JSON ).post( batchUri(), jsonString );
+        JaxRsResponse response = RestRequest.req()
+        .accept(APPLICATION_JSON_TYPE)
+        .header(StreamingJsonFormat.STREAM_HEADER, "true")
+        .post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
 
@@ -241,27 +244,34 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
         assertTrue(((String) result.get("location")).length() > 0);
     }
 
+    private String batchUri()
+    {
+        return getDataUri()+"batch";
+
+    }
+
     @Test
     public void shouldForwardUnderlyingErrors() throws Exception {
 
-        JaxRsResponse response = RestRequest.req().accept(STREAMING_JSON)
-            .post( batchUri(), new PrettyJSON()
+        JaxRsResponse response = RestRequest.req().accept(APPLICATION_JSON_TYPE).header(StreamingJsonFormat.STREAM_HEADER,"true")
+
+            .post(batchUri(), new PrettyJSON()
                     .array()
                     .object()
-                    .key( "method" ).value( "POST" )
-                    .key( "to" ).value( "/node" )
-                    .key( "body" )
+                    .key("method").value("POST")
+                    .key("to").value("/node")
+                    .key("body")
                     .object()
-                    .key( "age" )
+                    .key("age")
                     .array()
-                    .value( true )
-                    .value( "hello" )
+                    .value(true)
+                    .value("hello")
                     .endArray()
                     .endObject()
                     .endObject()
                     .endArray()
-                    .toString() );
-        Map<String, Object> res = singleResult( response, 0 );
+                    .toString());
+            Map<String, Object> res = singleResult( response, 0 );
 
         assertTrue(((String)res.get("message")).startsWith("Invalid JSON array in POST body"));
         assertEquals( 400, res.get( "status" ) );
@@ -300,7 +310,10 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
 
         int originalNodeCount = countNodes();
 
-        JaxRsResponse response = RestRequest.req().accept( STREAMING_JSON ).post(batchUri(), jsonString);
+        JaxRsResponse response = RestRequest.req()
+                .accept(APPLICATION_JSON_TYPE)
+                .header(StreamingJsonFormat.STREAM_HEADER, "true")
+                .post(batchUri(), jsonString);
         assertEquals(200, response.getStatus());
         assertTrue(((Map)singleResult( response, 1 ).get("body")).get("message").toString().contains( "java.util.ArrayList cannot be cast to java.util.Map" ));
         assertEquals(400, singleResult( response, 1 ).get( "status" ));
@@ -329,8 +342,9 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
             .toString();
         
         String entity = gen.get()
-                .expectedType( STREAMING_JSON )
-                .expectedStatus( 200 )
+                .expectedType( APPLICATION_JSON_TYPE )
+                .withHeader( StreamingJsonFormat.STREAM_HEADER,"true" )
+                .expectedStatus(200)
                 .payload( jsonString )
                 .post( batchUri() )
                 .entity();
@@ -366,7 +380,8 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
         .endArray()
         .toString();
         gen.get()
-            .expectedType( STREAMING_JSON )
+            .expectedType(APPLICATION_JSON_TYPE)
+            .withHeader(StreamingJsonFormat.STREAM_HEADER, "true")
             .expectedStatus( 200 )
             .payload( jsonString )
             .post( batchUri() )
@@ -421,7 +436,10 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
 
         int originalNodeCount = countNodes();
 
-        JaxRsResponse response = RestRequest.req().accept( STREAMING_JSON ).post( batchUri(), jsonString );
+        JaxRsResponse response = RestRequest.req()
+                .accept(APPLICATION_JSON_TYPE)
+                .header(StreamingJsonFormat.STREAM_HEADER, "true")
+                .post(batchUri(), jsonString);
         assertEquals(200, response.getStatus());
         assertEquals(400, singleResult( response,1 ).get("status"));
         assertEquals(originalNodeCount, countNodes());
@@ -451,7 +469,10 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
 
         int originalNodeCount = countNodes();
 
-        JaxRsResponse response = RestRequest.req().accept( STREAMING_JSON ).post( batchUri(), jsonString );
+        JaxRsResponse response = RestRequest.req()
+                .accept( APPLICATION_JSON_TYPE )
+                .header(StreamingJsonFormat.STREAM_HEADER, "true")
+                .post(batchUri(), jsonString);
         assertEquals(200, response.getStatus());
         assertEquals(404, singleResult( response ,1 ).get("status"));
         assertEquals(originalNodeCount, countNodes());
@@ -493,7 +514,10 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
                 .endObject()
             .endArray().toString();
         
-        JaxRsResponse response = RestRequest.req().accept( STREAMING_JSON ).post( batchUri(), jsonString );
+        JaxRsResponse response = RestRequest.req()
+                .accept( APPLICATION_JSON_TYPE )
+                .header(StreamingJsonFormat.STREAM_HEADER, "true")
+                .post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
         

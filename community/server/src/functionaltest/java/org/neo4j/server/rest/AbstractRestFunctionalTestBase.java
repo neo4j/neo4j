@@ -65,10 +65,10 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
         String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
 
-        gen.get().expectedStatus( status.getStatusCode() ).payload(
+        gen().expectedStatus( status.getStatusCode() ).payload(
                 queryString ).description(
                 AsciidocHelper.createCypherSnippet( script ) );
-        return gen.get().post( endpoint ).entity();
+        return gen().post( endpoint ).entity();
     }
     
     protected String doGremlinRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
@@ -78,9 +78,9 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
         String queryString = "{\"script\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
 
-        gen.get().expectedStatus( status.getStatusCode() ).payload(
+        gen().expectedStatus( status.getStatusCode() ).payload(
                 queryString ).description(formatGroovy( createScript( script ) ) );
-        return gen.get().post( endpoint ).entity();
+        return gen().post( endpoint ).entity();
     }
     
     protected String formatGroovy( String script )
@@ -144,7 +144,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public void cleanContent()
     {
         cleanDatabase();
-        gen.get().setGraph( graphdb() );
+        gen().setGraph( graphdb() );
     }
 
     protected String getDataUri()

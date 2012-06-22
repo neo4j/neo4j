@@ -19,11 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.junit.matchers.JUnitMatchers.either;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
@@ -198,7 +200,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
         Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
         assertEquals( 2, resultMap.size() );
-        assertThat( response, containsString( "\"I\", \"you\"" ) );
+        assertThat( response, anyOf(containsString("\"I\", \"you\""), containsString("\"I\",\"you\"")) );
     }
 
     @Test
@@ -210,8 +212,8 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String script = "start n = node(%I%) return n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
-        assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
-        assertThat( response, containsString( "[ \"a\", \"b\", \"c\" ]" ) );
+        assertThat( response, anyOf(containsString( "[ 1, 2, 3 ]" ),containsString( "[1,2,3]" )) );
+        assertThat( response, anyOf(containsString( "[ \"a\", \"b\", \"c\" ]" ),containsString( "[\"a\",\"b\",\"c\"]" )) );
     }
 
     void setProperty(String nodeName, String propertyName, Object propertyValue) {
@@ -231,7 +233,6 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     @Test
     @Documented
     @Title("Send queries with errors")
-    @Ignore
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {
         data.get();

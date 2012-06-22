@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -44,18 +45,52 @@ public final class RepresentationFormatRepository
         }
     }
 
-    public OutputFormat outputFormat( List<MediaType> acceptable, URI baseUri )
+    public OutputFormat outputFormat(List<MediaType> acceptable, URI baseUri, MultivaluedMap<String, String> requestHeaders)
+    {
+        RepresentationFormat format = forHeaders( acceptable, requestHeaders );
+        if (format==null)
+        {
+            format = forMediaTypes( acceptable );
+        }
+        if (format==null)
+        {
+            format = useDefault( acceptable );
+        }
+        return new OutputFormat( format, baseUri, injector );
+    }
+
+    private RepresentationFormat forHeaders(List<MediaType> acceptable, MultivaluedMap<String, String> requestHeaders)
+    {
+        if (requestHeaders==null) return null;
+        if (!containsType(acceptable,MediaType.APPLICATION_JSON_TYPE)) return null;
+        String streamHeader = requestHeaders.getFirst(StreamingFormat.STREAM_HEADER);
+        if ("true".equalsIgnoreCase(streamHeader))
+        {
+            return formats.get(StreamingFormat.MEDIA_TYPE);
+        }
+        return null;
+    }
+
+    private boolean containsType(List<MediaType> mediaTypes, MediaType mediaType)
+    {
+        for (MediaType type : mediaTypes)
+        {
+            if (mediaType.getType().equals(type.getType()) && mediaType.getSubtype().equals(type.getSubtype())) return true;
+        }
+        return false;
+    }
+
+    private RepresentationFormat forMediaTypes(List<MediaType> acceptable)
     {
         for ( MediaType type : acceptable )
         {
             RepresentationFormat format = formats.get( type );
             if ( format != null )
             {
-                return new OutputFormat( format, baseUri, injector );
+                return format;
             }
         }
-
-        return new OutputFormat( useDefault( acceptable ), baseUri, injector );
+        return null;
     }
 
     public InputFormat inputFormat( MediaType type )

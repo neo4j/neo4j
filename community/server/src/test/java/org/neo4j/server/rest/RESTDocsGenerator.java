@@ -41,16 +41,13 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import com.sun.jersey.api.client.*;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -94,6 +91,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
     private Map<String, String> headers = new TreeMap<String, String>(  );
+    private boolean noDoc;
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -190,8 +188,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         this.payload = payload;
         return this;
     }
-    
-    
+
+    public RESTDocsGenerator noDoc() {
+        this.noDoc = true;
+        return this;
+    }
+
 
     /**
      * Add an expected response header. If the heading is missing in the
@@ -277,7 +279,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         ClientRequest request;
         try
         {
-            request = REQUEST_BUILDER.accept( accept )
+            request = withHeaders(REQUEST_BUILDER)
+                    .accept(accept)
                     .build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
@@ -299,15 +302,16 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             if ( payload != null )
             {
-                request = REQUEST_BUILDER.type( payloadType )
-                        .accept( accept )
-                        .entity( payload )
+                request = withHeaders(REQUEST_BUILDER)
+                        .type(payloadType)
+                        .accept(accept)
+                        .entity(payload)
                         .build( new URI( uri ), method );
             }
             else
             {
-                request = REQUEST_BUILDER.accept( accept )
-                        .build( new URI( uri ), method );
+                request = withHeaders(REQUEST_BUILDER).accept( accept )
+                        .build(new URI(uri), method);
             }
         }
         catch ( URISyntaxException e )
@@ -315,6 +319,13 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept, headerFields, request );
+    }
+
+    private <T extends Builder> T withHeaders(T builder) {
+        for (Entry<String, String> entry : headers.entrySet()) {
+            builder.header(entry.getKey(),entry.getValue());
+        }
+        return builder;
     }
 
     /**
@@ -348,6 +359,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
                     .get( headerField ) );
         }
+        if (noDoc) data.setIgnore();
         data.setTitle( title );
         data.setDescription( description );
         data.setMethod( request.getMethod() );
@@ -436,6 +448,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         public String entity;
         public Map<String, String> requestHeaders;
         public Map<String, String> responseHeaders;
+        public boolean ignore;
 
         public void setPayload( final String payload )
         {
@@ -484,6 +497,10 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             requestHeaders = request;
         }
 
+        public void setIgnore() {
+            this.ignore = true;
+        }
+
         @Override
         public String toString()
         {
@@ -495,6 +512,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     protected void document( final DocumentationData data )
     {
+        if (data.ignore) return;
         data.description = replaceSnippets( data.description );
         Writer fw = null;
         try

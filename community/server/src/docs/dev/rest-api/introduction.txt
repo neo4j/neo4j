@@ -9,3 +9,8 @@ To interact with the JSON interface you must explicitly set the request header +
 You should also set the header +Content-Type:application/json+ if your request sends data, for example when you're creating a relationship.
 The examples include the relevant request and response headers.
 
+The server supports streaming results, with better performance and lower memory overhead. In most use-case, there should
+not be a difference in how the API behaves when using streaming.
+
+CAUTION: With a Header +X-Stream:true+ you can enable a streaming response per Request. This feature is experimental and should be thoroughly tested
+as it changes some semantics, esp. errors occurring during the lazy streaming of results. The goal is to make streaming the default mode in subsequent releases.

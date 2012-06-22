@@ -34,6 +34,7 @@ import org.mortbay.log.Log;
 import org.neo4j.server.rest.batch.BatchOperations;
 import org.neo4j.server.rest.batch.StreamingBatchOperationResults;
 import org.neo4j.server.rest.domain.BatchOperationFailedException;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.web.WebServer;
 
 public class StreamingBatchOperations extends BatchOperations
@@ -85,8 +86,7 @@ public class StreamingBatchOperations extends BatchOperations
             final HttpHeaders httpHeaders)
     {
         super.addHeaders( res,httpHeaders );
-        // todo check ! if it is not a list of headers then
-        res.addHeader( "Accept", "application/json;stream=true" );
+        res.addHeader(StreamingJsonFormat.STREAM_HEADER,"true");
     }
 
     private static class BatchInternalJettyServletResponse extends InternalJettyServletResponse {

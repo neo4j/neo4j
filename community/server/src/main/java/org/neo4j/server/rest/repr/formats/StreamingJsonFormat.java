@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
@@ -37,7 +36,6 @@ import org.codehaus.jackson.io.IOContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -51,8 +49,6 @@ import org.neo4j.server.rest.repr.StreamingFormat;
 @Service.Implementation( RepresentationFormat.class )
 public class StreamingJsonFormat extends RepresentationFormat implements StreamingFormat
 {
-    public static final MediaType MEDIA_TYPE = new MediaType( MediaType.APPLICATION_JSON_TYPE.getType(),
-            MediaType.APPLICATION_JSON_TYPE.getSubtype(), MapUtil.stringMap( "stream", "true" ) );
 
     private final JsonFactory factory;
     public StreamingJsonFormat()
@@ -288,7 +284,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         private final InputFormat inputFormat;
 
         public StreamingRepresentationFormat(JsonGenerator g, InputFormat inputFormat) {
-            super(StreamingJsonFormat.MEDIA_TYPE);
+            super(StreamingFormat.MEDIA_TYPE);
             this.g = g;
             this.inputFormat = inputFormat;
         }

@@ -42,6 +42,7 @@ import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.web.WebServer;
 
 @Path("/batch")
@@ -133,10 +134,15 @@ public class BatchOperationService {
 
     private boolean isStreaming( HttpHeaders httpHeaders )
     {
+        if ("true".equalsIgnoreCase(httpHeaders.getRequestHeaders().getFirst(StreamingJsonFormat.STREAM_HEADER)))
+        {
+            return true;
+        }
+
         for ( MediaType mediaType : httpHeaders.getAcceptableMediaTypes() )
         {
             Map<String, String> parameters = mediaType.getParameters();
-            if ( parameters.containsKey( "stream" ) && parameters.get("stream").equals( "true" ) )
+            if ( parameters.containsKey( "stream" ) && "true".equalsIgnoreCase(parameters.get("stream")))
             {
                 return true;
             }

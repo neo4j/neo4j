@@ -58,7 +58,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         // Get all shortest paths
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );
-        String response = gen.get()
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
         .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
@@ -89,7 +89,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
     {
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );
-        String response = gen.get()
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
         .post( "http://localhost:7474/db/data/node/" + a + "/path" )
@@ -153,7 +153,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         // Get cheapest paths using Dijkstra
         long start = nodeId( data.get(), "start" );
         long x = nodeId( data.get(), "x" );
-        String response = gen.get()
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
         .post( "http://localhost:7474/db/data/node/" + start + "/path" )
@@ -195,7 +195,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         // Get cheapest paths using Dijkstra
         long start = nodeId( data.get(), "start" );
         long x = nodeId( data.get(), "x" );
-        String response = gen.get()
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
         .post( "http://localhost:7474/db/data/node/" + start + "/path" )
@@ -218,7 +218,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         String noHitsJson = "{\"to\":\""
             + nodeUri( g )
             + "\", \"max_depth\":1, \"relationships\":{\"type\":\"dummy\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
-        String entity = gen.get()
+        String entity = gen()
         .expectedStatus( Status.NOT_FOUND.getStatusCode() )
         .payload( noHitsJson )
         .post( "http://localhost:7474/db/data/node/" + a + "/path" )

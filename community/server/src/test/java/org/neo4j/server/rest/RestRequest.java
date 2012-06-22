@@ -23,7 +23,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -44,6 +46,7 @@ public class RestRequest {
     private final static Client DEFAULT_CLIENT = Client.create();
     private final Client client;
     private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
+    private Map<String, String> headers=new HashMap<String, String>();
 
     public RestRequest( URI baseUri ) {
         this( baseUri, null, null );
@@ -93,7 +96,13 @@ public class RestRequest {
 
     private Builder builder(String path, final MediaType accept) {
         WebResource resource = client.resource( uri( pathOrAbsolute( path ) ) );
-        return resource.accept(accept);
+        Builder builder = resource.accept(accept);
+        if (!headers.isEmpty()) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                builder = builder.header(header.getKey(),header.getValue());
+            }
+        }
+        return builder;
     }
 
     private String pathOrAbsolute( String path ) {
@@ -207,6 +216,11 @@ public class RestRequest {
     public RestRequest accept( MediaType accept )
     {
         this.accept = accept;
+        return this;
+    }
+
+    public RestRequest header(String header, String value) {
+        this.headers.put(header,value);
         return this;
     }
 }

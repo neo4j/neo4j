@@ -46,6 +46,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 
 public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -153,6 +154,18 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
     {
         String entity = gen.get()
                 .expectedStatus( 200 )
+                .get( functionalTestHelper.nodeUri() + "/" + nodeWithRelationships + "/relationships" + "/all" )
+                .entity();
+        verifyRelReps( 3, entity );
+    }
+
+    @Test
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeStreaming()
+            throws JsonParseException
+    {
+        String entity = gen.get()
+                .withHeader(StreamingJsonFormat.STREAM_HEADER,"true")
+                .expectedStatus(200)
                 .get( functionalTestHelper.nodeUri() + "/" + nodeWithRelationships + "/relationships" + "/all" )
                 .entity();
         verifyRelReps( 3, entity );
@@ -278,6 +291,14 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode()
     {
         JaxRsResponse response = sendRetrieveRequestToServer( nonExistingNode, "/in" );
+        assertEquals( 404, response.getStatus() );
+        response.close();
+    }
+
+    @Test
+    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNodeStreaming()
+    {
+        JaxRsResponse response = RestRequest.req().header(StreamingJsonFormat.STREAM_HEADER,"true").get(functionalTestHelper.nodeUri() + "/" + nonExistingNode + "/relationships" + "/in");
         assertEquals( 404, response.getStatus() );
         response.close();
     }

@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.repr;
+package org.neo4j.server.rest.streaming;
 
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.TraverserFunctionalTest;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 
-import javax.ws.rs.core.MediaType;
-import java.io.OutputStream;
-
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-
-public interface StreamingFormat {
-    String STREAM_HEADER = "X-Stream";
-    MediaType MEDIA_TYPE = new MediaType( APPLICATION_JSON_TYPE.getType(),
-            APPLICATION_JSON_TYPE.getSubtype(), MapUtil.stringMap("stream", "true") );
-
-    RepresentationFormat writeTo(OutputStream output);
+public class StreamingTraverserFunctionalTest extends TraverserFunctionalTest {
+    @Override
+    public RESTDocsGenerator gen() {
+        return super.gen().noDoc().withHeader(StreamingJsonFormat.STREAM_HEADER, "true");
+    }
 }

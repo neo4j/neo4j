@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
@@ -51,12 +53,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     @Title( "Get service root" )
     public void assert200OkFromGet() throws Exception
     {
-        AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
-        Transaction tx = db.beginTx();
-        long referenceNodeId = data.get().get("I").getId();
-        db.getNodeManager().setReferenceNodeId( referenceNodeId );
-        tx.success();
-        tx.finish();
+        long referenceNodeId = setReferenceNodeIdToI();
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
@@ -98,7 +95,17 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.getStatus() );
         response.close();
     }
-    
+
+    private long setReferenceNodeIdToI() {
+        AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
+        Transaction tx = db.beginTx();
+        long referenceNodeId = data.get().get("I").getId();
+        db.getNodeManager().setReferenceNodeId( referenceNodeId );
+        tx.success();
+        tx.finish();
+        return referenceNodeId;
+    }
+
     /**
      * The whole REST API can be transmitted as JSON streams,
      * resulting in better performance and lower memory overhead at the server side.
@@ -110,7 +117,12 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     public void get_service_root_streaming() throws Exception
     {
         data.get();
-        String body = gen.get().expectedType( new MediaType("application","json",MapUtil.stringMap("stream","true") )).expectedStatus( 200 ).get( getDataUri() ).entity();
-        body.toString();
+        setReferenceNodeIdToI();
+        String body = gen().withHeader(StreamingJsonFormat.STREAM_HEADER,"true").expectedType(APPLICATION_JSON_TYPE).expectedStatus( 200 ).get( getDataUri() ).entity();
+
+        Map<String, Object> map = JsonHelper.jsonToMap( body );
+        System.out.println("map = " + map);
+        assertEquals( getDataUri() + "node", map.get( "node" ) );
+        assertNotNull(map.get("reference_node"));
     }
 }

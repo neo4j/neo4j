@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.server.rest.web.NodeNotFoundException;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 
+import javax.management.relation.RelationNotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -107,18 +110,39 @@ public class OutputFormat
                 .build();
     }
 
-    private ResponseBuilder formatRepresentation(ResponseBuilder response, final Representation representation) {
-        if (format instanceof StreamingFormat) {
+    private ResponseBuilder formatRepresentation(ResponseBuilder response, final Representation representation)
+    {
+        if (format instanceof StreamingFormat)
+        {
             return response.entity(stream(representation,(StreamingFormat)format));
-        } else {
+        } else
+        {
             return response.entity(toBytes(format( representation )));
         }
     }
 
-    private StreamingOutput stream(final Representation representation, final StreamingFormat streamingFormat) {
-        return new StreamingOutput() {
-                    public void write(OutputStream output) throws IOException, WebApplicationException {
-                        representation.serialize(streamingFormat.writeTo(output), baseUri, extensions);
+    private Object stream(final Representation representation, final StreamingFormat streamingFormat)
+    {
+        return new StreamingOutput()
+        {
+                    public void write(OutputStream output) throws IOException, WebApplicationException
+                    {
+                        RepresentationFormat outputStreamFormat = streamingFormat.writeTo(output);
+                        try
+                        {
+                            representation.serialize(outputStreamFormat, baseUri, extensions);
+                        } catch(Exception e)
+                        {
+                            if (e instanceof NodeNotFoundException || e instanceof RelationNotFoundException)
+                            {
+                                new WebApplicationException(notFound(e));
+                            }
+                            if (e instanceof BadInputException)
+                            {
+                                throw new WebApplicationException(badRequest(e));
+                            }
+                            throw new WebApplicationException(serverError(e));
+                        }
                     }
                 };
     }

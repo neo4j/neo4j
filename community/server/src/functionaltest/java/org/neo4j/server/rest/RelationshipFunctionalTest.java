@@ -28,10 +28,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -50,7 +52,7 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
+        gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getRelationshipUri( loves ) ).entity();
     }
 
@@ -58,7 +60,7 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( "I know you" )
     public void get_Relationship_by_ID() throws JsonParseException
     {
-        String response = gen.get().expectedStatus(
+        String response = gen().expectedStatus(
                 com.sun.jersey.api.client.ClientResponse.Status.OK.getStatusCode() ).get(
                 getRelationshipUri( data.get().get( "I" ).getSingleRelationship(
                         DynamicRelationshipType.withName( "know" ),
@@ -78,9 +80,9 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().description(
+        gen().description(
                 startGraph( "Remove property from a relationship1" ) );
-        gen.get().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
+        gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getPropertiesUri( loves ) + "/cost" ).entity();
 
     }
@@ -98,7 +100,17 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
+                getPropertiesUri( loves ) + "/non-existent" ).entity();
+    }
+    @Test
+    @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
+    public void shouldReturn404WhenPropertyWhichDoesNotExistRemovedFromRelationshipStreaming()
+    {
+        data.get();
+        Relationship loves = IteratorUtil.first(getNode("Romeo").getRelationships());
+        gen().withHeader(StreamingJsonFormat.STREAM_HEADER,"true").expectedStatus(Status.NOT_FOUND.getStatusCode()).delete(
                 getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
 
@@ -113,7 +125,7 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen.get().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
                 "http://localhost:7474/db/data/relationship/1234/properties" ).entity();
 
     }
@@ -129,7 +141,7 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen.get().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
                 "http://localhost:7474/db/data/relationship/1234/properties/cost" ).entity();
 
     }
@@ -142,8 +154,8 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().description( startGraph( "Delete relationship1" ) );
-        gen.get().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
+        gen().description( startGraph( "Delete relationship1" ) );
+        gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getRelationshipUri( loves ) ).entity();
 
     }

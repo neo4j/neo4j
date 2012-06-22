@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
 
 public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestBase
@@ -118,7 +119,7 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
         String complicatedString = asianText + germanText;
 
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
-        final RestRequest request = req;
+        final RestRequest request = req.header(StreamingJsonFormat.STREAM_HEADER,"true");
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) , new MediaType( "application","json", stringMap( "stream", "true" ) )).getEntity() );
         assertEquals( complicatedString, response );
