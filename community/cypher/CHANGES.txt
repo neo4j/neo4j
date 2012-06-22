@@ -3,6 +3,7 @@
 o CREATE and RELATE can now introduce path identifiers
 o Fixes #600: Double optional with no matching relationships returns too many rows
 o Fixes #613: Missing dependencies not reported correctly for queries with RELATE/SET/DELETE
+o String literals can now contain escape characters
 
 1.8.M04 (2012-06-07)
 --------------------

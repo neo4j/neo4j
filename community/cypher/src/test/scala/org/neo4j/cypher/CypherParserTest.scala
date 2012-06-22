@@ -38,6 +38,20 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Entity("s"), "s")))
   }
 
+  @Test def should_return_string_literal() {
+    testFrom_1_7("start s = node(1) return \"apa\"",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Literal("apa"), "\"apa\"")))
+  }
+
+  @Test def should_return_string_literal_with_escaped_quote_in() {
+    testFrom_1_8("start s = node(1) return \"ap\\\"a\"",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Literal("ap\"a"), "\"ap\\\"a\"")))
+  }
+
   @Test def allTheNodes() {
     testFrom_1_7("start s = NODE(*) return s",
       Query.
