@@ -25,7 +25,6 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;

@@ -25,7 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.junit.matchers.JUnitMatchers.either;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
@@ -33,7 +32,6 @@ import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;

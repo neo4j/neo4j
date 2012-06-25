@@ -26,11 +26,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;

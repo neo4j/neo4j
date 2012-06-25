@@ -28,15 +28,10 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
@@ -46,6 +41,9 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {
