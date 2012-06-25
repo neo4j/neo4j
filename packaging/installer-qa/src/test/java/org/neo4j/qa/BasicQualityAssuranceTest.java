@@ -52,6 +52,11 @@ public class BasicQualityAssuranceTest
         model.verifyThat(neo4jDocumentationIsCorrect());
         
         model.apply(neo4jStopCommand());
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         model.verifyThat(neo4jRestAPIDoesNotRespond());
         
         model.apply(neo4jStartCommand());

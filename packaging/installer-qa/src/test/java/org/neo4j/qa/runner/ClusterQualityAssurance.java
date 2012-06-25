@@ -267,14 +267,14 @@ public class ClusterQualityAssurance extends Suite {
         VirtualMachine ubuntu3 = vmf.vm(Neo4jVM.UBUNTU_3);
 
         // Windows
-//        platforms.put(Platforms.WINDOWS, new ClusterTestPermutation(
-//                WindowsEnterpriseDriver.class.getSimpleName(),
-//                new DefaultMachineClusterModel(new DefaultMachineModelImpl(
-//                        new WindowsEnterpriseDriver(win1)),
-//                        new DefaultMachineModelImpl(
-//                                new WindowsEnterpriseDriver(win2)),
-//                        new DefaultMachineModelImpl(
-//                                new WindowsEnterpriseDriver(win3)))));
+        platforms.put(Platforms.WINDOWS, new ClusterTestPermutation(
+                WindowsEnterpriseDriver.class.getSimpleName(),
+                new DefaultMachineClusterModel(new DefaultMachineModelImpl(
+                        new WindowsEnterpriseDriver(win1)),
+                        new DefaultMachineModelImpl(
+                                new WindowsEnterpriseDriver(win2)),
+                        new DefaultMachineModelImpl(
+                                new WindowsEnterpriseDriver(win3)))));
 
         // Ubuntu, with debian installer
         platforms.put(Platforms.UBUNTU_DEB, new ClusterTestPermutation(
