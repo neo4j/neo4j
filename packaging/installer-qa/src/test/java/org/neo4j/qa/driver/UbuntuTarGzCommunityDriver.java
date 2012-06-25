@@ -51,7 +51,7 @@ public class UbuntuTarGzCommunityDriver extends AbstractPosixDriver {
         
         vm.copyFromHost(installerPath, "/home/vagrant/installer/" + installerFileName);
         
-        sh("cd /home/vagrant/installer/ && tar xvf " + installerFileName);
+        sh("cd /home/vagrant/installer/ && tar xf " + installerFileName);
         sh("sudo mv /home/vagrant/installer/neo4j*/* " + INSTALL_DIR);
         
         sh("sudo " + INSTALL_DIR + "/bin/neo4j -h -u neo4j install");
@@ -77,7 +77,9 @@ public class UbuntuTarGzCommunityDriver extends AbstractPosixDriver {
     @Override
     public void stopNeo4j() {
         Result r = sh("sudo /etc/init.d/neo4j-service stop");
-        if(r.getOutput().endsWith("done")) {
+        String output = r.getOutput();
+        System.out.println("Output: " + output);
+        if(output.endsWith("done")) {
             throw new RuntimeException("Stopping neo4j service failed on ["+vm.definition().ip()+"]");
         }
     }    

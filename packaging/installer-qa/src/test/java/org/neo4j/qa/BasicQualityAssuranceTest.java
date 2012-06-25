@@ -52,11 +52,7 @@ public class BasicQualityAssuranceTest
         model.verifyThat(neo4jDocumentationIsCorrect());
         
         model.apply(neo4jStopCommand());
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        snooze();
         model.verifyThat(neo4jRestAPIDoesNotRespond());
         
         model.apply(neo4jStartCommand());
@@ -71,5 +67,15 @@ public class BasicQualityAssuranceTest
         
         model.apply(neo4jUninstallation());
         model.verifyThat(neo4jRestAPIDoesNotRespond());
+    }
+
+    private void snooze() {
+        int sleepyTime = 10000;
+        System.out.printf("Sleeping for %d seconds.%n", sleepyTime);
+        try {
+            Thread.sleep(sleepyTime);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -52,7 +52,7 @@ public class UbuntuTarGzEnterpriseDriver extends UbuntuTarGzCommunityDriver
         vm.copyFromHost(zookeeperInstallerPath,
                 "/home/vagrant/zk-installer/zookeeper.tar.gz");
 
-        sh("cd /home/vagrant/zk-installer/ && tar xvf zookeeper.tar.gz");
+        sh("cd /home/vagrant/zk-installer/ && tar xf zookeeper.tar.gz");
         sh("sudo mv /home/vagrant/zk-installer/neo4j*/* "
                 + ZOOKEEPER_INSTALL_DIR);
         sh("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
