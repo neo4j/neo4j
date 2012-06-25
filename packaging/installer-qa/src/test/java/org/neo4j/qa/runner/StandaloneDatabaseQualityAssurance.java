@@ -135,12 +135,15 @@ public class StandaloneDatabaseQualityAssurance extends Suite {
         private void runTestCase(Statement statement) throws Throwable {
             try
             {
+                System.out.println("Running: " + this.getTestClass()+ " " + this.getName());
                 statement.evaluate();
             } catch(Throwable e)
             {
             	System.out.println(" ^------- FAILED -------^");
             	System.out.println();
             	throw e;
+            } finally {
+                System.out.println("Completed: " + this.getTestClass()+ " " + this.getName());
             }
         }
 
