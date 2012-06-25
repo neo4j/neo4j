@@ -58,6 +58,5 @@ directory will point you in the right direction.
 License(s)
 ----------
 Various licenses apply. Please refer to the LICENSE and NOTICE files for more
-detailed information. A full report regarding the licenses of all included
-dependencies is found in site/dependencies.html.
+detailed information.
 
