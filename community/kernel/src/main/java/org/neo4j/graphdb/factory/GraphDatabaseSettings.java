@@ -45,18 +45,18 @@ public abstract class GraphDatabaseSettings
     public static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
     
     @Title( "Read only database" )
-    @Description("Only allow read operations from this Neo4j instance")
+    @Description("Only allow read operations from this Neo4j instance.")
     @Default( FALSE)
     public static final BooleanSetting read_only = new BooleanSetting("read_only");
 
-    @Description("The type of cache to use for nodes and relationships")
+    @Description("The type of cache to use for nodes and relationships.")
     @Default( CacheTypeSetting.soft )
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
     @Default( TRUE)
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting("load_kernel_extensions");
 
-    @Description( "Print out the effective Neo4j configuration after startup" )
+    @Description( "Print out the effective Neo4j configuration after startup." )
     @Default(FALSE)
     public static final BooleanSetting dump_configuration = new BooleanSetting( "dump_configuration" );
 
@@ -76,19 +76,19 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting intercept_deserialized_transactions = new BooleanSetting( "intercept_deserialized_transactions" );
 
     // Cypher version
-    @Description( "Enable this to specify a parser other than the default one. 1.5 and 1.6 are available" )
+    @Description( "Enable this to specify a parser other than the default one." )
     public static final OptionsSetting cypher_parser_version = new CypherParserSetting();
 
     // Remote logging
-    @Description( "Whether to enable logging to a remote server or not" )
+    @Description( "Whether to enable logging to a remote server or not." )
     @Default(FALSE)
     public static BooleanSetting remote_logging_enabled = new BooleanSetting( "remote_logging_enabled" );
 
-    @Description( "Host for remote logging using LogBack SocketAppender" )
+    @Description( "Host for remote logging using LogBack SocketAppender." )
     @Default("127.0.0.1")
     public static final StringSetting remote_logging_host = new StringSetting( "remote_logging_host", ANY, "Must be a valid hostname" );
 
-    @Description( "Port for remote logging using LogBack SocketAppender" )
+    @Description( "Port for remote logging using LogBack SocketAppender." )
     @Default("4560")
     public static final PortSetting remote_logging_port = new PortSetting( "remote_logging_port" );
 
@@ -115,12 +115,12 @@ public abstract class GraphDatabaseSettings
     public static final StringSetting relationship_keys_indexable = new StringSetting("relationship_keys_indexable",ANY,"Must be a comma-separated list of keys to be indexed");
 
     // Lucene settings
-    @Description( "Integer value that sets the maximum number of open lucene index searchers" )
+    @Description( "Integer value that sets the maximum number of open lucene index searchers." )
     @Default(Integer.MAX_VALUE+"")
     public static IntegerSetting lucene_searcher_cache_size = new IntegerSetting( "lucene_searcher_cache_size", "Must be a number", 1, null );
 
     // NeoStore settings
-    @Description( "Determines whether any TransactionInterceptors loaded will intercept prepared transactions before they reach the logical log" )
+    @Description( "Determines whether any TransactionInterceptors loaded will intercept prepared transactions before they reach the logical log." )
     @Default(FALSE)
     public static final BooleanSetting intercept_committing_transactions = new BooleanSetting( "intercept_committing_transactions" );
 
@@ -138,41 +138,41 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting rebuild_idgenerators_fast = new BooleanSetting( "rebuild_idgenerators_fast" );
 
     // NeoStore memory settings
-    @Description( "Tell Neo4j to use memory mapped buffers for accessing the native storage layer" )
+    @Description( "Tell Neo4j to use memory mapped buffers for accessing the native storage layer." )
     public static final UseMemoryMappedBuffers use_memory_mapped_buffers = new UseMemoryMappedBuffers();
 
-    @Description( "The size to allocate for memory mapping the node store" )
+    @Description( "The size to allocate for memory mapping the node store." )
     @Default("20M")
     public static final NumberOfBytesSetting nodestore_mapped_memory = new NumberOfBytesSetting("neostore.nodestore.db.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the property value store" )
+    @Description( "The size to allocate for memory mapping the property value store." )
     @Default("90M")
     public static final NumberOfBytesSetting nodestore_propertystore_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the store for property key indexes" )
+    @Description( "The size to allocate for memory mapping the store for property key indexes." )
     @Default("1M")
     public static final NumberOfBytesSetting nodestore_propertystore_index_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.index.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the store for property key strings" )
+    @Description( "The size to allocate for memory mapping the store for property key strings." )
     @Default("1M")
     public static final NumberOfBytesSetting nodestore_propertystore_index_keys_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.index.keys.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the string property store" )
+    @Description( "The size to allocate for memory mapping the string property store." )
     @Default("130M")
     public static final NumberOfBytesSetting strings_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.strings.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the array property store" )
+    @Description( "The size to allocate for memory mapping the array property store." )
     @Default("130M")
     public static final NumberOfBytesSetting arrays_mapped_memory = new NumberOfBytesSetting("neostore.propertystore.db.arrays.mapped_memory");
 
-    @Description( "The size to allocate for memory mapping the relationship store" )
+    @Description( "The size to allocate for memory mapping the relationship store." )
     @Default("100M")
     public static final NumberOfBytesSetting relationshipstore_mapped_memory = new NumberOfBytesSetting("neostore.relationshipstore.db.mapped_memory");
 
     @Default("100")
     public static final IntegerSetting relationship_grab_size = new IntegerSetting( "relationship_grab_size", "Must be a number" );
 
-    @Description( "Whether to grab locks on files or not" )
+    @Description( "Whether to grab locks on files or not." )
     @Default(TRUE)
     public static final BooleanSetting grab_file_lock = new BooleanSetting( "grab_file_lock" );
 
@@ -188,7 +188,7 @@ public abstract class GraphDatabaseSettings
     @Default("120")
     public static final IntegerSetting array_block_size = new IntegerSetting( "array_block_size", "Must be a number", 1, null );
 
-    @Description( "Mark this database as a backup slave" )
+    @Description( "Mark this database as a backup slave." )
     @Default( FALSE )
     public static final BooleanSetting backup_slave = new BooleanSetting( "backup_slave" );
     
@@ -225,21 +225,21 @@ public abstract class GraphDatabaseSettings
     // GCR Settings
     // TODO: These should be part of a settings class specifically for GCR, and loaded
     // the same way settings for kernel extensions are loaded.
-    @Description( "The amount of memory to use for the node cache (when using the 'gcr' cache)" )
+    @Description( "The amount of memory to use for the node cache (when using the 'gcr' cache)." )
     public static final GCRMemoryUsageSetting node_cache_size = new GCRMemoryUsageSetting( "node_cache_size");
 
-    @Description( "The amount of memory to use for the relationship cache (when using the 'gcr' cache)" )
+    @Description( "The amount of memory to use for the relationship cache (when using the 'gcr' cache)." )
     public static final GCRMemoryUsageSetting relationship_cache_size = new GCRMemoryUsageSetting( "relationship_cache_size");
 
-    @Description( "The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache)" )
+    @Description( "The fraction of the heap (1%-10%) to use for the base array in the node cache (when using the 'gcr' cache)." )
     @Default( "1.0" )
     public static final FloatSetting node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
 
-    @Description( "The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache)" )
+    @Description( "The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache)." )
     @Default( "1.0" )
     public static final FloatSetting relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid fraction", 1.0f, 10.0f);
 
-    @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)" )
+    @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)." )
     @Default( "60s" )
     public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
     
@@ -247,17 +247,17 @@ public abstract class GraphDatabaseSettings
     public static class CacheTypeSetting
         extends OptionsSetting
     {
-        @Description("Use weak reference cache")
+        @Description("Use weak reference cache.")
         public static final String weak = "weak";
 
         @Description("Provides optimal utilization of the available memory. Suitable for high performance traversal. \n"+
                      "May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache." )
         public static final String soft = "soft";
 
-        @Description("Don't use caching")
+        @Description("Don't use caching.")
         public static final String none = "none";
 
-        @Description("Use strong references")
+        @Description("Use strong references.")
         public static final String strong = "strong";
 
         @Description("GC resistant cache. Gets assigned a configurable amount of space in the JVM heap \n" +
@@ -287,13 +287,13 @@ public abstract class GraphDatabaseSettings
     public static class CypherParserSetting
         extends OptionsSetting
     {
-        @Description( "Cypher v1.5 syntax" )
+        @Description( "Cypher v1.5 syntax." )
         public static final String v1_5 = "1.5";
 
-        @Description( "Cypher v1.6 syntax" )
+        @Description( "Cypher v1.6 syntax." )
         public static final String v1_6 = "1.6";
 
-        @Description( "Cypher v1.7 syntax" )
+        @Description( "Cypher v1.7 syntax." )
         public static final String v1_7 = "1.7";
 
         public CypherParserSetting( )

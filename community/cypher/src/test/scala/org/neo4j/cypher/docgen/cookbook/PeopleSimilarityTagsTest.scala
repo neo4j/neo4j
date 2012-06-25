@@ -41,10 +41,13 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
     testQuery(
       title = "Find people based on similar tagged favorties",
       text = """To find out people similar to me based on taggings of their favorited items, an approach could be:
+
 * Determine the tags associated with what I favorite.
 * What else is tagged with those tags?
-* Who favorites items tagged with the same tags.
-* Sort the result by how many of the same things these people like.""",
+* Who favorites items tagged with the same tags?
+* Sort the result by how many of the same things these people like.
+
+""",
       queryText = "START me=node(%Joe%) " +
       		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-theirFavorites<-[:favorite]-people " +
       		"WHERE NOT(me=people) " +
