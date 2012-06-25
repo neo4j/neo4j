@@ -47,6 +47,7 @@ Apache Software License, Version 2.0
   Jackson
   jansi
   JAX-RS provider for JSON content type
+  JCL 1.1.1 implemented over SLF4J
   Jettison
   Jetty Server
   Jetty Utilities
