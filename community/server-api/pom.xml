@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>server-api</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M05</version>
   <packaging>jar</packaging>
   <name>Neo4j Server API</name>
   <description>Interfaces and baseclasses needed to create your own extensions.</description>
@@ -52,7 +52,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>1.8.M05</version>
     </dependency>
 
     <dependency>
