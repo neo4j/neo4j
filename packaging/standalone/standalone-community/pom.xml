@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>1.8-SNAPSHOT</version>
+    <version>1.8.M05</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -14,7 +14,7 @@
 
   <name>Neo4j Community - Server Assembler</name>
 
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M05</version>
   <description>This project assembles the Neo4j Community stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>

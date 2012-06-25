@@ -10,7 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>packaging-build</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M05</version>
   <name>Neo4j Packaging Build</name>
   <packaging>pom</packaging>
   <description>Project that builds Neo4j Packages.</description>
