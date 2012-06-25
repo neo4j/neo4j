@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -95,7 +96,7 @@ class IndexManagerImpl implements IndexManager
         this.indexProviders.put( name, provider );
     }
 
-    private Pair<Map<String, String>, Boolean> findIndexConfig( Class<? extends PropertyContainer> cls,
+    private Pair<Map<String, String>, Boolean/*true=needs to be set*/> findIndexConfig( Class<? extends PropertyContainer> cls,
             String indexName, Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
     {
         // Check stored config (has this index been created previously?)
@@ -133,12 +134,7 @@ class IndexManagerImpl implements IndexManager
         // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
         {
-            if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )
-            {
-                throw new IllegalArgumentException( "Supplied index configuration:\n" +
-                        suppliedConfig + "\ndoesn't match stored config in a valid way:\n" + storedConfig +
-                        "\nfor '" + indexName + "'" );
-            }
+            assertConfigMatches( indexProvider, indexName, storedConfig, suppliedConfig );
             // Fill in "provider" if not already filled in, backwards compatibility issue
             Map<String, String> newConfig = injectDefaultProviderIfMissing( cls, indexName, dbConfig, storedConfig );
             if ( newConfig != storedConfig )
@@ -148,8 +144,19 @@ class IndexManagerImpl implements IndexManager
             configToUse = newConfig;
         }
 
-        boolean created = indexStore.setIfNecessary( cls, indexName, configToUse );
-        return Pair.of( Collections.unmodifiableMap( configToUse ), created );
+        boolean needsToBeSet = !indexStore.has( cls, indexName );
+        return Pair.of( Collections.unmodifiableMap( configToUse ), needsToBeSet );
+    }
+
+    private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
+            Map<String, String> storedConfig, Map<String, String> suppliedConfig )
+    {
+        if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )
+        {
+            throw new IllegalArgumentException( "Supplied index configuration:\n" +
+                    suppliedConfig + "\ndoesn't match stored config in a valid way:\n" + storedConfig +
+                    "\nfor '" + indexName + "'" );
+        }
     }
 
     private Map<String, String> injectDefaultProviderIfMissing(
@@ -191,23 +198,38 @@ class IndexManagerImpl implements IndexManager
         Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
                 indexName, suppliedConfig, config.getParams() );
         if ( result.other() )
-        {
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-            try
-            {
-                executorService.submit( new IndexCreatorJob(cls, indexName, result.first()) ).get();
-            } catch (ExecutionException ex)
-            {
-                throw new TransactionFailureException( "Index creation failed for " + indexName +
-                        ", " + result.first(), ex.getCause() );
-            } catch (InterruptedException ex)
-            {
-                Thread.interrupted();
-            }
-            finally
-            {
-                executorService.shutdownNow();
+        {   // Ok, we need to create this config
+            synchronized ( this )
+            {   // Were we the first ones to get here?
+                Map<String, String> existing = indexStore.get( cls, indexName );
+                if ( existing != null )
+                {
+                    // No, someone else made it before us, cool
+                    assertConfigMatches( getIndexProvider( existing.get( PROVIDER ) ), indexName,
+                            existing, result.first() );
+                    return result.first();
+                }
+                
+                // We were the first one here, let's create this config
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                try
+                {
+                    executorService.submit( new IndexCreatorJob( cls, indexName, result.first() ) ).get();
+                    indexStore.set( cls, indexName, result.first() );
+                }
+                catch (ExecutionException ex)
+                {
+                    throw new TransactionFailureException( "Index creation failed for " + indexName +
+                            ", " + result.first(), ex.getCause() );
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.interrupted();
+                }
+                finally
+                {
+                    executorService.shutdownNow();
+                }
             }
         }
         return result.first();

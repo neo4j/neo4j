@@ -134,7 +134,7 @@ public class LogExtractor
         Long getFirstStartRecordTimestamp( long version ) throws IOException;
     }
     
-    static ByteBuffer newLogReaderBuffer()
+    public static ByteBuffer newLogReaderBuffer()
     {
         return ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
     }

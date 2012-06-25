@@ -151,11 +151,9 @@ public abstract class XaDataSource
     }
 
     /**
-     * Rotates this logical log. If {@link #keepLogicalLogs(boolean)} is
-     * configured to true the log will be saved and can be retrieved with the
-     * {@link #getLogicalLog(long)} method. If not it will be deleted. Active
-     * transactions get copied to a new logical log.
+     * Rotates this logical log. Active transactions get copied to a new logical log.
      *
+     * @return the last transaction id of the produced logical log.
      * @throws IOException if unable to read old log or write to new one
      */
     public long rotateLogicalLog() throws IOException
