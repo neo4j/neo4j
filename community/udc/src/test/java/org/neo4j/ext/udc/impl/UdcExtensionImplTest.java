@@ -244,7 +244,7 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get(VERSION);
-        assertTrue(version.matches("\\d.\\d(M0\\d|-SNAPSHOT)?"));
+        assertTrue(version.matches("\\d.\\d(\\.M0\\d|-SNAPSHOT)?"));
 
         destroy(graphdb);
     }
