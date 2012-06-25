@@ -44,6 +44,7 @@ public class Neo4jHAInstallation implements MachineModifier {
         String neo4jConf = driver.neo4jInstallDir() + "/conf/neo4j.properties";
         String serverConf = driver.neo4jInstallDir()
                 + "/conf/neo4j-server.properties";
+        String wrapperProperties = driver.neo4jInstallDir() + "/conf/neo4j-wrapper.conf";
 
         driver.installNeo4j();
         driver.stopNeo4j();
@@ -56,6 +57,8 @@ public class Neo4jHAInstallation implements MachineModifier {
         driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
         driver.setConfig(serverConf, "org.neo4j.server.webserver.address",
                 "0.0.0.0");
+
+        driver.setConfig(wrapperProperties, "wrapper.java.maxmemory", "512");
 
         // The database folder has to be empty on first boot
         driver.deleteDatabase();
