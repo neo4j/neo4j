@@ -1,0 +1,244 @@
+2012-06-26 15:12:24.647+0000: Creating new db @ /home/jake/Workspaces/Neo4j/community/udc/tmpdb-1286197925/neostore
+2012-06-26 15:12:24.747+0000: Opened [/home/jake/Workspaces/Neo4j/community/udc/tmpdb-1286197925/nioneo_logical.log.1] clean empty log, version=0, lastTxId=1
+2012-06-26 15:12:24.750+0000: TM new log: tm_tx_log.1
+2012-06-26 15:12:24.751+0000: --- STARTUP diagnostics START ---
+2012-06-26 15:12:24.752+0000: Neo4j Kernel properties:
+    read_only=false
+    neo4j.ext.udc.host=localhost:33791
+    logical_log=nioneo_logical.log
+    intercept_committing_transactions=false
+    node_auto_indexing=false
+    relationship_cache_size=460455936
+    cache_type=soft
+    intercept_deserialized_transactions=false
+    lucene_searcher_cache_size=2147483647
+    neo4j.ext.udc.interval=86400000
+    use_memory_mapped_buffers=true
+    rebuild_idgenerators_fast=true
+    neostore.propertystore.db.index.keys.mapped_memory=1M
+    neostore.propertystore.db.strings.mapped_memory=543M
+    neostore.propertystore.db.arrays.mapped_memory=615M
+    gcr_cache_min_log_interval=60s
+    relationship_auto_indexing=false
+    relationship_grab_size=100
+    node_cache_array_fraction=1.0
+    allow_store_upgrade=false
+    execution_guard_enabled=false
+    relationship_cache_array_fraction=1.0
+    store_dir=tmpdb-1286197925
+    remote_logging_host=127.0.0.1
+    online_backup_enabled=false
+    remote_logging_port=4560
+    gc_monitor_threshold=200ms
+    load_kernel_extensions=true
+    array_block_size=120
+    neostore.relationshipstore.db.mapped_memory=783M
+    keep_logical_logs=true
+    dump_configuration=false
+    gc_monitor_wait_time=100ms
+    neostore.nodestore.db.mapped_memory=177M
+    neo4j.ext.udc.first_delay=100
+    neo4j.ext.udc.reg=unreg
+    ephemeral=false
+    neo_store=neostore
+    logging.threshold_for_rotation=104857600
+    neostore.propertystore.db.index.mapped_memory=1M
+    backup_slave=false
+    neostore.propertystore.db.mapped_memory=639M
+    string_block_size=120
+    grab_file_lock=true
+    remote_logging_enabled=false
+    node_cache_size=460455936
+    neo4j.ext.udc.enabled=false
+    online_backup_port=6362
+2012-06-26 15:12:24.752+0000: Diagnostics providers:
+    org.neo4j.kernel.configuration.Config
+    org.neo4j.kernel.info.DiagnosticsManager
+    SYSTEM_MEMORY
+    JAVA_MEMORY
+    OPERATING_SYSTEM
+    JAVA_VIRTUAL_MACHINE
+    CLASSPATH
+    LIBRARY_PATH
+    SYSTEM_PROPERTIES
+    LINUX_SCHEDULERS
+2012-06-26 15:12:24.753+0000: System memory information:
+    Total Physical memory: 7.71 GB
+    Free Physical memory: 863.80 MB
+    Committed virtual memory: 4.47 GB
+    Total swap space: 7.91 GB
+    Free swap space: 7.91 GB
+2012-06-26 15:12:24.756+0000: JVM memory information:
+    Free  memory: 113.79 MB
+    Total memory: 118.31 MB
+    Max   memory: 1.72 GB
+    Garbage Collector: PS Scavenge: [PS Eden Space, PS Survivor Space]
+    Garbage Collector: PS MarkSweep: [PS Eden Space, PS Survivor Space, PS Old Gen, PS Perm Gen]
+    Memory Pool: Code Cache (Non-heap memory): committed=2.44 MB, used=683.06 kB, max=48.00 MB, threshold=0.00 B
+    Memory Pool: PS Eden Space (Heap memory): committed=30.88 MB, used=3.14 MB, max=648.38 MB, threshold=?
+    Memory Pool: PS Survivor Space (Heap memory): committed=5.13 MB, used=1.39 MB, max=5.13 MB, threshold=?
+    Memory Pool: PS Old Gen (Heap memory): committed=82.31 MB, used=0.00 B, max=1.29 GB, threshold=0.00 B
+    Memory Pool: PS Perm Gen (Non-heap memory): committed=20.75 MB, used=9.50 MB, max=82.00 MB, threshold=0.00 B
+2012-06-26 15:12:24.760+0000: Operating system information:
+    Operating System: Linux; version: 3.2.0-24-generic; arch: amd64; cpus: 8
+    Max number of file descriptors: 4096
+    Number of open file descriptors: 69
+    Process id: 7722@jTop
+    Byte order: LITTLE_ENDIAN
+2012-06-26 15:12:24.761+0000: JVM information:
+    VM Name: Java HotSpot(TM) 64-Bit Server VM
+    VM Vendor: Sun Microsystems Inc.
+    VM Version: 20.1-b02
+    JIT compiler: HotSpot 64-Bit Tiered Compilers
+    VM Arguments: [-Dfile.encoding=UTF-8]
+2012-06-26 15:12:24.761+0000: Java classpath:
+     [classpath + loader.0] file:/home/jake/Apps/eclipse/configuration/org.eclipse.osgi/bundles/166/1/.cp/
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1-tests.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/apache/httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar
+     [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/localedata.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/modules/jdk.boot.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/rt.jar
+     [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/dnsns.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/charsets.jar
+     [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/sunjce_provider.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/junit/junit/4.10/junit-4.10.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/neo4j/neo4j-kernel/1.8-SNAPSHOT/neo4j-kernel-1.8-SNAPSHOT-tests.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/osgi/osgi_R4_compendium/1.0/osgi_R4_compendium-1.0.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/commons-io/commons-io/1.4/commons-io-1.4.jar
+     [classpath + loader.0] file:/home/jake/Workspaces/Neo4j/community/udc/target/test-classes/
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jsse.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/neo4j/neo4j-kernel/1.8-SNAPSHOT/neo4j-kernel-1.8-SNAPSHOT.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/osgi/osgi_R4_core/1.0/osgi_R4_core-1.0.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/jce.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/resources.jar
+     [classpath + loader.0] file:/home/jake/Apps/eclipse/configuration/org.eclipse.osgi/bundles/165/1/.cp/
+     [classpath + loader.0] file:/home/jake/.m2/repository/org/apache/geronimo/specs/geronimo-jta_1.1_spec/1.1.1/geronimo-jta_1.1_spec-1.1.1.jar
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/classes
+     [classpath + loader.0] file:/home/jake/Apps/eclipse/configuration/org.eclipse.osgi/bundles/164/1/.cp/
+     [bootstrap] /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/sunrsasign.jar
+     [loader.1] file:/usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/ext/sunpkcs11.jar
+     [classpath + loader.0] file:/home/jake/Workspaces/Neo4j/community/udc/target/classes/
+2012-06-26 15:12:24.765+0000: Library path:
+    /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64/server
+    /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64
+    /usr/lib/jvm/java-6-sun-1.6.0.26/lib/amd64
+    /usr/java/packages/lib/amd64
+    /usr/lib64
+    /lib64
+    /lib
+    /usr/lib
+2012-06-26 15:12:24.767+0000: System.properties:
+    sun.boot.library.path = /usr/lib/jvm/java-6-sun-1.6.0.26/jre/lib/amd64
+    path.separator = :
+    file.encoding.pkg = sun.io
+    sun.java.launcher = SUN_STANDARD
+    user.country = US
+    sun.os.patch.level = unknown
+    user.dir = /home/jake/Workspaces/Neo4j/community/udc
+    sun.jnu.encoding = UTF-8
+    sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+    user.home = /home/jake
+    user.timezone = Europe/Stockholm
+    file.encoding = UTF-8
+    user.name = jake
+    sun.java.command = org.eclipse.jdt.internal.junit.runner.RemoteTestRunner -version 3 -port 59324 -testLoaderClass org.eclipse.jdt.internal.junit4.runner.JUnit4TestLoader -loaderpluginname org.eclipse.jdt.junit4.runtime -classNames org.neo4j.ext.udc.impl.UdcExtensionImplTest
+    sun.arch.data.model = 64
+    user.language = en
+    file.separator = /
+    sun.io.unicode.encoding = UnicodeLittle
+    sun.cpu.endian = little
+    sun.desktop = gnome
+    sun.cpu.isalist = 
+2012-06-26 15:12:24.767+0000: Linux scheduler information:
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    none
+    noop deadline [cfq] 
+    noop deadline [cfq] 
+    none
+2012-06-26 15:12:24.771+0000: --- STARTUP diagnostics END ---
+2012-06-26 15:12:24.772+0000: Extension org.neo4j.kernel.KernelExtension[dummy] loaded ok
+2012-06-26 15:12:24.772+0000: Extension org.neo4j.kernel.KernelExtension[other dummy] loaded ok
+2012-06-26 15:12:24.772+0000: Extension org.neo4j.kernel.KernelExtension[kernel udc] loaded ok
+2012-06-26 15:12:24.772+0000: --- STARTUP diagnostics for KernelDiagnostics:Versions START ---
+2012-06-26 15:12:24.772+0000: Graph Database: org.neo4j.kernel.EmbeddedGraphDatabase StoreId[time:1340723544647, id:-2433762189123825022, store version: 13561656364791302]
+2012-06-26 15:12:24.772+0000: Kernel version: Neo4j - Graph Database Kernel 1.8-SNAPSHOT (revision: 1.8.M04-104-g9558ece-dirty)
+2012-06-26 15:12:24.772+0000: Neo4j component versions:
+2012-06-26 15:12:24.773+0000:   Neo4j - Graph Database Kernel 1.8-SNAPSHOT (revision: 1.8.M04-104-g9558ece-dirty)
+2012-06-26 15:12:24.773+0000: --- STARTUP diagnostics for KernelDiagnostics:Versions END ---
+2012-06-26 15:12:24.773+0000: --- STARTUP diagnostics for NEO_STORE_VERSIONS START ---
+2012-06-26 15:12:24.773+0000: Store versions:
+    Store versions:
+      NeoStore v0.A.0
+      NodeStore v0.A.0
+      RelationshipStore v0.A.0
+      RelationshipTypeStore v0.A.0
+      PropertyStore v0.A.0
+      PropertyIndexStore v0.A.0
+      StringPropertyStore v0.A.0
+      ArrayPropertyStore v0.A.0
+2012-06-26 15:12:24.773+0000: --- STARTUP diagnostics for NEO_STORE_VERSIONS END ---
+2012-06-26 15:12:24.773+0000: --- STARTUP diagnostics for NEO_STORE_ID_USAGE START ---
+2012-06-26 15:12:24.773+0000: Id usage:
+    Id usage:
+      NodeStore: used=1 high=0
+      RelationshipStore: used=0 high=-1
+      RelationshipTypeStore: used=0 high=-1
+      PropertyStore: used=0 high=-1
+      PropertyIndexStore: used=0 high=-1
+      StringPropertyStore: used=1 high=0
+      ArrayPropertyStore: used=1 high=0
+2012-06-26 15:12:24.774+0000: --- STARTUP diagnostics for NEO_STORE_ID_USAGE END ---
+2012-06-26 15:12:24.774+0000: --- STARTUP diagnostics for KernelDiagnostics:StoreFiles START ---
+2012-06-26 15:12:24.774+0000: Storage files:
+    nioneo_logical.log.active: 4.00 B
+    neostore.propertystore.db.strings: 128.00 B
+    neostore.propertystore.db.arrays.id: 9.00 B
+    neostore.id: 9.00 B
+    neostore.relationshipstore.db.id: 9.00 B
+    neostore.propertystore.db: 0.00 B
+    neostore.propertystore.db.index.keys.id: 9.00 B
+    neostore.relationshiptypestore.db.names: 38.00 B
+    neostore: 54.00 B
+    messages.log: 10.25 kB
+    neostore.propertystore.db.arrays: 128.00 B
+    neostore.nodestore.db: 9.00 B
+    tm_tx_log.1: 0.00 B
+    neostore.nodestore.db.id: 9.00 B
+    neostore.propertystore.db.id: 9.00 B
+    neostore.relationshiptypestore.db.names.id: 9.00 B
+    active_tx_log: 11.00 B
+    neostore.propertystore.db.strings.id: 9.00 B
+    neostore.propertystore.db.index.id: 9.00 B
+    neostore.relationshiptypestore.db: 0.00 B
+    neostore.relationshipstore.db: 0.00 B
+    neostore.propertystore.db.index: 0.00 B
+    neostore.propertystore.db.index.keys: 38.00 B
+    lock: 0.00 B
+    nioneo_logical.log.1: 16.00 B
+    neostore.relationshiptypestore.db.id: 9.00 B

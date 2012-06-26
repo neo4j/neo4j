@@ -23,8 +23,17 @@ package org.neo4j.ext.udc.impl;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-import static org.neo4j.ext.udc.UdcConstants.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.SOURCE;
+import static org.neo4j.ext.udc.UdcConstants.TAGS;
+import static org.neo4j.ext.udc.UdcConstants.VERSION;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +53,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-// import org.neo4j.kernel.ha.HaSettings;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -196,6 +204,7 @@ public class UdcExtensionImplTest
 
         destroy( graphdb );
     }
+    
     @Test
     public void shouldBeAbleToDetermineEditionFromClasspath() throws Exception
     {
@@ -249,6 +258,34 @@ public class UdcExtensionImplTest
         destroy(graphdb);
     }
 
+    @Test
+    public void shouldNotStartIfDisabledInConfig() throws Exception
+    {
+        setupServer();
+
+        config.put(UdcSettings.udc_enabled.name(), "false");
+        
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        Thread.sleep(1000);
+        assertGotSuccessWithRetry( IS_ZERO );
+
+        destroy(graphdb);
+    }
+
+    @Test
+    public void shouldNotStartIfDisabledInSystemProperties() throws Exception
+    {
+        setupServer();
+
+        System.setProperty(UdcSettings.udc_enabled.name(), "false");
+        
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        Thread.sleep(1000);
+        assertGotSuccessWithRetry( IS_ZERO );
+
+        destroy(graphdb);
+    }
+
     private static interface Condition<T>
     {
         boolean isTrue( T value );
@@ -256,7 +293,8 @@ public class UdcExtensionImplTest
 
     private static final Condition<Integer> IS_ZERO = new Condition<Integer>()
     {
-        public boolean isTrue( Integer value )
+        @Override
+		public boolean isTrue( Integer value )
         {
             return value == 0;
         }
@@ -264,7 +302,8 @@ public class UdcExtensionImplTest
 
     private static final Condition<Integer> IS_GREATER_THAN_ZERO = new Condition<Integer>()
     {
-        public boolean isTrue( Integer value )
+        @Override
+		public boolean isTrue( Integer value )
         {
             return value > 0;
         }
@@ -286,7 +325,12 @@ public class UdcExtensionImplTest
         {
             Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();
-            Integer count = countValues.iterator().next();
+            Integer count = 0;
+            if(countValues.iterator().hasNext()) 
+            {
+	            count = countValues.iterator().next();
+            }
+            
             if ( condition.isTrue( count ) )
             {
                 return;

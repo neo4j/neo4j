@@ -21,6 +21,7 @@
 package org.neo4j.kernel.configuration;
 
 import junit.framework.Assert;
+
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -46,7 +47,9 @@ public class SystemPropertiesConfigurationTest
 
             System.setProperty( GraphDatabaseSettings.read_only.name(), "foo" );
 
-            Assert.assertEquals( MapUtil.stringMap( ),
+            // We expect invalid properties to be set by SystemPropertiesConfiguration. Validation will be done by the Config 
+            // class in its constructor.
+            Assert.assertEquals( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), "foo" ),
                                  new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
         }
         finally
@@ -56,7 +59,7 @@ public class SystemPropertiesConfigurationTest
     }
 
     @Test
-    public void testThatSetInvalidSystemPropertiesAreNotPickedUp()
+    public void testThatNonExistantPropertiesAreNotPickedUp()
     {
         System.setProperty( "foo", "bar" );
 
