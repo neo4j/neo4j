@@ -39,14 +39,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -62,7 +61,7 @@ public class TestIndexCreation
     @Before
     public void before() throws Exception
     {
-        db = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
+        db = new ImpermanentGraphDatabase();
     }
 
     @After
