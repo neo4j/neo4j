@@ -19,18 +19,15 @@
  */
 package org.neo4j.server.advanced;
 
-import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.advanced.jmx.ServerManagement;
+import org.neo4j.server.advanced.modules.JMXManagementModule;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer {
-
-    private ServerManagement serverManagement;
 
     protected AdvancedNeoServer()
     {
@@ -43,17 +40,13 @@ public class AdvancedNeoServer extends CommunityNeoServer {
         init();
     }
     
-    @Override
-	public void init()
-    {
-    	super.init();
-        try {
-	    	serverManagement = new ServerManagement( this );
-	        MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
-			beanServer.registerMBean( serverManagement, new ObjectName( "org.neo4j.ServerManagement" , "restartServer", "lifecycle" ));
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to initialize advanced Neo4j server, see nested exception.", e);
-		}
-    }
+	@Override
+	@SuppressWarnings("unchecked")
+	protected Iterable<ServerModule> createServerModules() 
+	{   
+        return Iterables.mix(Arrays.asList(
+        		(ServerModule)new JMXManagementModule(this)), 
+        		super.createServerModules());
+	}
 	
 }
