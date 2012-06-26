@@ -20,6 +20,8 @@
 package org.neo4j.com;
 
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+import static org.neo4j.kernel.configuration.Config.DEFAULT_DATA_SOURCE_NAME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -52,7 +54,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     @Override
     public Response<Integer> multiply( final int value1, final int value2 )
     {
-        return sendRequest( MadeUpRequestType.MULTIPLY, SlaveContext.EMPTY, new Serializer()
+        return sendRequest( MadeUpRequestType.MULTIPLY, context(), new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -61,6 +63,11 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
                 buffer.writeInt( value2 );
             }
         }, Protocol.INTEGER_DESERIALIZER );
+    }
+
+    private SlaveContext context()
+    {
+        return new SlaveContext( 0, 0, 0, new SlaveContext.Tx[] { lastAppliedTx( DEFAULT_DATA_SOURCE_NAME, 2 ) }, 0, 0 );
     }
 
     @Override
