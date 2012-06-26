@@ -8,14 +8,14 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
-  <version>1.8.M05</version>
+  <version>1.8-SNAPSHOT</version>
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
 
   <properties>
     <short-name>com</short-name>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <neo4j.version>1.8.M05</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
