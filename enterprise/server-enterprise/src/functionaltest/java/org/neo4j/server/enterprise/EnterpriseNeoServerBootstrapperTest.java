@@ -30,6 +30,6 @@ public class EnterpriseNeoServerBootstrapperTest
     @Test
     public void bootstrapperLoadsEnterpriseServerBootstrapper() throws Exception
     {
-        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( EnterpriseNeoServerBootstrapper.class ) );
+        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( EnterpriseBootstrapper.class ) );
     }
 }

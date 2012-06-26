@@ -19,10 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
+import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
+import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
+import org.neo4j.server.preflight.PreFlightTasks;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer {
 
@@ -31,22 +35,51 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
         this.configurator = configurator;
         init();
     }
-	
+    
     @Override
-    protected StartupHealthCheck createHealthCheck() {
-		final StartupHealthCheck parentCheck = super.createHealthCheck();
-		return new StartupHealthCheck(
-				new Neo4jHAPropertiesMustExistRule() ){
-			@Override
-			public boolean run(){
-				return parentCheck.run() && super.run();
-			}
-		};
+	protected PreFlightTasks createPreflightTasks() 
+    {
+		return new PreFlightTasks(
+				// TODO: This check should be done in the bootrapper,
+				// and verification of config should be done by the new
+				// config system.
+				//new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
+				new EnsurePreparedForHttpLogging(configurator.configuration()),
+				new PerformUpgradeIfNecessary(getConfiguration(), 
+						configurator.getDatabaseTuningProperties(), System.out),
+				new PerformRecoveryIfNecessary(getConfiguration(), 
+						configurator.getDatabaseTuningProperties(), System.out));
 	}
     
     @Override
-	protected Database createDatabase() {
+	protected Database createDatabase() 
+    {
     	return new EnterpriseDatabase(configurator.configuration());
     }
+    
+    @Override
+	protected InterruptThreadTimer createInterruptStartupTimer() 
+    {
+    	// If we are in HA mode, database startup can take a very long time, so
+    	// we default to disabling the startup timeout here, unless explicitly overridden
+    	// by configuration.
+    	if(getConfiguration().getString( Configurator.DB_MODE_KEY, "single" ).equalsIgnoreCase("ha"))
+    	{
+    		long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
+    		InterruptThreadTimer stopStartupTimer;
+    		if(startupTimeout > 0) 
+            {
+    			stopStartupTimer = InterruptThreadTimer.createTimer(
+    					startupTimeout,
+    					Thread.currentThread());
+            } else {
+            	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
+            }
+    		return stopStartupTimer;
+    	} else 
+    	{
+    		return super.createInterruptStartupTimer();
+    	}
+	}
 
 }

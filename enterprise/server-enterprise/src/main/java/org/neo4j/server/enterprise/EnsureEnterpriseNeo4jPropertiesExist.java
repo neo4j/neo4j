@@ -26,14 +26,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
+import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
 
-public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
+public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesExist
 {
-    @Override
+    public EnsureEnterpriseNeo4jPropertiesExist(Configuration config) {
+		super(config);
+	}
+
+    // TODO: This validation should be done by the settings classes in HA 
+    // and by the enterprise server settings, once we have refactored them 
+    // to use the new config scheme.
+	@Override
     protected boolean validateProperties( Properties configProperties )
     {
         String dbMode = configProperties.getProperty( Configurator.DB_MODE_KEY,

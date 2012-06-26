@@ -20,11 +20,14 @@
 
 package org.neo4j.server.enterprise;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +41,8 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.neo4j.test.server.ha.ServerCluster;
 
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class HaServerFunctionalTest
 {
@@ -66,7 +70,7 @@ public class HaServerFunctionalTest
     }
 
     @AfterClass
-    public static void stopZooKeeper()
+    public static void stopZooKeeper() throws IOException
     {
         if ( zooKeeper != null ) zooKeeper.shutdown();
         zooKeeper = null;

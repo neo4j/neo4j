@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -39,10 +40,13 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.enterprise.EnterpriseNeoServerBootstrapper;
+import org.neo4j.server.enterprise.EnterpriseBootstrapper;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+import org.neo4j.test.server.ha.ServerCluster.ServerManager;
 import org.neo4j.test.subprocess.SubProcess;
+
+import com.tinkerpop.gremlin.Tokens.T;
 
 public final class ServerCluster
 {
@@ -300,7 +304,7 @@ public final class ServerCluster
         {
             System.out.println( "configFilePath=" + configFilePath );
             System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFilePath );
-            this.bootstrap = new EnterpriseNeoServerBootstrapper();
+            this.bootstrap = new EnterpriseBootstrapper();
             this.startupStatus = this.bootstrap.start();
         }
 
