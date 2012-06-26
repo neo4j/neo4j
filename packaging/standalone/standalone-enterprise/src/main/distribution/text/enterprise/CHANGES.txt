@@ -1,3 +1,61 @@
+1.8.M05 (2012-06-25)
+--------------------
+HA:
+ o Changed master election process, now writing of latest txid for cluster members happens on demand, removing zookeeper as a bottleneck
+
+Kernel:
+ o Configurable amount of logical logs to keep, by for example number of days or size on disk.
+   keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o.
+   Regardless of configuration there will always be at least the latest non-empty logical log left.
+ o Reduced synchronization while memory mapping files, leading to increased multithreaded performance
+
+Server:
+ o Added support for multi line Cypher queries in webadmin browser
+
+Lucene-index:
+o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide for both, since
+  it's doesn't make sense to have a writer w/o a searcher and isn't possible to have a searcher
+  w/o its writer.
+o Loosened contention regarding getting index searchers for querying.
+
+Cypher:
+ o CREATE and RELATE can now introduce path identifiers
+ o String literals can now contain escape characters
+ o Fixes #600: Double optional with no matching relationships returns too many rows
+ o Fixes #613: Missing dependencies not reported correctly for queries with RELATE/SET/DELETE
+ o Fixes around optional paths
+
+1.8.M04 (2012-06-07)
+--------------------
+Kernel:
+ o Additions to the traversal framework:
+   + Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
+     uses this feature and are now faster due to less relationships being traversed.
+   + Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
+   + PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
+     just the end node of the path. It can also see and modify a user defined traversal branch state.
+   + Metadata about the traversal, for the time being: number of relationships traversal and
+     number paths returned.
+   + Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
+    a path in reverse order (starting from the end node going back to the start node). More relevant
+  	in many scenarios as well as allowing for a more efficient implementation.
+   + Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
+   + Some measure to reduce memory consumption and garbage generation during traversals.
+
+Graph-algo:
+ o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
+  Less relationships now needs to be traversed to find the requested paths.
+ o Added an implementation of the shortest path algorithm with the bidirectional traversal feature.
+
+Cypher:
+ o CREATE now accepts full paths and not only single nodes and relationships
+ o Path patterns can now be used as expressions and as predicates
+ o Fixes bug where RELATE fails to compare array properties
+ o Fixes #573: Arithmetics operations have wrong type
+ o Fixes #567: Parameter maps coming through REST are not parsed correctly
+ o Fixes #563: COUNT(*) does not return 0 for empty result
+ o Fixes #561: RELATE doesn't work as expected with map-parameters
+
 1.8.M03 (2012-05-24)
 --------------------
 Kernel:
