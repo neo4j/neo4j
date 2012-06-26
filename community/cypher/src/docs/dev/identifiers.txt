@@ -14,7 +14,8 @@ START n=node(1) MATCH n-->b RETURN b
 
 The identifiers are +n+ and +b+.
 
-Identifiers can be lower or upper case, and may contain underscore.
-If other characters are needed, you can use the +`+ sign.
+Identifier names are case sensitive, and can contain any underscore and alphanumeric character (a-z, 0-9), but must
+start with a letter. If other characters are needed, you can use the backquote (+`+) sign.
+
 The same rules apply to property names.
 

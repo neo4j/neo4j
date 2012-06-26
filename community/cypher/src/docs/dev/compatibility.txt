@@ -10,7 +10,7 @@ and old ones changed to fit into new possibilities. To guard you from having to 
 Cypher allows you to use an older parser, but still gain the speed from new optimizations.
 
 There are two ways you can select which parser to use. You can configure your database with the configuration parameter
-+cypher_parser_version+, and enter which parser you'd like to use (1.6 and 1.7 are supported now). Any Cypher query
++cypher_parser_version+, and enter which parser you'd like to use (1.6, 1.7 and 1.8 are supported now). Any Cypher query
 that doesn't explicitly say anything else, will get the parser you have configured.
 
 The other way is on a query by query basis. By simply pre-pending your query with +"CYPHER 1.6"+, that particular query

@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.{StatisticsChecker, QueryStatistics}
+import org.neo4j.cypher.StatisticsChecker
 
 class CreateTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List()
@@ -123,9 +123,9 @@ for this to work.""",
       text =
         """When you use CREATE and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
-      queryText = "create (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return andres,michael",
-      returns = "This query creates three nodes and two relationships in one go, and returns the end point " +
-        "of the created path",
+      queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
+      returns = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
+                "and returns it",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }
 

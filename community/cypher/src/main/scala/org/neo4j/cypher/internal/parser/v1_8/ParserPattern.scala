@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.{True, Entity, Expression}
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 trait ParserPattern extends Base {
 
@@ -53,6 +54,7 @@ trait ParserPattern extends Base {
         concretePattern.find(!_.success) match {
           case Some(No(msg)) => Failure(msg.mkString("\n"), rest)
           case None => Success(concretePattern.flatMap(_.values), rest)
+          case _ => throw new ThisShouldNotHappenError("Andres", "This is here to stop compiler warnings.")
         }
 
       case Failure(msg, rest) => Failure(msg, rest)

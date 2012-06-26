@@ -159,9 +159,7 @@ This section is showing some graph-related update operations that require advanc
 
 :leveloffset: 2
 
-include::insert-a-new-value-into-a-linked-list.txt[]
-
-include::cypher-linkedlist-graph.txt[]
+include::linked-list.txt[]
 
 :leveloffset: 1
 

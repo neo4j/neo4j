@@ -3,6 +3,10 @@ Create
 ======
 Creating graph elements - nodes and relationships, is done with +CREATE+.
 
+[TIP]
+In the `CREATE` clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
 :leveloffset: 2
 
 include::create-single-node.txt[]

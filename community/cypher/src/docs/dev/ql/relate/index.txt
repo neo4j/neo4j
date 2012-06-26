@@ -7,6 +7,10 @@ will always make the least change possible to the graph - if it can use parts of
 Another difference to +MATCH+ is that +RELATE+ assumes the pattern to be unique. If multiple matching subgraphs are
 found an exception will be thrown.
 
+[TIP]
+In the `RELATE` clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
 :leveloffset: 2
 
 include::create-relationship-if-it-is-missing.txt[]

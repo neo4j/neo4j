@@ -19,53 +19,34 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Assert._
-import org.junit.Test
+import org.neo4j.cypher.ExecutionResult
 
-class PatternTest extends DocumentingTestBase {
-  override def indexProps: List[String] = List("name")
 
-  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
+class PatternTest extends ArticleTest {
+  override val indexProps: List[String] = List("name")
+
+  def assert(name: String, result: ExecutionResult) {}
+
+  val graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "B KNOWS E", "C KNOWS E", "D KNOWS F")
 
   override val properties = Map(
     "A" -> Map("name" -> "Anders"),
-    "B" -> Map("name" -> "Bossman"),
+    "B" -> Map("name" -> "Becky"),
     "C" -> Map("name" -> "Cesar"),
-    "D" -> Map("name" -> "David"),
-    "E" -> Map("name" -> "Emil")
+    "D" -> Map("name" -> "Dilshad"),
+    "E" -> Map("name" -> "Emil"),
+    "F" -> Map("name" -> "Filipa")
   )
 
-  def section: String = "PATTERN"
-
-  def optionalExample = """START me=node(1)
-MATCH me-->friend-[?:parent_of]->children
-RETURN friend, children"""
-
-  def optionalQ1 = """START a=node(1)
-MATCH p = a-[?]->b
-RETURN b"""
-
-  def optionalQ2 = """START a=node(1)
-MATCH p = a-[?*]->b
-RETURN b"""
-
-  def optionalQ3 = """START a=node(1)
-MATCH p = a-[?]->x-->b
-RETURN b"""
-
-  def optionalQ4 = """START a=node(1), x=node(2)
-MATCH p = shortestPath( a-[?*]->x )
-RETURN p"""
-
-
-  @Test def intro() {
-    testQuery(
-      title = "Patterns",
-      text = """
-=== Introduction ===
+  val title = "Pattern"
+  val section = "Introduction"
+  val text =
+"""
+Patterns
+========
 
 Patterns are at the very core of Cypher, and are used in a lot of different places.
-The pattern is used to describe the shape of the data that we are looking for.
+Using patterns, you describe the shape of the data that you are looking for.
 Patterns are used in the `MATCH` clause. Path patterns are expressions.
 Since these expressions are collections, they can also be used as
 predicates (a non-empty collection signifies true). They are also used to `CREATE` the graph, and by the `RELATE`
@@ -81,7 +62,16 @@ Patterns have bound points, or starting points. They are the parts of the patter
 graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a starting point -- a pattern
 where parts of the pattern are not reachable from any starting point will be rejected.
 
-=== Patterns for related nodes ===
+[options="header", cols=">s,^,^,^,^,^", width="100%"]
+|===================
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+|Match|Yes|Yes|Yes|Yes|-
+|Create|-|-|-|Yes|Yes
+|Relate|-|-|-|Yes|Yes
+|Expressions|-|Yes|Yes|-|-
+|===================
+
+== Patterns for related nodes ==
 
 The description of the pattern is made up of one or more paths, separated by commas. A path is a sequence of nodes and
 relationships that always start and end in nodes. An example path would be:
@@ -101,7 +91,7 @@ If you don't care about a node, you don't need to name it. Empty parenthesis are
 
 +`a-->()<--b`+
 
-=== Working with relationships ===
+== Working with relationships ==
 
 If you need to work with the relationship between two nodes, you can name it.
 
@@ -122,23 +112,23 @@ If multiple relationship types are acceptable, you can list them, separating the
 This pattern matches a relationship of type +TYPE1+ or +TYPE2+, going from `a` to `b`. The relationship is named `r`.
 Multiple relationship types can not be used with `CREATE` or `RELATE`.
 
-=== Optional relationships === 
+== Optional relationships ==
 
 An optional relationship is matched when it is found, but replaced by a `null` otherwise.
 Normally, if no matching relationship is found, that sub-graph is not matched.
 Optional relationships could be called the Cypher equivalent of the outer join in SQL.
 
-Optional relationships are marked with a question mark.      
+They can only be used in `MATCH`.
+
+Optional relationships are marked with a question mark.
 They allow you to write queries like this one:
 
-[source,cypher]
-----
-"""
-        + optionalExample +
-"""
-----
+###no-results
+START me=node(*)
+MATCH me-->friend-[?]->friend_of_friend
+RETURN friend, friend_of_friend###
 
-The query above says ``give me all my friends, and their children, if they have any.''
+The query above says ``for every person, give me all their friends, and their friends friends, if they have any.''
 
 Optionality is transitive -- if a part of the pattern can only be reached from a bound point through an optional relationship,
 that part is also optional. In the pattern above, the only bound point in the pattern is `me`. Since the relationship
@@ -148,40 +138,27 @@ Also, named paths that contain optional parts are also optional -- if any part o
 `null`, the whole path is `null`.
 
 In the following examples, `b` and `p` are all optional and can contain `null`:
+###no-results
+START a=node(%A%)
+MATCH p = a-[?]->b
+RETURN b###
 
-[source,cypher]
-----
-"""
-        + optionalQ1 +
+###no-results
+START a=node(%A%)
+MATCH p = a-[?*]->b
+RETURN b###
 
-"""
-----
+###no-results
+START a=node(%A%)
+MATCH p = a-[?]->x-->b
+RETURN b###
 
-[source,cypher]
-----
-"""
-        + optionalQ2 +
+###no-results
+START a=node(%A%), x=node(%F%)
+MATCH p = shortestPath( a-[?*]->x )
+RETURN p###
 
-"""
-----
-
-[source,cypher]
-----
-"""
-        + optionalQ3 +
-
-"""
-----
-
-[source,cypher]
-----
-"""
-        + optionalQ4 +
-
-"""
-----
-
-=== Controlling depth ===
+== Controlling depth ==
 
 A pattern relationship can span multiple graph relationships. These are called variable length relationships, and are
 marked as such using an asterisk (`*`):
@@ -200,23 +177,49 @@ This is a variable length relationship containing at least three graph relations
 
 Variable length relationships can not be used with `CREATE` and `RELATE`.
 
-As a simple example, let's take the query below, executed on this graph:
+As a simple example, let's take the query below:
 
-include::cypher-pattern-graph.txt[]
+###
+START me=node(%F%)
+MATCH me-[:KNOWS*1..2]-remote_friend
+RETURN remote_friend###
 
-""",
-      queryText = """START me=node(1)
-MATCH me-[:KNOWS*2]-friendOfFriend
-RETURN friendOfFriend""",
-      returns = "This query returns the friends of my friends, and stops at that depth.",
-      assertions = p => assertTrue(true)
-    )
-  }
+This query starts from one node, and follows KNOWS relationships two or three steps out, and then stops.
 
-  @Test def runQueries() {
-    testWithoutDocs(optionalQ1)
-    testWithoutDocs(optionalQ2)
-    testWithoutDocs(optionalQ3)
-    testWithoutDocs(optionalQ4)
-  }
+== Assigning to path identifiers ==
+
+In a graph database, a path is a very important concept. A path is a collection of nodes and relationships,
+that describe a path in the graph. To assign a path to a path identifier, you simply assign a path pattern to an
+identifier, like so:
+
++`p = (a)-[*3..5]->(b)`+
+
+You can do this in `MATCH`, `RELATE` and `CREATE`, but not when using patterns as expressions. Example of the three in a
+single query:
+
+###no-results
+START me=node(%F%)
+MATCH p1 = me-[*2]-friendOfFriend
+CREATE p2 = me-[:MARRIED_TO]-(wife {name:"Gunhild"})
+RELATE p3 = wife-[:KNOWS]-friendOfFriend
+RETURN p1,p2,p3###
+
+== Setting properties ==
+
+Nodes and relationships are important, but Neo4j uses properties on both of these to allow for far denser graphs models.
+
+Properties are expressed in patterns using the map-construct, which is simply curly brackets surrounding a number of
+key-expression pairs, separated by commas, e.g. `{ name: "Andres", sport: "BJJ" }`. If the map is supplied through a
+parameter, the normal parameter expression is used: `{ paramName }`.
+
+Maps are only used by `CREATE` and `RELATE`. In `CREATE` they are used to set the properties on the newly created nodes
+and relationships.
+
+When used with `RELATE`, they are used to try to match a pattern element with the corresponding graph element. The
+match is successful if the properties on the pattern element can be matched exactly against properties on the graph
+elements. The graph element can have additional properties, and they do not affect the match. If Neo4j fails to find
+matching graph elements, the maps is used to set the properties on the newly created elements.
+"""
 }
+
+

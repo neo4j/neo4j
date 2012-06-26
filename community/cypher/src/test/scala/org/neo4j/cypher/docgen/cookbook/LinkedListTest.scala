@@ -19,47 +19,73 @@
  */
 package org.neo4j.cypher.docgen.cookbook
 
-import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.cypher.docgen.ArticleTest
+import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
 
-class LinkedListTest extends DocumentingTestBase {
-  def graphDescription = List()
-  def section = "cookbook"
+class LinkedListTest extends ArticleTest with StatisticsChecker {
+  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
+  val section = "cookbook"
+  val title = "Linked List"
 
-  @Test def completeGraph() {
-    testQuery(
-      title = "Insert a new value into a linked list",
-      text =
-"""In this example, a new value is inserted at the right position into an existing Linked List.
-        
-Firstly, a new linked list, containing the nodes with values `0` and `2` is created in the first
-subquery.
 
-In the second part, we are looking for the node in the position before our new node will have, and the node that will come after.
-They will already be connected with each other with the relationship identifier `old`.
-The 0 in `zero-[:LINK*0..]->before` means that there are zero or more relationships between
-the root node and the before node. Having zero relationships between two node in a path means that they are the same
-node. When the linked list is empty, the `root`, `before` and `after` identifier will all point to the same node -
- the newly created root node. The self relationship will be in the `old` identifier.
+  override def assert(name:String, result:ExecutionResult) { name match {
+    case "create" => assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
+  }}
 
-In the last query part, the `old` relationship is deleted.""",
-      queryText = """CREATE zero={name:0,value:0}, two={value:2,name:2}, zero-[:LINK]->two-[:LINK]->zero
-==== zero ====
-MATCH zero-[:LINK*0..]->before,
-      after-[:LINK*0..]->zero,
+  override val properties: Map[String, Map[String, Any]] = Map(
+    "A" -> Map("value" -> 10),
+    "B" -> Map("value" -> 20),
+    "C" -> Map("value" -> 30)
+  )
+
+
+
+  def text = """
+Linked Lists
+============
+
+A powerful feature of using a graph database, is that you can create your own in-graph data structures - like a linked
+list.
+
+This datastructure uses a single node as the list reference. The reference has an outgoing relationship to the head of
+the list, and an incoming relationship from the last element of the list. If the list is empty, the reference will point
+to it self.
+
+Something like this:
+
+###graph-image###
+
+To initialize an empty linked list, we simply create an empty node, and make it link to itself.
+
+###no-results empty-graph assertion=create
+CREATE root-[:LINK]->root // no ‘value’ property assigned to root
+RETURN root###
+
+
+Adding values is done by finding the relationship where the new value should be placed in, and replacing it with
+a new node, and two relationships to it.
+
+###no-results
+START root=node(%ROOT%)
+MATCH root-[:LINK*0..]->before,// before could be same as root
+      after-[:LINK*0..]->root, // after could be same as root
       before-[old:LINK]->after
-WHERE before.value? <= 1 AND
-      1 <= after.value?
-CREATE newValue={name:1,value : 1},
-       before-[:LINK]->newValue,
-       newValue-[:LINK]->after
-DELETE old 
-==== zero ====
-MATCH p = zero-[:LINK*1..]->zero 
-RETURN length(p) as list_length""",
-      returns =
-"""The length of the full list.""",
-      assertions = (p) => assertEquals(List(Map("list_length" -> 3)),p.toList))
-  } 
+WHERE before.value? < 25  // This is the value. It would normally be supplied through a parameter
+  AND 25 < after.value?
+CREATE before-[:LINK]->({value:25})-[:LINK]->after
+DELETE old###
+
+Deleting a value, conversely, is done by finding the node with the value, and the two relationships going in and out
+from it, and replacing with a new value.
+
+###no-results
+START root=node(%ROOT%)
+MATCH root-[:LINK*0..]->before,
+      before-[delBefore:LINK]->del-[delAfter:LINK]->after,
+      after-[:LINK*0..]->root
+WHERE del.value = 10
+CREATE before-[:LINK]->after
+DELETE del, delBefore, delAfter###
+"""
+
 }
