@@ -22,9 +22,8 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.{Before, After}
 import scala.collection.JavaConverters._
-import java.io.{PrintWriter, File, FileWriter}
+import java.io.{PrintWriter, File}
 import org.neo4j.graphdb._
-import org.scalatest.junit.JUnitSuite
 import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
@@ -32,10 +31,70 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription, GeoffService}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.neo4j.test.GeoffService
+import org.scalatest.Assertions
 
-abstract class DocumentingTestBase extends JUnitSuite {
+trait DocumentationHelper {
+  def generateConsole:Boolean
+  def db: GraphDatabaseService
+
+  def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
+
+  def createWriter(title: String, folder: String): (File, PrintWriter) = {
+    val dir = new File(path + nicefy(folder))
+    if (!dir.exists()) {
+      dir.mkdirs()
+    }
+
+    val writer = new PrintWriter(new File(dir, nicefy(title) + ".txt"), "UTF-8")
+    (dir, writer)
+  }
+
+  val path: String = "target/docs/dev/ql/"
+
+  val graphvizFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph.txt"
+
+  def dumpGraphViz(dir: File) {
+    val graphViz = new PrintWriter(new File(dir, graphvizFileName), "UTF-8")
+    val foo = emitGraphviz(graphvizFileName)
+    graphViz.write(foo)
+    graphViz.flush()
+    graphViz.close()
+  }
+
+  private def emitGraphviz(fileName:String): String = {
+
+    val out = new ByteArrayOutputStream()
+    val writer = new GraphvizWriter(getGraphvizStyle)
+    writer.emit(out, Walker.fullGraph(db))
+
+    return """
+_Graph_
+
+["dot", """" + fileName + """.svg", "neoviz"]
+----
+%s
+----
+
+""".format(out)
+  }
+
+  protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
+
+}
+
+abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
+  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
+    val r = testWithoutDocs(queryText, assertions:_*)
+    val result: ExecutionResult = r._1
+    var query: String = r._2
+
+    val (dir: File, writer: PrintWriter) = createWriter(title, section)
+    dumpToFile(writer, title, query, returns, text, result)
+
+    dumpGraphViz(dir)
+  }
 
   var db: GraphDatabaseService = null
   val parser: CypherParser = new CypherParser
@@ -53,64 +112,14 @@ abstract class DocumentingTestBase extends JUnitSuite {
 
   def indexProps: List[String] = List()
 
-  def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
-
   def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    writer.println("_Query_")
-    writer.println()
-    writer.println(AsciidocHelper.createCypherSnippet(query))
-    writer.println()
-    writer.println(returns)
-    writer.println()
-
-    val resultText = result.dumpToString()
-    writer.println(".Result")
-    writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
-    writer.println()
-    writer.println()
-    if(generateConsole) {
-      writer.println(".Try this query live")
-      writer.println("[console]")
-      writer.println("----\n"+ ( if(generateInitialGraphForConsole) new GeoffService(db).toGeoff() else "start n=node(*) match n-[r]->() delete n, r;")+"\n\n"+query+"\n----")
-      writer.println()
-    }
+    runQuery(writer, query, returns, result)
     writer.flush()
     writer.close()
-  }
-
-  def path: String = {
-    "target/docs/dev/ql/"
-  }
-
-  protected def getGraphvizStyle: GraphStyle = {
-    AsciiDocStyle.withAutomaticRelationshipTypeColors()
-  }
-
-  private def emitGraphviz(fileName: String): String = {
-    val out = new ByteArrayOutputStream();
-    val writer = new GraphvizWriter(getGraphvizStyle);
-    writer.emit(out, Walker.fullGraph(db));
-
-    """
-_Graph_
-
-["dot", """" + fileName + """.svg", "neoviz"]
-----
-%s
-----
-
-""".format(out)
-  }
-
-  def dumpGraphViz(graphViz: PrintWriter, fileName: String) {
-    val foo = emitGraphviz(fileName)
-    graphViz.write(foo)
-    graphViz.flush()
-    graphViz.close()
   }
 
   def executeQuery(queryText: String): ExecutionResult = {
@@ -118,24 +127,7 @@ _Graph_
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     engine.execute(query)
   }
-  
-  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    val r = testWithoutDocs(queryText, assertions:_*)
-    val result: ExecutionResult = r._1
-    var query: String = r._2
 
-    val dir = new File(path + nicefy(section))
-    if (!dir.exists()) {
-      dir.mkdirs()
-    }
-
-    val writer = new PrintWriter(new File(dir, nicefy(title) + ".txt"), "UTF-8")
-    dumpToFile(writer, title, query, returns, text, result)
-
-    val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
-    val graphViz = new PrintWriter(new File(dir, graphFileName + ".txt"), "UTF-8")
-    dumpGraphViz(graphViz, graphFileName)
-  }
 
 
   def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
@@ -192,6 +184,28 @@ _Graph_
       })
     })
   }
+
+  def runQuery(writer: PrintWriter, query: String, returns: String, result: ExecutionResult) {
+    writer.println("_Query_")
+    writer.println()
+    writer.println(AsciidocHelper.createCypherSnippet(query))
+    writer.println()
+    writer.println(returns)
+    writer.println()
+
+    val resultText = result.dumpToString()
+    writer.println(".Result")
+    writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
+    writer.println()
+    writer.println()
+    if (generateConsole) {
+      writer.println(".Try this query live")
+      writer.println("[console]")
+      writer.println("----\n" + (if (generateInitialGraphForConsole) new GeoffService(db).toGeoff else "start n=node(*) match n-[r?]->() delete n, r;") + "\n\n" + query + "\n----")
+      writer.println()
+    }
+  }
+
 }
 
 

@@ -4,6 +4,12 @@ Foreach
 Collections and paths are key concepts in Cypher. To use them for updating data, you can use the FOREACH construct.
 It allows you to do updating commands on elements in a collection - a path, or a collection created by aggregation.
 
+The identifier context inside of the foreach parenthesis is separate from the one outside it, i.e. if you `CREATE` a
+node identifier inside of a `FOREACH`, you will not be able to use it outside of the foreach statement, unless you
+match to find it.
+
+Inside of the `FOREACH` parenthesis, you can do any updating commands - `CREATE`, `DELETE`, `RELATE`, and `FOREACH`.
+
 :leveloffset: 2
 
 include::mark-all-nodes-along-a-path.txt[]

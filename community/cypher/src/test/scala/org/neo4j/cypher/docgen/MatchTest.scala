@@ -267,8 +267,8 @@ Cypher will try to match the relationship where the connected nodes switch sides
   @Test def match_mimicking_or() {
     testQuery(
       title = "Match with OR",
-      text = "Strictly speaking, you can't do OR in your MATCH. It's still possible to form a few query that " +
-             "work a lot like OR. ",
+      text = "Strictly speaking, you can't do OR in your MATCH. It's still possible to form a query that " +
+             "works a lot like OR.",
       queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
       returns = "This query is saying: give me the nodes that are connected to `a`, or `b`, or both.",
       assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)

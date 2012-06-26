@@ -121,7 +121,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: Symb
     writer.println("%s ms".format(timeTaken))
   }
 
-  def dumpToString(): String = {
+  lazy val dumpToString: String = {
     val stringWriter = new StringWriter()
     val writer = new PrintWriter(stringWriter)
     dumpToString(writer)
