@@ -29,13 +29,26 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     private volatile boolean responseFailureEncountered;
     private final byte internalProtocolVersion;
     public static final int FRAME_LENGTH = 10000;
+    private final Byte internalProtocolVersionInResponse;
+    private final Byte applicationProtocolVersionInResponse;
+    private final byte appProtocolVersion;
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion,
             byte applicationProtocolVersion, TxChecksumVerifier txVerifier )
     {
+        this( realMaster, port, internalProtocolVersion, applicationProtocolVersion, txVerifier, null, null );
+    }
+    
+    public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion,
+            byte applicationProtocolVersion, TxChecksumVerifier txVerifier, Byte internalProtocolVersionInResponse,
+            Byte applicationProtocolVersionInResponse )
+    {
         super( realMaster, port, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion,
                 DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, txVerifier );
         this.internalProtocolVersion = internalProtocolVersion;
+        this.appProtocolVersion = applicationProtocolVersion;
+        this.internalProtocolVersionInResponse = internalProtocolVersionInResponse;
+        this.applicationProtocolVersionInResponse = applicationProtocolVersionInResponse;
     }
 
     @Override
@@ -56,6 +69,14 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     protected byte getInternalProtocolVersion()
     {
         return internalProtocolVersion;
+    }
+    
+    @Override
+    protected ChunkingChannelBuffer newChunkingChannelBuffer( ChannelBuffer targetBuffer, Channel channel )
+    {
+        return new ChunkingChannelBuffer( targetBuffer, channel, FRAME_LENGTH,
+                internalProtocolVersionInResponse != null ? internalProtocolVersionInResponse : internalProtocolVersion,
+                applicationProtocolVersionInResponse != null ? applicationProtocolVersionInResponse : appProtocolVersion );
     }
     
     @Override

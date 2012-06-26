@@ -197,18 +197,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
                 throws Exception
         {
-            try
-            {
-                ChannelBuffer message = (ChannelBuffer) event.getMessage();
-                handleRequest( message, event.getChannel() );
-            }
-            catch ( Throwable e )
-            {
-                msgLog.logMessage( "Error handling request", e );
-                ctx.getChannel().close();
-                tryToFinishOffChannel( ctx.getChannel() );
-                throw Exceptions.launderedException( e );
-            }
+            ChannelBuffer message = (ChannelBuffer) event.getMessage();
+            handleRequest( message, event.getChannel() );
         }
 
         @Override
@@ -232,10 +222,25 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, final ExceptionEvent e ) throws Exception
         {
-            ctx.getChannel().close();
-            e.getCause().printStackTrace();
+            msgLog.logMessage( "Error handling request", e.getCause() );
+            tryToFinishOffChannel( ctx.getChannel() );
+
+            // Write a proper failure response back to the client. Errors on this level
+            // are more protocol/communication problems or bugs in the code, not
+            // failures from the request target.
+            final ChunkingChannelBuffer failureResponse = newChunkingChannelBuffer(
+                    ChannelBuffers.dynamicBuffer(), ctx.getChannel() );
+            failureResponse.clear( true );
+            submitSilent( masterCallExecutor, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    writeFailureResponse( e.getCause(), failureResponse );
+                }
+            } );
         }
     }
     
@@ -319,10 +324,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         };
     }
 
-    protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
+    protected void handleRequest( ChannelBuffer buffer, final Channel channel )
     {
-        Byte continuation = readContinuationHeader( buffer, channel );
-        if ( continuation == null ) return;
+        byte continuation = readContinuationHeader( buffer, channel );
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
             PartialRequest partialRequest = partialRequests.get( channel );
@@ -366,34 +370,23 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength,
-                    getInternalProtocolVersion(), applicationProtocolVersion );
+            ChunkingChannelBuffer chunkingBuffer = newChunkingChannelBuffer( bufferToWriteTo, channel );
             submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom ) );
         }
     }
 
-    private Byte readContinuationHeader( ChannelBuffer buffer, final Channel channel )
+    protected ChunkingChannelBuffer newChunkingChannelBuffer( ChannelBuffer targetBuffer, Channel channel )
+    {
+        return new ChunkingChannelBuffer( targetBuffer, channel, frameLength,
+                getInternalProtocolVersion(), applicationProtocolVersion );
+    }
+
+    private byte readContinuationHeader( ChannelBuffer buffer, final Channel channel ) throws IllegalProtocolVersionException
     {
         byte[] header = new byte[2];
         buffer.readBytes( header );
-        try
-        {   // Read request header and assert correct internal/application protocol version
-            assertSameProtocolVersion( header, getInternalProtocolVersion(), applicationProtocolVersion );
-        }
-        catch ( final IllegalProtocolVersionException e )
-        {   // Version mismatch, fail with a good exception back to the client
-            final ChunkingChannelBuffer failureResponse = new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(), channel,
-                    frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
-            submitSilent( masterCallExecutor, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    writeFailureResponse( e, failureResponse );
-                }
-            } );
-            return null;
-        }
+        // Read request header and assert correct internal/application protocol version
+        assertSameProtocolVersion( header, getInternalProtocolVersion(), applicationProtocolVersion );
         return (byte) (header[0] & 0x1);
     }
 
