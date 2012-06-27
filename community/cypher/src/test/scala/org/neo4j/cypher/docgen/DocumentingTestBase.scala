@@ -24,6 +24,7 @@ import org.junit.{Before, After}
 import scala.collection.JavaConverters._
 import java.io.{PrintWriter, File}
 import org.neo4j.graphdb._
+import factory.{GraphDatabaseSetting, GraphDatabaseSettings}
 import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter, GraphStyle}
 import org.neo4j.walk.Walker
@@ -158,7 +159,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   @Before
   def init() {
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
+      setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
+      setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
+      newGraphDatabase()
     engine = new ExecutionEngine(db)
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)

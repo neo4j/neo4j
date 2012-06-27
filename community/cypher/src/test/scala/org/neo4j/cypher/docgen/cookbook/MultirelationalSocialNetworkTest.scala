@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class MultirelationalSocialNetworkTest extends DocumentingTestBase {
@@ -41,14 +43,18 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
 
   def section = "cookbook"
 
+  override protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  }
+
   @Test def followBack() {
     testQuery(
       title = "Who FOLLOWS or LOVES me back",
       text = """This example shows a multi-relational network between persons and things they like. 
         A multi-relational graph is a graph with more than one kind of relationship between nodes.""",
       queryText = "START me=node:node_auto_index(name = 'Joe') " +
-                "MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LOVES/ RETURN other.name, type(r1)",
-      returns = "People that +FOLLOWS+ or +LOVES+ +Joe+ back.",
+                "MATCH me-[r1:FOLLOWS|LOVES]->other-[r2]->me WHERE type(r1)=type(r2) RETURN other.name, type(r1)",
+      returns = "The query returns people that +FOLLOWS+ or +LOVES+ +Joe+ back.",
       (p) => assertEquals(List(Map("other.name" -> "Sara", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "LOVES")),p.toList))

@@ -207,7 +207,7 @@ You can read about references and relevant JVM settings for Sun HotSpot here:
 
 * http://jeremymanson.blogspot.com/2009/07/how-hotspot-decides-to-clear_07.html[How Hotspot Decides to Clear SoftReferences]
 
-* http://java.sun.com/docs/hotspot/HotSpotFAQ.html#gc_softrefs[HotSpot FAQ]
+* http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_softrefs[HotSpot FAQ]
 
 
 Heap memory usage

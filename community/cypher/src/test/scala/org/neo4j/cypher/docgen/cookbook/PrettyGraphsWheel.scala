@@ -34,13 +34,13 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
       text =
 """This graph is created in a number of steps:
         
-- create a center node
-- once per element in the range, create a leaf and connect it to the center.
-- select 2 leafs from the center node and conenct them.
-- find the minimum and maximum leaf and connect these.
-- return the center node.""",
+- Create a center node.
+- Once per element in the range, create a leaf and connect it to the center.
+- Select 2 leafs from the center node and connect them.
+- Find the minimum and maximum leaf and connect these.
+- Return the id of the center node.""",
       queryText = """CREATE center
-foreach( x in range(1,10) : 
+foreach( x in range(1,6) : 
    CREATE leaf={count:x}, center-[:X]->leaf
 )
 ==== center ====
@@ -55,7 +55,7 @@ CREATE last_leaf-[:X]->first_leaf
 
 RETURN id(center) as id""",
       returns =
-"""The center node.""",
+"""The query returns the id of the center node.""",
       assertions = (p) => assertEquals(List(Map("id" -> 1)),p.toList))
   } 
 }

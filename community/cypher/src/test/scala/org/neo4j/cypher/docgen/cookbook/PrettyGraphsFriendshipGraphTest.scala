@@ -33,14 +33,14 @@ class PrettyGraphsFriendshipGraphTest extends DocumentingTestBase {
     testQuery(
       title = "Friendship graph",
       text =
-"""Works by first creating a center node, and then once per element in the range, creates a cycle graph and connects it to the center""",
+"""This query first creates a center node, and then once per element in the range, creates a cycle graph and connects it to the center""",
       queryText = """CREATE center
-foreach( x in range(1,10) : 
+foreach( x in range(1,3) : 
    CREATE leaf1, leaf2, center-[:X]->leaf1, center-[:X]->leaf2, leaf1-[:X]->leaf2
 )
 RETURN ID(center) as id""",
       returns =
-"""The id of the center node.""",
+"""The id of the center node is returned by the query.""",
       assertions = (p) => assertEquals(List(Map("id" -> 1)),p.toList))
   } 
 }

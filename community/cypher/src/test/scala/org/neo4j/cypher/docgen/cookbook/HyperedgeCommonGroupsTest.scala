@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class HyperedgeCommonGroupsTest extends DocumentingTestBase {
   def graphDescription = List(
@@ -53,22 +55,25 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
 
     def section = "cookbook"
 
+  override protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  }
     @Test def findCommonGroups() {
       testQuery(
       title = "Find common groups based on shared roles",
-      text = """Assume you have a more complicated graph:
+      text = """Assume a more complicated graph:
 
-1. 2 user nodes User1, User2
-2. User1 is in Group1, Group2, Group3.
-3. User1 has Role1, Role2 in Group1; Role2, Role3 in Group2; Role3, Role4 in Group3 (hyper edges)
-4. User2 is in Group1, Group2, Group3
-5. User2 has Role2, Role5 in Group1; Role3, Role4 in Group2; Role5, Role6 in Group3 (hyper edges)
+1. Two user nodes +User1+, +User2+.
+2. +User1+ is in +Group1+, +Group2+, +Group3+.
+3. +User1+ has +Role1+, +Role2+ in +Group1+; +Role2+, +Role3+ in +Group2+; +Role3+, +Role4+ in +Group3+ (hyper edges).
+4. +User2+ is in +Group1+, +Group2+, +Group3+.
+5. +User2+ has +Role2+, +Role5+ in +Group1+; +Role3+, +Role4+ in +Group2+; +Role5+, +Role6+ in +Group3+ (hyper edges).
 
 The graph for this looks like the following (nodes like +U1G2R23+ representing the HyperEdges):
 
 include::cypher-hyperedgecommongroups-graph.txt[]
 
-To return Group1 and Group2 as User1 and User2 share at least one common role in those 2 groups, the cypher query looks like:
+To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common role in these two groups, the query looks like this:
 """,
       queryText = "" +
       		"start " +
@@ -80,7 +85,7 @@ To return Group1 and Group2 as User1 and User2 share at least one common role in
             "u2-[:hasRoleInGroup]->hyperEdge2-[:hasGroup]->group, " +
             "hyperEdge2-[:hasRole]->role " +
             "return group.name, count(role) " +
-            "order by group.name asc",
+            "order by group.name ASC",
       returns = "The groups where +User1+ and +User2+ share at least one common role:",
       (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)"->1),Map("group.name" -> "Group2", "count(role)"->1)), p.toList))
   }

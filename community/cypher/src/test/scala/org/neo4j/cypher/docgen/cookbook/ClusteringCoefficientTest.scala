@@ -48,23 +48,23 @@ _3-[:KNOWS]->_4""");
     testQuery(
       title = "Calculating the Clustering Coefficient of a friend network",
       text = """In this example, adapted from 
-http://mypetprojects.blogspot.se/2012/06/social-network-analysis-with-neo4j.html[Niko Gamulins blog post on Neoj4 for Social Network Analysis],
+http://mypetprojects.blogspot.se/2012/06/social-network-analysis-with-neo4j.html[Niko Gamulins blog post on Neo4j for Social Network Analysis],
 the graph in question is showing the 2-hop relationships of a sample person as nodes with `KNOWS` relationships.
         
-The http://en.wikipedia.org/wiki/Clustering_coefficient[clustering coefficient] of a selected node is defined as probability that two randomly selected neighbors are connected to each other. 
-With the number of neighbors as `n` and the number of mutual connections between the neigbors`r` the calculation is:
+The http://en.wikipedia.org/wiki/Clustering_coefficient[clustering coefficient] of a selected node is defined as the probability that two randomly selected neighbors are connected to each other. 
+With the number of neighbors as `n` and the number of mutual connections between the neighbors `r` the calculation is:
 
 The number of possible connections between two neighbors is `n!/(2!(n-2)!) = 4!/(2!(4-2)!) = 24/4 = 6`,
 where `n` is the number of neighbors `n = 4` and the actual number `r` of connections is `1`. 
 Therefore the clustering coefficient of node 1 is `1/6`.
         
-`n` and `r` are quite simple to retrieve via the follwoing query:""",
+`n` and `r` are quite simple to retrieve via the following query:""",
               queryText = "START a = node(1)  " +
       		"MATCH (a)--(b)  " +
       		"==== a, count(distinct b) as n ====" +
       		"MATCH (a)--()-[r]-()--(a) " +
       		"RETURN n, count(distinct r) as r",
-      returns = "Returns `n` and `r` for the above calculations",
+      returns = "This returns `n` and `r` for the above calculations.",
       assertions = (p) => assertEquals(List(
         Map("n" -> 4, "r" -> 1)), p.toList))
   }

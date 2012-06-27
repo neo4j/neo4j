@@ -33,14 +33,14 @@ class PrettyGraphsStarTest extends DocumentingTestBase {
     testQuery(
       title = "Star graph",
       text =
-"""Works by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center""",
+"""The graph is created by first creating a center node, and then once per element in the range, creates a leaf node and connects it to the center.""",
       queryText = """create center
-foreach( x in range(1,10) : 
+foreach( x in range(1,6) : 
    create leaf, center-[:X]->leaf
 )
 return id(center) as id;""",
       returns =
-"""The center node.""",
+"""The query returns the id of the center node.""",
       assertions = (p) => assertEquals(List(Map("id" -> 1)),p.toList))
   } 
 }
