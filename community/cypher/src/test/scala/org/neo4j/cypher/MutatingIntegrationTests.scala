@@ -440,6 +440,14 @@ return distinct center""")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
+
+  @Test
+  def delete_and_delete_again() {
+    createNode()
+    val result = parseAndExecute("start a=node(1) delete a foreach( x in [1] : delete a)")
+
+    assertStats(result, deletedNodes = 1)
+  }
 }
 
 trait StatisticsChecker extends Assertions {

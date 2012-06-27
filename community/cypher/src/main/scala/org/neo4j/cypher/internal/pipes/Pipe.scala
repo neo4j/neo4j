@@ -27,6 +27,7 @@ import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import collection.mutable.{Queue, Map => MutableMap}
 import scala.collection.JavaConverters._
 import java.util.HashMap
+import org.neo4j.kernel.GraphDatabaseAPI
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -51,9 +52,7 @@ class NullPipe extends Pipe {
 }
 
 object MutableMaps {
-  // def create = new java.util.HashMap[String,Any](100).asScala
-  // def create = new java.util.HashMap[String,Any](100).asScala
-  def create = collection.mutable.Map[String,Any]() // new java.util.HashMap[String,Any](100).asScala
+  def create = collection.mutable.Map[String,Any]()
   def create(size : Int) = new java.util.HashMap[String,Any](size).asScala
   def create(input : scala.collection.Map[String,Any]) = new java.util.HashMap[String,Any](input.asJava).asScala
   def create(input : Seq[(String,Any)]) = {
@@ -74,10 +73,15 @@ class QueryState(val db: GraphDatabaseService,
   val propertySet = new Counter
   val deletedNodes = new Counter
   val deletedRelationships = new Counter
+
+  def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
+    db.asInstanceOf[GraphDatabaseAPI]
+  else
+    throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
 }
 
 class Counter {
-  private var counter = 0L;
+  private var counter = 0L
 
   def count = counter
 
@@ -126,9 +130,4 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.create,
   def newWith(newEntry : (String,Any)) = {
     copy(m = (MutableMaps.create(this.m) += newEntry))
   }
-/*
-  def newWith(newEntries : (String,Any)*) = {
-    copy(m = this.m.clone() ++ newEntries)
-  }
-*/
 }
