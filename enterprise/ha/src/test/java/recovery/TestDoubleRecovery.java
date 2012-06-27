@@ -20,12 +20,17 @@
 
 package recovery;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+
 import javax.transaction.xa.Xid;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackup;
@@ -52,8 +57,6 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
-
-import static org.junit.Assert.*;
 
 @SuppressWarnings( "serial" )
 public class TestDoubleRecovery extends AbstractSubProcessTestBase

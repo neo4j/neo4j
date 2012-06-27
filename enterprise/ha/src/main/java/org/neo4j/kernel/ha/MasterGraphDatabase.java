@@ -83,7 +83,20 @@ public class MasterGraphDatabase
     @Override
     protected TxIdGenerator createTxIdGenerator()
     {
-        return new MasterTxIdGenerator( broker );
+        int txPushFactor = config.get( HaSettings.tx_push_factor );
+        String value = config.get( HaSettings.tx_push_strategy );
+        if ( HaSettings.TxPushStrategySetting.fixed.equals( value ) )
+        {
+            return new MasterTxIdGenerator( broker, txPushFactor, SlavePriorities.fixed(), msgLog );
+        }
+        else if ( HaSettings.TxPushStrategySetting.roundRobin.equals( value ) )
+        {
+            return new MasterTxIdGenerator( broker, txPushFactor, SlavePriorities.roundRobin(), msgLog );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown tx_push_strategy: " + value );
+        }
     }
 
     @Override

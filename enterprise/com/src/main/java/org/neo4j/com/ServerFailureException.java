@@ -19,9 +19,25 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
-public interface MasterCaller<M, R>
+public class ServerFailureException extends RuntimeException
 {
-    Response<R> callMaster( M master, SlaveContext context, ChannelBuffer input, ChannelBuffer target );
+    public ServerFailureException()
+    {
+        super();
+    }
+
+    public ServerFailureException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+
+    public ServerFailureException( String message )
+    {
+        super( message );
+    }
+
+    public ServerFailureException( Throwable cause )
+    {
+        super( cause );
+    }
 }

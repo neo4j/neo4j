@@ -21,6 +21,7 @@
 package org.neo4j.kernel.ha;
 
 import java.util.Map;
+
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;

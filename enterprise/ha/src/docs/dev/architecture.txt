@@ -15,6 +15,7 @@ When running Neo4j in HA mode there is always a single master and zero or more s
 Compared to other master-slave replication setups Neo4j HA can handle writes on a slave so there is no need to redirect writes to the master.
 
 A slave will handle writes by synchronizing with the master to preserve consistency.
-Updates will however propagate from the master to other slaves eventually so a write from one slave is not immediately visible on all other slaves.
+Writes to master can be configured to be optimistically pushed to 0 or more slaves. By optimistically we mean the master will try to push to slaves before the transaction completes but if it fails the transaction will still be successful (different from normal replication factor).
+All updates will however propagate from the master to other slaves eventually so a write from one slave may not be immediately visible on all other slaves.
 This is the only difference between multiple machines running in HA mode compared to single machine operation.
 All other ACID characteristics are the same.

@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import org.neo4j.com.SlaveContext;
+import org.neo4j.com.RequestContext;
 
 public class ZooKeeperMachine extends Machine
 {
     public static final ZooKeeperMachine NO_MACHINE = new ZooKeeperMachine( -1,
-            -1, 1, SlaveContext.EMPTY.machineId(), null, "" );
+            -1, 1, RequestContext.EMPTY.machineId(), null, -1, "" );
 
     private final String zkPath;
 
     public ZooKeeperMachine( int machineId, int sequenceId,
             long lastCommittedTxId, int masterForCommittedTxId, String server,
-            String zkPath )
+            int backupPort, String zkPath )
     {
         super( machineId, sequenceId, lastCommittedTxId,
-                masterForCommittedTxId, server );
+                masterForCommittedTxId, server, backupPort );
         this.zkPath = zkPath;
     }
 

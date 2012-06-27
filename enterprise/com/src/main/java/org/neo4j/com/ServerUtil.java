@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Predicate;
@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class MasterUtil
+public class ServerUtil
 {
     private static File getBaseDir( GraphDatabaseAPI graphDb )
     {
@@ -97,7 +97,7 @@ public class MasterUtil
         {
             try
             {
-                appliedTransactions[i++] = SlaveContext.lastAppliedTx( ds.getName(), ds.getXaContainer()
+                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(), ds.getXaContainer()
                     .getResourceManager()
                     .rotateLogicalLog() );
             }
@@ -109,19 +109,19 @@ public class MasterUtil
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.
                 graphDb.getKernelPanicGenerator().generateEvent( ErrorState.TX_MANAGER_NOT_OK );
-                throw new MasterFailureException( e );
+                throw new ServerFailureException( e );
             }
         }
         return appliedTransactions;
     }
 
-    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseAPI graphDb,
+    public static RequestContext rotateLogsAndStreamStoreFiles( GraphDatabaseAPI graphDb,
             boolean includeLogicalLogs, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
                 graphDb.getXaDataSourceManager();
-        SlaveContext context = SlaveContext.anonymous( rotateLogs( graphDb ) );
+        RequestContext context = RequestContext.anonymous( rotateLogs( graphDb ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024*1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
@@ -151,7 +151,7 @@ public class MasterUtil
             }
             catch ( IOException e )
             {
-                throw new MasterFailureException( e );
+                throw new ServerFailureException( e );
             }
         }
         return context;
@@ -179,15 +179,15 @@ public class MasterUtil
         LogExtractor logExtractor = null;
         try
         {
-            final long masterLastTx = dataSource.getLastCommittedTxId();
-            if ( masterLastTx < endTxId )
+            final long serverLastTx = dataSource.getLastCommittedTxId();
+            if ( serverLastTx < endTxId )
             {
                 throw new RuntimeException(
                         "Was requested to extract transaction ids " + startTxId
                                 + " to " + endTxId + " from data source "
                                 + dataSource.getName()
-                                + " but largest transaction id in master is "
-                                + masterLastTx );
+                                + " but largest transaction id in server is "
+                                + serverLastTx );
             }
             try
             {
@@ -264,7 +264,7 @@ public class MasterUtil
 
     /**
      * After having created the response for a slave, this method compares its
-     * context against the local (master's) context and creates a transaction
+     * context against the local (server's) context and creates a transaction
      * stream containing all the transactions the slave does not currently
      * have. This way every response returned acts as an update for the slave.
      *
@@ -277,7 +277,7 @@ public class MasterUtil
      * @return The response, packed with the latest transactions
      */
     public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb,
-            SlaveContext context, T response, Predicate<Long> filter )
+            RequestContext context, T response, Predicate<Long> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
@@ -294,10 +294,10 @@ public class MasterUtil
                     throw new RuntimeException( "No data source '" + resourceName + "' found" );
                 }
                 resourceNames.add( resourceName );
-                final long masterLastTx = dataSource.getLastCommittedTxId();
-                if ( txEntry.getTxId() >= masterLastTx ) continue;
+                final long serverLastTx = dataSource.getLastCommittedTxId();
+                if ( txEntry.getTxId() >= serverLastTx ) continue;
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
-                        dataSource, txEntry.getTxId() + 1, masterLastTx, stream,
+                        dataSource, txEntry.getTxId() + 1, serverLastTx, stream,
                         filter );
                 logExtractors.add( logExtractor );
             }
@@ -338,7 +338,7 @@ public class MasterUtil
         }
 
         List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
-                getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, MasterUtil.ALL ) ) :
+                getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, ServerUtil.ALL ) ) :
                 Collections.<LogExtractor>emptyList();
         return new Response<Void>( null, graphDb.getStoreId(), createTransactionStream(
                         Collections.singletonList( dataSourceName ), stream,
@@ -368,7 +368,7 @@ public class MasterUtil
     }
 
     public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseAPI graphDb,
-            SlaveContext context, T response )
+            RequestContext context, T response )
     {
         return new Response<T>( response, graphDb.getStoreId(), TransactionStream.EMPTY,
                 ResourceReleaser.NO_OP );
@@ -409,6 +409,32 @@ public class MasterUtil
         {
             response.close();
         }
+    }
+    
+    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSourceManager dataSources, String resource )
+    {
+        return onlyIncludeResource( context, dataSources.getXaDataSource( resource ) );
+    }
+    
+    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSource dataSource )
+    {
+        Tx txForDs = null;
+        for ( Tx tx : context.lastAppliedTransactions() )
+        {
+            if ( tx.getDataSourceName().equals( dataSource.getName() ) )
+            {
+                txForDs = tx;
+                break;
+            }
+        }
+        if ( txForDs == null )
+        {   // Should not be able to happen
+            throw new RuntimeException( "Apparently " + context +
+                    " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
+        }
+        return new RequestContext( context.getSessionId(), context.machineId(),
+                context.getEventIdentifier(), new Tx[] {txForDs}, context.getMasterId(),
+                context.getChecksum() );
     }
 
     public interface TxHandler

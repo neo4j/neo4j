@@ -40,11 +40,11 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.neo4j.backup.check.ConsistencyCheck;
-import org.neo4j.com.MasterUtil;
-import org.neo4j.com.MasterUtil.TxHandler;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.ServerUtil;
+import org.neo4j.com.ServerUtil.TxHandler;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
@@ -116,7 +116,7 @@ public class OnlineBackup
             try
             {
                 // First, receive all txs pending
-                unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
+                unpackResponse( response, targetDb, ServerUtil.txHandlerForFullCopy() );
                 // Then go over all datasources, try to extract the latest tx
                 Set<String> noTxPresent = new HashSet<String>();
                 for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
@@ -151,7 +151,7 @@ public class OnlineBackup
                     {
                         recoveryDiff.put( ds, -1L );
                     }
-                    SlaveContext recoveryCtx = addDiffToSlaveContext(
+                    RequestContext recoveryCtx = addDiffToSlaveContext(
                             slaveContextOf( targetDb ), recoveryDiff );
                     try
                     {
@@ -347,7 +347,7 @@ public class OnlineBackup
         return result;
     }
 
-    private SlaveContext addDiffToSlaveContext( SlaveContext original,
+    private RequestContext addDiffToSlaveContext( RequestContext original,
             Map<String, Long> diffPerDataSource )
     {
         Tx[] oldTxs = original.lastAppliedTransactions();
@@ -363,9 +363,9 @@ public class OnlineBackup
                 diff = Long.valueOf( 0L );
             }
             long newTxId = originalTxId + diff;
-            newTxs[i] = SlaveContext.lastAppliedTx( dsName, newTxId );
+            newTxs[i] = RequestContext.lastAppliedTx( dsName, newTxId );
         }
-        return SlaveContext.anonymous( newTxs );
+        return RequestContext.anonymous( newTxs );
     }
 
     /**
@@ -381,7 +381,7 @@ public class OnlineBackup
      * @return A backup context, ready to perform
      */
     private OnlineBackup incrementalWithContext( GraphDatabaseAPI targetDb,
-            SlaveContext context )
+            RequestContext context )
     {
         BackupClient client = new BackupClient( hostNameOrIp, port, targetDb.getMessageLog(),
                 targetDb.getStoreId() );
@@ -449,7 +449,7 @@ public class OnlineBackup
     {
         try
         {
-            MasterUtil.applyReceivedTransactions( response, graphDb, txHandler );
+            ServerUtil.applyReceivedTransactions( response, graphDb, txHandler );
             getLastCommittedTxs( graphDb );
         }
         catch ( IOException e )
@@ -466,15 +466,15 @@ public class OnlineBackup
         }
     }
 
-    private SlaveContext slaveContextOf( GraphDatabaseAPI graphDb )
+    private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
         List<Tx> txs = new ArrayList<Tx>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            txs.add( SlaveContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
+            txs.add( RequestContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
         }
-        return SlaveContext.anonymous( txs.toArray( new Tx[0] ) );
+        return RequestContext.anonymous( txs.toArray( new Tx[0] ) );
     }
 
     private static boolean bumpLogFile( String targetDirectory, long toTimestamp )

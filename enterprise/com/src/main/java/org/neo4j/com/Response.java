@@ -37,7 +37,7 @@ public class Response<T>
         this.releaser = releaser;
     }
 
-    public T response() throws MasterFailureException
+    public T response() throws ServerFailureException
     {
         return response;
     }

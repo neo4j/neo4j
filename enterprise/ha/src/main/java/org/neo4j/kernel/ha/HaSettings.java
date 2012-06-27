@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
 import org.neo4j.graphdb.factory.Migrator;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
@@ -74,6 +75,33 @@ public class HaSettings
     @Default( "0" )
     public static final StringSetting pull_interval = new StringSetting( "ha.pull_interval", ANY, "Must be valid interval setting" );
 
+    @Description(   "The amount of slaves the master will ask to replicate a committed transaction. " + 
+                    "The master will not throw an exception on commit if the replication failed." )
+    @Default( "1" )
+    public static final IntegerSetting tx_push_factor = new IntegerSetting( "ha.tx_push_factor", "Must be a valid replication factor", 0, null ); 
+
+    
+    @Description(   "Push strategy of a transaction to a slave during commit. " + 
+                    " Round robin (\"round_robin\")  " + 
+                    " or fixed (\"fixed\") selecting the slave with highest machine id first" )
+    @Default( "fixed" )
+    public static final OptionsSetting tx_push_strategy = new TxPushStrategySetting();
+    
+    public static class TxPushStrategySetting
+        extends OptionsSetting
+    {
+        @Description( "Round robin" )
+        public static final String roundRobin = "round_robin";
+    
+        @Description( "Fixed" )
+        public static final String fixed = "fixed";
+    
+        public TxPushStrategySetting( )
+        {
+            super( "ha.tx_push_strategy", roundRobin, fixed );
+        }
+    }
+    
     public static final class SlaveUpdateModeSetting
         extends GraphDatabaseSetting.OptionsSetting
     {

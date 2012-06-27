@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxHook;
 

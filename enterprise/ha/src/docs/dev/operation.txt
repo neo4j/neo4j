@@ -15,16 +15,14 @@ To ensure consistency, a slave has to be up to date with the master before perfo
 This is built into the communication protocol between the slave and master, so that updates will happen automatically if needed.
 
 You can make a database instance permanently slave-only by including the +ha.slave_coordinator_update_mode=none+ configuration parameter in its configuration.
+
 Such instances will never become a master during fail-over elections though otherwise they behave identically to any other slaves, including the ability to
 write-through permanent slaves to the master.
 
 When performing a write on the master it will execute in the same way as running in normal embedded mode.
-Currently the master will not push updates to the slave. 
-Instead, slaves can be configured to have a pull interval.
-Without polling, updates will only happen on slaves whenever they synchronize a write with the master.
+Currently the master will by default try to push the transaction to one slave. This is done optimistically meaning if the push fails the transaction will still be successful. This push is not like replication factor that would cause the transaction to fail. The push factor (amount of slaves to try push a transaction to) can be configured to 0 (higher write performance) and up to amount of machines available in the cluster minus one.  
 
-Having all writes go through slaves has the benefit that the data will be replicated on two machines.
-This is recommended to avoid rollbacks in case of a master failure that could potentially happen when the new master is elected.
+Slaves can also be configured to update asynchronously by setting a pull interval.
 
 Whenever a server running a neo4j database becomes unavailable the coordinator service will detect that and remove it from the cluster.
 If the master goes down a new master will automatically be elected.
@@ -37,7 +35,7 @@ The old master will move away the branched database and download a full copy fro
 All this can be summarized as:
 
 * Slaves can handle write transactions.
-* Updates to slaves are eventual consistent.
+* Updates to slaves are eventual consistent but can be configured to optimistically be pushed from master during commit.
 * Neo4j HA is fault tolerant and (depending on ZooKeeper setup) can continue to operate from X machines down to a single machine.
 * Slaves will be automatically synchronized with the master on a write operation.
 * If the master fails a new master will be elected automatically.

@@ -75,6 +75,7 @@ public class TestStoreCopy
                                     "master-sandboxed", true ).getAbsolutePath() ).
             setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
             setConfig( HaSettings.server_id, "1" ).
+            setConfig( HaSettings.server, "localhost:6361" ).
             newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
@@ -84,11 +85,7 @@ public class TestStoreCopy
         masterTx.success();
         masterTx.finish();
 
-        slave = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "2" ).
-            newGraphDatabase();
+        startSlave();
 
         Assert.assertEquals( 1,
                 master.getBroker().getMaster().other().getMachineId() );
@@ -98,6 +95,16 @@ public class TestStoreCopy
         // Simple sanity check
         Assert.assertEquals( "bar",
                 slave.getNodeById( nodeId ).getProperty( "foo" ) );
+    }
+
+    private void startSlave()
+    {
+        slave = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+            newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
+            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+            setConfig( HaSettings.server_id, "2" ).
+            setConfig( HaSettings.server, "localhost:6362" ).
+            newGraphDatabase();
     }
 
     /**
@@ -152,11 +159,7 @@ public class TestStoreCopy
                 "neostore.propertystore.db" ), sandboxed, false );
         Assert.assertEquals( 3, sandboxed.listFiles().length );
 
-        slave = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "2" ).
-            newGraphDatabase();
+        startSlave();
 
         Assert.assertEquals( "bar",
                 slave.getNodeById( nodeId ).getProperty( "foo" ) );

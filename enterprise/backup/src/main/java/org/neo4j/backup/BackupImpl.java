@@ -20,9 +20,9 @@
 
 package org.neo4j.backup;
 
-import org.neo4j.com.MasterUtil;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -38,17 +38,17 @@ class BackupImpl implements TheBackupInterface
     
     public Response<Void> fullBackup( StoreWriter writer )
     {
-        SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, false, writer );
+        RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( graphDb, false, writer );
         writer.done();
         return packResponse( context );
     }
     
-    public Response<Void> incrementalBackup( SlaveContext context )
+    public Response<Void> incrementalBackup( RequestContext context )
     {
         return packResponse( context );
     }
     
-    private Response<Void> packResponse( SlaveContext context )
+    private Response<Void> packResponse( RequestContext context )
     {
         // On Windows there's a problem extracting logs from the current log version
         // where a rotation is requested during the time of extracting transactions
@@ -58,8 +58,8 @@ class BackupImpl implements TheBackupInterface
         // in Windows to avoid running into that problem.
         if ( GraphDatabaseSetting.osIsWindows() )
         {
-            MasterUtil.rotateLogs( graphDb );
+            ServerUtil.rotateLogs( graphDb );
         }
-        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
+        return ServerUtil.packResponse( graphDb, context, null, ServerUtil.ALL );
     }
 }

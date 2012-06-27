@@ -20,8 +20,8 @@
 package slavetest;
 
 import org.junit.Ignore;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
@@ -67,60 +67,60 @@ class TestMaster implements Master
         return actual.allocateIds( idType );
     }
 
-    public Response<Integer> createRelationshipType( SlaveContext context, String name )
+    public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
         return actual.createRelationshipType( context, name );
     }
 
-    public Response<Void> initializeTx( SlaveContext context )
+    public Response<Void> initializeTx( RequestContext context )
     {
         return actual.initializeTx( context );
     }
 
-    public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
+    public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
         return actual.acquireNodeWriteLock( context, nodes );
     }
 
-    public Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes )
+    public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
         return actual.acquireNodeReadLock( context, nodes );
     }
 
-    public Response<LockResult> acquireGraphWriteLock( SlaveContext context )
+    public Response<LockResult> acquireGraphWriteLock( RequestContext context )
     {
         return actual.acquireGraphWriteLock( context );
     }
 
-    public Response<LockResult> acquireGraphReadLock( SlaveContext context )
+    public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
         return actual.acquireGraphReadLock( context );
     }
 
-    public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
+    public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
             long... relationships )
     {
         return actual.acquireRelationshipWriteLock( context, relationships );
     }
 
-    public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
+    public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
             long... relationships )
     {
         return actual.acquireRelationshipReadLock( context, relationships );
     }
 
-    public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
+    public Response<Long> commitSingleResourceTransaction( RequestContext context, String resource,
             TxExtractor txGetter )
     {
         return actual.commitSingleResourceTransaction( context, resource, txGetter );
     }
 
-    public Response<Void> finishTransaction( SlaveContext context, boolean success )
+    public Response<Void> finishTransaction( RequestContext context, boolean success )
     {
         return actual.finishTransaction( context, success );
     }
 
-    public Response<Void> pullUpdates( SlaveContext context )
+    public Response<Void> pullUpdates( RequestContext context )
     {
         return actual.pullUpdates( context );
     }
@@ -130,7 +130,7 @@ class TestMaster implements Master
         return actual.getMasterIdForCommittedTx( txId, myStoreId );
     }
 
-    public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
+    public Response<Void> copyStore( RequestContext context, StoreWriter writer )
     {
         return actual.copyStore( context, writer );
     }
@@ -140,19 +140,19 @@ class TestMaster implements Master
         actual.shutdown();
     }
 
-    public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index,
+    public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index,
             String key )
     {
         return actual.acquireIndexWriteLock( context, index, key );
     }
 
-    public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
+    public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
     {
         return actual.acquireIndexReadLock( context, index, key );
     }
 
     @Override
-    public Response<Void> copyTransactions( SlaveContext context, String dsName, long startTxId,
+    public Response<Void> copyTransactions( RequestContext context, String dsName, long startTxId,
             long endTxId )
     {
         return actual.copyTransactions( context, dsName, startTxId, endTxId );

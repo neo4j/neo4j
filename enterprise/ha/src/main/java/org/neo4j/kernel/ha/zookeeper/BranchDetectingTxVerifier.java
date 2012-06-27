@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
+
 import org.neo4j.com.ComException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;

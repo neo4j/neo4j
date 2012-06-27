@@ -21,8 +21,8 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
 
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -160,7 +160,7 @@ public class SlaveLockManager extends LockManager
         NODE_READ
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireNodeReadLock( context, ((Node)resource).getId() );
             }
@@ -168,7 +168,7 @@ public class SlaveLockManager extends LockManager
         NODE_WRITE
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireNodeWriteLock( context, ((Node)resource).getId() );
             }
@@ -176,7 +176,7 @@ public class SlaveLockManager extends LockManager
         RELATIONSHIP_READ
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireRelationshipReadLock( context, ((Relationship)resource).getId() );
             }
@@ -184,7 +184,7 @@ public class SlaveLockManager extends LockManager
         RELATIONSHIP_WRITE
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireRelationshipWriteLock( context, ((Relationship)resource).getId() );
             }
@@ -192,7 +192,7 @@ public class SlaveLockManager extends LockManager
         GRAPH_READ
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireGraphReadLock( context );
             }
@@ -200,7 +200,7 @@ public class SlaveLockManager extends LockManager
         GRAPH_WRITE
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 return master.acquireGraphWriteLock( context );
             }
@@ -208,7 +208,7 @@ public class SlaveLockManager extends LockManager
         INDEX_WRITE
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 IndexLock lock = (IndexLock) resource;
                 return master.acquireIndexWriteLock( context, lock.getIndex(), lock.getKey() );
@@ -217,13 +217,13 @@ public class SlaveLockManager extends LockManager
         INDEX_READ
         {
             @Override
-            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
             {
                 IndexLock lock = (IndexLock) resource;
                 return master.acquireIndexReadLock( context, lock.getIndex(), lock.getKey() );
             }
         };
 
-        abstract Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource );
+        abstract Response<LockResult> acquireLock( Master master, RequestContext context, Object resource );
     }
 }

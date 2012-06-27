@@ -50,6 +50,12 @@ public abstract class AbstractBroker implements Broker
     {
         return config.getInteger( HaSettings.server_id );
     }
+    
+    @Override
+    public Slave[] getSlaves()
+    {
+        return new Slave[0];
+    }
 
     @Override
     public void notifyMasterChange( Machine newMaster )

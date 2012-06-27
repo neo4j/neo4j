@@ -19,11 +19,9 @@
  */
 package org.neo4j.com;
 
-public interface RequestType<M>
+import org.jboss.netty.buffer.ChannelBuffer;
+
+public interface TargetCaller<T, R>
 {
-    TargetCaller getTargetCaller();
-    
-    ObjectSerializer getObjectSerializer();
-    
-    byte id();
+    Response<R> call( T requestTarget, RequestContext context, ChannelBuffer input, ChannelBuffer target );
 }

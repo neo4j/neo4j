@@ -53,7 +53,7 @@ public class TestClusterNames
     public void makeSureStoreIdInStoreMatchesZKData() throws Exception
     {
         HighlyAvailableGraphDatabase db0 = db( 0, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), HaConfig.CONFIG_DEFAULT_PORT );
-        HighlyAvailableGraphDatabase db1 = db( 1, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), HaConfig.CONFIG_DEFAULT_PORT );
+        HighlyAvailableGraphDatabase db1 = db( 1, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ), HaConfig.CONFIG_DEFAULT_PORT+1 );
         awaitStarted( db0 );
         awaitStarted( db1 );
         db1.shutdown();
@@ -79,14 +79,14 @@ public class TestClusterNames
             // Here's one cluster
             String cluster1Name = "cluster_1";
             db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
-            db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
+            db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
             awaitStarted( db0Cluster1 );
             awaitStarted( db1Cluster1 );
     
             // Here's another cluster
             String cluster2Name = "cluster.2";
-            db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
-            db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
+            db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+2 );
+            db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
             awaitStarted( db0Cluster2 );
             awaitStarted( db1Cluster2 );
     

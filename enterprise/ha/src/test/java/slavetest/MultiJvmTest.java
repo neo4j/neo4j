@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.ha.StandaloneDatabase;
 
 @Ignore( "Not needed, SingleJvmWithNettyTest" )
@@ -47,7 +48,7 @@ public class MultiJvmTest extends AbstractHaTest
     }
     
     @Override
-    protected void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception
+    protected GraphDatabaseAPI startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception
     {
         File slavePath = dbPath( machineId );
         addDefaultConfig( config );
@@ -57,6 +58,7 @@ public class MultiJvmTest extends AbstractHaTest
             slaveJvm.awaitStarted();
         }
         jvms.set( machineId, slaveJvm );
+        return null;
     }
 
     @Override

@@ -70,10 +70,15 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
+import org.neo4j.kernel.ha.SlaveClient;
+import org.neo4j.kernel.ha.SlaveDatabaseOperations;
+import org.neo4j.kernel.ha.SlaveImpl;
+import org.neo4j.kernel.ha.SlaveServer;
 import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
@@ -92,7 +97,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     {
         cachedMasterOverride = null;
     }
-
+    
     @Test
     public void assertThatNettyIsUsed() throws Exception
     {
@@ -108,7 +113,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         config.put( "server_id", Integer.toString( id ) );
 
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
-                "localhost:" + Protocol.PORT );
+                "localhost:" + Protocol.PORT, 0 );
         int readTimeout = getConfigInt( config, HaSettings.read_timeout.name(), TEST_READ_TIMEOUT );
         final Master client = new MasterClient(
                 masterMachine.getServer().first(),
@@ -145,6 +150,17 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
             {
                 throw new UnsupportedOperationException(
                         "cannot instantiate master server on slave" );
+            }
+            
+            @Override
+            public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
+            {
+                int machineId = getMyMachineId();
+                int port = FakeSlaveBroker.LOW_SLAVE_PORT + machineId;
+                SlaveServer server = new SlaveServer( new SlaveImpl( graphDb, this, ops ),
+                        port, graphDb.getMessageLog() );
+                masterBroker.addSlave( new SlaveClient(  machineId, "localhost", port, graphDb.getMessageLog(), getClusterStoreId( false ), 10 ) );
+                return server;
             }
         };
     }

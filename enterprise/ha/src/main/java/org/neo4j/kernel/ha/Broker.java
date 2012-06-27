@@ -42,6 +42,10 @@ public interface Broker
 
     // I know... this isn't supposed to be here
     Object instantiateMasterServer( GraphDatabaseAPI graphDb );
+    
+    Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops );
+    
+    Slave[] getSlaves();
 
     void rebindMaster();
 

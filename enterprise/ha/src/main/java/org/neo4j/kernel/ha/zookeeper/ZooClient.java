@@ -36,9 +36,13 @@ import java.net.UnknownHostException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -61,12 +65,17 @@ import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.InformativeStackTrace;
 import org.neo4j.kernel.SlaveUpdateMode;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.Slave;
+import org.neo4j.kernel.ha.SlaveClient;
 import org.neo4j.kernel.ha.SlaveDatabaseOperations;
+import org.neo4j.kernel.ha.SlaveImpl;
+import org.neo4j.kernel.ha.SlaveServer;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -105,6 +114,11 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String clusterName;
     private final boolean allowCreateCluster;
     private final WatcherImpl watcher;
+    
+    private final Machine asMachine;
+    
+    private final Map<Integer, Pair<SlaveClient,Machine>> cachedSlaves = new HashMap<Integer, Pair<SlaveClient,Machine>>();
+    private volatile boolean serversRefreshed = true;
 
     public ZooClient( String storeDir, StringLogger stringLogger, Config conf,
             SlaveDatabaseOperations localDatabase, ClusterEventReceiver clusterReceiver )
@@ -125,6 +139,7 @@ public class ZooClient extends AbstractZooKeeperManager
         clusterName = conf.get( cluster_name );
         sequenceNr = "not initialized yet";
         allowCreateCluster = conf.getBoolean( allow_init_cluster );
+        asMachine = new Machine( machineId, 0, 0, 0, haServer, backupPort );
 
         try
         {
@@ -180,6 +195,12 @@ public class ZooClient extends AbstractZooKeeperManager
         return storeId;
     }
 
+    public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, Broker broker, SlaveDatabaseOperations ops )
+    {
+        return new SlaveServer( new SlaveImpl( graphDb, broker, ops ), Machine.splitIpAndPort( haServer ).other(),
+                graphDb.getMessageLog() );
+    }
+    
     @Override
     protected int getMyMachineId()
     {
@@ -264,6 +285,24 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 else throw new ZooKeeperException( "Couldn't get or create " + child, e );
             }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new ZooKeeperException( "Interrupted", e );
+        }
+    }
+    
+    protected void subscribeToChildrenChangeWatcher( String child )
+    {
+        String path = getRoot() + "/" + child;
+        try
+        {
+            zooKeeper.getChildren( path, true );
+        }
+        catch ( KeeperException e )
+        {
+            throw new ZooKeeperException( "Couldn't subscribe getChildren at " + path, e );
         }
         catch ( InterruptedException e )
         {
@@ -468,6 +507,7 @@ public class ZooClient extends AbstractZooKeeperManager
             // Add watches to our master notification nodes
             subscribeToDataChangeWatcher( MASTER_NOTIFY_CHILD );
             subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
+            subscribeToChildrenChangeWatcher( HA_SERVERS_CHILD );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -744,7 +784,15 @@ public class ZooClient extends AbstractZooKeeperManager
         watcher.shutdown();
         msgLog.close();
         this.shutdown = true;
+        shutdownSlaves();
         super.shutdown();
+    }
+
+    private void shutdownSlaves()
+    {
+        for ( Pair<SlaveClient,Machine> slave : cachedSlaves.values() )
+            slave.first().shutdown();
+        cachedSlaves.clear();
     }
 
     public boolean isShutdown()
@@ -760,9 +808,9 @@ public class ZooClient extends AbstractZooKeeperManager
     }
 
     @Override
-    protected String getHaServer( int machineId, boolean wait )
+    protected Machine getHaServer( int machineId, boolean wait )
     {
-        return machineId == this.machineId ? haServer : super.getHaServer( machineId, wait );
+        return machineId == this.machineId ? asMachine : super.getHaServer( machineId, wait );
     }
 
     private synchronized StoreId createCluster( StoreId storeIdSuggestion )
@@ -961,6 +1009,22 @@ public class ZooClient extends AbstractZooKeeperManager
                                         "NodeDeleted event received (a machine left the cluster)" ) );
                     }
                 }
+                else if ( event.getType() == Watcher.Event.EventType.NodeChildrenChanged )
+                {
+                    if ( path.endsWith( HA_SERVERS_CHILD ) )
+                    {
+                        try
+                        {
+                            refreshHaServers();
+                            serversRefreshed = true;
+                            subscribeToChildrenChangeWatcher( HA_SERVERS_CHILD );
+                        }
+                        catch ( ZooKeeperException e )
+                        {
+                            // Happens for session expiration, why?
+                        }
+                    }
+                }
                 else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
                 {
                     int updatedData = toInt( getZooKeeper( true ).getData( path, true, null ) );
@@ -977,6 +1041,7 @@ public class ZooClient extends AbstractZooKeeperManager
                                 electionHappening = true;
                                 clusterReceiver.newMaster( new InformativeStackTrace(
                                         "NodeDataChanged event received (someone though I should be the master)" ) );
+                                serversRefreshed = true;
                             }
                             finally
                             {
@@ -996,6 +1061,7 @@ public class ZooClient extends AbstractZooKeeperManager
                                 electionHappening = true;
                                 clusterReceiver.newMaster( new InformativeStackTrace(
                                         "NodeDataChanged event received (new master ensures I'm slave)" ) );
+                                serversRefreshed = true;
                             }
                             finally
                             {
@@ -1034,6 +1100,70 @@ public class ZooClient extends AbstractZooKeeperManager
                 msgLog.flush();
                 count.decrementAndGet();
             }
+        }
+    }
+    
+    @Override
+    protected void invalidateMaster()
+    {
+        super.invalidateMaster();
+        serversRefreshed = true;
+    }
+    
+    public Slave[] getSlavesFromZooKeeper()
+    {
+        synchronized ( cachedSlaves )
+        {
+            if ( serversRefreshed || cachedSlaves.isEmpty() )
+            {
+                // Go through the cached list and refresh where needed
+                Machine master = cachedMaster.other();
+                if ( master.getMachineId() == this.machineId )
+                {   // I'm the master, update/populate the slave list
+                    Set<Integer> visitedSlaves = new HashSet<Integer>();
+                    for ( Machine machine : getHaServers() )
+                    {
+                        int id = machine.getMachineId();
+                        visitedSlaves.add( id );
+                        if ( id == machineId )
+                            continue;
+
+                        boolean instantiate = true;
+                        Pair<SlaveClient, Machine> existingSlave = cachedSlaves.get( id );
+                        if ( existingSlave != null )
+                        {   // We already have a cached slave for this machine, check if
+                            // it's the same server information
+                            Machine existingMachine = existingSlave.other();
+                            if ( existingMachine.getServer().equals( machine.getServer() ) )
+                                instantiate = false;
+                            else
+                                // Connection information changed, needs refresh
+                                existingSlave.first().shutdown();
+                        }
+
+                        if ( instantiate )
+                        {
+                            cachedSlaves.put( id, Pair.of( new SlaveClient( machine.getMachineId(), machine.getServer().first(),
+                                    machine.getServer().other().intValue(), msgLog, storeId, maxConcurrentChannelsPerSlave ), machine ) );
+                        }
+                    }
+                    
+                    for ( int id : cachedSlaves.keySet() )
+                        if ( !visitedSlaves.contains( id ) )
+                            cachedSlaves.remove( id ).first().shutdown();
+                }
+                else
+                {   // I'm a slave, I don't need a slave list so clear any existing
+                    shutdownSlaves();
+                }
+                serversRefreshed = true;
+            }
+            
+            Slave[] slaves = new Slave[cachedSlaves.size()];
+            int i = 0;
+            for ( Pair<SlaveClient, Machine> slave : cachedSlaves.values() )
+                slaves[i++] = slave.first();
+            return slaves;
         }
     }
 }

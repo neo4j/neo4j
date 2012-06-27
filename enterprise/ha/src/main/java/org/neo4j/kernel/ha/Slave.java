@@ -17,27 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.kernel.ha;
 
-public class MasterFailureException extends RuntimeException
+import org.neo4j.com.Response;
+
+public interface Slave
 {
-    public MasterFailureException()
-    {
-        super();
-    }
-
-    public MasterFailureException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public MasterFailureException( String message )
-    {
-        super( message );
-    }
-
-    public MasterFailureException( Throwable cause )
-    {
-        super( cause );
-    }
+    Response<Void> pullUpdates( String resource, long upToAndIncludingTxId );
+    
+    int getServerId();
 }

@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import java.io.File;
 import java.util.Map;
+
 import org.junit.Ignore;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

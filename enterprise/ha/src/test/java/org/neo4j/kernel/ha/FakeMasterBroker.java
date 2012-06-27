@@ -20,6 +20,9 @@
 
 package org.neo4j.kernel.ha;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.neo4j.com.Protocol;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.Pair;
@@ -29,26 +32,28 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    public FakeMasterBroker( Config conf)
+    private final Collection<Slave> slaves = new ArrayList<Slave>();
+    
+    public FakeMasterBroker( Config conf )
     {
         super( conf );
     }
 
     public Machine getMasterMachine()
     {
-        return new Machine( getMyMachineId(), 0, 1, -1, null );
+        return new Machine( getMyMachineId(), 0, 1, -1, null, 0 );
     }
 
     public Pair<Master, Machine> getMaster()
     {
         return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(),
-                0, 1, -1, null ) );
+                0, 1, -1, null, 0 ) );
     }
 
     public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
         return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(),
-                0, 1, -1, null ) );
+                0, 1, -1, null, 0 ) );
     }
 
     public boolean iAmMaster()
@@ -63,5 +68,28 @@ public class FakeMasterBroker extends AbstractBroker
         return new MasterServer( new MasterImpl( graphDb, timeOut ),
                 Protocol.PORT, graphDb.getMessageLog(), config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
                 timeOut, TxChecksumVerifier.ALWAYS_MATCH );
+    }
+    
+    public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public Slave[] getSlaves()
+    {
+        return slaves.toArray( new Slave[slaves.size()] );
+    }
+    
+    public void addSlave( Slave slave )
+    {
+        slaves.add( slave );
+    }
+    
+    @Override
+    public void shutdown()
+    {
+        for ( Slave slave : slaves )
+            ((SlaveClient)slave).shutdown();
     }
 }

@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.kernel.ha;
 
-public interface RequestType<M>
+import java.util.Iterator;
+
+public interface SlavePriority
 {
-    TargetCaller getTargetCaller();
-    
-    ObjectSerializer getObjectSerializer();
-    
-    byte id();
+    Iterator<Slave> prioritize( Slave[] slaves );
 }
