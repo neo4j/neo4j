@@ -219,9 +219,10 @@ public class ComponentVersion extends Version
             <phase>process-classes</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateNeo4jSettingsAsciidoc"
-                      classpathref="maven.compile.classpath">
-                  <arg value="${build.directory}/docs/ops/configuration.txt" />
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle" />
+                  <arg value="${build.directory}/docs/ops/configuration-attributes.txt" />
                 </java>
               </target>
             </configuration>

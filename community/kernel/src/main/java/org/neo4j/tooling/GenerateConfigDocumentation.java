@@ -22,25 +22,39 @@ package org.neo4j.tooling;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
 import org.neo4j.kernel.configuration.ConfigAsciiDocGenerator;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
  * Generates Asciidoc for the GraphDatabaseSettings class.
  */
-public class GenerateNeo4jSettingsAsciidoc
+public class GenerateConfigDocumentation
 {
     public static void main( String[] args ) throws Exception
     {
-        ConfigAsciiDocGenerator generator = new ConfigAsciiDocGenerator();
-        String doc = generator.generateDocsFor(GraphDatabaseSettingsResourceBundle.class);
-        
+    	File output = null;
+    	String bundleName = null;
         if(args.length > 0)
         {
-        	File output = new File(args[0]);
-        	System.out.println("Saving docs for '"+GraphDatabaseSettings.class.getName()+"' in '" + output.getAbsolutePath() + "'.");
+        	bundleName = args[0];
+        	
+        	if(args.length > 1) 
+        	{
+        		output = new File(args[1]);
+        	}
+        	
+        } else 
+        {
+        	System.out.println("Usage: GenerateConfigDocumentation CONFIG_BUNDLE_CLASS [output file]");
+        	System.exit(0);
+        }
+        
+        ConfigAsciiDocGenerator generator = new ConfigAsciiDocGenerator();
+        String doc = generator.generateDocsFor(bundleName);
+        
+        if(output != null)
+        {
+        	System.out.println("Saving docs for '"+bundleName+"' in '" + output.getAbsolutePath() + "'.");
         	FileUtils.writeToFile(output, doc, false);
         } else 
         {

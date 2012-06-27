@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 import org.neo4j.graphdb.factory.SettingsResourceBundle;
 
@@ -45,11 +47,18 @@ public class ConfigAsciiDocGenerator {
 
 	public String generateDocsFor(Class<? extends SettingsResourceBundle> settingsResource)
 	{
-		ResourceBundle bundle = ResourceBundle.getBundle( settingsResource.getName() );
+		return generateDocsFor(settingsResource.getName());
+	}
+	
+	public String generateDocsFor(String settingsResource)
+	{
+		ResourceBundle bundle = ResourceBundle.getBundle( settingsResource );
 		
 		StringBuilder sb = new StringBuilder();
 		
-		Set<String> keys = bundle.keySet();
+		List<String> keys = new ArrayList<String>(bundle.keySet());
+		Collections.sort(keys);
+		
         for( String property : keys )
         {
             if (property.endsWith( ".description" ))

@@ -1,0 +1,9 @@
+[[kernel-configuration]]
+Kernel configuration
+====================
+
+These are the configuration options you can pass to the neo4j kernel. They
+can either be passed as a map when using the embedded database, or in the
+neo4j.properties file when using the Neo4j Server.
+
+include::configuration-attributes.txt[]
