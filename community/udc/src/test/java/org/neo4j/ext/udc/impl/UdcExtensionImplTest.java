@@ -53,6 +53,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -352,10 +353,14 @@ public class UdcExtensionImplTest
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( randomDbName );
         if ( config != null )
         {
-            graphDatabaseBuilder.setConfig( config );
+            //graphDatabaseBuilder.setConfig( config );
+        	return new ImpermanentGraphDatabase(config);
+        } else
+        {
+        	return new ImpermanentGraphDatabase();
         }
 
-        return graphDatabaseBuilder.newGraphDatabase();
+       // return graphDatabaseBuilder.newGraphDatabase();
     }
 
     private void destroy( GraphDatabaseService dbToDestroy ) throws IOException

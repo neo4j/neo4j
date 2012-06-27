@@ -61,9 +61,15 @@ public class SystemPropertiesConfigurationTest
     @Test
     public void testThatNonExistantPropertiesAreNotPickedUp()
     {
-        System.setProperty( "foo", "bar" );
-
-        Assert.assertEquals( MapUtil.stringMap(  ),
+    	try {
+	        System.setProperty( "foo", "bar" );
+	
+	        Assert.assertEquals( MapUtil.stringMap(  ),
                              new SystemPropertiesConfiguration( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(  ) ));
+	    }
+	    finally
+	    {
+	        System.clearProperty( "foo" );
+	    }
     }
 }

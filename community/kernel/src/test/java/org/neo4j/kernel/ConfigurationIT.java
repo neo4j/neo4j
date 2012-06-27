@@ -23,23 +23,24 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ConfigurationIT {
 
 	@Test
 	public void shouldPickUpSystemProperties() 
 	{
-		System.setProperty(GraphDatabaseSettings.string_block_size.name(), "13377331");
+		System.setProperty(GraphDatabaseSettings.string_block_size.name(), "1337");
 		GraphDatabaseAPI db = null;
 		try
 		{
-			db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase("target/" + ConfigurationIT.class.getSimpleName());
+			
+			db = new ImpermanentGraphDatabase();
 			int stringBlockSize = db.getDependencyResolver().resolveDependency(Config.class).get(GraphDatabaseSettings.string_block_size);
 			
-			assertThat(stringBlockSize, is(13377331));
+			assertThat(stringBlockSize, is(1337));
 		}
 		finally
 		{
@@ -47,6 +48,7 @@ public class ConfigurationIT {
 			{
 				db.shutdown();
 			}
+			System.clearProperty(GraphDatabaseSettings.string_block_size.name());
 		}
 	}
 	
