@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols.AnyType
 import collection.JavaConverters._
-import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
+import org.neo4j.graphdb._
+import org.neo4j.kernel.impl.core.NodeManager
 
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
@@ -41,18 +42,21 @@ case class DeleteEntityAction(elementToDelete: Expression)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
+    val nodeManager: NodeManager = state.graphDatabaseAPI.getNodeManager
+
     x match {
-      case n: Node => {
+      case n: Node if (!nodeManager.isDeleted(n)) =>
         state.deletedNodes.increase()
         n.delete()
-      }
-      case r: Relationship => {
+
+      case r: Relationship if (!nodeManager.isDeleted(r))=>
         state.deletedRelationships.increase()
         r.delete()
-      }
+
+      case _ => // Entity is already deleted. No need to do anything
+
     }
   }
-
   def identifier = Seq.empty
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))

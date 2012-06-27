@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -68,8 +70,6 @@ public class NodeManager
 
     private long referenceNodeId = 0;
 
-    private Config config;
-
     private final GraphDatabaseService graphDbService;
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
@@ -104,7 +104,6 @@ public class NodeManager
             NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups, 
             Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
-        this.config = config;
         this.graphDbService = graphDb;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
@@ -1153,28 +1152,62 @@ public class NodeManager
         return this.relTypeHolder;
     }
 
-    public void addNodePropertyTracker(
-            PropertyTracker<Node> nodePropertyTracker )
+    public void addNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )
     {
         nodePropertyTrackers.add( nodePropertyTracker );
     }
 
-    public void removeNodePropertyTracker(
-            PropertyTracker<Node> nodePropertyTracker )
+    public void removeNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )
     {
         nodePropertyTrackers.remove( nodePropertyTracker );
     }
 
-    public void addRelationshipPropertyTracker(
-            PropertyTracker<Relationship> relationshipPropertyTracker )
+    public void addRelationshipPropertyTracker( PropertyTracker<Relationship> relationshipPropertyTracker )
     {
         relationshipPropertyTrackers.add( relationshipPropertyTracker );
     }
 
-    public void removeRelationshipPropertyTracker(
-            PropertyTracker<Relationship> relationshipPropertyTracker )
+    public void removeRelationshipPropertyTracker(PropertyTracker<Relationship> relationshipPropertyTracker )
     {
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
+    }
+
+    public Boolean isDeleted( PropertyContainer resource )
+    {
+        Transaction transaction;
+        try
+        {
+            transaction = transactionManager.getTransaction();
+        } catch ( SystemException se )
+        {
+            // our TM never throws this exception
+            log.log( Level.SEVERE, "Failed to retrieve transaction", se );
+            return false;
+        }
+
+        if ( transaction == null )
+        {
+            return false;
+        }
+
+        boolean dontCreateIfMissing = false;
+        LockReleaser.PrimitiveElement primitiveElement = lockReleaser.getPrimitiveElement( transaction, dontCreateIfMissing );
+
+        if ( primitiveElement == null )
+        {
+            return false;
+        }
+
+        LockReleaser.CowEntityElement cowEntity;
+        if ( resource instanceof Node )
+        {
+            cowEntity = primitiveElement.nodeElement( ((Node) resource).getId(), false );
+        } else
+        {
+            cowEntity = primitiveElement.relationshipElement( ((Relationship) resource).getId(), false );
+        }
+
+        return cowEntity != null && cowEntity.deleted;
     }
     
     PersistenceManager getPersistenceManager()
