@@ -203,6 +203,18 @@ public interface TraversalDescription
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription reverse();
+    
+    /**
+     * Traverse from a single start node based on all the rules and behavior
+     * in this description. A {@link Traverser} is returned which is
+     * used to step through the graph and getting results back. The traversal
+     * is not guaranteed to start before the Traverser is used.
+     *
+     * @param startNode {@link Node} to start traversing from.
+     * @return a {@link Traverser} used to step through the graph and to get
+     * results from.
+     */
+    Traverser traverse( Node startNode );
 
     /**
      * Traverse from a set of start nodes based on all the rules and behavior

@@ -72,6 +72,11 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         this.endNodes = endNodes;
         this.initialState = initialState;
     }
+    
+    public Traverser traverse( Node startNode )
+    {
+        return new TraverserImpl( this, Arrays.asList( startNode ) );
+    }
 
     public Traverser traverse( Node... startNodes )
     {
