@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -40,6 +41,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
+
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
@@ -48,6 +50,7 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
+import org.neo4j.kernel.impl.util.ExceptionCauseSetter;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -318,7 +321,8 @@ public class TxManager extends AbstractTransactionManager
         while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime ) Thread.yield();
     }
 
-    public void begin() throws NotSupportedException, SystemException
+    @Override
+	public void begin() throws NotSupportedException, SystemException
     {
         begin( ForceMode.forced );
     }
@@ -376,7 +380,8 @@ public class TxManager extends AbstractTransactionManager
         }
     }
 
-    public void commit() throws RollbackException, HeuristicMixedException,
+    @Override
+	public void commit() throws RollbackException, HeuristicMixedException,
         HeuristicRollbackException, IllegalStateException, SystemException
     {
         assertTmOk( "tx commit" );
@@ -579,11 +584,14 @@ public class TxManager extends AbstractTransactionManager
                                                              + " error writing transaction log" ), e ));
         }
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
-        throw new RollbackException(
+        RollbackException rollbackException = new RollbackException(
             "Failed to commit, transaction rolledback" );
+        ExceptionCauseSetter.setCause(rollbackException, tx.getRollbackCause());
+        throw rollbackException;
     }
 
-    public void rollback() throws IllegalStateException, SystemException
+    @Override
+	public void rollback() throws IllegalStateException, SystemException
     {
         assertTmOk( "tx rollback" );
         Thread thread = Thread.currentThread();
@@ -654,7 +662,8 @@ public class TxManager extends AbstractTransactionManager
         }
     }
 
-    public int getStatus()
+    @Override
+	public int getStatus()
     {
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
@@ -665,12 +674,14 @@ public class TxManager extends AbstractTransactionManager
         return Status.STATUS_NO_TRANSACTION;
     }
 
-    public Transaction getTransaction()
+    @Override
+	public Transaction getTransaction()
     {
         return txThreadMap.get( Thread.currentThread() );
     }
 
-    public void resume( Transaction tx ) throws IllegalStateException,
+    @Override
+	public void resume( Transaction tx ) throws IllegalStateException,
         SystemException
     {
         assertTmOk( "tx resume" );
@@ -695,7 +706,8 @@ public class TxManager extends AbstractTransactionManager
         }
     }
 
-    public Transaction suspend() throws SystemException
+    @Override
+	public Transaction suspend() throws SystemException
     {
         assertTmOk( "tx suspend" );
         // check for ACTIVE/MARKED_ROLLBACK?
@@ -708,7 +720,8 @@ public class TxManager extends AbstractTransactionManager
         return tx;
     }
 
-    public void setRollbackOnly() throws IllegalStateException, SystemException
+    @Override
+	public void setRollbackOnly() throws IllegalStateException, SystemException
     {
         assertTmOk( "tx set rollback only" );
         Thread thread = Thread.currentThread();
@@ -720,7 +733,8 @@ public class TxManager extends AbstractTransactionManager
         tx.setRollbackOnly();
     }
 
-    public void setTransactionTimeout( int seconds ) throws SystemException
+    @Override
+	public void setTransactionTimeout( int seconds ) throws SystemException
     {
         assertTmOk( "tx set timeout" );
         // ...

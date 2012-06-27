@@ -295,6 +295,56 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     }
     
     @Test
+    public void shouldBeAbleToAccessExceptionThrownInEventHook()
+    {
+        commit();
+
+        class MyFancyException extends Exception 
+        {
+        	
+        }
+        
+        List<TransactionEventHandler<Object>> handlers =
+                new ArrayList<TransactionEventHandler<Object>>();
+        handlers.add( new ExceptionThrowingEventHandler(new MyFancyException(), null, null) );
+        
+        for ( TransactionEventHandler<Object> handler : handlers )
+        {
+            getGraphDb().registerTransactionEventHandler( handler );
+        }
+
+        try
+        {
+            newTransaction();
+            getGraphDb().createNode().delete();
+            try
+            {
+                commit();
+                fail( "Should fail commit" );
+            }
+            catch ( TransactionFailureException e )
+            {
+            	Throwable currentEx = e;
+            	do {
+            		currentEx = currentEx.getCause();
+                	if(currentEx instanceof MyFancyException)
+                	{
+                		return;
+                	}
+                } while(currentEx.getCause() != null);
+                fail("Expected to find the exception thrown in the event hook as the cause of transaction failure.");
+            }
+        }
+        finally
+        {
+            for ( TransactionEventHandler<Object> handler : handlers )
+            {
+                getGraphDb().unregisterTransactionEventHandler( handler );
+            }
+        }
+    }
+    
+    @Test
     public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
         Node node1 = getGraphDb().createNode();
@@ -331,7 +381,8 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         Map<String,Object> nodeProps = new HashMap<String,Object>();
         Map<String,Object> relProps = new HashMap<String, Object>();
         
-        public void afterCommit( TransactionData data, Object state )
+        @Override
+		public void afterCommit( TransactionData data, Object state )
         {
             for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
             {
@@ -345,11 +396,13 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             }
         }
 
-        public void afterRollback( TransactionData data, Object state )
+        @Override
+		public void afterRollback( TransactionData data, Object state )
         {
         }
 
-        public Object beforeCommit( TransactionData data )
+        @Override
+		public Object beforeCommit( TransactionData data )
                 throws Exception
         {
             // TODO Auto-generated method stub
@@ -398,17 +451,20 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             this.willFail = willFail;
         }
 
-        public void afterCommit( TransactionData data, T state )
+        @Override
+		public void afterCommit( TransactionData data, T state )
         {
             source.afterCommit( data, state );
         }
 
-        public void afterRollback( TransactionData data, T state )
+        @Override
+		public void afterRollback( TransactionData data, T state )
         {
             source.afterRollback( data, state );
         }
 
-        public T beforeCommit( TransactionData data ) throws Exception
+        @Override
+		public T beforeCommit( TransactionData data ) throws Exception
         {
             if ( willFail )
             {
@@ -416,6 +472,45 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             }
             return source.beforeCommit( data );
         }
+    }
+    
+    private static class ExceptionThrowingEventHandler implements TransactionEventHandler<Object>
+    {
+
+    	private final Exception beforeCommitException;
+    	private final Exception afterCommitException;
+    	private final Exception afterRollbackException;
+    	
+		public ExceptionThrowingEventHandler(Exception beforeCommitException,
+				Exception afterCommitException, Exception afterRollbackException) {
+			super();
+			this.beforeCommitException = beforeCommitException;
+			this.afterCommitException = afterCommitException;
+			this.afterRollbackException = afterRollbackException;
+		}
+
+		@Override
+		public Object beforeCommit(TransactionData data) throws Exception 
+		{
+			if(beforeCommitException != null)
+				throw beforeCommitException;
+			return null;
+		}
+
+		@Override
+		public void afterCommit(TransactionData data, Object state) 
+		{
+			if(afterCommitException != null)
+				throw new RuntimeException(afterCommitException);
+		}
+
+		@Override
+		public void afterRollback(TransactionData data, Object state) 
+		{
+			if(afterRollbackException != null)
+				throw new RuntimeException(afterRollbackException);
+		}
+    	
     }
 
     private static class DummyTransactionEventHandler<T> implements
@@ -432,21 +527,24 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             this.object = object;
         }
 
-        public void afterCommit( TransactionData data, T state )
+        @Override
+		public void afterCommit( TransactionData data, T state )
         {
             assertNotNull( data );
             this.receivedState = state;
             this.afterCommit = counter++;
         }
 
-        public void afterRollback( TransactionData data, T state )
+        @Override
+		public void afterRollback( TransactionData data, T state )
         {
             assertNotNull( data );
             this.receivedState = state;
             this.afterRollback = counter++;
         }
 
-        public T beforeCommit( TransactionData data ) throws Exception
+        @Override
+		public T beforeCommit( TransactionData data ) throws Exception
         {
             assertNotNull( data );
             this.receivedTransactionData = data;
