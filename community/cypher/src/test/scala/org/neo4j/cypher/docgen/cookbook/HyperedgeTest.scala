@@ -43,27 +43,27 @@ class HyperedgeTest extends DocumentingTestBase {
     testQuery(
       title = "Find Groups",
       text = """To find out in what roles a user is for a particular groups (here
-        'Group2'), the following Cypher Query can traverse this HyperEdge node and
+        'Group2'), the following query can traverse this HyperEdge node and
         provide answers.""",
       queryText = "start n=node:node_auto_index(name = \"User1\") " +
         "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
         "hyperEdge-[:hasRole]->role " +
         "where group.name = \"Group2\" " +
         "return role.name",
-      returns = "The role of +User1+:",
+      returns = "The role of +User1+ is returned:",
       (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
   }
 
   @Test def findAllGroupsForAUser() {
     testQuery(
       title = "Find all groups and roles for a user",
-      text = """Here, find all groups and the roles a user has, sorted by the roles names.""",
+      text = """Here, find all groups and the roles a user has, sorted by the name of the role.""",
       queryText = "start n=node:node_auto_index(name = \"User1\") " +
         "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
         "hyperEdge-[:hasRole]->role " +
         "return role.name, group.name " +
         "order by role.name asc",
-      returns = "The groups and roles of +User1+",
+      returns = "The groups and roles of +User1+ are returned:",
       (p) => {
         val result = p.toList
         assertEquals(Map("role.name" -> "Role1", "group.name" -> "Group2"), result.head)

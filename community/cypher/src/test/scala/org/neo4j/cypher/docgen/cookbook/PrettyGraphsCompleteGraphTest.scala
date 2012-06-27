@@ -35,11 +35,11 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase {
       text =
 """For this graph, a root node is created, and used to hang a number 
         of nodes from. Then, two nodes are selected, hanging from the center, with the requirement that the 
-        id of the first be less than the id of the next. This is to prevent double relationships and 
+        id of the first is less than the id of the next. This is to prevent double relationships and 
         self relationships. Using said match, relationships between all these nodes are created. Lastly, 
         the center node and all relationships connected to it are removed.""",
       queryText = """create center
-foreach( x in range(1,10) : 
+foreach( x in range(1,6) : 
    create leaf={count : x}, center-[:X]->leaf
 )
 ==== center ====
@@ -50,7 +50,7 @@ CREATE leaf1-[:X]->leaf2
 MATCH center-[r]->()
 DELETE center,r;""",
       returns =
-"""Nothing returned.""",
+"""Nothing is returned by this query.""",
       assertions = (p) => assertTrue(true))
   } 
 }

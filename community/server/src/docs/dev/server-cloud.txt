@@ -6,7 +6,7 @@ Neo4j on various cloud services either by a user, or as a managed instance on th
 
 == Heroku ==
 
-For the basic setup, please see http://devcenter.heroku.com/articles/quickstart[the Heroku Quickstart tutorial]
+For the basic setup, please see https://devcenter.heroku.com/articles/quickstart[the Heroku Quickstart tutorial]
 
 To add Neo4j to your Heroku app, do:
 

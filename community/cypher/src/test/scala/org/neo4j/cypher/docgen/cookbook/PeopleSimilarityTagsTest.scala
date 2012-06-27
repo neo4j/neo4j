@@ -23,6 +23,8 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.junit.Ignore
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class PeopleSimilarityTagsTest extends DocumentingTestBase {
@@ -37,10 +39,14 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
 
   def section = "cookbook"
 
+  override protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  }
+
   @Test def peopleSimilarityTags() {
     testQuery(
       title = "Find people based on similar tagged favorties",
-      text = """To find out people similar to me based on taggings of their favorited items, an approach could be:
+      text = """To find people similar to me based on the taggings of their favorited items, one approach could be:
 
 * Determine the tags associated with what I favorite.
 * What else is tagged with those tags?
@@ -48,12 +54,12 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
 * Sort the result by how many of the same things these people like.
 
 """,
-      queryText = "START me=node(%Joe%) " +
+      queryText = "START me=node:node_auto_index(name = \"Joe\") " +
       		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-theirFavorites<-[:favorite]-people " +
       		"WHERE NOT(me=people) " +
       		"RETURN people.name as name, count(*) as similar_favs " +
       		"ORDER BY similar_favs DESC",
-      returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
+      returns = "The query returns the list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => assertEquals(List(Map("name" -> "Sara", "similar_favs" -> 2),
           Map("name" -> "Derrick", "similar_favs" -> 1)), p.toList))
   } 

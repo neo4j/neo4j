@@ -22,11 +22,17 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class BoostingRecommendationResultsTest extends DocumentingTestBase {
   def graphDescription = List()
   def section = "cookbook"
   generateInitialGraphForConsole = false
+
+  override protected def getGraphvizStyle: GraphStyle = {
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  }
 
   @Test def boostingRecommendations() {
     executeQuery("""create 
@@ -54,15 +60,14 @@ perry-[:WORKSAT {weight: 2, activity: 3}]->cnn""")
 """This query finds the recommended friends for the origin that are working at the same place as the origin, 
 or know a person that the origin knows, also, the origin should not already know the target. This recommendation is 
 weighted for the weight of the relationship `r2`, and boosted with a factor of 2, if there is an `activity`-property on that relationship""",
-      queryText = """START origin=node(1) 
+      queryText = """START origin=node:node_auto_index(name = "Clark Kent")
         MATCH origin-[r1:KNOWS|WORKSAT]-(c)-[r2:KNOWS|WORKSAT]-candidate
         WHERE type(r1)=type(r2) AND (NOT (origin-[:KNOWS]-candidate)) 
         RETURN origin.name as origin, candidate.name as candidate, SUM(ROUND(r2.weight +
 (COALESCE(r2.activity?, 0) * 2))) as boost 
-        ORDER BY boost desc limit
-10;""",
+        ORDER BY boost desc limit 10;""",
       returns =
-"""The recoomended friends for the origin nodes and their recommendation score.""",
+"""This returns the recommended friends for the origin nodes and their recommendation score.""",
       assertions = (p) => assertEquals(List(
           Map("origin" -> "Clark Kent","candidate" -> "Perry White","boost" -> 22),
           Map("origin" -> "Clark Kent","candidate" -> "Anderson Cooper","boost" -> 4)),p.toList))

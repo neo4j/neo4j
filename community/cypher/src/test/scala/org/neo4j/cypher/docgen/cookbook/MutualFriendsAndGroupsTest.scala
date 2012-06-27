@@ -39,13 +39,13 @@ class MutualFriendsAndGroupsTest extends DocumentingTestBase {
       title = "Find mutual friends and groups",
       text =
 """In this scenario, the problem is to determine mutual friends and groups, if any,
-between persons. If no mutual groups or friends are found, there should be a 0 returned.""",
+between persons. If no mutual groups or friends are found, there should be a `0` returned.""",
       queryText = "START me=node(%Joe%), other=node(%Jill%, %Bob%) " +
           "MATCH " +
-          "pGroups=me-[?:member_of_group]->mg<-[?:member_of_group]-other, " +
+          "pGroups=me-[?:member_of_group]->mg<-[?:member_of_group]-other, \n" +
           "pMutualFriends=me-[?:knows]->mf<-[?:knows]-other " +
-            "RETURN other.name as name, count(distinct pGroups) AS mutualGroups, count(distinct pMutualFriends) AS mutualFriends " +
-            "ORDER By mutualFriends DESC",
+          "RETURN other.name as name, \n count(distinct pGroups) AS mutualGroups, \n count(distinct pMutualFriends) AS mutualFriends " +
+            "ORDER BY mutualFriends DESC",
       returns =
 """The question we are asking is -- how many unique paths are there between me and Jill, the paths being common group memberships, and common friends.
 If the paths are mandatory, no results will be returned if me and Bob lack any common friends, and we don't want that. To make a path optional,

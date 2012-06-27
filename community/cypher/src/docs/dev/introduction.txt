@@ -39,8 +39,10 @@ The query language is comprised of several distinct clauses.
 * +WITH+: Divides a query into multiple, distinct parts.
 
 
-Let's see three of them in action:
+Let's see three of them in action.
 
 include::intro-examples.txt[]
 
-To use Cypher from Java, see <<tutorials-cypher-java>>. For more Cypher examples, see even <<cypher-cookbook>>.
+To use Cypher from Java, see <<tutorials-cypher-java>>.
+For more Cypher examples, see <<cypher-cookbook>> as well.
+

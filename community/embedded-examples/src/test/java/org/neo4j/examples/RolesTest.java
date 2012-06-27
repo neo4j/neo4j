@@ -56,7 +56,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * image::roles.png[scaledwidth="100%"]
      * 
      * This is an implementation of an example found in the article 
-     * http://www.codeproject.com/KB/database/Modeling_DAGs_on_SQL_DBs.aspx[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases] 
+     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases] 
      * by http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=274518[Kemal Erdogan].
      * The article discusses how to store http://en.wikipedia.org/wiki/Directed_acyclic_graph[
      * directed acyclic graphs] (DAGs) 
