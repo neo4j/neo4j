@@ -409,7 +409,7 @@ public class NeoStore extends AbstractStore
 
     public synchronized void setLastCommittedTx( long txId )
     {
-        long current = getRecord( 3 );
+        long current = getLastCommittedTx();
         if ( (current + 1) != txId && !isInRecoveryMode() )
         {
             throw new InvalidRecordException( "Could not set tx commit id[" +
