@@ -57,7 +57,7 @@ include::path-tree-layout-full-range.txt[]
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
                 "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
-                "endPath=root-[`:2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
+                "endPath=root-[:`2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
                 "values=middle-[:VALUE]->event " +
                 "RETURN event.name " +

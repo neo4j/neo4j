@@ -28,16 +28,25 @@ class LinkedListTest extends ArticleTest with StatisticsChecker {
   val title = "Linked List"
 
 
-  override def assert(name:String, result:ExecutionResult) { name match {
-    case "create" => assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
-  }}
+  override def assert(name: String, result: ExecutionResult) {
+    name match {
+      case "create" =>
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
+        assert(result.toList.size === 0)
+      case "add"    =>
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 2, propertiesSet = 1, deletedRelationships = 1)
+        assert(result.toList.size === 0)
+      case "delete" =>
+        assertStats(result, deletedNodes = 1, relationshipsCreated = 1, deletedRelationships = 2)
+        assert(result.toList.size === 0)
+    }
+  }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30)
   )
-
 
 
   def text = """
@@ -65,7 +74,7 @@ RETURN root###
 Adding values is done by finding the relationship where the new value should be placed in, and replacing it with
 a new node, and two relationships to it.
 
-###no-results
+###no-results assertion=add
 START root=node(%ROOT%)
 MATCH root-[:LINK*0..]->before,// before could be same as root
       after-[:LINK*0..]->root, // after could be same as root
@@ -78,7 +87,7 @@ DELETE old###
 Deleting a value, conversely, is done by finding the node with the value, and the two relationships going in and out
 from it, and replacing with a new value.
 
-###no-results
+###no-results assertion=delete
 START root=node(%ROOT%)
 MATCH root-[:LINK*0..]->before,
       before-[delBefore:LINK]->del-[delAfter:LINK]->after,
