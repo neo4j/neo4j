@@ -49,6 +49,15 @@ public class AsciidocHelper
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
     }
 
+    public static String createGraphViz( String title,
+            GraphDatabaseService graph, String identifier,
+            String graphvizOptions )
+    {
+        return createGraphViz( title, graph, identifier,
+                AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors(),
+                graphvizOptions );
+    }
+
     public static String createGraphVizWithNodeId( String title,
             GraphDatabaseService graph, String identifier )
     {
@@ -56,20 +65,47 @@ public class AsciidocHelper
                 AsciiDocStyle.withAutomaticRelationshipTypeColors() );
     }
 
+    public static String createGraphVizWithNodeId( String title,
+            GraphDatabaseService graph, String identifier,
+            String graphvizOptions )
+    {
+        return createGraphViz( title, graph, identifier,
+                AsciiDocStyle.withAutomaticRelationshipTypeColors(),
+                graphvizOptions );
+    }
+
     public static String createGraphVizDeletingReferenceNode( String title,
             GraphDatabaseService graph, String identifier )
     {
+        return createGraphVizDeletingReferenceNode( title, graph, identifier,
+                "" );
+    }
+
+    public static String createGraphVizDeletingReferenceNode( String title,
+            GraphDatabaseService graph, String identifier,
+            String graphvizOptions )
+    {
         removeReferenceNode( graph );
         return createGraphViz( title, graph, identifier,
-                AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
+                AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors(),
+                graphvizOptions );
     }
 
     public static String createGraphVizWithNodeIdDeletingReferenceNode(
             String title, GraphDatabaseService graph, String identifier )
     {
+        return createGraphVizWithNodeIdDeletingReferenceNode( title, graph,
+                identifier, "" );
+    }
+
+    public static String createGraphVizWithNodeIdDeletingReferenceNode(
+            String title, GraphDatabaseService graph, String identifier,
+            String graphvizOptions )
+    {
         removeReferenceNode( graph );
         return createGraphViz( title, graph, identifier,
-                AsciiDocStyle.withAutomaticRelationshipTypeColors() );
+                AsciiDocStyle.withAutomaticRelationshipTypeColors(),
+                graphvizOptions );
     }
 
     /**
@@ -80,6 +116,13 @@ public class AsciidocHelper
      */
     public static String createGraphViz( String title,
             GraphDatabaseService graph, String identifier, GraphStyle graphStyle )
+    {
+        return createGraphViz( title, graph, identifier, graphStyle, "" );
+    }
+
+    public static String createGraphViz( String title,
+            GraphDatabaseService graph, String identifier,
+            GraphStyle graphStyle, String graphvizOptions )
     {
         GraphvizWriter writer = new GraphvizWriter( graphStyle );
         OutputStream out = new ByteArrayOutputStream();
@@ -96,10 +139,8 @@ public class AsciidocHelper
 
         return "." + title + "\n[\"dot\", \""
                + ( safeTitle + "-" + identifier ).replace( " ", "-" )
-               + ".svg\", \"neoviz\"]\n" +
-                "----\n" +
-                out.toString() +
-                "----\n";
+               + ".svg\", \"neoviz\", \"" + graphvizOptions + "\"]\n"
+               + "----\n" + out.toString() + "----\n";
     }
 
     private static void removeReferenceNode( GraphDatabaseService graph )

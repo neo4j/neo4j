@@ -123,9 +123,6 @@ include::calculating-the-clustering-coefficient-of-a-friend-network.txt[]
 
 This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].
 
-The graph visualizations look best using a Force Directed Layout, while the current layout below is different. For better results,
-use the live demos in http://docs.neo4j.org/chunked/{neo4j-version}/cypher-cookbook-pretty-graphs.html[the online version of this page].
-
 :leveloffset: 2
 
 include::star-graph.txt[]
