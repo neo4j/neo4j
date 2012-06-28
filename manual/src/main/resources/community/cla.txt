@@ -22,7 +22,7 @@ We may exercise all rights that a copyright holder has, as well as the rights yo
 
 Well, it allows us to sponsor the Neo4j projects and provide an infrastructure for the community, while making sure that we can include this in software that we ship to our customers without any nasty surprises. Without this ability, we as a small company would be hard pressed to release all our code as free software.
 
-Moreover, the CLA lets us protect community members (both developers and users) from hostile intellectual property litigation should the need arise. This is in line with how other free software stewards like the http://fsf.org[Free Software Foundation - FSF] defend projects (except with the FSF, there's no shared copyright but instead you completely sign it over to the FSF). The contributor agreement also includes a "free software covenant," or a promise that a contribution will remain available as free software.
+Moreover, the CLA lets us protect community members (both developers and users) from hostile intellectual property litigation should the need arise. This is in line with how other free software stewards like the http://www.fsf.org[Free Software Foundation - FSF] defend projects (except with the FSF, there's no shared copyright but instead you completely sign it over to the FSF). The contributor agreement also includes a "free software covenant," or a promise that a contribution will remain available as free software.
 
 At the end of the day, you still retain all rights to your contribution and we can stand confident that we can protect the Neo4j community and the Neo Technology customers.
 

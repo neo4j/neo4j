@@ -164,7 +164,7 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 |String| sequence of Unicode characters |
 |========================================================
 
-For further details on float/double values, see http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3[Java Language Specification].
+For further details on float/double values, see http://docs.oracle.com/javase/specs/jls/se5.0/html/typesValues.html#4.2.3[Java Language Specification].
 
 [[graphdb-neo4j-paths]]
 == Paths ==
