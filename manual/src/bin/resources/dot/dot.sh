@@ -15,6 +15,7 @@ nodeshape=box
 fontpath=$1
 targetimage=$2
 colorset=$3
+graphattrs=$4
 
 # "#a8e270" # lighter green
 # "#95bbe3" # lighter blue
@@ -64,7 +65,8 @@ prepend="digraph g{ $graphsettings\
    arrowsize=$arrowsize fontcolor=\"$edgefontcolor\"\
    fontsize=$edgefontsize fontname=\"$edgefont\"] \
   nodesep=$nodesep \
-  fontname=\"$graphfont\" "
+  fontname=\"$graphfont\" \
+  $graphattrs"
 
 echo "${prepend} ${indata} }" | dot -Tpng -o"$pngfile"
 echo "${prepend} ${indata} }" | dot -Tsvg -o"$svgfile"
