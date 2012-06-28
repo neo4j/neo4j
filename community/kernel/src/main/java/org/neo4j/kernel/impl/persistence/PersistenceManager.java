@@ -317,38 +317,24 @@ public class PersistenceManager
             this.tx = tx;
         }
 
-        public void afterCompletion( int param )
+        @Override
+		public void afterCompletion( int param )
         {
-            try
+            releaseConnections( tx );
+            if ( param == Status.STATUS_COMMITTED )
             {
-                releaseConnections( tx );
-                if ( param == Status.STATUS_COMMITTED )
-                {
-                    lockReleaser.commit();
-                }
-                else
-                {
-                    lockReleaser.rollback();
-                }
+                lockReleaser.commit();
             }
-            catch ( Throwable t )
+            else
             {
-                log.log( Level.SEVERE,
-                    "Unable to release connections for " + tx, t );
+                lockReleaser.rollback();
             }
         }
 
-        public void beforeCompletion()
+        @Override
+		public void beforeCompletion()
         {
-            try
-            {
-                delistResourcesForTransaction();
-            }
-            catch ( Throwable t )
-            {
-                log.log( Level.SEVERE,
-                    "Unable to delist resources for " + tx, t );
-            }
+            delistResourcesForTransaction();
         }
 
         private void releaseConnections( Transaction tx )

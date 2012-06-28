@@ -42,6 +42,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.MultipleCauseException;
 
 class TransactionImpl implements Transaction
 {
@@ -109,7 +110,8 @@ class TransactionImpl implements Transaction
         return txString.toString();
     }
 
-    public synchronized void commit() throws RollbackException,
+    @Override
+	public synchronized void commit() throws RollbackException,
         HeuristicMixedException, HeuristicRollbackException,
         IllegalStateException, SystemException
     {
@@ -122,14 +124,16 @@ class TransactionImpl implements Transaction
         return globalStartRecordWritten;
     }
 
-    public synchronized void rollback() throws IllegalStateException,
+    @Override
+	public synchronized void rollback() throws IllegalStateException,
         SystemException
     {
         // make sure tx not suspended
         txManager.rollback();
     }
 
-    public synchronized boolean enlistResource( XAResource xaRes )
+    @Override
+	public synchronized boolean enlistResource( XAResource xaRes )
         throws RollbackException, IllegalStateException, SystemException
     {
         if ( xaRes == null )
@@ -251,7 +255,8 @@ class TransactionImpl implements Transaction
         }
     }
 
-    public synchronized boolean delistResource( XAResource xaRes, int flag )
+    @Override
+	public synchronized boolean delistResource( XAResource xaRes, int flag )
         throws IllegalStateException
     {
         if ( xaRes == null )
@@ -306,7 +311,8 @@ class TransactionImpl implements Transaction
     }
 
     // TODO: figure out if this needs syncrhonization or make status volatile
-    public int getStatus() // throws SystemException
+    @Override
+	public int getStatus() // throws SystemException
     {
         return status;
     }
@@ -320,7 +326,8 @@ class TransactionImpl implements Transaction
     private List<Synchronization> syncHooksAdded =
         new ArrayList<Synchronization>();
 
-    public synchronized void registerSynchronization( Synchronization s )
+    @Override
+	public synchronized void registerSynchronization( Synchronization s )
         throws RollbackException, IllegalStateException
     {
         if ( s == null )
@@ -367,8 +374,7 @@ class TransactionImpl implements Transaction
                 }
                 catch ( Throwable t )
                 {
-                    log.log( Level.WARNING, "Caught exception from tx syncronization[" + s
-                        + "] beforeCompletion()", t );
+                    addRollbackCause(t);
                 }
             }
             // execute any hooks added since we entered doBeforeCompletion
@@ -389,7 +395,7 @@ class TransactionImpl implements Transaction
         }
     }
 
-    synchronized void doAfterCompletion()
+	synchronized void doAfterCompletion()
     {
         for ( Synchronization s : syncHooks )
         {
@@ -406,7 +412,8 @@ class TransactionImpl implements Transaction
         syncHooks = null; // help gc
     }
 
-    public void setRollbackOnly() throws IllegalStateException
+    @Override
+	public void setRollbackOnly() throws IllegalStateException
     {
         if ( status == Status.STATUS_ACTIVE ||
             status == Status.STATUS_PREPARING ||
@@ -435,6 +442,8 @@ class TransactionImpl implements Transaction
     }
 
     private volatile int hashCode = 0;
+
+	private Throwable rollbackCause;
 
     @Override
     public int hashCode()
@@ -649,5 +658,28 @@ class TransactionImpl implements Transaction
     public ForceMode getForceMode()
     {
         return forceMode;
+    }
+
+    public Throwable getRollbackCause()
+    {
+        return rollbackCause;
+    }
+
+    private void addRollbackCause( Throwable cause )
+    {
+        if ( rollbackCause == null )
+        {
+            rollbackCause = cause;
+        }
+        else
+        {
+            if ( !(rollbackCause instanceof MultipleCauseException) )
+            {
+                rollbackCause = new MultipleCauseException(
+                        "Multiple exceptions occurred, stack traces of all of them available below, or via #getCauses().",
+                        rollbackCause );
+            }
+            ((MultipleCauseException) rollbackCause).addCause( cause );
+        }
     }
 }
