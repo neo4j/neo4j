@@ -1172,7 +1172,7 @@ public class NodeManager
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
 
-    public Boolean isDeleted( PropertyContainer resource )
+    public boolean isDeleted( PropertyContainer resource )
     {
         Transaction transaction;
         try
