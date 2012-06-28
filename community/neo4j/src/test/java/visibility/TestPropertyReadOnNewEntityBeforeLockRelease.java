@@ -19,7 +19,11 @@
  */
 package visibility;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.util.concurrent.CountDownLatch;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -32,8 +36,6 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-import static org.junit.Assert.*;
-
 @SuppressWarnings( "serial" )
 public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubProcessTestBase
 {
@@ -43,8 +45,11 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     public void shouldBeAbleToReadPropertiesFromNewNodeReturnedFromIndex() throws Exception
     {
         runInThread( new CreateData() );
+        System.out.println("Awaiting first latch..");
         latch1.await();
+        System.out.println("Ok, reading..");
         run( new ReadData() );
+        System.out.println("Awaiting second latch..");
         latch2.await();
     }
 
@@ -91,15 +96,18 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
+            System.out.println("Fetching node");
             Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
+            System.out.println("Got node");
             assertNotNull( "did not get the node from the index", node );
             assertEquals( "present", node.getProperty( "value" ) );
+            System.out.println("Resuming thread");
             resumeThread();
         }
     }
 
     private volatile DebuggedThread thread;
-    private final BreakPoint lockReleaserCommit = new BreakPoint( LockReleaser.class, "commit" )
+    private final BreakPoint lockReleaserCommit = new BreakPoint( LockReleaser.class, "commit", javax.transaction.Transaction.class )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess

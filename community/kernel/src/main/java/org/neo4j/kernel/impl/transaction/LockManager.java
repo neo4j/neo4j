@@ -67,9 +67,24 @@ public class LockManager
     }
 
     /**
-     * Tries to acquire read lock on <CODE>resource</CODE> for the current
+     * Calls {{@link #getReadLock(Object, Transaction)} with parameters
+     * that will make the call try to get the read lock for the transaction
+     * associated with the current thread.
+     * 
+     * @param resource
+     * @throws DeadlockDetectedException
+     * @throws IllegalResourceException
+     */
+    public void getReadLock( Object resource)
+            throws DeadlockDetectedException, IllegalResourceException
+    {
+        getReadLock( resource, null );
+    }
+    
+    /**
+     * Tries to acquire read lock on <CODE>resource</CODE> for a given
      * transaction. If read lock can't be acquired the transaction will wait for
-     * the lransaction until it can acquire it. If waiting leads to dead lock a
+     * the transaction until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
      *
      * @param resource
@@ -78,7 +93,7 @@ public class LockManager
      *             If a deadlock is detected
      * @throws IllegalResourceException
      */
-    public void getReadLock( Object resource )
+    public void getReadLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         if ( resource == null )
@@ -97,11 +112,26 @@ public class LockManager
             }
             lock.mark();
         }
-        lock.acquireReadLock();
+        lock.acquireReadLock(tx);
     }
 
     /**
-     * Tries to acquire write lock on <CODE>resource</CODE> for the current
+     * Calls {{@link #getWriteLock(Object, Transaction)} with parameters
+     * that will make the call try to get the write lock for the transaction
+     * associated with the current thread.
+     * 
+     * @param resource
+     * @throws DeadlockDetectedException
+     * @throws IllegalResourceException
+     */
+    public void getWriteLock( Object resource)
+            throws DeadlockDetectedException, IllegalResourceException
+    {
+        getWriteLock( resource, null );
+    }
+    
+    /**
+     * Tries to acquire write lock on <CODE>resource</CODE> for a given
      * transaction. If write lock can't be acquired the transaction will wait
      * for the lock until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
@@ -112,7 +142,7 @@ public class LockManager
      *             If a deadlock is detected
      * @throws IllegalResourceException
      */
-    public void getWriteLock( Object resource )
+    public void getWriteLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         if ( resource == null )
@@ -131,7 +161,7 @@ public class LockManager
             }
             lock.mark();
         }
-        lock.acquireWriteLock();
+        lock.acquireWriteLock(tx);
     }
 
     /**
@@ -172,7 +202,7 @@ public class LockManager
     }
 
     /**
-     * Releases a read lock held by the current transaction on <CODE>resource</CODE>.
+     * Releases a write lock held by the current transaction on <CODE>resource</CODE>.
      * If current transaction don't have read lock a
      * {@link LockNotFoundException} will be thrown.
      *
