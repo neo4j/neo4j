@@ -21,7 +21,10 @@
 package org.neo4j.kernel;
 
 import java.util.Collection;
+
 import javax.transaction.TransactionManager;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -43,6 +46,13 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 public interface GraphDatabaseAPI
     extends GraphDatabaseService
 {
+	/**
+	 * Use this rather than the methods below, for situations where
+	 * dependencies of a sub-component are not known in advance.
+	 * @return
+	 */
+	DependencyResolver getDependencyResolver();
+	
     @Deprecated
     NodeManager getNodeManager();
 
