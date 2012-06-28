@@ -23,7 +23,6 @@ package org.neo4j.kernel.configuration;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.collection.Iterables;
 
@@ -60,6 +59,7 @@ public class SystemPropertiesConfiguration
                         GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
                         if (setting.name().equals( key ))
                         {
+                            setting.validate( (String) prop.getValue() );
                             systemProperties.put( key, (String) prop.getValue() );
                         }
                     }

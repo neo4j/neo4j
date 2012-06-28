@@ -58,7 +58,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
-import org.neo4j.kernel.configuration.SystemPropertiesConfiguration;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -192,7 +191,6 @@ public abstract class AbstractGraphDatabase
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
-	private DependencyResolver dependencyResolver;
 
     protected AbstractGraphDatabase(String storeDir, Map<String, String> params,
                                     Iterable<IndexProvider> indexProviders, Iterable<KernelExtension> kernelExtensions,
@@ -207,7 +205,6 @@ public abstract class AbstractGraphDatabase
 
         // Setup configuration
         params.put(Configuration.store_dir.name(), storeDir);
-        params = new SystemPropertiesConfiguration(getSettingsClasses()).apply(params);
         config = new Config( params, getSettingsClasses() );
         
         this.storeDir = config.get(Configuration.store_dir);
@@ -242,7 +239,6 @@ public abstract class AbstractGraphDatabase
 
     private void create()
     {
-    	dependencyResolver = new DependencyResolverImpl();
 
         fileSystem = life.add(createFileSystemAbstraction());
 
@@ -418,7 +414,7 @@ public abstract class AbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, fileSystem, lockManager, lockReleaser, logging.getLogger( Loggers.DATASOURCE ), xaFactory, providers, dependencyResolver);
+                    storeFactory, fileSystem, lockManager, lockReleaser, logging.getLogger( Loggers.DATASOURCE ), xaFactory, providers, new DependencyResolverImpl());
             xaDataSourceManager.registerDataSource( neoDataSource );
         } catch (IOException e)
         {
@@ -722,8 +718,7 @@ public abstract class AbstractGraphDatabase
         return storeDir;
     }
 
-    @Override
-	public StoreId getStoreId()
+    public StoreId getStoreId()
     {
         return storeId;
     }
@@ -960,14 +955,7 @@ public abstract class AbstractGraphDatabase
         return indexManager;
     }
 
-    // GraphDatabaseSPI implementation
-    @Override
-	public DependencyResolver getDependencyResolver()
-    {
-    	return dependencyResolver;
-    }
-    
-    // THESE SHOULD EVENTUALLY BE REMOVED! DON'T ADD dependencies on these!
+    // GraphDatabaseSPI implementation - THESE SHOULD EVENTUALLY BE REMOVED! DON'T ADD dependencies on these!
     public Config getConfig()
     {
         return config;
