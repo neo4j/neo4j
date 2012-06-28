@@ -660,23 +660,26 @@ class TransactionImpl implements Transaction
         return forceMode;
     }
 
-	public Throwable getRollbackCause() {
-		return rollbackCause;
-	}
+    public Throwable getRollbackCause()
+    {
+        return rollbackCause;
+    }
 
-    private void addRollbackCause(Throwable cause) {
-		if(rollbackCause == null)
-		{
-			rollbackCause = cause;
-		} else 
-		{
-			if(!(rollbackCause instanceof MultipleCauseException))
-			{
-				Throwable firstCause = rollbackCause;
-				rollbackCause = new MultipleCauseException("Multiple exceptions occurred, stack traces of all of them available below, or via #getCauses().");
-				((MultipleCauseException)rollbackCause).addCause(firstCause);
-			}
-			((MultipleCauseException)rollbackCause).addCause(cause);
-		}
-	}
+    private void addRollbackCause( Throwable cause )
+    {
+        if ( rollbackCause == null )
+        {
+            rollbackCause = cause;
+        }
+        else
+        {
+            if ( !(rollbackCause instanceof MultipleCauseException) )
+            {
+                rollbackCause = new MultipleCauseException(
+                        "Multiple exceptions occurred, stack traces of all of them available below, or via #getCauses().",
+                        rollbackCause );
+            }
+            ((MultipleCauseException) rollbackCause).addCause( cause );
+        }
+    }
 }

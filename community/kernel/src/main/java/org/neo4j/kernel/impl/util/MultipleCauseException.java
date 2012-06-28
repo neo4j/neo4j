@@ -25,74 +25,69 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class MultipleCauseException extends Exception 
+public class MultipleCauseException extends Exception
 {
+    private static final long serialVersionUID = -5556701516106141749L;
+    private static final String ALSO_CAUSED_BY = "Also caused by: ";
+    private final List<Throwable> causes = new ArrayList<Throwable>();
 
-	private static final long serialVersionUID = -5556701516106141749L;
-	private static final String ALSO_CAUSED_BY = "Also caused by: ";
-	private List<Throwable> causes;
+    public MultipleCauseException( String message, Throwable firstCause )
+    {
+        super( message, firstCause );
+        causes.add( firstCause );
+    }
+    
+    public List<Throwable> getCauses()
+    {
+        return causes;
+    }
 
-	public MultipleCauseException(String message)
-	{
-		super(message);
-		causes = new ArrayList<Throwable>();
-	}
+    public void addCause( Throwable cause )
+    {
+        causes.add( cause );
+    }
 
-	public List<Throwable> getCauses() 
-	{
-		return causes;
-	}
+    @Override
+    public void printStackTrace( PrintStream out )
+    {
+        super.printStackTrace( out );
+        printAllButFirstCauseStackTrace( out );
+    }
 
-	public void addCause(Throwable cause) 
-	{
-		if(causes.size() == 0)
-		{
-			ExceptionCauseSetter.setCause(this, cause);
-		}
-		
-		causes.add(cause);
-	}
-	
-	@Override
-	public void printStackTrace(PrintStream out)
-	{
-		super.printStackTrace(out);
-		printAllButFirstCauseStackTrace(out);
-	}
+    @Override
+    public void printStackTrace( PrintWriter out )
+    {
+        super.printStackTrace( out );
+        printAllButFirstCauseStackTrace( out );
+    }
 
-	@Override
-	public void printStackTrace(PrintWriter out)
-	{
-		super.printStackTrace(out);
-		printAllButFirstCauseStackTrace(out);
-	}
-	
-	private void printAllButFirstCauseStackTrace(PrintStream out) 
-	{
-		Iterator<Throwable> causeIterator = causes.iterator();
-		if(causeIterator.hasNext())
-		{
-			causeIterator.next(); // Skip first (already printed by default PrintStackTrace)
-			while(causeIterator.hasNext())
-			{
-				out.print(ALSO_CAUSED_BY);
-				causeIterator.next().printStackTrace(out);
-			}
-		}
-	}
-	
-	private void printAllButFirstCauseStackTrace(PrintWriter out) 
-	{
-		Iterator<Throwable> causeIterator = causes.iterator();
-		if(causeIterator.hasNext())
-		{
-			causeIterator.next(); // Skip first (already printed by default PrintStackTrace)
-			while(causeIterator.hasNext())
-			{
-				out.print(ALSO_CAUSED_BY);
-				causeIterator.next().printStackTrace(out);
-			}
-		}
-	}
-	
+    private void printAllButFirstCauseStackTrace( PrintStream out )
+    {
+        Iterator<Throwable> causeIterator = causes.iterator();
+        if ( causeIterator.hasNext() )
+        {
+            causeIterator.next(); // Skip first (already printed by default
+                                  // PrintStackTrace)
+            while ( causeIterator.hasNext() )
+            {
+                out.print( ALSO_CAUSED_BY );
+                causeIterator.next().printStackTrace( out );
+            }
+        }
+    }
+
+    private void printAllButFirstCauseStackTrace( PrintWriter out )
+    {
+        Iterator<Throwable> causeIterator = causes.iterator();
+        if ( causeIterator.hasNext() )
+        {
+            causeIterator.next(); // Skip first (already printed by default
+                                  // PrintStackTrace)
+            while ( causeIterator.hasNext() )
+            {
+                out.print( ALSO_CAUSED_BY );
+                causeIterator.next().printStackTrace( out );
+            }
+        }
+    }
 }

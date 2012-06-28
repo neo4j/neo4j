@@ -29,59 +29,42 @@ import java.io.PrintWriter;
 
 import org.junit.Test;
 
+public class TestMultipleCauseException
+{
+    @Test
+    public void shouldBeAbleToAddCauses()
+    {
+        Throwable cause = new Throwable();
+        MultipleCauseException exception = new MultipleCauseException( "Hello", cause );
 
-public class TestMultipleCauseException {
+        assertThat( exception.getMessage(), is( "Hello" ) );
+        assertThat( exception.getCause(), is( cause ) );
+        assertThat( exception.getCauses(), is( not( nullValue() ) ) );
+        assertThat( exception.getCauses().size(), is( 1 ) );
+        assertThat( exception.getCauses().get( 0 ), is( cause ) );
+    }
 
-	@Test
-	public void shouldWorkWithoutAnyCauses()
-	{
-		MultipleCauseException exception = new MultipleCauseException("Hello");
-		
-		assertThat(exception.getMessage(), is("Hello"));
-		assertThat(exception.getCause(), is(nullValue()));
-		assertThat(exception.getCauses(), is(not(nullValue())));
-		assertThat(exception.getCauses().size(), is(0));
-		
-	}
-	
-	@Test
-	public void shouldBeAbleToAddCauses()
-	{
-		MultipleCauseException exception = new MultipleCauseException("Hello");
-		Throwable cause = new Throwable();
-		
-		exception.addCause(cause);
-		
-		assertThat(exception.getMessage(), is("Hello"));
-		assertThat(exception.getCause(), is(cause));
-		assertThat(exception.getCauses(), is(not(nullValue())));
-		assertThat(exception.getCauses().size(), is(1));
-		assertThat(exception.getCauses().get(0), is(cause));
-	}
-	
-	@Test
-	public void stackTraceShouldContainAllCauses()
-	{
-		MultipleCauseException exception = new MultipleCauseException("Hello");
-		Throwable cause1 = new Throwable("Message 1");
-		Throwable cause2 = new Throwable("Message 2");
-		
-		exception.addCause(cause1);
-		exception.addCause(cause2);
-		
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		PrintWriter out = new PrintWriter(baos);
-		
-		// When
-		exception.printStackTrace(out);
-		out.flush();
-		String stackTrace = baos.toString();
-		
-		// Then
-		assertThat("Stack trace contains exception one as cause.", 
-				stackTrace.contains("Caused by: java.lang.Throwable: Message 1"), is(true));
-		assertThat("Stack trace contains exception one as cause.", 
-				stackTrace.contains("Also caused by: java.lang.Throwable: Message 2"), is(true));
-	}
-	
+    @Test
+    public void stackTraceShouldContainAllCauses()
+    {
+        Throwable cause1 = new Throwable( "Message 1" );
+        MultipleCauseException exception = new MultipleCauseException( "Hello", cause1 );
+
+        Throwable cause2 = new Throwable( "Message 2" );
+        exception.addCause( cause2 );
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintWriter out = new PrintWriter( baos );
+
+        // When
+        exception.printStackTrace( out );
+        out.flush();
+        String stackTrace = baos.toString();
+
+        // Then
+        assertThat( "Stack trace contains exception one as cause.",
+                stackTrace.contains( "Caused by: java.lang.Throwable: Message 1" ), is( true ) );
+        assertThat( "Stack trace contains exception one as cause.",
+                stackTrace.contains( "Also caused by: java.lang.Throwable: Message 2" ), is( true ) );
+    }
 }
