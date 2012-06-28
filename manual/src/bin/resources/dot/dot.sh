@@ -15,6 +15,7 @@ nodeshape=box
 fontpath=$1
 targetimage=$2
 colorset=$3
+graphattrs=$4
 
 # "#a8e270" # lighter green
 # "#95bbe3" # lighter blue
@@ -63,6 +64,7 @@ prepend="digraph g{ $graphsettings\
   edge [color=\"$boxcolor\" penwidth=2 arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" \
    arrowsize=$arrowsize fontcolor=\"$edgefontcolor\"\
    fontsize=$edgefontsize fontname=\"$edgefont\"] \
+   $graphattrs \
   nodesep=$nodesep \
   fontname=\"$graphfont\" "
 
