@@ -45,10 +45,11 @@ class SymbolTable(val identifiers: Identifier*) {
 
   def assertHas(expected: Identifier) {
     identifiers.find(_.name == expected.name) match {
-      case None => throwMissingKey(expected.name)
-      case Some(existing) => if (!expected.typ.isAssignableFrom(existing.typ)) {
-        throw new CypherTypeException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
-      }
+      case None           => throwMissingKey(expected.name)
+      case Some(existing) =>
+        if (!(expected.typ.isAssignableFrom(existing.typ) || existing.typ.isAssignableFrom(expected.typ))) {
+          throw new CypherTypeException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
+        }
     }
   }
 

@@ -30,12 +30,12 @@ abstract class Expression extends (Map[String, Any] => Any) {
   def apply(m: Map[String, Any]) = m.getOrElse(identifier.name, compute(m))
 
   val identifier: Identifier
-  def declareDependencies(extectedType: AnyType): Seq[Identifier]
-  def dependencies(extectedType: AnyType): Seq[Identifier] = {
+  def declareDependencies(expectedType: AnyType): Seq[Identifier]
+  def dependencies(expectedType: AnyType): Seq[Identifier] = {
     val myType = identifier.typ
-    if (!extectedType.isAssignableFrom(myType))
-      throw new SyntaxException(identifier.name + " expected to be of type " + extectedType + " but it is of type " + identifier.typ)
-    declareDependencies(extectedType)
+    if (!expectedType.isAssignableFrom(myType))
+      throw new SyntaxException(identifier.name + " expected to be of type " + expectedType + " but it is of type " + identifier.typ)
+    declareDependencies(expectedType)
   }
 
   def rewrite(f: Expression => Expression): Expression
