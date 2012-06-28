@@ -5,7 +5,7 @@ Community Support
 You can learn a lot about Neo4j on different _events._
 To get information on upcoming Neo4j events, have a look here:
 
-* http://events.neo4j.org/
+* http://neo4j.org/
 * http://neo4j.meetup.com/
 
 Get help from the Neo4j open source community; here are some starting points.

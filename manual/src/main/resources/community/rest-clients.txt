@@ -1,4 +1,5 @@
 
+[[rest-clients]]
 .Neo4j REST clients contributed by the community.
 [options="header"]
 |===============================================================================

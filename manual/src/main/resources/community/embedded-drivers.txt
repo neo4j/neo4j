@@ -1,4 +1,5 @@
 
+[[embedded-drivers]]
 .Neo4j embedded drivers contributed by the community.
 [options="header"]
 |===============================================================================
