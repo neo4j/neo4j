@@ -218,8 +218,14 @@ public class XaLogicalLog implements LogLoader
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
             fileChannel.write( sharedBuffer );
             scanIsComplete = true;
-            msgLog.logMessage( "Opened [" + fileToOpen + "] clean empty log, version=" + logVersion + ", lastTxId=" + lastTxId, true );
+            msgLog.logMessage( openedLogicalLogMessage( fileToOpen, lastTxId, true ), true );
         }
+    }
+
+    private String openedLogicalLogMessage( String fileToOpen, long lastTxId, boolean clean )
+    {
+        return "Opened logical log [" + fileToOpen + "] version=" + logVersion + ", lastTxId=" +
+                lastTxId + " (" + (clean ? "clean" : "recovered" ) + ")";
     }
 
     public boolean scanIsComplete()
@@ -805,9 +811,7 @@ public class XaLogicalLog implements LogLoader
         } while ( fileChannel.position() < endPosition );
         fileChannel.position( lastEntryPos );
         scanIsComplete = true;
-        String recoveryCompletedMessage = "Internal recovery completed, scanned " + logEntriesFound
-                + " log entries. Recovered " + recoveredTxCount
-                + " transactions. Last tx recovered: " + lastRecoveredTx;
+        String recoveryCompletedMessage = openedLogicalLogMessage( logFileName, lastRecoveredTx, false );
         log.fine( recoveryCompletedMessage );
         msgLog.logMessage( recoveryCompletedMessage );
 
