@@ -166,12 +166,17 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   private def includeGraphviz(startText: String, dir: File):String = {
     val graphVizLine = "include::" + graphvizFileName + "[]"
 
-    val txt = startText.replaceAllLiterally("###graph-image###", graphVizLine)
-    if (txt != startText) {
-      dumpGraphViz(dir)
+    val regex = "###graph-image(.*?)###".r
+    regex.findFirstMatchIn(startText) match {
+      case None => startText
+      case Some(options) =>
+        val optionString = options.group(1)
+        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", graphVizLine)
+        if (txt != startText) {
+          dumpGraphViz(dir, optionString.trim)
+        }
+        txt
     }
-
-    txt
   }
 
   private def includeQueries(query: String, dir: File) = {

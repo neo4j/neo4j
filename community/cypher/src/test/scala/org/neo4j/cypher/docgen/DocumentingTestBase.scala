@@ -56,15 +56,15 @@ trait DocumentationHelper {
 
   val graphvizFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph.txt"
 
-  def dumpGraphViz(dir: File) {
+  def dumpGraphViz(dir: File, graphVizOptions:String) {
     val graphViz = new PrintWriter(new File(dir, graphvizFileName), "UTF-8")
-    val foo = emitGraphviz(graphvizFileName)
+    val foo = emitGraphviz(graphvizFileName, graphVizOptions)
     graphViz.write(foo)
     graphViz.flush()
     graphViz.close()
   }
 
-  private def emitGraphviz(fileName:String): String = {
+  private def emitGraphviz(fileName:String, graphVizOptions:String): String = {
 
     val out = new ByteArrayOutputStream()
     val writer = new GraphvizWriter(getGraphvizStyle)
@@ -73,12 +73,12 @@ trait DocumentationHelper {
     return """
 _Graph_
 
-["dot", """" + fileName + """.svg", "neoviz"]
+["dot", "%s.svg", "neoviz", "%s"]
 ----
 %s
 ----
 
-""".format(out)
+""".format(fileName, graphVizOptions, out)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
@@ -94,7 +94,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     val (dir: File, writer: PrintWriter) = createWriter(title, section)
     dumpToFile(writer, title, query, returns, text, result)
 
-    dumpGraphViz(dir)
+    dumpGraphViz(dir, graphvizOptions)
   }
 
   var db: GraphDatabaseService = null
@@ -105,7 +105,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
   var generateConsole: Boolean = true
-  var generateInitialGraphForConsole: Boolean = true;
+  var generateInitialGraphForConsole: Boolean = true
+  val graphvizOptions: String = ""
 
   def section: String
 

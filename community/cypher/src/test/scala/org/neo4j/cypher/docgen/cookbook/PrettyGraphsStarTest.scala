@@ -27,7 +27,7 @@ class PrettyGraphsStarTest extends DocumentingTestBase {
   def graphDescription = List()
   def section = "cookbook"
   generateInitialGraphForConsole = false
-
+  override val graphvizOptions = "graph [layout=neato]"
 
   @Test def completeGraph() {
     testQuery(
