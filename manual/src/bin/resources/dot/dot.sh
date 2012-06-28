@@ -64,9 +64,9 @@ prepend="digraph g{ $graphsettings\
   edge [color=\"$boxcolor\" penwidth=2 arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" \
    arrowsize=$arrowsize fontcolor=\"$edgefontcolor\"\
    fontsize=$edgefontsize fontname=\"$edgefont\"] \
-   $graphattrs \
   nodesep=$nodesep \
-  fontname=\"$graphfont\" "
+  fontname=\"$graphfont\" \
+  $graphattrs"
 
 echo "${prepend} ${indata} }" | dot -Tpng -o"$pngfile"
 echo "${prepend} ${indata} }" | dot -Tsvg -o"$svgfile"
