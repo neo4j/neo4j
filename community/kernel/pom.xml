@@ -222,7 +222,7 @@ public class ComponentVersion extends Version
                 <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle" />
-                  <arg value="${build.directory}/docs/ops/configuration-attributes.txt" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.txt" />
                 </java>
               </target>
             </configuration>

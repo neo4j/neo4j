@@ -31,7 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -90,7 +90,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
-    private Map<String, String> headers = new TreeMap<String, String>(  );
+    private Map<String, String> addedRequestHeaders = new TreeMap<String, String>(  );
     private boolean noDoc;
 
     /**
@@ -174,7 +174,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     public RESTDocsGenerator withHeader( final String key, final String value )
     {
-        this.headers.put(key,value);
+        this.addedRequestHeaders.put(key,value);
         return this;
     }
 
@@ -322,7 +322,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     private <T extends Builder> T withHeaders(T builder) {
-        for (Entry<String, String> entry : headers.entrySet()) {
+        for (Entry<String, String> entry : addedRequestHeaders.entrySet()) {
             builder.header(entry.getKey(),entry.getValue());
         }
         return builder;
@@ -339,6 +339,22 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         if ( request.getEntity() != null )
         {
             data.setPayload( String.valueOf( request.getEntity() ) );
+            List<Object> contentTypes = request.getHeaders()
+                    .get( "Content-Type" );
+            if ( contentTypes != null )
+            {
+                if ( contentTypes.size() != 1 )
+                {
+                    throw new IllegalArgumentException(
+                            "Request contains multiple content-types." );
+                }
+                Object contentType = contentTypes.get( 0 );
+                if ( contentType instanceof MediaType )
+                {
+                    data.setPayloadType( (MediaType) contentType );
+                }
+            }
+            // data.setPayloadType( contentType );
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
@@ -379,16 +395,18 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     private void getRequestHeaders( final DocumentationData data, final MultivaluedMap<String, Object> headers )
     {
-        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS, Collections.<String>emptyList() ) );
+        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
+                addedRequestHeaders.keySet() ) );
     }
 
     private <T> Map<String, String> getHeaders( final MultivaluedMap<String, T> headers, final List<String> filter,
-            final List<String> additionalFilter )
+            final Collection<String> additionalFilter )
     {
         Map<String, String> filteredHeaders = new TreeMap<String, String>();
         for ( Entry<String, List<T>> header : headers.entrySet() )
         {
-            if ( filter.contains( header.getKey() ) || additionalFilter.contains( header.getKey() ) )
+            String key = header.getKey();
+            if ( filter.contains( key ) || additionalFilter.contains( key ) )
             {
                 String values = "";
                 for ( T value : header.getValue() )
@@ -399,7 +417,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                     }
                     values += String.valueOf( value );
                 }
-                filteredHeaders.put( header.getKey(), values );
+                filteredHeaders.put( key, values );
             }
         }
         return filteredHeaders;
@@ -434,79 +452,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         public JaxRsResponse response()
         {
             return response;
-        }
-    }
-
-    private class DocumentationData
-    {
-        public String payload;
-        public String title;
-        public String description;
-        public String uri;
-        public String method;
-        public int status;
-        public String entity;
-        public Map<String, String> requestHeaders;
-        public Map<String, String> responseHeaders;
-        public boolean ignore;
-
-        public void setPayload( final String payload )
-        {
-            this.payload = payload;
-        }
-
-        public void setDescription( final String description )
-        {
-            this.description = description;
-        }
-
-        public void setTitle( final String title )
-        {
-            this.title = title;
-        }
-        
-
-        public void setUri( final String uri )
-        {
-            this.uri = uri;
-        }
-
-        public void setMethod( final String method )
-        {
-            this.method = method;
-        }
-
-        public void setStatus( final int responseCode )
-        {
-            this.status = responseCode;
-
-        }
-
-        public void setEntity( final String entity )
-        {
-            this.entity = entity;
-        }
-
-        public void setResponseHeaders( final Map<String, String> response )
-        {
-            responseHeaders = response;
-        }
-
-        public void setRequestHeaders( final Map<String, String> request )
-        {
-            requestHeaders = request;
-        }
-
-        public void setIgnore() {
-            this.ignore = true;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "DocumentationData [payload=" + payload + ", title=" + title + ", description=" + description
-                   + ", uri=" + uri + ", method=" + method + ", status=" + status + ", entity=" + entity
-                   + ", requestHeaders=" + requestHeaders + ", responseHeaders=" + responseHeaders + "]";
         }
     }
 
@@ -550,7 +495,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                     line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
                 }
             }
-            writeEntity( fw, data.payload );
+            writeEntity( fw, data.getPayload() );
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
@@ -563,7 +508,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                     line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
                 }
             }
-            writeEntity( fw, JSONPrettifier.parse( data.entity ) );
+            writeEntity( fw, data.getPrettifiedEntity() );
             line( fw, "" );
         }
         catch ( IOException e )

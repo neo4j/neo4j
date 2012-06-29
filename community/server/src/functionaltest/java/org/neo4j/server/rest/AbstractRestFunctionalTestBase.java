@@ -58,28 +58,30 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         gen().setSection( getDocumentationSectionName() );
     }
     
-    protected String doCypherRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+    protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
         data.get();
         String parameterString = createParameterString( params );
 
 
-        String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
+        String script = createScript( scriptTemplate );
+        String queryString = "{\"query\": \"" + script + "\"," + parameterString+"},"  ;
 
-        gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(
-                AsciidocHelper.createCypherSnippet( script ) );
+        gen().expectedStatus( status.getStatusCode() )
+                .payload( queryString )
+                .description( AsciidocHelper.createCypherSnippet( script ) );
         return gen().post( endpoint ).entity();
     }
     
-    protected String doGremlinRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
         data.get();
         String parameterString = createParameterString( params );
 
 
-        String queryString = "{\"script\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
+        String script = createScript( scriptTemplate );
+        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
 
         gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( createScript( script ) ) );
+                queryString ).description(formatGroovy( script ) );
         return gen().post( endpoint ).entity();
     }
     
