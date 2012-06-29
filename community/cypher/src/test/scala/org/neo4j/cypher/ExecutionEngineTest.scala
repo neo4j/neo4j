@@ -2169,4 +2169,28 @@ RETURN x0.name?
 
     println(result.dumpToString())
   }
+
+  @Test
+  def pathDirectionRespected() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    val result = parseAndExecute("START a=node(1) match p=b<--a return p").toList.head("p").asInstanceOf[Path]
+
+    assert(result.startNode() === b)
+    assert(result.endNode() === a)
+  }
+
+  @Test
+  def shortestPathDirectionRespected() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    val result = parseAndExecute("START a=node(1), b=node(2) match p=shortestPath(b<-[*]-a) return p").toList.head("p").asInstanceOf[Path]
+
+    assert(result.startNode() === b)
+    assert(result.endNode() === a)
+  }
+
+
 }

@@ -66,10 +66,10 @@ trait ParserPattern extends Base {
 
   private def patternBit: Parser[Seq[AbstractPattern]] =
     pathAssignment |
-      path |
+      pathFacingOut |
       singleNode
 
-  private def singleNode: ParserPattern.this.type#Parser[Seq[ParsedEntity]] = {
+  private def singleNode: Parser[Seq[ParsedEntity]] = {
     node ^^ (n => Seq(n))
   }
 
@@ -107,6 +107,9 @@ trait ParserPattern extends Base {
   }
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
+  private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
+
+  private def relationshipFacingOut = relationship ^^ (x => x.map(_.makeOutgoing))
 
   private def relationship: Parser[List[AbstractPattern]] = {
     node ~ rep1(tail) ^^ {
@@ -114,13 +117,11 @@ trait ParserPattern extends Base {
         var start = head
         val links = tails.map {
           case Tail(dir, relName, relProps, end, None, types, optional) =>
-            val (l, r, d) = turnStartAndEndCorrect(dir, end, start)
-            val t = ParsedRelation(namer.name(relName), relProps, l, r, types, d, optional, True())
+            val t = ParsedRelation(namer.name(relName), relProps, start, end, types, dir, optional, True())
             start = end
             t
           case Tail(dir, relName, relProps, end, Some((min, max)), types, optional) =>
-            val (l, r, d) = turnStartAndEndCorrect(dir, end, start)
-            val t = ParsedVarLengthRelation(namer.name(None), relProps, l, r, types, d, optional, True(), min, max, relName)
+            val t = ParsedVarLengthRelation(namer.name(None), relProps, start, end, types, dir, optional, True(), min, max, relName)
             start = end
             t
         }
@@ -153,19 +154,6 @@ trait ParserPattern extends Base {
         relIterator = relIterator))
   }
 
-  // It's easier on everything if all relationships are either outgoing or both, but never incoming.
-  // So we turn all patterns around, facing the same way
-  private def turnStartAndEndCorrect(dir: Direction, end: ParsedEntity, start: ParsedEntity): (ParsedEntity, ParsedEntity, Direction) = {
-    dir match {
-      case Direction.INCOMING => (end, start, Direction.OUTGOING)
-      case Direction.OUTGOING => (start, end, Direction.OUTGOING)
-      case Direction.BOTH => (start.expression, end.expression) match {
-        case (Entity(a), Entity(b)) if a < b => (start, end, Direction.BOTH)
-        case (Entity(a), Entity(b)) if a >= b => (end, start, Direction.BOTH)
-        case _ => (start, end, Direction.BOTH)
-      }
-    }
-  }
 
   private def tailWithRelData: Parser[Tail] = opt("<") ~ "-" ~ "[" ~ opt(identity) ~ opt("?") ~ opt(":" ~> rep1sep(identity, "|")) ~ variable_length ~ props ~ "]" ~ "-" ~ opt(">") ~ node ^^ {
     case l ~ "-" ~ "[" ~ rel ~ optional ~ typez ~ varLength ~ properties ~ "]" ~ "-" ~ r ~ end => Tail(direction(l, r), rel, properties, end, varLength, typez.toSeq.flatten.distinct, optional.isDefined)

@@ -42,11 +42,11 @@ trait StartClause extends Base with Expressions {
 
   private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
-      val namedPathPatterns = patterns.map(matchTranslator).reduce(_ ++ _)
-      val startItems = patterns.map(translate).reduce(_ ++ _)
+      val namedPathPatterns: Maybe[Any] = patterns.map(matchTranslator).reduce(_ ++ _)
+      val startItems = patterns.map(p => translate(p.makeOutgoing)).reduce(_ ++ _)
 
       startItems match {
-        case No(msg) => No(msg)
+        case No(msg)    => No(msg)
         case Yes(stuff) => namedPathPatterns.seqMap(p => {
           val namedPath: NamedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
           Seq(NamedPathWStartItems(namedPath, stuff.map(_.asInstanceOf[StartItem])))
