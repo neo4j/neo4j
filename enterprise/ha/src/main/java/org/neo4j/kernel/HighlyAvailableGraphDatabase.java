@@ -574,7 +574,7 @@ public class HighlyAvailableGraphDatabase
             }
         }
         storeId = broker.getClusterStoreId(true);
-        newMaster( new InformativeStackTrace( "Starting up for the first time" ) );
+        newMaster( new InformativeStackTrace( "Starting up [" + machineId + "] for the first time" ) );
         localGraph();
     }
 
