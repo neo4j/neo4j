@@ -2112,6 +2112,13 @@ RETURN x0.name?
     assert(result().toList.size === 4)
   }
 
+  @Test
+  def with_should_not_forget_original_type() {
+    val result = parseAndExecute("create a={x:8} with a.x as foo return sum(foo)")
+
+    assert(result.toList === List(Map("sum(foo)" -> 8)))
+  }
+
   @Ignore("This pattern is currently not supported. Revisit when we do support it.")
   @Test
   def two_double_optional_paths_with_shared_relationships() {
