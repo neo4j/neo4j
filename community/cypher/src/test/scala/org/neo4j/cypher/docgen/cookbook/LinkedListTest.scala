@@ -21,12 +21,16 @@ package org.neo4j.cypher.docgen.cookbook
 
 import org.neo4j.cypher.docgen.ArticleTest
 import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
+import org.neo4j.visualization.graphviz.GraphStyle
+import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class LinkedListTest extends ArticleTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val section = "cookbook"
   val title = "Linked List"
 
+  override protected def getGraphvizStyle: GraphStyle = 
+    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -62,7 +66,7 @@ to it self.
 
 Something like this:
 
-###graph-image###
+###graph-image graph [rankdir=RL]###
 
 To initialize an empty linked list, we simply create an empty node, and make it link to itself.
 
@@ -75,11 +79,12 @@ Adding values is done by finding the relationship where the new value should be 
 a new node, and two relationships to it.
 
 ###no-results assertion=add
-START root=node(%ROOT%)
+START root=node:node_auto_index(name = "ROOT")
 MATCH root-[:LINK*0..]->before,// before could be same as root
       after-[:LINK*0..]->root, // after could be same as root
       before-[old:LINK]->after
-WHERE before.value? < 25  // This is the value. It would normally be supplied through a parameter
+WHERE before.value? < 25  // This is the value, which would normally
+                          // be supplied through a parameter.
   AND 25 < after.value?
 CREATE before-[:LINK]->({value:25})-[:LINK]->after
 DELETE old###
@@ -88,7 +93,7 @@ Deleting a value, conversely, is done by finding the node with the value, and th
 from it, and replacing with a new value.
 
 ###no-results assertion=delete
-START root=node(%ROOT%)
+START root=node:node_auto_index(name = "ROOT")
 MATCH root-[:LINK*0..]->before,
       before-[delBefore:LINK]->del-[delAfter:LINK]->after,
       after-[:LINK*0..]->root

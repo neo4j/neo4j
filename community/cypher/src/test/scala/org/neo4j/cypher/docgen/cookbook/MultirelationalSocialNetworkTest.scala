@@ -42,10 +42,10 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
             "Maria LIKES cars")
 
   def section = "cookbook"
+  override val graphvizOptions = "graph [layout=circo]"
 
-  override protected def getGraphvizStyle: GraphStyle = {
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  }
 
   @Test def followBack() {
     testQuery(
