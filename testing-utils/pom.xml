@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>25</version>
+    <version>35</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -122,6 +122,35 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <versionRange>[2.2.1,)</versionRange>
+                    <goals>
+                      <goal>single</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <execute/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
 
