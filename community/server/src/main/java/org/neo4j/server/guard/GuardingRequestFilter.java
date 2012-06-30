@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.guard;
 
-import static java.lang.System.currentTimeMillis;
 import static javax.servlet.http.HttpServletResponse.SC_REQUEST_TIMEOUT;
 
 import java.io.IOException;
@@ -73,8 +72,7 @@ public class GuardingRequestFilter implements Filter
                 chain.doFilter( req, res );
             } else
             {
-                final long valid = currentTimeMillis() + timeLimit;
-                guard.startTimeout( valid );
+                guard.startTimeout( timeLimit );
                 final TimerTask timerTask = new TimerTask()
                 {
 
@@ -86,7 +84,7 @@ public class GuardingRequestFilter implements Filter
                         // TODO current.interrupt(); + restart server
                     }
                 };
-                timer.schedule( timerTask, valid + 5000 );
+                timer.schedule( timerTask, timeLimit + 5000 );
 
                 try
                 {
