@@ -35,38 +35,52 @@ public class PlaceboTransaction implements Transaction
         {
         }
     };
+    
     private final TransactionManager transactionManager;
-
+    private boolean failed = true;
+    
     public PlaceboTransaction( TransactionManager transactionManager )
     {
         // we should override all so null is ok
         this.transactionManager = transactionManager;
     }
 
+    @Override
     public void failure()
     {
-        try
-        {
-            transactionManager.getTransaction().setRollbackOnly();
-        }
-        catch ( Exception e )
-        {
-            throw new TransactionFailureException(
-                "Failed to mark transaction as rollback only.", e );
-        }
+        failed = true;
     }
 
+    @Override
     public void success()
     {
+        failed = false;
     }
 
+    @Override
     public void finish()
     {
+        if(failed)
+        {
+            try
+            {
+                transactionManager.getTransaction().setRollbackOnly();
+            }
+            catch ( Exception e )
+            {
+                throw new TransactionFailureException(
+                    "Failed to mark transaction as rollback only.", e );
+            }
+        }
     }
     
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
+        // TODO: Would it be possible to retrieve a lock via the parent
+        // transaction here? It seems that this renders acquireXLock methods
+        // moot on nested tx's, a tx state the calling code may not know it
+        // is in.
         return NO_LOCK;
     }
     
