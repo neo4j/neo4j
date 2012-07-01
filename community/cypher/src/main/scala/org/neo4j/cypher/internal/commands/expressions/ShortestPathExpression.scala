@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.symbols.{SymbolTable, PathType, AnyType, Identifier}
+import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphalgo.GraphAlgoFactory
@@ -27,13 +27,13 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
+import scala.Some
+import org.neo4j.cypher.internal.commands.{Pattern, PathExtractor, ShortestPath}
 
 case class ShortestPathExpression(ast: ShortestPath) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(ast)
 
-  val symbols = new SymbolTable(declareDependencies(AnyType()).distinct: _*)
-
-  def compute(m: Map[String, Any]): Stream[Path] = {
+  def apply(m: Map[String, Any]): Stream[Path] = {
     if (anyStartpointsContainNull(m)) {
       null
     } else {
@@ -49,19 +49,14 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def getEndPoint(m: Map[String, Any], start: String): Node = m.getOrElse(start, throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find `" + start + "`")).asInstanceOf[Node]
 
-  private def anyStartpointsContainNull(m: Map[String, Any]): Boolean = {
-    declareDependencies(AnyType()).map(_.name).exists(key => m.get(key) match {
+  private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
+    symbolTableDependencies.exists(key => m.get(key) match {
       case None => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
       case Some(null) => true
       case Some(x) => false
     })
-  }
-
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = ast.possibleStartPoints.filterNot(_.name.startsWith("  UNNAMED"))
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = Seq()
-
-  val identifier: Identifier = Identifier(ast.toString, PathType())
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(ast.rewrite(f)))
 
@@ -78,6 +73,12 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
   else
     new AllShortestPathsFOO(expander, ast.maxDepth.getOrElse(15))
 
+  def calculateType(symbols: SymbolTable) = {
+    ast.assertTypes(symbols)
+    PathType()
+  }
+
+  def symbolTableDependencies = ast.symbolTableDependencies
 }
 
 trait FOO {

@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_6
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.Nullable
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, LongType}
+import org.neo4j.cypher.internal.pipes.aggregation.CountStarFunction
 
-class ConsoleCypherParser extends CypherParserImpl with ActualParser {
-  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
+case class CountStar() extends AggregationExpression {
+  def rewrite(f: (Expression) => Expression) = f(CountStar())
+
+  def createAggregationFunction = new CountStarFunction
+
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this)
+  else
+    Seq()
+
+  def calculateType(symbols: SymbolTable): CypherType = LongType()
+
+  def symbolTableDependencies = Set()
 }

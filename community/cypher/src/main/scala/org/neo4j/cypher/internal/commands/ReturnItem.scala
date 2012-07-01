@@ -19,38 +19,29 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.pipes.Dependant
+import expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.symbols._
+import collection.Map
 
-abstract class ReturnColumn extends Dependant {
-  def expressions(symbols: SymbolTable): Seq[Expression]
+abstract class ReturnColumn {
+  def expressions(symbols: SymbolTable): Map[String,Expression]
 
   def name: String
 }
 
 case class AllIdentifiers() extends ReturnColumn {
-  def expressions(symbols: SymbolTable) = symbols.identifiers.flatMap {
-    case Identifier(name, _) if name.startsWith("  UNNAMED") => None
-    case Identifier(name, typ) if MapType().isAssignableFrom(typ) => Some(Entity(name))
-    case Identifier(name, typ) if PathType().isAssignableFrom(typ) => Some(Entity(name))
-    case _ => None
-  }
+  def expressions(symbols: SymbolTable): Map[String, Expression] = symbols.identifiers.keys.
+    filterNot(_.startsWith("  UNNAMED")).
+    map(n => n -> Identifier(n)).toMap
 
   def name = "*"
-
-  def dependencies = Seq()
 }
 
-case class ReturnItem(expression: Expression, name: String, renamed: Boolean = false) extends ReturnColumn {
-  def expressions(symbols: SymbolTable) = Seq(expression)
+case class ReturnItem(expression: Expression, name: String, renamed: Boolean = false)
+  extends ReturnColumn {
+  def expressions(symbols: SymbolTable) = Map(name -> expression)
 
-  val dependencies = expression.dependencies(AnyType())
+  override def toString = name
 
-  val identifier = Identifier(name, expression.identifier.typ)
-
-  val columnName = identifier.name
-
-  override def toString() = identifier.name
-
-  def rename(newName: String) = ReturnItem(expression, newName, true)
+  def rename(newName: String) = ReturnItem(expression, newName, renamed = true)
 }

@@ -23,6 +23,7 @@ import internal.StringExtras
 import org.scalatest.Assertions
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
+import org.neo4j.graphdb.NotFoundException
 
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
   @Test def noReturnColumns() {
@@ -185,7 +186,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   }
 
   @Test def missing_create_dependency_correctly_reported() {
-    expectError(
+    expectNotFoundError(
       "START a=node(0) CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
       "Unknown identifier `missing`")
   }
@@ -195,10 +196,24 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "START a=node(0) SET a.name = missing RETURN a",
       "Unknown identifier `missing`")
   }
-
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
+    val s = """
+Wrong error message produced: %s
+Expected: %s
+     Got: %s
+            """.format(query, expectedError, error)
 
+
+    if(!error.getMessage.contains(expectedError)) {
+      fail(s)
+    }
+
+    error
+  }
+
+  private def expectNotFoundError(query: String, expectedError: String)  {
+    val error = intercept[NotFoundException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
 Expected: %s

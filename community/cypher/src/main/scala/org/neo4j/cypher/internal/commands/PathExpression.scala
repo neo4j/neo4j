@@ -19,20 +19,29 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.symbols.{SymbolTable, PathType, AnyType, Identifier}
+import expressions.Expression
+import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 
-case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with PathExtractor with PatternGraphBuilder {
-  val symbols = new SymbolTable(declareDependencies(AnyType()).distinct: _*)
-  val matchingContext = new MatchingContext(symbols, Seq(), buildPatternGraph(symbols, pathPattern))
-  val interestingPoints = pathPattern.flatMap(_.possibleStartPoints.map(_.name)).distinct
+case class PathExpression(pathPattern: Seq[Pattern])
+  extends Expression
+  with PathExtractor
+  with PatternGraphBuilder {
+  val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filterNot(p => p._1.startsWith("  UNNAMED")))
 
-  def compute(m: Map[String, Any]): Any = {
-    val returnNull = declareDependencies(AnyType()).map(_.name).exists(key => m.get(key) match {
+  val symbols2 = new SymbolTable(identifiers.toMap)
+  val matchingContext = new MatchingContext(symbols2, Seq(), buildPatternGraph(symbols2, pathPattern))
+  val interestingPoints: Seq[String] = pathPattern.
+    flatMap(_.possibleStartPoints.map(_._1)).
+    filterNot(_.startsWith("  UNNAMED")).
+    distinct
+
+  def apply(m: Map[String, Any]): Any = {
+    val returnNull = interestingPoints.exists(key => m.get(key) match {
       case None => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
       case Some(null) => true
       case Some(x) => false
@@ -50,11 +59,18 @@ case class PathExpression(pathPattern: Seq[Pattern]) extends Expression with Pat
     matches.map(getPath)
   }
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filterNot(_.name.startsWith("  UNNAMED")))
-
   def filter(f: (Expression) => Boolean): Seq[Expression] = Seq()
 
-  val identifier: Identifier = Identifier(pathPattern.mkString(","), PathType())
-
   def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f))))
+
+  def calculateType(symbols: SymbolTable): CypherType = {
+    pathPattern.foreach(_.assertTypes(symbols))
+    new IterableType( PathType() )
+  }
+
+  def symbolTableDependencies = {
+    val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
+    val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filterNot(_.startsWith("  UNNAMED")).toSet
+    patternDependencies ++ startPointDependencies
+  }
 }

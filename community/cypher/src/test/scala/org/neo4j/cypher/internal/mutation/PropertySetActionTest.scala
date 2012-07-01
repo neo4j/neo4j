@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.mutation
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.Property
 import org.neo4j.cypher.CypherTypeException
 
 class PropertySetActionTest extends Assertions {

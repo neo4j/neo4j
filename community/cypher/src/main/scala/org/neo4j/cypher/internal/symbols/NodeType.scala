@@ -26,7 +26,9 @@ object NodeType {
 }
 
 
-class NodeType extends MapType
+class NodeType extends MapType {
+  override def parentType:CypherType = MapType()
+}
 
 
 

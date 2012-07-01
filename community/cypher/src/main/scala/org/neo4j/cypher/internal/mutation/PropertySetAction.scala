@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.{Expression, Property}
-import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions{
   val Property(entityKey, propertyKey) = prop
-
-  def dependencies = e.dependencies(AnyType())
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val value = makeValueNeoSafe(e(context))
@@ -44,9 +42,15 @@ case class PropertySetAction(prop: Property, e: Expression)
     Stream(context)
   }
 
-  def identifier = Seq.empty
+  def identifier2 = Seq.empty
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
+
+  def assertTypes(symbols: SymbolTable) {
+    e.checkTypes(symbols)
+  }
+
+  def symbolTableDependencies = prop.symbolTableDependencies ++ e.symbolTableDependencies
 }

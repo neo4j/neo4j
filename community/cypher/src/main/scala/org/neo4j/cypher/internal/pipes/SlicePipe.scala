@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import java.lang.String
 import org.neo4j.helpers.ThisShouldNotHappenError
 import collection.mutable.Map
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends Pipe {
+//  val symbols = source.symbols
   val symbols = source.symbols
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.

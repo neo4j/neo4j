@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_6
+package org.neo4j.cypher.internal.commands.expressions
+import collection.Map
+import org.neo4j.cypher.internal.commands.IterableSupport
+import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyIterableType}
 
-import org.neo4j.cypher.internal.commands.{Literal, Expression}
+case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
+  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).tail
 
-trait SkipLimitClause extends Base {
-  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
+  def rewrite(f: (Expression) => Expression) = f(TailFunction(collection.rewrite(f)))
 
-  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ collection.filter(f)
+  else
+    collection.filter(f)
 
-  private def numberOrParam: Parser[Expression] =
-    (positiveNumber ^^ (x => Literal(x.toInt))
-      | parameter ^^ (x => x)
-      | failure("expected positive integer or parameter"))
+  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyIterableType(), symbols)
+
+  def symbolTableDependencies = collection.symbolTableDependencies
 }
-
-
-
-
-

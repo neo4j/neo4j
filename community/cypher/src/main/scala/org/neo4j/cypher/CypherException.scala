@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.Expression
+import internal.commands.expressions.Expression
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
@@ -33,7 +33,7 @@ class CypherTypeException(message: String, cause: Throwable = null) extends Cyph
 
 class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
   def this(message:String) = this(message, null)
-  def this(expression:Expression) = this("Expected " + expression.identifier.name + " to be an iterable, but it is not.", null)
+  def this(expression:Expression) = this("Expected " + expression + " to be an iterable, but it is not.", null)
 }
 
 class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{CachedExpression, Property, SortItem}
-import org.neo4j.cypher.internal.symbols.{ScalarType, Identifier}
+import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.commands.expressions.Property
 
 class SortBuilderTest extends BuilderTest {
 
@@ -31,24 +31,18 @@ class SortBuilderTest extends BuilderTest {
 
   @Test def should_accept_if_all_work_is_done_and_sorting_not_yet() {
     val q = PartiallySolvedQuery().copy(
-      sort = Seq(Unsolved(SortItem(Property("x", "foo"), true))),
+      sort = Seq(Unsolved(SortItem(Property("x", "foo"), ascending = true))),
       extracted = true
     )
-
-    val expected = List(Solved(SortItem(CachedExpression("x.foo", Identifier("x.foo", ScalarType())), true)))
 
     val p = createPipe(nodes = Seq("x"))
 
     assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
-
-    val resultQ = builder(plan(p, q)).query
-
-    assert(resultQ.sort === expected)
   }
 
   @Test def should_not_accept_if_not_yet_extracted() {
     val q = PartiallySolvedQuery().copy(
-      sort = Seq(Unsolved(SortItem(Property("x", "foo"), true))),
+      sort = Seq(Unsolved(SortItem(Property("x", "foo"), ascending = true))),
       extracted = false
     )
 

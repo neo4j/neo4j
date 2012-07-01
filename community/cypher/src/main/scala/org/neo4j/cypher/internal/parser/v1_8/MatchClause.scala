@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.{Identifier, Expression}
 
 trait MatchClause extends Base with ParserPattern {
   def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
@@ -31,9 +32,9 @@ trait MatchClause extends Base with ParserPattern {
   }
 
   private def successIfEntities[T](l: Expression, r: Expression)(f: (String, String) => T): Maybe[T] = (l, r) match {
-    case (Entity(lName), Entity(rName)) => Yes(Seq(f(lName, rName)))
-    case (x, Entity(_)) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
-    case (Entity(_), x) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
+    case (Identifier(lName), Identifier(rName)) => Yes(Seq(f(lName, rName)))
+    case (x, Identifier(_)) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
+    case (Identifier(_), x) => No(Seq("MATCH end points have to be node identifiers - found: " + x))
     case (x, y) => No(Seq("MATCH end points have to be node identifiers - found: " + x + " and " + y))
   }
 

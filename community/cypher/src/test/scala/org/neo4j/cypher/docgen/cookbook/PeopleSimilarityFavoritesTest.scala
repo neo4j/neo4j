@@ -27,13 +27,13 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 
 class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
-  def graphDescription = List("Joe favorite Cats", "Joe favorite Bikes", 
-      "Joe friend Sara", 
-      "Sara favorite Cats", 
-      "Sara favorite Bikes", 
-      "Derrick favorite Cats",
-      "Derrick favorite Bikes", 
-      "Jill favorite Bikes")
+  def graphDescription = List("Joe favorite Cats", "Joe favorite Bikes",
+    "Joe friend Sara",
+    "Sara favorite Cats",
+    "Sara favorite Bikes",
+    "Derrick favorite Cats",
+    "Derrick favorite Bikes",
+    "Jill favorite Bikes")
 
   def section = "cookbook"
   override val noTitle = true;
@@ -47,12 +47,12 @@ class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
       title = "Find people based on similar favorites",
       text = """To find out the possible new friends based on them liking similar things as the asking person, use a query like this:""",
       queryText = "START me=node:node_auto_index(name = \"Joe\") " +
-      		"MATCH me-[:favorite]->stuff<-[:favorite]-person " +
-      		"WHERE NOT(me-[:friend]-person) " +
-      		"RETURN person.name, count(stuff) " +
-      		"ORDER BY count(stuff) DESC",
+                  "MATCH me-[:favorite]->stuff<-[:favorite]-person " +
+                  "WHERE NOT(me-[:friend]-person) " +
+                  "RETURN person.name, count(stuff) " +
+                  "ORDER BY count(stuff) DESC",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends is returned.",
-      (p) => assertEquals(List(Map("person.name" -> "Derrick", "count(stuff)" -> 2),
-          Map("person.name" -> "Jill", "count(stuff)" -> 1)), p.toList))
-  } 
+      assertions = (p) => assertEquals(List(Map("person.name" -> "Derrick", "count(stuff)" -> 2),
+        Map("person.name" -> "Jill", "count(stuff)" -> 1)), p.toList))
+  }
 }

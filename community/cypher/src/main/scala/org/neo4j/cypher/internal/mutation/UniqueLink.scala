@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.mutation
 
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal, Expression}
+import org.neo4j.cypher.internal.commands.{CreateNodeStartItem, CreateRelationshipStartItem, IterableSupport}
+import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable, TypeSafe}
+import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.{CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, Identifier}
 import collection.Map
-import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.{UniquePathNotUniqueException, CypherTypeException}
 
 case class NamedExpectation(name: String, properties: Map[String, Expression])
   extends GraphElementPropertyFunctions
-  with IterableSupport {
+  with IterableSupport
+  with TypeSafe {
   def this(name: String) = this(name, Map.empty)
 
   def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = properties.forall {
@@ -45,6 +47,12 @@ case class NamedExpectation(name: String, properties: Map[String, Expression])
         if (expectationValue == elementValue) true
         else isCollection(expectationValue) && isCollection(elementValue) && makeTraversable(expectationValue).toList == makeTraversable(elementValue).toList
       }
+  }
+
+  def symbolTableDependencies = symbolTableDependencies(properties)
+
+  def assertTypes(symbols: SymbolTable) {
+    checkTypes(properties, symbols)
   }
 }
 
@@ -122,9 +130,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   private def createUpdateActions(dir: Direction, startNode: Node, end: NamedExpectation): Seq[UpdateWrapper] = {
     val createRel = if (dir == Direction.OUTGOING) {
-      CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Entity(end.name),Map()), relType, rel.properties)
+      CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Identifier(end.name),Map()), relType, rel.properties)
     } else {
-      CreateRelationshipStartItem(rel.name, (Entity(end.name),Map()), (Literal(startNode),Map()), relType, rel.properties)
+      CreateRelationshipStartItem(rel.name, (Identifier(end.name),Map()), (Literal(startNode),Map()), relType, rel.properties)
     }
 
     val relUpdate = UpdateWrapper(Seq(end.name), createRel)
@@ -140,9 +148,11 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     case x => throw new CypherTypeException("Expected `" + key + "` to a node, but it is a " + x)
   }
 
-  lazy val identifier = Seq(Identifier(start.name, NodeType()), Identifier(end.name, NodeType()), Identifier(rel.name, RelationshipType()))
+  lazy val identifier2 = Seq(start.name -> NodeType(), end.name -> NodeType(), rel.name -> RelationshipType())
 
-  def dependencies = (propDependencies(start.properties) ++ propDependencies(end.properties) ++ propDependencies(rel.properties)).distinct
+  def symbolTableDependencies:Set[String] = symbolTableDependencies(start.properties) ++
+    symbolTableDependencies(end.properties) ++
+    symbolTableDependencies(rel.properties)
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
     val s = NamedExpectation(start.name, rewrite(start.properties, f))
@@ -152,4 +162,10 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   }
 
   def filter(f: (Expression) => Boolean) = Seq.empty
+
+  def assertTypes(symbols: SymbolTable) {
+    checkTypes(start.properties, symbols)
+    checkTypes(end.properties, symbols)
+    checkTypes(rel.properties, symbols)
+  }
 }

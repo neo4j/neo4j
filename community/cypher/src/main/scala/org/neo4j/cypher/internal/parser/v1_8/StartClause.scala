@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 
 
@@ -62,7 +63,7 @@ trait StartClause extends Base with Expressions with CreateUnique {
         (b, a)
       Yes(Seq(CreateRelationshipStartItem(name, (from, startProps), (to, endProps), relType.head, props)))
 
-    case ParsedEntity(Entity(name), props, True()) =>
+    case ParsedEntity(Identifier(name), props, True()) =>
       Yes(Seq(CreateNodeStartItem(name, props)))
 
     case ParsedEntity(p, _, True()) if p.isInstanceOf[ParameterExpression] =>

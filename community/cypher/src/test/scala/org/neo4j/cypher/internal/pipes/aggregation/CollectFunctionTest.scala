@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
 class CollectFunctionTest extends AggregateTest {
 

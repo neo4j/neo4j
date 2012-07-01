@@ -25,7 +25,6 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.symbols.Identifier
 import scala.Some
 import org.neo4j.cypher.internal.symbols.RelationshipType
 
@@ -38,7 +37,7 @@ class PatternRelationship(key: String,
                           val predicate: Predicate)
   extends PatternElement(key) {
 
-  def identifiers : Seq[Identifier] = Seq(Identifier(startNode.key, NodeType()), Identifier(endNode.key, NodeType()), Identifier(key, RelationshipType()))
+  def identifiers2: Map[String, CypherType] = Map(startNode.key -> NodeType(), endNode.key -> NodeType(), key -> RelationshipType())
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
@@ -116,11 +115,10 @@ class VariableLengthPatternRelationship(pathName: String,
   extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
 
 
-  override def identifiers : Seq[Identifier] = Seq(
-    Identifier(startNode.key, NodeType()),
-    Identifier(endNode.key, NodeType()),
-    Identifier(key, new IterableType(RelationshipType()))) ++
-                                               relIterable.toSeq.map(Identifier(_, new IterableType(RelationshipType())))
+  override def identifiers2: Map[String, CypherType] =
+    Map(startNode.key -> NodeType(),
+      endNode.key -> NodeType(),
+      key -> new IterableType(RelationshipType())) ++ relIterable.map(_ -> new IterableType(RelationshipType())).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
 

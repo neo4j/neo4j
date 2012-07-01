@@ -237,6 +237,11 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
 
     loop
   }
+
+  override def toString = patternRels.map(tuple=> {
+    val r = tuple._2
+    "(%s)-['%s']-(%s)".format(r.startNode.key, r, r.endNode.key)
+  }).mkString(",")
 }
 
 case class Relationships(closestRel: String, oppositeRel: String)

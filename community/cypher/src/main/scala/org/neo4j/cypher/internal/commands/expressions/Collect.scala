@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType, IterableType}
+import org.neo4j.cypher.internal.pipes.aggregation.CollectFunction
 
-class ExpressionTest extends Assertions {
-  @Test def replacePropWithCache() {
-    val a = Collect(Nullable(Property("r", "age")))
-    
-    val b = a.rewrite {
-        case Property(n, p) => Literal(n + "." + p)
-        case x => x
-      }
+case class Collect(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
+  def createAggregationFunction = new CollectFunction(anInner)
 
-    assert(b === Collect(Nullable(Literal("r.age"))))
-  }
+  def expectedInnerType = AnyType()
+
+  def rewrite(f: (Expression) => Expression) = f(Collect(anInner.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable) = new IterableType(anInner.getType(symbols))
 }

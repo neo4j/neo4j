@@ -19,103 +19,30 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import org.neo4j.cypher.{CypherTypeException, SyntaxException}
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
+import collection.Map
 
+class SymbolTable(val identifiers: Map[String, CypherType]) {
+  def hasIdentifierNamed(name: String): Boolean = identifiers.contains(name)
+  def size: Int = identifiers.size
+  def this() = this(Map())
+  def add(key: String, typ: CypherType): SymbolTable = new SymbolTable(identifiers + (key -> typ))
+  def add(value: Map[String, CypherType]): SymbolTable = new SymbolTable(identifiers ++ value)
+  def filter(f: String => Boolean): SymbolTable = new SymbolTable(identifiers.filterKeys(f))
+  def keys: Seq[String] = identifiers.map(_._1).toSeq
+  def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
 
-class SymbolTable(val identifiers: Identifier*) {
-  assertNoDuplicatesExist()
+  def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
+    case Some(typ) if (expectedType.isAssignableFrom(typ)) => typ
+    case Some(typ) if (typ.isAssignableFrom(expectedType)) => typ
+    case Some(typ)                                         => throw new CypherTypeException("Expected `%s` to be a %s but it was %s".format(name, expectedType, typ))
+    case None                                              => throw new SyntaxException("Unknown identifier `%s`.".format(name))
+  }
 
-  def satisfies(needs: Seq[Identifier]): Boolean = try {
-    needs.foreach(assertHas(_))
+  def checkType(name: String, expectedType: CypherType): Boolean = try {
+    evaluateType(name, expectedType)
     true
   } catch {
-    case _ => false
-  }
-
-  def missingDependencies(needs: Seq[Identifier]): Seq[Identifier] = needs.filter(id => !satisfies(Seq(id)))
-
-  def missingExpressions(needs: Seq[Expression]): Seq[Expression] = needs.filter(id => !satisfies(Seq(id.identifier)))
-
-  def assertHas(name: String, typ: AnyType) {
-    assertHas(Identifier(name, typ))
-  }
-
-  def contains(identifier: Identifier) = identifiers.contains(identifier)
-
-  def assertHas(expected: Identifier) {
-    identifiers.find(_.name == expected.name) match {
-      case None           => throwMissingKey(expected.name)
-      case Some(existing) =>
-        if (!(expected.typ.isAssignableFrom(existing.typ) || existing.typ.isAssignableFrom(expected.typ))) {
-          throw new CypherTypeException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
-        }
-    }
-  }
-
-  def assertThat(id: Identifier): AnyType = actualIdentifier(id).typ
-
-  def remove(id: Identifier) = new SymbolTable(identifiers.filterNot(_ == id):_*)
-
-  def keys = identifiers.map(_.name)
-
-  def throwMissingKey(key: String) {
-    throw new SyntaxException("Unknown identifier `" + key + "`.")
-  }
-
-  def filter(keys: String*): SymbolTable = {
-
-    keys.foreach(key => if (!identifiers.exists(_.name == key))
-      throwMissingKey(key)
-    )
-
-    new SymbolTable(identifiers.filter(id => keys.contains(id.name)): _*)
-  }
-
-  private def get(key: String): Option[Identifier] = identifiers.find(_.name == key)
-
-  def add(newIdentifiers: Identifier*): SymbolTable = {
-    val matchedIdentifiers = newIdentifiers.map(newIdentifier => get(newIdentifier.name) match {
-      case None => newIdentifier
-      case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
-    })
-
-
-    val a = identifiers ++ matchedIdentifiers
-    val b = a.toSet
-    new SymbolTable(b.toSeq: _*)
-  }
-
-  def actualIdentifier(newIdentifier: Identifier): Identifier = get(newIdentifier.name) match {
-    case None => newIdentifier
-    case Some(existing) => handleMatched(newIdentifier, existing)
-  }
-
-  private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
-    newIdentifier match {
-      case _ => {
-        val a = existingIdentifier.typ
-        val b = newIdentifier.typ
-        if (b.isAssignableFrom(a)) {
-          existingIdentifier
-        } else {
-          throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
-        }
-      }
-    }
-  }
-
-  private def assertNoDuplicatesExist() {
-    val names: Set[String] = identifiers.map(_.name).toSet
-
-    if (names.size != identifiers.size) {
-      names.foreach(n => if (identifiers.filter(_.name == n).size > 1) throw new SyntaxException("Identifier " + n + " defined multiple times"))
-    }
-  }
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null => false
-    case x: SymbolTable => this.identifiers == x.identifiers
-    case _ => false
+    case _:CypherException => false
   }
 }

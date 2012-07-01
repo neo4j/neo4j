@@ -20,15 +20,19 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.commands.NamedPath
-import org.neo4j.cypher.internal.symbols.{PathType, Identifier}
+import org.neo4j.cypher.internal.symbols.PathType
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
-  def createResults(state: QueryState) = source.createResults(state).map(ctx => {
-    ctx.put(path.pathName, path.getPath(ctx))
-    ctx
-  })
+  def createResults(state: QueryState) = {
+    source.createResults(state).map(ctx => {
+      ctx.put(path.pathName, path.getPath(ctx))
+      ctx
+    })
+  }
 
-  val symbols = source.symbols.add(Identifier(path.pathName, PathType()))
+//  val symbols = source.symbols.add(Identifier(path.pathName, PathType()))
+  val symbols = source.symbols.add(path.pathName, PathType())
 
   override def executionPlan(): String = source.executionPlan() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
+
 }

@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{Property, Equals, Literal}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Property}
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.commands.Equals
 
 class FilterBuilderTest extends BuilderTest {
 

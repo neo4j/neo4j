@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.{Property, Identifier, Nullable, Expression}
 
 
 trait Predicates extends Base with ParserPattern {
@@ -51,7 +52,7 @@ trait Predicates extends Base with ParserPattern {
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in: Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => nullable(AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-"))), collection)
+    case checkee ~ in ~ collection => nullable(AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
   }
 
   def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInIterable(x._1, x._2, x._3), x._1))
@@ -86,6 +87,6 @@ trait Predicates extends Base with ParserPattern {
   def expression: Parser[Expression]
   def aggregateFunctionNames:Parser[String]
   def property: Parser[Expression]
-  def entity: Parser[Entity]
+  def entity: Parser[Identifier]
   def pathExpression: Parser[Expression]
 }

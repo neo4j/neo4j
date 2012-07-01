@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import collection.Map
-import collection.{Traversable, Seq}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.symbols._
+import collection.Map
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -36,9 +35,9 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
-  private def identifiers:Seq[Identifier] = patternGraph.patternRels.values.flatMap(p => p.identifiers).toSeq
+  private def identifiers = patternGraph.patternRels.values.flatMap(p => p.identifiers2).toMap
 
-  lazy val symbols = boundIdentifiers.add(identifiers: _*)
+  lazy val symbols = boundIdentifiers.add(identifiers)
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     builder.getMatches(sourceRow)

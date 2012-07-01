@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.Identifier
 import org.neo4j.cypher.internal.mutation.UniqueLink
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
-import org.neo4j.cypher.internal.commands.Entity
 import org.neo4j.cypher.internal.mutation.NamedExpectation
 import org.neo4j.cypher.internal.commands.True
 
@@ -52,7 +52,8 @@ trait CreateUnique extends Base with ParserPattern {
         })
       }
 
-    case ParsedRelation(name, props, ParsedEntity(Entity(startName), startProps, True()), ParsedEntity(Entity(endName), endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
+    case ParsedRelation(name, props, ParsedEntity(Identifier(startName), startProps, True()),
+    ParsedEntity(Identifier(endName), endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
       val link = UniqueLink(
         start = NamedExpectation(startName, startProps),
         end = NamedExpectation(endName, endProps),
@@ -61,7 +62,7 @@ trait CreateUnique extends Base with ParserPattern {
         dir = dir
       )
 
-      Yes(Seq(PathAndRelateLink(None,Seq(link))))
+      Yes(Seq(PathAndRelateLink(None, Seq(link))))
     case _ => No(Seq())
   }
 

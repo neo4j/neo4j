@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_7
 
 import org.neo4j.cypher.internal.commands._
+import expressions.AggregationExpression
 
 
 trait ReturnClause extends Base with Expressions {
@@ -44,7 +45,7 @@ trait ReturnClause extends Base with Expressions {
 
   def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
-      val columnName = returnItems.map(_.columnName).toList
+      val columnName = returnItems.map(_.name).toList
 
       val none = distinct match {
         case Some(x) => Some(Seq())

@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import org.neo4j.cypher.internal.commands._
 import collection.Map
+import expressions.{Identifier, Expression}
 
 
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
@@ -49,22 +50,22 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
 
   private def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
     val missingCreateNodeActions = commands.flatMap {
-      case createNode: CreateNodeStartItem => Seq()
+      case createNode: CreateNodeStartItem        => Seq()
       case createRel: CreateRelationshipStartItem =>
-        alsoCreateNode(createRel.from, symbols, commands) ++
+          alsoCreateNode(createRel.from, symbols, commands) ++
           alsoCreateNode(createRel.to, symbols, commands)
-      case x => Seq()
+      case x                                      => Seq()
     }
 
     missingCreateNodeActions.distinct ++ commands
   }
 
-  private def alsoCreateNode(e: (Expression, Map[String,Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[UpdateAction] = e._1 match {
-    case Entity(name) =>
-      val nodeFromUnderlyingPipe = symbols.satisfies(Seq(Identifier(name, NodeType())))
+  private def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[UpdateAction] = e._1 match {
+    case Identifier(name) =>
+      val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
       val nodeFromOtherCommand = commands.exists {
         case CreateNodeStartItem(n, _) => n == name
-        case _ => false
+        case _                         => false
       }
 
       if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
@@ -75,20 +76,17 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     case _ => Seq()
   }
 
-
-  //key: String, from: Expression, to: Expression, typ: String, props: Map[String, Expression])
-
-  def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]) = start match {
-    case Unsolved(x: CreateNodeStartItem) => pipe.symbols.satisfies(x.dependencies.toSeq)
-    case Unsolved(x: CreateRelationshipStartItem) => pipe.symbols.satisfies(x.dependencies.toSeq)
-    case _ => false
+  def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]):Boolean = start match {
+    case Unsolved(x: CreateNodeStartItem)         => x.checkTypes(pipe.symbols)
+    case Unsolved(x: CreateRelationshipStartItem) => x.checkTypes(pipe.symbols)
+    case _                                        => false
   }
 
-  override def missingDependencies(plan: ExecutionPlanInProgress) = plan.query.start.flatMap {
-    case Unsolved(x: CreateNodeStartItem) => plan.pipe.symbols.missingDependencies(x.dependencies.toSeq)
-    case Unsolved(x: CreateRelationshipStartItem) => plan.pipe.symbols.missingDependencies(x.dependencies.toSeq)
-    case _ => Seq()
-  }.map(_.name)
+  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.start.flatMap {
+    case Unsolved(x: CreateNodeStartItem)         => plan.pipe.symbols.missingSymbolTableDependencies(x)
+    case Unsolved(x: CreateRelationshipStartItem) => plan.pipe.symbols.missingSymbolTableDependencies(x)
+    case _                                        => Seq()
+  }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(applicableTo(plan.pipe))
 

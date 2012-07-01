@@ -23,10 +23,18 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.commands._
+import expressions.Identifier
+import expressions.Literal
+import expressions.Property
+import expressions.RelationshipFunction
+import expressions.{Identifier, RelationshipFunction, Literal, Property}
 import org.junit.{Before, Test}
-import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, Identifier, SymbolTable}
+import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.AllInIterable
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null
@@ -438,18 +446,6 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
       Map("pA" -> a, "pR1" -> r1, "pB" -> b, "pC" -> c, "pR2" -> r2))
   }
 
-  /*
-   @Test def predicateConcerningRelationship() {
-    val r = relate(a, b, "rel", Map("age" -> 15))
-    val r2 = relate(a, b, "rel", Map("age" -> 5))
-
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(Property("r", "age"), Literal(5))))
-
-    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r2))
-  }
-   */
-
   @Test def predicateConcerningRelationship() {
     val r = relate(a, b, "rel", Map("age" -> 15))
     val r2 = relate(a, b, "rel", Map("age" -> 5))
@@ -502,7 +498,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel", Map("foo" -> "bar"))
     relate(b, c, "rel", Map("foo" -> "notBar"))
 
-    val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val pred = AllInIterable(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
     val patterns = Seq(VarLengthRelatedTo("p", "a", "b", Some(2), Some(2), Seq(), Direction.OUTGOING, None, true, pred))
     val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"))
 
@@ -522,12 +518,12 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   }
 
   private def createMatchingContextWith(patterns: Seq[Pattern], nodes: Seq[String], rels: Seq[String], predicates:Seq[Predicate]=Seq[Predicate]()): MatchingContext = {
-    val nodeIdentifiers = nodes.map(x => Identifier(x, NodeType()))
-    val relIdentifiers = rels.map(x => Identifier(x, RelationshipType()))
+    val nodeIdentifiers2 = nodes.map(_ -> NodeType())
+    val relIdentifiers2 = rels.map(_ ->RelationshipType())
 
-    val identifiers = nodeIdentifiers++relIdentifiers
-    val symbols = new SymbolTable(identifiers:_*)
-    new MatchingContext(symbols, predicates, buildPatternGraph(symbols, patterns))
+    val identifiers2 = (nodeIdentifiers2++relIdentifiers2).toMap
+    val symbols2 = new SymbolTable(identifiers2)
+    new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns))
   }
 
   private def createMatchingContextWithRels(patterns: Seq[Pattern], rels: Seq[String], predicates: Seq[Predicate] = Seq[Predicate]()): MatchingContext =
@@ -536,8 +532,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   private def createMatchingContextWithNodes(patterns: Seq[Pattern], nodes: Seq[String], predicates: Seq[Predicate] = Seq[Predicate]()): MatchingContext =
     createMatchingContextWith(patterns, nodes, Seq(), predicates)
 
-  private def compare(matches: Map[String, Any], expecations: Map[String, Any]): Boolean = {
-    expecations.foreach(kv =>
+  private def compare(matches: Map[String, Any], expectation: Map[String, Any]): Boolean = {
+    expectation.foreach(kv =>
       matches.get(kv._1) match {
         case None => return false
         case Some(x) => if (x != kv._2) return false

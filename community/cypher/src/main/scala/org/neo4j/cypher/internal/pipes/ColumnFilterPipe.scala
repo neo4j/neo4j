@@ -19,31 +19,34 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.{ParameterValue, ReturnItem}
-import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
-import scala.collection.JavaConverters._
+import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.internal.commands.expressions.CachedExpression
+import org.neo4j.cypher.internal.commands.expressions.ParameterValue
+import org.neo4j.cypher.internal.commands.ReturnItem
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe: Boolean)
   extends PipeWithSource(source) {
-  val returnItemNames = returnItems.map(_.columnName)
-  val symbols = new SymbolTable(identifiers: _*)
+  val returnItemNames = returnItems.map(_.name)
+  val symbols = new SymbolTable(identifiers2.toMap)
 
-  private lazy val identifiers = source.symbols.identifiers.flatMap {
-    // Yay! My first monad!
-    case id => returnItems.
-      find(ri => ri.expression.identifier.name == id.name).
-      map(x => Identifier(x.columnName, id.typ))
-  }
+  private lazy val identifiers2: Seq[(String, CypherType)] = returnItems.
+    map( ri => ri.name->ri.expression.getType(source.symbols))
 
   def createResults(state: QueryState) = {
     source.createResults(state).map(ctx => {
       val newMap = MutableMaps.create(ctx.size)
 
-      ctx.foreach {
-        case (k, p) => if (p.isInstanceOf[ParameterValue] && !lastPipe) {
-          newMap.put(k, p)
-        } else {
-          returnItems.foreach( ri => if (ri.expression.identifier.name == k) { newMap.put(ri.columnName, p) } )
+      returnItems.foreach {
+        case ReturnItem(Identifier(oldName), newName, _)              => newMap.put(newName, ctx(oldName))
+        case ReturnItem(CachedExpression(oldName, _), newName, _) => newMap.put(newName, ctx(oldName))
+        case ReturnItem(_, name, _)                               => newMap.put(name, ctx(name))
+      }
+
+      if (!lastPipe) {
+        ctx.foreach {
+          case (k, p: ParameterValue) => newMap.put(k, p)
+          case _ =>
         }
       }
 
@@ -55,4 +58,8 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe:
     "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlan(), source.symbols.keys, returnItemNames.mkString(","))
 
   def dependencies = Seq()
+
+  def assertTypes(symbols: SymbolTable) {
+    returnItems.foreach(_.expression.assertTypes(symbols))
+  }
 }

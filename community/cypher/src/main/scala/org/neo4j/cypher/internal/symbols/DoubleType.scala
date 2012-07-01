@@ -25,7 +25,9 @@ object DoubleType {
   def apply() = instance
 }
 
-class DoubleType extends NumberType
+class DoubleType extends NumberType {
+  override def parentType:CypherType = NumberType()
+}
 
 
 

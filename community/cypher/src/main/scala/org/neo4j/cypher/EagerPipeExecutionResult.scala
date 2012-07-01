@@ -20,17 +20,14 @@
 package org.neo4j.cypher
 
 import internal.pipes.QueryState
-import internal.symbols.SymbolTable
-import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.graphdb.GraphDatabaseService
 import collection.Map
 
 class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]],
-                               symbols: SymbolTable,
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService)
-  extends PipeExecutionResult(r, symbols, columns) {
+  extends PipeExecutionResult(r, columns) {
 
   override lazy val queryStatistics = QueryStatistics(
     nodesCreated = state.createdNodes.count,

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.pipes.NullPipe
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery}
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
+import expressions.Literal
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import java.lang.Iterable
 import org.neo4j.graphdb._

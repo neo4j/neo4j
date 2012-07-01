@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.internal.commands.{Entity, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 
 
 abstract class AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def aggregateOn(values: Any*): Any = {
-    val func = createAggregator(Entity("x"))
+    val func = createAggregator(Identifier("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

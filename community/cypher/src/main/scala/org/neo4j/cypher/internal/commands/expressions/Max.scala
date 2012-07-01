@@ -17,7 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.symbols
+package org.neo4j.cypher.internal.commands.expressions
 
+import org.neo4j.cypher.internal.symbols.{AnyIterableType, CypherType, SymbolTable, NumberType}
+import org.neo4j.cypher.internal.pipes.aggregation.MaxFunction
 
-case class Identifier(name:String, typ:AnyType)
+case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
+  def createAggregationFunction = new MaxFunction(anInner)
+
+  def expectedInnerType = NumberType()
+
+  def rewrite(f: (Expression) => Expression) = f(Max(anInner.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable): CypherType = anInner.getType(symbols)
+}

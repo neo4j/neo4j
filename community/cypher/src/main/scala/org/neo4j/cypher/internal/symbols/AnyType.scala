@@ -20,31 +20,9 @@
 package org.neo4j.cypher.internal.symbols
 
 import java.lang.String
+import org.neo4j.cypher.CypherTypeException
 
-object AnyType {
-
-  def fromJava(obj:Any):AnyType = {
-    if(obj.isInstanceOf[String] || obj.isInstanceOf[Char])
-      return StringType()
-
-    if(obj.isInstanceOf[Number])
-      return NumberType()
-    
-    if(obj.isInstanceOf[Boolean])
-      return BooleanType()
-    
-    if(obj.isInstanceOf[Seq[_]] || obj.isInstanceOf[Array[_]])
-      return AnyIterableType()
-    
-    ScalarType()
-  }
-
-  val instance = new AnyType()
-
-  def apply() = instance
-}
-
-class AnyType {
+case class AnyType() extends CypherType {
   override def equals(other: Any) = if (other == null)
     false
   else
@@ -53,9 +31,11 @@ class AnyType {
       case _ => false
     }
 
-  def isAssignableFrom(other: AnyType): Boolean = this.getClass.isAssignableFrom(other.getClass)
+  override val iteratedType: CypherType = this
 
   override def toString: String = this.getClass.getSimpleName
+
+  def parentType:CypherType = this //This is the root of all
 }
 
 

@@ -29,7 +29,9 @@ object ScalarType
   def apply() = instance
 }
 
-class ScalarType extends AnyType
+class ScalarType extends AnyType {
+  override def parentType:CypherType = AnyType()
+}
 
 
 

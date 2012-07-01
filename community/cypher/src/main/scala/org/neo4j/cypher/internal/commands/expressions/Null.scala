@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_6
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, ScalarType}
+import collection.Map
 
+case class Null() extends Expression {
+  def apply(v1: Map[String, Any]) = null
 
-trait OrderByClause extends Base with ReturnItems  {
-  def desc:Parser[String] = ignoreCases("descending", "desc")
+  def rewrite(f: (Expression) => Expression): Expression = f(this)
 
-  def asc:Parser[String] = ignoreCases("ascending", "asc")
+  def filter(f: (Expression) => Boolean): Seq[Expression] = if (f(this)) Seq(this) else Seq()
 
-  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
-    case None => true
-    case Some(txt) => txt.toLowerCase.startsWith("a")
-  }
+  def calculateType(symbols: SymbolTable): CypherType = ScalarType()
 
-  def sortItem :Parser[SortItem] = (aggregateExpression | expression) ~ ascOrDesc ^^ { case expression ~ ascDesc => SortItem(expression, ascDesc)  }
-
-  def order: Parser[Seq[SortItem]] =
-    (ignoreCase("order by") ~> comaList(sortItem)
-      | ignoreCase("order") ~> failure("expected by"))
+  def symbolTableDependencies = Set()
 }
-
-
-
-
-

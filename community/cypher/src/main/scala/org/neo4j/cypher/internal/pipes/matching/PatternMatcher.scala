@@ -156,7 +156,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.dependencies.map(_.name).forall(m contains))
+    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
     predicate.forall(_.isMatch(m))
   }
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.{Identifier, AggregationExpression}
 import org.neo4j.cypher.SyntaxException
 
 
@@ -70,7 +71,7 @@ trait ReturnClause extends Base with Expressions {
 
     val problemColumns = columns._1.returnItems.flatMap {
       case ReturnItem(_, _, true) => None
-      case ReturnItem(Entity(_), _, _) => None
+      case ReturnItem(Identifier(_), _, _) => None
       case ri => Some(ri.name)
     }
     if (problemColumns.nonEmpty) {

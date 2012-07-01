@@ -30,7 +30,9 @@ object StringType
   def apply() = instance
 }
 
-class StringType extends ScalarType
+class StringType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
+}
 
 
 

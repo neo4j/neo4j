@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders.{QueryToken, Solved, Unsolved}
 import org.neo4j.cypher.internal.commands._
 import collection.Seq
+import expressions.{Expression, AggregationExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction

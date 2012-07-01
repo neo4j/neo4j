@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable, NumberType}
+import org.neo4j.cypher.internal.pipes.aggregation.AvgFunction
 
-class DistinctTest extends Assertions {
-  @Test def apa() {
-    val d = Distinct(Count(Literal("a")), Literal("a"))
-    assert(d.identifier.name === "count(distinct a)")
-  }
+case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
+  def createAggregationFunction = new AvgFunction(anInner)
+
+  def expectedInnerType = NumberType()
+
+  def rewrite(f: (Expression) => Expression) = f(Avg(anInner.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable): CypherType = NumberType()
 }

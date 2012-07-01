@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.symbols.Identifier
+import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.{StartItem, Expression}
+import org.neo4j.cypher.internal.commands.{Mutator, StartItem}
 import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
-case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") with UpdateAction {
-  def dependencies: Seq[Identifier] = links.flatMap(_.dependencies)
-
+case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") with Mutator with UpdateAction {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
     var ctx = context
@@ -75,7 +74,6 @@ case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") wi
     } else {                                                            // let's build one
       throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
     }
-
   }
 
   private def traverseNextStep(nextSteps: Seq[(String, PropertyContainer)], oldContext: ExecutionContext): ExecutionContext = {
@@ -136,9 +134,13 @@ case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") wi
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = links.flatMap(_.filter(f)).distinct
 
-  def identifier: Seq[Identifier] = links.flatMap(_.identifier).distinct
+  def identifier2: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
 
-  def rewrite(f: (Expression) => Expression): CreateUniqueAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
+  def rewrite(f: (Expression) => Expression): UpdateAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
+
+  def assertTypes(symbols: SymbolTable) {links.foreach(l=>l.assertTypes(symbols))}
+
+  def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
 }
 
 sealed abstract class CreateUniqueResult

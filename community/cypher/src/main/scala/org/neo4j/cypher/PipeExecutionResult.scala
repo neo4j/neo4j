@@ -25,11 +25,10 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
-import internal.symbols.SymbolTable
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
 
-class PipeExecutionResult(r: => Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
+class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List[String])
   extends ExecutionResult
   with StringExtras
   with IterableSupport {

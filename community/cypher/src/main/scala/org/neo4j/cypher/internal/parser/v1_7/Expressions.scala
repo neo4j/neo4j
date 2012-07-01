@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_7
 
 import org.neo4j.cypher.internal.commands._
+import expressions._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
@@ -82,7 +83,7 @@ trait Expressions extends Base {
     Literal(value)
   } )
 
-  def entity: Parser[Entity] = identity ^^ (x => Entity(x))
+  def entity: Parser[Identifier] = identity ^^ (x => Identifier(x))
 
   def collectionLiteral:Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq:_*))
 
@@ -185,7 +186,7 @@ trait Expressions extends Base {
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-")))
+    case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-")))
   }
   
   def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))

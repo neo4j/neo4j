@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.Property
 import org.scalatest.Assertions
 import org.junit.Test
 
