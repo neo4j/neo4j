@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
 
 public class PlaceboTransaction implements Transaction
 {
@@ -37,7 +38,7 @@ public class PlaceboTransaction implements Transaction
     };
     
     private final TransactionManager transactionManager;
-    private boolean failed = true;
+    private final TransactionOutcome outcome = new TransactionOutcome();
     
     public PlaceboTransaction( TransactionManager transactionManager )
     {
@@ -48,29 +49,34 @@ public class PlaceboTransaction implements Transaction
     @Override
     public void failure()
     {
-        failed = true;
+        outcome.failed();
     }
 
     @Override
     public void success()
     {
-        failed = false;
+        outcome.success();
     }
 
     @Override
     public void finish()
     {
-        if(failed)
+        if ( !outcome.canCommit() )
         {
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException(
-                    "Failed to mark transaction as rollback only.", e );
-            }
+            markAsRollback();
+        }
+    }
+
+    private void markAsRollback()
+    {
+        try
+        {
+            transactionManager.getTransaction().setRollbackOnly();
+        }
+        catch ( Exception e )
+        {
+            throw new TransactionFailureException(
+                "Failed to mark transaction as rollback only.", e );
         }
     }
     

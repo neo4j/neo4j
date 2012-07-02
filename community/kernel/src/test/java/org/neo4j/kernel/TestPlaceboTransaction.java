@@ -28,42 +28,37 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.junit.Before;
 import org.junit.Test;
-
 
 public class TestPlaceboTransaction
 {
+    private TransactionManager mockTxManager;
+    private Transaction mockTopLevelTx;
+    private PlaceboTransaction placeboTx;
+    
+    @Before
+    public void before() throws Exception
+    {
+        mockTxManager = mock( TransactionManager.class );
+        mockTopLevelTx = mock( Transaction.class );
+        when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
+        placeboTx = new PlaceboTransaction( mockTxManager );
+    }
 
     @Test
     public void shouldRollbackParentByDefault() throws SystemException
     {
-        // Given
-        TransactionManager mockTxManager = mock( TransactionManager.class );
-        Transaction mockTopLevelTx = mock( Transaction.class );
-        
-        when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        
-        PlaceboTransaction placeboTx = new PlaceboTransaction( mockTxManager );
-     
         // When
         placeboTx.finish();
         
         // Then
         verify( mockTopLevelTx ).setRollbackOnly();
-        
     }
 
     @Test
     public void shouldRollbackParentIfFailureCalled() throws SystemException
     {
-        // Given
-        TransactionManager mockTxManager = mock( TransactionManager.class );
-        Transaction mockTopLevelTx = mock( Transaction.class );
-        
-        when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        
-        PlaceboTransaction placeboTx = new PlaceboTransaction( mockTxManager );
-     
         // When
         placeboTx.failure();
         placeboTx.finish();
@@ -75,14 +70,6 @@ public class TestPlaceboTransaction
     @Test
     public void shouldNotRollbackParentIfSuccessCalled() throws SystemException
     {
-        // Given
-        TransactionManager mockTxManager = mock( TransactionManager.class );
-        Transaction mockTopLevelTx = mock( Transaction.class );
-        
-        when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        
-        PlaceboTransaction placeboTx = new PlaceboTransaction( mockTxManager );
-     
         // When
         placeboTx.success();
         placeboTx.finish();
@@ -91,4 +78,15 @@ public class TestPlaceboTransaction
         verifyNoMoreInteractions( mockTopLevelTx );
     }
     
+    @Test
+    public void successCannotOverrideFailure() throws Exception
+    {
+        // When
+        placeboTx.failure();
+        placeboTx.success();
+        placeboTx.finish();
+        
+        // Then
+        verify( mockTopLevelTx ).setRollbackOnly();
+    }
 }

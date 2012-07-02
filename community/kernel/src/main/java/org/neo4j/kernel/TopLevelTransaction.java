@@ -35,19 +35,23 @@ import org.neo4j.kernel.impl.transaction.LockType;
 
 public class TopLevelTransaction implements Transaction
 {
-    private static class TransactionOutcome {
+    static class TransactionOutcome
+    {
         private boolean success = false;
         private boolean failure = false;
-    
-        public void failed() {
+
+        public void failed()
+        {
             failure = true;
         }
-        
-        public void success() {
+
+        public void success()
+        {
             success = true;
         }
-        
-        public boolean canCommit() {
+
+        public boolean canCommit()
+        {
             return success && !failure;
         }
 
@@ -55,7 +59,6 @@ public class TopLevelTransaction implements Transaction
         {
             return success;
         }
-        
     }
     
     private final AbstractTransactionManager transactionManager;
