@@ -43,7 +43,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -54,12 +54,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * serializes requests and sends them to the server and waits for
  * a response back.
  */
-public abstract class Client<M> implements ChannelPipelineFactory
+public abstract class Client<T> implements ChannelPipelineFactory
 {
     // Max number of concurrent channels that may exist. Needs to be high because we
     // don't want to run into that limit, it will make some #acquire calls block and
     // gets disastrous if that thread is holding monitors that is needed to communicate
-    // with the master in some way.
+    // with the server in some way.
     public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
 
@@ -172,13 +172,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
         return Server.INTERNAL_PROTOCOL_VERSION;
     }
 
-    protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
+    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
         return sendRequest( type, context, serializer, deserializer, null );
     }
 
-    protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
+    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
     {
         boolean success = true;
@@ -237,12 +237,12 @@ public abstract class Client<M> implements ChannelPipelineFactory
         }
     }
 
-    protected int getReadTimeout( RequestType<M> type, int readTimeout )
+    protected int getReadTimeout( RequestType<T> type, int readTimeout )
     {
         return readTimeout;
     }
 
-    protected boolean shouldCheckStoreId( RequestType<M> type )
+    protected boolean shouldCheckStoreId( RequestType<T> type )
     {
         return true;
     }
@@ -269,7 +269,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         return StoreId.deserialize( byteBuffer );
     }
 
-    protected void writeContext( RequestType<M> type, SlaveContext context, ChannelBuffer targetBuffer )
+    protected void writeContext( RequestType<T> type, RequestContext context, ChannelBuffer targetBuffer )
     {
         targetBuffer.writeLong( context.getSessionId() );
         targetBuffer.writeInt( context.machineId() );
@@ -285,11 +285,11 @@ public abstract class Client<M> implements ChannelPipelineFactory
         targetBuffer.writeLong( context.getChecksum() );
     }
 
-    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<M> type ) throws Exception
+    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<T> type ) throws Exception
     {
         // Calling acquire is dangerous since it may be a blocking call... and if this
         // thread holds a lock which others may want to be able to communicate with
-        // the master things go stiff.
+        // the server things go stiff.
         Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire();
         if ( result == null )
         {
@@ -299,7 +299,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         return result;
     }
 
-    protected void releaseChannel( RequestType<M> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
+    protected void releaseChannel( RequestType<T> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
     {
         channelPool.release();
     }

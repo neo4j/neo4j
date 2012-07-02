@@ -17,42 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.kernel.ha;
 
 import org.jboss.netty.channel.Channel;
-import org.neo4j.backup.BackupClient.BackupRequestType;
-import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.TxChecksumVerifier;
+import org.neo4j.kernel.ha.SlaveClient.SlaveRequestType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-class BackupServer extends Server<TheBackupInterface, Object>
+public class SlaveServer extends Server<Slave, Void>
 {
-    static final byte PROTOCOL_VERSION = 1;
-    private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
-    static final int FRAME_LENGTH = Protocol.MEGA*4;
+    public static final byte APPLICATION_PROTOCOL_VERSION = 1;
     
-    public BackupServer( TheBackupInterface requestTarget, int port, StringLogger logger )
+    public SlaveServer( Slave requestTarget, int port, StringLogger logger )
     {
-        super( requestTarget, port, logger, FRAME_LENGTH, PROTOCOL_VERSION,
-                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                TxChecksumVerifier.ALWAYS_MATCH );
+        super( requestTarget, port, logger, Protocol.DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, 1,
+                20, TxChecksumVerifier.ALWAYS_MATCH );
     }
 
     @Override
-    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
-            RequestContext context )
+    protected RequestType<Slave> getRequestContext( byte id )
     {
-    }
-
-    @Override
-    protected RequestType<TheBackupInterface> getRequestContext( byte id )
-    {
-        return contexts[id];
+        return SlaveRequestType.values()[id];
     }
 
     @Override

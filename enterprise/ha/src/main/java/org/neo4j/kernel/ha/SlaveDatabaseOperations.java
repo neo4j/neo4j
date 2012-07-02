@@ -20,19 +20,19 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Client.ConnectionLostHandler;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
 
 public interface SlaveDatabaseOperations extends ConnectionLostHandler
 {
     /**
-     * Returns a {@link SlaveContext} instance that has {@code eventIdentifier}
+     * Returns a {@link RequestContext} instance that has {@code eventIdentifier}
      * as the event identifier.
      *
      * @param eventIdentifier The event identifier of the returned slave context
      * @return The slave context
      */
-    SlaveContext getSlaveContext( int eventIdentifier );
+    RequestContext getSlaveContext( int eventIdentifier );
 
     <T> T receive( Response<T> response );
 

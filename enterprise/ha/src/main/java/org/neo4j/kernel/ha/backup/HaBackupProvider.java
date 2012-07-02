@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.apache.zookeeper.KeeperException;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.com.ComException;

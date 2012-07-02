@@ -110,6 +110,7 @@ public class TestConfig
                     setConfig( HaSettings.server_id, "" + i ).
                     setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
                     setConfig( GraphDatabaseSettings.cache_type, GCResistantCacheProvider.NAME ).
+                    setConfig( HaSettings.server, "localhost:" + (6361+i) ).
                     newGraphDatabase();
             dbs.add( db );
         }

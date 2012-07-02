@@ -19,29 +19,31 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import org.neo4j.com.SlaveContext;
+import org.neo4j.com.RequestContext;
 import org.neo4j.helpers.Pair;
 
 public class Machine
 {
     public static final Machine NO_MACHINE = new Machine( -1, -1, 1,
-            SlaveContext.EMPTY.machineId(), null );
+            RequestContext.EMPTY.machineId(), null, -1 );
 
     private final int machineId;
     private final int sequenceId;
     private final long lastCommittedTxId;
     private final Pair<String, Integer> server;
+    private final int backupPort;
 
     private final int masterForCommittedTxId;
 
     public Machine( int machineId, int sequenceId, long lastCommittedTxId,
-            int masterForCommittedTxId, String server )
+            int masterForCommittedTxId, String server, int backupPort )
     {
         this.machineId = machineId;
         this.sequenceId = sequenceId;
         this.lastCommittedTxId = lastCommittedTxId;
         this.masterForCommittedTxId = masterForCommittedTxId;
         this.server = server != null ? splitIpAndPort( server ) : null;
+        this.backupPort = backupPort;
     }
 
     public int getMachineId()
@@ -68,12 +70,22 @@ public class Machine
     {
         return sequenceId;
     }
-
+    
     public Pair<String, Integer> getServer()
     {
         return server;
     }
+    
+    public String getServerAsString()
+    {
+        return server.first() + ":" + server.other();
+    }
 
+    public int getBackupPort()
+    {
+        return backupPort;
+    }
+    
     @Override
     public String toString()
     {

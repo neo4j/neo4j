@@ -329,7 +329,7 @@ public class TestCommunication
         server.shutdown();
     }
 
-    @Test( expected = FailingException.class )
+    @Test
     public void serverContextVerificationCanThrowException() throws Exception
     {
         final String failureMessage = "I'm failing";
@@ -349,31 +349,18 @@ public class TestCommunication
         {
             client.multiply( 10, 5 );
         }
-        finally
-        {
-            server.shutdown();
+        catch ( FailingException e )
+        {   // Good
         }
+
+        server.shutdown();
     }
 
-    @Test( expected = IllegalProtocolVersionException.class )
-    public void protocolMismatchOnServerWritesProperFailureResponse() throws Exception
+    private <E extends Exception> void assertCause( ComException comException,
+            Class<E> expectedCause, String expectedCauseMessagee )
     {
-        // Here we bypass the client protocol version checks and see if the server response
-        // is a proper failure response or not
-        byte clientInternalProtocolVersion = INTERNAL_PROTOCOL_VERSION+1;
-        byte clientApplicationProtocolVersion = APPLICATION_PROTOCOL_VERSION+1;
-        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
-                TxChecksumVerifier.ALWAYS_MATCH, clientInternalProtocolVersion, clientApplicationProtocolVersion );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, clientInternalProtocolVersion, clientApplicationProtocolVersion );
-        
-        try
-        {
-            client.multiply( 2, 2 );
-        }
-        finally
-        {
-            server.shutdown();
-        }
+        Throwable cause = comException.getCause();
+        assertTrue( expectedCause.isInstance( cause ) );
+        assertEquals( expectedCauseMessagee, cause.getMessage() );
     }
 }

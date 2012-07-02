@@ -57,6 +57,7 @@ public class SingleJvmTest extends AbstractHaTest
 {
     private TestMaster master;
     private List<GraphDatabaseAPI> haDbs;
+    protected FakeMasterBroker masterBroker;
 
     @After
     public void verifyAndShutdownDbs()
@@ -107,7 +108,7 @@ public class SingleJvmTest extends AbstractHaTest
         haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseAPI>();
         int machineId = haDbs.size()+1;
         haDbs.add( null );
-        startDb( machineId, config, awaitStarted );
+        GraphDatabaseAPI db = startDb( machineId, config, awaitStarted );
         return machineId;
     }
     
@@ -133,7 +134,7 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
-    protected void startDb( final int machineId, final Map<String, String> config, boolean awaitStarted )
+    protected GraphDatabaseAPI startDb( final int machineId, final Map<String, String> config, boolean awaitStarted )
     {
         haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseAPI>();
         File slavePath = dbPath( machineId );
@@ -158,6 +159,7 @@ public class SingleJvmTest extends AbstractHaTest
         };
         
         haDbs.set( machineId-1, haGraphDb );
+        return haGraphDb;
     }
 
     @Override
@@ -194,7 +196,7 @@ public class SingleJvmTest extends AbstractHaTest
             @Override
             protected Broker createBroker()
             {
-                return makeMasterBroker( masterId, this, config );
+                return (masterBroker = makeMasterBroker( masterId, this, config ));
             }
             
             @Override
@@ -206,7 +208,7 @@ public class SingleJvmTest extends AbstractHaTest
         return haGraphDb;
     }
 
-    protected Broker makeMasterBroker( int masterId, GraphDatabaseAPI graphDb, Map<String, String> config )
+    protected FakeMasterBroker makeMasterBroker( int masterId, GraphDatabaseAPI graphDb, Map<String, String> config )
     {
         config = new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config );
         Config configuration = new Config( config );

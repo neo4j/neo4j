@@ -123,7 +123,7 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
 
     public int getBackupPort( int machineId )
     {
-        int port = readHaServer( machineId, true ).other();
+        int port = readHaServer( machineId, true ).getBackupPort();
         return port != 0 ? port : DEFAULT_BACKUP_PORT;
     }
 

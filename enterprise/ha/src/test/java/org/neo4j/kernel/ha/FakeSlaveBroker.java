@@ -64,4 +64,13 @@ public class FakeSlaveBroker extends AbstractBroker
     {
         throw new UnsupportedOperationException();
     }
+    
+    public static final int LOW_SLAVE_PORT = 8950;
+    
+    @Override
+    public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
+    {
+        return new SlaveServer( new SlaveImpl( graphDb, this, ops ),
+                LOW_SLAVE_PORT + getMyMachineId(), graphDb.getMessageLog() );
+    }
 }

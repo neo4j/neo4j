@@ -54,6 +54,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
@@ -355,7 +356,7 @@ public abstract class AbstractHaTest
 
     protected abstract int addDb( Map<String, String> config, boolean awaitStarted ) throws Exception;
 
-    protected abstract void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception;
+    protected abstract GraphDatabaseAPI startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception;
 
     protected abstract void pullUpdates( int... slaves ) throws Exception;
 
@@ -746,6 +747,15 @@ public abstract class AbstractHaTest
         executeJob( new CommonJobs.SetNodePropertyJob( node, "key", "value" ), 1 );
         latchFetcher.fetch().countDownFirst();
         pullUpdates();
+    }
+    
+    @Test
+    public void commitAtMasterAlsoCommittsAtSlave() throws Exception
+    {
+        initializeDbs( 1 );
+        
+        long node = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        assertTrue( executeJob( new CommonJobs.GetNodeByIdJob( node ), 0 ) );
     }
     
     static class WorkerThread extends Thread

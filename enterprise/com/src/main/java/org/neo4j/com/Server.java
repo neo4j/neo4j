@@ -49,7 +49,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -61,11 +61,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import static org.neo4j.com.DechunkingChannelBuffer.*;
 
 /**
- * Sits on the master side, receiving serialized requests from slaves (via
- * {@link Client}). Delegates actual work to an instance of a specified communication
- * interface, injected in the constructor. 
+ * Receives requests from {@link Client clients}. Delegates actual work to an instance
+ * of a specified communication interface, injected in the constructor. 
  */
-public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
+public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory
 {
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     public static final int DEFAULT_BACKUP_PORT = 6362;
@@ -77,12 +76,12 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
-    private M realMaster;
+    private T requestTarget;
     private final ChannelGroup channelGroup;
-    private final Map<Channel, Pair<SlaveContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
-            new HashMap<Channel, Pair<SlaveContext,AtomicLong>>();
+    private final Map<Channel, Pair<RequestContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
+            new HashMap<Channel, Pair<RequestContext,AtomicLong>>();
     private final ExecutorService executor;
-    private final ExecutorService masterCallExecutor;
+    private final ExecutorService targetCallExecutor;
     private final StringLogger msgLog;
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
@@ -102,17 +101,17 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final int oldChannelThresholdMillis;
     private TxChecksumVerifier txVerifier;
     
-    public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
+    public Server( T requestTarget, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
             int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier )
     {
-        this.realMaster = realMaster;
+        this.requestTarget = requestTarget;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = logger;
         this.txVerifier = txVerifier;
         this.oldChannelThresholdMillis = oldChannelThreshold*1000;
         executor = Executors.newCachedThreadPool();
-        masterCallExecutor = Executors.newCachedThreadPool();
+        targetCallExecutor = Executors.newCachedThreadPool();
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2 );
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, maxNumberOfConcurrentTransactions );
@@ -128,7 +127,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
         catch ( ChannelException e )
         {
-            msgLog.logMessage( "Failed to bind master server to port " + port, e );
+            msgLog.logMessage( "Failed to bind server to port " + port, e );
             executor.shutdown();
             throw e;
         }
@@ -150,7 +149,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 Map<Channel, Boolean/*starting to get old?*/> channels = new HashMap<Channel, Boolean>();
                 synchronized ( connectedSlaveChannels )
                 {
-                    for ( Map.Entry<Channel, Pair<SlaveContext, AtomicLong>> channel : connectedSlaveChannels.entrySet() )
+                    for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> channel : connectedSlaveChannels.entrySet() )
                     {   // Has this channel been silent for a while?
                         long age = System.currentTimeMillis()-channel.getValue().other().get();
                         if ( age > oldChannelThresholdMillis )
@@ -197,8 +196,18 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
                 throws Exception
         {
-            ChannelBuffer message = (ChannelBuffer) event.getMessage();
-            handleRequest( message, event.getChannel() );
+            try
+            {
+                ChannelBuffer message = (ChannelBuffer) event.getMessage();
+                handleRequest( message, event.getChannel() );
+            }
+            catch ( Throwable e )
+            {
+                msgLog.logMessage( "Error handling request", e );
+                ctx.getChannel().close();
+                tryToFinishOffChannel( ctx.getChannel() );
+                throw Exceptions.launderedException( e );
+            }
         }
 
         @Override
@@ -222,31 +231,16 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, final ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
-            msgLog.logMessage( "Error handling request", e.getCause() );
-            tryToFinishOffChannel( ctx.getChannel() );
-
-            // Write a proper failure response back to the client. Errors on this level
-            // are more protocol/communication problems or bugs in the code, not
-            // failures from the request target.
-            final ChunkingChannelBuffer failureResponse = newChunkingChannelBuffer(
-                    ChannelBuffers.dynamicBuffer(), ctx.getChannel() );
-            failureResponse.clear( true );
-            submitSilent( masterCallExecutor, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    writeFailureResponse( e.getCause(), failureResponse );
-                }
-            } );
+            ctx.getChannel().close();
+            e.getCause().printStackTrace();
         }
     }
     
     protected void tryToFinishOffChannel( Channel channel )
     {
-        Pair<SlaveContext, AtomicLong> slave = null;
+        Pair<RequestContext, AtomicLong> slave = null;
         synchronized ( connectedSlaveChannels )
         {
             slave = connectedSlaveChannels.remove( channel );
@@ -258,7 +252,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         tryToFinishOffChannel( channel, slave.first() );
     }
 
-    protected void tryToFinishOffChannel( Channel channel, SlaveContext slave )
+    protected void tryToFinishOffChannel( Channel channel, RequestContext slave )
     {
         try
         {
@@ -291,7 +285,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
     }
 
-    private Runnable newTransactionFinisher( final SlaveContext slave )
+    private Runnable newTransactionFinisher( final RequestContext slave )
     {
         return new Runnable()
         {
@@ -324,17 +318,18 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         };
     }
 
-    protected void handleRequest( ChannelBuffer buffer, final Channel channel )
+    protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
     {
-        byte continuation = readContinuationHeader( buffer, channel );
+        Byte continuation = readContinuationHeader( buffer, channel );
+        if ( continuation == null ) return;
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
             PartialRequest partialRequest = partialRequests.get( channel );
             if ( partialRequest == null )
             {
                 // This is the first chunk in a multi-chunk request
-                RequestType<M> type = getRequestContext( buffer.readByte() );
-                SlaveContext context = readContext( buffer );
+                RequestType<T> type = getRequestContext( buffer.readByte() );
+                RequestContext context = readContext( buffer );
                 ChannelBuffer targetBuffer = mapSlave( channel, context, type );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
                 partialRequests.put( channel, partialRequest );
@@ -344,8 +339,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         else
         {
             PartialRequest partialRequest = partialRequests.remove( channel );
-            RequestType<M> type = null;
-            SlaveContext context = null;
+            RequestType<T> type = null;
+            RequestContext context = null;
             ChannelBuffer targetBuffer;
             ChannelBuffer bufferToReadFrom = null;
             ChannelBuffer bufferToWriteTo = null;
@@ -370,27 +365,38 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            ChunkingChannelBuffer chunkingBuffer = newChunkingChannelBuffer( bufferToWriteTo, channel );
-            submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom ) );
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength,
+                    getInternalProtocolVersion(), applicationProtocolVersion );
+            submitSilent( targetCallExecutor, targetCaller( type, channel, context, chunkingBuffer, bufferToReadFrom ) );
         }
     }
 
-    protected ChunkingChannelBuffer newChunkingChannelBuffer( ChannelBuffer targetBuffer, Channel channel )
-    {
-        return new ChunkingChannelBuffer( targetBuffer, channel, frameLength,
-                getInternalProtocolVersion(), applicationProtocolVersion );
-    }
-
-    private byte readContinuationHeader( ChannelBuffer buffer, final Channel channel ) throws IllegalProtocolVersionException
+    private Byte readContinuationHeader( ChannelBuffer buffer, final Channel channel )
     {
         byte[] header = new byte[2];
         buffer.readBytes( header );
-        // Read request header and assert correct internal/application protocol version
-        assertSameProtocolVersion( header, getInternalProtocolVersion(), applicationProtocolVersion );
+        try
+        {   // Read request header and assert correct internal/application protocol version
+            assertSameProtocolVersion( header, getInternalProtocolVersion(), applicationProtocolVersion );
+        }
+        catch ( final IllegalProtocolVersionException e )
+        {   // Version mismatch, fail with a good exception back to the client
+            final ChunkingChannelBuffer failureResponse = new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(), channel,
+                    frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
+            submitSilent( targetCallExecutor, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    writeFailureResponse( e, failureResponse );
+                }
+            } );
+            return null;
+        }
         return (byte) (header[0] & 0x1);
     }
 
-    private Runnable masterCaller( final RequestType<M> type, final Channel channel, final SlaveContext context,
+    private Runnable targetCaller( final RequestType<T> type, final Channel channel, final RequestContext context,
             final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom )
     {
         return new Runnable()
@@ -401,7 +407,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 Response<R> response = null;
                 try
                 {
-                    response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, targetBuffer );
+                    response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
                     writeTransactionStreams( response.transactions(), targetBuffer );
@@ -441,7 +447,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
     }
 
-    protected void responseWritten( RequestType<M> type, Channel channel, SlaveContext context )
+    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
     {
     }
     
@@ -479,7 +485,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         buffer.writeByte( 0/*no more transactions*/);
     }
 
-    protected SlaveContext readContext( ChannelBuffer buffer )
+    protected RequestContext readContext( ChannelBuffer buffer )
     {
         long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
@@ -490,7 +496,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         for ( int i = 0; i < txsSize; i++ )
         {
             String ds = readString( buffer );
-            Tx tx = SlaveContext.lastAppliedTx( ds, buffer.readLong() );
+            Tx tx = RequestContext.lastAppliedTx( ds, buffer.readLong() );
             lastAppliedTransactions[i] = tx;
             
             // Only perform checksum checks on the neo data source.
@@ -502,21 +508,21 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
         if ( neoTx != null ) txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
-        return new SlaveContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions, masterId, checksum );
+        return new RequestContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions, masterId, checksum );
     }
 
-    protected abstract RequestType<M> getRequestContext( byte id );
+    protected abstract RequestType<T> getRequestContext( byte id );
 
-    protected ChannelBuffer mapSlave( Channel channel, SlaveContext slave, RequestType<M> type )
+    protected ChannelBuffer mapSlave( Channel channel, RequestContext slave, RequestType<T> type )
     {
         channelGroup.add( channel );
         synchronized ( connectedSlaveChannels )
         {
             // Checking for machineId -1 excludes the "empty" slave contexts
             // which some communication points pass in as context.
-            if ( slave != null && slave.machineId() != SlaveContext.EMPTY.machineId() )
+            if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
             {
-                Pair<SlaveContext, AtomicLong> previous = connectedSlaveChannels.get( channel );
+                Pair<RequestContext, AtomicLong> previous = connectedSlaveChannels.get( channel );
                 if ( previous != null )
                 {
                     previous.other().set( System.currentTimeMillis() );
@@ -530,7 +536,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         return ChannelBuffers.dynamicBuffer();
     }
 
-    protected void unmapSlave( Channel channel, SlaveContext slave )
+    protected void unmapSlave( Channel channel, RequestContext slave )
     {
         synchronized ( connectedSlaveChannels )
         {
@@ -539,9 +545,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
     }
     
-    protected M getMaster()
+    protected T getRequestTarget()
     {
-        return realMaster;
+        return requestTarget;
     }
 
     public void shutdown()
@@ -550,28 +556,28 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         shuttingDown = true;
         silentChannelExecutor.shutdown();
         unfinishedTransactionExecutor.shutdown();
-        masterCallExecutor.shutdown();
+        targetCallExecutor.shutdown();
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
         msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
         
         // Set this to null since bootstrap/channelFactory.releaseExternalResources
         // cannot be called and holds a reference to this Server instance.
-        realMaster = null;
+        requestTarget = null;
         txVerifier = null;
         
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
     }
 
-    protected abstract void finishOffChannel( Channel channel, SlaveContext context );
+    protected abstract void finishOffChannel( Channel channel, RequestContext context );
 
-    public Map<Channel, SlaveContext> getConnectedSlaveChannels()
+    public Map<Channel, RequestContext> getConnectedSlaveChannels()
     {
-        Map<Channel, SlaveContext> result = new HashMap<Channel, SlaveContext>();
+        Map<Channel, RequestContext> result = new HashMap<Channel, RequestContext>();
         synchronized ( connectedSlaveChannels )
         {
-            for ( Map.Entry<Channel, Pair<SlaveContext, AtomicLong>> entry : connectedSlaveChannels.entrySet() )
+            for ( Map.Entry<Channel, Pair<RequestContext, AtomicLong>> entry : connectedSlaveChannels.entrySet() )
             {
                 result.put( entry.getKey(), entry.getValue().first() );
             }
@@ -586,11 +592,11 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private class PartialRequest
     {
-        final SlaveContext context;
+        final RequestContext context;
         final ChannelBuffer buffer;
-        final RequestType<M> type;
+        final RequestType<T> type;
 
-        public PartialRequest( RequestType<M> type, SlaveContext context, ChannelBuffer buffer )
+        public PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;

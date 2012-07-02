@@ -27,7 +27,7 @@ import java.util.Arrays;
  * datasource</li> <li>an event identifier, the txid of the most recent local
  * top level tx</li> <li>a session id, the startup time of the database</li>
  */
-public final class SlaveContext
+public final class RequestContext
 {
     public static class Tx
     {
@@ -70,7 +70,7 @@ public final class SlaveContext
     private final int masterId;
     private final long checksum;
 
-    public SlaveContext( long sessionId, int machineId, int eventIdentifier,
+    public RequestContext( long sessionId, int machineId, int eventIdentifier,
             Tx[] lastAppliedTransactions, int masterId, long checksum )
     {
         this.sessionId = sessionId;
@@ -126,11 +126,11 @@ public final class SlaveContext
     @Override
     public boolean equals( Object obj )
     {
-        if ( !( obj instanceof SlaveContext ) )
+        if ( !( obj instanceof RequestContext ) )
         {
             return false;
         }
-        SlaveContext o = (SlaveContext) obj;
+        RequestContext o = (RequestContext) obj;
         return o.eventIdentifier == eventIdentifier && o.machineId == machineId && o.sessionId == sessionId;
     }
 
@@ -140,11 +140,11 @@ public final class SlaveContext
         return this.hashCode;
     }
 
-    public static SlaveContext EMPTY = new SlaveContext( -1, -1, -1, new Tx[0], -1, -1 );
+    public static RequestContext EMPTY = new RequestContext( -1, -1, -1, new Tx[0], -1, -1 );
 
-    public static SlaveContext anonymous( Tx[] lastAppliedTransactions )
+    public static RequestContext anonymous( Tx[] lastAppliedTransactions )
     {
-        return new SlaveContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
+        return new RequestContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
                 lastAppliedTransactions, EMPTY.masterId, EMPTY.checksum );
     }
 }

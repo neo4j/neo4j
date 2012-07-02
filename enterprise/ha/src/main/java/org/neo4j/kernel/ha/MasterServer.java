@@ -28,9 +28,9 @@ import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
 import org.neo4j.com.Protocol;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
-import org.neo4j.com.SlaveContext;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.MasterClient.HaRequestType;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -48,10 +48,10 @@ public class MasterServer extends Server<Master, Void>
 
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
-    public MasterServer( Master realMaster, final int port, StringLogger logger, int maxConcurrentTransactions,
+    public MasterServer( Master requestTarget, final int port, StringLogger logger, int maxConcurrentTransactions,
             int oldChannelThreshold, TxChecksumVerifier txVerifier )
     {
-        super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, maxConcurrentTransactions,
+        super( requestTarget, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, maxConcurrentTransactions,
                 oldChannelThreshold, txVerifier );
     }
 
@@ -62,15 +62,15 @@ public class MasterServer extends Server<Master, Void>
     }
 
     @Override
-    protected void finishOffChannel( Channel channel, SlaveContext context )
+    protected void finishOffChannel( Channel channel, RequestContext context )
     {
-        getMaster().finishTransaction( context, false );
+        getRequestTarget().finishTransaction( context, false );
     }
 
     @Override
     public void shutdown()
     {
-        getMaster().shutdown();
+        getRequestTarget().shutdown();
         super.shutdown();
     }
     
@@ -80,14 +80,14 @@ public class MasterServer extends Server<Master, Void>
         return !( failure instanceof UnableToResumeTransactionException );
     }
 
-    public Map<Integer, Collection<SlaveContext>> getSlaveInformation()
+    public Map<Integer, Collection<RequestContext>> getSlaveInformation()
     {
         // Which slaves are connected a.t.m?
         Set<Integer> machineIds = new HashSet<Integer>();
-        Map<Channel, SlaveContext> channels = getConnectedSlaveChannels();
+        Map<Channel, RequestContext> channels = getConnectedSlaveChannels();
         synchronized ( channels )
         {
-            for ( SlaveContext context : channels.values() )
+            for ( RequestContext context : channels.values() )
             {
                 machineIds.add( context.machineId() );
             }
@@ -95,15 +95,15 @@ public class MasterServer extends Server<Master, Void>
 
         // Insert missing slaves into the map so that all connected slave
         // are in the returned map
-        Map<Integer, Collection<SlaveContext>> ongoingTransactions =
-                ((MasterImpl) getMaster()).getOngoingTransactions();
+        Map<Integer, Collection<RequestContext>> ongoingTransactions =
+                ((MasterImpl) getRequestTarget()).getOngoingTransactions();
         for ( Integer machineId : machineIds )
         {
             if ( !ongoingTransactions.containsKey( machineId ) )
             {
-                ongoingTransactions.put( machineId, Collections.<SlaveContext>emptyList() );
+                ongoingTransactions.put( machineId, Collections.<RequestContext>emptyList() );
             }
         }
-        return new TreeMap<Integer, Collection<SlaveContext>>( ongoingTransactions );
+        return new TreeMap<Integer, Collection<RequestContext>>( ongoingTransactions );
     }
 }

@@ -43,10 +43,10 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ComException;
-import org.neo4j.com.MasterUtil;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -77,6 +77,7 @@ import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveDatabaseOperations;
 import org.neo4j.kernel.ha.SlaveGraphDatabase;
+import org.neo4j.kernel.ha.SlaveServer;
 import org.neo4j.kernel.ha.shell.ZooClientFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.NoMasterException;
@@ -143,6 +144,7 @@ public class HighlyAvailableGraphDatabase
     private ClusterClient clusterClient;
     private int machineId;
     private volatile MasterServer masterServer;
+    private volatile SlaveServer slaveServer;
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
@@ -757,7 +759,7 @@ public class HighlyAvailableGraphDatabase
 
         try
         {
-            MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
+            ServerUtil.applyReceivedTransactions( response, copiedDb, ServerUtil.txHandlerForFullCopy() );
         }
         finally
         {
@@ -767,9 +769,9 @@ public class HighlyAvailableGraphDatabase
         getMessageLog().logMessage( "Done copying store from master" );
     }
 
-    private SlaveContext emptyContext()
+    private RequestContext emptyContext()
     {
-        return new SlaveContext( 0, machineId, 0, new Tx[0], 0, 0 );
+        return new RequestContext( 0, machineId, 0, new Tx[0], 0, 0 );
     }
 
     private long highestLogVersion( String targetStoreDir )
@@ -888,9 +890,8 @@ public class HighlyAvailableGraphDatabase
                     newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
-
-                SlaveContext slaveContext = null;
-
+                
+                RequestContext slaveContext = null;
                 // If this method is called from the outside then we need to tell the caller
                 // that this update wasn't performed due to either a shutdown or an internal restart,
                 // so throw NoMasterException
@@ -1156,6 +1157,7 @@ public class HighlyAvailableGraphDatabase
 */
         // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
         // reevaluateMyself(), after the local db has been assigned
+        this.slaveServer = (SlaveServer) broker.instantiateSlaveServer( this, slaveOperations );
         logHaInfo( "Started as slave" );
         this.startupTime = System.currentTimeMillis();
         return slaveGraphDatabase;
@@ -1342,6 +1344,11 @@ public class HighlyAvailableGraphDatabase
             this.masterServer.shutdown();
             messageLog.logMessage( "Internal shutdown masterServer DONE", true );
             this.masterServer = null;
+        }
+        if ( this.slaveServer != null )
+        {
+            this.slaveServer.shutdown();
+            this.slaveServer = null;
         }
         if ( this.internalGraphDatabase != null )
         {
@@ -1685,7 +1692,7 @@ public class HighlyAvailableGraphDatabase
     class LocalDatabaseOperations implements SlaveDatabaseOperations, ClusterEventReceiver
     {
         @Override
-        public SlaveContext getSlaveContext( int eventIdentifier )
+        public RequestContext getSlaveContext( int eventIdentifier )
         {
             // Constructs a slave context from scratch.
             try
@@ -1702,9 +1709,9 @@ public class HighlyAvailableGraphDatabase
                     {
                         master = dataSource.getMasterForCommittedTx( txId );
                     }
-                    txs[i++] = SlaveContext.lastAppliedTx( dataSource.getName(), txId );
+                    txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
                 }
-                return new SlaveContext( startupTime, machineId, eventIdentifier, txs, master.first(), master.other() );
+                return new RequestContext( startupTime, machineId, eventIdentifier, txs, master.first(), master.other() );
             }
             catch ( IOException e )
             {
@@ -1717,7 +1724,7 @@ public class HighlyAvailableGraphDatabase
         {
             try
             {
-                MasterUtil.applyReceivedTransactions( response, HighlyAvailableGraphDatabase.this, MasterUtil.NO_ACTION );
+                ServerUtil.applyReceivedTransactions( response, HighlyAvailableGraphDatabase.this, ServerUtil.NO_ACTION );
                 updateTime();
                 return response.response();
             }

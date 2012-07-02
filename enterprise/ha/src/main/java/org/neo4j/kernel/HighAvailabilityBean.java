@@ -28,8 +28,8 @@ import java.util.Map;
 import javax.management.NotCompliantMBeanException;
 import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
@@ -117,7 +117,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             MasterServer master = db.getMasterServerIfMaster();
             if ( master == null ) return null;
             List<SlaveInfo> result = new ArrayList<SlaveInfo>();
-            for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
+            for ( Map.Entry<Integer, Collection<RequestContext>> entry : master.getSlaveInformation().entrySet() )
             {
                 result.add( slaveInfo( entry.getKey().intValue(), entry.getValue() ) );
             }
@@ -144,10 +144,10 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return "Update completed in " + time + "ms";
         }
 
-        private SlaveInfo slaveInfo( int machineId, Collection<SlaveContext> contexts )
+        private SlaveInfo slaveInfo( int machineId, Collection<RequestContext> contexts )
         {
             List<SlaveTransaction> txInfo = new ArrayList<SlaveTransaction>();
-            for ( SlaveContext context : contexts )
+            for ( RequestContext context : contexts )
             {
                 Map<String, Long> lastTransactions = new HashMap<String, Long>();
                 for ( Tx tx : context.lastAppliedTransactions() )

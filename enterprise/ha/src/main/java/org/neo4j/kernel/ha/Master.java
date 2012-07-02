@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
@@ -35,31 +35,31 @@ public interface Master
 {
     Response<IdAllocation> allocateIds( IdType idType );
 
-    Response<Integer> createRelationshipType( SlaveContext context, String name );
+    Response<Integer> createRelationshipType( RequestContext context, String name );
 
     /**
      * Called when the first write operation of lock is performed for a transaction.
      */
-    Response<Void> initializeTx( SlaveContext context );
+    Response<Void> initializeTx( RequestContext context );
 
-    Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes );
+    Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes );
 
-    Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes );
+    Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes );
 
-    Response<LockResult> acquireGraphWriteLock( SlaveContext context );
+    Response<LockResult> acquireGraphWriteLock( RequestContext context );
 
-    Response<LockResult> acquireGraphReadLock( SlaveContext context );
+    Response<LockResult> acquireGraphReadLock( RequestContext context );
 
-    Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, long... relationships );
+    Response<LockResult> acquireRelationshipWriteLock( RequestContext context, long... relationships );
 
-    Response<LockResult> acquireRelationshipReadLock( SlaveContext context, long... relationships );
+    Response<LockResult> acquireRelationshipReadLock( RequestContext context, long... relationships );
 
-    Response<Long> commitSingleResourceTransaction( SlaveContext context,
+    Response<Long> commitSingleResourceTransaction( RequestContext context,
             String resource, TxExtractor txGetter );
 
-    Response<Void> finishTransaction( SlaveContext context, boolean success );
+    Response<Void> finishTransaction( RequestContext context, boolean success );
 
-    Response<Void> pullUpdates( SlaveContext context );
+    Response<Void> pullUpdates( RequestContext context );
 
     /**
      * Gets the master id for a given txId, also a checksum for that tx.
@@ -69,14 +69,14 @@ public interface Master
      */
     Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
 
-    Response<Void> copyStore( SlaveContext context, StoreWriter writer );
+    Response<Void> copyStore( RequestContext context, StoreWriter writer );
 
-    Response<Void> copyTransactions( SlaveContext context, String dsName,
+    Response<Void> copyTransactions( RequestContext context, String dsName,
             long startTxId, long endTxId );
 
     void shutdown();
 
-    Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key );
+    Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
 
-    Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key );
+    Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
 }

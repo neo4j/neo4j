@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.ServerUtil.onlyIncludeResource;
+
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.TransactionManager;
 
 import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
-import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -70,7 +70,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             final int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
-                    onlyForThisDataSource( databaseOperations.getSlaveContext( eventIdentifier ), dataSource ),
+                    onlyIncludeResource( databaseOperations.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
                     {
                         @Override
@@ -108,28 +108,6 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private SlaveContext onlyForThisDataSource( SlaveContext slaveContext, XaDataSource dataSource )
-    {
-        Tx txForDs = null;
-        for ( Tx tx : slaveContext.lastAppliedTransactions() )
-        {
-            if ( tx.getDataSourceName().equals( dataSource.getName() ) )
-            {
-                txForDs = tx;
-                break;
-            }
-        }
-        if ( txForDs == null )
-        {   // Should not be able to happen
-            throw new RuntimeException( "Apparently " + slaveContext +
-                    " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
-        }
-        return new SlaveContext( slaveContext.getSessionId(), slaveContext.machineId(),
-                slaveContext.getEventIdentifier(), new Tx[] {txForDs}, slaveContext.getMasterId(),
-                slaveContext.getChecksum() );
-    }
-
     public int getCurrentMasterId()
     {
         return this.broker.getMaster().other().getMachineId();
@@ -139,5 +117,30 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     public int getMyId()
     {
         return broker.getMyMachineId();
+    }
+
+    @Override
+    public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId )
+    {
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
     }
 }
