@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
 
 public class PlaceboTransaction implements Transaction
 {
@@ -35,15 +36,38 @@ public class PlaceboTransaction implements Transaction
         {
         }
     };
+    
     private final TransactionManager transactionManager;
-
+    private final TransactionOutcome outcome = new TransactionOutcome();
+    
     public PlaceboTransaction( TransactionManager transactionManager )
     {
         // we should override all so null is ok
         this.transactionManager = transactionManager;
     }
 
+    @Override
     public void failure()
+    {
+        outcome.failed();
+    }
+
+    @Override
+    public void success()
+    {
+        outcome.success();
+    }
+
+    @Override
+    public void finish()
+    {
+        if ( !outcome.canCommit() )
+        {
+            markAsRollback();
+        }
+    }
+
+    private void markAsRollback()
     {
         try
         {
@@ -55,18 +79,14 @@ public class PlaceboTransaction implements Transaction
                 "Failed to mark transaction as rollback only.", e );
         }
     }
-
-    public void success()
-    {
-    }
-
-    public void finish()
-    {
-    }
     
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
+        // TODO: Would it be possible to retrieve a lock via the parent
+        // transaction here? It seems that this renders acquireXLock methods
+        // moot on nested tx's, a tx state the calling code may not know it
+        // is in.
         return NO_LOCK;
     }
     
