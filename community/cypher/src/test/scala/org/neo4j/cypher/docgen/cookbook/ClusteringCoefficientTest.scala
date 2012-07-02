@@ -61,7 +61,7 @@ Therefore the clustering coefficient of node 1 is `1/6`.
 `n` and `r` are quite simple to retrieve via the following query:""",
               queryText = "START a = node(1)  " +
       		"MATCH (a)--(b)  " +
-      		"==== a, count(distinct b) as n ====" +
+      		"WITH a, count(distinct b) as n " +
       		"MATCH (a)--()-[r]-()--(a) " +
       		"RETURN n, count(distinct r) as r",
       returns = "This returns `n` and `r` for the above calculations.",
