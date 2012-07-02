@@ -242,7 +242,47 @@ public abstract class GraphDatabaseSettings
     @Description( "The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache)." )
     @Default( "60s" )
     public static final TimeSpanSetting gcr_cache_min_log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval");
-    
+
+    /**
+     * Configuration key for enabling the UDC extension. Set to "false"
+     * to disable; any other value is considered false.
+     */
+    @Default( TRUE)
+    public static final GraphDatabaseSetting.BooleanSetting udc_enabled = new GraphDatabaseSetting.BooleanSetting("neo4j.ext.udc.enabled");
+
+    /**
+     * Configuration key for the first delay, expressed
+     * in milliseconds.
+     */
+    @Default( ""+10 * 1000 * 60 )
+    public static final GraphDatabaseSetting.IntegerSetting first_delay = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.first_delay", "Must be nr of milliseconds to delay", 1, null);
+
+    /**
+     * Configuration key for the interval for regular updates,
+     * expressed in milliseconds.
+     */
+    @Default(""+1000 * 60 * 60 * 24)
+    public static final GraphDatabaseSetting.IntegerSetting interval = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.interval", "Must be nr of milliseconds of the interval for checking", 1, null);
+
+    /**
+     * The host address to which UDC updates will be sent.
+     * Should be of the form hostname[:port].
+     */
+    @Default( "udc.neo4j.org" )
+    public static final GraphDatabaseSetting.StringSetting udc_host = new GraphDatabaseSetting.StringSetting(  "neo4j.ext.udc.host", ANY, "Must be a valid hostname");
+
+    /**
+     * Configuration key for overriding the source parameter in UDC
+     */
+    public static final GraphDatabaseSetting.StringSetting udc_source = new GraphDatabaseSetting.StringSetting("neo4j.ext.udc.source", ANY, "Must be a valid source");
+
+    /**
+     * Unique registration id
+     */
+    @Default( "unreg" )
+    public static final GraphDatabaseSetting.StringSetting udc_registration_key = new GraphDatabaseSetting.StringSetting( "neo4j.ext.udc.reg", ANY, "Must be a valid registration id" );
+
+
     // Specialized settings
     public static class CacheTypeSetting
         extends OptionsSetting

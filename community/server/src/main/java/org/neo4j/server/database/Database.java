@@ -22,7 +22,6 @@ package org.neo4j.server.database;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -117,7 +116,7 @@ public class Database implements Lifecycle
 
         putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
         putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        databaseProperties.put( UdcSettings.udc_source.name(), "server" );
+        databaseProperties.put( GraphDatabaseSettings.udc_source.name(), "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }

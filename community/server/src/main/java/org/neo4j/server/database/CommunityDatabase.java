@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -98,7 +97,7 @@ public class CommunityDatabase extends/* implements */ Database {
 		
 		putIfAbsent( neo4jProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
         putIfAbsent( neo4jProperties, GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        neo4jProperties.put( UdcSettings.udc_source.name(), "server" );
+        neo4jProperties.put( GraphDatabaseSettings.udc_source.name(), "server" );
         
 		return neo4jProperties;
 	}

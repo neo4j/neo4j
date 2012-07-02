@@ -33,8 +33,8 @@ import java.util.Timer;
 import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.Edition;
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelData;
@@ -69,7 +69,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
     @Override
     public Class getSettingsClass()
     {
-        return UdcSettings.class;
+        return GraphDatabaseSettings.class;
     }
 
     @Override
@@ -81,13 +81,13 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
 
         Config config = loadConfig(kernel);
 
-        if ( !config.getBoolean( UdcSettings.udc_enabled )) return null;
+        if ( !config.getBoolean( GraphDatabaseSettings.udc_enabled )) return null;
 
-        int firstDelay = config.getInteger( UdcSettings.first_delay);
-        int interval = config.getInteger( UdcSettings.interval );
-        String hostAddress = config.get( UdcSettings.udc_host );
-        String source = config.get( UdcSettings.udc_source );
-        String registration = config.get( UdcSettings.udc_registration_key );
+        int firstDelay = config.getInteger( GraphDatabaseSettings.first_delay);
+        int interval = config.getInteger( GraphDatabaseSettings.interval );
+        String hostAddress = config.get( GraphDatabaseSettings.udc_host );
+        String source = config.get( GraphDatabaseSettings.udc_source );
+        String registration = config.get( GraphDatabaseSettings.udc_registration_key );
         Integer clusterNameHash = determineClusterNameHash(config);
         NeoStoreXaDataSource ds = kernel.graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
         boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
