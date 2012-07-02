@@ -318,21 +318,21 @@ public class PersistenceManager
         }
 
         @Override
-		public void afterCompletion( int param )
+        public void afterCompletion( int param )
         {
             releaseConnections( tx );
             if ( param == Status.STATUS_COMMITTED )
             {
-                lockReleaser.commit();
+                lockReleaser.commit(tx);
             }
             else
             {
-                lockReleaser.rollback();
+                lockReleaser.rollback(tx);
             }
         }
 
         @Override
-		public void beforeCompletion()
+        public void beforeCompletion()
         {
             delistResourcesForTransaction();
         }
