@@ -248,18 +248,11 @@ public class LockReleaser
             this.resource = resource;
             this.lockType = type;
         }
-        
+
         public boolean releaseIfAcquired( LockManager lockManager )
         {
-            // Assume that we are in a tx context, and will be able 
-            // to figure out the tx when we actually end up needing it. 
-            return releaseIfAcquired( lockManager, null );
-        }
-
-        public boolean releaseIfAcquired( LockManager lockManager, Transaction tx )
-        {
             if ( released ) return false;
-            lockType.release( resource, lockManager, tx );
+            lockType.release( resource, lockManager );
             return (released = true);
         }
 
@@ -273,11 +266,6 @@ public class LockReleaser
         }
     }
 
-    public LockElement addLockToTransaction( Object resource, LockType type )
-    {
-        return addLockToTransaction(resource, type, null);
-    }
-    
     /**
      * Invoking this method with no transaction running will cause the lock to
      * be released right away.
@@ -288,11 +276,10 @@ public class LockReleaser
      *            type of lock (READ or WRITE)
      * @throws NotInTransactionException
      */
-    public LockElement addLockToTransaction( Object resource, LockType type, Transaction tx )
+    public LockElement addLockToTransaction( Object resource, LockType type )
         throws NotInTransactionException
     {
-        tx = (tx == null ? getTransaction() : tx);
-        
+        Transaction tx = getTransaction();
         List<LockElement> lockElements = lockMap.get( tx );
         if ( lockElements != null )
         {
@@ -392,11 +379,7 @@ public class LockReleaser
 
     public void commit()
     {
-        commit(getTransaction());
-    }
-    
-    public void commit(Transaction tx)
-    {
+        Transaction tx = getTransaction();
         // propertyIndex
         releaseLocks( tx );
     }
@@ -410,11 +393,7 @@ public class LockReleaser
 
     public void rollback()
     {
-        rollback(getTransaction());
-    }
-    
-    public void rollback(Transaction tx)
-    {
+        Transaction tx = getTransaction();
         // propertyIndex
         propertyIndexManager.rollback( tx );
         releaseCows( tx, Status.STATUS_ROLLEDBACK );
@@ -436,7 +415,7 @@ public class LockReleaser
             {
                 try
                 {
-                    lockElement.releaseIfAcquired( lockManager, tx );
+                    lockElement.releaseIfAcquired( lockManager );
                 }
                 catch ( Exception e )
                 {
@@ -639,13 +618,11 @@ public class LockReleaser
             this.tx = tx;
         }
 
-        @Override
         public void afterCompletion( int status )
         {
             releaseLocks( tx );
         }
 
-        @Override
         public void beforeCompletion()
         {
         }

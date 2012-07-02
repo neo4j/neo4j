@@ -128,29 +128,20 @@ class RWLock
     }
 
     /**
-     * Calls {@link #acquireReadLock(Transaction)} with the transaction
-     * associated with the current thread.
-     * 
-     * @throws DeadlockDetectedException
-     */
-    void acquireReadLock() throws DeadlockDetectedException {
-        acquireReadLock(ragManager.getCurrentTransaction());
-    }
-    
-    /**
-     * Tries to acquire read lock for a given transaction. If 
+     * Tries to acquire read lock for current transaction. If 
      * <CODE>this.writeCount</CODE> is greater than the currents tx's write 
      * count the transaction has to wait and the {@link RagManager#checkWaitOn} 
      * method is invoked for deadlock detection.
      * <p>
-     * If the lock can be acquired the lock count is updated on <CODE>this</CODE>
+     * If the lock can be acquires the lock count is updated on <CODE>this</CODE>
      * and the transaction lock element (tle).
      * 
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireReadLock(Transaction tx) throws DeadlockDetectedException
+    synchronized void acquireReadLock() throws DeadlockDetectedException
     {
+        Transaction tx = ragManager.getCurrentTransaction();
         if ( tx == null )
         {
             tx = new PlaceboTransaction();
@@ -307,17 +298,7 @@ class RWLock
     }
 
     /**
-     * Calls {@link #acquireWriteLock(Transaction)} with the 
-     * transaction associated with the current thread.
-     * @throws DeadlockDetectedException
-     */
-    void acquireWriteLock() throws DeadlockDetectedException
-    {
-        acquireWriteLock( null );
-    }
-    
-    /**
-     * Tries to acquire write lock for a given transaction. If 
+     * Tries to acquire write lock for current transaction. If 
      * <CODE>this.writeCount</CODE> is greater than the currents tx's write 
      * count or the read count is greater than the currents tx's read count the 
      * transaction has to wait and the {@link RagManager#checkWaitOn} method is 
@@ -329,10 +310,9 @@ class RWLock
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireWriteLock(Transaction tx) throws DeadlockDetectedException
+    synchronized void acquireWriteLock() throws DeadlockDetectedException
     {
-        tx = (tx != null ? tx : ragManager.getCurrentTransaction()); 
-        
+        Transaction tx = ragManager.getCurrentTransaction();
         if ( tx == null )
         {
             tx = new PlaceboTransaction();
@@ -533,7 +513,6 @@ class RWLock
         return false;
     }
 
-    @Override
     public String toString()
     {
         return "RWLock[" + resource + "]";
@@ -548,7 +527,6 @@ class RWLock
             this.currentThread = Thread.currentThread();
         }
 
-        @Override
         public boolean equals( Object o )
         {
             if ( !(o instanceof PlaceboTransaction) )
@@ -559,54 +537,45 @@ class RWLock
                 .equals( ((PlaceboTransaction) o).currentThread );
         }
 
-        @Override
         public int hashCode()
         {
             return currentThread.hashCode();
         }
 
-        @Override
         public void commit()
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public boolean delistResource( XAResource arg0, int arg1 )
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public boolean enlistResource( XAResource arg0 )
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public int getStatus()
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public void registerSynchronization( Synchronization arg0 )
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public void rollback()
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public void setRollbackOnly()
         {
         }
 
-        @Override
         public String toString()
         {
             return "Placebo tx for thread " + currentThread;
