@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-public interface TxIdGenerator
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+public interface TxIdGenerator extends Lifecycle
 {
     public static final TxIdGenerator DEFAULT = new TxIdGenerator()
     {
@@ -37,11 +39,66 @@ public interface TxIdGenerator
         {
             return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
+
+        @Override
+        public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthor )
+        {
+        }
+
+        @Override
+        public void init() throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     };
     
+    /**
+     * Generates a transaction id to use for the committing transaction.
+     * @param dataSource {@link XaDataSource} to commit.
+     * @param identifier temporary transaction identifier.
+     * @return transaction id to use to commit the next transaction for
+     * this {@code dataSource}.
+     */
     long generate( XaDataSource dataSource, int identifier );
     
+    /**
+     * Hook which gets called when a transaction has been committed, but before
+     * returning from commit methods.
+     * @param dataSource {@link XaDataSource} which committed the transaction.
+     * @param identifier temporary identifier for the committed transaction.
+     * @param txId the transaction id used for this committed transaction.
+     * @param externalAuthorServerId if this transaction was authored by an
+     * external server exclude it as push target for this transaction.
+     * {@code null} means authored by this server.
+     */
+    void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId );
+    
+    /**
+     * Returns the id of the current master. For single instance case it's
+     * {@code -1}, but in multi instance scenario it returns the id
+     * of the current master instance.
+     * @return id of the current master.
+     */
     int getCurrentMasterId();
 
+    /**
+     * Returns the id of my database instance. In a single instance scenario
+     * {@code -1} will be returned. 
+     * @return my database instance id.
+     */
     int getMyId();
 }

@@ -317,7 +317,7 @@ public abstract class AbstractGraphDatabase
 
         transactionEventHandlers = new TransactionEventHandlers(txManager);
 
-        txIdGenerator = createTxIdGenerator();
+        txIdGenerator = life.add( createTxIdGenerator() );
 
         ragManager = new RagManager(txManager );
         lockManager = createLockManager();

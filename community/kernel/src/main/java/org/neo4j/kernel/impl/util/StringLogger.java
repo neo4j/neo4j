@@ -408,6 +408,12 @@ public abstract class StringLogger
         {
             out.close();
         }
+        
+        @Override
+        public String toString()
+        {
+            return "StringLogger[" + this.file + "]";
+        }
     }
 
     protected static final class LineLoggerImpl implements LineLogger
