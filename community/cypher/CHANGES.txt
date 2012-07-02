@@ -2,6 +2,7 @@
 --------------------
 o Fixes problem when graph elements are deleted multiple times in the same query
 o Fixes #625: Values passed through WITH have the wrong type
+o Fixes #654: Some paths are returned the wrong way
 
 1.8.M05 (2012-06-21)
 --------------------

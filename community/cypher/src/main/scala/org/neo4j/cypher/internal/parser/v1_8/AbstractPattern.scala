@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.{Predicate, Expression}
+import org.neo4j.cypher.internal.commands.{Entity, Predicate, Expression}
 import collection.Map
 import org.neo4j.cypher.SyntaxException
 
-abstract sealed class AbstractPattern
+abstract sealed class AbstractPattern {
+  def makeOutgoing:AbstractPattern
+}
 
 object PatternWithEnds {
   def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], Direction, Boolean, Option[Int], Option[String], Predicate)] = p match {
@@ -42,7 +44,9 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 
 case class ParsedEntity(expression: Expression,
                         props: Map[String, Expression],
-                        predicate: Predicate) extends AbstractPattern
+                        predicate: Predicate) extends AbstractPattern{
+  def makeOutgoing = this
+}
 
 case class ParsedRelation(name: String,
                           props: Map[String, Expression],
@@ -51,9 +55,36 @@ case class ParsedRelation(name: String,
                           typ: Seq[String],
                           dir: Direction,
                           optional: Boolean,
-                          predicate: Predicate) extends PatternWithPathName(name) {
+                          predicate: Predicate) extends PatternWithPathName(name) with Turnable {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
+
+  def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
+    copy(start = start, end = end, dir = dir)
 }
+
+trait Turnable {
+  def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern
+
+  // It's easier on everything if all relationships are either outgoing or both, but never incoming.
+  // So we turn all patterns around, facing the same way
+  def dir: Direction
+  def start:ParsedEntity
+  def end:ParsedEntity
+
+  def makeOutgoing = {
+    dir match {
+      case Direction.INCOMING => turn(start = end, end = start, dir = Direction.OUTGOING)
+      case Direction.OUTGOING => this
+      case Direction.BOTH     => (start.expression, end.expression) match {
+        case (Entity(a), Entity(b)) if a < b  => this
+        case (Entity(a), Entity(b)) if a >= b => turn(start = end, end = start, dir = dir)
+        case _                                => this
+      }
+    }
+  }
+
+}
+
 
 case class ParsedVarLengthRelation(name: String,
                                    props: Map[String, Expression],
@@ -65,8 +96,11 @@ case class ParsedVarLengthRelation(name: String,
                                    predicate: Predicate,
                                    minHops: Option[Int],
                                    maxHops: Option[Int],
-                                   relIterator: Option[String]) extends PatternWithPathName(name) {
+                                   relIterator: Option[String]) extends PatternWithPathName(name) with Turnable {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
+
+  def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
+    copy(start = start, end = end, dir = dir)
 }
 
 case class ParsedShortestPath(name: String,
@@ -81,8 +115,12 @@ case class ParsedShortestPath(name: String,
                               single: Boolean,
                               relIterator: Option[String]) extends PatternWithPathName(name) {
 def rename(newName: String): PatternWithPathName = copy(name = newName)
+
+  def makeOutgoing = this
 }
 
 case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends PatternWithPathName(name) {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
+
+  def makeOutgoing = this
 }
