@@ -112,7 +112,7 @@ public class RetrieveNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Get node.
-     * <p/>
+     * 
      * Note that the response contains URI/templates for the available
      * operations for getting properties and relationships.
      */
@@ -128,7 +128,7 @@ public class RetrieveNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Get node - compact.
-     * <p/>
+     * 
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.
      */

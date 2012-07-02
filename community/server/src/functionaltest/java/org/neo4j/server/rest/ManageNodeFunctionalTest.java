@@ -109,7 +109,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
      * Property values can not be null.
      * 
      * This example shows the response you get when trying to set a property to
-     * null.
+     * +null+.
      */
     @Documented
     @Test

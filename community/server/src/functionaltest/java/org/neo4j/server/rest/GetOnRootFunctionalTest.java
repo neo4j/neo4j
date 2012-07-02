@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.test.GraphDescription.Graph;
@@ -39,10 +40,11 @@ import org.neo4j.test.TestData.Title;
 public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 {
     /**
-     * The service root is your starting point to discover the REST API.
-     * It contains the basic starting points for the databse, and some
-     * version and extension information. The +reference_node+ entry will
-     * only be present if there is a reference node set and exists in the database.
+     * The service root is your starting point to discover the REST API. It
+     * contains the basic starting points for the database, and some version and
+     * extension information. The +reference_node+ entry will only be present if
+     * there is a reference node set and that node actually exists in the
+     * database.
      */
     @Documented
     @Test
@@ -115,10 +117,22 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         setReferenceNodeIdToI();
-        String body = gen().withHeader(StreamingJsonFormat.STREAM_HEADER,"true").expectedType(APPLICATION_JSON_TYPE).expectedStatus( 200 ).get( getDataUri() ).entity();
+        ResponseEntity responseEntity = gen().withHeader(
+                StreamingJsonFormat.STREAM_HEADER,
+                "true" )
+                .expectedType( APPLICATION_JSON_TYPE )
+                .expectedStatus( 200 )
+                .get( getDataUri() );
+        JaxRsResponse response = responseEntity.response();
+        // this gets the full media type, including things like
+        // ; stream=true at the end
+        String foundMediaType = response.getType()
+                .toString();
+        String expectedMediaType = StreamingJsonFormat.MEDIA_TYPE.toString();
+        assertEquals( expectedMediaType, foundMediaType );
 
+        String body = responseEntity.entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
-        System.out.println("map = " + map);
         assertEquals( getDataUri() + "node", map.get( "node" ) );
         assertNotNull(map.get("reference_node"));
     }

@@ -242,7 +242,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         String json = "{\"to\":\""
             + nodeUri( to )
             + "\", \"max_depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
-        return JSONPrettifier.parse( json );
+        return json;
     }
 
     //
@@ -251,7 +251,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         String json = "{\"to\":\"" + nodeUri( to ) + "\"" + ", \"cost_property\":\"cost\""
         + ( includeDefaultCost ? ", \"default_cost\":1" : "" )
         + ", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
-        return JSONPrettifier.parse( json );
+        return json;
     }
 
 }

@@ -203,7 +203,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
 
     /**
      * Get typed relationships.
-     * <p/>
+     * 
      * Note that the "+&+" needs to be escaped for example when using
      * http://curl.haxx.se/[cURL] from the terminal.
      */

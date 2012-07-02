@@ -44,7 +44,6 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.JSONPrettifier;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
@@ -349,7 +348,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
             + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
             + "}";
 
-        return JSONPrettifier.parse( description );
+        return description;
     }
 
     private Node createLinkedList( final int listLength, final Database db )

@@ -135,7 +135,7 @@ public class SetNodePropertiesFunctionalTest extends
      * Property values can not be nested.
      * 
      * Nesting properties is not supported. You could for example store the
-     * nested json as a string instead.
+     * nested JSON as a string instead.
      */
     @Documented
     @Test
