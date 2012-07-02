@@ -156,6 +156,7 @@
 <xsl:param name="admon.graphics.path">images/icons/admon/</xsl:param>
 
 <xsl:param name="toc.section.depth" select="1"></xsl:param>
+<xsl:param name="toc.max.depth" select="2"></xsl:param>
 
 <xsl:param name="callout.graphics" select="1"></xsl:param>
 <xsl:param name="callout.graphics.extension">.svg</xsl:param>

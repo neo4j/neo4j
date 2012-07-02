@@ -32,47 +32,47 @@
 </copyright>
 
 <abstract>
-  <title>Quickstart</title>
+  <title>Starting points</title>
   <para>
     <itemizedlist>
       <listitem>
         <para>
-          <xref linkend="what-is-a-graphdb" />
+          <link linkend="what-is-a-graphdb">What is a graph database?</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="cypher-query-lang" />
+          <link linkend="cypher-query-lang">Cypher Query Language</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="tutorials-java-embedded" />
+          <link linkend="tutorials-java-embedded">Using Neo4j embedded in Java applications</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="tutorials-python-embedded" />
+          <link linkend="tutorials-python-embedded">Using Neo4j embedded in Python applications</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="tutorials-rest" />
+          <link linkend="tutorials-rest">Remote Client Libraries</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="languages" />
+          <link linkend="languages">Languages</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="server" />
+          <link linkend="server">Neo4j Server</link>
         </para>
       </listitem>
       <listitem>
         <para>
-          <xref linkend="rest-api" />
+          <link linkend="rest-api">REST API</link>
         </para>
       </listitem>
     </itemizedlist>

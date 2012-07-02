@@ -3,6 +3,8 @@
 
 <xsl:param name="glossary.sort" select="1"></xsl:param>
 
+<xsl:param name="toc.max.depth" select="2"></xsl:param>
+
 <xsl:param name="generate.section.toc.level" select="1"></xsl:param>
 
 <xsl:param name="admon.graphics" select="1"></xsl:param>
