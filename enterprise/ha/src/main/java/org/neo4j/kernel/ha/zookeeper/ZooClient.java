@@ -698,10 +698,13 @@ public class ZooClient extends AbstractZooKeeperManager
                  * is synchronized, which means we can't have committedTx changed while
                  * we are here.
                  */
-                long txNow = committedTx;
-                flushing = true;
-                writeData( txNow, getFirstMasterForTx( txNow ) );
-                msgLog.logMessage( "Starting flushing of txids to zk, while at txid " + txNow );
+                if ( !flushing )
+                {
+                    long txNow = committedTx;
+                    flushing = true;
+                    writeData( txNow, getFirstMasterForTx( txNow ) );
+                    msgLog.logMessage( "Starting flushing of txids to zk, while at txid " + txNow );
+                }
             }
         }
     }
@@ -712,9 +715,12 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             synchronized ( this )
             {
-                flushing = false;
-                writeData( -2, -2 );
-                msgLog.logMessage( "Stopping flushing of txids to zk, while at txid " + committedTx );
+                if ( flushing )
+                {
+                    flushing = false;
+                    writeData( -2, -2 );
+                    msgLog.logMessage( "Stopping flushing of txids to zk, while at txid " + committedTx );
+                }
             }
         }
     }

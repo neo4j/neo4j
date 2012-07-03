@@ -306,58 +306,59 @@ public abstract class AbstractZooKeeperManager
             }
 
             writeFlush( getMyMachineId() );
-            /*
-             * This is an optimization - we can go and check right away but we might get
-             * to the first machine before it manages to flush. So instead of going back
-             * and asking/trying again, we just wait a bit, makes the election finish faster
-             * on average.
-             */
-            Thread.sleep( 100 );
-
-            Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
-            String root = getRoot();
-            List<String> children = getZooKeeper( true ).getChildren( root, false );
-            for ( String child : children )
+            
+            long endTime = System.currentTimeMillis()+sessionTimeout;
+OUTER:      do
             {
-                Pair<Integer, Integer> parsedChild = parseChild( child );
-                if ( parsedChild == null )
+                Thread.sleep( 100 );
+                Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
+    
+                String root = getRoot();
+                List<String> children = getZooKeeper( true ).getChildren( root, false );
+                for ( String child : children )
                 {
-                    continue;
-                }
-
-                try
-                {
-                    int id = parsedChild.first();
-                    int seq = parsedChild.other();
-                    Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
-                    long lastCommittedTxId = instanceData.first();
-                    int masterId = instanceData.other();
-                    if ( id == getMyMachineId() && mySequenceNumber == -1 )
-                    {
+                    Pair<Integer, Integer> parsedChild = parseChild( child );
+                    if ( parsedChild == null )
+                    {   // This was some kind of other ZK node, just ignore
                         continue;
                     }
-                    if ( lastCommittedTxId == -2 )
+    
+                    try
                     {
-                        msgLog.logMessage( "Couldn't read " + id + "_" + seq + ", retrying from scratch" );
-                        return null;
+                        int id = parsedChild.first();
+                        int seq = parsedChild.other();
+                        Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
+                        long lastCommittedTxId = instanceData.first();
+                        int masterId = instanceData.other();
+                        if ( id == getMyMachineId() && mySequenceNumber == -1 )
+                        {   // I'm not initialized yet
+                            continue;
+                        }
+                        if ( lastCommittedTxId == -2 )
+                        {   // This instances hasn't written its txId yet. Go out to
+                            // the outer loop and retry it again.
+                            continue OUTER;
+                        }
+                        if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
+                        {   // This instance has written its data so I'll grab it.
+                            Machine haServer = getHaServer( id, wait );
+                            ZooKeeperMachine toAdd = new ZooKeeperMachine( id, seq, lastCommittedTxId, masterId,
+                                    haServer.getServerAsString(), haServer.getBackupPort(), HA_SERVERS_CHILD + "/" + id );
+                            result.put( id, toAdd );
+                        }
                     }
-                    if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
+                    catch ( KeeperException inner )
                     {
-                        Machine haServer = getHaServer( id, wait );
-                        ZooKeeperMachine toAdd = new ZooKeeperMachine( id, seq, lastCommittedTxId, masterId,
-                                haServer.getServerAsString(), haServer.getBackupPort(), HA_SERVERS_CHILD + "/" + id );
-                        result.put( id, toAdd );
+                        if ( inner.code() != KeeperException.Code.NONODE )
+                        {
+                            throw new ZooKeeperException( "Unable to get master.", inner );
+                        }
                     }
                 }
-                catch ( KeeperException inner )
-                {
-                    if ( inner.code() != KeeperException.Code.NONODE )
-                    {
-                        throw new ZooKeeperException( "Unable to get master.", inner );
-                    }
-                }
+                return result;
             }
-            return result;
+            while ( System.currentTimeMillis() < endTime );
+            return null;
         }
         catch ( KeeperException e )
         {
