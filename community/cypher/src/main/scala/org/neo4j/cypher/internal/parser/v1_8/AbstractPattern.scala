@@ -71,14 +71,14 @@ trait Turnable {
   def start:ParsedEntity
   def end:ParsedEntity
 
-  def makeOutgoing = {
+  def makeOutgoing : AbstractPattern = {
     dir match {
       case Direction.INCOMING => turn(start = end, end = start, dir = Direction.OUTGOING)
-      case Direction.OUTGOING => this
+      case Direction.OUTGOING => this.asInstanceOf[AbstractPattern]
       case Direction.BOTH     => (start.expression, end.expression) match {
-        case (Entity(a), Entity(b)) if a < b  => this
+        case (Entity(a), Entity(b)) if a < b  => this.asInstanceOf[AbstractPattern]
         case (Entity(a), Entity(b)) if a >= b => turn(start = end, end = start, dir = dir)
-        case _                                => this
+        case _                                => this.asInstanceOf[AbstractPattern]
       }
     }
   }
