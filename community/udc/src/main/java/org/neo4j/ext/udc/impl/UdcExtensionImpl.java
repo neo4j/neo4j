@@ -176,7 +176,8 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         }
         catch ( Exception e )
         {
-            System.err.println( "failed to load udc.properties, because: " + e );
+            // AN: commenting out as this provides no value to the user
+            //System.err.println( "failed to load udc.properties, because: " + e );
         }
         return sysProps;
     }
