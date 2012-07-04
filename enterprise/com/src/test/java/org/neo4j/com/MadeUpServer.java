@@ -44,7 +44,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     {
         responseWritten = true;
     }
-
+    
     @Override
     protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
     {
@@ -57,7 +57,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     {
         return internalProtocolVersion;
     }
-
+    
     @Override
     protected RequestType<MadeUpCommunicationInterface> getRequestContext( byte id )
     {
@@ -68,12 +68,12 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     protected void finishOffChannel( Channel channel, RequestContext context )
     {
     }
-
+    
     public boolean responseHasBeenWritten()
     {
         return responseWritten;
     }
-
+    
     public boolean responseFailureEncountered()
     {
         return responseFailureEncountered;

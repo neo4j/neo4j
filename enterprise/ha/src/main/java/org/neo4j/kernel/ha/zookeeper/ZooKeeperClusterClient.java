@@ -37,8 +37,6 @@ import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterClientFactory;
-import org.neo4j.kernel.ha.MasterClientResolver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -57,18 +55,32 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
         this( zooKeeperServers, ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class));
     }
 
+//    public ZooKeeperClusterClient( String zooKeeperServers,
+//            AbstractGraphDatabase db )
+//    {
+//<<<<<<< HEAD
+//        super(zooKeeperServers, StringLogger.SYSTEM, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//              Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//              Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+//=======
+//        this( zooKeeperServers, StringLogger.SYSTEM, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, db,
+//                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
+//    }
+
     public ZooKeeperClusterClient( String zooKeeperServers, String clusterName )
     {
-        this( zooKeeperServers, StringLogger.SYSTEM, clusterName, Integer.parseInt( ConfigurationDefaults.getDefault(
-                HaSettings.zk_session_timeout, HaSettings.class ) ), new MasterClientResolver.F18( StringLogger.SYSTEM,
-                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
+        this( zooKeeperServers, StringLogger.SYSTEM, clusterName,
+                Integer.parseInt( ConfigurationDefaults.getDefault( HaSettings.zk_session_timeout, HaSettings.class ) ));
     }
 
     public ZooKeeperClusterClient( String zooKeeperServers, StringLogger msgLog, String clusterName,
-            int sessionTimeout, MasterClientFactory factory )
+            int sessionTimeout )
     {
-        super( zooKeeperServers, msgLog, sessionTimeout, factory );
+        super( zooKeeperServers, msgLog,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
+                sessionTimeout );
         this.clusterName = clusterName;
         try
         {

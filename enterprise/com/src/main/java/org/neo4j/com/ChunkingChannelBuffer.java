@@ -542,7 +542,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     {
         if ( !channel.isOpen() || !channel.isConnected() || !channel.isBound() )
             throw new ComException( "Channel has been closed, so no need to try to write to it anymore. Client closed it?" );
-
+        
         waitForClientToCatchUpOnReadingChunks();
         ChannelFuture future = channel.write( buffer );
         future.addListener( this );
@@ -835,7 +835,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         return this.buffer.compareTo( buffer );
     }
 
-    @Override
     public String toString()
     {
         return buffer.toString();

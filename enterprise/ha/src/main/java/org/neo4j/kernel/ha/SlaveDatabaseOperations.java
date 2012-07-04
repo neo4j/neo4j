@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.ConnectionLostHandler;
+import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 

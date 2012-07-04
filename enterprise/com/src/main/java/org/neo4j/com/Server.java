@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -34,7 +32,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -61,15 +58,17 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.com.DechunkingChannelBuffer.*;
+
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
- * of a specified communication interface, injected in the constructor.
+ * of a specified communication interface, injected in the constructor. 
  */
 public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory
 {
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     public static final int DEFAULT_BACKUP_PORT = 6362;
-
+    
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
@@ -88,11 +87,11 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
     private final int frameLength;
     private volatile boolean shuttingDown;
-
+    
     // Executor for channels that we know should be finished, but can't due to being
     // active at the moment.
     private final ExecutorService unfinishedTransactionExecutor;
-
+    
     // This is because there's a bug in Netty causing some channelClosed/channelDisconnected
     // events to not be sent. This is merely a safety net to catch the remained of the closed
     // channels that netty doesn't tell us about.
@@ -101,7 +100,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     private final byte applicationProtocolVersion;
     private final int oldChannelThresholdMillis;
     private TxChecksumVerifier txVerifier;
-
+    
     public Server( T requestTarget, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
             int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier )
     {
@@ -120,7 +119,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
         bootstrap = new ServerBootstrap( channelFactory );
         bootstrap.setPipelineFactory( this );
-
+        
         Channel channel;
         try
         {
@@ -174,7 +173,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             }
         };
     }
-
+    
     /**
      * Only exposed so that tests can control it. It's not configurable really.
      */
@@ -238,7 +237,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             e.getCause().printStackTrace();
         }
     }
-
+    
     protected void tryToFinishOffChannel( Channel channel )
     {
         Pair<RequestContext, AtomicLong> slave = null;
@@ -430,7 +429,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             }
         };
     }
-
+    
     protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
     {
         try
@@ -451,12 +450,12 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
     {
     }
-
+    
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
     {
         targetBuffer.writeBytes( storeId.serialize() );
     }
-
+    
     private static <T> void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer ) throws IOException
     {
         if ( !txStream.hasNext() )
@@ -464,7 +463,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             buffer.writeByte( 0 );
             return;
         }
-
+        
         String[] datasources = txStream.dataSourceNames();
         assert datasources.length <= 255 : "too many data sources";
         buffer.writeByte( datasources.length );
@@ -499,13 +498,13 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             String ds = readString( buffer );
             Tx tx = RequestContext.lastAppliedTx( ds, buffer.readLong() );
             lastAppliedTransactions[i] = tx;
-
+            
             // Only perform checksum checks on the neo data source.
             if ( ds.equals( Config.DEFAULT_DATA_SOURCE_NAME ) ) neoTx = tx;
         }
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
-
+        
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
         if ( neoTx != null ) txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
@@ -545,7 +544,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             channelGroup.remove( channel );
         }
     }
-
+    
     protected T getRequestTarget()
     {
         return requestTarget;
@@ -561,12 +560,12 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
         msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
-
+        
         // Set this to null since bootstrap/channelFactory.releaseExternalResources
         // cannot be called and holds a reference to this Server instance.
         requestTarget = null;
         txVerifier = null;
-
+        
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
     }

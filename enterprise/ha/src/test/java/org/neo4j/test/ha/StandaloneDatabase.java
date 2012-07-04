@@ -125,6 +125,23 @@ public class StandaloneDatabase
                         }
                     }
                 };
+//=======
+//                    broker = new FakeSlaveBroker( new MasterClient( "localhost",
+//                                            Protocol.PORT,
+//                                            placeHolderGraphDb,
+//                                            null,
+//                                            Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//                            Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+//                            Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+//                            masterId, machineId, placeHolderGraphDb );
+//                }
+//                config = removeDashes( config );
+//                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb( storeDir, config,
+//                                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb(
+//                                                placeHolderGraphDb, broker ),
+//                                        new FakeClusterClient( broker ) ) );
+//                placeHolderGraphDb.setDb( db );
+//>>>>>>> master
                 System.out.println( "Started HA db (w/o zoo keeper)" );
                 return haGraphDb;
             }

@@ -43,7 +43,6 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ComException;
-import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
@@ -74,7 +73,6 @@ import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterClientResolver;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveDatabaseOperations;
@@ -154,7 +152,6 @@ public class HighlyAvailableGraphDatabase
     private BranchedDataPolicy branchedDataPolicy;
     private final SlaveUpdateMode slaveUpdateMode;
     private final Caches caches;
-    private final MasterClientResolver masterClientResolver;
 
     // This lock is used to safeguard access to internal database
     // Users will acquire readlock, and upon master/slave switch
@@ -222,7 +219,7 @@ public class HighlyAvailableGraphDatabase
          */
         slaveOperations = new LocalDatabaseOperations();
 
-        // databaseLock = new ReentrantReadWriteLock( );
+//        databaseLock = new ReentrantReadWriteLock(  );
 
         this.nodeLookup = new HANodeLookup();
 
@@ -236,15 +233,7 @@ public class HighlyAvailableGraphDatabase
         this.branchedDataPolicy = configuration.getEnum( BranchedDataPolicy.class, HaSettings.branched_data_policy );
         this.localGraphWait = configuration.getInteger( HaSettings.read_timeout );
 
-        this.masterClientResolver = new MasterClientResolver(
-                messageLog,
-                configuration.getInteger( HaSettings.read_timeout ),
-                configuration.isSet( HaSettings.lock_read_timeout ) ? configuration.getInteger( HaSettings.lock_read_timeout )
-                        : configuration.getInteger( HaSettings.read_timeout ),
-                configuration.getInteger( HaSettings.max_concurrent_channels_per_slave ) );
-        masterClientResolver.getDefault();
-        // TODO The dependency from BrokerFactory to 'this' is completely
-        // broken. Needs rethinking
+        // TODO The dependency from BrokerFactory to 'this' is completely broken. Needs rethinking
         this.broker = createBroker();
         this.pullUpdates = false;
         this.clusterClient = createClusterClient();
@@ -440,8 +429,7 @@ public class HighlyAvailableGraphDatabase
              * only on the source machine being alive. If, in the meantime, the master changes
              * then the verification after the new master election will call us again.
              */
-            Pair<Master, Machine> master = createClusterClient().getMasterClient();
-
+            Pair<Master, Machine> master = clusterClient.getMasterClient();
             // Assume it's shut down at this point
             internalShutdown( false );
 
@@ -587,7 +575,7 @@ public class HighlyAvailableGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        storeId = broker.getClusterStoreId( true );
+        storeId = broker.getClusterStoreId(true);
         newMaster( new InformativeStackTrace( "Starting up [" + machineId + "] for the first time" ) );
         localGraph();
     }
@@ -757,17 +745,16 @@ public class HighlyAvailableGraphDatabase
     {
         getMessageLog().logMessage( "Copying store from master" );
         String temp = getClearedTempDir().getAbsolutePath();
-        Response<Void> response = master.first().copyStore( emptyContext(), new ToFileStoreWriter( temp ) );
+        Response<Void> response = master.first().copyStore( emptyContext(),
+                new ToFileStoreWriter( temp ) );
         long highestLogVersion = highestLogVersion( temp );
         if( highestLogVersion > -1 )
         {
             NeoStore.setVersion( temp, highestLogVersion + 1 );
         }
-        GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temp ).setConfig(
-                GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).setConfig(
-                GraphDatabaseSettings.allow_store_upgrade,
-                configuration.get( GraphDatabaseSettings.allow_store_upgrade ).toString() ).
-
+        GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().
+            newEmbeddedDatabaseBuilder( temp ).
+            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
 
         try
@@ -799,6 +786,54 @@ public class HighlyAvailableGraphDatabase
      */
     private AbstractGraphDatabase localGraph()
     {
+//        try
+//        {
+//            if (databaseLock.readLock().tryLock( localGraphWait, TimeUnit.SECONDS ))
+//            {
+//                try
+//                {
+//                    if (internalGraphDatabase == null)
+//                        if ( causeOfShutdown != null )
+//                        {
+//                            throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//                        }
+//                        else
+//                        {
+//                            throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                                    "maybe not started yet or in the middle of master/slave swap?" );
+//                        }
+//
+//                    return internalGraphDatabase;
+//                } finally
+//                {
+//                    databaseLock.readLock().unlock();
+//                }
+//            } else
+//            {
+//                if ( causeOfShutdown != null )
+//                {
+//                    throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//                }
+//                else
+//                {
+//                    throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                            "maybe not started yet or in the middle of master/slave swap?" );
+//                }
+//            }
+//        }
+//        catch( InterruptedException e )
+//        {
+//            if ( causeOfShutdown != null )
+//            {
+//                throw new RuntimeException( "Graph database not started", causeOfShutdown );
+//            }
+//            else
+//            {
+//                throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+//                        "maybe not started yet or in the middle of master/slave swap?" );
+//            }
+//        }
+
         AbstractGraphDatabase result = internalGraphDatabase;
         if( result != null )
         {
@@ -855,7 +890,7 @@ public class HighlyAvailableGraphDatabase
                     newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
-
+                
                 RequestContext slaveContext = null;
                 // If this method is called from the outside then we need to tell the caller
                 // that this update wasn't performed due to either a shutdown or an internal restart,
@@ -928,6 +963,77 @@ public class HighlyAvailableGraphDatabase
     {
         return getClass().getSimpleName() + "[" + storeDir + ", " + HaSettings.server_id.name() + ":" + machineId + "]";
     }
+
+    /* Commented out right before the "assembly" branch merged into master where the trickiness
+     * was in that master had changes to HAGraphDb, whereas the assembly branch which had gotten
+     * rid of the wrapping HighlyAvailableGraphDatabase and renamed HAGraphDb to
+     * HighylAvailableGraphDatabase. TODO remove this old method
+     */
+//    protected synchronized void reevaluateMyself( StoreId storeId )
+//    {
+//        Pair<Master, Machine> master = broker.getMasterReally( true );
+//        boolean iAmCurrentlyMaster = masterServer != null;
+//        messageLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
+//                                    "] (I am master=" + iAmCurrentlyMaster + ", " + internalGraphDatabase + ")" );
+//        pullUpdates = false;
+//        AbstractGraphDatabase newDb = null;
+//        try
+//        {
+//            if ( master.other().getMachineId() == machineId )
+//            {   // I am the new master
+//                if ( this.internalGraphDatabase == null || !iAmCurrentlyMaster )
+//                {   // I am currently a slave, so restart as master
+//                    internalShutdown( true );
+//                    newDb = startAsMaster( storeId );
+//                }
+//                // fire rebound event
+//                broker.rebindMaster();
+//            }
+//            else
+//            {   // Someone else is master
+//                broker.notifyMasterChange( master.other() );
+//                if ( this.internalGraphDatabase == null || iAmCurrentlyMaster )
+//                {   // I am currently master, so restart as slave.
+//                    // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
+//                    internalShutdown( true );
+//                    newDb = startAsSlave(storeId);
+//                }
+//                else
+//                {   // I am already a slave, so just forget the ids I got from the previous master
+//                    SlaveGraphDatabase slave = (SlaveGraphDatabase) internalGraphDatabase;
+//                    slave.forgetIdAllocationsFromMaster();
+//
+//                }
+//
+//                ensureDataConsistencyWithMaster( newDb != null ? newDb : internalGraphDatabase, master );
+//                messageLog.logMessage( "Data consistent with master" );
+//            }
+//            if ( newDb != null )
+//            {
+//                doAfterLocalGraphStarted( newDb );
+//
+//                // Assign the db last
+//                this.internalGraphDatabase = newDb;
+//
+//                /*
+//                 * We have to instantiate the update puller after the local db has been assigned.
+//                 * Another way to do it is to wait on a LocalGraphAvailableCondition. I chose this,
+//                 * it is simpler to follow, provided you know what a volatile does.
+//                 */
+//                if ( masterServer == null )
+//                {
+//                    // The above being true means we are a slave
+//                    instantiateAutoUpdatePullerIfConfigSaysSo();
+//                    pullUpdates = true;
+//                }
+//            }
+//        }
+//        catch ( Throwable t )
+//        {
+//            safelyShutdownDb( newDb );
+//            throw launderedException( t );
+//        }
+//    }
 
     protected synchronized void reevaluateMyself()
     {
@@ -1032,6 +1138,25 @@ public class HighlyAvailableGraphDatabase
         SlaveGraphDatabase slaveGraphDatabase = new SlaveGraphDatabase( storeDir, configuration.getParams(), storeId, this, broker, logging,
                 slaveOperations, slaveUpdateMode.createUpdater( broker ), nodeLookup,
                 relationshipLookups, fileSystemAbstraction, indexProviders, kernelExtensions, cacheProviders, caches );
+/*
+
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), this,
+                                                              new SlaveLockManager( txManager, txHook, broker, this ),
+                txManager,
+                lockReleaser,
+                kernelEventHandlers,
+                transactionEventHandlers,
+                kernelPanicEventGenerator,
+                extensions,
+                new SlaveIdGeneratorFactory( broker, this ),
+                new SlaveRelationshipTypeCreator( broker, this ),
+                new SlaveTxIdGeneratorFactory( broker, this ),
+                new SlaveTxHook( broker, this ),
+                slaveUpdateMode.createUpdater( broker ),
+                CommonFactories.defaultFileSystemAbstraction() );
+*/
+        // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
+        // reevaluateMyself(), after the local db has been assigned
         this.slaveServer = (SlaveServer) broker.instantiateSlaveServer( this, slaveOperations );
         logHaInfo( "Started as slave" );
         this.startupTime = System.currentTimeMillis();
@@ -1044,6 +1169,16 @@ public class HighlyAvailableGraphDatabase
 
         MasterGraphDatabase master = new MasterGraphDatabase( storeDir, configuration.getParams(), storeId, this,
                 broker, logging, nodeLookup, relationshipLookups, indexProviders, kernelExtensions, cacheProviders, caches);
+/*
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
+                CommonFactories.defaultLockManagerFactory(),
+                new MasterIdGeneratorFactory(),
+                CommonFactories.defaultRelationshipTypeCreator(),
+                new MasterTxIdGeneratorFactory( broker ),
+                new MasterTxHook(),
+                new ZooKeeperLastCommittedTxIdSetter( broker ),
+                CommonFactories.defaultFileSystemAbstraction() );
+*/
         this.masterServer = (MasterServer) broker.instantiateMasterServer( master );
         logHaInfo( "Started as master" );
         this.startupTime = System.currentTimeMillis();
@@ -1240,6 +1375,7 @@ public class HighlyAvailableGraphDatabase
         internalShutdown( false );
 
         life.shutdown();
+
     }
 
     protected synchronized void close()
@@ -1320,16 +1456,6 @@ public class HighlyAvailableGraphDatabase
                 sleepWithoutInterruption( 500, "" );
                 continue;
             }
-            catch ( IllegalProtocolVersionException pe )
-            {
-                getMessageLog().logMessage(
-                        "Got wrong protocol version during newMaster, expected " + pe.getExpected() + " but got "
-                                + pe.getReceived(), e );
-                broker.restart();
-                e = pe;
-                cause = pe;
-                continue;
-            }
             catch ( ComException ce )
             {
                 getMessageLog().logMessage(
@@ -1389,7 +1515,7 @@ public class HighlyAvailableGraphDatabase
             public ZooClient newZooClient()
             {
                 return new ZooClient( storeDir, messageLog, configuration, /* as SlaveDatabaseOperations for extracting master for tx */
-                slaveOperations, /* as ClusterEventReceiver */slaveOperations, masterClientResolver );
+                        slaveOperations, /* as ClusterEventReceiver */slaveOperations );
             }
         } );
     }
@@ -1401,9 +1527,10 @@ public class HighlyAvailableGraphDatabase
 
     private ClusterClient defaultClusterClient()
     {
-        return new ZooKeeperClusterClient( configuration.get( HaSettings.coordinators ), getMessageLog(),
+        return new ZooKeeperClusterClient(
+                configuration.get( HaSettings.coordinators ), getMessageLog(),
                 configuration.get( HaSettings.cluster_name ),
-                configuration.getInteger( HaSettings.zk_session_timeout ), masterClientResolver );
+                configuration.getInteger( HaSettings.zk_session_timeout ));
     }
 
     // TODO This should be removed. Analyze usages
@@ -1777,7 +1904,7 @@ public class HighlyAvailableGraphDatabase
     {
         return localGraph().getGuard();
     }
-
+    
     @Override
     public StoreId getStoreId()
     {

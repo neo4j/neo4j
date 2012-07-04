@@ -21,13 +21,13 @@ package org.neo4j.backup;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
+import org.neo4j.com.TargetCaller;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.StoreWriter;
-import org.neo4j.com.TargetCaller;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -50,8 +50,8 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context, Protocol.EMPTY_SERIALIZER,
-                Protocol.VOID_DESERIALIZER );
+        return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context,
+                Protocol.EMPTY_SERIALIZER, Protocol.VOID_DESERIALIZER );
     }
 
     @Override

@@ -65,8 +65,8 @@ public class FakeMasterBroker extends AbstractBroker
     {
         int timeOut = config.isSet( HaSettings.lock_read_timeout ) ? config.getInteger( HaSettings.lock_read_timeout ) : config
             .getInteger( HaSettings.read_timeout );
-        return new MasterServer( new MasterImpl( graphDb, timeOut ), Protocol.PORT, graphDb.getMessageLog(),
-                config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
+        return new MasterServer( new MasterImpl( graphDb, timeOut ),
+                Protocol.PORT, graphDb.getMessageLog(), config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
                 timeOut, TxChecksumVerifier.ALWAYS_MATCH );
     }
     

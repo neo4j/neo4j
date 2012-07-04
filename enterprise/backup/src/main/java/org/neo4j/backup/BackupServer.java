@@ -23,9 +23,9 @@ import org.jboss.netty.channel.Channel;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.impl.util.StringLogger;
 

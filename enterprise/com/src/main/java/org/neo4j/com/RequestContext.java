@@ -29,41 +29,39 @@ import java.util.Arrays;
  */
 public final class RequestContext
 {
-
     public static class Tx
     {
         private final String dataSourceName;
         private final long txId;
-
+        
         private Tx( String dataSourceName, long txId )
         {
             this.dataSourceName = dataSourceName;
             this.txId = txId;
         }
-
+        
         public String getDataSourceName()
         {
             return dataSourceName;
         }
-
+        
         public long getTxId()
         {
             return txId;
         }
-
+        
         @Override
         public String toString()
         {
             return dataSourceName + "/" + txId;
         }
-
     }
-
+    
     public static Tx lastAppliedTx( String dataSourceName, long txId )
     {
         return new Tx( dataSourceName, txId );
     }
-
+    
     private final int machineId;
     private final Tx[] lastAppliedTransactions;
     private final int eventIdentifier;
@@ -83,9 +81,9 @@ public final class RequestContext
         this.checksum = checksum;
 
         long hash = sessionId;
-        hash = ( 31 * hash ) ^ eventIdentifier;
-        hash = ( 31 * hash ) ^ machineId;
-        this.hashCode = (int) ( ( hash >>> 32 ) ^ hash );
+        hash = (31 * hash) ^ eventIdentifier;
+        hash = (31 * hash) ^ machineId;
+        this.hashCode = (int) ((hash >>> 32) ^ hash);
     }
 
     public int machineId()
@@ -107,12 +105,12 @@ public final class RequestContext
     {
         return sessionId;
     }
-
+    
     public int getMasterId()
     {
         return masterId;
     }
-
+    
     public long getChecksum()
     {
         return checksum;
@@ -121,8 +119,8 @@ public final class RequestContext
     @Override
     public String toString()
     {
-        return "SlaveContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
-               + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
+        return "SlaveContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" +
+                eventIdentifier + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
     }
 
     @Override

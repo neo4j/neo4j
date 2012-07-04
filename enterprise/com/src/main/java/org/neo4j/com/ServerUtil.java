@@ -85,7 +85,7 @@ public class ServerUtil
             return path.substring( 1 );
         return path;
     }
-
+    
     public static Tx[] rotateLogs( GraphDatabaseAPI graphDb )
     {
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
@@ -97,8 +97,9 @@ public class ServerUtil
         {
             try
             {
-                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(),
-                        ds.getXaContainer().getResourceManager().rotateLogicalLog() );
+                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(), ds.getXaContainer()
+                    .getResourceManager()
+                    .rotateLogicalLog() );
             }
             catch ( IOException e )
             {
@@ -155,7 +156,7 @@ public class ServerUtil
         }
         return context;
     }
-
+    
     /**
      * For a given {@link XaDataSource} it extracts the transaction stream from
      * startTxId up to endTxId (inclusive) in the provided {@link List} and
@@ -409,12 +410,12 @@ public class ServerUtil
             response.close();
         }
     }
-
+    
     public static RequestContext onlyIncludeResource( RequestContext context, XaDataSourceManager dataSources, String resource )
     {
         return onlyIncludeResource( context, dataSources.getXaDataSource( resource ) );
     }
-
+    
     public static RequestContext onlyIncludeResource( RequestContext context, XaDataSource dataSource )
     {
         Tx txForDs = null;

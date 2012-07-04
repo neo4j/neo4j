@@ -33,7 +33,7 @@ public class ToNetworkStoreWriter implements StoreWriter
     {
         this.targetBuffer = targetBuffer;
     }
-
+    
     public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
             boolean hasData ) throws IOException
     {
