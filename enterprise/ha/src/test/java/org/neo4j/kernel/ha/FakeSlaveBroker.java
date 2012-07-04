@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Client;
+import org.neo4j.com.ConnectionLostHandler;
 import org.neo4j.com.Protocol;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -30,7 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
-    
+
     public FakeSlaveBroker( Master master, int masterMachindId, Config config )
     {
         super( config );
@@ -39,9 +40,8 @@ public class FakeSlaveBroker extends AbstractBroker
 
     public FakeSlaveBroker( StringLogger log, int masterMachineId, Config config )
     {
-        this( new MasterClient( "localhost",
-                Protocol.PORT, log, storeId, Client.ConnectionLostHandler.NO_ACTION, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+        this( new MasterClient18( "localhost", Protocol.PORT, log, storeId, ConnectionLostHandler.NO_ACTION,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), masterMachineId, config );
     }
 

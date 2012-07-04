@@ -58,7 +58,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         this.applicationProtocolVersion = applicationProtocolVersion;
         readNextChunk();
     }
-    
+
     protected ChannelBuffer readNext()
     {
         try
@@ -87,11 +87,11 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             readNextChunk();
         }
     }
-    
+
     private void readNextChunk()
     {
         ChannelBuffer readBuffer = readNext();
-        
+
         /* Header layout:
          * [    ,    ][    ,   x] 0: last chunk in message, 1: there a more chunks after this one
          * [    ,    ][    ,  x ] 0: success, 1: failure
@@ -102,7 +102,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         more = (header[0] & 0x1) != 0;
         failure = (header[0] & 0x2) != 0;
         assertSameProtocolVersion( header, internalProtocolVersion, applicationProtocolVersion );
-        
+
         if ( !more && buffer == null )
         {
             // Optimization: this is the first chunk and it'll be the only chunk
@@ -115,7 +115,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             discardReadBytes();
             buffer.writeBytes( readBuffer );
         }
-        
+
         if ( failure )
         {
             Throwable failure = readAndThrowFailureResponse();
@@ -129,16 +129,18 @@ public class DechunkingChannelBuffer implements ChannelBuffer
          * Only 6 bits for internal protocol version, yielding 64 values. It's ok to wrap around because
          * It's highly unlikely that instances that are so far apart in versions will communicate
          * with each other.
-         */ 
+         */
         byte readInternalProtocolVersion = (byte) ((header[0] & 0x7C) >>> 2);
         if ( readInternalProtocolVersion != internalProtocolVersion )
         {
-            throw new IllegalProtocolVersionException( "Unexpected internal protocol version " + readInternalProtocolVersion +
+            throw new IllegalProtocolVersionException( internalProtocolVersion, readInternalProtocolVersion,
+                    "Unexpected internal protocol version " + readInternalProtocolVersion +
                     ", expected " + internalProtocolVersion + ". Header:" + numbersToBitString( header ) );
         }
         if ( header[1] != applicationProtocolVersion )
         {
-            throw new IllegalProtocolVersionException( "Unexpected application protocol version " + header[1] +
+            throw new IllegalProtocolVersionException( applicationProtocolVersion, header[1],
+                    "Unexpected application protocol version " + header[1] +
                     ", expected " + applicationProtocolVersion + ". Header:" + numbersToBitString( header ) );
         }
     }
@@ -155,7 +157,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         {
             throw new ComException( "Couldn't read failure response", e );
         }
-        
+
         if ( cause instanceof RuntimeException ) throw (RuntimeException) cause;
         if ( cause instanceof Error ) throw (Error) cause;
         throw new ComException( cause );
@@ -165,7 +167,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         return buffer.factory();
     }
-    
+
     public boolean failure()
     {
         return failure;
@@ -420,7 +422,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         return new UnsupportedOperationException( "Not supported in a DechunkingChannelBuffer, it's used merely for reading" );
     }
-    
+
     public void setByte( int index, int value )
     {
         throw unsupportedOperation();
@@ -875,11 +877,13 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         return buffer.toString( index, length, charsetName, terminatorFinder );
     }
 
+    @Override
     public int hashCode()
     {
         return buffer.hashCode();
     }
 
+    @Override
     public boolean equals( Object obj )
     {
         return buffer.equals( obj );
@@ -890,11 +894,12 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         return this.buffer.compareTo( buffer );
     }
 
+    @Override
     public String toString()
     {
         return buffer.toString();
     }
-    
+
     private InputStream asInputStream()
     {
         return new InputStream()

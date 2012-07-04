@@ -26,7 +26,9 @@ import static org.neo4j.com.Protocol.writeString;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -73,6 +75,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
     private final byte applicationProtocolVersion;
     private final StoreId storeId;
     private final ResourceReleaser resourcePoolReleaser;
+    private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
 
     public Client( String hostNameOrIp, int port, StringLogger logger,
             StoreId storeId, int frameLength, byte applicationProtocolVersion, int readTimeout,
@@ -94,6 +97,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
+        this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentChannels, maxUnusedPoolSize )
         {
@@ -216,6 +220,15 @@ public abstract class Client<T> implements ChannelPipelineFactory
             return new Response<R>( response, storeId, txStreams,
                     resourcePoolReleaser );
         }
+        catch ( IllegalProtocolVersionException e )
+        {
+            success = false;
+            for ( MismatchingVersionHandler handler : mismatchingVersionHandlers )
+            {
+                handler.versionMismatched( e.getExpected(), e.getReceived() );
+            }
+            throw e;
+        }
         catch ( Throwable e )
         {
             success = false;
@@ -246,7 +259,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
     {
         return true;
     }
-    
+
     protected StoreId getStoreId()
     {
         return storeId;
@@ -323,6 +336,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
     {
         channelPool.close( true );
         executor.shutdownNow();
+        mismatchingVersionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );
     }
 
@@ -398,16 +412,8 @@ public abstract class Client<T> implements ChannelPipelineFactory
         }
     }
 
-    public interface ConnectionLostHandler
+    public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
     {
-        public static final ConnectionLostHandler NO_ACTION = new ConnectionLostHandler()
-        {
-
-            @Override
-            public void handle( Exception e )
-            {
-            }
-        };
-        void handle( Exception e );
+        mismatchingVersionHandlers.add( toAdd );
     }
 }

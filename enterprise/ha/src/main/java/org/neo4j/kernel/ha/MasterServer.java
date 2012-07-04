@@ -32,7 +32,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.ha.MasterClient.HaRequestType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -41,24 +40,19 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class MasterServer extends Server<Master, Void>
 {
-    /* Version 1 first version
-     * Version 2 since 2012-01-24
-     * Version 3 since 2012-02-16 */
-    static final byte PROTOCOL_VERSION = 3;
-
-    static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
+    public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
     public MasterServer( Master requestTarget, final int port, StringLogger logger, int maxConcurrentTransactions,
             int oldChannelThreshold, TxChecksumVerifier txVerifier )
     {
-        super( requestTarget, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, maxConcurrentTransactions,
+        super( requestTarget, port, logger, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, maxConcurrentTransactions,
                 oldChannelThreshold, txVerifier );
     }
 
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
-        return HaRequestType.values()[id];
+        return HaRequestType18.values()[id];
     }
 
     @Override
@@ -73,7 +67,7 @@ public class MasterServer extends Server<Master, Void>
         getRequestTarget().shutdown();
         super.shutdown();
     }
-    
+
     @Override
     protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
     {

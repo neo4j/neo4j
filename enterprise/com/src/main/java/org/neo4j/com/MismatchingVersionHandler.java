@@ -17,26 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-import org.neo4j.com.ConnectionLostHandler;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
-
-public interface SlaveDatabaseOperations extends ConnectionLostHandler
+public interface MismatchingVersionHandler
 {
-    /**
-     * Returns a {@link RequestContext} instance that has {@code eventIdentifier}
-     * as the event identifier.
-     *
-     * @param eventIdentifier The event identifier of the returned slave context
-     * @return The slave context
-     */
-    RequestContext getSlaveContext( int eventIdentifier );
-
-    <T> T receive( Response<T> response );
-
-    void exceptionHappened( RuntimeException e );
-
-    int getMasterForTx( long tx );
+    public void versionMismatched( int expected, int received );
 }

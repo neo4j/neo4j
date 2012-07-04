@@ -22,28 +22,49 @@ package org.neo4j.com;
 /**
  * Thrown when a communication between client/server is attempted and either of internal protocol version
  * and application protocol doesn't match.
- * 
+ *
  * @author Mattias Persson
  */
 public class IllegalProtocolVersionException extends ComException
 {
-    public IllegalProtocolVersionException()
+    private final int expected;
+    private final int received;
+
+    public IllegalProtocolVersionException( int expected, int received )
     {
         super();
+        this.expected = expected;
+        this.received = received;
     }
 
-    public IllegalProtocolVersionException( String message, Throwable cause )
+    public IllegalProtocolVersionException( int expected, int received, String message, Throwable cause )
     {
         super( message, cause );
+        this.expected = expected;
+        this.received = received;
     }
 
-    public IllegalProtocolVersionException( String message )
+    public IllegalProtocolVersionException( int expected, int received, String message )
     {
         super( message );
+        this.expected = expected;
+        this.received = received;
     }
 
-    public IllegalProtocolVersionException( Throwable cause )
+    public IllegalProtocolVersionException( int expected, int received, Throwable cause )
     {
         super( cause );
+        this.expected = expected;
+        this.received = received;
+    }
+
+    public int getExpected()
+    {
+        return expected;
+    }
+
+    public int getReceived()
+    {
+        return received;
     }
 }
