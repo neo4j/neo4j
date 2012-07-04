@@ -4,6 +4,7 @@ o Added edition information (community, advanced, enterprise)
 o Added a cluster-name hash so that stores originating from the same cluster can be aggregated
 o Fixed release version and revision
 o Changed precedence of database configuration over internal udc configuration
+o Added distribution information (dpkg, rpm, unknown)
 
 1.7 (2012-04-18)
 ----------------

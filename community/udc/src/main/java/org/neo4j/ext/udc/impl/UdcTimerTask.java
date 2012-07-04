@@ -20,16 +20,10 @@
 package org.neo4j.ext.udc.impl;
 
 
-import org.neo4j.ext.udc.Edition;
-
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TimerTask;
-
-import static org.neo4j.ext.udc.UdcConstants.*;
 
 public class UdcTimerTask extends TimerTask
 {
@@ -41,53 +35,14 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String revision, String storeId, String source, boolean crashPing, String registration, String mac, String tags, Edition edition, Integer clusterNameHash)
+    public UdcTimerTask(String host, String storeId, boolean crashPing, Map<String, String> params)
     {
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
 
         this.storeId = storeId;
 
-        Map<String, String> udcFields = new HashMap<String, String>();
-
-        add(udcFields, ID, storeId);
-        add(udcFields, VERSION, version);
-        add(udcFields, REVISION, revision);
-
-        add(udcFields, EDITION, edition);
-        add(udcFields, TAGS, tags);
-        add(udcFields, CLUSTER_HASH, clusterNameHash);
-        add(udcFields, SOURCE, source);
-        add(udcFields, REGISTRATION, registration);
-        add(udcFields, MAC, mac);
-
-        Map<String, String> params = mergeSystemPropertiesWith( udcFields );
-
         pinger = new Pinger( host, params, crashPing );
-    }
-
-    private void add(Map<String, String> udcFields, String name, Object value) {
-        if ( value == null ) return;
-        String str = value.toString().trim();
-        if (str.isEmpty()) return;
-        udcFields.put(name, str);
-    }
-
-    private Map<String, String> mergeSystemPropertiesWith( Map<String, String> udcFields )
-    {
-        Map<String, String> mergedMap = new HashMap<String, String>();
-        mergedMap.putAll( udcFields );
-        Properties sysProps = System.getProperties();
-        Enumeration sysPropsNames = sysProps.propertyNames();
-        while ( sysPropsNames.hasMoreElements() )
-        {
-            String sysPropName = (String)sysPropsNames.nextElement();
-            if ( sysPropName.startsWith( "neo4j.ext.udc" ) )
-            {
-                mergedMap.put( sysPropName.substring( "neo4j.ext.udc".length() + 1 ), sysProps.get( sysPropName ).toString() );
-            }
-        }
-        return mergedMap;
     }
 
     @Override

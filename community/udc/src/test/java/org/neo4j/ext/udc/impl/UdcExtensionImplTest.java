@@ -39,6 +39,7 @@ import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.ext.udc.Edition;
+import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -234,6 +235,56 @@ public class UdcExtensionImplTest
         assertNotNull(handler.getQueryMap().get(MAC));
 
         destroy( graphdb );
+    }
+
+    @Test
+    public void shouldIncludePrefixedSystemProperties() throws Exception
+    {
+        setupServer();
+        System.setProperty(UdcConstants.UDC_PROPERTY_PREFIX+".test","udc-property");
+        System.setProperty("os.test","os-property");
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals("udc-property",handler.getQueryMap().get("test"));
+        assertEquals("os-property",handler.getQueryMap().get("os.test"));
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldNotIncludeDistributionForWindows() throws Exception
+    {
+        setupServer();
+        System.setProperty("os.name","Windows");
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals(UdcConstants.UNKNOWN_DIST,handler.getQueryMap().get("dist"));
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldIncludeDistributionForLinux() throws Exception
+    {
+        if (!System.getProperty("os.name").equals("Linux")) return;
+        setupServer();
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+
+        assertEquals(UdcInformationCollector.searchForPackageSystems(),handler.getQueryMap().get("dist"));
+
+        destroy( graphdb );
+    }
+    @Test
+    public void shouldNotIncludeDistributionForMacOS() throws Exception
+    {
+        setupServer();
+        System.setProperty("os.name","Mac OS X");
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry(IS_GREATER_THAN_ZERO);
+        assertEquals(UdcConstants.UNKNOWN_DIST,handler.getQueryMap().get("dist"));
+
+        destroy(graphdb);
     }
 
     @Test

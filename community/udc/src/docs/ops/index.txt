@@ -29,6 +29,7 @@ To gather good statistics about Neo4j usage, UDC collects this information:
 * Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb)
 * Neo4j Edition (community, advanced, enterprise)
 * A hash of the current cluster name (if any)
+* Distribution information for Linux (rpm, dpkg, unknown)
 
 After startup, UDC waits for ten minutes before sending the first ping. It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum. The ping to the UDC servers is done with a HTTP GET.
 
