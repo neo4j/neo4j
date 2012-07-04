@@ -64,8 +64,7 @@ public class AutoconfIT
         BatchInserter inserter = new BatchInserterImpl( storeDir );
         try
         {
-            for ( int i = 0; i < 100000000; i++ )
-                inserter.createNode( null );
+            inserter.createNode( 100000000, null );
         }
         finally
         {
