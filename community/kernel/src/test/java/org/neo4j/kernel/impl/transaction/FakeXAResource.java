@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-public class FakeXAResource implements XAResource
+class FakeXAResource implements XAResource
 {
     private String name = null;
     private int transactionTimeout = 0;
     private ArrayList<MethodCall> methodCalls = new ArrayList<MethodCall>();
 
-    public FakeXAResource( String name )
+    FakeXAResource( String name )
     {
         this.name = name;
     }
@@ -40,7 +40,6 @@ public class FakeXAResource implements XAResource
         return name;
     }
 
-    @Override
     public String toString()
     {
         return name;
@@ -63,7 +62,6 @@ public class FakeXAResource implements XAResource
         methodCalls.add( methodCall );
     }
 
-    @Override
     public void commit( Xid xid, boolean onePhase )
     {
         addMethodCall( new MethodCall( "commit", new Object[] { xid,
@@ -71,7 +69,6 @@ public class FakeXAResource implements XAResource
             "javax.transaction.xa.Xid", "java.lang.Boolean" } ) );
     }
 
-    @Override
     public void end( Xid xid, int flags )
     {
         addMethodCall( new MethodCall( "end", new Object[] { xid,
@@ -79,27 +76,23 @@ public class FakeXAResource implements XAResource
             "java.lang.Integer" } ) );
     }
 
-    @Override
     public void forget( Xid xid )
     {
         addMethodCall( new MethodCall( "forget", new Object[] { xid },
             new String[] { "javax.transaction.xa.Xid" } ) );
     }
 
-    @Override
     public int getTransactionTimeout()
     {
         return transactionTimeout;
     }
 
-    @Override
     public boolean setTransactionTimeout( int timeout )
     {
         transactionTimeout = timeout;
         return true;
     }
 
-    @Override
     public boolean isSameRM( XAResource xares )
     {
         if ( xares instanceof FakeXAResource )
@@ -112,7 +105,6 @@ public class FakeXAResource implements XAResource
         return false;
     }
 
-    @Override
     public int prepare( Xid xid )
     {
         addMethodCall( new MethodCall( "prepare", new Object[] { xid },
@@ -120,7 +112,6 @@ public class FakeXAResource implements XAResource
         return XAResource.XA_OK;
     }
 
-    @Override
     public Xid[] recover( int flag )
     {
         addMethodCall( new MethodCall( "recover", new Object[] { new Integer(
@@ -128,14 +119,12 @@ public class FakeXAResource implements XAResource
         return new Xid[0];
     }
 
-    @Override
     public void rollback( Xid xid )
     {
         addMethodCall( new MethodCall( "rollback", new Object[] { xid },
             new String[] { "javax.transaction.xa.Xid" } ) );
     }
 
-    @Override
     public void start( Xid xid, int flags )
     {
         addMethodCall( new MethodCall( "start", new Object[] { xid,
