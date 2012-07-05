@@ -54,6 +54,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -112,7 +113,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         this.txVerifier = txVerifier;
         this.oldChannelThresholdMillis = oldChannelThreshold*1000;
         executor = Executors.newCachedThreadPool();
-        targetCallExecutor = Executors.newCachedThreadPool();
+        targetCallExecutor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + ":" + port ) );
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2 );
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, maxNumberOfConcurrentTransactions );

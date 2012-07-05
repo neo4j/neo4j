@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.neo4j.com.Response;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -250,7 +251,7 @@ public class MasterTxIdGenerator implements TxIdGenerator
     @Override
     public void start() throws Throwable
     {
-        this.slaveCommitters = Executors.newCachedThreadPool();
+        this.slaveCommitters = Executors.newCachedThreadPool( new NamedThreadFactory( "slave-committer" ) );
     }
 
     @Override
