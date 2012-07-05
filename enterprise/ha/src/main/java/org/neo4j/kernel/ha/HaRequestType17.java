@@ -43,7 +43,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.MasterClient18.AquireLockCall;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
-public enum HaRequestType18 implements RequestType<Master>
+public enum HaRequestType17 implements RequestType<Master>
 {
     // ====
     ALLOCATE_IDS( new TargetCaller<Master, IdAllocation>()
@@ -312,18 +312,7 @@ public enum HaRequestType18 implements RequestType<Master>
         {
             return true;
         }
-    },
-
-    // ====
-    PUSH_TRANSACTION( new TargetCaller<Master, Void>()
-    {
-        @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
-        {
-            return master.pushTransaction( context, readString( input ), input.readLong() );
-        }
-    }, VOID_SERIALIZER, true );
+    };
 
     @SuppressWarnings( "rawtypes" )
     final TargetCaller caller;
@@ -331,7 +320,7 @@ public enum HaRequestType18 implements RequestType<Master>
     final ObjectSerializer serializer;
     private final boolean includesSlaveContext;
 
-    private <T> HaRequestType18( TargetCaller caller, ObjectSerializer<T> serializer, boolean includesSlaveContext )
+    private <T> HaRequestType17( TargetCaller caller, ObjectSerializer<T> serializer, boolean includesSlaveContext )
     {
         this.caller = caller;
         this.serializer = serializer;

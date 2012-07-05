@@ -78,7 +78,8 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         static final ProtocolCombo PC_153 = new ProtocolCombo( 2, 2 );
-        static final ProtocolCombo PC_18 = new ProtocolCombo( 3, 2 );
+        static final ProtocolCombo PC_17 = new ProtocolCombo( 3, 2 );
+        static final ProtocolCombo PC_18 = new ProtocolCombo( 4, 2 );
     }
 
     private final Map<ProtocolCombo, MasterClientFactory> protocolToFactoryMapping;
@@ -87,6 +88,8 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     {
         protocolToFactoryMapping = new HashMap<ProtocolCombo, MasterClientFactory>();
         protocolToFactoryMapping.put( ProtocolCombo.PC_153, new F153( messageLogger, readTimeout, lockReadTimeout,
+                channels ) );
+        protocolToFactoryMapping.put( ProtocolCombo.PC_17, new F17( messageLogger, readTimeout, lockReadTimeout,
                 channels ) );
         protocolToFactoryMapping.put( ProtocolCombo.PC_18, new F18( messageLogger, readTimeout, lockReadTimeout,
                 channels ) );
@@ -137,6 +140,21 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
         {
             return new MasterClient153( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+        }
+    };
+
+    public static final class F17 extends StaticMasterClientFactory
+    {
+        public F17( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+        {
+            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+        }
+
+        @Override
+        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
+        {
+            return new MasterClient17( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
         }
     };
