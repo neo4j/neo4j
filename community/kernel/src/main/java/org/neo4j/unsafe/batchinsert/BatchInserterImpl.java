@@ -343,6 +343,8 @@ public class BatchInserterImpl implements BatchInserter
         if ( thatFits == null )
         {
             thatFits = new PropertyRecord( getPropertyStore().nextId() );
+            thatFits.setInUse( true );
+            result = true;
 
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
@@ -350,9 +352,7 @@ public class BatchInserterImpl implements BatchInserter
                         primitive.getNextProp() );
                 thatFits.setNextProp( first.getId() );
                 first.setPrevProp( thatFits.getId() );
-                thatFits.setInUse(true);
                 getPropertyStore().updateRecord( first );
-                result = true;
             }
             primitive.setNextProp( thatFits.getId() );
         }

@@ -181,6 +181,27 @@ public class TestBatchInsert
 
         inserter.shutdown();
     }
+    
+    @Test
+    public void setSingleProperty() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( null );
+
+        String value = "Something";
+        String key = "name";
+        inserter.setNodeProperty( node, key, value );
+        
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        assertEquals( value, db.getNodeById( node ).getProperty( key ) );
+        db.shutdown();
+    }
+
+    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
+    {
+        inserter.shutdown();
+        return new EmbeddedGraphDatabase( inserter.getStoreDir() );
+    }
 
     @Test
     public void testSetAndKeepNodeProperty()
