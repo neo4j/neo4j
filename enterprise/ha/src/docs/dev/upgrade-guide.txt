@@ -1,0 +1,52 @@
+[[upgrade-guide]]
+Upgrading a Neo4j HA Cluster
+============================
+
+This document describes the steps required to upgrade a Neo4j cluster from version 1.5.3 to 1.8 without disrupting its operation, a process referred to as a rolling upgrade. The starting assumptions are that there exists a cluster running Neo4j version 1.5.3 with the corresponding ZooKeeper instances and that the machine which is currently the master is known. It is also assumed that on each machine the Neo4j service and the neo4j coordinator service is installed under a directory which from here on is assumed to be /opt/neo4j-enterprise-1.5.3
+
+== Overview ==
+
+The process consists of upgrading each machine in turn by removing it from the cluster, moving over the database and starting it back up again. Configuration settings also have to be transferred. It is important to note that the last machine to be upgraded must be the master.
+In general, the "cluster version" is defined by the version of the master, providing the master is 1.5.3 the cluster as a whole can operate (the 1.8 instances running in compatibility mode). When a 1.8 instance is elected master however, the 1.5.3 instances are not capable of communicating with it, so we have to make sure that the last machine upgraded is the 1.5.3 master. The upgrade process is detected automatically from the joining 1.8 instances and they will not participate in a master election while even a single 1.5.3 instance is part of the cluster.
+
+== Step 1: On each slave perform the upgrade ==
+
+Download and unpack the new version. Copy over any configuration settings you run your instances with, taking care for deprecated settings and API changes that can occur between versions. Also, ensure that newly introduced settings have proper values (see <<ha-configuration>>). Apart from the files under conf/ you should also set proper values in data/coordinator/myid (copying over the file from the 1.5.3 instance is sufficient)
+The most important thing about the settings setup is the allow_store_upgrade setting in neo4j.properties which must be set to true, otherwise the instance will be unable to start.
+Finally, don't forget to copy over any server plugins you may have.
+Shutdown first the neo4j instance and then the coordinator with
+
+[source,shell]
+----
+service neo4j-service stop
+service neo4j-coordinator stop
+----
+
+Next, uninstall both services
+
+[source,shell]
+----
+service neo4j-service remove
+service neo4j-coordinator remove
+----
+Now you can copy over the database. Assuming the old instance is at /opt/neo4j-enterprise-1.5.3 and the newly unpacked under /opt/neo4j-enterprise-1.8 the proper command would be
+
+[source,shell]
+----
+cp -R /opt/neo4j-enterprise-1.5.3/data/graph.db /opt/neo4j-enterprise-1.8/data/
+----
+
+Next install neo4j and the coordinator services, which also starts them
+
+[source,shell]
+----	
+/opt/neo4j-enterprise-1.8/bin/neo4j-coordinator install
+/opt/neo4j-enterprise-1.8/bin/neo4j install
+----
+
+Done. Now check that the services are running and that webadmin reports the version 1.8. Transactions should also be applied from the master as usual.
+
+== Step 2:  Upgrade the master, complete the procedure ==
+
+Go to the current master and execute step 1 The moment it will be stopped another instance will take over, transitioning the cluster to 1.8. Finish Step 1 on this machine as well and you will have completed the process.
+

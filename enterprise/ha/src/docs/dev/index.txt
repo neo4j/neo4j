@@ -18,6 +18,8 @@ include::config.txt[]
 
 include::operation.txt[]
 
+include::upgrade-guide.txt[]
+
 include::ha-setup-tutorial.txt[]
 
 include::haproxy.txt[]
