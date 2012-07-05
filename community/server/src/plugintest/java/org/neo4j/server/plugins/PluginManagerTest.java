@@ -32,14 +32,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class PluginManagerTest
 {
     private static PluginManager manager;
-    private static AbstractGraphDatabase graphDb;
+    private static InternalAbstractGraphDatabase graphDb;
 
     @BeforeClass
     public static void loadExtensionManager() throws Exception

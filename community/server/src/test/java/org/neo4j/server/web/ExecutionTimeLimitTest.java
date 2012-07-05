@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -39,7 +39,7 @@ public class ExecutionTimeLimitTest
 // ------------------------------ FIELDS ------------------------------
 
     private WrappingNeoServerBootstrapper testBootstrapper;
-    private AbstractGraphDatabase db;
+    private InternalAbstractGraphDatabase db;
     private long wait;
 
 // -------------------------- OTHER METHODS --------------------------

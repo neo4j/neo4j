@@ -70,7 +70,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
@@ -126,7 +126,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @Test
     public void testStartupInExistingDirectory() {
-        AbstractGraphDatabase graphDatabase = new ImpermanentGraphDatabase();
+        InternalAbstractGraphDatabase graphDatabase = new ImpermanentGraphDatabase();
         Index<Node> index = graphDatabase.index().forNodes("nodes");
         assertNotNull(index);
     }

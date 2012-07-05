@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class WrappingDatabase extends Database {
 
-	public WrappingDatabase(GraphDatabaseAPI db) {
+	public WrappingDatabase(AbstractGraphDatabase db) {
 		super(db);
 	}
 	

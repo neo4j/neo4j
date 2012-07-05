@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.TxLog;
@@ -185,7 +185,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
                 {
                     return !Boolean.parseBoolean( thread.getLocal( 1, "onePhase" ) );
                 }
-            }, new BreakPoint( Crash.class, "run", AbstractGraphDatabase.class )
+            }, new BreakPoint( Crash.class, "run", InternalAbstractGraphDatabase.class )
             {
                 @Override
                 protected void callback( DebugInterface debug ) throws KillSubProcess

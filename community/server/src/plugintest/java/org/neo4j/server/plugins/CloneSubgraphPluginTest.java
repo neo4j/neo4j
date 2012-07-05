@@ -84,7 +84,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
     public void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
-        createASocialNetwork( server.getDatabase().graph );
+        createASocialNetwork( server.getDatabase().getGraph() );
     }
 
     private Node jw;
@@ -161,7 +161,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
     public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException
     {
-        int originalCount = eagerlyCount( server.getDatabase().graph.getAllNodes() );
+        int originalCount = eagerlyCount( server.getDatabase().getGraph().getAllNodes() );
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
@@ -193,7 +193,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         assertEquals( 200, response.getStatus() );
 
         int doubleTheNumberOfNodes = ( originalCount * 2 ) + 1;
-        assertEquals( doubleTheNumberOfNodes, eagerlyCount( server.getDatabase().graph.getAllNodes() ) );
+        assertEquals( doubleTheNumberOfNodes, eagerlyCount( server.getDatabase().getGraph().getAllNodes() ) );
         response.close();
     }
 

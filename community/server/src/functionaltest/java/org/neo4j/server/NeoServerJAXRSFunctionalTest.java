@@ -86,7 +86,7 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
         assertEquals( "hello", response );
 
         // Assert that extensions gets initialized
-        int nodesCreated = createSimpleDatabase( server.getDatabase().graph );
+        int nodesCreated = createSimpleDatabase( server.getDatabase().getGraph() );
         thirdPartyServiceUri = new URI( server.baseUri()
                 .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
         response = CLIENT.resource( thirdPartyServiceUri.toString() )

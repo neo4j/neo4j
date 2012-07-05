@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
@@ -284,7 +284,7 @@ public class TestRaceOnMultipleNodeImpl
         }
     }
 
-    private AbstractGraphDatabase graphdb;
+    private InternalAbstractGraphDatabase graphdb;
 
     @Before
     public void startDb()

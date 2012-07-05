@@ -353,14 +353,14 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
     private Node createLinkedList( final int listLength, final Database db )
     {
-        Transaction tx = db.graph.beginTx();
+        Transaction tx = db.getGraph().beginTx();
         Node startNode = null;
         try
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
             {
-                Node current = db.graph.createNode();
+                Node current = db.getGraph().createNode();
                 current.setProperty( "name", String.valueOf( i ) );
 
                 if ( previous != null )

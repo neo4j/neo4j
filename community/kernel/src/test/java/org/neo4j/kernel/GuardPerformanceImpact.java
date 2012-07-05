@@ -82,7 +82,7 @@ public class GuardPerformanceImpact
 
     private static long withoutGuard() throws IOException
     {
-        final AbstractGraphDatabase db = prepare( false );
+        final InternalAbstractGraphDatabase db = prepare( false );
         try
         {
             final long start = currentTimeMillis();
@@ -96,7 +96,7 @@ public class GuardPerformanceImpact
         }
     }
 
-    private static AbstractGraphDatabase prepare( boolean insertGuard ) throws IOException
+    private static InternalAbstractGraphDatabase prepare( boolean insertGuard ) throws IOException
     {
         File tmpFile = File.createTempFile( "neo4j-test", "" );
         tmpFile.delete();
@@ -104,7 +104,7 @@ public class GuardPerformanceImpact
                 stringMap( "enable_execution_guard", valueOf( insertGuard ) ) );
     }
 
-    private static void createData( final AbstractGraphDatabase db )
+    private static void createData( final InternalAbstractGraphDatabase db )
     {
         for ( int j = 0; j < TX; j++ )
         {
@@ -118,7 +118,7 @@ public class GuardPerformanceImpact
         }
     }
 
-    private static void cleanup( final AbstractGraphDatabase db )
+    private static void cleanup( final InternalAbstractGraphDatabase db )
     {
         db.shutdown();
         deleteFiles( new File( db.getStoreDir() ) );
@@ -139,7 +139,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabled() throws IOException
     {
-        final AbstractGraphDatabase db = prepare( true );
+        final InternalAbstractGraphDatabase db = prepare( true );
         try
         {
             final long start = currentTimeMillis();
@@ -154,7 +154,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabledAndActiveOpsCount() throws IOException
     {
-        final AbstractGraphDatabase db = prepare( true );
+        final InternalAbstractGraphDatabase db = prepare( true );
         try
         {
             final long start = currentTimeMillis();
@@ -172,7 +172,7 @@ public class GuardPerformanceImpact
 
     private static long guardEnabledAndActiveTimeout() throws IOException
     {
-        final AbstractGraphDatabase db = prepare( true );
+        final InternalAbstractGraphDatabase db = prepare( true );
         try
         {
             final long start = currentTimeMillis();

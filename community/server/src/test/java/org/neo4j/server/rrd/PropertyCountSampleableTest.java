@@ -61,9 +61,9 @@ public class PropertyCountSampleableTest
 
     private void addNodeIntoGraph()
     {
-        Transaction tx = db.graph.beginTx();
-        Node referenceNode = db.graph.getReferenceNode();
-        Node myNewNode = db.graph.createNode();
+        Transaction tx = db.getGraph().beginTx();
+        Node referenceNode = db.getGraph().getReferenceNode();
+        Node myNewNode = db.getGraph().createNode();
         myNewNode.setProperty( "id", UUID.randomUUID().toString() );
         myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
         {
@@ -80,8 +80,8 @@ public class PropertyCountSampleableTest
 
     private void addPropertyToReferenceNode()
     {
-        Transaction tx = db.graph.beginTx();
-        Node n = db.graph.getReferenceNode();
+        Transaction tx = db.getGraph().beginTx();
+        Node n = db.getGraph().getReferenceNode();
         n.setProperty( "monkey", "rock!" );
         tx.success();
         tx.finish();
@@ -91,7 +91,7 @@ public class PropertyCountSampleableTest
     public void setUp() throws Exception
     {
         db = new WrappingDatabase( new ImpermanentGraphDatabase() );
-        sampleable = new PropertyCountSampleable( db.graph );
+        sampleable = new PropertyCountSampleable( db.getGraph() );
     }
 
     @After

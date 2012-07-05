@@ -32,7 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -51,7 +51,7 @@ import static recovery.CreateTransactionsAndDie.*;
 
 public class TestRecoveryVerification
 {
-    private static class TestGraphDatabase extends AbstractGraphDatabase
+    private static class TestGraphDatabase extends InternalAbstractGraphDatabase
     {
         private final RecoveryVerifier verifier;
 

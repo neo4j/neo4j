@@ -291,7 +291,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     public void listAutoIndexingPropertiesForNodes() throws JsonParseException {
         String propName = "some-property";
-        server().getDatabase().graph.index().getNodeAutoIndexer().startAutoIndexingProperty(propName);
+        server().getDatabase().getGraph().index().getNodeAutoIndexer().startAutoIndexingProperty(propName);
         
         List<String> properties = getAutoIndexedPropertiesForType("node");
         

@@ -50,7 +50,7 @@ public class NodeIdsInUseSampleableTest
     {
         double oldValue = sampleable.getValue();
 
-        createNode( db.graph );
+        createNode( db.getGraph() );
 
         assertThat( sampleable.getValue(), greaterThan( oldValue ) );
     }

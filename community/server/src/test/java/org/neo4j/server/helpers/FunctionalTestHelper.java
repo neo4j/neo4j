@@ -233,7 +233,7 @@ public final class FunctionalTestHelper
 
     public GraphDatabaseAPI getDatabase()
     {
-        return server.getDatabase().graph;
+        return server.getDatabase().getGraph();
     }
 
     public String webAdminUri()

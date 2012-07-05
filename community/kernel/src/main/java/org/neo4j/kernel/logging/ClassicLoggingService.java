@@ -20,7 +20,7 @@
 
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -38,7 +38,7 @@ public class ClassicLoggingService
     public ClassicLoggingService(Config config)
     {
         this.config = config;
-        stringLogger = StringLogger.logger( config.get( AbstractGraphDatabase.Configuration.store_dir ) );
+        stringLogger = StringLogger.logger( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
     @Override

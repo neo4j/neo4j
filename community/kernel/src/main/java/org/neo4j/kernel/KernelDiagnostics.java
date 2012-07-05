@@ -34,7 +34,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 
 abstract class KernelDiagnostics implements DiagnosticsProvider
 {
-    static void register( DiagnosticsManager manager, AbstractGraphDatabase graphdb, NeoStoreXaDataSource ds )
+    static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreXaDataSource ds )
     {
         manager.prependProvider( new Versions( graphdb.getClass(), ds ) );
         ds.registerDiagnosticsWith( manager );

@@ -36,13 +36,13 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 
 public class DummyIndexProvider extends IndexProvider implements IndexImplementation
 {
     static final String IDENTIFIER = "test-dummy-neo-index";
-    private AbstractGraphDatabase db;
+    private InternalAbstractGraphDatabase db;
     
     public DummyIndexProvider()
     {
@@ -53,7 +53,7 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
     public IndexImplementation load( DependencyResolver dependencyResolver ) throws Exception
     {
         // This is just for testing (reusing provider/index impl).
-        db = dependencyResolver.resolveDependency( AbstractGraphDatabase.class );
+        db = dependencyResolver.resolveDependency( InternalAbstractGraphDatabase.class );
         return this;
     }
 
@@ -90,9 +90,9 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
     private abstract class DummyIndex<T extends PropertyContainer> implements Index<T>
     {
         private final String name;
-        private final AbstractGraphDatabase db;
+        private final InternalAbstractGraphDatabase db;
         
-        public DummyIndex( String name, AbstractGraphDatabase db )
+        public DummyIndex( String name, InternalAbstractGraphDatabase db )
         {
             this.name = name;
             this.db = db;
@@ -175,7 +175,7 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
     
     private class DummyNodeIndex extends DummyIndex<Node>
     {
-        public DummyNodeIndex( String name, AbstractGraphDatabase db )
+        public DummyNodeIndex( String name, InternalAbstractGraphDatabase db )
         {
             super( name, db );
         }
@@ -189,7 +189,7 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
     
     private class DummyRelationshipIndex extends DummyIndex<Relationship> implements RelationshipIndex
     {
-        public DummyRelationshipIndex( String name, AbstractGraphDatabase db )
+        public DummyRelationshipIndex( String name, InternalAbstractGraphDatabase db )
         {
             super( name, db );
         }

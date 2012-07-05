@@ -65,7 +65,7 @@ public class ExtensionService
         this.input = input;
         this.output = output;
         this.extensions = extensions;
-        this.graphDb = database.graph;
+        this.graphDb = database.getGraph();
     }
 
     private Node node( long id ) throws NodeNotFoundException

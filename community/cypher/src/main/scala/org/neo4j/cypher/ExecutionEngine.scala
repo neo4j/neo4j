@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 import java.lang.Error
 import java.util.{Map => JavaMap}
 import scala.deprecated
-import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionEngine(graph: GraphDatabaseService) {
@@ -36,8 +36,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   val parser = createCorrectParser()
 
-  private def createCorrectParser() = if (graph.isInstanceOf[AbstractGraphDatabase]) {
-    val database = graph.asInstanceOf[AbstractGraphDatabase]
+  private def createCorrectParser() = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
+    val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
     database.getConfig.getParams.asScala.get("cypher_parser_version") match {
       case None => new CypherParser()
       case Some(v) => new CypherParser(v.toString)

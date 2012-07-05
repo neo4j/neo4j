@@ -26,7 +26,7 @@ import java.io.IOException;
 import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -36,7 +36,7 @@ public class DatabasePrimitivesSampleableBaseTest
     @Test
     public void sampleTest() throws MalformedObjectNameException, IOException
     {
-        AbstractGraphDatabase db = new ImpermanentGraphDatabase();
+        InternalAbstractGraphDatabase db = new ImpermanentGraphDatabase();
         
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db );
 

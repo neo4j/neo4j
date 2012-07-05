@@ -1,3 +1,8 @@
+1.8.M06
+-------
+
+o Deprecated AbstractGraphDatabase.transactionRunning()
+
 1.8.M05 (2012-06-25)
 --------------------
 o Configurable amount of logical logs to keep, by for example number of days or size on disk.

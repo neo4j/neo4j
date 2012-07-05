@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
@@ -54,12 +54,12 @@ public class StoreAccess
     private boolean closeable;
     private NeoStore neoStore;
 
-    public StoreAccess( AbstractGraphDatabase graphdb )
+    public StoreAccess( InternalAbstractGraphDatabase graphdb )
     {
         this( getNeoStoreFrom( graphdb ) );
     }
 
-    private static NeoStore getNeoStoreFrom( AbstractGraphDatabase graphdb )
+    private static NeoStore getNeoStoreFrom( InternalAbstractGraphDatabase graphdb )
     {
         return graphdb.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
     }

@@ -75,7 +75,7 @@ public class SessionFactoryImpl implements SessionFactory
             @Override
             ScriptSession newSession( Database database )
             {
-                return new CypherSession( database.graph );
+                return new CypherSession( database.getGraph() );
             }
         },
         SHELL
@@ -83,7 +83,7 @@ public class SessionFactoryImpl implements SessionFactory
             @Override
             ScriptSession newSession( Database database )
             {
-                return new ShellSession( database.graph );
+                return new ShellSession( database.getGraph() );
             }
         };
         

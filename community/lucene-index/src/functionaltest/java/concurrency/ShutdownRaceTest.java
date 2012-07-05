@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -99,7 +99,7 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
     private static class IndexTask implements Task
     {
         @Override
-        public void run( final AbstractGraphDatabase graphdb )
+        public void run( final GraphDatabaseAPI graphdb )
         {
             try
             {
@@ -141,7 +141,7 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
     private static class BreakTask extends IndexTask
     {
         @Override
-        public void run( final AbstractGraphDatabase graphdb )
+        public void run( final GraphDatabaseAPI graphdb )
         {
             new Thread()
             {
@@ -153,7 +153,7 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
             }.start();
         }
 
-        void runTask( AbstractGraphDatabase graphdb )
+        void runTask( GraphDatabaseAPI graphdb )
         {
             super.run( graphdb );
         }

@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -145,7 +145,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void initialize()
     {
         fs = new FileSystem();
-        AbstractGraphDatabase graphdb = new Database();
+        InternalAbstractGraphDatabase graphdb = new Database();
         prefix = graphdb.getStoreDir();
         createInitialData( graphdb );
         graphdb.shutdown();
@@ -159,7 +159,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     {
         try
         {
-            AbstractGraphDatabase graphdb = new Database();
+            InternalAbstractGraphDatabase graphdb = new Database();
             verifyData( graphdb );
             graphdb.shutdown();
         }

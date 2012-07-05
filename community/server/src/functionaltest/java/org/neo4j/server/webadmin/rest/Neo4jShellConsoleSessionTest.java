@@ -33,7 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -54,7 +54,7 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new WrappingDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().
+        this.database = new WrappingDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().
             newImpermanentDatabaseBuilder().
             setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
             newGraphDatabase() );
@@ -70,7 +70,7 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        return new ShellSession( database.graph );
+        return new ShellSession( database.getGraph() );
     }
 
     @Test

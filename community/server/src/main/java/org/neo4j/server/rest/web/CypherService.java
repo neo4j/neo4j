@@ -47,7 +47,7 @@ public class CypherService {
 
     public CypherService(@Context Database database, @Context InputFormat input,
             @Context OutputFormat output) {
-        this.executionEngine = new ExecutionEngine(database.graph);
+        this.executionEngine = new ExecutionEngine(database.getGraph());
         this.input = input;
         this.output = output;
     }

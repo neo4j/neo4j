@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.jmx.Primitives;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -55,7 +55,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
-    static AbstractGraphDatabase myDb;
+    static InternalAbstractGraphDatabase myDb;
 
     @BeforeClass
     public static void setup() throws IOException
@@ -69,7 +69,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         myDb.shutdown();
     }
 
-    private AbstractGraphDatabase getGraphDb()
+    private InternalAbstractGraphDatabase getGraphDb()
     {
         return myDb;
     }
@@ -78,7 +78,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     public void usingWrappingNeoServerBootstrapper()
     {
         // START SNIPPET: usingWrappingNeoServerBootstrapper
-        AbstractGraphDatabase graphdb = getGraphDb();
+        InternalAbstractGraphDatabase graphdb = getGraphDb();
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb );
         srv.start();

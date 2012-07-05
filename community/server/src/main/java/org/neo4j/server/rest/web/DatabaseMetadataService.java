@@ -45,7 +45,7 @@ public class DatabaseMetadataService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getRelationshipTypes()
     {
-        Iterable<RelationshipType> relationshipTypes = GlobalGraphOperations.at( database.graph ).getAllRelationshipTypes();
+        Iterable<RelationshipType> relationshipTypes = GlobalGraphOperations.at( database.getGraph() ).getAllRelationshipTypes();
         return Response.ok()
                 .type( MediaType.APPLICATION_JSON )
                 .entity( generateJsonRepresentation( relationshipTypes ) )

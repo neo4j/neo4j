@@ -79,7 +79,7 @@ public class BatchOperationService {
             final StreamingOutput stream = new StreamingOutput() {
                 public void write(final OutputStream output) throws IOException, WebApplicationException
                 {
-                    Transaction tx = database.graph.beginTx();
+                    Transaction tx = database.getGraph().beginTx();
                     try {
                         final ServletOutputStream servletOutputStream = new ServletOutputStream() {
                             public void write(int i) throws IOException {
@@ -110,7 +110,7 @@ public class BatchOperationService {
 
     private Response batchProcess( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body )
     {
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
             NonStreamingBatchOperations batchOperations = new NonStreamingBatchOperations( webServer );

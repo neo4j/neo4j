@@ -516,7 +516,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addExecutionLimitFilter( final int timeout )
     {
-        final Guard guard = server.getDatabase().graph.getGuard();
+        final Guard guard = server.getDatabase().getGraph().getGuard();
         if ( guard == null )
         {
             //TODO enable guard and restart EmbeddedGraphdb

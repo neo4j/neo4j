@@ -67,9 +67,9 @@ public class RrdFactory
     {
         Sampleable[] primitives = {
 //                new MemoryUsedSampleable(),
-                new NodeIdsInUseSampleable( (GraphDatabaseAPI) db.graph ),
-                new PropertyCountSampleable( (GraphDatabaseAPI) db.graph ),
-                new RelationshipCountSampleable( (GraphDatabaseAPI) db.graph )
+                new NodeIdsInUseSampleable( db.getGraph() ),
+                new PropertyCountSampleable( db.getGraph() ),
+                new RelationshipCountSampleable( db.getGraph() )
         };
 
         Sampleable[] usage = {
@@ -82,7 +82,7 @@ public class RrdFactory
         };
 
         final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
-                getDefaultDirectory( (GraphDatabaseAPI) db.graph ) );
+                getDefaultDirectory( (GraphDatabaseAPI) db.getGraph() ) );
         final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(

@@ -39,7 +39,7 @@ public class ServerHelper
             return;
         }
 
-        new Transactor( server.getDatabase().graph, new UnitOfWork()
+        new Transactor( server.getDatabase().getGraph(), new UnitOfWork()
         {
 
             @Override
@@ -52,7 +52,7 @@ public class ServerHelper
 
             private void deleteAllNodesAndRelationships( final NeoServer server )
             {
-                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().graph ).getAllNodes();
+                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().getGraph() ).getAllNodes();
                 for ( Node n : allNodes )
                 {
                     Iterable<Relationship> relationships = n.getRelationships();
@@ -77,12 +77,12 @@ public class ServerHelper
 
             private void deleteAllIndexes( final NeoServer server )
             {
-                IndexManager indexManager = server.getDatabase().graph.index();
+                IndexManager indexManager = server.getDatabase().getGraph().index();
                 
                 for ( String indexName : indexManager.nodeIndexNames() )
                 {
                 	try{
-	                    server.getDatabase().graph.index()
+	                    server.getDatabase().getGraph().index()
 	                            .forNodes( indexName )
 	                            .delete();
                 	} catch(UnsupportedOperationException e) {
@@ -93,7 +93,7 @@ public class ServerHelper
                 for ( String indexName : indexManager.relationshipIndexNames() )
                 {
                 	try {
-	                    server.getDatabase().graph.index()
+	                    server.getDatabase().getGraph().index()
 	                            .forRelationships( indexName )
 	                            .delete();
                 	} catch(UnsupportedOperationException e) {

@@ -73,12 +73,12 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     public void cleanTheDatabase()
     {
         cleanDatabase();
-        gen().setGraph( server().getDatabase().graph );
+        gen().setGraph( server().getDatabase().getGraph() );
     }
 
     long createNode()
     {
-        GraphDatabaseAPI graphdb = server().getDatabase().graph;
+        GraphDatabaseAPI graphdb = server().getDatabase().getGraph();
         Transaction tx = graphdb.beginTx();
         Node node;
         try {

@@ -60,13 +60,13 @@ public class PagedTraverserTest
 
     private void createLinkedList( int listLength, Database db )
     {
-        Transaction tx = db.graph.beginTx();
+        Transaction tx = db.getGraph().beginTx();
         try
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
             {
-                Node current = db.graph.createNode();
+                Node current = db.getGraph().createNode();
 
                 if ( previous != null )
                 {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -50,6 +51,6 @@ public class WrappingNeoServer extends CommunityNeoServer {
 
 	@Override
 	protected Database createDatabase() {
-		return new WrappedDatabase(db);
+		return new WrappedDatabase( (AbstractGraphDatabase) db );
 	}
 }

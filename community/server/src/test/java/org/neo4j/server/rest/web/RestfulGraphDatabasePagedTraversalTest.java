@@ -188,7 +188,7 @@ public class RestfulGraphDatabasePagedTraversalTest
 
     private long createListOfNodes( int numberOfNodes )
     {
-        Transaction tx = database.graph.beginTx();
+        Transaction tx = database.getGraph().beginTx();
         try
         {
             long zerothNode = helper.createNode( MapUtil.map( "name", String.valueOf( 0 ) ) );
@@ -196,8 +196,8 @@ public class RestfulGraphDatabasePagedTraversalTest
             for ( int i = 1; i < numberOfNodes; i++ )
             {
                 long currentNodeId = helper.createNode( MapUtil.map( "name", String.valueOf( i ) ) );
-                database.graph.getNodeById( previousNodeId )
-                        .createRelationshipTo( database.graph.getNodeById( currentNodeId ),
+                database.getGraph().getNodeById( previousNodeId )
+                        .createRelationshipTo( database.getGraph().getNodeById( currentNodeId ),
                                 DynamicRelationshipType.withName( "PRECEDES" ) );
             }
 

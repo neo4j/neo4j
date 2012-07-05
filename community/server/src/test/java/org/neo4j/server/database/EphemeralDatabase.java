@@ -23,7 +23,7 @@ import java.util.HashMap;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class EphemeralDatabase extends CommunityDatabase {
@@ -40,7 +40,7 @@ public class EphemeralDatabase extends CommunityDatabase {
 	@SuppressWarnings("deprecation")
 	public void start()
 	{
-		this.graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+		this.graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory()
 			.newImpermanentDatabaseBuilder()
 			.setConfig( loadNeo4jProperties() )
 			.newGraphDatabase();

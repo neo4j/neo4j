@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
  *
  * For more information, see {@link GraphDatabaseService}.
  */
-public class EmbeddedGraphDatabase extends AbstractGraphDatabase
+public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
 {
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in

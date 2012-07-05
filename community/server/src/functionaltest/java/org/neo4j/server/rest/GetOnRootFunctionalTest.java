@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
@@ -96,7 +96,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     private long setReferenceNodeIdToI() {
-        AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
+        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase)graphdb();
         Transaction tx = db.beginTx();
         long referenceNodeId = data.get().get("I").getId();
         db.getNodeManager().setReferenceNodeId( referenceNodeId );

@@ -46,7 +46,7 @@ public class PluginInitializer
 
     public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )
     {
-        GraphDatabaseAPI graphDatabaseService = neoServer.getDatabase().graph;
+        GraphDatabaseAPI graphDatabaseService = neoServer.getDatabase().getGraph();
         Configuration configuration = neoServer.getConfiguration();
 
         Collection<Injectable<?>> injectables = new HashSet<Injectable<?>>();

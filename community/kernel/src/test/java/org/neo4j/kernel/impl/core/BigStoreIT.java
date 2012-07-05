@@ -44,7 +44,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
@@ -53,7 +53,7 @@ public class BigStoreIT implements RelationshipType
     private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
     
     private static final String PATH = "target/var/big";
-    private AbstractGraphDatabase db;
+    private InternalAbstractGraphDatabase db;
     public @Rule
     TestName testName = new TestName()
     {

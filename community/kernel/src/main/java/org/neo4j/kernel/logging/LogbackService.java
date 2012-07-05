@@ -26,7 +26,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import java.io.File;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.RestartOnChange;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -58,7 +58,7 @@ public class LogbackService
     public void init()
         throws Throwable
     {
-        final String storeDir = config.get( AbstractGraphDatabase.Configuration.store_dir );
+        final String storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
 
         File file = new File( storeDir ).getAbsoluteFile();
         if (!file.exists())

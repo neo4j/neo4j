@@ -63,7 +63,7 @@ public class NeoServletContainer extends ServletContainer
         Set<Object> singletons = rc.getSingletons();
         singletons.add( new LeaseManagerProvider() );
         singletons.add( new DatabaseProvider( server.getDatabase() ) );
-        singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().graph ) );
+        singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().getGraph() ) );
         singletons.add( new NeoServerProvider( server ) );
         singletons.add( new ConfigurationProvider( server.getConfiguration() ) );
 

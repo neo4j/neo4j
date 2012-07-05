@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
  */
-public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
+public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDatabase
 {
     private static Map<String, String> readOnlyParams = new HashMap<String, String>();
 

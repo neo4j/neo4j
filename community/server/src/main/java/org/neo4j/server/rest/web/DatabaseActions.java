@@ -104,7 +104,7 @@ public class DatabaseActions
         this.leases = leaseManager;
         this.defaultForceMode = defaultForceMode;
         this.database = database;
-        this.graphDb = database.graph;
+        this.graphDb = database.getGraph();
     }
 
     public DatabaseActions forceMode( ForceMode forceMode )

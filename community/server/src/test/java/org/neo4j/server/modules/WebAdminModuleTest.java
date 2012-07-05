@@ -57,11 +57,12 @@ public class WebAdminModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
         Database db = mock( Database.class );
-        db.graph = ( mock( AbstractGraphDatabase.class ) );
+        AbstractGraphDatabase graph = mock( AbstractGraphDatabase.class );
+        when( db.getGraph() ).thenReturn( graph );
         Kernel mockKernel = mock( Kernel.class );
         ObjectName mockObjectName = mock( ObjectName.class );
         when( mockKernel.getMBeanQuery() ).thenReturn( mockObjectName );
-        when( db.graph.getManagementBeans( Kernel.class ) ).thenReturn( Collections.singleton( mockKernel ) );
+        when( graph.getManagementBeans( Kernel.class ) ).thenReturn( Collections.singleton( mockKernel ) );
 
         when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );

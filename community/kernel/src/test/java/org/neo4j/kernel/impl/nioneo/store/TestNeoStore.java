@@ -51,7 +51,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -160,9 +160,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
-            AbstractGraphDatabase.Configuration.store_dir.name(), path(),
-            AbstractGraphDatabase.Configuration.neo_store.name(), file("neo"),
-            AbstractGraphDatabase.Configuration.logical_log.name(), file("nioneo_logical.log"))));
+            InternalAbstractGraphDatabase.Configuration.store_dir.name(), path(),
+            InternalAbstractGraphDatabase.Configuration.neo_store.name(), file("neo"),
+            InternalAbstractGraphDatabase.Configuration.logical_log.name(), file("nioneo_logical.log"))));
         StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
 
         ds = new NeoStoreXaDataSource(config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,

@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServer;
 
 @Path("/")
@@ -49,7 +49,7 @@ public class TestJetty6WebServer {
 		// dependency to NeoServer, which should be removed.
 		// Once that is done, we should instantiate WebServer 
 		// here directly.
-		GraphDatabaseAPI db = mock(GraphDatabaseAPI.class);
+        AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
 		
 		WebServer server = neoServer.getWebServer();

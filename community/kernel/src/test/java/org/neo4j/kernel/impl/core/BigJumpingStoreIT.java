@@ -44,7 +44,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class BigJumpingStoreIT
 {
-    private static class TestDatabase extends AbstractGraphDatabase
+    private static class TestDatabase extends InternalAbstractGraphDatabase
     {
         protected TestDatabase( String storeDir, Map<String, String> params )
         {
@@ -79,7 +79,7 @@ public class BigJumpingStoreIT
     private static final String PATH = "target/var/bigjump";
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
     private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
-    private AbstractGraphDatabase db;
+    private InternalAbstractGraphDatabase db;
 
     @Before
     public void doBefore()

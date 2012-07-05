@@ -33,7 +33,7 @@ import org.neo4j.index.impl.lucene.ConnectionBroker;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.index.impl.lucene.LuceneXaConnection;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConnectionBroker;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -60,7 +60,7 @@ public class LuceneIndexProvider extends IndexProvider
     public IndexImplementation load( DependencyResolver dependencyResolver)
     {
         Config config = dependencyResolver.resolveDependency(Config.class);
-        AbstractGraphDatabase gdb = dependencyResolver.resolveDependency(AbstractGraphDatabase.class);
+        InternalAbstractGraphDatabase gdb = dependencyResolver.resolveDependency(InternalAbstractGraphDatabase.class);
         TransactionManager txManager = dependencyResolver.resolveDependency(TransactionManager.class);
         IndexStore indexStore = dependencyResolver.resolveDependency(IndexStore.class);
         XaFactory xaFactory = dependencyResolver.resolveDependency(XaFactory.class);

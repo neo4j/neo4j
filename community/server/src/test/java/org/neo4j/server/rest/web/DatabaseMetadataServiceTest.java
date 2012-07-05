@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -40,7 +40,7 @@ public class DatabaseMetadataServiceTest
     @Test
     public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws Throwable
     {
-        AbstractGraphDatabase db = new ImpermanentGraphDatabase();
+        InternalAbstractGraphDatabase db = new ImpermanentGraphDatabase();
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.createRelationshipTo( db.createNode(), withName( "a" ) );
