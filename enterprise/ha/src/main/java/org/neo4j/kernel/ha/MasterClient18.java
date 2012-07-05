@@ -302,6 +302,21 @@ public class MasterClient18 extends Client<Master> implements MasterClient
         }, VOID_DESERIALIZER );
     }
 
+    @Override
+    public Response<Void> pushTransaction( RequestContext context, final String resourceName, final long tx )
+    {
+        context = stripFromTransactions( context );
+        return sendRequest( HaRequestType18.PUSH_TRANSACTION, context, new Serializer()
+        {
+            @Override
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            {
+                writeString( buffer, resourceName );
+                buffer.writeLong( tx );
+            }
+        }, VOID_DESERIALIZER );
+    }
+    
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
     {
         int numberOfDefragIds = buffer.readInt();

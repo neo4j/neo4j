@@ -312,7 +312,18 @@ public enum HaRequestType18 implements RequestType<Master>
         {
             return true;
         }
-    };
+    },
+    
+    // ====
+    PUSH_TRANSACTION( new TargetCaller<Master, Void>()
+    {
+        @Override
+        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.pushTransaction( context, readString( input ), input.readLong() );
+        }
+    }, VOID_SERIALIZER, true );
 
     @SuppressWarnings( "rawtypes" )
     final TargetCaller caller;

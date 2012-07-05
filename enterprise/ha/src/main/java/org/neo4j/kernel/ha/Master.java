@@ -79,4 +79,6 @@ public interface Master
     Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
 
     Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
+    
+    Response<Void> pushTransaction( RequestContext context, String resourceName, long tx );
 }

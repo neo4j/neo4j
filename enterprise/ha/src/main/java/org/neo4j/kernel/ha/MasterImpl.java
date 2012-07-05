@@ -37,9 +37,11 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -510,6 +512,14 @@ public class MasterImpl implements Master
             String key )
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
+    }
+    
+    @Override
+    public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
+    {
+        graphDb.getTxIdGenerator().committed( graphDb.getXaDataSourceManager().getXaDataSource( resourceName ),
+                context.getEventIdentifier(), tx, context.machineId() );
+        return new Response<Void>( null, graphDb.getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     // =====================================================================

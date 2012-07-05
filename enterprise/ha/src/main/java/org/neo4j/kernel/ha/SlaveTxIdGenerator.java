@@ -122,6 +122,9 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     @Override
     public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId )
     {
+        // Tell the master to push this transaction
+        broker.getMaster().first().pushTransaction(
+                databaseOperations.getSlaveContext( identifier ), dataSource.getName(), txId ).close();
     }
 
     @Override

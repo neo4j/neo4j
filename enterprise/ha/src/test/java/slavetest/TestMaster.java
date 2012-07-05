@@ -157,4 +157,10 @@ class TestMaster implements Master
     {
         return actual.copyTransactions( context, dsName, startTxId, endTxId );
     }
+    
+    @Override
+    public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
+    {
+        return actual.pushTransaction( context, resourceName, tx );
+    }
 }

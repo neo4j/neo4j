@@ -728,6 +728,11 @@ OUTER:      do
         {
             throw noMasterException();
         }
+        
+        public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
+        {
+            throw noMasterException();
+        }
 
         @Override
         public String toString()
