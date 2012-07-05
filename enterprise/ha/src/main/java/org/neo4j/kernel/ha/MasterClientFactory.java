@@ -19,24 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.ConnectionLostHandler;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-public interface SlaveDatabaseOperations extends ConnectionLostHandler
+public interface MasterClientFactory
 {
-    /**
-     * Returns a {@link RequestContext} instance that has {@code eventIdentifier}
-     * as the event identifier.
-     *
-     * @param eventIdentifier The event identifier of the returned slave context
-     * @return The slave context
-     */
-    RequestContext getSlaveContext( int eventIdentifier );
-
-    <T> T receive( Response<T> response );
-
-    void exceptionHappened( RuntimeException e );
-
-    int getMasterForTx( long tx );
+    public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId );
 }

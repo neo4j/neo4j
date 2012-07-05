@@ -17,26 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-import org.neo4j.com.ConnectionLostHandler;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
 
-public interface SlaveDatabaseOperations extends ConnectionLostHandler
+public interface ConnectionLostHandler
 {
-    /**
-     * Returns a {@link RequestContext} instance that has {@code eventIdentifier}
-     * as the event identifier.
-     *
-     * @param eventIdentifier The event identifier of the returned slave context
-     * @return The slave context
-     */
-    RequestContext getSlaveContext( int eventIdentifier );
+    public static final ConnectionLostHandler NO_ACTION = new ConnectionLostHandler()
+    {
 
-    <T> T receive( Response<T> response );
+        @Override
+        public void handle( Exception e )
+        {
+        }
+    };
 
-    void exceptionHappened( RuntimeException e );
-
-    int getMasterForTx( long tx );
+    void handle( Exception e );
 }

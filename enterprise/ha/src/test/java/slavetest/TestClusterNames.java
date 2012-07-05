@@ -73,7 +73,7 @@ public class TestClusterNames
                                      db1Cluster1 = null,
                                      db0Cluster2 = null,
                                      db1Cluster2 = null;
-                                     
+
         try
         {
             // Here's one cluster
@@ -82,14 +82,14 @@ public class TestClusterNames
             db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
             awaitStarted( db0Cluster1 );
             awaitStarted( db1Cluster1 );
-    
+
             // Here's another cluster
             String cluster2Name = "cluster.2";
             db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+2 );
             db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
             awaitStarted( db0Cluster2 );
             awaitStarted( db1Cluster2 );
-    
+
             // Set property in one cluster, make sure it only affects that cluster
             String cluster1PropertyName = "c1";
             setRefNodeName( db1Cluster1, cluster1PropertyName );
@@ -98,7 +98,7 @@ public class TestClusterNames
             assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
             assertNull( db0Cluster2.getReferenceNode().getProperty( "name", null ) );
             assertNull( db1Cluster2.getReferenceNode().getProperty( "name", null ) );
-    
+
             // Set property in the other cluster, make sure it only affects that cluster
             String cluster2PropertyName = "c2";
             setRefNodeName( db1Cluster2, cluster2PropertyName );
@@ -107,10 +107,10 @@ public class TestClusterNames
             assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
             assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
             assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
-    
+
             // Restart an instance and make sure it rejoins the correct cluster again
             db0Cluster1.shutdown();
-            
+
             pullUpdates( db1Cluster1 );
             setRefNodeName( db1Cluster1, cluster1PropertyName );
             assertTrue( db1Cluster1.isMaster() );
@@ -120,7 +120,7 @@ public class TestClusterNames
             pullUpdates( db0Cluster2 );
             db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+3 );
             pullUpdates( db0Cluster2, db1Cluster2 );
-    
+
             // Change property in the first cluster, make sure it only affects that cluster
             cluster1PropertyName = "new c1";
             setRefNodeName( db1Cluster1, cluster1PropertyName );
@@ -129,7 +129,7 @@ public class TestClusterNames
             assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
             assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
             assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
-    
+
             // Set property in the other cluster, make sure it only affects that cluster
             cluster2PropertyName = "new new c2";
             setRefNodeName( db1Cluster2, cluster2PropertyName );
@@ -143,12 +143,12 @@ public class TestClusterNames
             db0Cluster1 = null;
             db1Cluster1.shutdown();
             db1Cluster1 = null;
-            
+
             db0Cluster2.shutdown();
             db0Cluster2 = null;
             db1Cluster2.shutdown();
             db1Cluster2 = null;
-            
+
         }
         finally
         {

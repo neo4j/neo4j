@@ -32,7 +32,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -43,7 +42,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.IdAllocation;
 import org.neo4j.kernel.ha.LockResult;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.ha.MasterClientFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -55,6 +54,7 @@ public abstract class AbstractZooKeeperManager
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
     protected static final String FLUSH_REQUESTED_CHILD = "flush-requested";
+    protected static final String COMPATIBILITY_CHILD = "compatibility-1.8";
 
     protected static final int STOP_FLUSHING = -6;
 
@@ -63,22 +63,19 @@ public abstract class AbstractZooKeeperManager
     protected volatile Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
 
     protected final StringLogger msgLog;
-    protected final int maxConcurrentChannelsPerSlave;
-    protected final int clientReadTimeout;
-    protected final int clientLockReadTimeout;
     private final long sessionTimeout;
 
-    public AbstractZooKeeperManager( String servers, StringLogger msgLog,
-            int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave, int sessionTimeout )
+    private final MasterClientFactory masterClientFactory;
+
+    public AbstractZooKeeperManager( String servers, StringLogger msgLog, int sessionTimeout,
+            MasterClientFactory clientFactory )
     {
         assert msgLog != null;
 
         this.servers = servers;
         this.msgLog = msgLog;
-        this.clientLockReadTimeout = clientLockReadTimeout;
-        this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
-        this.clientReadTimeout = clientReadTimeout;
         this.sessionTimeout = sessionTimeout;
+        this.masterClientFactory = clientFactory;
     }
 
     protected String asRootPath( StoreId storeId )
@@ -192,10 +189,10 @@ public abstract class AbstractZooKeeperManager
         }
         return cachedMaster;
     }
-    
+
     protected StoreId getStoreId()
     {
-        // TODO
+        // By default return null, since by default we don't know of databases.
         return null;
     }
 
@@ -205,10 +202,9 @@ public abstract class AbstractZooKeeperManager
         {
             return NO_MASTER;
         }
-        return new MasterClient( master.getServer().first(),
-                master.getServer().other(), this.msgLog, getStoreId(),
-                ConnectionLostHandler.NO_ACTION, clientReadTimeout,
-                clientLockReadTimeout, maxConcurrentChannelsPerSlave );
+        return masterClientFactory.instantiate( master.getServer().first(),
+                master.getServer().other().intValue(),
+                getStoreId() );
     }
 
     protected abstract int getMyMachineId();
@@ -306,13 +302,13 @@ public abstract class AbstractZooKeeperManager
             }
 
             writeFlush( getMyMachineId() );
-            
+
             long endTime = System.currentTimeMillis()+sessionTimeout;
 OUTER:      do
             {
                 Thread.sleep( 100 );
                 Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
-    
+
                 String root = getRoot();
                 List<String> children = getZooKeeper( true ).getChildren( root, false );
                 for ( String child : children )
@@ -322,7 +318,7 @@ OUTER:      do
                     {   // This was some kind of other ZK node, just ignore
                         continue;
                     }
-    
+
                     try
                     {
                         int id = parsedChild.first();
@@ -374,7 +370,7 @@ OUTER:      do
             writeFlush( STOP_FLUSHING );
         }
     }
-    
+
     protected Machine getHaServer( int machineId, boolean wait )
     {
         Machine result = haServersCache.get( machineId );
@@ -385,7 +381,7 @@ OUTER:      do
         }
         return result;
     }
-    
+
     protected void refreshHaServers() throws KeeperException
     {
         try
@@ -405,12 +401,17 @@ OUTER:      do
             throw new ZooKeeperException( "Interrupted", e );
         }
     }
-    
+
     protected Iterable<Machine> getHaServers()
     {
         return haServersCache.values();
     }
-    
+
+    protected int getNumberOfServers()
+    {
+        return haServersCache.size();
+    }
+
     protected Machine readHaServer( int machineId, boolean wait )
     {
         if ( wait )
@@ -550,7 +551,7 @@ OUTER:      do
     {
         return Integer.parseInt( path.substring( path.lastIndexOf( '/' )+1 ) );
     }
-    
+
     private void writeFlush( int toWrite )
     {
         final String path = getRoot() + "/" + FLUSH_REQUESTED_CHILD;

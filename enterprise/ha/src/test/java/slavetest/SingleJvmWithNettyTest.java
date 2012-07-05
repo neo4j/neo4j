@@ -49,8 +49,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.Client;
-import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
+import org.neo4j.com.ConnectionLostHandler;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -74,6 +74,7 @@ import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.ha.MasterClient18;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.SlaveClient;
 import org.neo4j.kernel.ha.SlaveDatabaseOperations;
@@ -97,7 +98,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     {
         cachedMasterOverride = null;
     }
-    
+
     @Test
     public void assertThatNettyIsUsed() throws Exception
     {
@@ -106,23 +107,22 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 "Slave Broker is not a client",
                 ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getBroker().getMaster().first() instanceof MasterClient );
     }
-    
+
     @Override
     protected Broker makeSlaveBroker( TestMaster master, int masterId, int id, HighlyAvailableGraphDatabase db, Map<String, String> config )
     {
         config.put( "server_id", Integer.toString( id ) );
 
-        final Machine masterMachine = new Machine( masterId, -1, 1, -1,
-                "localhost:" + Protocol.PORT, 0 );
+        final Machine masterMachine = new Machine( masterId, -1, 1, -1, "localhost:" + Protocol.PORT, 0 );
         int readTimeout = getConfigInt( config, HaSettings.read_timeout.name(), TEST_READ_TIMEOUT );
-        final Master client = new MasterClient(
+        final Master client = new MasterClient18(
                 masterMachine.getServer().first(),
                 masterMachine.getServer().other(),
                 db.getMessageLog(),
                 AbstractBroker.storeId,
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, HaSettings.lock_read_timeout.name(), readTimeout ),
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
         return new AbstractBroker( new Config( new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config ) ))
         {
             public boolean iAmMaster()
@@ -151,7 +151,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 throw new UnsupportedOperationException(
                         "cannot instantiate master server on slave" );
             }
-            
+
             @Override
             public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
             {
@@ -170,7 +170,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         String value = config.get( key );
         return value != null ? Integer.parseInt( value ) : defaultValue;
     }
-    
+
     @Test
     public void makeSureLogMessagesIsWrittenEvenAfterInternalRestart() throws Exception
     {
@@ -490,7 +490,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         // Asserting time spent in a unit test is error prone. Comparing lockTimeout=1
         // against the default (20) / 2 = 10 should be pretty fine and should still verify
         // the correct behavior.
-        assertTrue( "" + waitTime, waitTime < Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS*1000/2 );
+        assertTrue( "" + waitTime, waitTime < Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000 / 2 );
         latch.countDownSecond();
     }
 
@@ -564,7 +564,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
         executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
     }
-    
+
     @Test
     public void lockWaitTimeoutShouldHaveSilentTxFinishRollingBackToNotHideOriginalException() throws Exception
     {
@@ -583,7 +583,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return null;
             }
         } );
-        
+
         DoubleLatch latch = latchFetcher.fetch();
         latch.awaitFirst(); // Wait for lockHolder to grab the lock
         try
@@ -725,7 +725,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
             fail( "Should not have gotten more than one failed pullUpdates during master switch." );
         }
     }
-    
+
     @Test
     public void bruteForceCreateSameRelationshipTypeOnDifferentSlaveAtTheSameTimeShouldYieldSameId() throws Exception
     {
@@ -753,7 +753,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                         {
                             throw new RuntimeException( e );
                         }
-                        
+
                         Transaction tx = db.beginTx();
                         try
                         {
@@ -769,18 +769,18 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 thread.start();
                 threads.add( thread );
             }
-            
+
             latch.countDown();
             for ( Thread thread : threads )
             {
                 thread.join();
             }
-            
+
             List<GraphDatabaseAPI> dbs = new ArrayList<GraphDatabaseAPI>();
             dbs.add( getMasterHaDb() );
             for ( int s = 0; s < slaves; s++ )
                 dbs.add( getSlave( s ) );
-            
+
             // Verify so that the relationship type on all the machines has got the same id
             int highestId = 0;
             for ( GraphDatabaseAPI db : dbs )
