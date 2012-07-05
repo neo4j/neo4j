@@ -1224,7 +1224,7 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    public synchronized LogEntry.Start applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
+    public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
             long nextTxId, ForceMode forceMode ) throws IOException
     {
         int xidIdent = 0;
@@ -1287,7 +1287,6 @@ public class XaLogicalLog implements LogLoader
 
         checkLogRotation();
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
-        return startEntry;
     }
 
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )

@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -964,5 +965,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public StoreId getStoreId()
     {
         return actual.getStoreId();
+    }
+    
+    @Override
+    public TxIdGenerator getTxIdGenerator()
+    {
+        return actual.getTxIdGenerator();
     }
 }

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
@@ -69,6 +70,9 @@ public interface GraphDatabaseAPI
 
     @Deprecated
     IdGeneratorFactory getIdGeneratorFactory();
+    
+    @Deprecated
+    TxIdGenerator getTxIdGenerator();
 
     @Deprecated
     String getStoreDir();

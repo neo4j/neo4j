@@ -1021,6 +1021,12 @@ public abstract class AbstractGraphDatabase
     {
         return msgLog;
     }
+    
+    @Override
+    public TxIdGenerator getTxIdGenerator()
+    {
+        return txIdGenerator;
+    }
 
     @Override
     public KernelPanicEventGenerator getKernelPanicGenerator()

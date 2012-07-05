@@ -765,17 +765,11 @@ public class XaResourceManager
         }
     }
 
-    public /*synchronized in the method*/ long applyPreparedTransaction(
+    public synchronized long applyPreparedTransaction(
             ReadableByteChannel transaction ) throws IOException
     {
-        long txId = 0;
-        LogEntry.Start startEntry = null;
-        synchronized ( this )
-        {
-            txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-            startEntry = log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
-        }
-        txIdGenerator.committed( dataSource, startEntry.getIdentifier(), txId, startEntry.getLocalId() );
+        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+        log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
         return txId;
     }
     
