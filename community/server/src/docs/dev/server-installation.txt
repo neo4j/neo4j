@@ -162,13 +162,16 @@ It's good practice to reset the unit testing database before each test run. This
 
 Next, configure the instance by changing the following values in 'test/conf/neo4j-server.properties' to
 
-- change the server port to `7475`
+- change the server port for HTTP to `7475` (and HTTPS to a port other than default if you are using it)
 //- activate the clean-database server extension for remote cleaning of the database via REST
 
 [source,shell]
 ----
-# Note the different port number from the development instance
+# Note the different HTTP port number from the development instance
 org.neo4j.server.webserver.port=7475
+
+# Assign a different port number for HTTPS
+org.neo4j.server.webserver.https.port=7464
 
 # Uncomment the following if the instance will be accessed from a host other than localhost
 org.neo4j.server.webserver.address=0.0.0.0
