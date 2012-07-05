@@ -72,10 +72,10 @@ class RWLock
 
     private final Object resource; // the resource for this RWLock
 
-    private final LinkedList<WaitElement> waitingThreadList = 
+    private final LinkedList<WaitElement> waitingThreadList =
         new LinkedList<WaitElement>();
 
-    private final ArrayMap<Transaction,TxLockElement> txLockElementMap = 
+    private final ArrayMap<Transaction,TxLockElement> txLockElementMap =
         new ArrayMap<Transaction,TxLockElement>( (byte)5, false, true );
 
     private final RagManager ragManager;
@@ -94,7 +94,7 @@ class RWLock
         int writeCount = 0;
 
         private boolean movedOn = false;
-        
+
         TxLockElement( Transaction tx )
         {
             this.tx = tx;
@@ -130,28 +130,28 @@ class RWLock
     /**
      * Calls {@link #acquireReadLock(Transaction)} with the transaction
      * associated with the current thread.
-     * 
+     *
      * @throws DeadlockDetectedException
      */
     void acquireReadLock() throws DeadlockDetectedException {
         acquireReadLock(ragManager.getCurrentTransaction());
     }
-    
+
     /**
-     * Tries to acquire read lock for a given transaction. If 
-     * <CODE>this.writeCount</CODE> is greater than the currents tx's write 
-     * count the transaction has to wait and the {@link RagManager#checkWaitOn} 
+     * Tries to acquire read lock for a given transaction. If
+     * <CODE>this.writeCount</CODE> is greater than the currents tx's write
+     * count the transaction has to wait and the {@link RagManager#checkWaitOn}
      * method is invoked for deadlock detection.
      * <p>
      * If the lock can be acquired the lock count is updated on <CODE>this</CODE>
      * and the transaction lock element (tle).
-     * 
+     *
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
     synchronized void acquireReadLock(Transaction tx) throws DeadlockDetectedException
     {
-        if ( tx == null )
+        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
         {
             tx = new PlaceboTransaction();
         }
@@ -257,8 +257,8 @@ class RWLock
                 }
                 else
                 {
-                    java.util.ListIterator<WaitElement> listItr = 
-                        waitingThreadList.listIterator( 
+                    java.util.ListIterator<WaitElement> listItr =
+                        waitingThreadList.listIterator(
                             waitingThreadList.lastIndexOf( we ) );
                     // hm am I doing the first all over again?
                     // think I am if cursor is at lastIndex + 0.5 oh well...
@@ -307,7 +307,7 @@ class RWLock
     }
 
     /**
-     * Calls {@link #acquireWriteLock(Transaction)} with the 
+     * Calls {@link #acquireWriteLock(Transaction)} with the
      * transaction associated with the current thread.
      * @throws DeadlockDetectedException
      */
@@ -315,25 +315,23 @@ class RWLock
     {
         acquireWriteLock( null );
     }
-    
+
     /**
-     * Tries to acquire write lock for a given transaction. If 
-     * <CODE>this.writeCount</CODE> is greater than the currents tx's write 
-     * count or the read count is greater than the currents tx's read count the 
-     * transaction has to wait and the {@link RagManager#checkWaitOn} method is 
+     * Tries to acquire write lock for a given transaction. If
+     * <CODE>this.writeCount</CODE> is greater than the currents tx's write
+     * count or the read count is greater than the currents tx's read count the
+     * transaction has to wait and the {@link RagManager#checkWaitOn} method is
      * invoked for deadlock detection.
      * <p>
      * If the lock can be acquires the lock count is updated on <CODE>this</CODE>
      * and the transaction lock element (tle).
-     * 
+     *
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
     synchronized void acquireWriteLock(Transaction tx) throws DeadlockDetectedException
     {
-        tx = (tx != null ? tx : ragManager.getCurrentTransaction()); 
-        
-        if ( tx == null )
+        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
         {
             tx = new PlaceboTransaction();
         }
