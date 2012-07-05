@@ -23,7 +23,7 @@ package org.neo4j.kernel.ha;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.logging.Logging;
  * TODO
  */
 public class AbstractHAGraphDatabase
-    extends AbstractGraphDatabase
+    extends InternalAbstractGraphDatabase
 {
     protected Broker broker;
     private NodeProxy.NodeLookup nodeLookup;

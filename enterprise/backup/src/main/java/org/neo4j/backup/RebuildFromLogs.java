@@ -30,7 +30,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -55,7 +55,7 @@ class RebuildFromLogs
     private final XaDataSource nioneo;
     private final StoreAccess stores;
 
-    RebuildFromLogs( AbstractGraphDatabase graphdb )
+    RebuildFromLogs( InternalAbstractGraphDatabase graphdb )
     {
         this.nioneo = getDataSource( graphdb, Config.DEFAULT_DATA_SOURCE_NAME );
         this.stores = new StoreAccess( graphdb );
@@ -87,7 +87,7 @@ class RebuildFromLogs
         nioneo.applyCommittedTransaction( txId, txData );
     }
 
-    private static XaDataSource getDataSource( AbstractGraphDatabase graphdb, String name )
+    private static XaDataSource getDataSource( InternalAbstractGraphDatabase graphdb, String name )
     {
         XaDataSource datasource = graphdb.getXaDataSourceManager().getXaDataSource( name );
         if ( datasource == null ) throw new NullPointerException( "Could not access " + name );
@@ -150,7 +150,7 @@ class RebuildFromLogs
         }
         long txCount = findLastTransactionId( source, LOGICAL_LOG_DEFAULT_NAME + ".v" + maxFileId );
         String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
-        AbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb( target.getAbsolutePath(),
+        InternalAbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb( target.getAbsolutePath(),
                                                                        new TxDiffLogConfig( full
                                                                                ? VerificationLevel.FULL_WITH_LOGGING
                                                                                : VerificationLevel.LOGGING, txdifflog ) );

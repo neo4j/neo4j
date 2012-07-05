@@ -30,7 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
@@ -75,7 +75,7 @@ public class TestConsistencyCheck
         }
     }
     
-    private static void buildCleanDatabase( AbstractGraphDatabase graphdb )
+    private static void buildCleanDatabase( InternalAbstractGraphDatabase graphdb )
     {
 
     }
@@ -123,7 +123,7 @@ public class TestConsistencyCheck
 
     @Rule
     public final TargetDirectory.TestDirectory test = TargetDirectory.testDirForTest( TestConsistencyCheck.class );
-    private AbstractGraphDatabase graphdb;
+    private InternalAbstractGraphDatabase graphdb;
     private StoreAccess store;
 
     @Before

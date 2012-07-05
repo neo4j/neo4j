@@ -41,7 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -433,7 +433,7 @@ public class TestBackup
         GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         try
         {
-            XaDataSource ds = ((AbstractGraphDatabase)db).getXaDataSourceManager().getNeoStoreDataSource();
+            XaDataSource ds = ((InternalAbstractGraphDatabase)db).getXaDataSourceManager().getNeoStoreDataSource();
             return ds.getLastCommittedTxId();
         }
         finally

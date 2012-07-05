@@ -321,7 +321,7 @@ public final class ServerCluster
 
         private GraphDatabaseAPI graphDb()
         {
-            return this.bootstrap.getServer().getDatabase().graph;
+            return this.bootstrap.getServer().getDatabase().getGraph();
         }
 
         @Override

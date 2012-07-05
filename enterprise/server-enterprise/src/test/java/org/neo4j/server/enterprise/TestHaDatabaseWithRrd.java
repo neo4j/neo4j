@@ -74,12 +74,12 @@ public class TestHaDatabaseWithRrd
     private void doTransaction( Database db )
     {
         Node node = null;
-        Transaction tx = db.graph.beginTx();
+        Transaction tx = db.getGraph().beginTx();
         String key = "name";
         String value = "Test";
         try
         {
-            node = db.graph.createNode();
+            node = db.getGraph().createNode();
             node.setProperty( key, value );
             tx.success();
         }

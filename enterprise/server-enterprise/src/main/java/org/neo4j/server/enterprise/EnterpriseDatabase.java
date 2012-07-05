@@ -22,6 +22,7 @@ package org.neo4j.server.enterprise;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -69,8 +70,8 @@ public class EnterpriseDatabase extends CommunityDatabase {
         {
 			GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfig.getString( Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
 			
-			this.graph = factory.createDatabase(
-					serverConfig.getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY, Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY), 
+			this.graph = (AbstractGraphDatabase) factory.createDatabase(
+					serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY, Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY),
 					loadNeo4jProperties());
 			
             log.info( "Successfully started database" );

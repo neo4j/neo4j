@@ -43,7 +43,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -188,7 +188,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         }
     }
 
-    private final BreakPoint ON_CRASH = new BreakPoint( Crash.class, "run", AbstractGraphDatabase.class )
+    private final BreakPoint ON_CRASH = new BreakPoint( Crash.class, "run", InternalAbstractGraphDatabase.class )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
