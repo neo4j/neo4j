@@ -1248,13 +1248,14 @@ public class ZooClient extends AbstractZooKeeperManager
                         if ( instantiate )
                         {
                             cachedSlaves.put( id, Pair.of( new SlaveClient( machine.getMachineId(), machine.getServer().first(),
-                                                    machine.getServer().other().intValue(), msgLog, storeId,
-                                                    conf.getInteger( HaSettings.max_concurrent_channels_per_slave ) ),
-                                            machine ) );
+                                    machine.getServer().other().intValue(), msgLog, storeId,
+                                    conf.get( HaSettings.max_concurrent_channels_per_slave ) ),
+                                    machine ) );
                         }
                     }
 
-                    for ( int id : cachedSlaves.keySet() )
+                    Integer[] existingSlaves = cachedSlaves.keySet().toArray( new Integer[cachedSlaves.size()] );
+                    for ( int id : existingSlaves )
                         if ( !visitedSlaves.contains( id ) )
                             cachedSlaves.remove( id ).first().shutdown();
                 }
