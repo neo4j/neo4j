@@ -1,7 +1,10 @@
-1.8
+1.8.M06 (2012-07-06)
 --------------------
 o Added transaction push factor that can be configured with amount of slaves to push transactions to. The master will 
   optimistically push each transaction before tx.finish completes to reduce risk of branched data.
+o Added the ability for rolling upgrades from versions 1.5.3 onwards.
+o Changed the way master election notification and data gathering works, leading to massively reduced writing of data to
+  the zookeeper service and a subsequent performance increase.
 
 1.8.M03 (2012-05-24)
 --------------------
