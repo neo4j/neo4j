@@ -181,7 +181,7 @@ It is specified as a fraction of the heap, for example specifying +5+ will let t
 Increasing this figure (up to a maximum of 10) will reduce the chance of hash collisions at the expense of more heap used for it.
 More collisions means more redundant loading of objects from the low level cache.
 
-[options="header",frame="none",cols="<15m,<85"]
+[options="header",frame="none",cols="<15m,<70,<15m"]
 |==========================================
 | `configuration option`            | Description (what it controls)                                                                 | Example value
 | node_cache_array_fraction         | Fraction of the heap to dedicate to the array holding the nodes in the cache (max 10).         | 7
@@ -194,7 +194,7 @@ Optimal settings for the maximum size depends on the size of your graph.
 The configured maximum size should leave enough room for other objects to coexist in the same JVM, but at the same time large enough to keep loading from the low level cache at a minimum.
 Predicted load on the JVM as well as layout of domain level objects should also be take into consideration.  
 
-[options="header",frame="none",cols="<15m,<85"]
+[options="header",frame="none",cols="<15m,<70,<15m"]
 |==========================================
 | `configuration option`   | Description (what it controls)                                           | Example value
 | node_cache_size          | Maximum size of the heap memory to dedicate to the cached nodes.         | 2G
