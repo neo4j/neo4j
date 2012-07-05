@@ -57,7 +57,7 @@ public class SlaveLockManager extends LockManager
     }
 
     @Override
-    public void getReadLock( Object resource ) throws DeadlockDetectedException,
+    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
             IllegalResourceException
     {
         LockGrabber grabber = null;
@@ -70,7 +70,7 @@ public class SlaveLockManager extends LockManager
         {
             if ( grabber == null )
             {
-                super.getReadLock( resource );
+                super.getReadLock( resource, tx );
                 return;
             }
 
@@ -84,7 +84,7 @@ public class SlaveLockManager extends LockManager
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
-                    super.getReadLock( resource );
+                    super.getReadLock( resource, tx );
                     return;
                 case DEAD_LOCKED:
                     throw new DeadlockDetectedException( result.getDeadlockMessage() );
@@ -108,7 +108,7 @@ public class SlaveLockManager extends LockManager
     }
 
     @Override
-    public void getWriteLock( Object resource ) throws DeadlockDetectedException,
+    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
             IllegalResourceException
     {
         // Code copied from getReadLock. Fix!
@@ -122,7 +122,7 @@ public class SlaveLockManager extends LockManager
         {
             if ( grabber == null )
             {
-                super.getWriteLock( resource );
+                super.getWriteLock( resource, tx );
                 return;
             }
 
@@ -136,7 +136,7 @@ public class SlaveLockManager extends LockManager
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
-                    super.getWriteLock( resource );
+                    super.getWriteLock( resource, tx );
                     return;
                 case DEAD_LOCKED:
                     throw new DeadlockDetectedException( result.getDeadlockMessage() );
