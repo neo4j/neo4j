@@ -504,11 +504,6 @@ public class XaResourceManager
             txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
         return xaTransaction;
     }
-    
-    void pushTransaction( int identifier, long txId, int authorServerId )
-    {
-        txIdGenerator.committed( dataSource, identifier, txId, authorServerId );
-    }
 
     private ForceMode getForceMode()
     {
@@ -770,11 +765,17 @@ public class XaResourceManager
         }
     }
 
-    public synchronized long applyPreparedTransaction(
+    public /*synchronized in the method*/ long applyPreparedTransaction(
             ReadableByteChannel transaction ) throws IOException
     {
-        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-        log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
+        long txId = 0;
+        LogEntry.Start startEntry = null;
+        synchronized ( this )
+        {
+            txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+            startEntry = log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
+        }
+        txIdGenerator.committed( dataSource, startEntry.getIdentifier(), txId, startEntry.getLocalId() );
         return txId;
     }
     

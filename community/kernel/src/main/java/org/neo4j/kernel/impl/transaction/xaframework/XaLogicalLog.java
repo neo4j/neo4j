@@ -1224,74 +1224,70 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    public /*synchronized in the method*/ void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
+    public synchronized LogEntry.Start applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
             long nextTxId, ForceMode forceMode ) throws IOException
     {
         int xidIdent = 0;
         LogEntry.Start startEntry = null;
-        synchronized ( this )
+        if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
-            if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
-            {
-                throw new IllegalStateException( "Tried to apply tx " +
-                    nextTxId + " but expected transaction " +
-                    (xaTf.getCurrentVersion() + 1) );
-            }
-    
-            logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
-                    ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
-    
-            long logEntriesFound = 0;
-            scanIsComplete = false;
-            LogDeserializer logApplier = getLogDeserializer( byteChannel );
-            xidIdent = getNextIdentifier();
-            long startEntryPosition = writeBuffer.getFileChannelPosition();
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-            {
-                logEntriesFound++;
-            }
-            byteChannel.close();
-            startEntry = logApplier.getStartEntry();
-            if ( startEntry == null )
-            {
-                throw new IOException( "Unable to find start entry" );
-            }
-            startEntry.setStartPosition( startEntryPosition );
-    //        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
-            LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
-                    xidIdent, nextTxId, System.currentTimeMillis() );
-            LogIoUtils.writeLogEntry( commit, writeBuffer );
-            // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
-            forceMode.force( writeBuffer );
-            Xid xid = startEntry.getXid();
-            try
-            {
-                XaTransaction xaTx = xaRm.getXaTransaction( xid );
-                xaTx.setCommitTxId( nextTxId );
-                cacheTxStartPosition( nextTxId, startEntry );
-                xaRm.commit( xid, true );
-                LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
-                LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
-                xidIdentMap.remove( startEntry.getIdentifier() );
-                recoveredTxMap.remove( startEntry.getIdentifier() );
-            }
-            catch ( XAException e )
-            {
-                throw new IOException( e );
-            }
-    
-    //        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
-    //        LogIoUtils.writeLogEntry( done, writeBuffer );
-            // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
-            scanIsComplete = true;
-    //        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
-            logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
-    
-            checkLogRotation();
-    //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
+            throw new IllegalStateException( "Tried to apply tx " +
+                nextTxId + " but expected transaction " +
+                (xaTf.getCurrentVersion() + 1) );
         }
-        
-        xaRm.pushTransaction( xidIdent, nextTxId, startEntry.getLocalId() );
+
+        logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
+                ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
+
+        long logEntriesFound = 0;
+        scanIsComplete = false;
+        LogDeserializer logApplier = getLogDeserializer( byteChannel );
+        xidIdent = getNextIdentifier();
+        long startEntryPosition = writeBuffer.getFileChannelPosition();
+        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+        {
+            logEntriesFound++;
+        }
+        byteChannel.close();
+        startEntry = logApplier.getStartEntry();
+        if ( startEntry == null )
+        {
+            throw new IOException( "Unable to find start entry" );
+        }
+        startEntry.setStartPosition( startEntryPosition );
+//        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
+        LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
+                xidIdent, nextTxId, System.currentTimeMillis() );
+        LogIoUtils.writeLogEntry( commit, writeBuffer );
+        // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
+        forceMode.force( writeBuffer );
+        Xid xid = startEntry.getXid();
+        try
+        {
+            XaTransaction xaTx = xaRm.getXaTransaction( xid );
+            xaTx.setCommitTxId( nextTxId );
+            cacheTxStartPosition( nextTxId, startEntry );
+            xaRm.commit( xid, true );
+            LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
+            LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
+            xidIdentMap.remove( startEntry.getIdentifier() );
+            recoveredTxMap.remove( startEntry.getIdentifier() );
+        }
+        catch ( XAException e )
+        {
+            throw new IOException( e );
+        }
+
+//        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
+//        LogIoUtils.writeLogEntry( done, writeBuffer );
+        // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
+        scanIsComplete = true;
+//        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+        logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
+
+        checkLogRotation();
+//        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
+        return startEntry;
     }
 
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
