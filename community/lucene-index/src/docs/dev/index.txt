@@ -435,9 +435,6 @@ CAUTION: This setting is not persisted after shutting down the database.
 Neo4j provides a single index for nodes and one for relationships in each database that automatically follow property values as they are added, deleted and changed on database primitives.
 This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
 
-[CAUTION]
-This is an experimental feature. Expect changes in the API and do not rely on it for production data handling.
-
 [[auto-indexing-config]]
 === Configuration ===
 
