@@ -64,7 +64,7 @@ public class HaSettings
     public static final BooleanSetting allow_init_cluster = new BooleanSetting( "ha.allow_init_cluster" );
 
     @Default("5000")
-    public static final IntegerSetting zk_session_timeout = new IntegerSetting( "ha.zk_session_timeout", "Must be a valid timeout in seconds", 1, null );
+    public static final IntegerSetting zk_session_timeout = new IntegerSetting( "ha.zk_session_timeout", "Must be a valid timeout in milliseconds", 1, null );
 
     @Default("500")
     public static final IntegerSetting coordinator_fetch_info_timeout = new IntegerSetting( "ha.coordinator_fetch_info_timeout", "Must be a valid timeout in seconds", 1, null );

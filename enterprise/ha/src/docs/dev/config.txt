@@ -69,7 +69,7 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 | ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
 | ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes  | 100 | no
 | ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_last,keep_none,shutdown} | no
-| ha.zk_session_timeout | how long before a non reachable instance has its session expired from the ZooKeeper cluster and its ephemeral nodes removed, probably leading to a master election | 30 | no
+| ha.zk_session_timeout | how long (in milliseconds) before a non reachable instance has its session expired from the ZooKeeper cluster and its ephemeral nodes removed, probably leading to a master election | 5000 | no
 | ha.tx_push_factor     | amount of slaves a tx will be pushed to whenever the master commits a transaction   | 1 (default)    | no
 | ha.tx_push_strategy   | either "fixed" (default) or "round_robin", fixed will push to the slaves with highest server id | fixed          | no
 |========================================================================================

@@ -116,7 +116,7 @@ public class TestZooClient
         Map<String, String> stringConfig = new HashMap<String, String>();
         stringConfig.put( HaSettings.coordinators.name(), "localhost:4181" );
         stringConfig.put( HaSettings.server_id.name(), "1" );
-        stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( secondsForSessionToExpire ) );
+        stringConfig.put( HaSettings.zk_session_timeout.name(), Long.toString( 1000 * secondsForSessionToExpire ) );
         Config config = new Config( new ConfigurationDefaults( OnlineBackupSettings.class, GraphDatabaseSettings.class,
                 HaSettings.class ).apply( stringConfig ) );
 
