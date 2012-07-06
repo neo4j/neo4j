@@ -1,7 +1,9 @@
-1.8.M06
--------
-
+1.8.M06 (2012-07-06)
+--------------------
 o Deprecated AbstractGraphDatabase.transactionRunning()
+o Fix for issue where read locks were not being properly released.
+o Changed synchronization of applying transactions to prevent a deadlock scenario
+o Original cause can be extracted from a transaction RollbackException
 
 1.8.M05 (2012-06-25)
 --------------------

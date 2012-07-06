@@ -1,3 +1,7 @@
+1.8.M06 (2012-07-06)
+--------------------
+o Fixed issue that stopped the server from starting without the UDC-jars.
+
 1.8.M05 (2012-06-25)
 --------------------
 o Added support for multi line Cypher queries in webadmin browser
