@@ -1,3 +1,18 @@
+1.8.M06 (2012-07-06)
+--------------------
+Kernel:
+ o Deprecated AbstractGraphDatabase.transactionRunning()
+ o Changed synchronization of applying transactions to prevent a deadlock scenario
+ o Original cause can be extracted from a transaction RollbackException
+
+Server:
+ o Fixed issue that stopped the server from starting without the UDC-jars.
+
+Cypher:
+ o Fixes problem when graph elements are deleted multiple times in the same query
+ o Fixes #625: Values passed through WITH have the wrong type
+ o Fixes #654: Some paths are returned the wrong way
+
 1.8.M05 (2012-06-25)
 --------------------
 Kernel:

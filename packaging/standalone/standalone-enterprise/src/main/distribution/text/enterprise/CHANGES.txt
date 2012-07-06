@@ -1,3 +1,25 @@
+1.8.M06 (2012-07-06)
+--------------------
+HA:
+ o Added transaction push factor that can be configured with amount of slaves to push transactions to. The master will
+   optimistically push each transaction before tx.finish completes to reduce risk of branched data.
+ o Added the ability for rolling upgrades from versions 1.5.3 onwards.
+ o Changed the way master election notification and data gathering works, leading to massively reduced writing of data to
+   the zookeeper service and a subsequent performance increase.
+
+Kernel:
+ o Deprecated AbstractGraphDatabase.transactionRunning()
+ o Changed synchronization of applying transactions to prevent a deadlock scenario
+ o Original cause can be extracted from a transaction RollbackException
+
+Server:
+ o Fixed issue that stopped the server from starting without the UDC-jars.
+
+Cypher:
+ o Fixes problem when graph elements are deleted multiple times in the same query
+ o Fixes #625: Values passed through WITH have the wrong type
+ o Fixes #654: Some paths are returned the wrong way
+
 1.8.M05 (2012-06-25)
 --------------------
 HA:
