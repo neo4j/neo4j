@@ -23,13 +23,19 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.List;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.json.JSONException;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cypher.ParameterWrongTypeException;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -38,6 +44,7 @@ import org.neo4j.test.GraphDescription.Graph;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -352,7 +359,42 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         // Ensure nothing was borked.
         assertThat(returnedValue, is(complicatedString));
     }
-    
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldHandleFailingCypherStatementCorrectly() throws Exception {
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/cypher")
+                    .key("body")   .object()
+                                       .key("query").value("start n=node({id}) set n.foo = 10   return n")
+                                       .key("params").object().key("id").value("0").endObject()
+                                   .endObject()
+                .endObject()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                .endObject()
+            .endArray()
+            .toString();
+
+        String entity = gen.get()
+                .expectedStatus( 500 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
+
+        System.out.println("entity = " + entity);
+        // Pull out the property value from the depths of the response
+        Map<String, Object> result = JsonHelper.jsonToMap(entity);
+        String exception = (String) result.get("exception");
+        assertThat(exception, is("BatchOperationFailedException"));
+        String innerException = (String) ((Map) JsonHelper.jsonToMap((String) result.get("message"))).get("exception");
+        assertThat(innerException, is("ParameterWrongTypeException"));
+    }
+
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,

@@ -145,7 +145,6 @@ public abstract class InternalAbstractGraphDatabase
     protected Map<String, String> params;
     private final Iterable<KernelExtension> kernelExtensions;
     protected StoreId storeId;
-    private Transaction placeboTransaction = null;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
     protected Logging logging;
@@ -735,12 +734,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( transactionRunning() )
         {
-            if ( placeboTransaction == null )
-            {
-                placeboTransaction = new PlaceboTransaction(
-                        txManager );
-            }
-            return placeboTransaction;
+            return new PlaceboTransaction( txManager );
         }
         Transaction result = null;
         try
@@ -856,7 +850,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( "Node[" + id + "]" );
         }
-        return nodeManager.getNodeById( id );
+        return nodeManager.getNodeById(id);
     }
 
     @Override
