@@ -44,14 +44,9 @@ class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]],
     val eagerResult = try {
       immutableResult.toList
     } catch {
-      case e => db match {
-        case adb: GraphDatabaseAPI => state.transaction match {
-          case None => throw e
-          case Some(tx : Transaction) => tx.failure()
-          throw e
-        }
-        case _ => throw e
-      }
+      case e =>
+        state.transaction.foreach(tx => tx.failure())
+        throw e
     }
 
     val ms = System.currentTimeMillis() - start
