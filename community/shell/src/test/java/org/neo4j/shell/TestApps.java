@@ -19,12 +19,15 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.neo4j.cypher.NodeStillHasRelationshipsException;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import java.io.File;
 import java.io.Serializable;
@@ -32,20 +35,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.cypher.NodeStillHasRelationshipsException;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestApps extends AbstractShellTest
 {
@@ -381,6 +372,7 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
+            System.out.println(e);
             assertTrue( "Expected notice about cause not found in " + e.getMessage(),
                     e.getMessage().contains( NodeStillHasRelationshipsException.class.getSimpleName() ) );
         }
