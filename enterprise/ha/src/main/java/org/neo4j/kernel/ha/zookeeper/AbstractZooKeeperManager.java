@@ -389,7 +389,17 @@ OUTER:      do
             Set<Integer> visitedChildren = new HashSet<Integer>();
             for ( String child : getZooKeeper( true ).getChildren( getRoot() + "/" + HA_SERVERS_CHILD, false ) )
             {
-                int id = idFromPath( child );
+                int id;
+                try
+                {
+                    // We put other nodes under this root, for example "<instance-id>-jmx"
+                    // and maybe others. So only include children named with numbers.
+                    id = idFromPath( child );
+                }
+                catch ( NumberFormatException e )
+                {
+                    continue;
+                }
                 haServersCache.put( id, readHaServer( id, false ) );
                 visitedChildren.add( id );
             }
