@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import internal.pipes.QueryState
 import internal.symbols.SymbolTable
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.kernel.GraphDatabaseAPI
 import collection.Map
 
@@ -45,10 +45,10 @@ class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]],
       immutableResult.toList
     } catch {
       case e => db match {
-        case adb: GraphDatabaseAPI => adb.getTxManager.getTransaction match {
-          case null => throw e
-          case tx => tx.rollback()
-            throw e
+        case adb: GraphDatabaseAPI => state.transaction match {
+          case None => throw e
+          case Some(tx : Transaction) => tx.failure()
+          throw e
         }
         case _ => throw e
       }

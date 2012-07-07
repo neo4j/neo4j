@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
-import org.neo4j.graphdb.{Path, NotFoundException, Relationship, Node}
+import org.neo4j.graphdb._
 import java.util.HashMap
 
 class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
@@ -468,8 +468,18 @@ return distinct center""")
     assert(result.startNode() === a)
     assert(result.endNode() === b)
   }
-}
 
+  @Test
+  def failure_only_fails_inner_transaction() {
+    val tx = graph.beginTx()
+    try {
+      parseAndExecute("start a=node({id}) set a.foo = 'bar' return a","id"->"0")
+    } catch {
+      case _ => tx.failure()
+    }
+    finally tx.finish()
+  }
+}
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,
                   nodesCreated: Long = 0,
