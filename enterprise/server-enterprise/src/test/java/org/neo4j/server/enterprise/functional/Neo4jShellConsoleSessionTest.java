@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -55,6 +56,7 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
+@Ignore( "Due to fix (62e73bfe8265971cebff166bb9ec8a6de3ab8f39) in community not working" )
 public class Neo4jShellConsoleSessionTest implements SessionFactory
 {
     private ConsoleService consoleService;
