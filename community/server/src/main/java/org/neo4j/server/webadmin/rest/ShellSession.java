@@ -50,14 +50,14 @@ public class ShellSession implements ScriptSession
     public ShellSession( GraphDatabaseAPI graph )
     {
         ShellServerExtension shell = (ShellServerExtension) Service.load( KernelExtension.class, "shell" );
-        if ( shell == null )
-            throw new UnsupportedOperationException( "Shell server not found" );
+        if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
         try
         {
-            // We always use the fallback server (that we create on our own) since
-            // HighlyAvailableGraphDatabase#getKernelData() returns the instance from
-            // the internal db, and a ShellSession across master switches.
-            ShellServer server = getFallbackServer( graph );
+            ShellServer server = shell.getShellServer( graph.getKernelData() );
+            if ( server == null )
+            {
+                server = getFallbackServer(graph);
+            }
             output = new CollectingOutput();
             client = new SameJvmClient( new HashMap<String, Serializable>(), server, output );
             output.asString();
