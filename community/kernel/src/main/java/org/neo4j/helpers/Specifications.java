@@ -20,6 +20,8 @@
 
 package org.neo4j.helpers;
 
+import java.util.Arrays;
+
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -51,7 +53,7 @@ public class Specifications
 
     public static <T> AndSpecification<T> and( final Specification<T>... specifications )
     {
-        return and( Iterables.iterable( specifications ));
+        return and( Arrays.asList( specifications ));
     }
 
     public static <T> AndSpecification<T> and( final Iterable<Specification<T>> specifications )
@@ -61,7 +63,7 @@ public class Specifications
 
     public static <T> OrSpecification<T> or( final Specification<T>... specifications )
     {
-        return or( Iterables.iterable( specifications ) );
+        return or( Arrays.asList( specifications ) );
     }
 
     public static <T> OrSpecification<T> or( final Iterable<Specification<T>> specifications )
@@ -71,7 +73,7 @@ public class Specifications
 
     public static <T> Specification<T> in( final T... allowed )
     {
-        return in( Iterables.iterable( allowed ) );
+        return in( Arrays.asList( allowed ) );
     }
 
     public static <T> Specification<T> in( final Iterable<T> allowed )
@@ -147,7 +149,7 @@ public class Specifications
 
         public OrSpecification<T> or(Specification<T>... specifications)
         {
-            return Specifications.or( Iterables.prepend( this, Iterables.iterable( specifications ) ) );
+            return Specifications.or( Iterables.prepend( this, Arrays.asList( specifications ) ) );
         }
     }
 
@@ -175,7 +177,7 @@ public class Specifications
 
         public AndSpecification<T> and(Specification<T>... specifications)
         {
-            return Specifications.and( Iterables.prepend( this, Iterables.iterable( specifications ) ) );
+            return Specifications.and( Iterables.prepend( this, Arrays.asList( specifications ) ) );
         }
 
         public OrSpecification<T> or(Specification<T>... specifications)

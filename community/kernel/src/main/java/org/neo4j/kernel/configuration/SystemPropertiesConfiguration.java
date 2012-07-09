@@ -21,6 +21,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -36,7 +37,7 @@ public class SystemPropertiesConfiguration
 
     public SystemPropertiesConfiguration(Class<?>... settingsClasses)
     {
-        this( Iterables.iterable( settingsClasses ));
+        this( Arrays.asList( settingsClasses ));
     }
 
     public SystemPropertiesConfiguration( Iterable<Class<?>> settingsClasses )

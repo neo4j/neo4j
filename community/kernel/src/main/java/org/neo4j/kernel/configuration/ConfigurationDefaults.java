@@ -22,6 +22,7 @@ package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +72,7 @@ public class ConfigurationDefaults
 
     public ConfigurationDefaults(Class<?>... settingsClasses)
     {
-        this( Iterables.iterable( settingsClasses ));
+        this( Arrays.asList( settingsClasses ));
     }
 
     public ConfigurationDefaults( Iterable<Class<?>> settingsClasses )

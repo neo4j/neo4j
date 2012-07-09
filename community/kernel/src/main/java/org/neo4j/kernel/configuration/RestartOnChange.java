@@ -21,6 +21,8 @@
 package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Specification;
@@ -60,7 +62,7 @@ public class RestartOnChange
                     return Specifications.not( Specifications.<String>TRUE() );
                 }
             }
-        }, Iterables.iterable( settingsClass.getFields() ) ) ), life);
+        }, Arrays.asList( settingsClass.getFields() ) ) ), life);
     }
     
     public RestartOnChange( final String configurationNamePrefix, Lifecycle life)

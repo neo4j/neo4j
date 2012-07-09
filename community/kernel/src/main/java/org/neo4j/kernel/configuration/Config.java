@@ -21,6 +21,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class Config implements DiagnosticsProvider
     
     public Config(Map<String, String> inputParams, Class<?> ... settingsClasses)
     {
-        this(inputParams, Iterables.iterable(settingsClasses));
+        this(inputParams, Arrays.asList(settingsClasses));
     }
     
     public Config(Map<String, String> inputParams, Iterable<Class<?>> settingsClasses)

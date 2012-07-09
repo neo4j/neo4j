@@ -346,7 +346,7 @@ public final class Iterables
                             {
                                 return iterable.iterator();
                             }
-                        }, Iterables.iterable( iterables) ));
+                        }, Arrays.asList( iterables) ));
 
                 return new Iterator<T>()
                 {
