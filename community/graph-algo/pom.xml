@@ -17,7 +17,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M06</version>
   <packaging>jar</packaging>
   <name>Neo4j - Graph Algorithms</name>
   <description>Graph algorithms for Neo4j.</description>
@@ -51,12 +51,12 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>1.8.M06</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>1.8.M06</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
