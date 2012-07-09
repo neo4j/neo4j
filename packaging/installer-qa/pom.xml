@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>installer-qa</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.M06</version>
   <packaging>jar</packaging>
 
   <name>Neo4j Installer Quality Assurance</name>
@@ -25,7 +25,7 @@
 
   <properties>
     <short-name>installer-qa</short-name>
-    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.8.M06</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     
     <box-path-ubuntu-11.04-amd64-with-jre>${basedir}/boxes/ubuntu-11.04-server-amd64-with-jre.box</box-path-ubuntu-11.04-amd64-with-jre>

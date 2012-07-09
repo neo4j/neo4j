@@ -12,7 +12,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- NOTE: to pass properties to cucumber, they must be added to the plugin below -->
-    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.8.M06</neo4j.version>
     <neo4j.home>${project.build.directory}/neo4j_home</neo4j.home>
 
     <cuke4duke.version>0.4.3</cuke4duke.version>
