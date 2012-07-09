@@ -23,19 +23,13 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
 import org.json.JSONException;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cypher.ParameterWrongTypeException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -44,7 +38,6 @@ import org.neo4j.test.GraphDescription.Graph;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 {
