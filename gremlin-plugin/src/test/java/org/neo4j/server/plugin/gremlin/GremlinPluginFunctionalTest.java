@@ -367,7 +367,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * This example is showing a group count in Germlin, for instance the
+     * This example is showing a group count in Gremlin, for instance the
      * counting of the different relationship types connected to some the start
      * node. The result is collected into a variable that then is returned.
      */
@@ -383,7 +383,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * This example is showing a group count in Germlin, for instance the
+     * This example is showing a group count in Gremlin, for instance the
      * counting of the different relationship types connected to some the start
      * node. The result is collected into a variable that then is returned.
      * 
