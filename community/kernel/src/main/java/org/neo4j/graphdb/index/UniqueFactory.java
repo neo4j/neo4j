@@ -191,11 +191,11 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final T getOrCreate( String key, Object value )
     {
-        Transaction tx = graphDatabase().beginTx();
-        try
+        T result = index.get( key, value ).getSingle();
+        if ( result == null )
         {
-            T result = index.get( key, value ).getSingle();
-            if ( result == null )
+            Transaction tx = graphDatabase().beginTx();
+            try
             {
                 Map<String, Object> properties = Collections.singletonMap( key, value );
                 T created = create( properties );
@@ -209,14 +209,14 @@ public abstract class UniqueFactory<T extends PropertyContainer>
                 {
                     delete( created );
                 }
+                tx.success();
             }
-            tx.success();
-            return result;
+            finally
+            {
+                tx.finish();
+            }
         }
-        finally
-        {
-            tx.finish();
-        }
+        return result;
     }
 
     /**
