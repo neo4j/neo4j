@@ -48,12 +48,12 @@ class PathTreeTest extends DocumentingTestBase {
     testQuery(
       title = "Return the full range",
       text = """In this case, the range goes from the first to the last leaf of the index tree. Here, 
-      +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values can
-         be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
-        
++startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values can
+be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
+
 include::path-tree-layout-full-range.txt[]
 
-        """,
+""",
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
                 "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
@@ -73,11 +73,11 @@ include::path-tree-layout-full-range.txt[]
     testQuery(
       title = "Return zero range",
       text = """Here, only the events indexed under one leaf (2010-12-31) are returned.
-        The query only needs one path segment +rootPath+  (color +Green+) through the index.
-                
+The query only needs one path segment +rootPath+  (color +Green+) through the index.
+
 include::path-tree-layout-zero-range.txt[]
 
-        """,
+""",
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
                 "rootPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->leaf, " +
@@ -96,10 +96,10 @@ include::path-tree-layout-zero-range.txt[]
       text = """Here, the query range results in partly shared paths when querying the index,
 making the introduction of and common path segment +commonPath+ (color +Black+) necessary, before spanning up +startPath+ (color +Greenyellow+) and 
 +endPath+ (color +Darkgreen+) . After that, +valuePath+ (color +Blue+) connects the leafs and the indexed values are returned off +values+ (color +Red+)  path.
-        
+
 include::path-tree-layout-shared-root-path.txt[]
-        
-        """,
+
+""",
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
                 "commonPath=root-[:`2011`]->()-[:`01`]->commonRootEnd, " +

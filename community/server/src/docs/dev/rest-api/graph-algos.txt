@@ -1,3 +1,5 @@
+[[rest-api-graph-algos]]
+== Built-in Graph Algorithms ==
 
 Neo4j comes with a number of built-in graph algorithms.
 They are performed from a start node.
@@ -12,3 +14,12 @@ algorithm:: The algorithm to choose. If not set, default is +shortestPath+.
 
 max_depth:: The maximum depth as an integer for the algorithms like ShortestPath, where applicable.
 Default is +1+.
+
+include::find-all-shortest-paths.txt[]
+
+include::find-one-of-the-shortest-paths-between-nodes.txt[]
+
+include::execute-a-dijkstra-algorithm-with-similar-weights-on-relationships.txt[]
+
+include::execute-a-dijkstra-algorithm-with-weights-on-relationships.txt[]
+

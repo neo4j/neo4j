@@ -1,3 +1,10 @@
+[[rest-api-traverse]]
+== Traversals ==
+
+[WARNING]
+The Traversal REST Endpoint executes arbitrary Groovy code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
+In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
+interesting traversals with the Java API ( see <<server-plugins>> ) or secure your server, see <<security-server>>.
 
 Traversals are performed from a start node.
 The traversal is controlled by the URI and the body sent with the request.
@@ -44,4 +51,19 @@ Out of the box, the REST API supports JavaScript code in filters and evaluators.
 The script body will be executed in a Java context which has access to the full Neo4j http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/[Java API].
 See the examples for the exact syntax of the request.
 
+include::traversal-using-a-return-filter.txt[]
+
+include::return-relationships-from-a-traversal.txt[]
+
+include::return-paths-from-a-traversal.txt[]
+
+include::traversal-returning-nodes-below-a-certain-depth.txt[]
+
+include::creating-a-paged-traverser.txt[]
+
+include::paging-through-the-results-of-a-paged-traverser.txt[]
+
+include::paged-traverser-page-size.txt[]
+
+include::paged-traverser-timeout.txt[]
 

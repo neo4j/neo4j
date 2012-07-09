@@ -1,0 +1,9 @@
+[[cypher-cookbook-mutual-friends-and-groups]]
+== Find people based on mutual friends and groups ==
+
+:leveloffset: 2
+
+include::cypher-mutualfriendsandgroups-graph.txt[]
+
+include::find-mutual-friends-and-groups.txt[]
+

@@ -57,7 +57,7 @@ class LinkedListTest extends ArticleTest with StatisticsChecker {
 Linked Lists
 ============
 
-A powerful feature of using a graph database, is that you can create your own in-graph data structures - like a linked
+A powerful feature of using a graph database, is that you can create your own in-graph data structures -- like a linked
 list.
 
 This datastructure uses a single node as the list reference. The reference has an outgoing relationship to the head of
@@ -84,8 +84,7 @@ MATCH root-[:LINK*0..]->before,// before could be same as root
       after-[:LINK*0..]->root, // after could be same as root
       before-[old:LINK]->after
 WHERE before.value? < 25  // This is the value, which would normally
-                          // be supplied through a parameter.
-  AND 25 < after.value?
+  AND 25 < after.value?   // be supplied through a parameter.
 CREATE before-[:LINK]->({value:25})-[:LINK]->after
 DELETE old###
 

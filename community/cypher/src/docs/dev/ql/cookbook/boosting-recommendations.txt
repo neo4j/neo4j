@@ -1,0 +1,9 @@
+[[cypher-cookbook-boostingrecommendations]]
+== Boosting recommendation results ==
+
+:leveloffset: 2
+
+include::cypher-boostingrecommendationresults-graph.txt[]
+
+include::boosting-with-properties-on-relationships.txt[]
+

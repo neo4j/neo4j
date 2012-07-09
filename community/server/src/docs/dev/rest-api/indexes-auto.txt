@@ -1,0 +1,9 @@
+[[rest-api-auto-indexes]]
+== Automatic Indexes ==
+
+To enable automatic indexes in neo4j, set up the database for that, see <<auto-indexing-config>>. With this feature enabled, you can then index and query nodes in these indexes.
+
+include::find-node-by-exact-match-from-an-automatic-index.txt[]
+
+include::find-node-by-query-from-an-automatic-index.txt[]
+

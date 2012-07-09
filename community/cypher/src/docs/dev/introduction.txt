@@ -44,5 +44,5 @@ Let's see three of them in action.
 include::intro-examples.txt[]
 
 To use Cypher from Java, see <<tutorials-cypher-java>>.
-For more Cypher examples, see <<cypher-cookbook>> as well.
+For more Cypher examples, see <<data-modeling-examples>> as well.
 

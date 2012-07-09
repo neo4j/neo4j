@@ -66,6 +66,6 @@ include::java-cypher-queries-rows.txt[]
 For more information on the Java interface to Cypher, see the 
 http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].
 
-For more information and examples for Cypher, see <<cypher-query-lang>> and <<cypher-cookbook>>.
+For more information and examples for Cypher, see <<cypher-query-lang>> and <<data-modeling-examples>>.
 
 

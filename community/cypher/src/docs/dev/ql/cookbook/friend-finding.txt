@@ -1,0 +1,11 @@
+[[cypher-cookbook-friend-finding]]
+== Basic Friend finding based on social neighborhood ==
+
+Imagine an example graph like the following one:
+
+include::cypher-collabfiltering-graph.txt[]
+
+:leveloffset: 2
+
+include::simple-friend-finder.txt[]
+

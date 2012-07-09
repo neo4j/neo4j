@@ -4,7 +4,7 @@ Traversal
 
 For reading about traversals, see <<tutorial-traversal>>.
 
-For more examples of traversals, see <<domain-modeling-gallery>>.
+For more examples of traversals, see <<data-modeling-examples>>.
 
 == The Matrix ==
 

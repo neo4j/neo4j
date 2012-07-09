@@ -1,158 +1,3 @@
-[[cypher-cookbook]]
-Cypher Cookbook
-===============
-
-The following cookbook aims to provide a few snippets, examples and use-cases and their query-solutions in Cypher.
-For the Cypher reference documentation, see <<cypher-query-lang>>.
-
-[[cypher-cookbook-hyperedges]]
-== Hyperedges ==
-
-Imagine a user being part of different groups.
-A group can have different roles, and a user can be part of different groups.
-He also can have different roles in different groups apart from the membership.
-The association of a User, a Group and a Role can be referred to as a _HyperEdge_.
-However, it can be easily modeled in a property graph as a node that captures this n-ary relationship, as depicted below in the +U1G2R1+ node.
-
-include::cypher-hyperedge-graph.txt[]
-
-:leveloffset: 2
-
-include::find-groups.txt[]
-
-include::find-all-groups-and-roles-for-a-user.txt[]
-       
-include::find-common-groups-based-on-shared-roles.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-friend-finding]]
-== Basic Friend finding based on social neighborhood ==
-
-Imagine an example graph like the following one:
-
-include::cypher-collabfiltering-graph.txt[]
-
-:leveloffset: 2
-
-include::simple-friend-finder.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-co-favorited-places]]
-== Co-favorited places ==
-
-:leveloffset: 2
-
-include::cypher-cofavoritedplaces-graph.txt[]
-
-include::co-favorited-places---users-who-like-x-also-like-y.txt[]
-
-include::co-tagged-places---places-related-through-tags.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-similar-favorites]]
-== Find people based on similar favorites ==
-
-:leveloffset: 2
-
-include::cypher-peoplesimilarityfavorites-graph.txt[]
-
-include::find-people-based-on-similar-favorites.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-mutual-friends-and-groups]]
-== Find people based on mutual friends and groups ==
-
-:leveloffset: 2
-
-include::cypher-mutualfriendsandgroups-graph.txt[]
-
-include::find-mutual-friends-and-groups.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-similar-tags]]
-== Find friends based on similar tagging ==
-
-:leveloffset: 2
-
-include::cypher-peoplesimilaritytags-graph.txt[]
-
-include::find-people-based-on-similar-tagged-favorties.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-multirelational-social-network]]
-== Multirelational (social) graphs ==
-
-:leveloffset: 2
-
-include::cypher-multirelationalsocialnetwork-graph.txt[]
-
-include::who-follows-or-loves-me-back.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-boostingrecommendations]]
-== Boosting recommendation results ==
-
-:leveloffset: 2
-
-include::cypher-boostingrecommendationresults-graph.txt[]
-
-include::boosting-with-properties-on-relationships.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-clustering-coefficient]]
-== Calculating the clustering coefficient of a network ==
-
-:leveloffset: 2
-
-include::cypher-clusteringcoefficient-graph.txt[]
-
-include::calculating-the-clustering-coefficient-of-a-friend-network.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-pretty-graphs]]
-== Pretty graphs ==
-
-This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].
-
-:leveloffset: 2
-
-include::star-graph.txt[]
-
-include::cypher-prettygraphsstar-graph.txt[]
-
-:leveloffset: 2
-
-include::wheel-graph.txt[]
-
-include::cypher-prettygraphswheel-graph.txt[]
-
-:leveloffset: 2
-
-include::complete-graph.txt[]
-
-include::cypher-prettygraphscompletegraph-graph.txt[]
-
-:leveloffset: 2
-
-include::friendship-graph.txt[]
-
-include::cypher-prettygraphsfriendshipgraph-graph.txt[]
-
-:leveloffset: 1
-
-[[cypher-cookbook-complex-updates]]
-== Complex updates ==
-
-This section is showing some graph-related update operations that require advanced graph manipulations.
 
 :leveloffset: 2
 
@@ -160,49 +5,53 @@ include::linked-list.txt[]
 
 :leveloffset: 1
 
-[[cypher-cookbook-path-tree]]
-== A multilevel indexing structure (path tree) ==
-
-In this example, a multi-level tree structure 
-is used to index event nodes (here +Event1+, +Event2+ and +Event3+, 
-in this case with a YEAR-MONTH-DAY granularity, making this a timeline indexing structure.
-However, this approach should work for a wide range of multi-level ranges.
-
-The structure follows a couple of rules:
-
-- Events can be indexed multiple times by connecting the indexing structure leafs with the events via a +VALUE+ relationship.
-- The querying is done in a path-range fashion. That is, the start- and end path from the indexing root to the start and end leafs in the tree are calculated
-- Using Cypher, the queries following different strategies can be expressed as path sections and put together using one single query.
-
-The graph below depicts a structure with 3 Events being attached to an index structure at different leafs.
-
-:leveloffset: 2
-
-include::path-tree-layout.txt[]
-
-include::return-zero-range.txt[]
-
-include::return-the-full-range.txt[]
-
-include::return-partly-shared-path-ranges.txt[]
+include::hyperedges.txt[]
 
 :leveloffset: 1
 
-[[cypher-cookbook-similarity-calc]]
-== More complex similarity computations ==
+include::friend-finding.txt[]
 
-:leveloffset: 2
+:leveloffset: 1
 
-include::calculate-similarities-by-complex-calculations.txt[]
+include::co-favorited-places.txt[]
 
-include::cypher-complexsimilarity-graph.txt[]
+:leveloffset: 1
 
+include::similar-favorites.txt[]
 
+:leveloffset: 1
 
-//== Activity Streams ==
+include::mutual-friends-and-groups.txt[]
 
-//:leveloffset: 1
+:leveloffset: 1
 
-//include::cypher-graphity-graph.txt[]
+include::similar-tags.txt[]
 
-//include::find-activity-streams-in-a-network-without-scaling-penalty.txt[]
+:leveloffset: 1
+
+include::multirelational-social-network.txt[]
+
+:leveloffset: 1
+
+include::boosting-recommendations.txt[]
+
+:leveloffset: 1
+
+include::clustering-coefficient.txt[]
+
+:leveloffset: 1
+
+include::pretty-graphs.txt[]
+
+:leveloffset: 1
+
+include::path-tree.txt[]
+
+:leveloffset: 1
+
+include::similarity-complex.txt[]
+
+:leveloffset: 1
+
+//include::activity-streams.txt[]
+

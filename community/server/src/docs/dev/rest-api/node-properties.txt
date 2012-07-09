@@ -1,0 +1,17 @@
+[[rest-api-node-properties]]
+== Node properties ==
+
+include::set-property-on-node.txt[]
+
+include::update-node-properties.txt[]
+
+include::get-properties-for-node.txt[]
+
+include::property-values-can-not-be-null.txt[]
+
+include::property-values-can-not-be-nested.txt[]
+
+include::delete-all-properties-from-node.txt[]
+
+include::delete-a-named-property-from-a-node.txt[]
+

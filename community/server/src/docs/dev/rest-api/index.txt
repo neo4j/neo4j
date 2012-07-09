@@ -4,306 +4,33 @@ REST API
 
 include::introduction.txt[]
 
-[[rest-api-service-root]]
-== Service root ==
+include::service-root.txt[]
 
-include::get-service-root.txt[]
+include::cypher.txt[]
 
-include::get-service-root-streaming.txt[]
+include::nodes.txt[]
 
-[[rest-api-cypher]]
-== Cypher queries ==
+include::relationships.txt[]
 
-The Neo4j REST API allows querying with the <<cypher-query-lang>>.
-The results are returned as a list of string headers (+columns+), and a +data+ part,
-consisting of a list of all rows, every row consisting of a list of REST representations
-of the field value - +Node+, +Relationship+, +Path+ or any simple value like +String+.
+include::relationship-types.txt[]
 
-include::send-a-query.txt[]
+include::node-properties.txt[]
 
-include::return-paths.txt[]
+include::relationship-properties.txt[]
 
-include::send-queries-with-parameters.txt[]
+include::indexes.txt[]
 
-include::nested-results.txt[]
+include::indexes-unique.txt[]
 
-include::server-errors.txt[]
+include::indexes-auto.txt[]
 
-[[rest-api-nodes]]
-== Nodes ==
-
-include::create-node.txt[]
-
-include::create-node-with-properties.txt[]
-
-include::get-node.txt[]
-
-include::get-non-existent-node.txt[]
-
-include::delete-node.txt[]
-
-include::nodes-with-relationships-can-not-be-deleted.txt[]
-
-[[rest-api-relationships]]
-== Relationships ==
-
-Relationships are a first class citizen in the Neo4j REST API. They can be accessed either
-stand-alone or through the nodes they are attached to.
-
-The general pattern to get relationships from a node is:
-[source]
-GET http://localhost:7474/db/data/node/123/relationships/{dir}/{-list|&|types}
-
-Where +dir+ is one of +all+, +in+, +out+ and +types+ is an ampersand-separated list of types.
-See the examples below for more information.
-
-include::get-relationship-by-id.txt[]
-
-include::create-relationship.txt[]
-
-include::create-a-relationship-with-properties.txt[]
-
-include::delete-relationship.txt[]
-
-include::get-all-properties-on-a-relationship.txt[]
-
-include::set-all-properties-on-a-relationship.txt[]
-
-include::get-single-property-on-a-relationship.txt[]
-
-include::set-single-property-on-a-relationship.txt[]
-
-include::get-all-relationships.txt[]
-
-include::get-incoming-relationships.txt[]
-
-include::get-outgoing-relationships.txt[]
-
-include::get-typed-relationships.txt[]
-
-include::get-relationships-on-a-node-without-relationships.txt[]
-
-[[rest-api-relationship-types]]
-== Relationship types ==
-
-include::get-relationship-types.txt[]
-
-[[rest-api-node-properties]]
-== Node properties ==
-
-include::set-property-on-node.txt[]
-
-include::update-node-properties.txt[]
-
-include::get-properties-for-node.txt[]
-
-include::property-values-can-not-be-null.txt[]
-
-include::property-values-can-not-be-nested.txt[]
-
-include::delete-all-properties-from-node.txt[]
-
-include::delete-a-named-property-from-a-node.txt[]
-
-[[rest-api-relationship-properties]]
-== Relationship properties ==
-
-include::update-relationship-properties.txt[]
-
-inlcude::remove-properties-from-a-relationship.txt[]
-
-include::remove-property-from-a-relationship.txt[]
-
-include::remove-non-existent-property-from-a-relationship.txt[]
-
-include::remove-properties-from-a-non-existing-relationship.txt[]
-
-include::remove-property-from-a-non-existing-relationship.txt[]
-
-
-[[rest-api-indexes]]
-== Indexes ==
-
-An index can contain either nodes or relationships.
-
-NOTE: To create an index with default configuration, simply start using it by adding nodes/relationships to it. It will then be automatically created for you.
-
-What default configuration means depends on how you have configured your database.
-If you haven't changed any indexing configuration, it means the indexes will be using a Lucene-based backend.
-
-All the examples below show you how to do operations on node indexes, but all of them are just as applicable
-to relationship indexes. Simple change the "node" part of the URL to "relationship".
-
-If you want to customize the index settings, see <<rest-api-create-node-index-with-configuration>>.
-
-include::create-node-index.txt[]
-
-include::create-node-index-with-configuration.txt[]
-
-include::delete-node-index.txt[]
-
-include::list-node-indexes.txt[]
-
-include::add-node-to-index.txt[]
-
-include::remove-all-entries-with-a-given-node-from-an-index.txt[]
-
-include::remove-all-entries-with-a-given-node-and-key-from-an-index.txt[]
-
-include::remove-all-entries-with-a-given-node,-key-and-value-from-an-index.txt[]
-
-include::find-node-by-exact-match.txt[]
-
-include::find-node-by-query.txt[]
-
-[[rest-api-unique-indexes]]
-== Unique Indexes ==
-
-For more information, see <<transactions-unique-nodes>>.
-
-include::create-a-unique-node-in-an-index.txt[]
-
-include::create-a-unique-node-in-an-index-(the-case-where-it-exists).txt[]
-
-include::add-a-node-to-an-index-unless-a-node-already-exists-for-the-given-mapping.txt[]
-
-include::create-a-unique-relationship-in-an-index.txt[]
-
-include::add-a-relationship-to-an-index-unless-a-relationship-already-exists-for-the-given-mapping.txt[]
-
-[[rest-api-auto-indexes]]
-== Automatic Indexes ==
-
-To enable automatic indexes in neo4j, set up the database for that, see <<auto-indexing-config>>. With this feature enabled, you can then index and query nodes in these indexes.
-
-include::find-node-by-exact-match-from-an-automatic-index.txt[]
-
-include::find-node-by-query-from-an-automatic-index.txt[]
-
-[[rest-api-configurable-auto-indexes]]
-== Configurable Automatic Indexing ==
-
-Out of the box auto-indexing supports exact matches since they are created with the default configuration (http://docs.neo4j.org/chunked/snapshot/indexing-create.html) the first time you access them. However it is possible to intervene in the lifecycle of the server before any auto indexes are created to change their configuration.
-
-This approach *cannot* be used on databases that already have auto-indexes established. To change the auto-index configuration existing indexes would have to be deleted first, so be careful!
-
-[CAUTION]
-This technique works, but it is not particularly pleasant. Future versions of Neo4j may remove this loophole in favour of a better structured feature for managing auto-indexing configurations.
-
-Auto-indexing must be enabled through configuration before we can create or configure them. Firstly ensure that you've added some config like this into your server's +neo4j.properties+ file:
-
-[source]
-----
-node_auto_indexing=true
-relationship_auto_indexing=true
-node_keys_indexable=name,phone
-relationship_keys_indexable=since
-----
-
-The +node_auto_indexing+ and +relationship_auto_indexing+ turn auto-indexing on for nodes and relationships respectively. The +node_keys_indexable+ key allows you to specify a comma-separated list of node property keys to be indexed. The +relationship_keys_indexable+ does the same for relationship property keys. 
-
-Next start the server as usual by invoking the start script as described in <<server-installation>>.
-
-Next we have to pre-empt the creation of an auto-index, by telling the server to create an apparently manual index which has the same name as the node (or relationship) auto-index. For example, in this case we'll create a node auto index whose name is +node_auto_index+, like so:
-
-include::create-an-auto-index-for-nodes-with-specific-configuration.txt[]
-
-If you require configured auto-indexes for relationships, the approach is similar:
-
-include::create-an-auto-index-for-relationships-with-specific-configuration.txt[]
-
-In case you're curious how this works, on the server side it triggers the creation of an index which happens to have the same name as the auto index that the database would create for itself. Now when we interact with the database, the index thinks the index is already is created so the state machine skips over that step and just gets on with normal day-to-day auto-indexing.
-
-[CAUTION]
-You have to do this early in your server lifecycle, before any normal auto indexes are created.
-
-There are a few REST calls providing a REST interface to the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/AutoIndexer.html[AutoIndexer] component. The following REST calls work both, for `node` and `relationship` by simply changing the respective part of the URL.
-
-include::get-current-status-for-autoindexing-on-nodes.txt[]
-
-include::enable-node-autoindexing.txt[]
-
-include::lookup-list-of-properties-being-autoindexed.txt[]
-
-include::add-a-property-for-autoindexing-on-nodes.txt[]
-
-include::remove-a-property-for-autoindexing-on-nodes.txt[]
-
-[[rest-api-traverse]]
-== Traversals ==
-
-[WARNING]
-The Traversal REST Endpoint executes arbitrary Groovy code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
-In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
-interesting traversals with the Java API ( see <<server-plugins>> ) or secure your server, see <<security-server>>.
+include::indexes-configurable-auto.txt[]
 
 include::traversals.txt[]
 
-include::traversal-using-a-return-filter.txt[]
+include::graph-algos.txt[]
 
-include::return-relationships-from-a-traversal.txt[]
+include::batch-operations.txt[]
 
-include::return-paths-from-a-traversal.txt[]
+include::wadl.txt[]
 
-include::traversal-returning-nodes-below-a-certain-depth.txt[]
-
-include::creating-a-paged-traverser.txt[]
-
-include::paging-through-the-results-of-a-paged-traverser.txt[]
-
-include::paged-traverser-page-size.txt[]
-
-include::paged-traverser-timeout.txt[]
-
-
-[[rest-api-graph-algos]]
-== Built-in Graph Algorithms ==
-
-include::graph_algos.txt[]
-
-include::find-all-shortest-paths.txt[]
-
-include::find-one-of-the-shortest-paths-between-nodes.txt[]
-
-include::execute-a-dijkstra-algorithm-with-similar-weights-on-relationships.txt[]
-
-include::execute-a-dijkstra-algorithm-with-weights-on-relationships.txt[]
-
-
-[[rest-api-batch-ops]]
-== Batch operations ==
-
-CAUTION: Batch support is currently _experimental_. Expect this part of the API to change.
-
-include::execute-multiple-operations-in-batch.txt[]
-
-include::refer-to-items-created-earlier-in-the-same-batch-job.txt[]
-
-include::execute-multiple-operations-in-batch-streaming.txt[]
-
-[[rest-api-wadl-support]]
-== WADL Support ==
-
-The Neo4j REST API is a truly RESTful interface relying on hypermedia controls (links) to advertise permissible
-actions to users. Hypermedia is a dynamic interface style where declarative constructs (semantic markup) are used
-to inform clients of their next legal choices just in time.
-
-[CAUTION]
-RESTful APIs cannot be modelled by static interface description languages like WSDL or WADL.
-
-However for some use cases, developers may wish to expose WADL descriptions of the Neo4j REST API, particularly when
-using tooling that expects such.
-
-In those cases WADL generation may be enabled by adding to your server's +neo4j.properties+ file:
-
-[source]
-----
-unsupported_wadl_generation_enabled=true
-----
-
-[CAUTION]
-WADL is not an officially supported part of the Neo4j server API because WADL is insufficiently expressive to capture
-the set of potential interactions a client can drive with Neo4j server. Expect the WADL description to be incomplete,
-and in some cases contradictory to the real API. In any cases where the WADL description disagrees with the REST API,
-the REST API should be considered authoritative. WADL generation may be withdrawn at any point in the Neo4j release
-cycle.

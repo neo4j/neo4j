@@ -1,0 +1,11 @@
+[[rest-api-batch-ops]]
+== Batch operations ==
+
+CAUTION: Batch support is currently _experimental_. Expect this part of the API to change.
+
+include::execute-multiple-operations-in-batch.txt[]
+
+include::refer-to-items-created-earlier-in-the-same-batch-job.txt[]
+
+include::execute-multiple-operations-in-batch-streaming.txt[]
+
