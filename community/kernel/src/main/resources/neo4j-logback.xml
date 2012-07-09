@@ -49,7 +49,4 @@
     <appender-ref ref="FILE" />
   </logger>
 
-  <root level="INFO">
-  </root>
-
 </configuration>
