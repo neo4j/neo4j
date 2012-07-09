@@ -26,7 +26,7 @@
 
   <properties>
     <short-name>installer-windows</short-name>
-    <neo4j.version>1.8.M06</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>

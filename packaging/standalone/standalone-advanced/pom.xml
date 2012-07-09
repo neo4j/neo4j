@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>1.8.M06</version>
+    <version>1.8-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -14,7 +14,7 @@
 
   <name>Neo4j Advanced - Server Assembler</name>
 
-  <version>1.8.M06</version>
+  <version>1.8-SNAPSHOT</version>
   <description>This project assembles the Neo4j Advanced stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>

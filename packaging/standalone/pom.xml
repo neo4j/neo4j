@@ -14,7 +14,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.8.M06</version>
+  <version>1.8-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -38,7 +38,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.8.M06</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <windows-wrapper.version>4</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
     
