@@ -103,7 +103,7 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * 
      * @@Match-cypher-result
      * 
-     * There is no join table here, but if one is necessary the next example will show hot to do that, writing the pattern relationship like so: 
+     * There is no join table here, but if one is necessary the next example will show how to do that, writing the pattern relationship like so:
      * `-[r:belongs_to]->` will introduce (the equivalent of) join table available as the variable `r`. 
      * In reality this is a named relationship in Cypher, so we're saying ``join `Person` to `Group` via `belongs_to`.'' 
      * To illustrate this, consider this image, comparing the SQL model and Neo4j/Cypher.
@@ -115,7 +115,7 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * image::RDBMSvsGraph.svg.png[scaledwidth="100%"]
      * endif::nonhtmloutput[]
      * 
-     * And here's example queries:
+     * And here are example queries:
      * 
      * .SQL Query
      * @@JoinEntity-sql-query
