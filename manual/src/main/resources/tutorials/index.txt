@@ -18,10 +18,6 @@ include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/ql/cookbook/index.txt[]
-
-:leveloffset: 1
-
 include::rest.txt[]
 
 :leveloffset: 1
@@ -34,7 +30,7 @@ include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/data-modeling-examples.txt[]
 
 :leveloffset: 1
 
