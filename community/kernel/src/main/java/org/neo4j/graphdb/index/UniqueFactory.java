@@ -195,18 +195,20 @@ public abstract class UniqueFactory<T extends PropertyContainer>
         try
         {
             T result = index.get( key, value ).getSingle();
-            if ( result != null ) return result;
-            Map<String, Object> properties = Collections.singletonMap( key, value );
-            T created = create( properties );
-            result = index.putIfAbsent( created, key, value );
             if ( result == null )
             {
-                initialize( created, properties );
-                result = created;
-            }
-            else
-            {
-                delete( created );
+                Map<String, Object> properties = Collections.singletonMap( key, value );
+                T created = create( properties );
+                result = index.putIfAbsent( created, key, value );
+                if ( result == null )
+                {
+                    initialize( created, properties );
+                    result = created;
+                }
+                else
+                {
+                    delete( created );
+                }
             }
             tx.success();
             return result;
