@@ -90,8 +90,8 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * The `MATCH` clause is analogous to the `JOIN` in SQL. A normal a->b relationship is an 
      * inner join between nodes a and b -- both sides have to have at least one match, or nothing is returned.
      * 
-     * A simple example, where we find all nodes that are connected to the node representing
-     * the person "Anakin", through an incoming relationship.
+     * We'll start with a simple example, where we find all email addresses that are connected to
+     * the person ``Anakin''. This is an ordinary one-to-many relationship.
      * 
      * .SQL Query
      * @@Match-sql-query
@@ -168,14 +168,14 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * Not all predicates have an equivalent in the other language, but the concept is the same.
      * 
      * .SQL Query
-     * @@Match-sql-query
+     * @@Where-sql-query
      * 
-     * @@Match-sql-result
+     * @@Where-sql-result
      * 
      * .Cypher Query
-     * @@Match-cypher-query
+     * @@Where-cypher-query
      * 
-     * @@Match-cypher-result
+     * @@Where-cypher-result
      * 
      * == Return ==
      * This is SQL's `SELECT`. 

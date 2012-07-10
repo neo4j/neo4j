@@ -168,7 +168,7 @@ public class CypherSql
                                 + "MATCH person-[:belongs_to*]->group RETURN person.name, group.name",
                         "Bridget", "Admin", "Technichian", "User", "3 rows" ) );
                 add( new TestData(
-                        "Match",
+                        "Where",
                         "SELECT * FROM `Person` WHERE `Person`.age > 35 AND `Person`.hair = 'blonde'".replace(
                                 "`", identifierQuoteString ),
                         "START person=node:Person('name: *') WHERE person.age > 35 AND person.hair = 'blonde' RETURN person",
