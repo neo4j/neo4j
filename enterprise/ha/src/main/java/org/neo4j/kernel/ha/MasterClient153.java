@@ -296,7 +296,7 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
             }
         }, VOID_DESERIALIZER );
     }
-    
+
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
     {
         int numberOfDefragIds = buffer.readInt();
@@ -377,12 +377,11 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
     public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
         throw new UnsupportedOperationException();
- 
     }
 
     @Override
     public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
     {
-        throw new UnsupportedOperationException();
+        return Response.EMPTY;
     }
 }

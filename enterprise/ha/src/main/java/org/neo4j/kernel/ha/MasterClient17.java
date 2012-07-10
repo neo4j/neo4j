@@ -305,7 +305,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pushTransaction( RequestContext context, final String resourceName, final long tx )
     {
-        throw new UnsupportedOperationException();
+        return Response.EMPTY;
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
