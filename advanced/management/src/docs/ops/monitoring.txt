@@ -4,14 +4,12 @@ Monitoring
 
 NOTE: Most of the monitoring features are only available in the Advanced and Enterprise editions of Neo4j.
 
-In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available. Most of these are exposed through the http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX API].
+In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
+Most of these are exposed through http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX].
 
-
-[[operations-jmx]]
-== JMX ==
 
 [[jmx-remote]]
-=== Adjusting remote JMX access to the Neo4j Server ===
+== Adjusting remote JMX access to the Neo4j Server ==
 
 Per default, the Neo4j Advanced Server and Neo4j Enterprise Server editions do not allow remote JMX connections, since the relevant options in the 'conf/neo4j-wrapper.conf' configuration file are commented out.
 To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
@@ -34,7 +32,8 @@ For maximum security, please adjust at least the password settings in 'conf/jmx.
 
 For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 
-=== How to connect to a Neo4j instance using JMX and JConsole ===
+[[jmx-connect-jconsole]]
+== How to connect to a Neo4j instance using JMX and JConsole ==
 
 First, start your embedded database or the Neo4j Server, for instance using
 
@@ -64,14 +63,16 @@ When using Neo4j in embedded mode, make sure to pass the +com.sun.management.jmx
 image::jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
 
 
-=== How to connect to the JMX monitoring programmatically ===
+[[jmx-connect-programmatic]]
+== How to connect to the JMX monitoring programmatically ==
 
 In order to programmatically connect to the Neo4j JMX server, there are some convenience methods in the Neo4j Management component to help you find out the most commonly used monitoring attributes of Neo4j.
 See <<tutorials-java-embedded-jmx>> for an example.
 
 Once you have access to this information, you can use it to for instance expose the values to http://en.wikipedia.org/wiki/Simple_Network_Management_Protocol[SNMP] or other monitoring systems.
 
-=== Reference of supported JMX MBeans ===
+[[jmx-mxbeans]]
+== Reference of supported JMX MBeans ==
 
 include::{importdir}/neo4j-ha-docs-jar/ops/jmx.txt[]
 
