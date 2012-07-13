@@ -34,12 +34,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.test.GraphDescription;
+import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TestData;
 
 public class TestJavaTestDocsGenerator implements GraphHolder
 {
@@ -51,8 +47,9 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    String directory = "target" + File.separator + "testdocs";
+    File directory = TargetDirectory.forTest(getClass()).directory("testdocs", false);
     String sectionName = "testsection";
+    File sectionDirectory = new File(directory, sectionName);
 
     @Documented( value = "Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet_2-1\n@@snippet12\n." )
     @Test
@@ -69,9 +66,8 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet1", snippet1 );
         doc.addSnippet( "snippet12", snippet12 );
         doc.addSnippet( "snippet_2-1", snippet2 );
-        doc.document( directory, sectionName );
-        String result = readFileAsString( new File(
-                "target/testdocs/testsection/title1.txt" ) );
+        doc.document( directory.getAbsolutePath(), sectionName );
+        String result = readFileAsString( new File(sectionDirectory, "title1.txt"));
         assertTrue( result.contains( snippet1 ) );
         assertTrue( result.contains( snippet12 ) );
         assertTrue( result.contains( snippet2 ) );
@@ -84,7 +80,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     {
         data.get();
         JavaTestDocsGenerator doc = gen.get();
-        doc.document( directory, sectionName );
+        doc.document( directory.getAbsolutePath(), sectionName );
     }
 
     /**
@@ -110,9 +106,8 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         String snippet2 = "snippet2-value";
         doc.addSnippet( "snippet1", snippet1 );
         doc.addSnippet( "snippet2", snippet2 );
-        doc.document( directory, sectionName );
-        String result = readFileAsString( new File(
-                "target/testdocs/testsection/title2.txt" ) );
+        doc.document( directory.getAbsolutePath(), sectionName );
+        String result = readFileAsString( new File(sectionDirectory, "title2.txt)"));
         assertTrue( result.contains( snippet1 ) );
         assertTrue( result.contains( snippet2 ) );
     }
