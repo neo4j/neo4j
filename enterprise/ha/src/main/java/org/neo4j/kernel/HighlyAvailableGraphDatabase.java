@@ -597,6 +597,7 @@ public class HighlyAvailableGraphDatabase
         storeId = broker.getClusterStoreId( true );
         newMaster( new InformativeStackTrace( "Starting up [" + machineId + "] for the first time" ) );
         localGraph();
+        masterClientResolver.enableDowngradeBarrier();
     }
 
     private void checkAndRecoverCorruptLogs( InternalAbstractGraphDatabase localDb,
@@ -931,6 +932,7 @@ public class HighlyAvailableGraphDatabase
         return localGraph().transactionRunning();
     }
 
+    @Override
     public final <T> T getManagementBean( Class<T> type )
     {
         return localGraph().getManagementBean( type );
@@ -1424,7 +1426,7 @@ public class HighlyAvailableGraphDatabase
     {
         return storeDir;
     }
-    
+
     @Override
     public KernelPanicEventGenerator getKernelPanicGenerator()
     {

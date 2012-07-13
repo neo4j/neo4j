@@ -66,24 +66,104 @@ public class MasterClientResolverTest
     {
         MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         resolver.getDefault();
-        Class previousClass = resolver.instantiate( "", 0, null ).getClass();
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        Class previousClass = currentClient.getClass();
         assertNull( resolver.getFor( -1, -1 ) );
-        assertEquals( "class was not the same after getting unknown protocol", previousClass,
-                resolver.instantiate( "", 0, null ).getClass() );
+        assertEquals( "class was not the same after getting unknown protocol", previousClass, currentClient.getClass() );
+        currentClient.shutdown();
     }
 
     @Test
     public void testAskedVersionSticks()
     {
         MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
+
         resolver.getFor( 2, 2 );
-        assertEquals( "wrong version returned for version 2", MasterClient153.class,
-                resolver.instantiate( "", 0, null ).getClass() );
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 2", MasterClient153.class, currentClient.getClass() );
+        currentClient.shutdown();
+
         resolver.getFor( 3, 2 );
-        assertEquals( "wrong version returned for version 3", MasterClient17.class,
-                resolver.instantiate( "", 0, null ).getClass() );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 3", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+
         resolver.getFor( 4, 2 );
-        assertEquals( "wrong version returned for version 4", MasterClient18.class,
-                resolver.instantiate( "", 0, null ).getClass() );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient18.class, currentClient.getClass() );
+        currentClient.shutdown();
+    }
+
+    @Test
+    public void testDowngradesArePossibleIfNotLocked()
+    {
+        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
+
+        resolver.getFor( 4, 2 );
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient18.class, currentClient.getClass() );
+        currentClient.shutdown();
+
+        resolver.getFor( 3, 2 );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+
+        resolver.getFor( 2, 2 );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient153.class, currentClient.getClass() );
+        currentClient.shutdown();
+    }
+
+    @Test
+    public void testDowngradesArePossibleUntilLocked()
+    {
+        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
+
+        resolver.getFor( 4, 2 );
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient18.class, currentClient.getClass() );
+        currentClient.shutdown();
+
+        resolver.getFor( 3, 2 );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+
+        resolver.enableDowngradeBarrier();
+
+        resolver.getFor( 2, 2 );
+        currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "wrong version returned for version 4", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+    }
+
+    @Test
+    public void downgradeDoesNotHappenWhenLocked()
+    {
+        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
+        resolver.getFor( 3, 2 );
+        resolver.enableDowngradeBarrier();
+        resolver.getFor( 2, 2 );
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( "locking should not allow downgrade", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+    }
+
+    @Test
+    public void lockingShouldNotPreventBootstrapping()
+    {
+        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
+        resolver.enableDowngradeBarrier();
+
+        resolver.getFor( 3, 2 );
+        MasterClient currentClient = resolver.instantiate( "", 0, null );
+        assertEquals( MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
+
+        currentClient = resolver.instantiate( "", 0, null );
+        resolver.getFor( 2, 2 );
+        assertEquals( "locking should not allow downgrade", MasterClient17.class, currentClient.getClass() );
+        currentClient.shutdown();
     }
 }
