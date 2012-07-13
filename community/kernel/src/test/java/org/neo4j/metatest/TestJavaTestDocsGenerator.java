@@ -107,7 +107,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet1", snippet1 );
         doc.addSnippet( "snippet2", snippet2 );
         doc.document( directory.getAbsolutePath(), sectionName );
-        String result = readFileAsString( new File(sectionDirectory, "title2.txt)"));
+        String result = readFileAsString( new File(sectionDirectory, "title2.txt"));
         assertTrue( result.contains( snippet1 ) );
         assertTrue( result.contains( snippet2 ) );
     }
