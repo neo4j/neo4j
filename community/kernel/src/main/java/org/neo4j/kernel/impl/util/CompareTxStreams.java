@@ -28,12 +28,13 @@ public class CompareTxStreams
 {
     public static void main( String[] args ) throws IOException
     {
-        LogExtractor extractor1 = null;
-        LogExtractor extractor2 = null;
+        compareLogStreams( LogExtractor.from( args[0] ), LogExtractor.from( args[1] ) );
+    }
+
+    protected static void compareLogStreams( LogExtractor extractor1, LogExtractor extractor2 ) throws IOException
+    {
         try
         {
-            extractor1 = LogExtractor.from( args[0] );
-            extractor2 = LogExtractor.from( args[1] );
             boolean branchingDetected = false;
             long lastTx = 1;
             while ( true )

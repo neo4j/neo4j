@@ -348,51 +348,6 @@ public class LogExtractor
         int getIdentifier();
     }
 
-    private static class KnownIdentifierCollector implements LogEntryCollector
-    {
-        private final int identifier;
-        private LogEntry.Start startEntry;
-
-        KnownIdentifierCollector( int identifier )
-        {
-            this.identifier = identifier;
-        }
-
-        public int getIdentifier()
-        {
-            return identifier;
-        }
-
-        public LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException
-        {
-            if ( entry.getIdentifier() == identifier )
-            {
-                if ( entry instanceof LogEntry.Start )
-                {
-                    startEntry = (Start) entry;
-                }
-                if ( target != null )
-                {
-                    LogIoUtils.writeLogEntry( entry, target );
-                }
-                return entry;
-            }
-            return null;
-        }
-
-        @Override
-        public boolean hasInFutureQueue()
-        {
-            return false;
-        }
-
-        @Override
-        public LogEntry.Start getLastStartEntry()
-        {
-            return startEntry;
-        }
-    }
-
     private static class KnownTxIdCollector implements LogEntryCollector
     {
         private final Map<Integer,List<LogEntry>> transactions = new HashMap<Integer,List<LogEntry>>();
@@ -546,11 +501,22 @@ public class LogExtractor
     
     public static LogExtractor from( final String storeDir ) throws IOException
     {
-        // 2 is a "magic" first tx :)
-        return from( storeDir, 2 );
+        return from( storeDir, NIONEO_COMMAND_FACTORY );
     }
     
     public static LogExtractor from( final String storeDir, long startTxId ) throws IOException
+    {
+        return from( storeDir, NIONEO_COMMAND_FACTORY, startTxId );
+    }
+    
+    public static LogExtractor from( final String storeDir, XaCommandFactory commandFactory ) throws IOException
+    {
+        // 2 is a "magic" first tx :)
+        return from( storeDir, commandFactory, 2 );
+    }
+    
+    public static LogExtractor from( final String storeDir, XaCommandFactory commandFactory,
+            long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
         {
@@ -623,18 +589,24 @@ public class LogExtractor
             {
                 throw new UnsupportedOperationException();
             }
-        };
-        
-        XaCommandFactory commandFactory = new XaCommandFactory()
-        {
+            
             @Override
-            public XaCommand readCommand( ReadableByteChannel byteChannel,
-                    ByteBuffer buffer ) throws IOException
+            public String toString()
             {
-                return Command.readCommand( null, byteChannel, buffer );
+                return getClass().getSimpleName() + "[" + storeDir + "]";
             }
         };
         
         return new LogExtractor( new LogPositionCache(), loader, commandFactory, startTxId, Long.MAX_VALUE );
     }
+    
+    public static final XaCommandFactory NIONEO_COMMAND_FACTORY = new XaCommandFactory()
+    {
+        @Override
+        public XaCommand readCommand( ReadableByteChannel byteChannel,
+                ByteBuffer buffer ) throws IOException
+        {
+            return Command.readCommand( null, byteChannel, buffer );
+        }
+    };
 }
