@@ -54,7 +54,7 @@ public class LoopRelTestIT
         {
             GraphDatabaseService gdb = new EmbeddedGraphDatabase( "target/looprels" );
             ArrayList<Node> nodes = verifyOkDbAndSetup( gdb );
-            doRandomStuff( gdb, 10000, nodes );
+            doRandomStuff( gdb, 1000, nodes );
             gdb.shutdown();
         }
     }

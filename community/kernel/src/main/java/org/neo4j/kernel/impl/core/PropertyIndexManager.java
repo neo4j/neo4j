@@ -36,15 +36,16 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class PropertyIndexManager
     implements Lifecycle
 {
-    private ConcurrentHashMap<String, List<PropertyIndex>> indexMap = new ConcurrentHashMap<String, List<PropertyIndex>>();
-    private ConcurrentHashMap<Integer, PropertyIndex> idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
+    private Map<String, List<PropertyIndex>> indexMap = new CopyOnWriteHashMap<String, List<PropertyIndex>>();
+    private Map<Integer, PropertyIndex> idToIndexMap = new CopyOnWriteHashMap<Integer, PropertyIndex>();
 
-    private ConcurrentHashMap<Transaction, TxCommitHook> txCommitHooks = new ConcurrentHashMap<Transaction, TxCommitHook>();
+    private Map<Transaction, TxCommitHook> txCommitHooks = new ConcurrentHashMap<Transaction, TxCommitHook>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;

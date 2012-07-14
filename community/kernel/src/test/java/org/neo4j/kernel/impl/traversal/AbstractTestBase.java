@@ -272,6 +272,11 @@ public abstract class AbstractTestBase
         expect( asList( path ), new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION ),
                 pathAsString );
     }
+    
+    public static <E> void assertContains( Iterator<E> actual, E... expected )
+    {
+        assertContains( IteratorUtil.asIterable( actual ), expected );
+    }
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )
     {
