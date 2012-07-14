@@ -30,10 +30,10 @@ define(
   
     class ConsoleRouter extends Router
       routes : 
-        "/console/" : "console"
-        "/console/:type" : "console"
+        "/console/"      : "showConsole"
+        "/console/:type" : "showConsole"
 
-      consoleType : "shell"
+      consoleType : "http"
 
       init : (appState) =>
         @appState = appState
@@ -47,29 +47,59 @@ define(
         @shellState = new Console(server:@appState.get("server"), lang:"shell")
         @httpState = new HttpConsole(server:@appState.get("server"), lang:"http")
       
-        @views = 
-          gremlin : new GremlinConsoleView
-            appState : @appState
-            consoleState : @gremlinState
-            lang: "gremlin"
-          shell : new ShellConsoleView
-            appState : @appState
-            consoleState : @shellState
-            lang: "shell"
-          http : new HttpConsoleView
-            appState : @appState
-            consoleState : @httpState
-            lang: "http"
+        # Ask the server what console engines are available
+        self = this
+        @appState.getServer().manage.console.availableEngines (engines) ->
+          self.onAvailableEnginesLoaded(engines)
           
-      console : (type=false) =>
+      showConsole : (type=false) =>
         @saveLocation()
+
         if type is false then type = @consoleType
         @consoleType = type
-        @appState.set( mainView : @getConsoleView(type) )
-        @getConsoleView(type).focusOnInputField()
 
-      getConsoleView : (type) =>
-        @views[type]
+        if @views?
+          if @views[type]?
+            view = @views[type]            
+          else
+            alert "Unsupported console type: '#{type}', is it disabled in the server?."
+            view = @views['http']
+          
+          @appState.set( mainView : view )
+          view.focusOnInputField()
+        else
+          # Set a flag to remember to re-run this method when
+          # available engines has been loaded.
+          @renderWhenEnginesAreLoaded = true
+
+      onAvailableEnginesLoaded : (engines) ->
+        engines.push('http') # HTTP is always available
+        @views = 
+          http : new HttpConsoleView
+            appState     : @appState
+            consoleState : @httpState
+            lang         : "http"
+            engines      : engines
+
+        if _(engines).indexOf('gremlin') > -1
+          @views.gremlin = new GremlinConsoleView
+            appState     : @appState
+            consoleState : @gremlinState
+            lang         : "gremlin"
+            engines      : engines
+
+        if  _(engines).indexOf('shell') > -1 
+          @views.shell = new ShellConsoleView
+            appState     : @appState
+            consoleState : @shellState
+            lang         : "shell"
+            engines      : engines
+          
+          # Use shell per default if it is available
+          @consoleType = "shell"
+
+        if @renderWhenEnginesAreLoaded?
+          @showConsole()
 
       #
       # Bootstrapper SPI

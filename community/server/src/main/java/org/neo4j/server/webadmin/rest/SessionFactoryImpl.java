@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.servlet.http.HttpSession;
 
 import org.neo4j.server.database.Database;
@@ -26,30 +31,37 @@ import org.neo4j.server.webadmin.console.CypherSession;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
-public class SessionFactoryImpl implements SessionFactory
+public class SessionFactoryImpl implements ConsoleSessionFactory
 {
     private HttpSession httpSession;
+    private Map<String, ConsoleEngineCreator> engineCreators = new HashMap<String, ConsoleEngineCreator>();
 
-    public SessionFactoryImpl( HttpSession httpSession )
+    public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines )
     {
         this.httpSession = httpSession;
+        
+        enableEngines(supportedEngines);
     }
 
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if ( engineName.equals( "shell" ) )
+        engineName = engineName.toLowerCase();
+        if(engineCreators.containsKey(engineName)) 
         {
-//            return new CypherSession( database.graph );
-            return getOrInstantiateSession( database, "shellSession", SessionCreator.SHELL );
+            return getOrInstantiateSession( database, engineName + "-console-session", engineCreators.get(engineName));
         }
-        else
-        {
-            return getOrInstantiateSession( database, "consoleSession", SessionCreator.GREMLIN );
-        }
+        
+        throw new IllegalArgumentException("Unknown console engine '" + engineName + "'.");
     }
 
-    private ScriptSession getOrInstantiateSession( Database database, String key, SessionCreator creator )
+    @Override
+    public Iterable<String> supportedEngines()
+    {
+        return engineCreators.keySet();
+    }
+
+    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleEngineCreator creator )
     {
         Object session = httpSession.getAttribute( key );
         if ( session == null )
@@ -60,7 +72,7 @@ public class SessionFactoryImpl implements SessionFactory
         return (ScriptSession) session;
     }
     
-    private static enum SessionCreator
+    public static enum ConsoleEngineCreator
     {
         GREMLIN
         {
@@ -89,4 +101,20 @@ public class SessionFactoryImpl implements SessionFactory
         
         abstract ScriptSession newSession( Database database );
     }
+
+
+    private void enableEngines(List<String> supportedEngines)
+    {
+        for(String engineName : supportedEngines) 
+        {
+            for(ConsoleEngineCreator creator : EnumSet.allOf(ConsoleEngineCreator.class)) 
+            {
+                if(creator.name().equalsIgnoreCase(engineName)) 
+                {
+                    engineCreators.put(engineName.toLowerCase(), creator);
+                }
+            }
+        }
+    }
+
 }

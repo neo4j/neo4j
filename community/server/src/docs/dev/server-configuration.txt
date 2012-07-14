@@ -167,3 +167,22 @@ wrapper.java.additional.3=-Xloggc:data/log/neo4j-gc.log
 This line is already present and needs uncommenting. Note also that logging is not directed to console ;
 You will find the logging statements in 'data/log/ne4j-gc.log' or whatever directory you set at the option.
 
+
+=== Disabling console types in Webadmin ===
+
+You may, for security reasons, want to disable the Gremlin console and/or the Neo4j Shell in Webadmin.
+Both of them allow arbitrary code execution, and so they could constitute a security risk if you do not trust all users of your Neo4j Server.
+
+In the 'conf/neo4j-server.properties' file:
+
+[source]
+----
+# To disable both Neo4j Shell and Gremlin:
+org.neo4j.server.manage.console_engines=
+
+# To enable only the Neo4j Shell:
+org.neo4j.server.manage.console_engines=shell
+
+# To enable both
+org.neo4j.server.manage.console_engines=gremlin,shell
+----

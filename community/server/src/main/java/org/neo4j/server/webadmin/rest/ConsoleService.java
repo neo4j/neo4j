@@ -33,7 +33,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Pair;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -44,30 +46,32 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
 
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
 {
+    public static final String SERVICE_PATH = "server/console";
+    
     private static final String SERVICE_NAME = "console";
-    static final String SERVICE_PATH = "server/console";
-    private final SessionFactory sessionFactory;
+    private static final Logger log = Logger.getLogger( ConsoleService.class );
+    
+    private final ConsoleSessionFactory sessionFactory;
     private final Database database;
     private final OutputFormat output;
 
-    public ConsoleService( SessionFactory sessionFactory, Database database, OutputFormat output )
+    @SuppressWarnings("unchecked")
+    public ConsoleService( @Context Configuration config, @Context Database database, @Context HttpServletRequest req, @Context OutputFormat output )
+    {
+        this( new SessionFactoryImpl( req.getSession( true ), config.getList(Configurator.MANAGEMENT_CONSOLE_ENGINES, Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES) ), database, output );
+    }
+
+    public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, OutputFormat output )
     {
         this.sessionFactory = sessionFactory;
         this.database = database;
         this.output = output;
     }
-
-    public ConsoleService( @Context Database database, @Context HttpServletRequest req, @Context OutputFormat output )
-    {
-        this( new SessionFactoryImpl( req.getSession( true ) ), database, output );
-    }
-
-    Logger log = Logger.getLogger( ConsoleService.class );
 
     @Override
     public String getName()
@@ -84,8 +88,7 @@ public class ConsoleService implements AdvertisableService
     @GET
     public Response getServiceDefinition()
     {
-        ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( SERVICE_PATH );
-        result.resourceUri( "exec", "" );
+        ConsoleServiceRepresentation result = new ConsoleServiceRepresentation( SERVICE_PATH, sessionFactory.supportedEngines() );
 
         return output.ok( result );
     }
@@ -110,7 +113,13 @@ public class ConsoleService implements AdvertisableService
                     .build();
         }
 
-        ScriptSession scriptSession = getSession( args );
+        ScriptSession scriptSession;
+        try {
+            scriptSession = getSession( args );
+        } catch(IllegalArgumentException e) {
+            return output.badRequest(e);
+        }
+        
         log.trace( scriptSession.toString() );
         try
         {

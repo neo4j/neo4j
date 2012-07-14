@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2010-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -999,6 +999,11 @@ neo4j.services.ConsoleService=function(a){neo4j.Service.call(this,a)
 _.extend(neo4j.services.ConsoleService.prototype,neo4j.Service.prototype);
 neo4j.services.ConsoleService.prototype.exec=neo4j.Service.resourceFactory({resource:"exec",method:"POST",before:function(b,a){b({command:a[0],engine:a[1]},a[2])
 }});
+neo4j.services.ConsoleService.prototype.availableEngines=function(a){this.serviceMethodPreflight(function(){function c(d){a(d.engines?d.engines:[])
+}function b(d){a(d)
+}this.get("/",null,c,b)
+})
+};
 neo4j.services.JmxService=function(a){neo4j.Service.call(this,a);
 this.kernelInstance=neo4j.cachedFunction(this.kernelInstance,0,2000)
 };
@@ -1248,13 +1253,11 @@ return this.getServiceDefinition().then(function(b,d,c){a.web.get(b.relationship
 }else{b(a)
 }})
 },getServiceDefinition:function(){if(typeof(this._serviceDefinitionPromise)==="undefined"){var a=this;
-this._serviceDefinitionPromise=this.getDiscoveryDocument().then(function(c,d,b){a.web.get(c.data,function(e){d(e)
-})
+this._serviceDefinitionPromise=this.getDiscoveryDocument().then(function(c,d,b){a.web.get(c.data,d,b)
 })
 }return this._serviceDefinitionPromise
 },getDiscoveryDocument:function(){if(typeof(this._discoveryDocumentPromise)==="undefined"){var a=this;
-this._discoveryDocumentPromise=new neo4j.Promise(function(c,b){a.web.get(a.url,function(d){c(d)
-})
+this._discoveryDocumentPromise=new neo4j.Promise(function(c,b){a.web.get(a.url,c,b)
 })
 }return this._discoveryDocumentPromise
 },get:function(c,b,d,a){this.web.get(this.url+c,b,d,a)
