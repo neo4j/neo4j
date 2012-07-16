@@ -53,5 +53,9 @@ include::similarity-complex.txt[]
 
 :leveloffset: 1
 
+include::graphity.txt[]
+
+:leveloffset: 1
+
 //include::activity-streams.txt[]
 
