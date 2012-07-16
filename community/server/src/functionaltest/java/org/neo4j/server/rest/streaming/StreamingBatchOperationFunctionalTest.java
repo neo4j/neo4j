@@ -521,6 +521,126 @@ public class StreamingBatchOperationFunctionalTest extends AbstractRestFunctiona
         
     }
     
+    // It has to be possible to create relationships among created and not-created nodes
+    // in batch operation.  Tests the fix for issue #690.
+    @Test
+    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception {
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/node/Cultures?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("tobias")
+                            .key("properties")
+                                .object()
+                                    .key("name").value("Tobias Tester")
+                                .endObject()
+                        .endObject()
+                    .key("id")      .value(0)
+                .endObject()
+                .object()                       // Creates Andres, hence 201 Create
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/node/Cultures?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("andres")
+                            .key("properties")
+                                .object()
+                                    .key("name").value("Andres Tester")
+                                .endObject()
+                        .endObject()
+                    .key("id")      .value(1)
+                .endObject()
+                .object()                       // Duplicated to ID.1, hence 200 OK
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/node/Cultures?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("andres")
+                            .key("properties")
+                                .object()
+                                    .key("name").value("Andres Tester")
+                                .endObject()
+                        .endObject()
+                    .key("id")      .value(2)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/relationship/my_rels/?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("tobias-andres")
+                            .key("start").value("{0}")
+                            .key("end").value("{1}")
+                            .key("type").value("FRIENDS")
+                        .endObject()
+                    .key("id")      .value(3)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/relationship/my_rels/?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("andres-tobias")
+                            .key("start").value("{2}")          // Not-created entity here
+                            .key("end").value("{0}")
+                            .key("type").value("FRIENDS")
+                        .endObject()
+                    .key("id")      .value(4)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/relationship/my_rels/?unique")
+                    .key("body")
+                        .object()
+                            .key("key").value("name")
+                            .key("value").value("andres-tobias")
+                            .key("start").value("{1}")          // Relationship should not be created
+                            .key("end").value("{0}")
+                            .key("type").value("FRIENDS")
+                        .endObject()
+                    .key("id")      .value(5)
+                .endObject()
+            .endArray().toString();
+        
+        JaxRsResponse response = RestRequest.req()
+                .accept( APPLICATION_JSON_TYPE )
+                .header(StreamingJsonFormat.STREAM_HEADER, "true")
+                .post(batchUri(), jsonString);
+
+        assertEquals(200, response.getStatus());
+        final String entity = response.getEntity();
+        System.out.println("entity = " + entity);
+        List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
+        assertEquals(6, results.size());
+        Map<String, Object> andresResult1 = results.get(1);
+        Map<String, Object> andresResult2 = results.get(2);
+        Map<String, Object> secondRelationship  = results.get(4);
+        Map<String, Object> thirdRelationship  = results.get(5);
+
+        // Same people
+        Map<String, Object> body1 = (Map<String, Object>) andresResult1.get("body");
+        Map<String, Object> body2 = (Map<String, Object>) andresResult2.get("body");
+        assertEquals(body1.get("id"), body2.get("id"));
+        // Same relationship
+        body1 = (Map<String, Object>) secondRelationship.get("body");
+        body2 = (Map<String, Object>) thirdRelationship.get("body");
+        assertEquals(body1.get("self"), body2.get("self"));
+        // Created for {2} {0}
+        assertTrue(((String) secondRelationship.get("location")).length() > 0);
+        // {2} = {1} = Andres
+        body1 = (Map<String, Object>) secondRelationship.get("body");
+        body2 = (Map<String, Object>) andresResult1.get("body");
+        assertEquals(body1.get("start"), body2.get("self"));
+        
+    }
     private int countNodes()
     {
         return IteratorUtil.count( (Iterable)graphdb().getAllNodes() );

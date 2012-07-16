@@ -55,6 +55,12 @@ public class OutputFormat
         return response( Response.ok(), representation );
     }
 
+    public final <REPR extends Representation & EntityRepresentation> Response ok( REPR representation, Boolean t ) throws BadInputException
+    {
+        if ( representation.isEmpty() ) return noContent();
+        return response( Response.ok().header("Location", uri(representation)), representation );
+    }
+
     public final <REPR extends Representation & EntityRepresentation> Response created( REPR representation )
             throws BadInputException
     {
