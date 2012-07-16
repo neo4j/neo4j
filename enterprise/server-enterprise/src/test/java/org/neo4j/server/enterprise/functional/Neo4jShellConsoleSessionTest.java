@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.enterprise.functional;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.util.List;
-
-import javax.ws.rs.core.Response;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -50,14 +39,24 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.SessionFactory;
+import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.rest.ShellSession;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
+import javax.ws.rs.core.Response;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.util.List;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @Ignore( "Due to fix (62e73bfe8265971cebff166bb9ec8a6de3ab8f39) in community not working" )
-public class Neo4jShellConsoleSessionTest implements SessionFactory
+public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
 {
     private ConsoleService consoleService;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
@@ -117,6 +116,12 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
         return session;
     }
 
+    @Override
+    public Iterable<String> supportedEngines()
+    {
+        return null;
+    }
+
     @Test
     public void haMasterSwitchLeavesAWorkingShell() throws Exception
     {
@@ -152,4 +157,6 @@ public class Neo4jShellConsoleSessionTest implements SessionFactory
     {
         return (List<String>)JsonHelper.readJson(new String( (byte[]) response.getEntity(), "UTF-8" ));
     }
+
+
 }
