@@ -72,7 +72,6 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
      * Also do an incremental backup just to make sure that the logs have gotten the
      * right records injected.
      */
-    @Ignore( "TODO Broken since the assembly merge. Please fix" )
     @Test
     public void crashAfter2PCMarkAsCommittingThenCrashAgainAndRecover() throws Exception
     {
@@ -188,7 +187,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         }
     }
 
-    private final BreakPoint ON_CRASH = new BreakPoint( Crash.class, "run", InternalAbstractGraphDatabase.class )
+    private final BreakPoint ON_CRASH = new BreakPoint( Crash.class, "run", GraphDatabaseAPI.class )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
