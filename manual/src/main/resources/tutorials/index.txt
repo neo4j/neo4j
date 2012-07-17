@@ -22,10 +22,6 @@ include::rest.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
-
-:leveloffset: 1
-
 include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
 
 :leveloffset: 1
@@ -39,5 +35,9 @@ include::languages.txt[]
 :leveloffset: 1
 
 include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
 
 
