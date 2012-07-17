@@ -128,7 +128,7 @@ The overhead of the GC resistant cache is also much smaller as well as insert/lo
 The GC resistant cache is experimental. Production use is only advisable after extensive user testing.
 
 [TIP]
-The use of heap memory is subject to the java garbage collector - depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
+The use of heap memory is subject to the java garbage collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
 Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
 Instead leave some space for Neo4j's filesystem caches.
 These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
@@ -227,7 +227,7 @@ This table can be used to calculate how much memory the data in the object cache
                    .+>m|  48 B | Object overhead.
                    .+>m| 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
 .5+| Property      .+>m| 116 B | Size for each property of a node or relationship.
-                   .+>m|  32 B | Data element - allows for transactional modification and keeps track of on disk location.
+                   .+>m|  32 B | Data element -- allows for transactional modification and keeps track of on disk location.
                    .+>m|  48 B | Entry in the hash table where it is stored.
                    .+>m|  12 B | Space used in hash table, accounts for normal fill ratio.
                    .+>m|  24 B | Property key index.

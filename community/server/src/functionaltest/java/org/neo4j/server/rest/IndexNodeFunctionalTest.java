@@ -177,11 +177,11 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Add node to index.
-     *
+     * 
      * Associates a node with the given key/value pair in the given index.
-     *
-     * NOTE: Spaces in the URI have to be escaped.
-     *
+     * 
+     * NOTE: Spaces in the URI have to be encoded as +%20+.
+     * 
      * CAUTION: This does *not* overwrite previous entries. If you index the
      * same key/value/item combination twice, two index entries are created. To
      * do update-type operations, you need to delete the old entry before adding
@@ -222,8 +222,8 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Find node by exact match.
-     *
-     * NOTE: Spaces in the URI have to be escaped.
+     * 
+     * NOTE: Spaces in the URI have to be encoded as +%20+.
      */
     @Documented
     @Test

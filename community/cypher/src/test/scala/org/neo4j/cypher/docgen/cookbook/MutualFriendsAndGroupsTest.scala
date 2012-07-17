@@ -33,6 +33,7 @@ class MutualFriendsAndGroupsTest extends DocumentingTestBase {
       "Jill knows Bill")
 
   def section = "cookbook"
+  override val noTitle = true;
 
   @Test def peopleSimilarityTags() {
     testQuery(

@@ -5,7 +5,7 @@
 
 include::cypher-cofavoritedplaces-graph.txt[]
 
-include::co-favorited-places---users-who-like-x-also-like-y.txt[]
+include::co-favorited-places----users-who-like-x-also-like-y.txt[]
 
-include::co-tagged-places---places-related-through-tags.txt[]
+include::co-tagged-places----places-related-through-tags.txt[]
 

@@ -19,17 +19,17 @@ The Neo4j team is very concerned about your privacy. We do not disclose any pers
 
 To gather good statistics about Neo4j usage, UDC collects this information:
 
-* Kernel version - the build number, and if there are any modifications to the kernel.
-* Store id - it is a randomized globally unique id created at the same time a database is created.
-* Ping count - UDC holds an internal counter which is incremented for every ping, and reset for every restart of the kernel.
-* Source - this is either "neo4j" or "maven". If you downloaded Neo4j from the Neo4j website, it's "neo4j", if you are using Maven to get Neo4j, it will be "maven".
-* Java version - the referrer string shows which version of Java is being used.
-* MAC address to uniquely identify instances behind firewalls
-* Registration id - for registered server instances
-* Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb)
-* Neo4j Edition (community, advanced, enterprise)
-* A hash of the current cluster name (if any)
-* Distribution information for Linux (rpm, dpkg, unknown)
+* Kernel version: The build number, and if there are any modifications to the kernel.
+* Store id: A randomized globally unique id created at the same time a database is created.
+* Ping count: UDC holds an internal counter which is incremented for every ping, and reset for every restart of the kernel.
+* Source: This is either "neo4j" or "maven". If you downloaded Neo4j from the Neo4j website, it's "neo4j", if you are using Maven to get Neo4j, it will be "maven".
+* Java version: The referrer string shows which version of Java is being used.
+* MAC address to uniquely identify instances behind firewalls.
+* Registration id: For registered server instances.
+* Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb).
+* Neo4j Edition (community, advanced, enterprise).
+* A hash of the current cluster name (if any).
+* Distribution information for Linux (rpm, dpkg, unknown).
 
 After startup, UDC waits for ten minutes before sending the first ping. It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum. The ping to the UDC servers is done with a HTTP GET.
 

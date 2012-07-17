@@ -127,7 +127,7 @@ public class RetrieveNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get node - compact.
+     * Get node -- compact.
      * 
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.

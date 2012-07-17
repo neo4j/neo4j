@@ -107,6 +107,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   var generateConsole: Boolean = true
   var generateInitialGraphForConsole: Boolean = true
   val graphvizOptions: String = ""
+  val noTitle: Boolean = false;
 
   def section: String
 
@@ -116,7 +117,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
-    writer.println("== " + title + " ==")
+    if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
     runQuery(writer, query, returns, result)

@@ -131,7 +131,7 @@ For details on removing index entries, see <<indexing-remove>>.
 
 Remember that a node or relationship can be associated with any number of key-value pairs in an index.
 This means that you can index a node or relationship with many key-value pairs that have the same key.
-In the case where a property value changes and you'd like to update the index, it's not enough to just index the new value - you'll have to remove the old value as well.
+In the case where a property value changes and you'd like to update the index, it's not enough to just index the new value -- you'll have to remove the old value as well.
 
 Here's a code example for that demonstrates how it's done:
 

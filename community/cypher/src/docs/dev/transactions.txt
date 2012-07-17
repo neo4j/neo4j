@@ -1,6 +1,6 @@
 [[query-transactions]]
-Transactions and Cypher
-=======================
+Transactions
+============
 
 Any query that updates the graph will run in a transaction. An updating query will always either fully succeed,
 or not succeed at all.

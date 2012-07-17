@@ -59,7 +59,7 @@ class MealTestIgnored extends DocumentingTestBase {
 
   @Test def weightedMeal() {
     testQuery(
-      title = "Longest Paths - find the leaf ingredients",
+      title = "Longest Paths -- find the leaf ingredients",
       text = """From the root, find the paths to all the leaf ingredients in order to return the paths for the weight calculation""",
       queryText = "" +
       		"START me=node(%Peter%) " +
@@ -67,7 +67,7 @@ class MealTestIgnored extends DocumentingTestBase {
         "path=meal-[r:composed_of*0..]->ingredient " +
         "WHERE not(ingredient --> ())" +
         "RETURN ingredient.name ",
-      returns = "The activity stream for Jane.",
+      returns = "The activity stream for Jane is returned.",
       (p) => assertEquals(List(Map("ingredient.name" -> "Potatoes"), 
           Map("ingredient.name" -> "Meat"),
           Map("ingredient.name" -> "Salt"),

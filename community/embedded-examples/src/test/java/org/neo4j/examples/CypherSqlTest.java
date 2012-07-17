@@ -195,7 +195,7 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
      * 
      * @@Return-cypher-result
      * 
-     * Order by is the same in both languages - `ORDER BY` expression `ASC`/`DESC`. 
+     * Order by is the same in both languages -- `ORDER BY` expression `ASC`/`DESC`. 
      * Nothing weird here.
      * 
      * // == Recursive queries ==

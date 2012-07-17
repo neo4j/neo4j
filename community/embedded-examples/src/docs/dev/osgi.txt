@@ -2,8 +2,8 @@
 OSGi setup
 ==========
 
-In http://www.osgi.org/[OSGi] - related contexts like a number of Application Servers (e.g. http://glassfish.java.net/[Glassfish] )
-and http://www.eclipse.org[Eclipse] - based systems, Neo4j can be set up explicitly rather than being discovered by the Java Service Loader
+In http://www.osgi.org/[OSGi]-related contexts like a number of Application Servers (e.g. http://glassfish.java.net/[Glassfish] )
+and http://www.eclipse.org[Eclipse]-based systems, Neo4j can be set up explicitly rather than being discovered by the Java Service Loader
 mechanism.
 
 

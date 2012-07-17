@@ -1,7 +1,7 @@
 [[query-delete]]
 Delete
 ======
-Removing graph elements - nodes, relationships and properties, is done with +DELETE+.
+Removing graph elements -- nodes, relationships and properties, is done with +DELETE+.
 
 :leveloffset: 2
 

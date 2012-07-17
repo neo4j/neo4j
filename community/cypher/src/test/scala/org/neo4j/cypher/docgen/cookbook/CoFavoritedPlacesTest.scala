@@ -48,7 +48,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
   @Test def coFavoritedPlaces() {
     testQuery(
-      title = "Co-Favorited Places - Users Who Like x Also Like y",
+      title = "Co-Favorited Places -- Users Who Like x Also Like y",
       text = """Find places that people also like who favorite this place:
 
 * Determine who has favorited place x.
@@ -65,7 +65,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
   
   @Test def coTaggedPlaces() {
     testQuery(
-      title = "Co-Tagged Places - Places Related through Tags",
+      title = "Co-Tagged Places -- Places Related through Tags",
       text = """Find places that are tagged with the same tags:
 
 * Determine the tags for place x.
