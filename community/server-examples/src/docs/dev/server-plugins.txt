@@ -155,7 +155,7 @@ If the extension throws an exception response code +500+ and a detailed error me
 
 Extensions that do any kind of write operation will have to manage their own transactions, i.e. transactions aren't managed automatically.
 
-Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses - meaning that
+Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses -- meaning that
 clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade
 path as servers are enriched with plugins (old clients don't break).
 

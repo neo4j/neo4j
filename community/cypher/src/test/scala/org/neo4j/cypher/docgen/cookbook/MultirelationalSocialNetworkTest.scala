@@ -43,6 +43,7 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
 
   def section = "cookbook"
   override val graphvizOptions = "graph [layout=circo]"
+  override val noTitle = true;
 
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

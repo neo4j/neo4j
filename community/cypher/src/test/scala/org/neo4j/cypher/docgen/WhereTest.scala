@@ -64,7 +64,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def regular_expressions_escaped() {
     testQuery(
       title = "Escaping in regular expressions",
-      text = "If you need a forward slash inside of your regular expression, escape it just like you expect to.",
+      text = "If you need a forward slash inside of your regular expression, escape it using a backslash (+\\+).",
       queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Some\/thing/ return n""",
       returns = """No nodes match this regular expression.""",
       assertions = (p) => assertEquals(List(), p.toList))
@@ -132,7 +132,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Filter on patterns",
       text = """Patterns are expressions in Cypher, expressions that return a collection of paths. Collection
-expressions are also predicates - an empty collection represents `false`, and a non-empty represents `true`.
+expressions are also predicates -- an empty collection represents `false`, and a non-empty represents `true`.
 
 So, patterns are not only expressions, they are also predicates. The only limitation to your pattern is that you must be
 able to express it in a single path. You can't use comas between multiple paths like you do in MATCH. You can achieve

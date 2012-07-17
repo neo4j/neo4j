@@ -13,7 +13,7 @@ Other options to traverse or query graphs in Neo4j are <<cypher-query-lang,Cyphe
 
 Here follows a short explanation of all different methods that can modify or add to a traversal description.
 
-* _Expanders_ -- define what to traverse, typically in terms of relationships direction and type.
+* _Expanders_ -- define what to traverse, typically in terms of relationship direction and type.
 * _Order_ -- for example depth-first or breadth-first.
 * _Uniqueness_ -- visit nodes (relationships, paths) only once.
 * _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
@@ -112,13 +112,13 @@ Default if not set is http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/
 
 A Uniqueness can be supplied to the TraversalDescription to dictate under what circumstances a traversal may revisit the same position in the graph. The various uniqueness levels that can be used in Neo4j are:
 
-* +NONE+ - any position in the graph may be revisited.
-* +NODE_GLOBAL+ uniqueness - no node in the entire graph may be visited more than once. This could potentially consume a lot of memory since it requires keeping an in-memory data structure remembering all the visited nodes.
-* +RELATIONSHIP_GLOBAL+ uniqueness - no relationship in the entire graph may be visited more than once. For the same reasons as NODE_GLOBAL uniqueness, this could use up a lot of memory. But since graphs typically have a larger number of relationships than nodes, the memory overhead of this uniqueness level could grow even quicker.
-* +NODE_PATH+ uniqueness - a node may not occur previously in the path reaching up to it.
-* +RELATIONSHIP_PATH+ uniqueness - a relationship may not occur previously in the path reaching up to it.
-* +NODE_RECENT+ uniqueness - Similar to NODE_GLOBAL uniqueness in that there is a global collection of visited nodes each position is checked against. This uniqueness level does however have a cap on how much memory it may consume in the form of a collection that only contains the most recently visited nodes. The size of this collection can be specified by providing a number as the second argument to the TraversalDescription.uniqueness()-method along with the uniqueness level.
-* +RELATIONSHIP_RECENT+ uniqueness - works like NODE_RECENT uniqueness, but with relationships instead of nodes.
+* +NONE+: Any position in the graph may be revisited.
+* +NODE_GLOBAL+ uniqueness: No node in the entire graph may be visited more than once. This could potentially consume a lot of memory since it requires keeping an in-memory data structure remembering all the visited nodes.
+* +RELATIONSHIP_GLOBAL+ uniqueness: no relationship in the entire graph may be visited more than once. For the same reasons as +NODE_GLOBAL+ uniqueness, this could use up a lot of memory. But since graphs typically have a larger number of relationships than nodes, the memory overhead of this uniqueness level could grow even quicker.
+* +NODE_PATH+ uniqueness: A node may not occur previously in the path reaching up to it.
+* +RELATIONSHIP_PATH+ uniqueness: A relationship may not occur previously in the path reaching up to it.
+* +NODE_RECENT+ uniqueness: Similar to +NODE_GLOBAL+ uniqueness in that there is a global collection of visited nodes each position is checked against. This uniqueness level does however have a cap on how much memory it may consume in the form of a collection that only contains the most recently visited nodes. The size of this collection can be specified by providing a number as the second argument to the TraversalDescription.uniqueness()-method along with the uniqueness level.
+* +RELATIONSHIP_RECENT+ uniqueness: Works like +NODE_RECENT+ uniqueness, but with relationships instead of nodes.
 
 
 ==== Depth First / Breadth First ====
@@ -126,7 +126,7 @@ A Uniqueness can be supplied to the TraversalDescription to dictate under what c
 These are convenience methods for setting preorder http://en.wikipedia.org/wiki/Depth-first_search[depth-first]/ http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first] +BranchSelector+|+ordering+ policies.
 The same result can be achieved by calling the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[+order+] method with ordering policies from the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderDepthFirst[+Traversal+] http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderBreadthFirst[+factory+], or to write your own +BranchSelector+/+BranchOrderingPolicy+ and pass in.
 
-=== Order - How to move through branches? ===
+=== Order -- How to move through branches? ===
 
 A more generic version of depthFirst/breadthFirst methods in that it allows an arbitrary http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/BranchOrderingPolicy.html[+BranchOrderingPolicy+] to be injected into the description.
 
@@ -135,10 +135,10 @@ A more generic version of depthFirst/breadthFirst methods in that it allows an a
 
 A BranchSelector is used for selecting which branch of the traversal to attempt next. This is used for implementing traversal orderings. The traversal framework provides a few basic ordering implementations:
 
-* +Traversal.preorderDepthFirst()+ - Traversing depth first, visiting each node before visiting its child nodes.
-* +Traversal.postorderDepthFirst()+ - Traversing depth first, visiting each node after visiting its child nodes.
-* +Traversal.preorderBreadthFirst()+ - Traversing breadth first, visiting each node before visiting its child nodes.
-* +Traversal.postorderBreadthFirst()+ - Traversing breadth first, visiting each node after visiting its child nodes.
+* +Traversal.preorderDepthFirst()+: Traversing depth first, visiting each node before visiting its child nodes.
+* +Traversal.postorderDepthFirst()+: Traversing depth first, visiting each node after visiting its child nodes.
+* +Traversal.preorderBreadthFirst()+: Traversing breadth first, visiting each node before visiting its child nodes.
+* +Traversal.postorderBreadthFirst()+: Traversing breadth first, visiting each node after visiting its child nodes.
 
 NOTE: Please note that breadth first traversals have a higher memory overhead than depth first traversals.
 

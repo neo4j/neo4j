@@ -4,10 +4,10 @@ Transaction Management
 
 In order to fully maintain data integrity and ensure good transactional behavior, Neo4j supports the ACID properties:
 
-* atomicity - if any part of a transaction fails, the database state is left unchanged
-* consistency - any transaction will leave the database in a consistent state
-* isolation - during a transaction, modified data cannot be accessed by other operations
-* durability - the DBMS can always recover the results of a committed transaction
+* atomicity: If any part of a transaction fails, the database state is left unchanged.
+* consistency: Any transaction will leave the database in a consistent state.
+* isolation: During a transaction, modified data cannot be accessed by other operations.
+* durability: The DBMS can always recover the results of a committed transaction.
 
 Specifically:
 

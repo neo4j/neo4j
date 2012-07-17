@@ -273,7 +273,7 @@ class FunctionsTest extends DocumentingTestBase {
       title = "SIGN",
       syntax = "SIGN( expression )",
       arguments = List("expression" -> "A numerical expression"),
-      text = "Returns the signum of a number - zero if the expression is zero, -1 for any negative number, and 1 for any positive number.",
+      text = "Returns the signum of a number -- zero if the expression is zero, `-1` for any negative number, and `1` for any positive number.",
       queryText = "start n=node(1) return sign(-17), sign(0.1)",
       returns = "",
       assertions = (p) => assert(List(Map("sign(-17)"-> -1, "sign(0.1)"->1)) === p.toList)

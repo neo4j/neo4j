@@ -1,6 +1,6 @@
 [[query-updating]]
-Updating the graph with Cypher
-==============================
+Updating the graph
+==================
 
 Cypher can be used for both querying and updating your graph.
 

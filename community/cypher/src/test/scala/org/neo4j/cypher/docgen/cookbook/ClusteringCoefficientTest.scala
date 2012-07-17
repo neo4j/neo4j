@@ -27,6 +27,7 @@ class ClusteringCoefficientTest extends DocumentingTestBase {
   def graphDescription = List()
 
   def section = "cookbook"
+  override val noTitle = true;
 
   @Test def calculatingClusteringCoefficient() {
     executeQuery("""

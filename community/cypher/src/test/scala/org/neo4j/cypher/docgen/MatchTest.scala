@@ -105,12 +105,12 @@ class MatchTest extends DocumentingTestBase {
     db.inTx(() => {
       val a = node("A")
       val b = node("A")
-      a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE WITH SPACE IN IT"))
+      a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE THAT HAS SPACE IN IT"))
     })
     testQuery(
       title = "Relationship types with uncommon characters",
-      text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use ` to escape these.",
-      queryText = """start n=node(%A%) match (n)-[r:`TYPE WITH SPACE IN IT`]->() return r""",
+      text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use +`+ (backtick) to quote these.",
+      queryText = """start n=node(%A%) match (n)-[r:`TYPE THAT HAS SPACE IN IT`]->() return r""",
       returns = """This query returns a relationship of a type with spaces in it.""",
       assertions = (p) => assertEquals(1, p.size)
     )

@@ -36,6 +36,7 @@ class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
       "Jill favorite Bikes")
 
   def section = "cookbook"
+  override val noTitle = true;
 
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

@@ -58,7 +58,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * 
      * * The aggregation of principals into groups, connected by the +IS_MEMBER_OF+ relationship. One principal (user or group) can be part of many groups at the same time.
      * 
-     * * The +SECURITY+ - relationships, connecting the content composite structure to the principal composite structure, containing a addition/removal modifier property ("++RW+")
+     * * The +SECURITY+ -- relationships, connecting the content composite structure to the principal composite structure, containing a addition/removal modifier property ("++RW+").
      * 
      * 
      * === Constructing the ACL ===

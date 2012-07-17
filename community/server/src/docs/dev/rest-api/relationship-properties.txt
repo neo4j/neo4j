@@ -3,7 +3,7 @@
 
 include::update-relationship-properties.txt[]
 
-inlcude::remove-properties-from-a-relationship.txt[]
+include::remove-properties-from-a-relationship.txt[]
 
 include::remove-property-from-a-relationship.txt[]
 

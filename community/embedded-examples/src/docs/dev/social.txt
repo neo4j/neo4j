@@ -55,14 +55,14 @@ tag=getStatusTraversal
 ----
 
 This gives us a traverser that will start at one +StatusUpdate+, and will follow the chain of updates until they run out.
-Traversers are lazy loading, so it's performant even when dealing with thousands of statuses - they are not loaded until we actually consume them.
+Traversers are lazy loading, so it's performant even when dealing with thousands of statuses -- they are not loaded until we actually consume them.
 
 == Activity stream ==
 
-Once we have friends, and they have status messages, we might want to read our friends status' messages, in reverse time order - latest first.
+Once we have friends, and they have status messages, we might want to read our friends status' messages, in reverse time order -- latest first.
 To do this, we go through these steps:
 
-. Gather all friend's status update iterators in a list - latest date first.
+. Gather all friend's status update iterators in a list -- latest date first.
 . Sort the list.
 . Return the first item in the list.
 . If the first iterator is exhausted, remove it from the list.
