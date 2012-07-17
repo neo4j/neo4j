@@ -52,7 +52,6 @@ public class Database implements Lifecycle
     @Deprecated
     public AbstractGraphDatabase graph;
 
-    private String databaseStoreDirectory;
     private RrdDb rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
@@ -74,7 +73,6 @@ public class Database implements Lifecycle
     @Deprecated
     public Database( AbstractGraphDatabase db )
     {
-        this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
     }
 
@@ -129,7 +127,7 @@ public class Database implements Lifecycle
 
     public String getLocation()
     {
-        return databaseStoreDirectory;
+        return graph.getStoreDir();
     }
 
     public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name )
