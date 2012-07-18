@@ -314,6 +314,28 @@ public class ComponentVersion extends Version
           </groups>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <failOnError>false</failOnError>
+          <logResults>true</logResults>
+          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
+           need to fix that. -->
+          <comparisonVersion>1.7</comparisonVersion>
+          <includes>
+            <include>org/neo4j/graphdb/**</include>
+          </includes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
