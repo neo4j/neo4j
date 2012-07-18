@@ -334,6 +334,16 @@ public class ComponentVersion extends Version
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
+
+          <!-- These are temporary exceptions for the 1.8 release, please remove after that. -->
+          <excludeMessageCodes>
+            <param>6006</param><!-- Field was made final. -->
+          </excludeMessageCodes>
+          <excludes>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*UseMemoryMappedBuffers</exclude>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*BooleanSetting</exclude>
+          </excludes>
+
         </configuration>
       </plugin>
     </plugins>
