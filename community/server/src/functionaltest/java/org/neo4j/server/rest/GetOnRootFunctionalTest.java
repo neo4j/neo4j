@@ -106,20 +106,26 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * The whole REST API can be transmitted as JSON streams,
-     * resulting in better performance and lower memory overhead at the server side.
-     * To use it, adjust your accept headers on the request for every call.
+     * The whole REST API can be transmitted as JSON streams, resulting in
+     * better performance and lower memory overhead on the server side. To use
+     * it, adjust the request headers for every call, see the example below for
+     * details.
+     * 
+     * CAUTION: This feature is new, and you should make yourself comfortable
+     * with the streamed response style versus the non-streamed API where
+     * results are delivered in a single large response. Expect future releases
+     * to have streaming enabled by default since it is a far more efficient
+     * mechanism for both client and server.
      */
     @Documented
     @Test
     @Graph("I know you")
-    public void get_service_root_streaming() throws Exception
+    public void streaming() throws Exception
     {
         data.get();
         setReferenceNodeIdToI();
-        ResponseEntity responseEntity = gen().withHeader(
-                StreamingJsonFormat.STREAM_HEADER,
-                "true" )
+        ResponseEntity responseEntity = gen().docHeadingLevel( 2 )
+                .withHeader( StreamingJsonFormat.STREAM_HEADER, "true" )
                 .expectedType( APPLICATION_JSON_TYPE )
                 .expectedStatus( 200 )
                 .get( getDataUri() );
