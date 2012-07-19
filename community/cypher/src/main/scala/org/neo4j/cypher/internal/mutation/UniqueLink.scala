@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, Identifier
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.{RelatePathNotUnique, CypherTypeException}
+import org.neo4j.cypher.{UniquePathNotUniqueException, CypherTypeException}
 
 case class NamedExpectation(name: String, properties: Map[String, Expression])
   extends GraphElementPropertyFunctions
@@ -48,16 +48,16 @@ case class NamedExpectation(name: String, properties: Map[String, Expression])
   }
 }
 
-object RelateLink {
-  def apply(start: String, end: String, relName: String, relType: String, dir: Direction): RelateLink =
-    new RelateLink(NamedExpectation(start, Map.empty), NamedExpectation(end, Map.empty), NamedExpectation(relName, Map.empty), relType, dir)
+object UniqueLink {
+  def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
+    new UniqueLink(NamedExpectation(start, Map.empty), NamedExpectation(end, Map.empty), NamedExpectation(relName, Map.empty), relType, dir)
 }
 
-case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
+case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions {
   lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
-  def exec(context: ExecutionContext, state: QueryState): Option[(RelateLink, RelateResult)] = {
+  def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
     // We haven't yet figured out if we already have both elements in the context
     // so let's start by finding that first
 
@@ -82,7 +82,7 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   // This method sees if a matching relationship already exists between two nodes
   // If any matching rels are found, they are returned. Otherwise, a new one is
   // created and returned.
-  private def twoNodes(startNode: Node, endNode: Node, ctx: ExecutionContext, state: QueryState): Option[(RelateLink, RelateResult)] = {
+  private def twoNodes(startNode: Node, endNode: Node, ctx: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.
       filter(r => {
       r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, ctx)
@@ -96,14 +96,14 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
           Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
         }))
       case List(r) => Some(this->Traverse(rel.name -> r))
-      case _ => throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+      case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
   }
 
   // When only one node exists in the context, we'll traverse all the relationships of that node
   // and try to find a matching node/rel. If matches are found, they are returned. If nothing is
   // found, we'll create it and return it
-  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: NamedExpectation): Option[(RelateLink, RelateResult)] = {
+  private def oneNode(startNode: Node, ctx: ExecutionContext, dir: Direction, state: QueryState, end: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
     val rels = startNode.getRelationships(relationshipType, dir).asScala.filter(r => {
       rel.compareWithExpectations(r, ctx) && end.compareWithExpectations(r.getOtherNode(startNode), ctx)
     }).toList
@@ -115,7 +115,7 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
           Seq(tx.acquireWriteLock(startNode))
         }))
       case List(r) => Some(this->Traverse(rel.name -> r, end.name -> r.getOtherNode(startNode)))
-      case _ => throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+      case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
   }
 
@@ -144,11 +144,11 @@ case class RelateLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def dependencies = (propDependencies(start.properties) ++ propDependencies(end.properties) ++ propDependencies(rel.properties)).distinct
 
-  def rewrite(f: (Expression) => Expression): RelateLink = {
+  def rewrite(f: (Expression) => Expression): UniqueLink = {
     val s = NamedExpectation(start.name, rewrite(start.properties, f))
     val e = NamedExpectation(end.name, rewrite(end.properties, f))
     val r = NamedExpectation(rel.name, rewrite(rel.properties, f))
-    RelateLink(s, e, r, relType, dir)
+    UniqueLink(s, e, r, relType, dir)
   }
 
   def filter(f: (Expression) => Boolean) = Seq.empty

@@ -41,16 +41,15 @@ class PatternTest extends ArticleTest {
   val title = "Pattern"
   val section = "Introduction"
   val text =
-"""
+    """
 Patterns
 ========
 
 Patterns are at the very core of Cypher, and are used in a lot of different places.
 Using patterns, you describe the shape of the data that you are looking for.
 Patterns are used in the `MATCH` clause. Path patterns are expressions.
-Since these expressions are collections, they can also be used as
-predicates (a non-empty collection signifies true). They are also used to `CREATE` the graph, and by the `RELATE`
-clause.
+Since these expressions are collections, they can also be used as predicates (a non-empty collection signifies true).
+They are also used to `CREATE`/`CREATE UNIQUE` the graph.
 
 So, understanding patterns is important, to be able to be effective with Cypher.
 
@@ -63,13 +62,13 @@ graph nodes or relationships. All parts of the pattern must be directly or indir
 where parts of the pattern are not reachable from any starting point will be rejected.
 
 [options="header", cols=">s,^,^,^,^,^", width="100%"]
-|===================
-|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
-|Match|Yes|Yes|Yes|Yes|-
-|Create|-|-|-|Yes|Yes
-|Relate|-|-|-|Yes|Yes
-|Expressions|-|Yes|Yes|-|-
-|===================
+      |===================
+      |Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+      |Match|Yes|Yes|Yes|Yes|-
+      |Create|-|-|-|Yes|Yes
+      |Create Unique|-|-|-|Yes|Yes
+      |Expressions|-|Yes|Yes|-|-
+      |===================
 
 == Patterns for related nodes ==
 
@@ -110,7 +109,7 @@ If multiple relationship types are acceptable, you can list them, separating the
 +`a-[r:TYPE1|TYPE2]->b`+
 
 This pattern matches a relationship of type +TYPE1+ or +TYPE2+, going from `a` to `b`. The relationship is named `r`.
-Multiple relationship types can not be used with `CREATE` or `RELATE`.
+Multiple relationship types can not be used with `CREATE` or `CREATE UNIQUE`.
 
 == Optional relationships ==
 
@@ -175,7 +174,7 @@ You can set a minimum set of steps that can be taken, and/or the maximum number 
 
 This is a variable length relationship containing at least three graph relationships, and at most five.
 
-Variable length relationships can not be used with `CREATE` and `RELATE`.
+Variable length relationships can not be used with `CREATE` and `CREATE UNIQUE`.
 
 As a simple example, let's take the query below:
 
@@ -194,14 +193,14 @@ identifier, like so:
 
 +`p = (a)-[*3..5]->(b)`+
 
-You can do this in `MATCH`, `RELATE` and `CREATE`, but not when using patterns as expressions. Example of the three in a
-single query:
+You can do this in `MATCH`, `CREATE` and `CREATE UNIQUE`, but not when using patterns as expressions. Example of the
+three in a single query:
 
 ###no-results
 START me=node(%F%)
 MATCH p1 = me-[*2]-friendOfFriend
 CREATE p2 = me-[:MARRIED_TO]-(wife {name:"Gunhild"})
-RELATE p3 = wife-[:KNOWS]-friendOfFriend
+CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend
 RETURN p1,p2,p3###
 
 == Setting properties ==
@@ -212,11 +211,11 @@ Properties are expressed in patterns using the map-construct, which is simply cu
 key-expression pairs, separated by commas, e.g. `{ name: "Andres", sport: "BJJ" }`. If the map is supplied through a
 parameter, the normal parameter expression is used: `{ paramName }`.
 
-Maps are only used by `CREATE` and `RELATE`. In `CREATE` they are used to set the properties on the newly created nodes
-and relationships.
+Maps are only used by `CREATE` and `CREATE UNIQUE`. In `CREATE` they are used to set the properties on the newly created
+nodes and relationships.
 
-When used with `RELATE`, they are used to try to match a pattern element with the corresponding graph element. The
-match is successful if the properties on the pattern element can be matched exactly against properties on the graph
+When used with `CREATE UNIQUE`, they are used to try to match a pattern element with the corresponding graph element.
+The match is successful if the properties on the pattern element can be matched exactly against properties on the graph
 elements. The graph element can have additional properties, and they do not affect the match. If Neo4j fails to find
 matching graph elements, the maps is used to set the properties on the newly created elements.
 """

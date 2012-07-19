@@ -31,18 +31,18 @@ import collection.mutable.Map
 
 
 /*
-This test tries to set up a situation where RELATE would fail, unless we guard with locks to prevent creating
+This test tries to set up a situation where CREATE UNIQUE would fail, unless we guard with locks to prevent creating
 multiple relationships.
 
-It does so by using a decorator around ImpermanentGraphDatabase, so directly after RELATE has done getRelationships on
-a node, we'll create a new relationship.
+It does so by using a decorator around ImpermanentGraphDatabase, so directly after CREATE UNIQUE has done
+getRelationships on a node, we'll create a new relationship.
 */
 
-class RelateUniqueTest extends Assertions {
+class DoubleCheckCreateUniqueTest extends Assertions {
   var done = false
   val db = new ImpermanentGraphDatabase() with TripIt
 
-  @Test def double_check_relate() {
+  @Test def double_check_unique() {
 
     db.afterGetRelationship = createRel
 
@@ -62,7 +62,7 @@ class RelateUniqueTest extends Assertions {
     assert(a.getRelationships.asScala.size === 1)
   }
 
-  val relateAction = RelateAction(RelateLink("a", "b", "r", "X", Direction.OUTGOING))
+  val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
   private def createExecutionContext(a: Node): ExecutionContext = {

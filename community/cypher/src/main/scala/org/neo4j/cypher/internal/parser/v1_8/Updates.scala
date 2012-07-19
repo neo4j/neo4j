@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.SyntaxException
 
 trait Updates extends Base with Expressions with StartClause {
-  def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] = rep(delete | set | foreach | relate) ^^ (cmds => reduce(cmds))
+  def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] = rep(delete | set | foreach) ^^ (cmds => reduce(cmds))
 
   def foreach: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
     case id ~ in ~ iterable ~ ":" ~ creates ~ innerUpdates => {
@@ -37,7 +37,6 @@ trait Updates extends Base with Expressions with StartClause {
     }
   }
 
-  private def reduce[A,B](in:Seq[(Seq[A], Seq[B])]):(Seq[A], Seq[B]) = if (in.isEmpty) (Seq(),Seq()) else in.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
 
   def delete: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("delete") ~> commaList(expression) ^^ {
     case expressions => val updateActions: List[UpdateAction with Product] = expressions.map {
@@ -47,50 +46,10 @@ trait Updates extends Base with Expressions with StartClause {
       (updateActions, Seq())
   }
 
-  case class PathAndRelateLink(path:Option[NamedPath], links:Seq[RelateLink])
-
-  private def translate(abstractPattern: AbstractPattern): Maybe[PathAndRelateLink] = abstractPattern match {
-    case ParsedNamedPath(name, patterns) =>
-      val namedPathPatterns = patterns.map(matchTranslator).reduce(_ ++ _)
-      val startItems = patterns.map(translate).reduce(_ ++ _)
-
-      startItems match {
-        case No(msg) => No(msg)
-        case Yes(stuff) => namedPathPatterns.seqMap(p => {
-          val namedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
-          val links = stuff.map(_.asInstanceOf[PathAndRelateLink])
-
-          Seq(PathAndRelateLink(Some(namedPath), links.flatMap(_.links)))
-        })
-      }
-
-    case ParsedRelation(name, props, ParsedEntity(Entity(startName), startProps, True()), ParsedEntity(Entity(endName), endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
-      val link = RelateLink(
-        start = NamedExpectation(startName, startProps),
-        end = NamedExpectation(endName, endProps),
-        rel = NamedExpectation(name, props),
-        relType = typ.head,
-        dir = dir
-      )
-
-      Yes(Seq(PathAndRelateLink(None,Seq(link))))
-    case _ => No(Seq())
-  }
-
   def set: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("set") ~> commaList(propertySet) ^^ ((_,Seq()))
 
-
-  def relate: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("relate") ~> usePattern(translate) ^^ (patterns => {
-    val (links, path)= reduce(patterns.map {
-      case PathAndRelateLink(p, l) => (l, p.toSeq)
-    })
-
-    (Seq(RelateAction(links:_*)), path)
-  })
 
   def propertySet = property ~ "=" ~ expression ^^ {
     case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
   }
-
-  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
 }

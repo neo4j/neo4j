@@ -1,6 +1,7 @@
 1.8
 --------------------
 o Added escape characters to string literals
+o Renamed `RELATE` to `CREATE UNIQUE`
 
 1.8.M06 (2012-07-06)
 --------------------

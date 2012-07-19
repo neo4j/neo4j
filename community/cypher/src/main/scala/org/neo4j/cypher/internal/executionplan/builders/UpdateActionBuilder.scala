@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.pipes.{ExecuteUpdateCommandsPipe, TransactionStartPipe}
+import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
+import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UpdateAction}
+import org.neo4j.cypher.internal.commands.StartItem
 
 class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -32,22 +34,43 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
       new TransactionStartPipe(plan.pipe, db)
     }
 
-    val commands = plan.query.updates.filter(cmd => cmd.unsolved && p.symbols.satisfies(cmd.token.dependencies))
+    val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, p)
+    val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, p)
+    val startCmds = startItems.map(_.map(_.asInstanceOf[UpdateAction]))
+    val commands = updateCmds ++ startCmds
+
+
     val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands.map(_.token))
 
     plan.copy(
       containsTransaction = true,
-      query = plan.query.copy(updates = plan.query.updates.filterNot(commands.contains) ++ commands.map(_.solve)),
+      query = plan.query.copy(
+        updates = plan.query.updates.filterNot(updateCmds.contains) ++ updateCmds.map(_.solve),
+        start = plan.query.start.filterNot(startItems.contains) ++ startItems.map(_.solve)),
       pipe = resultPipe
     )
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.updates.exists(cmd => cmd.unsolved && plan.pipe.symbols.satisfies(cmd.token.dependencies))
+
+  private def extractValidStartItems(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[StartItem]] = {
+    plan.query.start.filter(cmd => cmd.unsolved && cmd.token.isInstanceOf[UpdateAction] && p.symbols.satisfies(cmd.token.asInstanceOf[UpdateAction].dependencies))
+  }
+
+  private def extractValidUpdateActions(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[UpdateAction]] = {
+    plan.query.updates.filter(cmd => cmd.unsolved && p.symbols.satisfies(cmd.token.dependencies))
+  }
+
+  def canWorkWith(plan: ExecutionPlanInProgress) =
+    extractValidUpdateActions(plan, plan.pipe).nonEmpty ||
+      extractValidStartItems(plan, plan.pipe).nonEmpty
 
   def priority = PlanBuilder.Mutation
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.updates.flatMap {
     case Unsolved(cmd) => plan.pipe.symbols.missingDependencies(cmd.dependencies).map(_.name)
+    case _ => None
+  } ++ plan.query.start.flatMap {
+    case Unsolved(cmd) if cmd.isInstanceOf[UpdateAction] => plan.pipe.symbols.missingDependencies(cmd.asInstanceOf[UpdateAction].dependencies).map(_.name)
     case _ => None
   }
 }

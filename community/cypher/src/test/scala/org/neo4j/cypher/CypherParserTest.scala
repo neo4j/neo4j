@@ -1733,80 +1733,80 @@ create a-[r:REL]->b
         returns(AllIdentifiers()))
   }
 
-  @Test def single_relate() {
+  @Test def single_create_unique() {
     val secondQ = Query.
-      relate(RelateLink("a", "b", "  UNNAMED1", "reltype", Direction.OUTGOING)).
+      unique(UniqueLink("a", "b", "  UNNAMED1", "reltype", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) relate a-[:reltype]->b", q)
+    testFrom_1_8("start a = node(1), b=node(2) create unique a-[:reltype]->b", q)
   }
 
-  @Test def single_relate_with_rel() {
+  @Test def single_create_unique_with_rel() {
     val secondQ = Query.
-      relate(RelateLink("a", "b", "r", "reltype", Direction.OUTGOING)).
+      unique(UniqueLink("a", "b", "r", "reltype", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) relate a-[r:reltype]->b", q)
+    testFrom_1_8("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
   @Test def single_relate_with_empty_parenthesis() {
     val secondQ = Query.
-      relate(RelateLink("a", "  UNNAMED1", "  UNNAMED2", "reltype", Direction.OUTGOING)).
+      unique(UniqueLink("a", "  UNNAMED1", "  UNNAMED2", "reltype", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) relate a-[:reltype]->()", q)
+    testFrom_1_8("start a = node(1), b=node(2) create unique a-[:reltype]->()", q)
   }
 
   @Test def two_relates() {
     val secondQ = Query.
-      relate(
-      RelateLink("a", "b", "  UNNAMED1", "X", Direction.OUTGOING),
-      RelateLink("c", "b", "  UNNAMED2", "X", Direction.OUTGOING)).
+      unique(
+      UniqueLink("a", "b", "  UNNAMED1", "X", Direction.OUTGOING),
+      UniqueLink("c", "b", "  UNNAMED2", "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) relate a-[:X]->b<-[:X]-c", q)
+    testFrom_1_8("start a = node(1) create unique a-[:X]->b<-[:X]-c", q)
   }
 
   @Test def relate_with_initial_values_for_node() {
     val secondQ = Query.
-      relate(
-      RelateLink(new NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), new NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
+      unique(
+      UniqueLink(new NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), new NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) relate a-[:X]->(b {name:'Andres'})", q)
+    testFrom_1_8("start a = node(1) create unique a-[:X]->(b {name:'Andres'})", q)
   }
 
   @Test def relate_with_initial_values_for_rel() {
     val secondQ = Query.
-      relate(
-      RelateLink(new NamedExpectation("a"), new NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
+      unique(
+      UniqueLink(new NamedExpectation("a"), new NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) relate a-[:X {name:'Andres'}]->b", q)
+    testFrom_1_8("start a = node(1) create unique a-[:X {name:'Andres'}]->b", q)
   }
 
   @Test def foreach_with_literal_collection() {
@@ -1837,15 +1837,15 @@ create a-[r:REL]->b
 
   @Test def relate_with_two_rels_to_same_node() {
     val returns = Query.
-      updates(RelateAction(
-      RelateLink("root", "x", "r1", "X", Direction.OUTGOING),
-      RelateLink("root", "x", "r2", "Y", Direction.OUTGOING)))
+      start(CreateUniqueAction(
+      UniqueLink("root", "x", "r1", "X", Direction.OUTGOING),
+      UniqueLink("root", "x", "r2", "Y", Direction.OUTGOING)))
       .returns(ReturnItem(Entity("x"), "x"))
 
     val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
 
     testFrom_1_8(
-      "start root=node(0) relate x<-[r1:X]-root-[r2:Y]->x return x",
+      "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x",
       q
     )
   }
@@ -1906,7 +1906,7 @@ create a-[r:REL]->b
 
   @Test def relate_and_assign_to_path_identifier() {
     val q2 = Query.
-      updates(RelateAction(RelateLink("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING))).
+      start(CreateUniqueAction(UniqueLink("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING))).
       namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
       returns(ReturnItem(Entity("p"), "p"))
 
@@ -1915,7 +1915,7 @@ create a-[r:REL]->b
       tail(q2).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) relate p = a-[r:KNOWS]->() return p", q)
+    testFrom_1_8("start a=node(0) create unique p = a-[r:KNOWS]->() return p", q)
   }
 
   @Test(expected = classOf[SyntaxException]) def assign_to_path_inside_foreach_should_work() {

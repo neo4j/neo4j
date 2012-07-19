@@ -25,7 +25,7 @@ abstract class CypherException(message: String, cause: Throwable) extends Runtim
   def this(message:String) = this(message, null)
 }
 
-class RelatePathNotUnique(message:String) extends CypherException(message)
+class UniquePathNotUniqueException(message:String) extends CypherException(message)
 
 class EntityNotFoundException(message:String, cause:Throwable=null) extends CypherException(message, cause)
 

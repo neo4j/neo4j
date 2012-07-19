@@ -52,7 +52,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (a {name : 'Andres'}) return a",
-      returns = "The newly created node is returned. This query uses the alternative syntax, which fits with how +RELATE+ looks.",
+      returns = "The newly created node is returned. This query uses the alternative syntax for single node creation",
       assertions = (p) => assert(p.size === 1)
     )
   }

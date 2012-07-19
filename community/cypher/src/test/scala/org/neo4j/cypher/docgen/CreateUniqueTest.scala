@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
 
-class RelateTest extends DocumentingTestBase with StatisticsChecker {
+class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List(
     "root X A",
     "root X B",
@@ -30,13 +30,13 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
     "A KNOWS C"
   )
 
-  def section = "Relate"
+  def section = "Create Unique"
 
   @Test def create_relationship_when_missing() {
     testQuery(
       title = "Create relationship if it is missing",
-      text = "+RELATE+ is used to describe the pattern that should be found or created.",
-      queryText = "start left=node(%A%), right=node(%B%,%C%) relate left-[r:KNOWS]->right return r",
+      text = "+CREATE UNIQUE+ is used to describe the pattern that should be found or created.",
+      queryText = "start left=node(%A%), right=node(%B%,%C%) create unique left-[r:KNOWS]->right return r",
       returns = "The left node is matched agains the two right nodes. One relationship already exists and can be " +
         "matched, and the other relationship is created before it is returned.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1))
@@ -46,7 +46,7 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create node if missing",
       text = "If the pattern described needs a node, and it can't be matched, a new node will be created.",
-      queryText = "start root=node(%root%) relate root-[:LOVES]-someone return someone",
+      queryText = "start root=node(%root%) create unique root-[:LOVES]-someone return someone",
       returns = "The root node doesn't have any LOVES relationships, and so a node is created, and also a relationship " +
         "to that node.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1))
@@ -56,7 +56,7 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create nodes with values",
       text = "The pattern described can also contain values on the node. These are given using the JSON-like prop : <expression> syntax.",
-      queryText = "start root=node(%root%) relate root-[:X]-(leaf {name:'D'} ) return leaf",
+      queryText = "start root=node(%root%) create unique root-[:X]-(leaf {name:'D'} ) return leaf",
       returns = "Node node connected with the root node has the name 'D', and so a new node needs to be created to " +
         "match the pattern.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
@@ -66,7 +66,7 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create relationship with values",
       text = "Relationships created can also be matched on values.",
-      queryText = "start root=node(%root%) relate root-[r:X {since:'forever'}]-() return r",
+      queryText = "start root=node(%root%) create unique root-[r:X {since:'forever'}]-() return r",
       returns = "In this example, we want the relationship to have a value, and since no such relationship can be found," +
         " a new node and relationship are created. Note that since we are not interested in the created node, we don't " +
         "name it.",
@@ -76,8 +76,8 @@ class RelateTest extends DocumentingTestBase with StatisticsChecker {
   @Test def commad_separated_pattern() {
     testQuery(
       title = "Describe complex pattern",
-      text = "The pattern described by +RELATE+ can be separated by commas, just like in +MATCH+ and +CREATE+",
-      queryText = "start root=node(%root%) relate root-[:FOO]->x, root-[:BAR]->x return x",
+      text = "The pattern described by +CREATE UNIQUE+ can be separated by commas, just like in +MATCH+ and +CREATE+",
+      queryText = "start root=node(%root%) create unique root-[:FOO]->x, root-[:BAR]->x return x",
       returns = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
   }
