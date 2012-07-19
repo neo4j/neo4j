@@ -19,6 +19,9 @@ The Gremlin plugin lets you execute arbitrary Groovy code under the hood. In hos
 In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
 interesting Gremlin or Java routines, see <<server-plugins>> or secure your server, see <<security-server>>.
 
+[TIP]
+When returning results from pipes like `g.v(0).in()`, make sure to iterate through the results in order not to return the pipe object but its content, like `g.v(0).in().iterate()`. For more caveats, see https://github.com/tinkerpop/gremlin/wiki/Troubleshooting[Gremlin Troubleshooting]
+
 :leveloffset: 1
 
 include::send-a-gremlin-script---url-encoded.txt[]
