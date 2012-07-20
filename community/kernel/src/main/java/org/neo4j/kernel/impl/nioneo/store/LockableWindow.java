@@ -142,7 +142,7 @@ abstract class LockableWindow implements PersistenceWindow
 
     synchronized boolean isFree()
     {
-        return waitingThreadList.isEmpty() && marked == 0;
+        return lockCount == 0 && marked == 0;
     }
 
     synchronized boolean writeOutAndCloseIfFree( boolean readOnly )

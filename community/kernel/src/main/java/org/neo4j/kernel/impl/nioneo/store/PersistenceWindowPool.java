@@ -249,13 +249,12 @@ public class PersistenceWindowPool
             // window if the window isn't memory mapped.
             if ( brickSize > 0 && dpw.getOperationType() == OperationType.WRITE )
                 applyChangesToWindowIfNecessary( dpw );
-            
+
+            dpw.unLock();
             if ( dpw.isFree() )
             {
-                int key = (int) dpw.position();
-                activeRowWindows.remove( key );
+                activeRowWindows.remove( (int) dpw.position(), dpw );
             }
-            dpw.unLock();
         }
         else
         {
@@ -503,7 +502,7 @@ public class PersistenceWindowPool
                     break;
                 
                 LockableWindow window = mappedBrick.getWindow();
-                if ( window.writeOutAndCloseIfFree( readOnly ) )
+                if (window.writeOutAndCloseIfFree( readOnly ) )
                 {
                     mappedBrick.setWindow( null );
                     memUsed -= brickSize;
