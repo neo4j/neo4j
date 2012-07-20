@@ -61,6 +61,7 @@ import com.sun.jersey.api.client.ClientRequest.Builder;
  */
 public class RESTDocsGenerator extends AsciiDocGenerator
 {
+    private static final String EQUAL_SIGNS = "======";
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
@@ -92,6 +93,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private String payload;
     private Map<String, String> addedRequestHeaders = new TreeMap<String, String>(  );
     private boolean noDoc;
+    private int headingLevel = 3;
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -194,6 +196,21 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return this;
     }
 
+    /**
+     * Set a custom heading level. Defaults to 3.
+     * 
+     * @param headingLevel a value between 1 and 6 (inclusive)
+     */
+    public RESTDocsGenerator docHeadingLevel( final int headingLevel )
+    {
+        if ( headingLevel < 1 || headingLevel > EQUAL_SIGNS.length() )
+        {
+            throw new IllegalArgumentException( "Heading level out of bounds: "
+                                                + headingLevel );
+        }
+        this.headingLevel = headingLevel;
+        return this;
+    }
 
     /**
      * Add an expected response header. If the heading is missing in the
@@ -473,7 +490,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             line( fw, "[[" + longSection + "]]" );
             //make first Character uppercase
             String firstChar = data.title.substring(  0, 1 ).toUpperCase();
-            line( fw, "=== " + firstChar + data.title.substring( 1 ) + " ===" );
+            String heading = firstChar + data.title.substring( 1 );
+            line( fw, getAsciidocHeading( heading ) );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )
             {
@@ -531,6 +549,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 }
             }
         }
+    }
+
+    private String getAsciidocHeading( final String heading )
+    {
+        String equalSigns = EQUAL_SIGNS.substring( 0, headingLevel );
+        return equalSigns + ' ' + heading + ' ' + equalSigns;
     }
 
     public void writeEntity( final Writer fw, final String entity )

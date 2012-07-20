@@ -6,6 +6,8 @@ include::introduction.txt[]
 
 include::service-root.txt[]
 
+include::streaming.txt[]
+
 include::cypher.txt[]
 
 include::nodes.txt[]
