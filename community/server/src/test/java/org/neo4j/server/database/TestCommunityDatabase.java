@@ -20,6 +20,7 @@
 package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
@@ -146,6 +147,15 @@ public class TestCommunityDatabase
 
         otherDb.stop();
         FileUtils.forceDelete( tempDir );
+    }
+
+    @Test
+    public void shouldBeAbleToGetLocation() throws Throwable
+    {
+
+        theDatabase.start();
+        assertThat( theDatabase.getLocation(), is( theDatabase.getGraph().getStoreDir() ) );
+
     }
 
     private int findFreeShellPortToUse( int startingPort )
