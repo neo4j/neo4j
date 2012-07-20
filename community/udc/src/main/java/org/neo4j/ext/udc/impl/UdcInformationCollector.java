@@ -120,7 +120,8 @@ public class UdcInformationCollector {
             "openshift", "openshift", "cloudfoundry", "cloudfoundry",
             "(junit|testng)", "test",
             "jruby", "ruby", "clojure", "clojure", "jython", "python", "groovy", "groovy",
-            "(tomcat|jetty)", "web");
+            "(tomcat|jetty)", "web",
+            "spring-data-neo4j", "sdn");
 
     private String determineTags(Map<String, String> jarNamesForTags, String classPath) {
         StringBuilder result=new StringBuilder();
