@@ -81,7 +81,7 @@ trait GraphElementPropertyFunctions extends IterableSupport {
     val seq = a.asInstanceOf[Traversable[_]].toSeq
 
     if (seq.size == 0) {
-      Array[String]();
+      Array[String]()
     } else try {
       seq.head match {
         case c: String => seq.map(_.asInstanceOf[String]).toArray[String]

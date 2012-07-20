@@ -27,32 +27,30 @@ import org.neo4j.graphdb.{DynamicRelationshipType, Node}
 import org.neo4j.cypher.internal.symbols._
 
 
-abstract sealed class StartItem(val identifierName: String) {
+abstract class StartItem(val identifierName: String) {
   def mutating = false
 }
 
-abstract class RelationshipStartItem(id: String) extends StartItem(id)
+case class RelationshipById(varName: String, expression: Expression) extends StartItem(varName)
 
-abstract class NodeStartItem(id: String) extends StartItem(id)
+case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends StartItem(varName)
 
-case class RelationshipById(varName: String, expression: Expression) extends RelationshipStartItem(varName)
+case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression) extends StartItem(varName)
 
-case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends RelationshipStartItem(varName)
+case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends StartItem(varName)
 
-case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression) extends RelationshipStartItem(varName)
+case class NodeByIndexQuery(varName: String, idxName: String, query: Expression) extends StartItem(varName)
 
-case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends NodeStartItem(varName)
+case class NodeById(varName: String, expression: Expression) extends StartItem(varName)
 
-case class NodeByIndexQuery(varName: String, idxName: String, query: Expression) extends NodeStartItem(varName)
+case class AllNodes(columnName: String) extends StartItem(columnName)
 
-case class NodeById(varName: String, expression: Expression) extends NodeStartItem(varName)
+case class AllRelationships(columnName: String) extends StartItem(columnName)
 
-case class AllNodes(columnName: String) extends NodeStartItem(columnName)
 
-case class AllRelationships(columnName: String) extends RelationshipStartItem(columnName)
 
 case class CreateNodeStartItem(key: String, props: Map[String, Expression])
-  extends NodeStartItem(key)
+  extends StartItem(key)
   with Mutator
   with UpdateAction
   with GraphElementPropertyFunctions
@@ -88,7 +86,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
 }
 
 case class CreateRelationshipStartItem(key: String, from: (Expression, Map[String, Expression]), to: (Expression, Map[String, Expression]), typ: String, props: Map[String, Expression])
-  extends NodeStartItem(key)
+  extends StartItem(key)
   with Mutator
   with UpdateAction
   with GraphElementPropertyFunctions {

@@ -23,17 +23,17 @@ import org.neo4j.cypher.internal.symbols.Identifier
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.{StartItem, Expression}
-import org.neo4j.cypher.RelatePathNotUnique
+import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 
-case class RelateAction(links: RelateLink*) extends UpdateAction {
+case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") with UpdateAction {
   def dependencies: Seq[Identifier] = links.flatMap(_.dependencies)
 
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
-    var linksToDo: Seq[RelateLink] = links
+    var linksToDo: Seq[UniqueLink] = links
     var ctx = context
     while (linksToDo.nonEmpty) {
-      val results: Seq[(RelateLink, RelateResult)] = executeAllRemainingPatterns(linksToDo, ctx, state)
+      val results: Seq[(UniqueLink, CreateUniqueResult)] = executeAllRemainingPatterns(linksToDo, ctx, state)
       linksToDo = results.map(_._1)
       val updateCommands = extractUpdateCommands(results)
       val traversals = extractTraversals(results)
@@ -59,8 +59,8 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
     Stream(ctx)
   }
 
-  private def tryAgain(linksToDo: Seq[RelateLink], context: ExecutionContext, state: QueryState): ExecutionContext = {
-    val results: Seq[(RelateLink, RelateResult)] = executeAllRemainingPatterns(linksToDo, context, state)
+  private def tryAgain(linksToDo: Seq[UniqueLink], context: ExecutionContext, state: QueryState): ExecutionContext = {
+    val results: Seq[(UniqueLink, CreateUniqueResult)] = executeAllRemainingPatterns(linksToDo, context, state)
     val updateCommands = extractUpdateCommands(results)
     val traversals = extractTraversals(results)
 
@@ -84,7 +84,7 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
 
     if (uniqueKeys.size != uniqueKVPs.size) {
       //We can only go forward following a unique path. Fail.
-      throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+      throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     } else {
       oldContext.newWith(uniqueKeys)
     }
@@ -106,7 +106,7 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
         case (currentContext, updateCommand) => {
           val result = updateCommand.cmd.exec(currentContext, state)
           if (result.size != 1) {
-            throw new RelatePathNotUnique("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+            throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
           } else {
             result.head
           }
@@ -118,36 +118,36 @@ case class RelateAction(links: RelateLink*) extends UpdateAction {
     context
   }
 
-  private def extractUpdateCommands(results: scala.Seq[(RelateLink, RelateResult)]): Seq[Update] =
+  private def extractUpdateCommands(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[Update] =
     results.flatMap {
       case (_, u: Update) => Some(u)
       case _ => None
     }
 
-  private def extractTraversals(results: scala.Seq[(RelateLink, RelateResult)]): Seq[(String, PropertyContainer)] =
+  private def extractTraversals(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[(String, PropertyContainer)] =
     results.flatMap {
       case (_, Traverse(ctx@_*)) => ctx
       case _ => None
     }
 
-  private def executeAllRemainingPatterns(linksToDo: Seq[RelateLink], ctx: ExecutionContext, state: QueryState): Seq[(RelateLink, RelateResult)] = linksToDo.flatMap(link => link.exec(ctx, state))
+  private def executeAllRemainingPatterns(linksToDo: Seq[UniqueLink], ctx: ExecutionContext, state: QueryState): Seq[(UniqueLink, CreateUniqueResult)] = linksToDo.flatMap(link => link.exec(ctx, state))
 
-  private def canNotAdvanced(results: scala.Seq[(RelateLink, RelateResult)]) = results.forall(_._2 == CanNotAdvance())
+  private def canNotAdvanced(results: scala.Seq[(UniqueLink, CreateUniqueResult)]) = results.forall(_._2 == CanNotAdvance())
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = links.flatMap(_.filter(f)).distinct
 
   def identifier: Seq[Identifier] = links.flatMap(_.identifier).distinct
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = RelateAction(links.map(_.rewrite(f)): _*)
+  def rewrite(f: (Expression) => Expression): CreateUniqueAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 }
 
-sealed abstract class RelateResult
+sealed abstract class CreateUniqueResult
 
-case class CanNotAdvance() extends RelateResult
+case class CanNotAdvance() extends CreateUniqueResult
 
-case class Traverse(result: (String, PropertyContainer)*) extends RelateResult
+case class Traverse(result: (String, PropertyContainer)*) extends CreateUniqueResult
 
-case class Update(cmds: Seq[UpdateWrapper], locker: () => Seq[Lock]) extends RelateResult {
+case class Update(cmds: Seq[UpdateWrapper], locker: () => Seq[Lock]) extends CreateUniqueResult {
   def lock(): Seq[Lock] = locker()
 }
 

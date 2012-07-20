@@ -25,7 +25,7 @@ import collection.JavaConverters._
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{Node, Relationship}
 
-class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+class CreateUniqueAcceptanceTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
   val stats = QueryStatistics.empty
 
@@ -34,7 +34,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val a = createNode()
     val b = createNode()
 
-    val result = parseAndExecute("start a = node(1), b=node(2) relate a-[r:X]->b return r")
+    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -51,7 +51,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "X")
-    val result = parseAndExecute("start a = node(1), b=node(2) relate a-[r:X]->b return r")
+    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assert(a.getRelationships.asScala.size === 1)
@@ -63,7 +63,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "BAR")
-    val result = parseAndExecute("start a = node(1), b=node(2) relate a-[r:FOO]->b return r")
+    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:FOO]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -79,7 +79,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val c = createNode()
     val d = createNode()
 
-    val result = parseAndExecute("start a = node(1,2), b=node(3), c=node(4) relate a-[:X]->b-[:X]->c")
+    val result = parseAndExecute("start a = node(1,2), b=node(3), c=node(4) create unique a-[:X]->b-[:X]->c")
 
     assertStats(result, relationshipsCreated = 3)
 
@@ -93,7 +93,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
   def creates_minimal_amount_of_nodes_reverse() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) relate c-[:X]->b-[:X]->a")
+    val result = parseAndExecute("start a = node(1) create unique c-[:X]->b-[:X]->a")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
 
@@ -107,7 +107,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
   def creates_node_if_it_is_missing() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) relate a-[:X]->root return root")
+    val result = parseAndExecute("start a = node(1) create unique a-[:X]->root return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
@@ -119,7 +119,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
   def creates_node_if_it_is_missing_pattern_reversed() {
     val a = createNode()
 
-    val result = parseAndExecute("start a = node(1) relate root-[:X]->a return root")
+    val result = parseAndExecute("start a = node(1) create unique root-[:X]->a return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
 
@@ -133,7 +133,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val b = createNode("name" -> "Michael")
     relate(a, b, "X")
 
-    val createdNode = executeScalar[Node]("start a = node(1) relate a-[:X]->(b {name:'Andres'}) return b")
+    val createdNode = executeScalar[Node]("start a = node(1) create unique a-[:X]->(b {name:'Andres'}) return b")
 
     assert(b != createdNode, "We should have created a new node - this one doesn't match")
     assert(createdNode.getProperty("name") === "Andres")
@@ -145,7 +145,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val b = createNode()
     relate(a, b, "X", Map("foo" -> "bar"))
 
-    val createdNode = executeScalar[Node]("start a = node(1) relate a-[:X {foo:'not bar'}]->b return b")
+    val createdNode = executeScalar[Node]("start a = node(1) create unique a-[:X {foo:'not bar'}]->b return b")
 
     assert(b != createdNode, "We should have created a new node - this one doesn't match")
     val createdRelationship = createdNode.getRelationships.asScala.toList.head
@@ -158,7 +158,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
     val b = createNode()
     val r = relate(a, b, "X", Map("foo" -> "bar"))
 
-    val createdRel = executeScalar[Relationship]("start a = node(1), b = node(2) relate a-[r:X {foo:'not bar'}]->b return r")
+    val createdRel = executeScalar[Relationship]("start a = node(1), b = node(2) create unique a-[r:X {foo:'not bar'}]->b return r")
 
     assert(r != createdRel, "We should have created a new rel - this one doesn't match")
     assert(createdRel.getProperty("foo") === "not bar")
@@ -170,23 +170,15 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
   def handle_optional_nulls() {
     createNode()
 
-    intercept[CypherTypeException](parseAndExecute("start a = node(1) match a-[?]->b relate b-[:X]->c"))
+    intercept[CypherTypeException](parseAndExecute("start a = node(1) match a-[?]->b create unique b-[:X]->c"))
   }
-
-
-  // discard based on rel-props and node-props
-  // two_nodes_with_one_more_rel_created() {
-  // start r = rel(0),a=node(0) relate a-[r:X]-b //BLOW UP
-  // start a=node(0) match a-[?]-b relate b-[:X]->a //Blow up if b is null
-  // test self-relationships
-  // double delete and then a create after
 
   @Test
   def creates_single_node_if_it_is_missing() {
     val a = createNode()
     val b = createNode()
 
-    val result = parseAndExecute("start a = node(1), b=node(2) relate a-[:X]->root<-[:X]-b return root")
+    val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[:X]->root<-[:X]-b return root")
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
 
     val aRels = a.getRelationships.asScala.toList
@@ -231,7 +223,7 @@ class RelateAcceptanceTests extends ExecutionEngineHelper with Assertions with S
 START root = node(1)
 CREATE book
 FOREACH(name in ['a','b','c'] :
-  RELATE root-[:tag]->(tag {name:name})<-[:tagged]-book
+  CREATE UNIQUE root-[:tag]->(tag {name:name})<-[:tagged]-book
 )
 return book
 """)
@@ -264,7 +256,7 @@ return book
     val result = parseAndExecute("""
 START root = node(1)
 FOREACH(name in ['a','b','c'] :
-  RELATE root-[:tag]->(tag {name:name})
+  CREATE UNIQUE root-[:tag]->(tag {name:name})
 )
 """)
 
@@ -283,17 +275,17 @@ FOREACH(name in ['a','b','c'] :
     relate(a,b1,"X")
     relate(a,b2,"X")
 
-    intercept[RelatePathNotUnique](parseAndExecute("""START a = node(1) RELATE a-[:X]->b-[:X]->d"""))
+    intercept[UniquePathNotUniqueException](parseAndExecute("""START a = node(1) CREATE UNIQUE a-[:X]->b-[:X]->d"""))
   }
   @Test
   def tree_structure() {
     val a = createNode()
 
     val result = parseAndExecute("""START root=node(1)
-      CREATE (value {year:2012, month:5, day:11})
-      WITH root,value
-      RELATE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
-    return value;""")
+CREATE (value {year:2012, month:5, day:11})
+WITH root,value
+CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
+RETURN value;""")
 
     /*
              root
@@ -310,10 +302,10 @@ FOREACH(name in ['a','b','c'] :
     assertStats(result, nodesCreated = 4, relationshipsCreated = 4, propertiesSet = 6)
 
     val result2 = parseAndExecute("""START root=node(1)
-      CREATE (value { year:2012, month:5, day:12 })
-      WITH root,value
-      RELATE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
-    return value;""")
+CREATE (value { year:2012, month:5, day:12 })
+WITH root,value
+CREATE UNIQUE root-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->value
+RETURN value;""")
 
     assertStats(result2, nodesCreated = 2, relationshipsCreated = 2, propertiesSet = 4)
 

@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 
 
-trait StartClause extends Base with Expressions {
-  def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart
+trait StartClause extends Base with Expressions with CreateUnique {
+  def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart | failure("expected START or CREATE")
 
-  def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("start") ~> commaList(startBit) ^^ (x => (x, Seq())) | failure("expected START or CREATE")
+  def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("start") ~> commaList(startBit) ^^ (x => (x, Seq()))
 
-  def createStart = ignoreCase("create") ~> commaList(usePattern(translate)) ^^ {
+  def createStart: Parser[(Seq[StartItem], Seq[NamedPath])] = relate|create
+
+  def create = ignoreCase("create") ~> commaList(usePattern(translate)) ^^ {
     case matching =>
       val pathsAndItems = matching.flatten.filter(_.isInstanceOf[NamedPathWStartItems]).map(_.asInstanceOf[NamedPathWStartItems])
       val startItems = matching.flatten.filter(_.isInstanceOf[StartItem]).map(_.asInstanceOf[StartItem])

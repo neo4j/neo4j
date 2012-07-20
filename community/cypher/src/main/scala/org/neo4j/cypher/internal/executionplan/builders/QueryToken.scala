@@ -25,6 +25,8 @@ abstract sealed class QueryToken[T](val token: T) {
   def unsolved = !solved
 
   def solve: QueryToken[T] = Solved(token)
+
+  def map[B](f : T => B):QueryToken[B] = if (solved) Solved(f(token)) else Unsolved(f(token))
 }
 
 case class Solved[T](t: T) extends QueryToken[T](t) {

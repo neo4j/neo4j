@@ -178,9 +178,9 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "These columns can't be listen in the WITH statement without renaming: count(*)")
   }
 
-  @Test def missing_relate_dependency_correctly_reported() {
+  @Test def missing_dependency_correctly_reported() {
     expectError(
-      "START a=node(0) RELATE a-[:KNOWS]->(b {name:missing}) RETURN b",
+      "START a=node(0) CREATE UNIQUE a-[:KNOWS]->(b {name:missing}) RETURN b",
       "Unknown identifier `missing`")
   }
 

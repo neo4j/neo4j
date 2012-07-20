@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.mutation.{RelateAction, RelateLink, UpdateAction}
-
+import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
   def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
-  def relate(cmds:RelateLink*) = new QueryBuilder(Seq()).updates(RelateAction(cmds:_*))
+  def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueAction(cmds:_*)))
 }
 
 case class Query(returns: Return,
