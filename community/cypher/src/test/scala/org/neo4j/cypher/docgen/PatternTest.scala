@@ -62,13 +62,13 @@ graph nodes or relationships. All parts of the pattern must be directly or indir
 where parts of the pattern are not reachable from any starting point will be rejected.
 
 [options="header", cols=">s,^,^,^,^,^", width="100%"]
-      |===================
-      |Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
-      |Match|Yes|Yes|Yes|Yes|-
-      |Create|-|-|-|Yes|Yes
-      |Create Unique|-|-|-|Yes|Yes
-      |Expressions|-|Yes|Yes|-|-
-      |===================
+|===================
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+|Match|Yes|Yes|Yes|Yes|-
+|Create|-|-|-|Yes|Yes
+|Create Unique|-|-|-|Yes|Yes
+|Expressions|-|Yes|Yes|-|-
+|===================
 
 == Patterns for related nodes ==
 
