@@ -20,8 +20,19 @@
 package org.neo4j.test.subprocess;
 
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+
+import com.sun.jdi.ClassNotLoadedException;
+import com.sun.jdi.ClassType;
+import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.InvocationException;
+import com.sun.jdi.Method;
+import com.sun.jdi.ObjectReference;
+import com.sun.jdi.Value;
 
 @SuppressWarnings( "restriction" )
 public class DebuggedThread
@@ -45,6 +56,33 @@ public class DebuggedThread
     {
         thread.suspend();
         debug.suspended( thread, callback );
+        return this;
+    }
+
+    // TODO Make it possible to define the type of exception to terminate the thread with
+    public DebuggedThread stop()
+    {
+        /*
+         * To kill a thread requires an Exception. But it is not a local thread so it has to be an exception
+         * object on the remote VM. So grab hold of a reference to the RuntimeException class, get its constructor,
+         * create an instance on the remote VM and use that to stop the thread.
+         */
+        ClassType threadDeathClass = (ClassType)
+                thread.virtualMachine().classesByName( "java.lang.RuntimeException" ).get(0);
+        Method constructor = threadDeathClass.concreteMethodByName( "<init>", "()V" );
+        try
+        {
+            ObjectReference toKillWith = threadDeathClass.newInstance( thread, constructor, new LinkedList(), ClassType.INVOKE_SINGLE_THREADED );
+            thread.stop( toKillWith );
+        }
+        catch (Exception e)
+        {
+            /*
+             * Can be one of {InvalidType, ClassNotLoaded, IncompatibleThreadState, Invocation}Exception. We cannot
+             * recover on any of those, just rethrow it.
+             */
+            throw new RuntimeException( e );
+        }
         return this;
     }
 
