@@ -9,7 +9,7 @@ mechanism.
 
 == Simple OSGi Activator scenario ==
 
-As seen in the following example, instead of relying on the Classloading of the Neo4j kernal, the Neo4j bundles are treated as library bundles,
+As seen in the following example, instead of relying on the Classloading of the Neo4j kernel, the Neo4j bundles are treated as library bundles,
 and services like the IndexProviders and CacheProviders are explicitly instantiated, configured and registered. Just make the necessary jars available
 as wrapped library bundles, so all needed classes are exported and seen by the bundle containing the Activator.
 
