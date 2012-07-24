@@ -35,14 +35,14 @@ class CollabFilteringTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   }
-    
+
   @Test def basicCollborativeFiltering() {
     testQuery(
       title = "Simple Friend Finder",
       text = """To find out the friends of Joe's friends that are not already his friends, the query looks like this:""",
       queryText = "start joe=node:node_auto_index(name = \"Joe\") " +
-        "match joe-[:knows]->friend-[:knows]->friend_of_friend, " +
-        "joe-[r?:knows]->friend_of_friend " +
+        "match joe-[:knows]-friend-[:knows]-friend_of_friend, " +
+        "joe-[r?:knows]-friend_of_friend " +
         "where r IS NULL " +
         "return friend_of_friend.name, COUNT(*) " +
         "order by COUNT(*) DESC, friend_of_friend.name",
