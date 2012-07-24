@@ -151,8 +151,8 @@ NOTE: It's ok to have a dot right after the URL, it won't be part of the link.
 
 == Text Formatting ==
 
-* \_Italics_ is rendered as _Italics_
-* *Bold* - just don't do it, the editor in charge is likely to remove it anyhow!
+* \_Italics_ is rendered as _Italics_ and used for emphasis.
+* \*Bold* is rendered as *Bold* and used sparingly, for strong emphasis only.
 * \+methodName()+ is rendered as +methodName()+ and is used for literals as well
   (note: the content between the `+` signs _will_ be parsed).
 * \`command` is rendered as `command` (typically used for command-line)
