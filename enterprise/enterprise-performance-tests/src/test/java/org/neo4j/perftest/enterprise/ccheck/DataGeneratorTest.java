@@ -59,7 +59,7 @@ public class DataGeneratorTest
         generator.generateData( batchInserter );
 
         // then
-        verify( batchInserter, times( 5 ) ).createNode( argThat( hasSize( 2 ) ) );
+        verify( batchInserter, times( 4 /* reference node already exists*/ ) ).createNode( argThat( hasSize( 2 ) ) );
         verify( batchInserter, times( 5 ) ).createRelationship( anyLong(), anyLong(), argThat( hasName( "FOO" ) ),
                                                                 argThat( hasSize( 1 ) ) );
         verify( batchInserter, times( 10 ) )
