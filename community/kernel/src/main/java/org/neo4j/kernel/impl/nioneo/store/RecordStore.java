@@ -28,6 +28,8 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public interface RecordStore<R extends AbstractBaseRecord>
 {
+    String getStorageFileName();
+
     public long getHighId();
 
     public R getRecord( long id );
@@ -172,6 +174,11 @@ public interface RecordStore<R extends AbstractBaseRecord>
         {
             long highId = store.getHighId();
             if ( progress == null ) progress = progressInit( store, highId );
+            if ( progress != null )
+            {
+                String name = store.getStorageFileName();
+                progress.phase( name.substring( name.lastIndexOf( '/' ) + 1 ) );
+            }
             for ( R record : scan( store, filters ) )
             {
                 store.accept( this, record );
