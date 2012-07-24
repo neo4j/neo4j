@@ -31,6 +31,45 @@ import java.io.PrintStream;
 public interface ProgressIndicator
 {
     /**
+     * A factory interface for creating {@link ProgressIndicator}s.
+     *
+     * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
+     */
+    public interface Factory
+    {
+        SimpleProgress newSimpleProgressIndicator(long total);
+
+        MultiProgress newMultiProgressIndicator(long total);
+    }
+
+    /**
+     * A factory implementation that creates progress indicators that log progress textually.
+     *
+     * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
+     */
+    public final class Textual implements Factory
+    {
+        private final PrintStream out;
+
+        public Textual( PrintStream out )
+        {
+            this.out = out;
+        }
+
+        @Override
+        public SimpleProgress newSimpleProgressIndicator( long total )
+        {
+            return SimpleProgress.textual( out, total );
+        }
+
+        @Override
+        public MultiProgress newMultiProgressIndicator( long total )
+        {
+            return MultiProgress.textual( out, total );
+        }
+    }
+
+    /**
      * Update the current progress count for the current source.
      * 
      * @param incremental whether this is an incremental update (
