@@ -20,21 +20,14 @@
 package org.neo4j.test.subprocess;
 
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.InvocationException;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
-import com.sun.jdi.Value;
 
-@SuppressWarnings( "restriction" )
 public class DebuggedThread
 {
     private final com.sun.jdi.ThreadReference thread;
