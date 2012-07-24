@@ -32,6 +32,7 @@
     <module>ha</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
+    <module>enterprise-performance-tests</module>
   </modules>
 
   <licenses>

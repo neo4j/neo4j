@@ -213,18 +213,9 @@ public class OnlineBackup
             bumpLogFile( targetDirectory, timestamp );
             if ( verification )
             {
-                StoreFactory factory = new StoreFactory( new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( stringMap() )), new DefaultIdGeneratorFactory(),
-                        new DefaultFileSystemAbstraction(), new DefaultLastCommittedTxIdSetter(), SYSTEM, new DefaultTxHook() );
-                NeoStore neoStore = factory.newNeoStore( new File( targetDirectory, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
-                try
-                {
-                    StoreAccess store = new StoreAccess( neoStore );
-                    ConsistencyCheck.run( store, false );
-                }
-                finally
-                {
-                    neoStore.close();
-                }
+                ConsistencyCheck.run( targetDirectory,
+                                      new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
+                                                          .apply( stringMap() ) ) );
             }
         }
         finally

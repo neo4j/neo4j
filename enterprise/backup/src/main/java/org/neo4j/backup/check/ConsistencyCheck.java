@@ -66,7 +66,13 @@ import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TA
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TYPE_NOT_IN_USE;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_KEY_NAME;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_TYPE_NAME;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -74,11 +80,20 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -90,6 +105,9 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Finds inconsistency in a Neo4j store.
@@ -104,6 +122,10 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
  */
 public abstract class ConsistencyCheck extends RecordStore.Processor implements Runnable, Iterable<RecordStore<?>>
 {
+    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
+    private static final GraphDatabaseSetting<Boolean> consistency_check_property_owners =
+            new GraphDatabaseSetting.BooleanSetting( "consistency_check_property_owners" );
+
     /**
      * Run a full consistency check on the specified store.
      *
@@ -127,23 +149,46 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
             System.exit( -1 );
             return;
         }
-        EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase( args[ 0 ] );
-        StoreAccess stores = new StoreAccess( graphdb );
-        
-        // TODO: check for the existence of active logical logs and report:
-        // * that this might be a source of inconsistencies
-        // * you can run recovery before starting by using the --recovery flag
-        // This should probably be reported both before and after the tool runs
-//        if ( recovery ) new EmbeddedGraphDatabase( args[0] ).shutdown();
-//        StoreAccess stores = new StoreAccess( args[0] );
-        try
+        String storeDir = args[0];
+        if ( !new File( storeDir ).isDirectory() )
         {
-            run( stores, propowner );
+            printUsage( String.format( "'%s' is not a directory", storeDir ) );
+            System.exit( -1 );
         }
-        finally
+        if ( recovery )
         {
-            graphdb.shutdown();
+            new EmbeddedGraphDatabase( storeDir ).shutdown();
         }
+        else
+        {
+            // TODO: the name of the active file is hard-coded, because there is no way to get it through code
+            XaLogicalLogFiles logFiles = new XaLogicalLogFiles(
+                    new File( storeDir, "nioneo_logical.log" ).getAbsolutePath(), new DefaultFileSystemAbstraction() );
+            try
+            {
+                switch ( logFiles.determineState() )
+                {
+                case LEGACY_WITHOUT_LOG_ROTATION:
+                    printUsage( "WARNING: store contains log file from too old version." );
+                    break;
+                case NO_ACTIVE_FILE:
+                case CLEAN:
+                    break;
+                default:
+                    printUsage( "Active logical log detected, this might be a source of inconsistencies.",
+                                "Consider allowing the database to recover before running the consistency check.",
+                                "Consistency checking will continue, abort if you wish to perform recovery first.",
+                                "To perform recovery before checking consistency, use the '--recovery' flag." );
+                }
+            }
+            catch ( IOException e )
+            {
+                System.err.printf( "Failure when checking for active logs: '%s', continuing as normal.%n", e );
+            }
+        }
+        run( storeDir, new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
+                                           .apply( stringMap( consistency_check_property_owners.name(),
+                                                              Boolean.toString( propowner ) ) ) ) );
     }
 
     private static void printUsage( String... msgLines )
@@ -155,12 +200,42 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         System.err.println( "         -recovery   --  to perform recovery on the store before checking" );
     }
 
+    public static void run( String storeDir, Config config )
+    {
+        run( new ProgressIndicator.Textual( System.err ), storeDir, config );
+    }
+
+    public static void run( ProgressIndicator.Factory progressFactory, String storeDir, Config config )
+    {
+        StoreFactory factory = new StoreFactory( config,
+                                                 new DefaultIdGeneratorFactory(),
+                                                 new DefaultFileSystemAbstraction(),
+                                                 new DefaultLastCommittedTxIdSetter(),
+                                                 StringLogger.SYSTEM,
+                                                 new DefaultTxHook() );
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+        try
+        {
+            StoreAccess store = new StoreAccess( neoStore );
+            run( progressFactory, store, config.get( consistency_check_property_owners ) );
+        }
+        finally
+        {
+            neoStore.close();
+        }
+    }
+
     public static void run( StoreAccess stores, boolean propowner )
+    {
+        run( new ProgressIndicator.Textual( System.err ), stores, propowner );
+    }
+
+    public static void run( final ProgressIndicator.Factory progressFactory, StoreAccess stores, boolean propowner )
     {
         new ConsistencyCheck( stores, propowner )
         {
             @Override
-            ProgressIndicator.MultiProgress progressInit()
+            ProgressIndicator progressInit()
             {
                 System.err.println( "Checking consistency"
                                     + ( propowners() ? " (with property owner verification)" : "" ) + " on:" );
@@ -174,7 +249,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
                         total += highId;
                     }
                 }
-                return ProgressIndicator.MultiProgress.textual( System.err, total );
+                return progressFactory.newMultiProgressIndicator( total );
             }
 
             @Override
@@ -336,7 +411,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
     @SuppressWarnings( "unchecked" )
     public void run()
     {
-        ProgressIndicator.MultiProgress progress = progressInit();
+        ProgressIndicator progress = progressInit();
 
         applyFiltered( nodes, progress, RecordStore.IN_USE );
         applyFiltered( rels, progress, RecordStore.IN_USE );
@@ -356,7 +431,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         checkResult();
     }
 
-    ProgressIndicator.MultiProgress progressInit()
+    ProgressIndicator progressInit()
     {
         return null;
     }
@@ -1016,5 +1091,6 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         {
             return null;
         }
-    }
+
+  }
 }

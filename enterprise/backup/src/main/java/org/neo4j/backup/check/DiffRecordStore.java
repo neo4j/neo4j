@@ -82,6 +82,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
+    public String getStorageFileName()
+    {
+        return actual.getStorageFileName();
+    }
+
+    @Override
     public long getHighId()
     {
         return Math.max( highId, actual.getHighId() );
