@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.nio.channels.ReadableByteChannel;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -92,6 +93,8 @@ public class TestTxApplicationSynchronization
         tx.success();
         tx.finish();
 
+        final CountDownLatch localLatch = new CountDownLatch( 1 );
+
         Thread updatePuller = new Thread( new Runnable()
         {
             public void run()
@@ -101,25 +104,28 @@ public class TestTxApplicationSynchronization
                     Pair<Long, ReadableByteChannel> lastTx = getLatestCommitedTx( baseDb );
                     NeoStoreXaDataSource targetNeoDatasource = targetDb.getXaDataSourceManager()
                             .getNeoStoreDataSource();
+                    /*
+                     * To see this test case pass move the latch under the applyCommitedTransaction (so that tx
+                     * application in this thread finishes first) and comment out the @EnabledBreakpoints above (so
+                     * that synchronization is not messed with or it will deadlock).
+                     */
+                    localLatch.countDown();
                     targetNeoDatasource.applyCommittedTransaction( lastTx.first(), lastTx.other() );
                 }
                 catch ( Exception e )
                 {
                     throw new RuntimeException( e );
                 }
-
             }
-        } );
-        /*
-         * To see this test case pass uncomment the sleep below (so that tx application in the thread above has time
-         * to finish) and comment out the @EnabledBreakpoints above (so that synchronization is not messed with).
-         */
-        // Thread.sleep( 3000 );
+        }, "writer" );
+
         updatePuller.start();
-        waitForSuspend();
-        targetDb.getNodeById( nodeId ).getProperty( "propName" );
-        resumeAll();
-        updatePuller.join();
+        Thread.sleep( 100 ); // I don't know why this is necessary
+        localLatch.await(); // Wait for tx apply to start
+        waitForSuspend(); // Wait for tx apply breakpoint to trigger
+        targetDb.getNodeById( nodeId ).getProperty( "propName" ); // Get the exception
+        resumeAll(); // Restart all threads
+        updatePuller.join(); // Join so we don't leave stuff hanging
     }
 
     @BreakpointTrigger("waitForSuspend")
@@ -132,23 +138,18 @@ public class TestTxApplicationSynchronization
     {
     }
 
-    private static DebuggedThread reader;
     private static DebuggedThread updater;
+    private static final CountDownLatch latch = new CountDownLatch( 1 );
 
     @BreakpointHandler("waitForSuspend")
-    public static void suspendHandler( BreakPoint self, DebugInterface di )
+    public static void suspendHandler( BreakPoint self, DebugInterface di ) throws Exception
     {
-        reader = di.thread();
-        reader.suspend( null );
+        latch.await();
     }
 
     @BreakpointHandler("resumeAll")
     public static void resumeAllHandler( BreakPoint self, DebugInterface di )
     {
-        if ( reader != null )
-        {
-            reader.resume();
-        }
         if ( updater != null )
         {
             updater.resume();
@@ -163,7 +164,6 @@ public class TestTxApplicationSynchronization
         {
             commandExecute.enable();
         }
-        di.thread().resume();
     }
 
     @BreakpointHandler("execute")
@@ -171,10 +171,7 @@ public class TestTxApplicationSynchronization
     {
         updater = di.thread();
         updater.suspend( null );
-        if ( reader != null )
-        {
-            reader.resume();
-        }
+        latch.countDown();
     }
 
     private static Pair<Long, ReadableByteChannel> getLatestCommitedTx( EmbeddedGraphDatabase db ) throws Exception
