@@ -16,6 +16,9 @@ include::create-a-relationship-between-two-nodes.txt[]
 include::create-a-relationship-and-set-properties.txt[]
 include::create-a-full-path.txt[]
 
+// TODO: get the query from the code somehow (could be written to a file).
+// This goes for the example below as well.
+
 [[create-create-single-node-from-map]]
 == Create single node from map ==
 You can also create a graph entity from a `Map<String,Object>` map. All
@@ -26,7 +29,7 @@ _Query_
 
 [source,cypher]
 ----
-create node {props}
+create ({props})
 ----
 
 This query can be used in the following fashion:
@@ -48,7 +51,7 @@ _Query_
 
 [source,cypher]
 ----
-create node {props}
+create (n {props}) return n
 ----
 
 This query can be used in the following fashion:
@@ -60,3 +63,4 @@ source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
 tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----
+

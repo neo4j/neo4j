@@ -47,7 +47,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create node if missing",
       text = "If the pattern described needs a node, and it can't be matched, a new node will be created.",
       queryText = "start root=node(%root%) create unique root-[:LOVES]-someone return someone",
-      returns = "The root node doesn't have any LOVES relationships, and so a node is created, and also a relationship " +
+      returns = "The root node doesn't have any `LOVES` relationships, and so a node is created, and also a relationship " +
         "to that node.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1))
   }
@@ -55,9 +55,9 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
   @Test def create_node_with_values() {
     testQuery(
       title = "Create nodes with values",
-      text = "The pattern described can also contain values on the node. These are given using the JSON-like prop : <expression> syntax.",
+      text = "The pattern described can also contain values on the node. These are given using the following syntax: `prop : <expression>`.",
       queryText = "start root=node(%root%) create unique root-[:X]-(leaf {name:'D'} ) return leaf",
-      returns = "Node node connected with the root node has the name 'D', and so a new node needs to be created to " +
+      returns = "No node connected with the root node has the name 'D', and so a new node is created to " +
         "match the pattern.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
   }
@@ -65,7 +65,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
   @Test def create_relationship_with_values() {
     testQuery(
       title = "Create relationship with values",
-      text = "Relationships created can also be matched on values.",
+      text = "Relationships to be created can also be matched on values.",
       queryText = "start root=node(%root%) create unique root-[r:X {since:'forever'}]-() return r",
       returns = "In this example, we want the relationship to have a value, and since no such relationship can be found," +
         " a new node and relationship are created. Note that since we are not interested in the created node, we don't " +
@@ -76,7 +76,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
   @Test def commad_separated_pattern() {
     testQuery(
       title = "Describe complex pattern",
-      text = "The pattern described by +CREATE UNIQUE+ can be separated by commas, just like in +MATCH+ and +CREATE+",
+      text = "The pattern described by +CREATE UNIQUE+ can be separated by commas, just like in +MATCH+ and +CREATE+.",
       queryText = "start root=node(%root%) create unique root-[:FOO]->x, root-[:BAR]->x return x",
       returns = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))

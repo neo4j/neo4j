@@ -49,9 +49,9 @@ class ForeachTest extends DocumentingTestBase {
   @Test def mark_all_nodes_along_a_path() {
     testQuery(
       title = "Mark all nodes along a path",
-      text = "This query will set the property marked to true on all nodes along a path.",
+      text = "This query will set the property `marked` to true on all nodes along a path.",
       queryText = "start begin = node(%A%), end = node(%D%) match p = begin -[*]-> end foreach(n in nodes(p) : set n.marked = true)",
-      returns = "Nothing is returned from this query",
+      returns = "Nothing is returned from this query.",
       assertions = (p) => {})
   }
 }
