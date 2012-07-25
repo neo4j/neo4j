@@ -1,3 +1,9 @@
+1.8.M07 (2012-??-??)
+--------------------
+o Traversal framework backwards compatibility
+  + Cleaned up any breaking changes
+  + Removed Expander#addFilter
+
 1.8.M06 (2012-07-06)
 --------------------
 o Deprecated AbstractGraphDatabase.transactionRunning()
