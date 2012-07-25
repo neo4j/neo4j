@@ -68,9 +68,14 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         return count.get();
     }
 
+    public int invocationCount( int value )
+    {
+        return count.getAndSet( value );
+    }
+
     public final int resetInvocationCount()
     {
-        return count.getAndSet( 0 );
+        return invocationCount( 0 );
     }
 
     final void invoke( DebugInterface debug ) throws KillSubProcess

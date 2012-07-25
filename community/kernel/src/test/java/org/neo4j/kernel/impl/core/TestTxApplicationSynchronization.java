@@ -23,7 +23,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
@@ -54,11 +53,10 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
  * are executed before node commands.
  */
 @ForeignBreakpoints({@ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.Command$NodeCommand",
-        method = "execute", on = BreakPoint.Event.ENTRY),
-        @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
-                method = "commitRecovered", on = BreakPoint.Event.ENTRY)})
+                                                       method = "execute", on = BreakPoint.Event.ENTRY),
+                     @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
+                                                       method = "applyCommit", on = BreakPoint.Event.ENTRY)})
 @RunWith(SubProcessTestRunner.class)
-@Ignore("This test case fails because no fix has been committed for it")
 public class TestTxApplicationSynchronization
 {
     private EmbeddedGraphDatabase baseDb;
@@ -85,7 +83,7 @@ public class TestTxApplicationSynchronization
     }
 
     @Test
-    @EnabledBreakpoints({"commitRecovered", "waitForSuspend", "resumeAll"})
+    @EnabledBreakpoints({"applyCommit", "waitForSuspend", "resumeAll"})
     public void test() throws Exception
     {
         Transaction tx = baseDb.beginTx();
@@ -156,13 +154,21 @@ public class TestTxApplicationSynchronization
         }
     }
 
-    @BreakpointHandler("commitRecovered")
-    public static void handleCommitRecovered( BreakPoint self, DebugInterface di,
-                                              @BreakpointHandler("execute") BreakPoint commandExecute )
+    @BreakpointHandler("applyCommit")
+    public static void onCommitRecovered( BreakPoint self, DebugInterface di,
+                                          @BreakpointHandler("execute") BreakPoint commandExecute )
     {
-        if ( self.invocationCount() > 1 )
+        Boolean isRecovered = (Boolean) di.getLocalVariable( "isRecovered" );
+        if ( isRecovered )
         {
-            commandExecute.enable();
+            if ( self.invocationCount() > 1 )
+            {
+                commandExecute.enable();
+            }
+        }
+        else
+        {
+            self.invocationCount( self.invocationCount() - 1 );
         }
     }
 
