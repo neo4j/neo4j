@@ -150,7 +150,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
 
   @Test def has_not_relationship_to() {
     testQuery(
-      title = "Filter on patterns using not",
+      title = "Filter on patterns using NOT",
       text = """The `NOT()` function can be used to exclude a pattern. """,
       queryText = """start persons=node(*), peter=node(%Peter%) where not(persons-->peter) return persons""",
       returns = "Nodes that do not have an outgoing relationship to the \"+Peter+\" node are returned.",

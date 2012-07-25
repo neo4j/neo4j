@@ -26,7 +26,7 @@ Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact 
 For initial import of data using indexes, see <<indexing-batchinsert>>.
 
 .Transactions
-NOTE: All modifying index operations must be performed inside a transaction, as with any mutating operation in Neo4j.
+NOTE: All modifying index operations must be performed inside a transaction, as with any modifying operation in Neo4j.
 
 
 [[indexing-create]]

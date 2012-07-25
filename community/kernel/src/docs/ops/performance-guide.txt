@@ -106,7 +106,7 @@ management in Neo4j, please read the <<transactions>> guidelines.
 
 The Neo4j kernel makes use of several store files and a logical log file 
 to store the graph on disk. The store files contain the actual graph and the 
-log contains mutating operations. All writes to the logical log are append-only 
+log contains modifying operations. All writes to the logical log are append-only 
 and when a transaction is committed changes to the logical log will be forced 
 (+fdatasync+) down to disk. The store files are however not flushed to disk and 
 writes to them are not append-only either. They will be written to in a more or

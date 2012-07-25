@@ -55,7 +55,7 @@ class WithTest extends DocumentingTestBase {
 start david=node(%D%) match david--otherPerson-->()
 ========== otherPerson, count(*) as foaf ==========
 set otherPerson.connection_count = foaf """,
-      returns = """The person connected to David with the at least more than one outgoing relationship.""",
+      returns = """For persons connected to David, the `connection_count` property is set to their number of outgoing relationships.""",
       assertions = (p) => assertEquals(node("A").getProperty("connection_count"), 2L))
   }
 }

@@ -57,7 +57,7 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create nodes with values",
       text = "The pattern described can also contain values on the node. These are given using the following syntax: `prop : <expression>`.",
       queryText = "start root=node(%root%) create unique root-[:X]-(leaf {name:'D'} ) return leaf",
-      returns = "No node connected with the root node has the name 'D', and so a new node is created to " +
+      returns = "No node connected with the root node has the name +D+, and so a new node is created to " +
         "match the pattern.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1))
   }
