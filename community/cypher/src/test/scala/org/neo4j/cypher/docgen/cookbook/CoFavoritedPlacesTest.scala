@@ -25,20 +25,19 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-
 class CoFavoritedPlacesTest extends DocumentingTestBase {
-  def graphDescription = List("Joe favorite CoffeeShop1", 
-      "Joe favorite SaunaX", 
-      "Joe favorite MelsPlace",
-      "Jill favorite CoffeeShop1", 
-      "Jill favorite MelsPlace", 
-      "CoffeeShop2 tagged Cool",
-      "CoffeeShop1 tagged Cool",
-      "CoffeeShop1 tagged Cosy",
-      "CoffeeShop3 tagged Cosy",
-      "MelsPlace tagged Cosy",
-      "MelsPlace tagged Cool",
-      "Jill favorite CoffeShop2")
+  def graphDescription = List("Joe favorite CoffeeShop1",
+    "Joe favorite SaunaX",
+    "Joe favorite MelsPlace",
+    "Jill favorite CoffeeShop1",
+    "Jill favorite MelsPlace",
+    "CoffeeShop2 tagged Cool",
+    "CoffeeShop1 tagged Cool",
+    "CoffeeShop1 tagged Cosy",
+    "CoffeeShop3 tagged Cosy",
+    "MelsPlace tagged Cosy",
+    "MelsPlace tagged Cool",
+    "Jill favorite CoffeShop2")
 
   def section = "cookbook"
 
@@ -59,10 +58,10 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
       		ORDER BY count(*) DESC, stuff.name""",
       returns = "The list of places that are favorited by people that favorited the start place.",
       assertions = (p) => assertEquals(List(Map("stuff.name" -> "MelsPlace", "count(*)" -> 2),
-          Map("stuff.name" -> "CoffeShop2", "count(*)" -> 1),
-          Map("stuff.name" -> "SaunaX", "count(*)" -> 1)),p.toList))
-  } 
-  
+        Map("stuff.name" -> "CoffeShop2", "count(*)" -> 1),
+        Map("stuff.name" -> "SaunaX", "count(*)" -> 1)), p.toList))
+  }
+
   @Test def coTaggedPlaces() {
     testQuery(
       title = "Co-Tagged places -- places related through tags",
@@ -71,14 +70,14 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 * Determine the tags for place x.
 * What else is tagged the same as x that is not x.""",
       queryText = """START place=node:node_auto_index(name = "CoffeeShop1") 
-      		MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
-      		RETURN otherPlace.name, collect(tag.name) 
-      		ORDER BY otherPlace.name DESC""",
-      returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends is returned.",
+MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
+RETURN otherPlace.name, collect(tag.name)
+ORDER BY length(collect(tag.name)) DESC, otherPlace.name""",
+      returns = "This query returns other places than CoffeeShop1 which share the same tags; they are ranked by the number of tags.",
       assertions = (p) => {
         assertEquals(List(Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cool", "Cosy")),
-                Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy")),
-                Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool"))),p.toList)
+          Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool")),
+          Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy"))), p.toList)
       })
-  } 
+  }
 }
