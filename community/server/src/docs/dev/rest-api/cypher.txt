@@ -7,7 +7,7 @@ consisting of a list of all rows, every row consisting of a list of REST represe
 of the field value -- +Node+, +Relationship+, +Path+ or any simple value like +String+.
 
 [TIP]
-In order to speed up queries in repeated scenarios, try not to use literals but replace then with parameters wherever possible in order to let the server cache query plans, see <<rest-api-send-queries-with-parameters>> for details.
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans, see <<rest-api-send-queries-with-parameters>> for details.
 
 include::send-queries-with-parameters.txt[]
 
