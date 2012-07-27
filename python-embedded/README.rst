@@ -33,7 +33,7 @@ To install neo4j-embedded from this source tree, use the maven build tool to pro
 
   mvn package
   unzip target/neo4j-python-embedded-[VERSION]-python-dist.zip
-  cd target/neo4j-embedded
+  cd neo4j-embedded
   python setup.py install
 
 Releasing
