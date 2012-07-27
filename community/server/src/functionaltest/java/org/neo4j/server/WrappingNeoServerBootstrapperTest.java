@@ -91,10 +91,12 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     @Test
     public void shouldAllowModifyingProperties()
     {
-
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( "target/configDb" ).setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory()
+            .newEmbeddedDatabaseBuilder( "target/configDb" )
+            .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
+            .newGraphDatabase();
         ServerConfigurator config;
         config = new ServerConfigurator( graphdb );
         // let the server endpoint be on a custom port
