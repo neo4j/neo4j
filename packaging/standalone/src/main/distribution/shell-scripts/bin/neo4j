@@ -1,4 +1,8 @@
 #!/bin/bash
+### BEGIN REDHAT INFO
+# chkconfig: 2345 99 20
+# description: The Neo4J graph database server. See http://neo4j.org
+### END REDHAT INFO
 ### BEGIN INIT INFO
 # Provides:          neo4j-service
 # Required-Start:
@@ -6,8 +10,8 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 ### END INIT INFO
-
 # Copyright (c) 2002-2012 "Neo Technology,"
+
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -362,7 +366,12 @@ installservice() {
             modify_user_config $proposed_user
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
-          update-rc.d ${SERVICE_NAME} defaults
+          selectinittool
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --add ${SERVICE_NAME}
+          else
+            update-rc.d ${SERVICE_NAME} defaults
+          fi
           chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
         fi
       fi

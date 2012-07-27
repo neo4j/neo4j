@@ -266,6 +266,7 @@ remove_user() {
 removeservice() {
     detectos
     checkstatus
+    selectinittool
 
     PLIST_FILE=$LAUNCHD_NAME.plist
 
@@ -278,7 +279,12 @@ removeservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
-	        update-rc.d -f ${SERVICE_NAME} remove
+
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --del ${SERVICE_NAME}
+          else
+            update-rc.d -f ${SERVICE_NAME} remove
+          fi
           rm /etc/init.d/${SERVICE_NAME}
         fi
 
@@ -324,4 +330,14 @@ checklimits() {
         echo "WARNING: Max $OPEN_FILES open files allowed, minimum of 40 000 recommended. See the Neo4j manual."
       fi
     fi
+}
+
+selectinittool() {
+  if [ -x '/sbin/chkconfig' ]; then
+    INIT_TOOL='chkconfig'
+  elif [ -x '/usr/sbin/update-rc.d' ]; then
+    INIT_TOOL='update-rc.d'
+  else
+    INIT_TOOL='update-rc.d'
+  fi
 }
