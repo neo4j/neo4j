@@ -33,18 +33,18 @@ class ReturnTest extends DocumentingTestBase {
   @Test def returnNode() {
     testQuery(
       title = "Return nodes",
-      text = "To return a node, list it in the return statemenet.",
+      text = "To return a node, list it in the `RETURN` statemenet.",
       queryText = """start n=node(%B%) return n""",
-      returns = """The node.""",
+      returns = """The example will return the node.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
   }
 
   @Test def returnRelationship() {
     testQuery(
       title = "Return relationships",
-      text = "To return a relationship, just include it in the return list.",
+      text = "To return a relationship, just include it in the `RETURN` list.",
       queryText = """start n=node(%A%) match (n)-[r:KNOWS]->(c) return r""",
-      returns = """The relationship.""",
+      returns = """The relationship is returned by the example.""",
       assertions = (p) => assertEquals(1, p.size))
   }
 
@@ -53,7 +53,7 @@ class ReturnTest extends DocumentingTestBase {
       title = "Return property",
       text = "To return a property, use the dot separator, like this:",
       queryText = """start n=node(%A%) return n.name""",
-      returns = """The the value of the property 'name'.""",
+      returns = """The value of the property `name` gets returned.""",
       assertions = (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
   }
 
@@ -75,7 +75,7 @@ return `This isn't a common identifier`.happy""",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
       queryText = """start n=node(%A%, %B%) return n.age?""",
-      returns = """The age when the node has that property, or +null+ if the property is not there.""",
+      returns = """This example returns the age when the node has that property, or +null+ if the property is not there.""",
       assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age?").toList))
   }
 
@@ -84,14 +84,14 @@ like this:""",
       title = "Unique results",
       text = """`DISTINCT` retrieves only unique rows depending on the columns that have been selected to output.""",
       queryText = """start a=node(%A%) match (a)-->(b) return distinct b""",
-      returns = """The node named B, but only once.""",
+      returns = """The node named B is returned by the query, but only once.""",
       assertions = (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }
 
   @Test def column_aliasing() {
     testQuery(
       title = "Column alias",
-      text = """If the name of the column should be different from the expression used, you can rename it by using AS <new name>.""",
+      text = """If the name of the column should be different from the expression used, you can rename it by using `AS` <new name>.""",
       queryText = """start a=node(%A%) return a.age AS SomethingTotallyDifferent""",
       returns = """Returns the age property of a node, but renames the column.""",
       assertions = (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
@@ -102,7 +102,7 @@ like this:""",
       title = "Return all elements",
       text = """When you want to return all nodes, relationships and paths found in a query, you can use the `*` symbol.""",
       queryText = """start a=node(%A%) match p=a-[r]->b return *""",
-      returns = """Returns the two nodes, the relationship and the path used in the query""",
+      returns = """This returns the two nodes, the relationship and the path used in the query.""",
       assertions = (p) => assertEquals(p.toList.head.keys, Set("a", "b", "r", "p")))
   }
 }

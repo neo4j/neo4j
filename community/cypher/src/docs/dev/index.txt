@@ -50,11 +50,11 @@ include::ql/order-by/index.txt[]
 
 :leveloffset: 2
 
-include::ql/skip/index.txt[]
+include::ql/limit/index.txt[]
 
 :leveloffset: 2
 
-include::ql/limit/index.txt[]
+include::ql/skip/index.txt[]
 
 :leveloffset: 2
 

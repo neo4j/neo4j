@@ -31,9 +31,9 @@ class SkipTest extends DocumentingTestBase {
   @Test def returnFromThree() {
     testQuery(
       title = "Skip first three",
-      text = "To return a subset of the result, starting from third result, use this syntax:",
+      text = "To return a subset of the result, starting from the fourth result, use the following syntax:",
       queryText = "start n=node(%A%, %B%, %C%, %D%, %E%) return n order by n.name skip 3",
-      returns = "The first three nodes are skipped, and only the last two are returned.",
+      returns = "The first three nodes are skipped, and only the last two are returned in the result.",
       (p) => assertEquals(List(node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
 
@@ -42,7 +42,7 @@ class SkipTest extends DocumentingTestBase {
       title = "Return middle two",
       text = "To return a subset of the result, starting from somewhere in the middle, use this syntax:",
       queryText = "start n=node(%A%, %B%, %C%, %D%, %E%) return n order by n.name skip 1 limit 2",
-      returns = "Two nodes from the middle are returned",
+      returns = "Two nodes from the middle are returned.",
       (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 }

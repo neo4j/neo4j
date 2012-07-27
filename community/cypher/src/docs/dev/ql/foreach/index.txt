@@ -8,7 +8,7 @@ The identifier context inside of the foreach parenthesis is separate from the on
 node identifier inside of a `FOREACH`, you will not be able to use it outside of the foreach statement, unless you
 match to find it.
 
-Inside of the `FOREACH` parenthesis, you can do any updating commands -- `CREATE`, `CREATE UNIQUE`, `DELETE`,
+Inside of the `FOREACH` parentheses, you can do any updating commands -- `CREATE`, `CREATE UNIQUE`, `DELETE`,
 and `FOREACH`.
 
 :leveloffset: 2

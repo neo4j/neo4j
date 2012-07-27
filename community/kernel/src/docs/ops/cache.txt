@@ -7,7 +7,7 @@ For how to provide custom configuration to Neo4j, see <<configuration-introducti
 Neo4j utilizes two different types of caches:
 A file buffer cache and an object cache.
 The file buffer cache caches the storage file data in the same format as it is stored on the durable storage media.
-The object cache caches the nodes, relationships and properties in a format that is optimized for high traversal speeds and transactional mutation.
+The object cache caches the nodes, relationships and properties in a format that is optimized for high traversal speeds and transactional writes.
 
 
 File buffer cache

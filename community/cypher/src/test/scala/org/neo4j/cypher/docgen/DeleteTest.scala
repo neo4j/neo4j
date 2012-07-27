@@ -65,10 +65,10 @@ class DeleteTest extends DocumentingTestBase {
   @Test def delete_property() {
     testQuery(
       title = "Remove a property",
-      text = "Neo4j doesn't allow storing null in properties. Instead, if no value exists, the property is" +
+      text = "Neo4j doesn't allow storing +null+ in properties. Instead, if no value exists, the property is " +
         "just not there. So, to remove a property value on a node or a relationship, is also done with +DELETE+.",
       queryText = "start andres = node(%Andres%) delete andres.age return andres",
-      returns = "The node is returned, and no property 'age' exists on it.",
+      returns = "The node is returned, and no property `age` exists on it.",
       assertions = (p) => {
         assertFalse("Property was not removed as expected.", node("Andres").hasProperty("age"))
       })

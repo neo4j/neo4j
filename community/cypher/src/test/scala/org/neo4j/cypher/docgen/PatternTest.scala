@@ -137,6 +137,7 @@ Also, named paths that contain optional parts are also optional -- if any part o
 `null`, the whole path is `null`.
 
 In the following examples, `b` and `p` are all optional and can contain `null`:
+
 ###no-results
 START a=node(%A%)
 MATCH p = a-[?]->b
@@ -183,7 +184,7 @@ START me=node(%F%)
 MATCH me-[:KNOWS*1..2]-remote_friend
 RETURN remote_friend###
 
-This query starts from one node, and follows KNOWS relationships two or three steps out, and then stops.
+This query starts from one node, and follows `KNOWS` relationships two or three steps out, and then stops.
 
 == Assigning to path identifiers ==
 

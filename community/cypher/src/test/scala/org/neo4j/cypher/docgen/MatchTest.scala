@@ -130,7 +130,9 @@ class MatchTest extends DocumentingTestBase {
   @Test def variableLengthPath() {
     testQuery(
       title = "Variable length relationships",
-      text = "Nodes that are a variable number of relationship->node hops away can be found using the following syntax: `-[:TYPE*minHops..maxHops]->`. ",
+      text = """Nodes that are a variable number of relationship->node hops away can be found using the following syntax:
+`-[:TYPE*minHops..maxHops]->`.
+Note that either the minimum or maximum limit can be omitted.""",
       queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
       returns = "This query returns the start and end point, if there is a path between 1 and 3 relationships away.",
       assertions = (p) => assertEquals(List(
@@ -267,8 +269,8 @@ Cypher will try to match the relationship where the connected nodes switch sides
   @Test def match_mimicking_or() {
     testQuery(
       title = "Match with OR",
-      text = "Strictly speaking, you can't do OR in your MATCH. It's still possible to form a query that " +
-             "works a lot like OR.",
+      text = "Strictly speaking, you can't do `OR` in your `MATCH`. It's still possible to form a query that " +
+             "works a lot like `OR`.",
       queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
       returns = "This query is saying: give me the nodes that are connected to `a`, or `b`, or both.",
       assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)

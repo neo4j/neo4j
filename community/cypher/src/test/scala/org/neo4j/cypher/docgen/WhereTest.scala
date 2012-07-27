@@ -37,9 +37,9 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_property() {
     testQuery(
       title = "Filter on node property",
-      text = "To filter on a property, write your clause after the `WHERE` keyword.",
+      text = "To filter on a property, write your clause after the `WHERE` keyword. Filtering on relationship properties works just the same way.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.age < 30 return n""",
-      returns = """The node.""",
+      returns = """The "+Tobias+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -48,7 +48,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Boolean operations",
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`.",
       queryText = """start n=node(%Andres%, %Tobias%) where (n.age < 30 and n.name = "Tobias") or not(n.name = "Tobias")  return n""",
-      returns = """The node.""",
+      returns = """This will return both nodes in the start clause.""",
       assertions = (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -57,7 +57,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Regular expressions",
       text = "You can match on regular expressions by using `=~ /regexp/`, like this:",
       queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Tob.*/ return n""",
-      returns = """The node named Tobias.""",
+      returns = """The "+Tobias+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -73,18 +73,18 @@ class WhereTest extends DocumentingTestBase {
   @Test def regular_expressions_case_insensitive() {
     testQuery(
       title = "Case insensitive regular expressions",
-      text = "By pre-pending a regular expression with (?i), the whole expression becomes case insensitive.",
+      text = "By pre-pending a regular expression with `(?i)`, the whole expression becomes case insensitive.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /(?i)ANDR.*/ return n""",
-      returns = """The node with name 'Andres' is returned.""",
+      returns = """The node with name "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
   @Test def has_property() {
     testQuery(
       title = "Property exists",
-      text = "To only include nodes/relationships that have a property, just write out the identifier and the property you expect it to have.",
+      text = "To only include nodes/relationships that have a property, use the `HAS()` function and just write out the identifier and the property you expect it to have.",
       queryText = """start n=node(%Andres%, %Tobias%) where has(n.belt) return n""",
-      returns = """The node named Andres.""",
+      returns = """The node named "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -94,7 +94,7 @@ class WhereTest extends DocumentingTestBase {
       text = "If you want to compare a property on a graph element, but only if it exists, use the nullable property syntax. " +
         "You can use a question mark if you want missing property to return true, like:",
       queryText = """start n=node(%Andres%, %Tobias%) where n.belt? = 'white' return n""",
-      returns = "All nodes, even those without the belt property",
+      returns = "This returns all nodes, even those without the belt property.",
       assertions = (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -114,17 +114,17 @@ class WhereTest extends DocumentingTestBase {
         "advanced filtering on the type. You can use the special property `TYPE` to compare the type with something else. " +
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
       queryText = """start n=node(%Andres%) match (n)-[r]->() where type(r) =~ /K.*/ return r""",
-      returns = """The relationship that has a type whose name starts with K.""",
+      returns = """This returns relationships that has a type whose name starts with K.""",
       assertions = (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
 
   @Test def filter_on_null() {
     testQuery(
       title = "Filter on null values",
-      text = "Sometimes you might want to test if a value or an identifier is null. This is done just like SQL does it, " +
-        "with IS NULL. Also like SQL, the negative is `IS NOT NULL`, althought `NOT(IS NULL x)` also works.",
+      text = "Sometimes you might want to test if a value or an identifier is +null+. This is done just like SQL does it, " +
+        "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
-      returns = "Nodes that Tobias is not connected to",
+      returns = "Nodes that Tobias is not connected to are returned.",
       assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
   }
 
@@ -135,23 +135,32 @@ class WhereTest extends DocumentingTestBase {
 expressions are also predicates -- an empty collection represents `false`, and a non-empty represents `true`.
 
 So, patterns are not only expressions, they are also predicates. The only limitation to your pattern is that you must be
-able to express it in a single path. You can't use comas between multiple paths like you do in MATCH. You can achieve
-the same effect by combining multiple patterns with AND.
+able to express it in a single path. You can not use commas between multiple paths like you do in `MATCH`. You can achieve
+the same effect by combining multiple patterns with `AND`.
 
 Note that you can not introduce new identifiers here. Although it might look very similar to the `MATCH` patterns, the
 `WHERE` clause is all about eliminating matched subgraphs. `MATCH a-[*]->b` is very different from `WHERE a-[*]->b`; the
 first will produce a subgraph for every path it can find between `a` and `b`, and the latter will eliminate any matched
 subgraphs where `a` and `b` do not have a directed relationship chain between them.
              """,
-      queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) where a<--b return b""",
-      returns = "Nodes that Tobias is not connected to",
-      assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
+      queryText = """start tobias=node(%Tobias%), others=node(%Andres%, %Peter%) where tobias<--others return others""",
+      returns = "Nodes that have an outgoing relationship to the \"+Tobias+\" node are returned.",
+      assertions = (p) => assertEquals(List(Map("others" -> node("Andres"))), p.toList))
+  }
+
+  @Test def has_not_relationship_to() {
+    testQuery(
+      title = "Filter on patterns using NOT",
+      text = """The `NOT()` function can be used to exclude a pattern. """,
+      queryText = """start persons=node(*), peter=node(%Peter%) where not(persons-->peter) return persons""",
+      returns = "Nodes that do not have an outgoing relationship to the \"+Peter+\" node are returned.",
+      assertions = (p) => assertEquals(List(Map("persons" -> node("Tobias")),Map("persons" -> node("Peter"))), p.toList))
   }
 
   @Test def in_operator() {
     testQuery(
       title = "IN operator",
-      text = "To check if an element exists in a collection, you can use the IN operator.",
+      text = "To check if an element exists in a collection, you can use the `IN` operator.",
       queryText = """start a=node(%Andres%, %Tobias%, %Peter%) where a.name IN ["Peter", "Tobias"] return a""",
       returns = "This query shows how to check if a property exists in a literal collection.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
