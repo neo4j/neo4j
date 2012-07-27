@@ -22,27 +22,49 @@ package org.neo4j.kernel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class KernelData
 {
+    public static final GraphDatabaseSetting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;
     private static final Map<String, KernelData> instances = new HashMap<String, KernelData>();
-    private static int ID_COUNTER = 0;
 
     private static synchronized String newInstance( KernelData instance )
     {
-        final String instanceId = Integer.toString( ID_COUNTER++ );
+        String instanceId = instance.configuration.get( forced_id );
+        if ( instanceId == null )
+        {
+            instanceId = "";
+        }
+        instanceId = instanceId.trim();
+        if ( instanceId.equals( "" ) )
+        {
+            for ( int i = 0; i < instances.size() + 1; i++ )
+            {
+                instanceId = Integer.toString( i );
+                if ( !instances.containsKey( instanceId ) )
+                {
+                    break;
+                }
+            }
+        }
+        if ( instances.containsKey( instanceId ) )
+        {
+            throw new IllegalStateException(
+                    "There is already a kernel started with " + forced_id.name() + "='" + instanceId + "'." );
+        }
         instances.put( instanceId, instance );
         return instanceId;
     }
 
     private static synchronized Collection<KernelData> kernels()
     {
-        return new LinkedList<KernelData>( instances.values() );
+        return new ArrayList<KernelData>( instances.values() );
     }
 
     private static synchronized void removeInstance( String instanceId )
@@ -84,10 +106,12 @@ public abstract class KernelData
     }
 
     private final String instanceId;
+    private final Config configuration;
 
-    KernelData()
+    KernelData( Config configuration )
     {
-        instanceId = newInstance( this );
+        this.configuration = configuration;
+        this.instanceId = newInstance( this );
     }
 
     public final String instanceId()
@@ -109,11 +133,12 @@ public abstract class KernelData
 
     public abstract Version version();
 
-    public abstract Config getConfig();
+    public Config getConfig()
+    {
+        return configuration;
+    }
 
     public abstract GraphDatabaseAPI graphDatabase();
-
-    public abstract Map<String, String> getConfigParams();
 
     private final Map<KernelExtension<?>, Object> state = new HashMap<KernelExtension<?>, Object>();
 
@@ -204,9 +229,10 @@ public abstract class KernelData
         }
     }
 
+    @Deprecated
     public final Object getParam( String key )
     {
-        return getConfigParams().get( key );
+        return getConfig().getParams().get( key );
     }
     
     public PropertyContainer properties()

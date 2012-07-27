@@ -56,7 +56,7 @@ public final class ConfigurationBean extends Neo4jMBean
     ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( CONFIGURATION_MBEAN_NAME, kernel, support );
-        this.config = new HashMap<String, String>(kernel.getConfigParams());
+        this.config = new HashMap<String, String>(kernel.getConfig().getParams());
         this.configuration = kernel.getConfig();
         configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
     }
@@ -118,13 +118,10 @@ public final class ConfigurationBean extends Neo4jMBean
     private MBeanAttributeInfo[] keys()
     {
         List<MBeanAttributeInfo> keys = new ArrayList<MBeanAttributeInfo>();
-        for ( Map.Entry<String, String> entry : config.entrySet() )
+        for ( String key : config.keySet() )
         {
-            if ( entry.getKey() instanceof String )
-            {
-                keys.add( new MBeanAttributeInfo( (String) entry.getKey(), String.class.getName(),
-                        describeConfigParameter( (String) entry.getKey() ), true, true, false ) );
-            }
+            keys.add( new MBeanAttributeInfo( key, String.class.getName(),
+                                              describeConfigParameter( key ), true, true, false ) );
         }
         return keys.toArray( new MBeanAttributeInfo[keys.size()] );
     }
