@@ -92,7 +92,7 @@ build the manual
 
 Build the standalone distributions
 
-    #git clone git@github.com:neo4j/packaging.git
+    git clone git@github.com:neo4j/packaging.git
     cd packaging
     git pull origin master
     cd standalone

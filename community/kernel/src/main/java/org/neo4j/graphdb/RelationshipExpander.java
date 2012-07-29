@@ -24,7 +24,8 @@ package org.neo4j.graphdb;
  * from a node.
  * 
  * @deprecated in favor or {@link PathExpander}. A {@link RelationshipExpander}
- * can still be wrapped in a TODO to act like a {@link PathExpander}.
+ * can still be wrapped via {@link org.neo4j.kernel.StandardExpander#toPathExpander(RelationshipExpander)}
+ * to act like a {@link PathExpander}.
  */
 public interface RelationshipExpander
 {
