@@ -40,7 +40,7 @@ public class Script extends ConfigurationParser
         super( format );
     }
 
-    private String storeDir;
+    protected String storeDir;
 
     public static <S extends Script> S initialize( Class<S> scriptClass, String... args )
     {
