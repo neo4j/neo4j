@@ -1,0 +1,113 @@
+<project default="debian">
+
+    <macrodef name="udc_source">
+        <attribute name="name"/>
+        <sequential>
+            <local name="udc.jar"/>
+            <property name="udc.tmpdir" location="${project.build.directory}/udc_tmp"/>
+            <!-- this is a glob? -->
+            <property name="udc.properties" location="${udc.tmpdir}/org/neo4j/ext/udc/udc.properties"/>
+
+            <fileset id="udc.jars" dir="${project.build.outputDirectory}/@{name}" includes="**/neo4j-udc*.jar"/>
+            <property name="udc.jar" value="${toString:udc.jars}"/>
+            <echo message="Working on: ${udc.jar}" />
+            <unzip src="target/classes/@{name}/${udc.jar}"
+                   dest="${udc.tmpdir}">
+                <patternset>
+                    <include name="**/udc.properties"/>
+                </patternset>
+            </unzip>
+            <replaceregexp file="${udc.properties}"
+                           match="maven"
+                           replace="debian"/>
+            <jar jarfile="target/classes/@{name}/${udc.jar}" update="true">
+                <fileset dir="${udc.tmpdir}"/>
+            </jar>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="package">
+
+        <attribute name="name"/>
+        <sequential>
+            <!-- Unzip the standalone distributions -->
+            <local name="source.distribution" />
+            <property name="source.distribution" location="${project.build.directory}/neo4j-@{name}-${neo4j.version}-unix.tar.gz"/>
+
+            <untar src="${source.distribution}"
+                   dest="${project.build.outputDirectory}"
+                   compression="gzip"/>
+
+            <!-- Handle the case of the co-ordinator -->
+            <copy toDir="${project.build.outputDirectory}/neo4j-coordinator-${neo4j.version}" failonerror="false">
+                <fileset dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"/>
+            </copy>
+
+            <!-- Move distributions into build folders -->
+            <move toDir="${project.build.outputDirectory}/@{name}/server">
+                <fileset dir="${project.build.outputDirectory}/neo4j-@{name}-${neo4j.version}"
+                         includes="**"/>
+            </move>
+
+            <udc_source name="@{name}"/>
+            <chmod perm="700">
+                <fileset dir="${project.build.outputDirectory}/@{name}">
+                    <include name="**/server/bin/neo4j"/>
+                    <include name="**/server/bin/neo4j-shell"/>
+                    <include name="**/server/bin/utils"/>
+                    <include name="**/server/bin/neo4j-backup"/>
+                    <include name="**/server/bin/neo4j-coordinator"/>
+                    <include name="**/server/bin/neo4j-coordinator-shell"/>
+                </fileset>
+            </chmod>
+
+            <!-- Copy manpages into build folder -->
+            <copy toDir="${project.build.outputDirectory}/@{name}/manpages">
+                <fileset dir="${project.build.directory}/manpages" includes="**"/>
+            </copy>
+
+            <!-- Run installer projects -->
+            <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/@{name}"
+                  failonerror="true">
+                <arg line="-us"/>
+                <arg line="-uc"/>
+                <arg line="-B"/>
+            </exec>
+
+        </sequential>
+    </macrodef>
+
+    <target name="coordinator_dependency">
+        <copy file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+              tofile="${project.build.directory}/neo4j-coordinator-${neo4j.version}-unix.tar.gz" />
+    </target>
+
+    <target name="generate">
+        <package name="community"/>
+        <package name="advanced"/>
+        <package name="enterprise"/>
+        <package name="coordinator"/>
+    </target>
+
+    <target name="publish_to_target" depends="generate">
+        <!-- Copy installers into target/, changing the version in the filename
+from the debian compliant one to a maven compliant one. This makes
+it easier to use these artifacts in other projects (since otherwise
+other projects would have to figure out the debian compliant version). -->
+        <copy
+                file="${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j_${neo4j.version}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-advanced_${neo4j.version}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb"/>
+        <copy
+                file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb"/>
+    </target>
+
+    <target name="debian" depends="coordinator_dependency, publish_to_target"/>
+</project>
