@@ -131,7 +131,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Variable length relationships",
       text = "Nodes that are a variable number of relationship->node hops away can be found using the following syntax: `-[:TYPE*minHops..maxHops]->`. " +
-        "minHops and maxHops are optional and default to 0 and infinity respectively. When no bounds are given the dots may be omitted.",
+        "minHops and maxHops are optional and default to 1 and infinity respectively. When no bounds are given the dots may be omitted.",
       queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
       returns = "This query returns the start and end point, if there is a path between 1 and 3 relationships away.",
       assertions = (p) => assertEquals(List(
