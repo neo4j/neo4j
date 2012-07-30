@@ -222,8 +222,8 @@ public class StoreFactory
     private void createPropertyStore( String fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
-        int stringStoreBlockSize = config.getInteger( Configuration.string_block_size );
-        int arrayStoreBlockSize = config.getInteger( Configuration.array_block_size );
+        int stringStoreBlockSize = config.get( Configuration.string_block_size );
+        int arrayStoreBlockSize = config.get( Configuration.array_block_size );
 
         createDynamicStringStore(fileName + ".strings", stringStoreBlockSize, IdType.STRING_BLOCK);
         createPropertyIndexStore(fileName + ".index");

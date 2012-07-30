@@ -178,17 +178,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public LuceneDataSource( Config config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction, XaFactory xaFactory)
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
-        indexSearchers = new IndexClockCache( config.getInteger( Configuration.lucene_searcher_cache_size ) );
+        indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         String storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
         this.indexStore = indexStore;
-        boolean allowUpgrade = config.getBoolean( Configuration.allow_store_upgrade );
+        boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.providerStore = newIndexStore( storeDir, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
-        boolean isReadOnly = config.getBoolean( Configuration.read_only );
-        this.directoryGetter = config.getBoolean( Configuration.ephemeral ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
+        boolean isReadOnly = config.get( Configuration.read_only );
+        this.directoryGetter = (boolean) config.get( Configuration.ephemeral ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
 
         nodeEntityType = new EntityType()
         {

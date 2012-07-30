@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.HasSettings;
 
 /**
  * Hook for providing extended functionality to the Neo4j Graph Database kernel.
@@ -50,7 +51,7 @@ import org.neo4j.helpers.Service;
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  * @param <S> the Extension state type
  */
-public abstract class KernelExtension<S> extends Service
+public abstract class KernelExtension<S> extends Service implements HasSettings
 {
     static final String INSTANCE_ID = "instanceId";
 
@@ -71,12 +72,7 @@ public abstract class KernelExtension<S> extends Service
         return this.getClass().equals( obj.getClass() );
     }
 
-    /**
-     * Return the class that contains GraphDatabaseSetting fields that define
-     * the properties needed by this extension.
-     *
-     * @return a class or null if no settings are needed
-     */
+    @Override
     public Class getSettingsClass()
     {
         return null;

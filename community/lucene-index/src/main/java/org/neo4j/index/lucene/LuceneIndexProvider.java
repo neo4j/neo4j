@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
@@ -46,9 +47,9 @@ public class LuceneIndexProvider extends IndexProvider
 {
     private static List<WeakReference<LuceneIndexImplementation>> previousProviders = new ArrayList<WeakReference<LuceneIndexImplementation>>();
     
-    public static abstract class  Configuration
+    public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
+        public static final GraphDatabaseSetting<Boolean> read_only = GraphDatabaseSettings.read_only;
     }
 
     public LuceneIndexProvider( )
@@ -71,7 +72,8 @@ public class LuceneIndexProvider extends IndexProvider
 
         xaDataSourceManager.registerDataSource(luceneDataSource);
 
-        IndexConnectionBroker<LuceneXaConnection> broker = config.getBoolean( Configuration.read_only ) ? new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txManager )
+        IndexConnectionBroker<LuceneXaConnection> broker = config.get( Configuration.read_only ) ?
+                  new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txManager )
                 : new ConnectionBroker( txManager, luceneDataSource );
 
         // TODO This is a hack to support reload of HA instances. Remove if HA supports start/stop of single instance instead

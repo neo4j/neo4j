@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.TimeUtil;
@@ -93,7 +94,7 @@ public class Config implements DiagnosticsProvider
     {
         return params.keySet();
     }
-    
+
     public boolean isSet( GraphDatabaseSetting<?> graphDatabaseSetting )
     {
         return params.containsKey( graphDatabaseSetting.name() ) && params.get( graphDatabaseSetting.name() ) != null;
@@ -105,7 +106,7 @@ public class Config implements DiagnosticsProvider
      * @param setting
      * @return
      */
-    public <T> T get(GraphDatabaseSetting<T> setting)
+    public <T> T get( GraphDatabaseSetting<T> setting )
     {
         String string = params.get( setting.name() );
         if (string != null)
@@ -481,13 +482,13 @@ public class Config implements DiagnosticsProvider
 
     @Deprecated
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
-    
+
     @Deprecated
     public boolean getBoolean(GraphDatabaseSetting.BooleanSetting setting)
     {
         return get( setting );
     }
-    
+
     @Deprecated
     public int getInteger(GraphDatabaseSetting.IntegerSetting setting)
     {

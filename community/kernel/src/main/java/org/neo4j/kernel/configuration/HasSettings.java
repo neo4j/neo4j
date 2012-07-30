@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.configuration;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-
-public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
+public interface HasSettings
 {
-    private Config config;
-
-    public ConfigMapUpgradeConfiguration( Config config )
-    {
-        this.config = config;
-    }
-
-    @Override
-    public void checkConfigurationAllowsAutomaticUpgrade()
-    {
-        if ( !config.get( GraphDatabaseSettings.allow_store_upgrade ) )
-        {
-            throw new UpgradeNotAllowedByConfigurationException();
-        }
-    }
+    /**
+     * Get a class that defines settings using static fields.
+     * See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}
+     * for an example.
+     *
+     * @return a class or null if no settings are needed
+     */
+    public Class getSettingsClass();
 }

@@ -34,7 +34,7 @@ public class ConfigMapUpgradeConfigurationTestIT
     public void shouldNotAllowAutomaticUpgradeIfConfigParameterIsMissing()
     {
         Config config = defaultConfig();
-        assertFalse( config.getBoolean( GraphDatabaseSettings.allow_store_upgrade ) );
+        assertFalse( config.get( GraphDatabaseSettings.allow_store_upgrade ) );
 
         try
         {

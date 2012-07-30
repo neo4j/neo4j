@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.Migrator;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 

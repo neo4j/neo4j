@@ -63,7 +63,7 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     @Override
     public void start()
     {
-        setEnabled(config.getBoolean( Configuration.node_auto_indexing ));
+        setEnabled( config.get( Configuration.node_auto_indexing ) );
         propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.node_keys_indexable )) );
     }
 

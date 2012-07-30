@@ -21,7 +21,6 @@
 package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.hamcrest.CoreMatchers.*;

@@ -61,7 +61,7 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     @Override
     public void start()
     {
-        setEnabled(config.getBoolean( Configuration.relationship_auto_indexing ));
+        setEnabled( config.get( Configuration.relationship_auto_indexing ) );
         propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.relationship_keys_indexable )) );
     }
 

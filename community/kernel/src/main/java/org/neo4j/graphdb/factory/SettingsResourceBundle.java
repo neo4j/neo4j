@@ -32,7 +32,10 @@ import org.neo4j.kernel.impl.transaction.IllegalResourceException;
  * ResourceBundle for classes that use GraphDatabaseSetting, which use reflection to find its values.
  *
  * This allows us to keep the descriptions in the Java code, so they are available in JavaDoc.
+ *
+ * This is deprecated, because it is due to be moved to the internal API.
  */
+@Deprecated
 public class SettingsResourceBundle
     extends ResourceBundle
 {

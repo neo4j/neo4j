@@ -107,7 +107,7 @@ public abstract class CommonAbstractStore
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
-        grabFileLock = configuration.getBoolean( Configuration.grab_file_lock );
+        grabFileLock = configuration.get( Configuration.grab_file_lock );
 
         try
         {
@@ -147,8 +147,8 @@ public abstract class CommonAbstractStore
 
     protected void checkStorage()
     {
-        readOnly = configuration.getBoolean( Configuration.read_only );
-        backupSlave = configuration.getBoolean( Configuration.backup_slave );
+        readOnly = configuration.get( Configuration.read_only );
+        backupSlave = configuration.get( Configuration.backup_slave );
         if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
@@ -222,7 +222,7 @@ public abstract class CommonAbstractStore
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(configuration.getParams(), storageFileName ),
-            configuration.getBoolean( Configuration.use_memory_mapped_buffers ), isReadOnly() && !isBackupSlave() ) );
+            configuration.get( Configuration.use_memory_mapped_buffers ), isReadOnly() && !isBackupSlave() ) );
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -422,6 +422,7 @@ public abstract class CommonAbstractStore
      * @param config Map of configuration parameters
      * @param storageFileName Name of the file on disk
      */
+    // TODO: This should use the type-safe config API, rather than this magic stuff
     private long calculateMappedMemory( Map<?, ?> config, String storageFileName )
     {
         String convertSlash = storageFileName.replace( '\\', '/' );

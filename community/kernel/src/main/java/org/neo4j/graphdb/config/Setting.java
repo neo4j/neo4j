@@ -17,22 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
+package org.neo4j.graphdb.config;
 
 /**
- * Used in settings classes to denote that a field contains an {@link ConfigurationMigrator}.
- * This gets picked up by the configuration, and config migrations are applied whenever configuration
- * is modified.
+ * This interface is available only for use, not for implementing. Implementing this interface is not expected, and
+ * backwards compatibility is not guaranteed for implementors.
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
-public @interface Migrator {
+public interface Setting
+{
+    public String name();
+
+    public void validate( String value )
+            throws InvalidConfigurationValueException;
 
 }

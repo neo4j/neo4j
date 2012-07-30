@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.configuration;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
-{
-    private Config config;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
 
-    public ConfigMapUpgradeConfiguration( Config config )
-    {
-        this.config = config;
-    }
+/**
+ * Used in settings classes to denote that a field contains an {@link ConfigurationMigrator}.
+ * This gets picked up by the configuration, and config migrations are applied whenever configuration
+ * is modified.
+ */
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.FIELD )
+public @interface Migrator {
 
-    @Override
-    public void checkConfigurationAllowsAutomaticUpgrade()
-    {
-        if ( !config.get( GraphDatabaseSettings.allow_store_upgrade ) )
-        {
-            throw new UpgradeNotAllowedByConfigurationException();
-        }
-    }
 }

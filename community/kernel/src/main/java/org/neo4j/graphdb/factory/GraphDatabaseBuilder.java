@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.InvalidConfigurationValueException;
+import org.neo4j.graphdb.config.Setting;
 
 /**
  * Builder for GraphDatabaseServices that allows for setting and loading configuration.
@@ -56,17 +58,25 @@ public class GraphDatabaseBuilder
      * @param value
      * @return the builder
      */
-    public GraphDatabaseBuilder setConfig(GraphDatabaseSetting setting, String value)
+    public GraphDatabaseBuilder setConfig(Setting setting, String value)
     {
-        if (value == null)
+        try
         {
-            config.remove( setting.name() );
-        } else
-        {
-            setting.validate( value );
-            config.put( setting.name(), value );
+            if (value == null)
+            {
+                config.remove( setting.name() );
+            } else
+            {
+                setting.validate( value );
+                config.put( setting.name(), value );
+            }
+            return this;
         }
-        return this;
+        catch ( InvalidConfigurationValueException e )
+        {
+            // TODO: Add localized error at this level
+            throw new IllegalArgumentException( e.getMessage(), e );
+        }
     }
 
     /**

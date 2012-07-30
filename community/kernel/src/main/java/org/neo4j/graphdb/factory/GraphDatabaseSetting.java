@@ -33,19 +33,43 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
- * Setting types for Neo4j. Actual settings are in GraphDatabaseSettings
+ * Setting types for Neo4j. Actual settings are in GraphDatabaseSettings.
+ *
+ * This is a usage-only class, backwards compatibility is retained for using implementations
+ * of it, but not for implementing it.
+ *
+ * This is deprecated, please use {@link Setting} instead.
  */
-public abstract class GraphDatabaseSetting<T>
+// Deprecated because we want to make this internal. Users should use Setting<T> instead.
+@Deprecated
+public abstract class GraphDatabaseSetting<T> implements Setting
 {
+    // Deprecated because we want to move this out of the public API
+    @Deprecated
     public static final String TRUE = "true";
+
+    // Deprecated because we want to move this out of the public API
+    @Deprecated
     public static final String FALSE = "false";
-    
+
+    // Deprecated because we want to move this out of the public API
+    @Deprecated
     public static final String ANY = ".+";
+
+    // Deprecated because this is to be removed
+    @Deprecated
+    public static final String SIZE = "\\d+[kmgKMG]";
+
+    // Deprecated because this is to be removed
+    @Deprecated
+    public static final String DURATION = "\\d+(ms|s|m)";
+
 
     public interface DefaultValue
     {
@@ -55,7 +79,11 @@ public abstract class GraphDatabaseSetting<T>
     //
     // Implementations of GraphDatabaseSetting
     //
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class StringSetting
         extends GraphDatabaseSetting<String>
     {
@@ -63,7 +91,7 @@ public abstract class GraphDatabaseSetting<T>
 
         public StringSetting() 
         {
-            this("", ANY, "Must be a non-empty string.");
+            this( "", ANY, "Must be a non-empty string." );
         }
         
         public StringSetting( String name, String regex, String formatMessage )
@@ -76,21 +104,25 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
 
             if (!regex.matcher( value ).matches())
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
         }
         
         @Override
-        public String valueOf(String rawValue, Config config) 
+        public String valueOf(String rawValue, Config config)
         {
             return rawValue;
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static abstract class NumberSetting<T extends Number>
         extends GraphDatabaseSetting<T>
     {
@@ -120,6 +152,13 @@ public abstract class GraphDatabaseSetting<T>
             	throw illegalValue(locale, value+"", "Maximum allowed value is: %s", new String[]{max+""} );
         }
 
+        @Deprecated
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        protected void rangeCheck(Comparable value)
+        {
+            rangeCheck( Locale.getDefault(), value );
+        }
+
         public T getMin()
         {
             return min;
@@ -130,7 +169,11 @@ public abstract class GraphDatabaseSetting<T>
             return max;
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class IntegerSetting
         extends NumberSetting<Integer>
     {
@@ -148,7 +191,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
 
             int val;
             try
@@ -157,7 +200,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
 
             rangeCheck(locale, val );
@@ -170,6 +213,10 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class LongSetting
         extends NumberSetting<Long>
     {
@@ -187,7 +234,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
 
             long val;
             try
@@ -196,7 +243,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
 
             rangeCheck(locale, val );
@@ -209,6 +256,10 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class FloatSetting
         extends NumberSetting<Float>
     {
@@ -226,7 +277,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
 
             float val;
             try
@@ -235,7 +286,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
 
             rangeCheck(locale, val );
@@ -248,6 +299,10 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class DoubleSetting
         extends NumberSetting<Double>
     {
@@ -265,7 +320,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
 
             double val;
             try
@@ -274,7 +329,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch( Exception e )
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
 
             rangeCheck(locale, val );
@@ -283,10 +338,14 @@ public abstract class GraphDatabaseSetting<T>
         @Override
         public Double valueOf(String rawValue, Config config) 
         {
-            return Double.valueOf(rawValue);
+            return Double.valueOf( rawValue );
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class PortSetting
         extends IntegerSetting
     {
@@ -295,7 +354,11 @@ public abstract class GraphDatabaseSetting<T>
             super(name, "Must be a valid port number", 1, 65535);
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class TimeSpanSetting extends GraphDatabaseSetting<Long>
     {
 
@@ -312,11 +375,11 @@ public abstract class GraphDatabaseSetting<T>
             throws IllegalArgumentException
         {
             if(value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             
             if (!timeSpanRegex.matcher( value ).matches())
             {
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             }
         }
         
@@ -327,6 +390,10 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static abstract class BaseOptionsSetting<ST>
         extends GraphDatabaseSetting<ST>
     {
@@ -349,7 +416,7 @@ public abstract class GraphDatabaseSetting<T>
                     return;
             }
             
-            throw illegalValue( locale, value, Arrays.asList( options() ).toString() );
+            throw illegalValue( locale, value, new String[]{Arrays.asList( options() ).toString()} );
         }
 
         public String[] options()
@@ -357,7 +424,11 @@ public abstract class GraphDatabaseSetting<T>
             return options;
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class OptionsSetting extends BaseOptionsSetting<String> {
 
         protected OptionsSetting(String name, String ... options)
@@ -372,7 +443,11 @@ public abstract class GraphDatabaseSetting<T>
         }
         
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class EnumerableSetting<ET extends Enum<ET>> extends BaseOptionsSetting<ET> {
 
         private static String[] enumSetToStringArray(EnumSet<?> enums) {
@@ -399,6 +474,10 @@ public abstract class GraphDatabaseSetting<T>
         
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class BooleanSetting
         extends BaseOptionsSetting<Boolean>
     {
@@ -414,6 +493,10 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class AbstractPathSetting
     extends StringSetting
     {
@@ -453,7 +536,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
         }
         
         @Override
@@ -495,7 +578,11 @@ public abstract class GraphDatabaseSetting<T>
             }
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class FileSetting
         extends AbstractPathSetting
     {
@@ -529,14 +616,18 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             
             File file = new File(value);
             if(file.exists() && !file.isFile())
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class DirectorySetting
         extends AbstractPathSetting
     {
@@ -563,21 +654,25 @@ public abstract class GraphDatabaseSetting<T>
          * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
          */
         public DirectorySetting( String name, DirectorySetting relativeTo, boolean makeCanonical, boolean fixIncorrectPathSeparators) {
-            super( name, relativeTo, makeCanonical, fixIncorrectPathSeparators);
+            super( name, relativeTo, makeCanonical, fixIncorrectPathSeparators );
         }
     
         @Override
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             
             File dir = new File(value);
             if(dir.exists() && !dir.isDirectory())
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class NumberOfBytesSetting
         extends GraphDatabaseSetting<Long>
     {
@@ -593,10 +688,10 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             
             if(!sizeRegex.matcher(value).matches())
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
         }
         
         @Override
@@ -623,7 +718,11 @@ public abstract class GraphDatabaseSetting<T>
             return Long.parseLong( mem.trim() ) * multiplier;
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class IntegerRangeNumberOfBytesSetting extends GraphDatabaseSetting<Integer>
     {
         private final GraphDatabaseSetting<Long> fullRange;
@@ -659,7 +758,11 @@ public abstract class GraphDatabaseSetting<T>
             return fullRange.valueOf( rawValue, config ).intValue();
         }
     }
-    
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class ListSetting<T>
         extends GraphDatabaseSetting<List<T>>
     {
@@ -682,7 +785,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if (value == null)
-                throw illegalValue( locale, value );
+                throw illegalValue( locale, value, new String[0] );
             
             if( value.length() == 0)
                 return;
@@ -707,9 +810,13 @@ public abstract class GraphDatabaseSetting<T>
             return list;
         }
     }
-    
 
 
+
+    /**
+     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     */
+    @Deprecated
     public static class URISetting extends GraphDatabaseSetting<URI>
     {
         private boolean normalize;
@@ -720,7 +827,7 @@ public abstract class GraphDatabaseSetting<T>
         }
         
         public URISetting( String name, boolean normalize) {
-            super( name, "'%s' does not validate as a proper URI.");
+            super( name, "Value given does not validate as a proper URI.");
             this.normalize = normalize;
         }
     
@@ -728,7 +835,7 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             if(value == null)
-                throw illegalValue(locale,"");
+                throw illegalValue(locale, null, new String[0]);
             
             try
             {
@@ -736,7 +843,7 @@ public abstract class GraphDatabaseSetting<T>
             }
             catch ( URISyntaxException e )
             {
-                throw illegalValue(locale, value);
+                throw illegalValue(locale, value, new String[0]);
             }
         }
         
@@ -814,7 +921,8 @@ public abstract class GraphDatabaseSetting<T>
      * @return
      */
     public abstract T valueOf(String rawValue, Config config);
-    
+
+
     protected String getMessage(Locale locale, String defaultMessage)
     {
         if (locale.getLanguage().equals( Locale.ENGLISH.getLanguage() ))
@@ -831,7 +939,13 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
 
-    protected IllegalArgumentException illegalValue(Locale locale, String value, Object... args)
+    @Deprecated
+    protected IllegalArgumentException illegalValue(Locale locale, String... args)
+    {
+        return illegalValue( locale, "<unknown>" , args);
+    }
+
+    protected IllegalArgumentException illegalValue(Locale locale, String value, Object [] args)
         throws IllegalArgumentException
     {
         return illegalValue(locale, value, validationMessage, args);

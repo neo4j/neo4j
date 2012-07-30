@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.cache;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HasSettings;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public abstract class CacheProvider extends Service
+public abstract class CacheProvider extends Service implements HasSettings
 {
     protected static final String NODE_CACHE_NAME = "NodeCache";
     protected static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
@@ -53,5 +54,11 @@ public abstract class CacheProvider extends Service
     public String getDescription()
     {
         return description;
+    }
+
+    @Override
+    public Class getSettingsClass()
+    {
+        return null;
     }
 }

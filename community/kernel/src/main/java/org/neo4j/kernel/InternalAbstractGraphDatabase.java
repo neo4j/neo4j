@@ -55,9 +55,11 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
+import org.neo4j.kernel.configuration.HasSettings;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -211,7 +213,9 @@ public abstract class InternalAbstractGraphDatabase
     {
         Map<String, CacheProvider> map = new HashMap<String, CacheProvider>();
         for ( CacheProvider provider : cacheProviders )
+        {
             map.put( provider.getName(), provider );
+        }
         return map;
     }
 
@@ -271,7 +275,9 @@ public abstract class InternalAbstractGraphDatabase
         String cacheTypeName = config.get( Configuration.cache_type );
         CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
+        {
             throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
+        }
 
         kernelEventHandlers = new KernelEventHandlers();
 
@@ -1021,31 +1027,22 @@ public abstract class InternalAbstractGraphDatabase
     }
     
 	private List<Class<?>> getSettingsClasses() {
-		// Get the list of settings classes for extensions
+
         List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
         settingsClasses.add( GraphDatabaseSettings.class );
-        for( KernelExtension<?> kernelExtension : kernelExtensions )
+
+        // Get the list of settings classes for extensions
+        for( HasSettings potentiallyConfigurable : Iterables.concat( kernelExtensions, cacheProviders.values()) )
         {
-            Class<?> settingsClass = kernelExtension.getSettingsClass();
+            Class<?> settingsClass = potentiallyConfigurable.getSettingsClass();
             if( settingsClass != null )
             {
                 settingsClasses.add( settingsClass );
             }
         }
+
 		return settingsClasses;
 	}
-
-    private String canonicalize( String path )
-    {
-        try
-        {
-            return new File( path ).getCanonicalFile().getAbsolutePath();
-        }
-        catch ( IOException e )
-        {
-            return new File( path ).getAbsolutePath();
-        }
-    }
 
     @Override
     public boolean equals( Object o )

@@ -103,7 +103,7 @@ public class BatchInserterImpl implements BatchInserter
 
         params = new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( params );
         Config config = new Config( params );
-        boolean dump = config.get(GraphDatabaseSettings.dump_configuration);
+        boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.storeDir = storeDir;
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 

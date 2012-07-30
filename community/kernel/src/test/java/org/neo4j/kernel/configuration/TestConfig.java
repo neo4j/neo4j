@@ -29,7 +29,6 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.Migrator;
 
 public class TestConfig {
 
