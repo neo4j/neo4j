@@ -335,8 +335,6 @@ checklimits() {
 selectinittool() {
   if [ -x '/sbin/chkconfig' ]; then
     INIT_TOOL='chkconfig'
-  elif [ -x '/usr/sbin/update-rc.d' ]; then
-    INIT_TOOL='update-rc.d'
   else
     INIT_TOOL='update-rc.d'
   fi

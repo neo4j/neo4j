@@ -1,4 +1,8 @@
 #!/bin/bash
+### BEGIN REDHAT INFO
+# chkconfig: 2345 98 21
+# description: The Neo4J enterprise co-ordinator. See http://neo4j.org
+### END REDHAT INFO
 ### BEGIN INIT INFO
 # Provides:          neo4j-coord
 # Required-Start:
@@ -202,6 +206,7 @@ modify_user_config() {
 installservice() {
     detectos
     findjava
+    selectinittool
     if [ ! -x "$JAVACMD" ] ; then
       if [[ $HEADLESS == false ]]; then
         read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
@@ -250,7 +255,11 @@ installservice() {
             esac
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
-          update-rc.d ${SERVICE_NAME} defaults
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --add ${SERVICE_NAME}
+          else
+            update-rc.d ${SERVICE_NAME} defaults
+          fi
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then

@@ -311,6 +311,7 @@ modify_user_config() {
 installservice() {
     detectos
     findjava
+    selectinittool
     if [ ! -x "$JAVACMD" ] ; then
       if [[ $HEADLESS == false ]]; then
         read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
@@ -366,7 +367,6 @@ installservice() {
             modify_user_config $proposed_user
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
-          selectinittool
           if [ $INIT_TOOL == 'chkconfig' ]; then
             chkconfig --add ${SERVICE_NAME}
           else
