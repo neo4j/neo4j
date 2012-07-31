@@ -88,7 +88,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
 
     private Config loadConfig(KernelData kernel) {
         Properties udcProps = loadUdcProperties();
-        HashMap<String, String> config = new HashMap<String, String>(kernel.getConfigParams());
+        HashMap<String, String> config = new HashMap<String, String>(kernel.getConfig().getParams());
         for (Map.Entry<Object, Object> entry : udcProps.entrySet()) {
             config.put((String)entry.getKey(), (String) entry.getValue());
         }

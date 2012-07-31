@@ -191,6 +191,12 @@ public abstract class GraphDatabaseSettings
     @Description( "Mark this database as a backup slave." )
     @Default( FALSE )
     public static final BooleanSetting backup_slave = new BooleanSetting( "backup_slave" );
+
+    @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
+                         "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
+    @Default("")
+    public static final GraphDatabaseSetting<String> forced_kernel_id = new StringSetting( "forced_kernel_id", "[a-zA-Z0-9]*",
+                                            "Invalid kernel identifier." );
     
     // TODO: This should be in enterprise, but we currently have code depending on this in community
     @Default( FALSE)
