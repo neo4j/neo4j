@@ -250,9 +250,15 @@ remove_user() {
     else
       yn="y"
     fi
+
+    if [ -x '/usr/sbin/deluser' ]; then
+      DELETE_CMD='/usr/sbin/deluser'
+    else
+      DELETE_CMD='/usr/sbin/userdel'
+    fi
     
     case $yn in
-      [Yy]* ) deluser $wrapper_user
+      [Yy]* ) $DELETE_CMD $wrapper_user
               modify_user_config "" created=true
         ;;
       * ) echo "OK, we'll let that user live, for now." 
@@ -339,3 +345,4 @@ selectinittool() {
     INIT_TOOL='update-rc.d'
   fi
 }
+
