@@ -43,19 +43,13 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private Iterator<Path> foundPaths;
     private SideSelector selector;
     private Map<Direction, Side> sides = new EnumMap<Direction, Side>( Direction.class );
-    private final UniquenessFilter uniqueness;
+    private final BidirectionalUniquenessFilter uniqueness;
     private final Predicate<Path> uniquenessPredicate = new Predicate<Path>()
     {
         @Override
         public boolean accept( Path path )
         {
-            if ( !(uniqueness instanceof BidirectionalUniquenessFilter) )
-            {
-                throw new IllegalArgumentException( "You must supply a BidirectionalUniquenessFilter, " +
-                        "not just a UniquenessFilter." );
-            }
-
-            return ((BidirectionalUniquenessFilter) uniqueness).checkFull( path );
+            return uniqueness.checkFull( path );
         }
     };
 
@@ -92,7 +86,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         this.collisionDetector = description.collisionPolicy.create( description.collisionEvaluator );
     }
 
-    private UniquenessFilter makeSureStartAndEndHasSameUniqueness( TraversalDescriptionImpl start,
+    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( TraversalDescriptionImpl start,
                                                                    TraversalDescriptionImpl end )
     {
         if ( !start.uniqueness.equals( end.uniqueness ) )
@@ -110,7 +104,14 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                     "same currently. Start side has " + start.uniquenessParameter + ", " +
                     "end side has " + end.uniquenessParameter );
         }
-        return start.uniqueness.create( start.uniquenessParameter );
+        
+        UniquenessFilter uniqueness = start.uniqueness.create( start.uniquenessParameter );
+        if ( !(uniqueness instanceof BidirectionalUniquenessFilter) )
+        {
+            throw new IllegalArgumentException( "You must supply a BidirectionalUniquenessFilter, " +
+                    "not just a UniquenessFilter." );
+        }
+        return (BidirectionalUniquenessFilter) uniqueness;
     }
 
     private SideSelector alwaysOutgoingSide()
