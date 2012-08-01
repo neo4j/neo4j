@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import static org.junit.Assert.assertSame;
+
 import java.util.HashMap;
 
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,8 +30,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
-
-import static org.junit.Assert.assertSame;
 
 @Ignore("We want to tie the thing owning the instanceId to the HA db, but the extensions need access to the " +
                 "internal db through the KernelData object while starting the internal db, " +

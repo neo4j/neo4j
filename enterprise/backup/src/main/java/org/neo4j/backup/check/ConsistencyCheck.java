@@ -69,10 +69,7 @@ import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UN
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
