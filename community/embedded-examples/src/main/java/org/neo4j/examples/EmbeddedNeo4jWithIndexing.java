@@ -33,11 +33,11 @@ public class EmbeddedNeo4jWithIndexing
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
     private static Index<Node> nodeIndex;
+    private static Index<Node> referenceIndex;
 
     // START SNIPPET: createRelTypes
     private static enum RelTypes implements RelationshipType
     {
-        USERS_REFERENCE,
         USER
     }
     // END SNIPPET: createRelTypes
@@ -47,6 +47,7 @@ public class EmbeddedNeo4jWithIndexing
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         nodeIndex = graphDb.index().forNodes( "nodes" );
+        referenceIndex = graphDb.index().forNodes( "references" );
         registerShutdownHook();
         // END SNIPPET: startDb
 
@@ -56,8 +57,9 @@ public class EmbeddedNeo4jWithIndexing
         {
             // Create users sub reference node
             Node usersReferenceNode = graphDb.createNode();
-            graphDb.getReferenceNode().createRelationshipTo(
-                usersReferenceNode, RelTypes.USERS_REFERENCE );
+            usersReferenceNode.setProperty( "reference", "users" );
+            referenceIndex.add( usersReferenceNode, "reference", "users" );
+
             // Create some users and index their names with the IndexService
             for ( int id = 0; id < 100; id++ )
             {
@@ -87,8 +89,7 @@ public class EmbeddedNeo4jWithIndexing
                 user.delete();
                 relationship.delete();
             }
-            usersReferenceNode.getSingleRelationship( RelTypes.USERS_REFERENCE,
-                    Direction.INCOMING ).delete();
+            referenceIndex.remove( usersReferenceNode );
             usersReferenceNode.delete();
             tx.success();
         }

@@ -1,5 +1,6 @@
 1.8.M07 (2012-??-??)
 --------------------
+o [DEPRECATION] Deprecated reference node. Indexes should be used for entry points in the graph
 o Traversal framework backwards compatibility
   + Cleaned up any breaking changes
   + Removed Expander#addFilter

@@ -633,6 +633,7 @@ public class DatabaseActionsTest
                 .isEmpty() );
     }
 
+    // TODO remove once reference node is gone
     @Test
     public void shouldBeAbleToGetReferenceNode() throws Exception
     {

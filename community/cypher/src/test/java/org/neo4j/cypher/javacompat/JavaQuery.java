@@ -48,11 +48,13 @@ public class JavaQuery
     {
         // START SNIPPET: execute
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        // add some data first
+        // add some data first, keep id of node so we can refer to it
+        long id;
         Transaction tx = db.beginTx();
         try
         {
-            Node refNode = db.getReferenceNode();
+            Node refNode = db.createNode();
+            id = refNode.getId();
             refNode.setProperty( "name", "reference node" );
             tx.success();
         }
@@ -63,7 +65,7 @@ public class JavaQuery
 
         // let's execute a query now
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node(0) return n, n.name" );
+        ExecutionResult result = engine.execute( "start n=node("+id+") return n, n.name" );
         System.out.println( result );
         // END SNIPPET: execute
         // START SNIPPET: columns
@@ -81,7 +83,7 @@ public class JavaQuery
         }
         // END SNIPPET: items
         // the result is now empty, get a new one
-        result = engine.execute( "start n=node(0) return n, n.name" );
+        result = engine.execute( "start n=node("+id+") return n, n.name" );
         // START SNIPPET: rows
         for ( Map<String, Object> row : result )
         {

@@ -43,6 +43,7 @@ public class NewMatrix
 
     private static final String MATRIX_DB = "target/matrix-new-db";
     private GraphDatabaseService graphDb;
+    private long matrixNodeId;
 
     public static void main( String[] args )
     {
@@ -71,13 +72,17 @@ public class NewMatrix
         Transaction tx = graphDb.beginTx();
         try
         {
+            // Create matrix node
+            Node matrix = graphDb.createNode();
+            matrixNodeId = matrix.getId();
+
+            // Create Neo
             Node thomas = graphDb.createNode();
             thomas.setProperty( "name", "Thomas Anderson" );
             thomas.setProperty( "age", 29 );
 
             // connect Neo/Thomas to the reference node
-            Node referenceNode = graphDb.getReferenceNode();
-            referenceNode.createRelationshipTo( thomas, RelTypes.NEO_NODE );
+            matrix.createRelationshipTo( thomas, RelTypes.NEO_NODE );
 
             Node trinity = graphDb.createNode();
             trinity.setProperty( "name", "Trinity" );
@@ -123,7 +128,7 @@ public class NewMatrix
      */
     private Node getNeoNode()
     {
-        return graphDb.getReferenceNode()
+        return graphDb.getNodeById( matrixNodeId )
                 .getSingleRelationship( RelTypes.NEO_NODE, Direction.OUTGOING )
                 .getEndNode();
     }
