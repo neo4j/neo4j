@@ -403,6 +403,12 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             return neoStore.incrementVersion();
         }
+        
+        @Override
+        public void setVersion( long version )
+        {
+            neoStore.setVersion( version );
+        }
 
         @Override
         public void flushAll()
