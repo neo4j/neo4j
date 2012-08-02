@@ -19,59 +19,33 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import collection.mutable.{HashSet => MutableHashSet}
-import org.neo4j.cypher.internal.mutation.{DeleteEntityAction, UpdateAction}
-import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService, NotInTransactionException}
+import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
 import org.neo4j.cypher.{ParameterWrongTypeException, InternalException}
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction]) extends PipeWithSource(source) {
-
-
   def createResults(state: QueryState) = {
-    val deletedNodes = MutableHashSet[Long]()
-    val deletedRelationships = MutableHashSet[Long]()
-
-    if (commands.size == 1) {
-      source.createResults(state).flatMap {
-        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships)
-      }
-    } else {
-      source.createResults(state).flatMap {
-        case ctx => executeMutationCommands(ctx, state, deletedNodes, deletedRelationships, ctx => if (ctx.size > 1) throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
-      }
+    source.createResults(state).flatMap {
+      case ctx => executeMutationCommands(ctx, state, commands.size == 1)
     }
   }
 
-  // TODO: Make it better
-  private def executeMutationCommands(ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long], f: Traversable[ExecutionContext] => Unit = x=>{}): Traversable[ExecutionContext] =
+  private def executeMutationCommands(ctx: ExecutionContext,
+                                      state: QueryState,
+                                      singleCommand: Boolean): Traversable[ExecutionContext] =
     try {
-      commands.foldLeft(Traversable(ctx))((context, cmd) => context.flatMap( c => exec(cmd, c, state, deletedNodes, deletedRelationships, f)))
+      commands.foldLeft(Traversable(ctx))((context, cmd) => context.flatMap(c => exec(cmd, c, state, singleCommand)))
     } catch {
       case e: NotInTransactionException => throw new InternalException("Expected to be in a transaction at this point", e)
     }
 
-  private def exec(cmd: UpdateAction, ctx: ExecutionContext, state: QueryState, deletedNodes: MutableHashSet[Long], deletedRelationships: MutableHashSet[Long], f: Traversable[ExecutionContext] => Unit): Traversable[ExecutionContext] = {
-    val result = cmd match {
-      case cmd@DeleteEntityAction(expression) => {
-        expression(ctx) match {
-          case n: Node => {
-            if (!deletedNodes.contains(n.getId)) {
-              deletedNodes.add(n.getId)
-              cmd.exec(ctx, state)
-            } else Stream(ctx)
-          }
-          case r: Relationship => {
-            if (!deletedRelationships.contains(r.getId)) {
-              deletedRelationships.add(r.getId)
-              cmd.exec(ctx, state)
-            } else Stream(ctx)
-          }
-          case _ => cmd.exec(ctx, state)
-        }
-      }
-      case cmd => cmd.exec(ctx, state)
-    }
-    f(result)
+  private def exec(cmd: UpdateAction,
+                   ctx: ExecutionContext,
+                   state: QueryState,
+                   singleCommand: Boolean): Traversable[ExecutionContext] = {
+    val result = cmd.exec(ctx, state)
+    if (result.size > 1 && !singleCommand)
+      throw new ParameterWrongTypeException("If you create multiple elements, you can only create one of each.")
     result
   }
 
