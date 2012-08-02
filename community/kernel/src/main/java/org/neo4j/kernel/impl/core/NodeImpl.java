@@ -38,6 +38,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -90,7 +91,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         return size;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -347,7 +348,16 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             if ( relationships == null )
             {
-                relChainPosition = nodeManager.getRelationshipChainPosition( this );
+                try
+                {
+                    relChainPosition = nodeManager.getRelationshipChainPosition( this );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    throw new NotFoundException( asProxy( nodeManager ) +
+                            " concurrently deleted while loading its relationships?", e );
+                }
+
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
@@ -386,7 +396,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         return result;
     }
 
-//    private Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships(
 //            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
     private Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
             NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
@@ -395,10 +404,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             return null;
         }
-//        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels =
-//            nodeManager.getMoreRelationships( this );
-        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels =
-                nodeManager.getMoreRelationships( this );
+        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
+
+        rels = loadMoreRelationshipsFromNodeManager(nodeManager);
+
         ArrayMap<String,RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
@@ -433,7 +442,6 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     boolean getMoreRelationships( NodeManager nodeManager )
     {
-//        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels;
         Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
@@ -445,7 +453,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 return false;
             }
-            rels = nodeManager.getMoreRelationships( this );
+            rels = loadMoreRelationshipsFromNodeManager(nodeManager);
             ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
@@ -477,6 +485,19 @@ public class NodeImpl extends ArrayBasedPrimitive
         return true;
     }
 
+    private Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long>
+        loadMoreRelationshipsFromNodeManager( NodeManager nodeManager )
+    {
+        try
+        {
+            return nodeManager.getMoreRelationships( this );
+        } catch(InvalidRecordException e)
+        {
+            throw new NotFoundException( "Unable to load one or more relationships from " + asProxy( nodeManager ) +
+                    ". This usually happens when relationships are deleted by someone else just as we are about to load them. Please try again.", e );
+        }
+    }
+
     private RelIdArray getRelIdArray( String type )
     {
         // Concurrency-wise it's ok even if the relationships variable
@@ -496,7 +517,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         // we don't do size update here, instead performed in lockRelaser 
         // when calling commitRelationshipMaps and in getMoreRelationships
-        
+
         // precondition: called under synchronization
 
         // make a local reference to the array to avoid multiple read barrier hits

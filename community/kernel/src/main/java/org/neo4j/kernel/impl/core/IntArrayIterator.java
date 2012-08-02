@@ -145,7 +145,7 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                     break;
                 }
             }
-         } while ( currentTypeIterator.hasNext() );
+        } while ( currentTypeIterator.hasNext() );
         // no next element found
         return null;
     }
