@@ -806,7 +806,6 @@ public class ZooClient extends AbstractZooKeeperManager
     public void shutdown()
     {
         watcher.shutdown();
-        msgLog.close();
         this.shutdown = true;
         shutdownSlaves();
         super.shutdown();
