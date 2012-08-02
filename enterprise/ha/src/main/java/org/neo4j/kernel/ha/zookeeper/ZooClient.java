@@ -310,20 +310,6 @@ public class ZooClient extends AbstractZooKeeperManager
 
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
-        setDataChangeWatcher( child, currentMasterId, true );
-    }
-
-    /**
-     * Writes into one of master-notify or master-rebound the value given. If skipOnSame
-     * is true then if the value there is the same as the argument nothing will be written.
-     * A watch is always set on the node.
-     * @param child The node to write to
-     * @param currentMasterId The value to write
-     * @param skipOnSame If true, then if the existing value is the same as currentMasterId nothing
-     *                   will be written.
-     */
-    protected void setDataChangeWatcher( String child, int currentMasterId, boolean skipOnSame )
-    {
         try
         {
             String root = getRoot();
@@ -335,7 +321,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
 
-                if ( skipOnSame && ByteBuffer.wrap( data ).getInt() == currentMasterId )
+                if ( ByteBuffer.wrap( data ).getInt() == currentMasterId )
                 {
                     msgLog.logMessage( child + " not set, is already " + currentMasterId );
                     return;
@@ -666,21 +652,6 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             Thread.interrupted();
             msgLog.logMessage( "Unable to set jxm connection info", e );
-        }
-    }
-
-    public int getCurrentMasterNotify()
-    {
-        String path = rootPath + "/" + MASTER_NOTIFY_CHILD;
-        byte[] data;
-        try
-        {
-            data = zooKeeper.getData( path, true, null );
-            return ByteBuffer.wrap( data ).getInt();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
@@ -1051,18 +1022,9 @@ public class ZooClient extends AbstractZooKeeperManager
                         {
                             sequenceNr = setup();
                             msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
-                            int previousMaster = getCurrentMasterNotify(); // used in check below
                             if ( sessionId != -1 )
                             {
                                 clusterReceiver.newMaster( new InformativeStackTrace( "Got SyncConnected event from ZK" ) );
-                            }
-                            if (getCurrentMasterNotify() == getMyMachineId() && previousMaster == getMyMachineId())
-                            {
-                                /*
-                                 * Apparently no one claimed the role of master while i was away.
-                                 * I'll ping everyone to make sure.
-                                 */
-                                setDataChangeWatcher( MASTER_REBOUND_CHILD, getMyMachineId(), false );
                             }
                             sessionId = newSessionId;
                         }
