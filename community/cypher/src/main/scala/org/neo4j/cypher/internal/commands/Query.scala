@@ -70,13 +70,13 @@ order  : %s
 slice  : %s
 next   : %s
 """.format(
-  start.mkString,
-  updatedCommands.mkString,
+  start.mkString(","),
+  updatedCommands.mkString(","),
   matching,
   namedPaths,
   where,
   aggregation,
-  returns.returnItems.mkString,
+  returns.returnItems.mkString(","),
   sort,
   slice,
   tail

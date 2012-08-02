@@ -47,8 +47,6 @@ case class AllNodes(columnName: String) extends StartItem(columnName)
 
 case class AllRelationships(columnName: String) extends StartItem(columnName)
 
-
-
 case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   extends StartItem(key)
   with Mutator
@@ -85,7 +83,10 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
 }
 
-case class CreateRelationshipStartItem(key: String, from: (Expression, Map[String, Expression]), to: (Expression, Map[String, Expression]), typ: String, props: Map[String, Expression])
+case class CreateRelationshipStartItem(key: String,
+                                       from: (Expression, Map[String, Expression]),
+                                       to: (Expression, Map[String, Expression]),
+                                       typ: String, props: Map[String, Expression])
   extends StartItem(key)
   with Mutator
   with UpdateAction

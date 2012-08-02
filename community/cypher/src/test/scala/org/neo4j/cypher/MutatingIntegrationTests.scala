@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
@@ -470,12 +470,17 @@ return distinct center""")
   }
 
   @Test
+  def create_with_parameters_is_not_ok_when_identifier_already_exists() {
+    intercept[CypherTypeException](parseAndExecute("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
+  }
+
+  @Test
   def failure_only_fails_inner_transaction() {
     val tx = graph.beginTx()
     try {
       parseAndExecute("start a=node({id}) set a.foo = 'bar' return a","id"->"0")
     } catch {
-      case _ => tx.failure()
+      case _: Throwable => tx.failure()
     }
     finally tx.finish()
   }

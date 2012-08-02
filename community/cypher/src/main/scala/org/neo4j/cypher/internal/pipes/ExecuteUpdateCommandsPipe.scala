@@ -21,9 +21,15 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
-import org.neo4j.cypher.{ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.{CypherTypeException, ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.internal.commands.{Expression, Entity, CreateRelationshipStartItem, CreateNodeStartItem}
+import collection.Map
 
-class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction]) extends PipeWithSource(source) {
+class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
+  extends PipeWithSource(source) {
+
+  assertNothingIsCreatedWhenItShouldNot()
+
   def createResults(state: QueryState) = {
     source.createResults(state).flatMap {
       case ctx => executeMutationCommands(ctx, state, commands.size == 1)
@@ -49,6 +55,30 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     result
   }
 
+
+  private def extractEntitiesWithProperties(action: UpdateAction): Seq[(String, Iterable[Any])] = action match {
+    case CreateNodeStartItem(key, props)                      => Seq((key, props))
+    case CreateRelationshipStartItem(key, from, to, _, props) => Seq((key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+    case _                                                    => Seq()
+  }
+
+
+  def extractIfEntity(from: (Expression, Map[String, Expression])): Option[(String, Map[String, Expression])] = {
+    from match {
+      case (Entity(key), props) => Some((key, props))
+      case _                    => None
+    }
+  }
+
+  private def assertNothingIsCreatedWhenItShouldNot() {
+    val entitiesAndProps: Seq[(String, Iterable[Any])] = commands.flatMap(cmd => extractEntitiesWithProperties(cmd))
+    val entitiesWithProps = entitiesAndProps.filter(_._2.nonEmpty)
+
+    entitiesWithProps.foreach {
+      case (key, props) => if (source.symbols.keys.contains(key))
+        throw new CypherTypeException("Can't create `%s` with properties here. It already exists in this context".format(key))
+    }
+  }
 
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
 

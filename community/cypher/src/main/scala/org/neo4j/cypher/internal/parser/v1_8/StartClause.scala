@@ -56,7 +56,7 @@ trait StartClause extends Base with Expressions with CreateUnique {
       }
 
     case ParsedRelation(name, props, ParsedEntity(a, startProps, True()), ParsedEntity(b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
-      val (from, to) = if (dir == Direction.OUTGOING)
+      val (from, to) = if (dir != Direction.INCOMING)
         (a, b)
       else
         (b, a)

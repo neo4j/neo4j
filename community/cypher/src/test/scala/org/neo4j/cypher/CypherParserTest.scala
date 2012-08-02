@@ -1882,8 +1882,8 @@ create a-[r:REL]->b
   @Test def full_path_in_create() {
     val secondQ = Query.
       start(
-        CreateRelationshipStartItem("r1", (Entity("a"),Map()), (Entity("  UNNAMED1"),Map()), "KNOWS", Map()),
-        CreateRelationshipStartItem("r2", (Entity("b"),Map()), (Entity("  UNNAMED1"),Map()), "LOVES", Map())).
+      CreateRelationshipStartItem("r1", (Entity("a"), Map()), (Entity("  UNNAMED1"), Map()), "KNOWS", Map()),
+      CreateRelationshipStartItem("r2", (Entity("  UNNAMED1"), Map()), (Entity("b"), Map()), "LOVES", Map())).
       returns()
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
@@ -1902,6 +1902,14 @@ create a-[r:REL]->b
       start(CreateRelationshipStartItem("r", (Entity("a"), Map()), (Entity("  UNNAMED1"), Map()), "KNOWS", Map())).
       namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
       returns(ReturnItem(Entity("p"), "p")))
+  }
+
+  @Test def undirected_relationship() {
+    testFrom_1_8(
+      "create (a {name:'A'})-[:KNOWS]-(b {name:'B'})",
+      Query.
+        start(CreateRelationshipStartItem("  UNNAMED1", (Entity("a"), Map("name" -> Literal("A"))), (Entity("b"), Map("name" -> Literal("B"))), "KNOWS", Map())).
+        returns())
   }
 
   @Test def relate_and_assign_to_path_identifier() {
