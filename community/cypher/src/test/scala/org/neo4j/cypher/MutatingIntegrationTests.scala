@@ -479,6 +479,19 @@ return distinct center""")
     }
     finally tx.finish()
   }
+
+  @Test
+  def create_two_rels_in_one_command_should_work() {
+    val result = parseAndExecute("create (a{name:'a'})-[:test]->b, a-[:test2]->c")
+
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 1)
+  }
+
+  @Test
+  def cant_set_properties_after_node_is_already_created() {
+    intercept[SyntaxException](parseAndExecute("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
+  }
+
 }
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,
