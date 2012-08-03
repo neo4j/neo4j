@@ -27,9 +27,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-public final class ListRepresentation extends Representation
+public class ListRepresentation extends Representation
 {
-    private final Iterable<? extends Representation> content;
+    protected final Iterable<? extends Representation> content;
 
     public ListRepresentation( final String type, final Iterable<? extends Representation> content )
     {

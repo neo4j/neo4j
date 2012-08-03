@@ -86,7 +86,7 @@ public class ObjectToRepresentationConverter
     public static ListRepresentation getListRepresentation( Iterable data )
     {
         final FirstItemIterable<Representation> results = convertValuesToRepresentations( data );
-        return new ListRepresentation( getType( results ), results );
+        return new ServerListRepresentation( getType( results ), results );
     }
 
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
@@ -98,15 +98,7 @@ public class ObjectToRepresentationConverter
         return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
             @Override
             protected Representation underlyingObjectToObject(Object value) {
-                if ( value instanceof Iterable )
-                {
-                    final FirstItemIterable<Representation> nested = convertValuesToRepresentations((Iterable) value);
-                    return new ListRepresentation( getType( nested ), nested);
-                }
-                else
-                {
-                    return getSingleRepresentation( value );
-                }
+               return convert(value);
             }
         });
     }

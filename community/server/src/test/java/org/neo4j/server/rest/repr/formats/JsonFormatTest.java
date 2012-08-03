@@ -22,8 +22,13 @@ package org.neo4j.server.rest.repr.formats;
 import static org.junit.Assert.assertEquals;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +37,9 @@ import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
+import org.neo4j.server.rest.repr.ServerListRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 public class JsonFormatTest
@@ -130,5 +138,29 @@ public class JsonFormatTest
         assertEquals(
                 JsonHelper.createJsonFrom( Collections.singletonMap( "nested",
                         Collections.singletonMap( "data", "expected data" ) ) ), entity );
+    }
+    
+    @Test
+    public void canFormatNestedMapsAndLists() throws Exception
+    {
+        String entity = json.format( new MappingRepresentation( "test" )
+        {
+            @Override
+            protected void serialize( MappingSerializer serializer )
+            {
+                ArrayList<Representation> maps = new ArrayList<Representation>();
+                maps.add(new MappingRepresentation("map") {
+					
+					@Override
+					protected void serialize(MappingSerializer serializer) {
+						serializer.putString( "foo", "bar" );
+						
+					}
+				});
+				serializer.putList("foo", new ServerListRepresentation(RepresentationType.MAP, maps ));
+            }
+        } );
+
+        Assert.assertEquals( "bar",((Map)((List)((Map)JsonHelper.jsonToMap(entity)).get("foo")).get(0)).get("foo") );
     }
 }
