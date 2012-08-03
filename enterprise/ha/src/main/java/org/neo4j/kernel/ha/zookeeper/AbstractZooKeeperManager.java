@@ -175,6 +175,7 @@ public abstract class AbstractZooKeeperManager
     private Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, WaitMode mode, boolean allowChange )
     {
         ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait, mode ).values() );
+        masterElectionHappened( cachedMaster, master );
         Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
@@ -188,6 +189,11 @@ public abstract class AbstractZooKeeperManager
             cachedMaster = Pair.<Master, Machine>of( masterClient, (Machine) master );
         }
         return cachedMaster;
+    }
+
+    protected void masterElectionHappened( Pair<Master, Machine> previousMaster, Machine newMaster )
+    {
+        // default no op
     }
 
     protected StoreId getStoreId()
