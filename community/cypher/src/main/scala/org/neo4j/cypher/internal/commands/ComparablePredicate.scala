@@ -40,12 +40,11 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
 
   def sign: String
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString = left.toString() + " " + sign + " " + right.toString()
-  def exists(f: (Expression) => Boolean) = left.exists(f) || right.exists(f)
+  override def toString() = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
   def filter(f: (Expression) => Boolean): Seq[Expression] = left.filter(f) ++ right.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     left.assertTypes(symbols)
     right.assertTypes(symbols)
   }
@@ -56,13 +55,12 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
   def isMatch(m: Map[String, Any]): Boolean = a(m) == b(m)
   def atoms = Seq(this)
-  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
-  override def toString = a.toString() + " == " + b.toString()
+  override def toString() = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
   def filter(f: (Expression) => Boolean): Seq[Expression] = a.filter(f) ++ b.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.assertTypes(symbols)
     b.assertTypes(symbols)
   }
