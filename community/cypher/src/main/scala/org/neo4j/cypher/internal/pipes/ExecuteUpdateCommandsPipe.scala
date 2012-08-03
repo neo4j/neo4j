@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, NamedExpectation, UpdateAction}
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
-import org.neo4j.cypher.{CypherTypeException, ParameterWrongTypeException, InternalException}
-import org.neo4j.cypher.internal.commands.{Expression, Entity, CreateRelationshipStartItem, CreateNodeStartItem}
+import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.internal.commands.{Entity, Expression, CreateRelationshipStartItem, CreateNodeStartItem}
 import collection.Map
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
@@ -56,28 +56,28 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   }
 
 
-  private def extractEntitiesWithProperties(action: UpdateAction): Seq[(String, Iterable[Any])] = action match {
-    case CreateNodeStartItem(key, props)                      => Seq((key, props))
-    case CreateRelationshipStartItem(key, from, to, _, props) => Seq((key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+  private def extractEntitiesWithProperties(action: UpdateAction): Seq[NamedExpectation] = action match {
+    case CreateNodeStartItem(key, props)                      => Seq(NamedExpectation(key, props))
+    case CreateRelationshipStartItem(key, from, to, _, props) => Seq(NamedExpectation(key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+    case CreateUniqueAction(links@_*)                         => links.flatMap(l => Seq(l.start, l.end, l.rel))
     case _                                                    => Seq()
   }
 
 
-  def extractIfEntity(from: (Expression, Map[String, Expression])): Option[(String, Map[String, Expression])] = {
+  def extractIfEntity(from: (Expression, Map[String, Expression])): Option[NamedExpectation] = {
     from match {
-      case (Entity(key), props) => Some((key, props))
+      case (Entity(key), props) => Some(NamedExpectation(key, props))
       case _                    => None
     }
   }
 
   private def assertNothingIsCreatedWhenItShouldNot() {
-    val entitiesAndProps: Seq[(String, Iterable[Any])] = commands.flatMap(cmd => extractEntitiesWithProperties(cmd))
-    val entitiesWithProps = entitiesAndProps.filter(_._2.nonEmpty)
+    val entitiesAndProps: Seq[NamedExpectation] = commands.flatMap(cmd => extractEntitiesWithProperties(cmd))
+    val entitiesWithProps = entitiesAndProps.filter(_.properties.nonEmpty)
 
-    entitiesWithProps.foreach {
-      case (key, props) => if (source.symbols.keys.contains(key))
-        throw new CypherTypeException("Can't create `%s` with properties here. It already exists in this context".format(key))
-    }
+    entitiesWithProps.foreach(l => if (source.symbols.keys.contains(l.name))
+      throw new SyntaxException("Can't create `%s` with properties here. It already exists in this context".format(l.name))
+    )
   }
 
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"

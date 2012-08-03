@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
@@ -471,7 +471,7 @@ return distinct center""")
 
   @Test
   def create_with_parameters_is_not_ok_when_identifier_already_exists() {
-    intercept[CypherTypeException](parseAndExecute("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
+    intercept[SyntaxException](parseAndExecute("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
   }
 
   @Test
@@ -497,6 +497,10 @@ return distinct center""")
     intercept[SyntaxException](parseAndExecute("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
   }
 
+  @Test
+  def cant_set_properties_after_node_is_already_created2() {
+    intercept[SyntaxException](parseAndExecute("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
+  }
 }
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,

@@ -29,7 +29,6 @@ import collection.Map
 import collection.mutable
 import org.neo4j.cypher.SyntaxException
 
-
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
@@ -66,13 +65,14 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
       case CreateNodeStartItem(key, props)
         if createdNodes.contains(key) && props.nonEmpty              =>
         throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
+
       case CreateNodeStartItem(key, _) if createdNodes.contains(key) => None
+
       case x@CreateNodeStartItem(key, _)                             =>
         createdNodes += key
         Some(x)
     }
   }
-
 
   private def alsoCreateNode(e: (Expression, Map[String,Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNodeStartItem] = e._1 match {
     case Entity(name) =>
