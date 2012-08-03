@@ -38,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -288,6 +289,7 @@ public class UdcExtensionImplTest
     }
 
     @Test
+    @Ignore
     public void shouldIncludeVersionInConfig() throws Exception
     {
         setupServer();
