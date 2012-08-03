@@ -18,7 +18,7 @@
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j-cypher</artifactId>
     <packaging>jar</packaging>
-    <version>1.8-SNAPSHOT</version>
+    <version>1.8.M07ENG1</version>
     <name>Neo4j - Cypher</name>
     <description>Neo4j query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -62,35 +62,35 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-lucene-index</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-matching</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-algo</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.8.M07ENG1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
