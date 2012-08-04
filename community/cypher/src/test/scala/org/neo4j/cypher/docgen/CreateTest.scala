@@ -52,7 +52,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (a {name : 'Andres'}) return a",
-      returns = "The newly created node is returned. This query uses the alternative syntax for single node creation",
+      returns = "The newly created node is returned. This query uses the alternative syntax for single node creation.",
       assertions = (p) => assert(p.size === 1)
     )
   }
@@ -73,8 +73,8 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:REL]->b return r",
-      returns = "The created relationship is returned.",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:RELTYPE]->b return r",
+      returns = "The created relationship is returned by the query.",
       assertions = (p) => assert(p.size === 1)
     )
   }
@@ -121,7 +121,7 @@ for this to work.""",
     testQuery(
       title = "Create a full path",
       text =
-        """When you use CREATE and a pattern, all parts of the pattern that are not already in scope at this time
+        """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
       returns = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
@@ -142,10 +142,10 @@ will be created. """,
 
     testQuery(
       title = "Create a relationship and set properties",
-      text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes." +
+      text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
-      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:REL {name : a.name + '<->' + b.name }]->b return r",
-      returns = "The newly created relationship is returned.",
+      queryText = "start a=node(" + aId + "), b=node(" + bId + ") create a-[r:RELTYPE {name : a.name + '<->' + b.name }]->b return r",
+      returns = "The newly created relationship is returned by the example query.",
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 1)

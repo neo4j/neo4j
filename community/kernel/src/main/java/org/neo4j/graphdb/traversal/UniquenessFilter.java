@@ -19,44 +19,27 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.Path;
-
-/**
- * Filter for {@link Path}s to make sure that a specific uniqueness contract
- * is fulfilled. Only paths that fulfill the uniqueness contract will be let
- * through. For example a uniqueness contract that for any given {@link Path}
- * "there cannot be any node occurring more than once", or that "the end node
- * being visited right now must not have been visited before".
- */
 public interface UniquenessFilter
 {
     /**
      * The check whether or not to expand the first branch is a separate
      * method because it may contain checks which would be unnecessary for
      * all other checks. So it's purely an optimization.
-     * 
+     *
      * @param branch the first branch to check, i.e. the branch representing
-     * the start node in the traversal.
+     *               the start node in the traversal.
      * @return whether or not {@code branch} is unique, and hence can be
-     * visited in this traversal.
+     *         visited in this traversal.
      */
     boolean checkFirst( TraversalBranch branch );
-    
+
     /**
      * Checks whether or not {@code branch} is unique, and hence can be
      * visited in this traversal.
+     *
      * @param branch the {@link TraversalBranch} to check for uniqueness.
      * @return whether or not {@code branch} is unique, and hence can be
-     * visited in this traversal.
+     *         visited in this traversal.
      */
     boolean check( TraversalBranch branch );
-    
-    /**
-     * Checks {@link Path} alone to see if it follows the uniqueness contract
-     * provided by this {@link UniquenessFilter}.
-     * @param path the {@link Path} to examine.
-     * @return {@code true} if the {@code path} fulfills the uniqueness contract,
-     * otherwise {@code false}.
-     */
-    boolean checkFull( Path path );
 }

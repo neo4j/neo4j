@@ -39,23 +39,23 @@ class WithTest extends DocumentingTestBase {
   @Test def filter_on_aggregate_functions_results() {
     testQuery(
       title = "Filter on aggregate function results",
-      text = "Aggregated results have to pass through a WITH clause to be able to filter on.",
+      text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
       queryText = """start david=node(%D%) match david--otherPerson-->() with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
-      returns = """The person connected to David with the at least more than one outgoing relationship.""",
+      returns = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList))
   }
 
   @Test def alternative_way_to_write_with() {
     testQuery(
-      title = "Alternative syntax of with",
+      title = "Alternative syntax of WITH",
       text = "If you prefer a more visual way of writing your query, you can use " +
         "equal-signs as delimiters before and after the column list. Use at least three " +
-        "before the column list, and at least after.",
+        "before the column list, and at least three after.",
       queryText = """
 start david=node(%D%) match david--otherPerson-->()
 ========== otherPerson, count(*) as foaf ==========
 set otherPerson.connection_count = foaf """,
-      returns = """The person connected to David with the at least more than one outgoing relationship.""",
+      returns = """For persons connected to David, the `connection_count` property is set to their number of outgoing relationships.""",
       assertions = (p) => assertEquals(node("A").getProperty("connection_count"), 2L))
   }
 }

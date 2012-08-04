@@ -31,6 +31,72 @@ import java.io.PrintStream;
 public interface ProgressIndicator
 {
     /**
+     * A factory interface for creating {@link ProgressIndicator}s.
+     *
+     * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
+     */
+    public interface Factory
+    {
+        Factory NONE = new Factory()
+        {
+            @Override
+            public ProgressIndicator newSimpleProgressIndicator( long total )
+            {
+                return ProgressIndicator.NONE;
+            }
+
+            @Override
+            public ProgressIndicator newMultiProgressIndicator( long total )
+            {
+                return ProgressIndicator.NONE;
+            }
+        };
+
+        ProgressIndicator newSimpleProgressIndicator( long total );
+
+        ProgressIndicator newMultiProgressIndicator( long total );
+    }
+
+    /**
+     * A factory implementation that creates progress indicators that log progress textually.
+     *
+     * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
+     */
+    public final class Textual implements Factory
+    {
+        private final PrintStream out;
+
+        public Textual( PrintStream out )
+        {
+            this.out = out;
+        }
+
+        @Override
+        public SimpleProgress newSimpleProgressIndicator( long total )
+        {
+            return SimpleProgress.textual( out, total );
+        }
+
+        @Override
+        public MultiProgress newMultiProgressIndicator( long total )
+        {
+            return MultiProgress.textual( out, total );
+        }
+    }
+
+    /**
+     * Set the name of the current phase of the progress.
+     * This is an optional method that users of progress indication can use to notify the progress indicator
+     * of the name of the current phase, if the progress indicator supports it.
+     *
+     * A progress indicator can choose not to support this feature by implementing this method as a no-op.
+     * A progress indicator must support clients that don't invoke this method.
+     *
+     * @param phase the name of the current phase.
+     */
+    void phase( String phase );
+
+    /**
      * Update the current progress count for the current source.
      * 
      * @param incremental whether this is an incremental update (
@@ -42,10 +108,21 @@ public interface ProgressIndicator
 
     /**
      * Mark the process as done with the current source.
-     * 
+     *
      * @param totalProgress the total progress reached by the source.
      */
     void done( long totalProgress );
+
+    /**
+     * Signal that the entire progress has completed.
+     *
+     * This method is generally only used by processes that process multiple phases,
+     * where the {@link #done(long)} method is used to indicate the completion of a
+     * single phase, rather than the completion of the entire process.
+     *
+     * To not invoke this method from a process that only processes a single phase is perfectly acceptable.
+     */
+    void done();
 
     /**
      * A {@link ProgressIndicator} that can report the progress for a single
@@ -99,6 +176,12 @@ public interface ProgressIndicator
         }
 
         @Override
+        public void phase( String phase )
+        {
+            // default: do nothing
+        }
+
+        @Override
         public void update( boolean incremental, long value )
         {
             int permille = (int) ( ( currentProgress( incremental, value ) * 1000 ) / total );
@@ -111,7 +194,7 @@ public interface ProgressIndicator
             done();
         }
 
-        void done()
+        public void done()
         {
             if ( lastPermille < 1000 ) progress( lastPermille = 1000 );
         }
@@ -233,6 +316,12 @@ public interface ProgressIndicator
         }
 
         @Override
+        public void phase( String phase )
+        {
+            // default: do nothing
+        }
+
+        @Override
         public void update( boolean incremental, long value )
         {
             position += incremental ? updateIncremental( value ) : updateAbsolute( value );
@@ -269,5 +358,71 @@ public interface ProgressIndicator
             if ( lastStep > 0 ) out.println();
             out.println( "[" + totalProgress + " " + doneMessage + "]" );
         }
+
+        @Override
+        public void done()
+        {
+            done( lastAbsolutePosition );
+        }
     }
+
+    public abstract class Decorator implements ProgressIndicator
+    {
+        private final ProgressIndicator actual;
+
+        public Decorator( ProgressIndicator actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public void phase( String phase )
+        {
+            actual.phase( phase );
+        }
+
+        @Override
+        public void update( boolean incremental, long value )
+        {
+            actual.update( incremental, value );
+        }
+
+        @Override
+        public void done( long totalProgress )
+        {
+            actual.done( totalProgress );
+        }
+
+        @Override
+        public void done()
+        {
+            actual.done();
+        }
+    }
+
+    /**
+     * A null object implementation of the ProgressIndicator interface.
+     */
+    ProgressIndicator NONE = new ProgressIndicator()
+    {
+        @Override
+        public void phase( String phase )
+        {
+        }
+
+        @Override
+        public void update( boolean incremental, long value )
+        {
+        }
+
+        @Override
+        public void done( long totalProgress )
+        {
+        }
+
+        @Override
+        public void done()
+        {
+        }
+    };
 }

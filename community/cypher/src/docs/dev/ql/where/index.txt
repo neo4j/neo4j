@@ -3,7 +3,7 @@ Where
 =====
 
 If you need filtering apart from the pattern of the data that you are looking
-for, you can add clauses in the where part of the query.
+for, you can add clauses in the `WHERE` part of the query.
 
 include::cypher-where-graph.txt[]
 
@@ -18,4 +18,6 @@ include::default-true-if-property-is-missing.txt[]
 include::default-false-if-property-is-missing.txt[]
 include::filter-on-null-values.txt[]
 include::filter-on-patterns.txt[]
+include::filter-on-patterns-using-not.txt[]
 include::in-operator.txt[]
+

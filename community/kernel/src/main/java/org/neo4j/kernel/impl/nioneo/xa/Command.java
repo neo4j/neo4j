@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.logging.Logger;
 
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -287,6 +288,8 @@ public abstract class Command extends XaCommand
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
     private static final byte NEOSTORE_COMMAND = (byte) 6;
 
+    abstract void removeFromCache( LockReleaser lockReleaser );
+
     static class NodeCommand extends Command
     {
         private final NodeRecord record;
@@ -303,6 +306,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitNode( record );
+        }
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            lockReleaser.removeNodeFromCache( getKey() );
         }
 
         @Override
@@ -418,6 +427,17 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitRelationship( record );
+        }
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            lockReleaser.removeRelationshipFromCache( getKey() );
+            if ( this.getFirstNode() != -1 || this.getSecondNode() != -1 )
+            {
+                lockReleaser.removeNodeFromCache( this.getFirstNode() );
+                lockReleaser.removeNodeFromCache( this.getSecondNode() );
+            }
         }
 
         @Override
@@ -585,7 +605,13 @@ public abstract class Command extends XaCommand
         {
             visitor.visitNeoStore( record );
         }
-        
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            // no-op
+        }
+
         @Override
         public String toString()
         {
@@ -630,6 +656,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitPropertyIndex( record );
+        }
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            // no-op
         }
 
         @Override
@@ -757,6 +789,21 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitProperty( record );
+        }
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            long nodeId = this.getNodeId();
+            long relId = this.getRelId();
+            if ( nodeId != -1 )
+            {
+                lockReleaser.removeNodeFromCache( nodeId );
+            }
+            else if ( relId != -1 )
+            {
+                lockReleaser.removeRelationshipFromCache( relId );
+            }
         }
 
         @Override
@@ -968,6 +1015,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitRelationshipType( record );
+        }
+
+        @Override
+        void removeFromCache( LockReleaser lockReleaser )
+        {
+            // no-op
         }
 
         @Override

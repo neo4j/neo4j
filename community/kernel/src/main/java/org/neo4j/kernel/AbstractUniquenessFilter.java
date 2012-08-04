@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.traversal.BidirectionalUniquenessFilter;
 import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.UniquenessFilter;
 
-abstract class AbstractUniquenessFilter implements UniquenessFilter
+abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter
 {
     final PrimitiveTypeFetcher type;
 

@@ -38,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -295,7 +296,7 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get(VERSION);
-        assertTrue(version.matches("\\d.\\d(\\.M0\\d|-SNAPSHOT)?"));
+        assertTrue(version.matches("\\d\\.\\d(\\.|\\-).*?"));
 
         destroy(graphdb);
     }

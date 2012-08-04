@@ -26,7 +26,7 @@ Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact 
 For initial import of data using indexes, see <<indexing-batchinsert>>.
 
 .Transactions
-NOTE: All modifying index operations must be performed inside a transaction, as with any mutating operation in Neo4j.
+NOTE: All modifying index operations must be performed inside a transaction, as with any modifying operation in Neo4j.
 
 
 [[indexing-create]]
@@ -133,7 +133,7 @@ Remember that a node or relationship can be associated with any number of key-va
 This means that you can index a node or relationship with many key-value pairs that have the same key.
 In the case where a property value changes and you'd like to update the index, it's not enough to just index the new value -- you'll have to remove the old value as well.
 
-Here's a code example for that demonstrates how it's done:
+Here's a code example that demonstrates how it's done:
 
 [snippet,java]
 ----
@@ -182,7 +182,7 @@ source=examples/ImdbExampleTest.java
 tag=getRelationships
 ----
 
-IMPORTANT: In you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
+IMPORTANT: In case you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
 
 [[indexing-search-query]]
 === Query ===

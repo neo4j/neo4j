@@ -423,12 +423,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         if ( !isRecovered() && !prepared )
         {
-            throw new XAException( "Cannot commit non prepared transaction["
-                + getIdentifier() + "]" );
+            throw new XAException( "Cannot commit non prepared transaction[" + getIdentifier() + "]" );
         }
         if ( isRecovered() )
         {
-            commitRecovered();
+            applyCommit( true );
             return;
         }
         if ( !isRecovered() && getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
@@ -436,6 +435,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new RuntimeException( "Tx id: " + getCommitTxId() +
                     " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
         }
+        applyCommit( false );
+    }
+
+    private void applyCommit( boolean isRecovered )
+    {
         try
         {
             committed = true;
@@ -447,6 +451,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 for ( Command.RelationshipTypeCommand command : relTypeCommands )
                 {
                     command.execute();
+                    if ( isRecovered )
+                    {
+                        addRelationshipType( (int) command.getKey() );
+                    }
                 }
             }
             // property keys
@@ -456,6 +464,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 for ( Command.PropertyIndexCommand command : propIndexCommands )
                 {
                     command.execute();
+                    if ( isRecovered )
+                    {
+                        addPropertyIndexCommand( (int) command.getKey() );
+                    }
                 }
             }
 
@@ -463,13 +475,45 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             java.util.Collections.sort( nodeCommands, sorter );
             java.util.Collections.sort( relCommands, sorter );
             java.util.Collections.sort( propCommands, sorter );
-            executeCreated( propCommands, relCommands, nodeCommands );
-            executeModified( propCommands, relCommands, nodeCommands );
-            if ( neoStoreCommand != null ) neoStoreCommand.execute();
-            executeDeleted( propCommands, relCommands, nodeCommands );
-            updateFirstRelationships();
-            lockReleaser.commitCows(); // updates the cached primitives
-            neoStore.setLastCommittedTx( getCommitTxId() );
+            executeCreated( isRecovered, propCommands, relCommands, nodeCommands );
+            executeModified( isRecovered, propCommands, relCommands, nodeCommands );
+            if ( isRecovered )
+            {
+                neoStore.setRecoveredStatus( true );
+            }
+            try
+            {
+                if ( neoStoreCommand != null )
+                {
+                    neoStoreCommand.execute();
+                    if ( isRecovered )
+                    {
+                        removeGraphPropertiesFromCache();
+                    }
+                }
+                if ( isRecovered )
+                {
+                    neoStore.setLastCommittedTx( getCommitTxId() );
+                }
+            }
+            finally
+            {
+                if ( isRecovered )
+                {
+                    neoStore.setRecoveredStatus( false );
+                }
+            }
+            executeDeleted( isRecovered, propCommands, relCommands, nodeCommands );
+            if ( isRecovered )
+            {
+                neoStore.updateIdGenerators();
+            }
+            else
+            {
+                updateFirstRelationships();
+                lockReleaser.commitCows(); // updates the cached primitives
+                neoStore.setLastCommittedTx( getCommitTxId() );
+            }
         }
         finally
         {
@@ -490,114 +534,48 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             lockReleaser.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
     }
 
-    private static void executeCreated(
-            ArrayList<? extends Command>... commands )
+    private void executeCreated( boolean removeFromCache, List<? extends Command>... commands )
     {
-        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
             if ( command.isCreated() && !command.isDeleted() )
             {
                 command.execute();
+                if ( removeFromCache )
+                {
+                    command.removeFromCache( lockReleaser );
+                }
             }
         }
     }
 
-    private static void executeModified(
-            ArrayList<? extends Command>... commands )
+    private void executeModified( boolean removeFromCache, List<? extends Command>... commands )
     {
-        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
             if ( !command.isCreated() && !command.isDeleted() )
             {
                 command.execute();
+                if ( removeFromCache )
+                {
+                    command.removeFromCache( lockReleaser );
+                }
             }
         }
     }
 
-    private static void executeDeleted(
-            ArrayList<? extends Command>... commands )
+    private void executeDeleted( boolean removeFromCache, List<? extends Command>... commands )
     {
-        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
             if ( command.isDeleted() )
             {
                 command.execute();
-            }
-        }
-    }
-
-    private void commitRecovered()
-    {
-        try
-        {
-            committed = true;
-            CommandSorter sorter = new CommandSorter();
-            // property index
-            if ( propIndexCommands != null )
-            {
-                java.util.Collections.sort( propIndexCommands, sorter );
-                for ( Command.PropertyIndexCommand command : propIndexCommands )
+                if ( removeFromCache )
                 {
-                    command.execute();
-                    addPropertyIndexCommand( (int) command.getKey() );
+                    command.removeFromCache( lockReleaser );
                 }
             }
-            // properties
-            java.util.Collections.sort( propCommands, sorter );
-            for ( Command.PropertyCommand command : propCommands )
-            {
-                command.execute();
-                removePropertyFromCache( command );
-            }
-            // reltypes
-            if ( relTypeCommands != null )
-            {
-                java.util.Collections.sort( relTypeCommands, sorter );
-                for ( Command.RelationshipTypeCommand command : relTypeCommands )
-                {
-                    command.execute();
-                    addRelationshipType( (int) command.getKey() );
-                }
-            }
-            // relationships
-            java.util.Collections.sort( relCommands, sorter );
-            for ( Command.RelationshipCommand command : relCommands )
-            {
-                command.execute();
-                removeRelationshipFromCache( command.getKey() );
-                // if any of them are -1 both should be so we get an exception if that does not hold true
-                if ( command.getFirstNode() != -1 || command.getSecondNode() != -1 ) 
-                {
-                    removeNodeFromCache( command.getFirstNode() );
-                    removeNodeFromCache( command.getSecondNode() );
-                }
-            }
-            // nodes
-            java.util.Collections.sort( nodeCommands, sorter );
-            for ( Command.NodeCommand command : nodeCommands )
-            {
-                command.execute();
-                removeNodeFromCache( command.getKey() );
-            }
-            neoStore.setRecoveredStatus( true );
-            try
-            {
-                if ( neoStoreCommand != null )
-                {
-                    neoStoreCommand.execute();
-                    removeGraphPropertiesFromCache();
-                }
-                neoStore.setLastCommittedTx( getCommitTxId() );
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( false );
-            }
-            neoStore.updateIdGenerators( );
-        }
-        finally
-        {
-            clear();
         }
     }
 

@@ -17,24 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.docgen
+package org.neo4j.graphdb.traversal;
 
-import org.neo4j.graphdb.Node
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.neo4j.graphdb.Path;
 
-class LimitTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
-
-  def section: String = "Limit"
-
-  @Test def returnFirstThree() {
-    testQuery(
-      title = "Return first part",
-      text = "To return a subset of the result, starting from the top, use this syntax:",
-      queryText = "start n=node(%A%, %B%, %C%, %D%, %E%) return n limit 3",
-      returns = "The top three items are returned by the example query.",
-      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
-  }
+public interface BidirectionalUniquenessFilter extends UniquenessFilter {
+    /**
+     * Checks {@link Path} alone to see if it follows the uniqueness contract
+     * provided by this {@link UniquenessFilter}.
+     *
+     * @param path the {@link Path} to examine.
+     * @return {@code true} if the {@code path} fulfills the uniqueness contract,
+     *         otherwise {@code false}.
+     */
+    boolean checkFull(Path path);
 }
-

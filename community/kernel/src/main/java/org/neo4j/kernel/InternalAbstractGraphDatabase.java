@@ -1084,12 +1084,11 @@ public abstract class InternalAbstractGraphDatabase
 
 	protected class DefaultKernelData extends KernelData implements Lifecycle
     {
-        private final Config config;
         private final GraphDatabaseAPI graphDb;
 
         public DefaultKernelData(Config config, GraphDatabaseAPI graphDb)
         {
-            this.config = config;
+            super( config );
             this.graphDb = graphDb;
         }
 
@@ -1097,18 +1096,6 @@ public abstract class InternalAbstractGraphDatabase
         public Version version()
         {
             return Version.getKernel();
-        }
-
-        @Override
-        public Config getConfig()
-        {
-            return config;
-        }
-
-        @Override
-        public Map<String, String> getConfigParams()
-        {
-            return config.getParams();
         }
 
         @Override

@@ -35,9 +35,9 @@ class SetTest extends DocumentingTestBase {
   @Test def set_property_on_node() {
     testQuery(
       title = "Set a property",
-      text = "To set a property on a node or relationship, use +SET+",
+      text = "To set a property on a node or relationship, use +SET+.",
       queryText = "start n = node(%Andres%) set n.surname = 'Taylor' return n",
-      returns = "The newly changes node is returned",
+      returns = "The newly changed node is returned by the query.",
       assertions = (p) => assert(node("Andres").getProperty("surname") === "Taylor")
     )
   }
@@ -48,7 +48,7 @@ class SetTest extends DocumentingTestBase {
       text = """Normally you remove a property by using delete, but it's sometimes handy to do
 it using the +SET+ command. One example is if the property comes from a parameter.""",
       queryText = "start n = node(%Andres%) set n.name = null return n",
-      returns = "The node is returned, and the name property is now missing.",
+      returns = "The node is returned by the query, and the name property is now missing.",
       assertions = (p) => assertFalse(node("Andres").hasProperty("name"))
     )
   }

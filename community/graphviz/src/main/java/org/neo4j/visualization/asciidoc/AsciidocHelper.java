@@ -169,9 +169,9 @@ public class AsciidocHelper
 
     public static String createCypherSnippet( final String query )
     {
-        String[] keywordsToBreakOn = new String[] {"start", "create", "set", "delete", "foreach",
+        String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
         "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-        "desc", "descending", "unique"};
+        "desc", "descending", "create"};
         return createLanguageSnippet( query, "cypher", keywordsToBreakOn );
     }
 

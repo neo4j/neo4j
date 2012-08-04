@@ -76,7 +76,7 @@ class StartTest extends DocumentingTestBase {
       title = "Node by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `node:index-name(key = \"value\")`. In this example, there exists a node index named `nodes`.",
       queryText = """start n=node:nodes(name = "A") return n""",
-      returns = """The query returns the node indexed with the name "A".""",
+      returns = """The query returns the node indexed with the name "+A+".""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
@@ -96,7 +96,7 @@ class StartTest extends DocumentingTestBase {
       title = "Relationship by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `relationship:index-name(key = \"value\")`.",
       queryText = """start r=relationship:rels(name = "Andrés") return r""",
-      returns = """The relationship indexed with the +name+ property set to "Andrés" is returned by the query.""",
+      returns = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
       (p) => assertEquals(List(Map("r" -> rel(0))), p.toList))
   }
 
@@ -116,7 +116,7 @@ class StartTest extends DocumentingTestBase {
       title = "Multiple starting points",
       text = "Sometimes you want to bind multiple starting points. Just list them separated by commas.",
       queryText = """start a=node(%A%), b=node(%B%) return a,b""",
-      returns = """Both the +A+ and the +B+ nodes are returned.""",
+      returns = """Both the nodes +A+ and the +B+  are returned.""",
       p => assertEquals(List(Map("a"->node("A"), "b"->node("B"))), p.toList))
   }
 }

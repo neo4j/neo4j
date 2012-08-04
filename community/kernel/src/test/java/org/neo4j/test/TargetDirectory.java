@@ -32,8 +32,21 @@ public class TargetDirectory
 {
     public class TestDirectory implements TestRule
     {
+        private final boolean clean;
         private File subdir = null;
-        
+
+        @Deprecated
+        public TestDirectory()
+        {
+            this( false );
+        }
+
+        private TestDirectory( boolean clean )
+        {
+
+            this.clean = clean;
+        }
+
         public File directory()
         {
             if ( subdir == null ) throw new IllegalStateException( "Not initialized" );
@@ -43,7 +56,7 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            subdir = TargetDirectory.this.directory( description.getMethodName() );
+            subdir = TargetDirectory.this.directory( description.getMethodName(), clean );
             return new Statement()
             {
                 @Override
@@ -126,7 +139,12 @@ public class TargetDirectory
 
     public TestDirectory testDirectory()
     {
-        return new TestDirectory();
+        return new TestDirectory( false );
+    }
+
+    public TestDirectory cleanTestDirectory()
+    {
+        return new TestDirectory( true );
     }
 
     public static TargetDirectory forTest( Class<?> owningTest )

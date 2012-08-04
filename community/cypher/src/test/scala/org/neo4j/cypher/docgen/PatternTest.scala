@@ -62,13 +62,13 @@ graph nodes or relationships. All parts of the pattern must be directly or indir
 where parts of the pattern are not reachable from any starting point will be rejected.
 
 [options="header", cols=">s,^,^,^,^,^", width="100%"]
-      |===================
-      |Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
-      |Match|Yes|Yes|Yes|Yes|-
-      |Create|-|-|-|Yes|Yes
-      |Create Unique|-|-|-|Yes|Yes
-      |Expressions|-|Yes|Yes|-|-
-      |===================
+|===================
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
+|Match|Yes|Yes|Yes|Yes|-
+|Create|-|-|-|Yes|Yes
+|Create Unique|-|-|-|Yes|Yes
+|Expressions|-|Yes|Yes|-|-
+|===================
 
 == Patterns for related nodes ==
 
@@ -137,6 +137,7 @@ Also, named paths that contain optional parts are also optional -- if any part o
 `null`, the whole path is `null`.
 
 In the following examples, `b` and `p` are all optional and can contain `null`:
+
 ###no-results
 START a=node(%A%)
 MATCH p = a-[?]->b
@@ -183,7 +184,7 @@ START me=node(%F%)
 MATCH me-[:KNOWS*1..2]-remote_friend
 RETURN remote_friend###
 
-This query starts from one node, and follows KNOWS relationships two or three steps out, and then stops.
+This query starts from one node, and follows `KNOWS` relationships two or three steps out, and then stops.
 
 == Assigning to path identifiers ==
 

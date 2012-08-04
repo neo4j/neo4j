@@ -115,6 +115,11 @@ public class StoreAccess
         return params;
     }
 
+    public NeoStore getRawNeoStore()
+    {
+        return neoStore;
+    }
+
     public RecordStore<NodeRecord> getNodeStore()
     {
         return nodeStore;
