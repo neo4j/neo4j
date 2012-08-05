@@ -21,7 +21,7 @@
 	<groupId>org.neo4j.drivers</groupId>
 	<artifactId>neo4j-python-embedded</artifactId>
 
-	<version>1.8.M07ENG1</version>
+	<version>1.8-SNAPSHOT</version>
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
 	<description>
@@ -44,7 +44,7 @@
 		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
 		<build.number>0</build.number>
 
-		<neo4j.version>1.8.M07ENG1</neo4j.version>
+		<neo4j.version>1.8-SNAPSHOT</neo4j.version>
 		<gremlin.version>1.2</gremlin.version>
 		<docs.url>http://docs.neo4j.org/chunked/${project.version}/python-embedded.html</docs.url>
 	</properties>
