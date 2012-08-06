@@ -379,7 +379,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return createTransaction( identifier, this.getLogicalLog() );
         }
 
-        @SuppressWarnings( "unchecked" )
         @Override
         public void flushAll()
         {
@@ -394,6 +393,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
                 }
             }
+            providerStore.flush();
         }
 
         @Override
@@ -406,6 +406,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
         public long getAndSetNewVersion()
         {
             return providerStore.incrementVersion();
+        }
+        
+        @Override
+        public void setVersion( long version )
+        {
+            providerStore.setVersion( version );
         }
 
         @Override

@@ -208,7 +208,13 @@ public class AbstractSubProcessTestBase
     protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
             throws IOException
     {
-        return test.target.directory( "graphdb." + instance, true );
+        return getStoreDir( test, instance, true );
+    }
+    
+    protected static File getStoreDir( AbstractSubProcessTestBase test, int instance, boolean clean )
+            throws IOException
+    {
+        return test.target.directory( "graphdb." + instance, clean );
     }
     
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,

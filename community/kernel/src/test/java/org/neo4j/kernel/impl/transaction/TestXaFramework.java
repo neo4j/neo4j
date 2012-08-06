@@ -215,6 +215,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             return 0;
         }
+        
+        @Override
+        public void setVersion( long version )
+        {
+        }
 
         @Override
         public long getLastCommittedTx()

@@ -246,6 +246,7 @@ public class NeoStore extends AbstractStore
         {
             return;
         }
+        super.flushAll();
         relTypeStore.flushAll();
         propStore.flushAll();
         relStore.flushAll();
