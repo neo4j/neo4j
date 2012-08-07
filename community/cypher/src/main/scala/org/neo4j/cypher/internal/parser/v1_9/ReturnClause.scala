@@ -30,7 +30,7 @@ trait ReturnClause extends Base with Expressions {
     case col ~ None => col
   } | "*" ^^^ AllIdentifiers()
 
-  def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
+  def returnItem: Parser[ReturnItem] = trap(expressionOrPredicate) ^^ {
     case (expression, name) => ReturnItem(expression, name.replace("`", ""))
   }
 

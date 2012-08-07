@@ -1775,6 +1775,17 @@ foreach(x in [1,2,3] :
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
+
+  @Test def use_predicate_as_expression() {
+    testFrom_1_9("start n=node(0) return id(n) = 0, n is null",
+      Query.
+        start(NodeById("n", 0)).
+        returns(
+        ReturnItem(Equals(IdFunction(Identifier("n")), Literal(0)), "id(n) = 0"),
+        ReturnItem(IsNull(Identifier("n")), "n is null")
+      ))
+  }
+
   def test_1_9(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
@@ -1791,6 +1802,10 @@ foreach(x in [1,2,3] :
 
   def testFrom_1_8(query: String, expectedQuery: Query) {
     test_1_8(query, expectedQuery)
+    test_1_9(query, expectedQuery)
+  }
+
+  def testFrom_1_9(query: String, expectedQuery: Query) {
     test_1_9(query, expectedQuery)
   }
 

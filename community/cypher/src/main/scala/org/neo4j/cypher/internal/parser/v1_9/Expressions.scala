@@ -67,6 +67,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | parens(expression)
       | failure("illegal value"))
 
+  def expressionOrPredicate: Parser[Expression] = pathExpression | predicate | expression
+
   def numberLiteral: Parser[Expression] = number ^^ (x => {
     val value: Any = if (x.contains("."))
       x.toDouble

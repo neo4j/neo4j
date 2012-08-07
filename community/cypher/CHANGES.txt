@@ -1,3 +1,7 @@
+1.9
+--------------------
+o Predicates can now be returned and used to set properties
+
 1.8
 --------------------
 o Added escape characters to string literals
