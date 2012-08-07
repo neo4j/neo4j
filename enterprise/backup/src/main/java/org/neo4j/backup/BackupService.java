@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
@@ -49,10 +48,13 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -199,9 +201,16 @@ class BackupService
             bumpLogFile( targetDirectory, timestamp );
             if ( checkConsistency )
             {
-                ConsistencyCheck.run( targetDirectory,
-                        new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
-                                .apply( stringMap() ) ) );
+                try
+                {
+                    FullCheck.run( ProgressMonitorFactory.textual( System.err ), targetDirectory,
+                            new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( stringMap(  ) ) ),
+                            StringLogger.SYSTEM );
+                }
+                catch ( ConsistencyCheckIncompleteException e )
+                {
+                    e.printStackTrace( System.err );
+                }
             }
         }
         finally

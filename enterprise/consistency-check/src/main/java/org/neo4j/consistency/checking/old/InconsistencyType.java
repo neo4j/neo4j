@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.check;
+package org.neo4j.consistency.checking.old;
 
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 
+@Deprecated
 public interface InconsistencyType
 {
     String message();

@@ -28,6 +28,7 @@
 
   <modules>
     <module>com</module>
+    <module>consistency-check</module>
     <module>backup</module>
     <module>ha</module>
     <module>neo4j-enterprise</module>

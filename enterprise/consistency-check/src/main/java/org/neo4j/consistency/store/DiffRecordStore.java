@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.check;
+package org.neo4j.consistency.store;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 
 /**
  * Not thread safe, intended for single threaded use.
@@ -64,6 +66,19 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         return diff.get( id ) != null;
     }
 
+    public R forceGetRaw( R record )
+    {
+        if ( diff.containsKey( record.getLongId() ) )
+        {
+            return actual.forceGetRecord( record.getLongId() );
+        }
+        else
+        {
+            return record;
+        }
+    }
+
+    @Override
     public R forceGetRaw( long id )
     {
         return actual.forceGetRecord( id );
@@ -85,6 +100,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public String getStorageFileName()
     {
         return actual.getStorageFileName();
+    }
+
+    @Override
+    public WindowPoolStats getWindowPoolStats()
+    {
+        return actual.getWindowPoolStats();
     }
 
     @Override
@@ -150,6 +171,11 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         actual.close();
     }
 
+    public R getChangedRecord( long id )
+    {
+        return diff.get( id );
+    }
+
     @SuppressWarnings( "unchecked" )
     private static class DispatchProcessor extends RecordStore.Processor
     {
@@ -181,9 +207,9 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         }
 
         @Override
-        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string, IdType idType )
         {
-            processor.processString( (RecordStore<DynamicRecord>) diffStore, string );
+            processor.processString( (RecordStore<DynamicRecord>) diffStore, string, idType );
         }
 
         @Override

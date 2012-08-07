@@ -22,10 +22,12 @@ package org.neo4j.backup.log;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.backup.check.ConsistencyCheck;
-import org.neo4j.backup.check.DiffRecordStore;
-import org.neo4j.backup.check.DiffStore;
-import org.neo4j.backup.check.InconsistencyType;
+import org.neo4j.consistency.checking.old.ConsistencyRecordProcessor;
+import org.neo4j.consistency.checking.old.ConsistencyReporter;
+import org.neo4j.consistency.checking.old.InconsistencyType;
+import org.neo4j.consistency.checking.old.MonitoringConsistencyReporter;
+import org.neo4j.consistency.store.DiffRecordStore;
+import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
@@ -42,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
+@Deprecated
 class VerifyingTransactionInterceptor implements TransactionInterceptor
 {
     enum CheckerMode
@@ -49,7 +52,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         FULL( true )
         {
             @Override
-            ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker )
+            <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker )
             {
                 try
                 {
@@ -59,15 +62,14 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
                 {
                     System.err.println( e.getMessage() );
                 }
-                return checker;
             }
         },
         DIFF( false )
         {
             @Override
-            ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker )
+            <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker )
             {
-                return diffs.applyToAll( checker );
+                diffs.applyToAll( checker );
             }
         };
         final boolean checkProp;
@@ -77,7 +79,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             this.checkProp = checkProp;
         }
 
-        abstract ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker );
+        abstract <R extends RecordStore.Processor & Runnable> void apply( DiffStore diffs, R checker );
     }
 
     private final boolean rejectInconsistentTransactions;
@@ -137,10 +139,12 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
          *  just return - if not, throw Error so that the
          *  store remains safe.
          */
-        ConsistencyCheck consistency = mode.apply( diffs, new ConsistencyCheck( diffs, mode.checkProp )
+//        diffs, mode.checkProp
+        MonitoringConsistencyReporter reporter = new MonitoringConsistencyReporter( new ConsistencyReporter()
         {
             @Override
-            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
+            public <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record,
+                                                               InconsistencyType inconsistency )
             {
                 if ( inconsistency.isWarning() ) return;
                 StringBuilder log = messageHeader( "Inconsistencies" ).append( "\n\t" );
@@ -151,7 +155,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             }
 
             @Override
-            protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
+            public <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
                     RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
                     InconsistencyType inconsistency )
             {
@@ -168,11 +172,12 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
                 msgLog.logMessage( log.toString() );
                 if ( difflog != null && difflog != msgLog ) difflog.logMessage( log.toString() );
             }
-        } );
+        });
+        mode.apply( diffs, new ConsistencyRecordProcessor( diffs, reporter ) );
         DataInconsistencyError error = null;
         try
         {
-            consistency.checkResult();
+            reporter.checkResult();
         }
         catch ( AssertionError e )
         {
@@ -298,11 +303,11 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
     private static <R extends AbstractBaseRecord> void logRecord( LineLogger log, RecordStore<? extends R> store,
             R record )
     {
-        DiffRecordStore<? extends R> diff = (DiffRecordStore<? extends R>) store;
+        DiffRecordStore<R> diff = (DiffRecordStore<R>) store;
         String prefix = "";
         if ( diff.isModified( record.getLongId() ) )
         {
-            log.logLine( "- " + diff.forceGetRaw( record.getLongId() ) );
+            log.logLine( "- " + diff.forceGetRaw( record ) );
             prefix = "+ ";
             record = store.forceGetRecord( record.getLongId() );
         }

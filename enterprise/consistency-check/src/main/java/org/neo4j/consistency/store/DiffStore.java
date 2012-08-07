@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.check;
+package org.neo4j.consistency.store;
 
 import java.util.Collection;
 
@@ -27,18 +27,14 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
@@ -48,15 +44,11 @@ import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
  */
 public class DiffStore extends StoreAccess implements CommandRecordVisitor
 {
+    private NeoStoreRecord masterRecord;
+
     public DiffStore( NeoStore store )
     {
         super( store );
-    }
-
-    public DiffStore( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-            RelationshipTypeStore typeStore )
-    {
-        super( nodeStore, relStore, propStore, typeStore );
     }
 
     @Override
@@ -85,7 +77,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public void visitNode( NodeRecord record )
     {
         getNodeStore().forceUpdateRecord( record );
-        record = getNodeStore().forceGetRaw( record.getId() );
+        record = getNodeStore().forceGetRaw( record );
         if ( record.inUse() )
         {
             markProperty( record.getNextProp() );
@@ -97,7 +89,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public void visitRelationship( RelationshipRecord record )
     {
         getRelationshipStore().forceUpdateRecord( record );
-        record = getRelationshipStore().forceGetRaw( record.getId() );
+        record = getRelationshipStore().forceGetRaw( record );
         if ( record.inUse() )
         {
             getNodeStore().markDirty( record.getFirstNode() );
@@ -112,12 +104,12 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
 
     private void markRelationship( long rel )
     {
-        if ( !Record.NO_NEXT_RELATIONSHIP.value( rel ) ) getRelationshipStore().markDirty( rel );
+        if ( !Record.NO_NEXT_RELATIONSHIP.is( rel ) ) getRelationshipStore().markDirty( rel );
     }
 
     private void markProperty( long prop )
     {
-        if ( !Record.NO_NEXT_PROPERTY.value( prop ) ) getPropertyStore().markDirty( prop );
+        if ( !Record.NO_NEXT_PROPERTY.is( prop ) ) getPropertyStore().markDirty( prop );
     }
 
     @Override
@@ -125,7 +117,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     {
         getPropertyStore().forceUpdateRecord( record );
         updateDynamic( record );
-        record = getPropertyStore().forceGetRaw( record.getId() );
+        record = getPropertyStore().forceGetRaw( record );
         updateDynamic( record );
         if ( record.inUse() )
         {
@@ -148,8 +140,20 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
             DiffRecordStore<DynamicRecord> store = ( record.getType() == PropertyType.STRING.intValue() )
                     ? getStringStore() : getArrayStore();
             store.forceUpdateRecord( record );
-            if ( !Record.NO_NEXT_BLOCK.value( record.getNextBlock() ) )
-                getPropertyStore().markDirty( record.getNextBlock() );
+            if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
+                getBlockStore(record.getType()).markDirty( record.getNextBlock() );
+        }
+    }
+
+    private DiffRecordStore getBlockStore( int type )
+    {
+        if ( type == PropertyType.STRING.intValue() )
+        {
+            return getStringStore();
+        }
+        else
+        {
+            return getArrayStore();
         }
     }
 
@@ -175,7 +179,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     public void visitNeoStore( NeoStoreRecord record )
     {
-        // TODO Do consistency check
+        this.masterRecord = record;
     }
 
     @Override
@@ -230,5 +234,10 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public DiffRecordStore<DynamicRecord> getPropertyKeyStore()
     {
         return (DiffRecordStore<DynamicRecord>) super.getPropertyKeyStore();
+    }
+
+    public NeoStoreRecord getMasterRecord()
+    {
+        return masterRecord;
     }
 }

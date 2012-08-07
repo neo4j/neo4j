@@ -19,68 +19,12 @@
  */
 package org.neo4j.backup.log;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-@Service.Implementation( TransactionInterceptorProvider.class )
-public class InconsistencyLoggingTransactionInterceptorProvider extends
-        TransactionInterceptorProvider
+@Service.Implementation(TransactionInterceptorProvider.class)
+@Deprecated
+public class InconsistencyLoggingTransactionInterceptorProvider
+        extends org.neo4j.consistency.checking.incremental.intercept.InconsistencyLoggingTransactionInterceptorProvider
 {
-    public static final String NAME = "inconsistencylog";
-
-    public InconsistencyLoggingTransactionInterceptorProvider()
-    {
-        super( NAME );
-    }
-
-    @Override
-    public String name()
-    {
-        return NAME;
-    }
-
-    @Override
-    public VerifyingTransactionInterceptor create( XaDataSource ds,
-            Object options, DependencyResolver dependencyResolver )
-    {
-        if ( !( options instanceof String ) )
-        {
-            return null;
-        }
-        VerifyingTransactionInterceptor.CheckerMode mode;
-        String[] config = ((String) options).split( ";" );
-        try
-        {
-            mode = VerifyingTransactionInterceptor.CheckerMode.valueOf( config[0].toUpperCase() );
-        }
-        catch ( Exception ex )
-        {
-            return null;
-        }
-
-        Map<String, String> extra = new HashMap<String, String>();
-        for ( int i = 1; i < config.length; i++ )
-        {
-            String[] parts = config[i].split( "=", 2 );
-            extra.put( parts[0].toLowerCase(), parts.length == 1 ? "true" : parts[1] );
-        }
-        return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds, dependencyResolver.resolveDependency( StringLogger.class ), mode, false, extra );
-    }
-
-    @Override
-    public VerifyingTransactionInterceptor create( TransactionInterceptor next,
-            XaDataSource ds, Object options, DependencyResolver dependencyResolver )
-    {
-        VerifyingTransactionInterceptor result = create( ds, options, dependencyResolver );
-        result.setNext( next );
-        return result;
-    }
 }

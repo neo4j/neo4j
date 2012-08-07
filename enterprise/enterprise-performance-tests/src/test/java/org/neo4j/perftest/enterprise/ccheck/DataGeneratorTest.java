@@ -22,6 +22,7 @@ package org.neo4j.perftest.enterprise.ccheck;
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,8 +49,9 @@ public class DataGeneratorTest
         config.setValue( DataGenerator.relationships, asList( new DataGenerator.RelationshipSpec( "FOO", 1 ),
                                                               new DataGenerator.RelationshipSpec( "BAR", 2 ) ) );
         config.setValue( DataGenerator.node_properties,
-                         asList( DataGenerator.PropertyGenerator.STRING, DataGenerator.PropertyGenerator.STRING ) );
-        config.setValue( DataGenerator.relationship_properties, asList( DataGenerator.PropertyGenerator.STRING ) );
+                asList( new DataGenerator.PropertySpec( DataGenerator.PropertyGenerator.STRING, 2 ) ) );
+        config.setValue( DataGenerator.relationship_properties,
+                asList( new DataGenerator.PropertySpec( DataGenerator.PropertyGenerator.STRING, 1 ) ) );
 
         DataGenerator generator = new DataGenerator( config.build() );
 
@@ -59,6 +61,7 @@ public class DataGeneratorTest
         generator.generateData( batchInserter );
 
         // then
+        verify( batchInserter, times( 1 ) ).setNodeProperties( eq( 0L ), argThat( hasSize( 2 ) ) );
         verify( batchInserter, times( 4 /* reference node already exists*/ ) ).createNode( argThat( hasSize( 2 ) ) );
         verify( batchInserter, times( 5 ) ).createRelationship( anyLong(), anyLong(), argThat( hasName( "FOO" ) ),
                                                                 argThat( hasSize( 1 ) ) );
