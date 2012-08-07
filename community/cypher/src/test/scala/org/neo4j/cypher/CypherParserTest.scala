@@ -39,7 +39,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def should_return_string_literal() {
-    testFrom_1_7("start s = node(1) return \"apa\"",
+    testAll("start s = node(1) return \"apa\"",
       Query.
         start(NodeById("s", 1)).
         returns(ReturnItem(Literal("apa"), "\"apa\"")))
@@ -53,14 +53,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def allTheNodes() {
-    testFrom_1_7("start s = NODE(*) return s",
+    testAll("start s = NODE(*) return s",
       Query.
         start(AllNodes("s")).
         returns(ReturnItem(Identifier("s"), "s")))
   }
 
   @Test def allTheRels() {
-    testFrom_1_7("start r = relationship(*) return r",
+    testAll("start r = relationship(*) return r",
       Query.
         start(AllRelationships("r")).
         returns(ReturnItem(Identifier("r"), "r")))
@@ -173,7 +173,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldReturnLiterals() {
-    testFrom_1_7(
+    testAll(
       "start a = NODE(1) return 12",
       Query.
         start(NodeById("a", 1)).
@@ -181,7 +181,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldReturnAdditions() {
-    testFrom_1_7(
+    testAll(
       "start a = NODE(1) return 12+2",
       Query.
         start(NodeById("a", 1)).
@@ -189,7 +189,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def arithmeticsPrecedence() {
-    testFrom_1_7(
+    testAll(
       "start a = NODE(1) return 12/4*3-2*4",
       Query.
         start(NodeById("a", 1)).
@@ -261,7 +261,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldHandleRegularComparison() {
-    testFrom_1_7(
+    testAll(
       "start a = node(1) where \"Andres\" =~ /And.*/ return a",
       Query.
         start(NodeById("a", 1)).
@@ -271,7 +271,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldHandleMultipleRegularComparison() {
-    testFrom_1_7(
+    testAll(
       """start a = node(1) where a.name =~ /And.*/ AnD a.name =~ /And.*/ return a""",
       Query.
         start(NodeById("a", 1)).
@@ -281,7 +281,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldHandleEscapedRegexs() {
-    testFrom_1_7(
+    testAll(
       """start a = node(1) where a.name =~ /And\/.*/ return a""",
       Query.
         start(NodeById("a", 1)).
@@ -854,7 +854,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def exclamationMarkOperator() {
-    testFrom_1_7(
+    testAll(
       "start a = node(1) where a.prop! = 42 return a",
       Query.
         start(NodeById("a", 1)).
@@ -1077,7 +1077,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Ignore @Test def shouldAcceptRelationshipWithPredicate() {
-    testFrom_1_7(
+    testAll(
       "start a = node(1) match a-[r WHERE r.foo = 'bar']->b return b",
       Query.
         start(NodeById("a", 1)).
@@ -1094,7 +1094,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldParseMathFunctions() {
-    testFrom_1_7("start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
+    testAll("start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
       Query.
         start(NodeById("s", 0)).
         returns(
@@ -1109,14 +1109,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldAllowCommentAtEnd() {
-    testFrom_1_7("start s = NODE(1) return s // COMMENT",
+    testAll("start s = NODE(1) return s // COMMENT",
       Query.
         start(NodeById("s", 1)).
         returns(ReturnItem(Identifier("s"), "s")))
   }
 
   @Test def shouldAllowCommentAlone() {
-    testFrom_1_7("""start s = NODE(1) return s
+    testAll("""start s = NODE(1) return s
     // COMMENT""",
       Query.
         start(NodeById("s", 1)).
@@ -1124,7 +1124,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldAllowCommentsInsideStrings() {
-    testFrom_1_7("start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
+    testAll("start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
       Query.
         start(NodeById("s", 1)).
         where(Equals(Property("s", "apa"), Literal("//NOT A COMMENT")))
@@ -1132,7 +1132,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldHandleCommentsFollowedByWhiteSpace() {
-    testFrom_1_7("""start s = NODE(1)
+    testAll("""start s = NODE(1)
     //I can haz more comment?
     return s""",
       Query.
@@ -1141,7 +1141,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def first_last_and_rest() {
-    testFrom_1_7("start x = NODE(1) match p=x-->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
+    testAll("start x = NODE(1) match p=x-->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
         namedPaths(NamedPath("p", RelatedTo("x", "z", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True()))).
@@ -1153,7 +1153,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def filter() {
-    testFrom_1_7("start x = NODE(1) match p=x-->z return filter(x in p : x.prop = 123)",
+    testAll("start x = NODE(1) match p=x-->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
         namedPaths(NamedPath("p", RelatedTo("x", "z", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True()))).
@@ -1163,7 +1163,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def collection_literal() {
-    testFrom_1_7("start x = NODE(1) return ['a','b','c']",
+    testAll("start x = NODE(1) return ['a','b','c']",
       Query.
         start(NodeById("x", 1)).
         returns(ReturnItem(Collection(Literal("a"), Literal("b"), Literal("c")), "['a','b','c']")
@@ -1171,7 +1171,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def collection_literal2() {
-    testFrom_1_7("start x = NODE(1) return []",
+    testAll("start x = NODE(1) return []",
       Query.
         start(NodeById("x", 1)).
         returns(ReturnItem(Collection(), "[]")
@@ -1179,7 +1179,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def collection_literal3() {
-    testFrom_1_7("start x = NODE(1) return [1,2,3]",
+    testAll("start x = NODE(1) return [1,2,3]",
       Query.
         start(NodeById("x", 1)).
         returns(ReturnItem(Collection(Literal(1), Literal(2), Literal(3)), "[1,2,3]")
@@ -1187,7 +1187,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def collection_literal4() {
-    testFrom_1_7("start x = NODE(1) return ['a',2]",
+    testAll("start x = NODE(1) return ['a',2]",
       Query.
         start(NodeById("x", 1)).
         returns(ReturnItem(Collection(Literal("a"), Literal(2)), "['a',2]")
@@ -1195,7 +1195,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def in_with_collection_literal() {
-    testFrom_1_7("start x = NODE(1) where x.prop in ['a','b'] return x",
+    testAll("start x = NODE(1) where x.prop in ['a','b'] return x",
       Query.
         start(NodeById("x", 1)).
         where(AnyInIterable(Collection(Literal("a"), Literal("b")), "-_-INNER-_-", Equals(Property("x", "prop"), Identifier("-_-INNER-_-")))).
@@ -1204,7 +1204,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def mutliple_relationship_type_in_match() {
-    testFrom_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
@@ -1213,7 +1213,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def mutliple_relationship_type_in_varlength_rel() {
-    testFrom_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
@@ -1222,7 +1222,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def mutliple_relationship_type_in_shortest_path() {
-    testFrom_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
@@ -1775,27 +1775,29 @@ foreach(x in [1,2,3] :
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
-  def test_1_8(query: String, expectedQuery: Query) {
+  def test_1_9(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
+  }
+
+  def test_1_8(query: String, expectedQuery: Query) {
+    testQuery(Some("1.8"), query, expectedQuery)
+    testQuery(Some("1.8"), query + ";", expectedQuery)
   }
 
   def test_1_7(query: String, expectedQuery: Query) {
     testQuery(Some("1.7"), query, expectedQuery)
   }
 
-  def testFrom_1_7(query: String, expectedQuery: Query) {
-    test_1_7(query, expectedQuery)
-    test_1_8(query, expectedQuery)
-  }
-
   def testFrom_1_8(query: String, expectedQuery: Query) {
     test_1_8(query, expectedQuery)
+    test_1_9(query, expectedQuery)
   }
 
   def testAll(query: String, expectedQuery: Query) {
     test_1_7(query, expectedQuery)
     test_1_8(query, expectedQuery)
+    test_1_9(query, expectedQuery)
   }
 
   def testOlderParsers(queryText: String, queryAst: Query) {
