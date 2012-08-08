@@ -1,3 +1,8 @@
+1.8.M07 (2012-08-08)
+--------------------
+o Fixed bug where transactions committed through slaves in a mixed version cluster would fail
+o Master recovery in clusters with only one instance master capable will now always work as expected
+
 1.8.M06 (2012-07-06)
 --------------------
 o Added transaction push factor that can be configured with amount of slaves to push transactions to. The master will 
