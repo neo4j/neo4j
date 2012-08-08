@@ -1,3 +1,26 @@
+1.8.M07 (2012-08-08)
+--------------------
+Kernel:
+ o Traversal framework backwards compatibility
+   + Cleaned up any breaking changes
+   + Removed Expander#addFilter
+ o Kernel JMX bean instance identifier is now reused and can optionally be set explicitly via forced_kernel_id config setting
+
+Server:
+ o Consoles in webadmin can now be disabled.
+
+Cypher:
+ o Added escape characters to string literals
+ o Renamed `RELATE` to `CREATE UNIQUE`
+
+UDC:
+ o Added edition information (community, advanced, enterprise)
+ o Added a cluster-name hash so that stores originating from the same cluster can be aggregated
+ o Fixed release version and revision
+ o Changed precedence of database configuration over internal udc configuration
+ o Added distribution information (dpkg, rpm, unknown)
+
+
 1.8.M06 (2012-07-06)
 --------------------
 Kernel:
