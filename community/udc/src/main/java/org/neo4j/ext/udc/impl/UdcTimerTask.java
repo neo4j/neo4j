@@ -35,14 +35,14 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String storeId, boolean crashPing, Map<String, String> params)
+    public UdcTimerTask( String hostAddress, UdcInformationCollector collector )
     {
+        this.storeId = collector.getStoreId();
+
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
 
-        this.storeId = storeId;
-
-        pinger = new Pinger( host, params, crashPing );
+        pinger = new Pinger( hostAddress, collector );
     }
 
     @Override
@@ -54,8 +54,6 @@ public class UdcTimerTask extends TimerTask
             incrementSuccessCount( storeId );
         } catch ( IOException e )
         {
-            // ABK: commenting out to not annoy people
-            // System.err.println("UDC update to " + host + " failed, because: " + e);
             incrementFailureCount( storeId );
         }
     }

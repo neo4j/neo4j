@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ext.udc.impl;
+package org.neo4j.server.rest.web;
 
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
-public interface UdcInformationCollector
+public class CollectUserAgentFilter
 {
-    Map<String, String> getUdcParams();
+    private final static Set<String> userAgents = new HashSet<String>();
 
-    String getStoreId();
-
-    boolean getCrashPing();
+    public static Set<String> getUserAgents() {
+        return userAgents;
+    }
+    public static void reset() {
+        userAgents.clear();
+    }
+    public static void addUserAgent(String agent) {
+        userAgents.add(agent);
+    }
 }
