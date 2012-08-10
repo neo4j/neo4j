@@ -43,4 +43,40 @@ public class ReflectionUtil
         final FieldAccessor fieldAccessor = reflectionFactory.newFieldAccessor( field, false );
         fieldAccessor.set( null, value );
     }
+
+    public static <T> T getPrivateField( Object target, String fieldName, Class<T> fieldType ) throws Exception
+    {
+        Class<?> type = target.getClass();
+        Field field = getField( fieldName, type );
+        if ( !fieldType.isAssignableFrom( field.getType() ) )
+        {
+            throw new IllegalArgumentException( "Field type does not match " + field.getType() + " is no subclass of " +
+                    "" + fieldType );
+        }
+        field.setAccessible( true );
+        return fieldType.cast( field.get( target ) );
+    }
+
+    private static Field getField( String fieldName, Class<? extends Object> type ) throws NoSuchFieldException
+    {
+        if ( type == null )
+        {
+            throw new NoSuchFieldException( fieldName );
+        }
+        try
+        {
+            Field field = type.getDeclaredField( fieldName );
+            if ( field != null )
+            {
+                return field;
+            }
+        }
+        catch ( NoSuchFieldError e )
+        {
+        }
+        catch ( NoSuchFieldException e )
+        {
+        }
+        return getField( fieldName, type.getSuperclass() );
+    }
 }

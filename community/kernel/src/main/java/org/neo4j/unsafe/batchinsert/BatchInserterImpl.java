@@ -98,11 +98,12 @@ public class BatchInserterImpl implements BatchInserter
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
+        params.putAll( stringParams );
         final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
         params = new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( params );
         Config config = new Config( params );
-        boolean dump = config.getBoolean( GraphDatabaseSettings.dump_configuration );
+        boolean dump = config.get(GraphDatabaseSettings.dump_configuration);
         this.storeDir = storeDir;
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
@@ -125,6 +126,19 @@ public class BatchInserterImpl implements BatchInserter
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
         indexStore = new IndexStore( storeDir, fileSystem );
+    }
+
+    private Map<String,String> getDefaultParams()
+    {
+        Map<String,String> params = new HashMap<String,String>();
+        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
+        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
+        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
+        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
+        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
+        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+        params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+        return params;
     }
 
     @Override
@@ -384,9 +398,9 @@ public class BatchInserterImpl implements BatchInserter
         return false;
     }
 
-    private void rejectAutoUpgrade( Map<String, String> stringParams )
+    private void rejectAutoUpgrade( Map<String, String> params )
     {
-        if ( parseBoolean( stringParams.get( GraphDatabaseSettings.allow_store_upgrade.name() ) ) )
+        if ( parseBoolean(params.get(GraphDatabaseSettings.allow_store_upgrade.name())) )
         {
             throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
             		", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );
@@ -686,19 +700,6 @@ public class BatchInserterImpl implements BatchInserter
         neoStore.close();
         msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         msgLog.close();
-    }
-
-    private Map<String,String> getDefaultParams()
-    {
-        Map<String,String> params = new HashMap<String,String>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
-        return params;
     }
 
     @Override
