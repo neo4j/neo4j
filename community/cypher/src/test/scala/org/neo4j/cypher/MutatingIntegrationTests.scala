@@ -420,6 +420,15 @@ return distinct center""")
 
     assert(r1 === r2)
   }
+  @Test
+  def create_unique_relationship_and_use_created_identifier_in_set() {
+    createNode()
+    createNode()
+
+    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) create unique a-[r:FOO]->b set r.foo = 'bar' return r")
+
+    assert("bar" === r1.getProperty("foo"))
+  }
 
   @Test
   def create_unique_twice_with_array_prop() {
