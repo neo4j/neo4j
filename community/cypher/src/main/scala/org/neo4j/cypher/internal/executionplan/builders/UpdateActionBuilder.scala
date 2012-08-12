@@ -37,7 +37,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, p)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, p)
     val startCmds = startItems.map(_.map(_.asInstanceOf[UpdateAction]))
-    val commands = updateCmds ++ startCmds
+    val commands = startCmds ++ updateCmds
 
     val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands.map(_.token))
 
