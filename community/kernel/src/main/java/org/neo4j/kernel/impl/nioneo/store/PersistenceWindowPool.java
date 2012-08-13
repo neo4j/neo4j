@@ -28,6 +28,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,6 +72,11 @@ public class PersistenceWindowPool
     private boolean useMemoryMapped = true;
 
     private final boolean readOnly;
+    
+    private final AtomicBoolean refreshing = new AtomicBoolean();
+    private final AtomicInteger avertedRefreshes = new AtomicInteger();
+    private final AtomicLong refreshTime = new AtomicLong();
+    private final AtomicInteger refreshes = new AtomicInteger();
     
     /**
      * Create new pool for a store.
@@ -465,50 +473,72 @@ public class PersistenceWindowPool
         if ( brickMiss < REFRESH_BRICK_COUNT || brickSize <= 0 )
             return;
      
-        synchronized ( this )
+        if ( refreshing.compareAndSet( false, true ) )
         {
-            brickMiss = 0;
-            Pair<List<BrickElement>, List<BrickElement>> currentMappings = gatherMappedVersusUnmappedWindows();
-            List<BrickElement> mappedBricks = currentMappings.first();
-            List<BrickElement> unmappedBricks = currentMappings.other();
-            
-            // Fill up unused memory, i.e. map unmapped bricks as much as available memory allows
-            // and request patterns signals. Start the loop from the end of the array where the
-            // bricks with highest hit ratio are.
-            int unmappedIndex = unmappedBricks.size() - 1;
-            while ( memUsed + brickSize <= availableMem && unmappedIndex >= 0 )
+            // No one is doing refresh right now, go ahead and do it
+            try
             {
-                BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
-                if ( unmappedBrick.getHit() == 0 )
-                    // We have more memory available, but no more windows have actually
-                    // been requested so don't map unused random windows.
-                    return;
-                
-                allocateNewWindow( unmappedBrick );
+                long t = System.currentTimeMillis();
+                doRefreshBricks();
+                refreshes.incrementAndGet();
+                refreshTime.addAndGet( System.currentTimeMillis()-t );
             }
-            
-            // Switch bad/unused mappings. Start iterating over mapped bricks
-            // from the beginning (those with lowest hit ratio) and unmapped from the end
-            // (or rather where the fill-up-unused-memory loop above left off) where we've
-            // got the unmapped bricks with highest hit ratio.
-            int mappedIndex = 0;
-            while ( unmappedIndex >= 0 && mappedIndex < mappedBricks.size() )
+            finally
             {
-                BrickElement mappedBrick = mappedBricks.get( mappedIndex++ );
-                BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
-                if ( mappedBrick.getHit() >= unmappedBrick.getHit() )
-                    // We've passed a point where we don't have any unmapped brick
-                    // with a higher hit ratio then the lowest mapped brick. We're done.
-                    break;
-                
-                LockableWindow window = mappedBrick.getWindow();
-                if (window.writeOutAndCloseIfFree( readOnly ) )
-                {
-                    mappedBrick.setWindow( null );
-                    memUsed -= brickSize;
-                    if ( allocateNewWindow( unmappedBrick ) )
-                        switches++;
-                }
+                refreshing.set( false );
+            }
+        }
+        else
+        {
+            // Another thread is doing refresh right now, trust it to refresh the bricks
+            // and just go about my business.
+            avertedRefreshes.incrementAndGet();
+        }
+    }
+    
+    private synchronized void doRefreshBricks()
+    {
+        brickMiss = 0;
+        Pair<List<BrickElement>, List<BrickElement>> currentMappings = gatherMappedVersusUnmappedWindows();
+        List<BrickElement> mappedBricks = currentMappings.first();
+        List<BrickElement> unmappedBricks = currentMappings.other();
+        
+        // Fill up unused memory, i.e. map unmapped bricks as much as available memory allows
+        // and request patterns signals. Start the loop from the end of the array where the
+        // bricks with highest hit ratio are.
+        int unmappedIndex = unmappedBricks.size() - 1;
+        while ( memUsed + brickSize <= availableMem && unmappedIndex >= 0 )
+        {
+            BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
+            if ( unmappedBrick.getHit() == 0 )
+                // We have more memory available, but no more windows have actually
+                // been requested so don't map unused random windows.
+                return;
+            
+            allocateNewWindow( unmappedBrick );
+        }
+        
+        // Switch bad/unused mappings. Start iterating over mapped bricks
+        // from the beginning (those with lowest hit ratio) and unmapped from the end
+        // (or rather where the fill-up-unused-memory loop above left off) where we've
+        // got the unmapped bricks with highest hit ratio.
+        int mappedIndex = 0;
+        while ( unmappedIndex >= 0 && mappedIndex < mappedBricks.size() )
+        {
+            BrickElement mappedBrick = mappedBricks.get( mappedIndex++ );
+            BrickElement unmappedBrick = unmappedBricks.get( unmappedIndex-- );
+            if ( mappedBrick.getHit() >= unmappedBrick.getHit() )
+                // We've passed a point where we don't have any unmapped brick
+                // with a higher hit ratio then the lowest mapped brick. We're done.
+                break;
+            
+            LockableWindow window = mappedBrick.getWindow();
+            if (window.writeOutAndCloseIfFree( readOnly ) )
+            {
+                mappedBrick.setWindow( null );
+                memUsed -= brickSize;
+                if ( allocateNewWindow( unmappedBrick ) )
+                    switches++;
             }
         }
     }
@@ -644,8 +674,9 @@ public class PersistenceWindowPool
 
     WindowPoolStats getStats()
     {
+        int avgRefreshTime = refreshes.get() == 0 ? 0 : (int)(refreshTime.get()/refreshes.get());
         return new WindowPoolStats( storeName, availableMem, memUsed, brickCount,
-                brickSize, hit, miss, ooe );
+                brickSize, hit, miss, ooe, switches, avgRefreshTime, refreshes.get(), avertedRefreshes.get() );
     }
 
     private static class BrickElement
