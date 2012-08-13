@@ -6,11 +6,11 @@ Once you are ready to have your changes looked at by Neo4j committers, there are
 
 By following these guidelines, you significantly lessen the load on Neo4j Committers, and shorten the time it will take to handle your improvements.
 
-== Sign the CLA ==
+### Sign the CLA
 
 This is as quick as sending an email - http://docs.neo4j.org/chunked/milestone/cla.html
 
-== No merges ==
+### No merges
 
 Ensure that there are no merge-commits added by you.
 If you have merged in the Neo4j master to keep up to date, undo that merge and use rebase instead.
@@ -18,7 +18,7 @@ If you have merged in the Neo4j master to keep up to date, undo that merge and u
 Minimizing merges makes commit history easier to read.
 Also, because we ask that each pull request is a single commit, merges are not necessary.
 
-== Squash your changes into one commit ==
+### Squash your changes into one commit
 
 If you have multiple commits, you should squash them into a single one for the pull request. 
 Keeping your changes in a single commit makes the commit history easier to read. 
@@ -39,11 +39,11 @@ One way to do this is to, while standing on your local branch with your changes,
 
 If you are asked to modify parts of your code, work in your original branch (the one with multiple commits), and follow the above process to create a fixed single commit.
 
-== Rebase against master ==
+### Rebase against master
 
 Once you have a single commit, make sure it is rebased against the latest Neo4j Master.
 
-== Run all applicable tests ==
+### Run all applicable tests
 
 Before issuing your PR, make sure that all the tests for the project you are modifying are green.
 
