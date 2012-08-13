@@ -22,12 +22,12 @@ package org.neo4j.server.configuration;
 import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.database.AbstractInjectableProvider;
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
 @Provider
-public class ConfigurationProvider extends AbstractInjectableProvider<Configuration>
+public class ConfigurationProvider extends InjectableProvider<Configuration>
 {
     private Configuration config;
 

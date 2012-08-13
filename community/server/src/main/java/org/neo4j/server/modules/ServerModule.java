@@ -28,9 +28,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public interface ServerModule
 {
-	// StringLogger here to be removed when logging refactoring is done
+    // StringLogger here to be removed when logging refactoring is done
 	// it should be passed in through constructors.
-    public void start(StringLogger logger);
+    void start(StringLogger logger);
 
-    public void stop();
+    void stop();
 }

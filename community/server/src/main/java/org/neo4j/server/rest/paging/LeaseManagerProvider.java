@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.rest.paging;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
+import javax.ws.rs.ext.Provider;
+
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class LeaseManagerProvider extends AbstractInjectableProvider<LeaseManager>
+@Provider
+public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
 {
     private static final LeaseManager leaseManager = new LeaseManager( new RealClock() );
 

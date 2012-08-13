@@ -20,7 +20,9 @@
 package org.neo4j.server.modules;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +58,6 @@ public class ManagementApiModuleTest
         ManagementApiModule module = new ManagementApiModule(webServer, config);
         module.start(StringLogger.DEV_NULL);
 
-        verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
     }
 }

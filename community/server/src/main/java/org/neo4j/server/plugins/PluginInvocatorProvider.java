@@ -19,23 +19,27 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
+import javax.ws.rs.ext.Provider;
+
+import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class PluginInvocatorProvider extends AbstractInjectableProvider<PluginInvocator>
+@Provider
+public class PluginInvocatorProvider extends InjectableProvider<PluginInvocator>
 {
-    private final PluginInvocator invocator;
+    private final AbstractNeoServer neoServer;
 
-    public PluginInvocatorProvider( PluginInvocator invocator )
+    public PluginInvocatorProvider( AbstractNeoServer neoServer )
     {
         super( PluginInvocator.class );
-        this.invocator = invocator;
+        this.neoServer = neoServer;
     }
 
     @Override
     public PluginInvocator getValue( HttpContext c )
     {
-        return invocator;
+        return neoServer.getExtensionManager();
     }
 }

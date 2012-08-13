@@ -27,10 +27,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
@@ -42,26 +41,15 @@ public class CypherService {
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
 
-    private static volatile ExecutionEngine executionEngine;
+    private CypherExecutor cypherExecutor;
     private OutputFormat output;
     private InputFormat input;
     private static volatile GraphDatabaseAPI usedGraphDb;
 
-
-    public CypherService(@Context Database database, @Context InputFormat input,
-            @Context OutputFormat output) {
-        initEngine(database.getGraph());
+    public CypherService(@Context CypherExecutor cypherExecutor, @Context InputFormat input, @Context OutputFormat output) {
+        this.cypherExecutor = cypherExecutor;
         this.input = input;
         this.output = output;
-    }
-
-    private static void initEngine(GraphDatabaseAPI graphDb) {
-        if (usedGraphDb == graphDb) return;
-        synchronized (CypherService.class) {
-            if (usedGraphDb == graphDb) return;
-            usedGraphDb = graphDb;
-            executionEngine = new ExecutionEngine(usedGraphDb);
-        }
     }
 
     @POST
@@ -76,7 +64,7 @@ public class CypherService {
         String query =  (String) command.get(QUERY_KEY);
         Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
         try {
-            ExecutionResult result = executionEngine.execute(  query, params );
+            ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
             return output.ok(new CypherResultRepresentation( result ));
         } catch(Exception e) {
             return output.badRequest(e);

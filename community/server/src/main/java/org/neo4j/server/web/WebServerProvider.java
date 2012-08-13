@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.web;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
+import javax.ws.rs.ext.Provider;
+
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class WebServerProvider extends AbstractInjectableProvider<WebServer>
+@Provider
+public class WebServerProvider extends InjectableProvider<WebServer>
 {
 
     private final WebServer server;

@@ -28,40 +28,54 @@ import java.util.List;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.database.GraphDatabaseServiceProvider;
+import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.plugins.Injectable;
+import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.plugins.TypedInjectable;
+import org.neo4j.server.rest.paging.LeaseManagerProvider;
+import org.neo4j.server.rest.repr.InputFormatProvider;
+import org.neo4j.server.rest.repr.OutputFormatProvider;
+import org.neo4j.server.rest.repr.RepresentationFormatRepository;
+import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.statistic.StatisticCollector;
+import org.neo4j.server.web.InjectableWrapper;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.server.web.WebServerProvider;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
     public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
 
     protected Database database;
+    protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
     protected WebServer webServer;
     
 	protected final StatisticCollector statisticsCollector = new StatisticCollector();
 	
     private StartupHealthCheck startupHealthCheck;
-    private PluginInitializer pluginInitializer;
 
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
 
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
-    
+
+
 
     protected abstract StartupHealthCheck createHealthCheck();
 
@@ -77,12 +91,9 @@ public abstract class AbstractNeoServer implements NeoServer
     {
     	this.startupHealthCheck = createHealthCheck();
         this.database = createDatabase();
+        this.cypherExecutor = new CypherExecutor( database );
         this.webServer = createWebServer();
-        
-        pluginInitializer = new PluginInitializer( this );
 
-        // TODO: Cyclic dependency
-        webServer.setNeoServer( this );
         for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
@@ -101,7 +112,9 @@ public abstract class AbstractNeoServer implements NeoServer
 	        configureWebServer();
 	
 	        database.start();
-	        
+
+            cypherExecutor.start();
+
 	        DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
 	
 	        StringLogger logger = diagnosticsManager.getTargetLog();
@@ -129,7 +142,7 @@ public abstract class AbstractNeoServer implements NeoServer
     /**
      * Use this method to register server modules from subclasses
      *
-     * @param clazz
+     * @param module
      */
     protected final void registerModule( ServerModule module )
     {
@@ -194,6 +207,10 @@ public abstract class AbstractNeoServer implements NeoServer
 
         webServer.setEnableHttps( sslEnabled );
         webServer.setHttpsPort( sslPort );
+
+        webServer.setWadlEnabled( Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator.WADL_ENABLED ) ) ) );
+        webServer.setDefaultInjectables( createDefaultInjectables() );
+
         if ( sslEnabled )
         {
             log.info( "Enabling HTTPS on port [%s]", sslPort );
@@ -222,6 +239,12 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 webServer.setHttpLoggingConfiguration(
                     new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ) );
+            }
+
+            Integer limit = getConfiguration().getInteger( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+            if ( limit != null )
+            {
+                webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
             }
 
             webServer.start();
@@ -352,21 +375,12 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             stopWebServer();
             stopModules();
-            stopExtensionInitializers();
             log.info( "Successfully shutdown Neo4j Server." );
         }
         catch ( Exception e )
         {
             log.warn( "Failed to cleanly shutdown Neo4j Server." );
         }
-    }
-
-    /**
-     * shuts down initializers of individual plugins
-     */
-    private void stopExtensionInitializers()
-    {
-        pluginInitializer.stop();
     }
 
     private void stopWebServer()
@@ -430,14 +444,35 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    // TODO: This is called by a class inside WebServer to get a list of 
-    // injectables to be made available to JAX-RS classes. This is not how
-    // plugins should be initialized. Reverse the direction of this such that
-    // injectables are pushed into webServer (preferrably via the addJaxRSPackage-method
-    @Override
-    public Collection<Injectable<?>> getInjectables( List<String> packageNames )
+    protected Collection<InjectableProvider<?>> createDefaultInjectables()
     {
-        return pluginInitializer.initializePackages( packageNames );
+        Collection<InjectableProvider<?>> singletons = new ArrayList<InjectableProvider<?>>(  );
+
+        Database database = getDatabase();
+
+        singletons.add( new LeaseManagerProvider() );
+        singletons.add( new DatabaseProvider( database ) );
+        singletons.add( new GraphDatabaseServiceProvider( database ) );
+        singletons.add( new NeoServerProvider( this ) );
+        singletons.add( new ConfigurationProvider( getConfiguration() ) );
+
+        singletons.add( new RrdDbProvider( database ) );
+
+        singletons.add( new WebServerProvider( getWebServer() ) );
+
+        PluginInvocatorProvider pluginInvocatorProvider = new PluginInvocatorProvider( this );
+        singletons.add( pluginInvocatorProvider );
+        RepresentationFormatRepository repository = new RepresentationFormatRepository( this );
+
+        singletons.add( new InputFormatProvider( repository ) );
+        singletons.add( new OutputFormatProvider( repository ) );
+        singletons.add( new CypherExecutorProvider( cypherExecutor ) );
+        return singletons;
+    }
+
+    private InjectableWrapper toInjectableProvider( Object service )
+    {
+        return new InjectableWrapper( TypedInjectable.injectable( service ));
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

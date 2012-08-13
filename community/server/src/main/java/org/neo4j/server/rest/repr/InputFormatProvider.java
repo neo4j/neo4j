@@ -22,12 +22,14 @@ package org.neo4j.server.rest.repr;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.ext.Provider;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public final class InputFormatProvider extends AbstractInjectableProvider<InputFormat>
+@Provider
+public final class InputFormatProvider extends InjectableProvider<InputFormat>
 {
     private final RepresentationFormatRepository repository;
 

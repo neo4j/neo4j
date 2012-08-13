@@ -24,6 +24,8 @@ import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUT
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.guard.Guard;
@@ -32,6 +34,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.web.WebServer;
 
@@ -50,7 +53,7 @@ public class RESTApiModule implements ServerModule
     	this.config = config;
     	this.database = database;
     }
-    
+
     @Override
 	public void start( StringLogger logger )
     {
@@ -58,8 +61,7 @@ public class RESTApiModule implements ServerModule
         {
             URI restApiUri = restApiUri( );
 
-            webServer.addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
-                            restApiUri.toString() );
+            webServer.addJAXRSPackages( getPackageNames(), restApiUri.toString(), null );
             loadPlugins( logger );
             
             setupRequestTimeLimit();
@@ -73,13 +75,17 @@ public class RESTApiModule implements ServerModule
         }
     }
 
-	@Override
+    private List<String> getPackageNames()
+    {
+        return listFrom( new String[] { Configurator.REST_API_PACKAGE } );
+    }
+
+    @Override
 	public void stop()
     {
         try
         {
-			webServer.removeJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
-	                restApiUri().toString() );
+			webServer.removeJAXRSPackages( getPackageNames(), restApiUri().toString() );
 
 			tearDownRequestTimeLimit();
 			unloadPlugins();

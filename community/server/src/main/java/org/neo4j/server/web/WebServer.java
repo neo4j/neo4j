@@ -21,6 +21,7 @@ package org.neo4j.server.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import javax.servlet.Filter;
@@ -28,7 +29,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.security.KeyStoreInformation;
 
@@ -54,7 +58,7 @@ public interface WebServer
 
     void stop();
 
-    void addJAXRSPackages( List<String> packageNames, String serverMountPoint );
+    void addJAXRSPackages( List<String> packageNames, String serverMountPoint, Collection<Injectable<?>> injectables );
     void removeJAXRSPackages( List<String> packageNames, String serverMountPoint );
 
     void addFilter(Filter filter, String pathSpec);
@@ -66,10 +70,7 @@ public interface WebServer
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException;
 
-    @Deprecated
-    void setNeoServer( NeoServer server );
-    
-    /** 
+    /**
      * Please use {@link #addFilter instead}, this will be removed
      * in version 1.10
      * @param rules
@@ -80,8 +81,13 @@ public interface WebServer
     /** 
      * Please use {@link #addFilter instead}, this will be removed
      * in version 1.10
-     * @param rules
+     * @param timeout
+     * @param guard
      */
     @Deprecated
-    void addExecutionLimitFilter( int timeout );
+    void addExecutionLimitFilter( int timeout, Guard guard );
+
+    void setWadlEnabled( boolean wadlEnabled );
+
+    void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables );
 }

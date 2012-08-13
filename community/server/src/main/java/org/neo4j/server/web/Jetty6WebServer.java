@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,6 +40,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -56,10 +60,10 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.security.UriPathWildcardMatcher;
@@ -68,14 +72,13 @@ import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
-
 public class Jetty6WebServer implements WebServer
 {
-	private static class FilterDefinition
+
+    private boolean wadlEnabled;
+    private Collection<InjectableProvider<?>> defaultInjectables;
+
+    private static class FilterDefinition
 	{
 		private final Filter filter;
 		private final String pathSpec;
@@ -114,7 +117,6 @@ public class Jetty6WebServer implements WebServer
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
     private final List<FilterDefinition> filters = new ArrayList<FilterDefinition>();
     
-    private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
@@ -198,30 +200,55 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void addJAXRSPackages( List<String> packageNames, String mountPoint )
+    public void addJAXRSPackages( List<String> packageNames, String mountPoint, Collection<Injectable<?>> injectables )
     {
         // We don't want absolute URIs at this point
         mountPoint = ensureRelativeUri( mountPoint );
 
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
+        Collection<InjectableProvider<?>> injectableProviders = mergeInjectables( defaultInjectables, injectables );
+        ServletContainer container = new NeoServletContainer( injectableProviders );
         ServletHolder servletHolder = new ServletHolder( container );
-        if ( !Boolean.valueOf( String.valueOf( server.getConfiguration().getProperty( Configurator.WADL_ENABLED ) ) ) )
-        {
-            servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( true ) );
-        }
-        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages",
-            toCommaSeparatedList( packageNames ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
-            AllowAjaxFilter.class.getName() );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS,
-            CollectUserAgentFilter.class.getName() );
+        servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
+        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, CollectUserAgentFilter.class.getName() );
+
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
 
         jaxRSPackages.put( mountPoint, servletHolder );
     }
-    
+
+    public void setWadlEnabled( boolean wadlEnabled )
+    {
+        this.wadlEnabled = wadlEnabled;
+    }
+
+    @Override
+    public void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables )
+    {
+        this.defaultInjectables = defaultInjectables;
+    }
+
+    private Collection<InjectableProvider<?>> mergeInjectables( Collection<InjectableProvider<?>> defaultInjectables,
+                                                                Collection<Injectable<?>> injectables )
+    {
+        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<InjectableProvider<?>>(  );
+        if ( defaultInjectables != null )
+        {
+            injectableProviders.addAll( defaultInjectables );
+        }
+        if ( injectables != null )
+        {
+            for ( Injectable<?> injectable : injectables )
+            {
+                injectableProviders.add( new InjectableWrapper( injectable ) );
+            }
+        }
+        return injectableProviders;
+    }
+
     @Override
 	public void removeJAXRSPackages( List<String> packageNames, String serverMountPoint )
     {
@@ -246,12 +273,6 @@ public class Jetty6WebServer implements WebServer
     			iter.remove();
     		}
     	}
-    }
-
-    @Override
-    public void setNeoServer( NeoServer server )
-    {
-        this.server = server;
     }
 
 	@Override
@@ -517,9 +538,8 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void addExecutionLimitFilter( final int timeout )
+    public void addExecutionLimitFilter( final int timeout, final Guard guard )
     {
-        final Guard guard = server.getDatabase().getGraph().getGuard();
         if ( guard == null )
         {
             //TODO enable guard and restart EmbeddedGraphdb

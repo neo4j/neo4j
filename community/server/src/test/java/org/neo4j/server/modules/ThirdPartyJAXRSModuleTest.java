@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,7 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 
 public class ThirdPartyJAXRSModuleTest
@@ -47,6 +49,7 @@ public class ThirdPartyJAXRSModuleTest
         CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
+        when( neoServer.getDatabase() ).thenReturn( new Database(  ) );
 
         Configurator configurator = mock( PropertyFileConfigurator.class );
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
@@ -56,9 +59,9 @@ public class ThirdPartyJAXRSModuleTest
 
         when( neoServer.getConfigurator() ).thenReturn( configurator );
 
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator);
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator, neoServer );
         module.start(StringLogger.DEV_NULL);
 
-        verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
     }
 }

@@ -17,36 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.web;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
+import javax.ws.rs.ext.Provider;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.Database;
+import com.sun.jersey.api.core.HttpContext;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
 
-public interface NeoServer
+@Provider
+public class InjectableWrapper extends InjectableProvider<Object>
 {
-	void init();
-	
-    void start();
+    private final Injectable injectable;
 
-    void stop();
+    public InjectableWrapper( Injectable injectable )
+    {
+        super( injectable.getType() );
+        this.injectable = injectable;
+    }
 
-    Configuration getConfiguration();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    URI baseUri();
-
+    @Override
+    public Object getValue( HttpContext c )
+    {
+        return injectable.getValue();
+    }
 }

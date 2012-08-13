@@ -17,30 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.database;
 
-import javax.ws.rs.ext.Provider;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.server.logging.Logger;
 
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.InjectableProvider;
-import org.rrd4j.core.RrdDb;
-
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class RrdDbProvider extends InjectableProvider<RrdDb>
+public class CypherExecutor implements Lifecycle
 {
-    private Database database;
+    public static Logger log = Logger.getLogger( CypherExecutor.class );
 
-    public RrdDbProvider( Database database )
+    private final Database database;
+    private ExecutionEngine executionEngine;
+
+    public CypherExecutor( Database database )
     {
-        super( RrdDb.class );
         this.database = database;
     }
 
-    @Override
-    public RrdDb getValue( HttpContext c )
+	public ExecutionEngine getExecutionEngine()
     {
-        return database.rrdDb();
+		return executionEngine;
+	}
+
+	@Override
+	public void init() throws Throwable 
+	{
+		
+	}
+
+	@Override
+	public void start() throws Throwable 
+	{
+		this.executionEngine = new ExecutionEngine( database.getGraph() );
+	}
+
+	@Override
+	public void stop() throws Throwable 
+	{
+		this.executionEngine = null;
+	}
+
+    @Override
+	public void shutdown() throws Throwable
+    {
+        
     }
 }

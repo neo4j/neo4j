@@ -31,17 +31,17 @@ import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.SPIPluginLifecycle;
 
 /**
- * Allows Plugins to provide their own initialization
+ * Allows unmanaged extensions to provide their own initialization
  */
-public class PluginInitializer
+public class ExtensionInitializer
 {
-    private final Iterable<PluginLifecycle> pluginLifecycles;
+    private final Iterable<PluginLifecycle> lifecycles;
     private final NeoServer neoServer;
 
-    public PluginInitializer( NeoServer neoServer )
+    public ExtensionInitializer( NeoServer neoServer )
     {
         this.neoServer = neoServer;
-        pluginLifecycles = Service.load( PluginLifecycle.class );
+        lifecycles = Service.load( PluginLifecycle.class );
     }
 
     public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )
@@ -50,18 +50,18 @@ public class PluginInitializer
         Configuration configuration = neoServer.getConfiguration();
 
         Collection<Injectable<?>> injectables = new HashSet<Injectable<?>>();
-        for ( PluginLifecycle pluginLifecycle : pluginLifecycles )
+        for ( PluginLifecycle lifecycle : lifecycles )
         {
-            if ( hasPackage( pluginLifecycle, packageNames ) )
+            if ( hasPackage( lifecycle, packageNames ) )
             {
-                if ( pluginLifecycle instanceof SPIPluginLifecycle )
+                if ( lifecycle instanceof SPIPluginLifecycle )
                 {
-                    SPIPluginLifecycle lifecycle = (SPIPluginLifecycle) pluginLifecycle;
-                    injectables.addAll( lifecycle.start( neoServer ) );
+                    SPIPluginLifecycle lifeCycleSpi = (SPIPluginLifecycle) lifecycle;
+                    injectables.addAll( lifeCycleSpi.start( neoServer ) );
                 }
                 else
                 {
-                    injectables.addAll( pluginLifecycle.start( graphDatabaseService, configuration ) );
+                    injectables.addAll( lifecycle.start( graphDatabaseService, configuration ) );
                 }
             }
         }
@@ -70,9 +70,7 @@ public class PluginInitializer
 
     private boolean hasPackage( PluginLifecycle pluginLifecycle, Iterable<String> packageNames )
     {
-        String lifecyclePackageName = pluginLifecycle.getClass()
-                .getPackage()
-                .getName();
+        String lifecyclePackageName = pluginLifecycle.getClass().getPackage().getName();
         for ( String packageName : packageNames )
         {
             if ( lifecyclePackageName.startsWith( packageName ) )
@@ -85,7 +83,7 @@ public class PluginInitializer
 
     public void stop()
     {
-        for ( PluginLifecycle pluginLifecycle : pluginLifecycles )
+        for ( PluginLifecycle pluginLifecycle : lifecycles )
         {
             pluginLifecycle.stop();
         }

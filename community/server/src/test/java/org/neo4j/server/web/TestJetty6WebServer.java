@@ -51,7 +51,6 @@ public class TestJetty6WebServer {
 		// here directly.
         AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
-		
 		WebServer server = neoServer.getWebServer();
 		
 		try 
@@ -59,7 +58,7 @@ public class TestJetty6WebServer {
 			server.setAddress("127.0.0.1");
 			server.setPort(7878);
 			
-			server.addJAXRSPackages(Arrays.asList(new String[]{"org.neo4j.server.web"}), "/");
+			server.addJAXRSPackages(Arrays.asList(new String[]{"org.neo4j.server.web"}), "/", null );
 			
 			server.start();
 			server.stop();

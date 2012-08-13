@@ -51,7 +51,7 @@ public class WebAdminModule implements ServerModule
     	this.config = config;
     	this.database = database;
     }
-    
+
     @Override
 	public void start(StringLogger logger)
     {

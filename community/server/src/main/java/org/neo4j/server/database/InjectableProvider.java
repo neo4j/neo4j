@@ -25,14 +25,13 @@ import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
 import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
 import com.sun.jersey.spi.inject.Injectable;
-import com.sun.jersey.spi.inject.InjectableProvider;
 
-public abstract class AbstractInjectableProvider<E> extends AbstractHttpContextInjectable<E> implements
-        InjectableProvider<Context, Class<E>>
+public abstract class InjectableProvider<E> extends AbstractHttpContextInjectable<E> implements
+        com.sun.jersey.spi.inject.InjectableProvider<Context, Class<E>>
 {
     private final Class<E> t;
 
-    public AbstractInjectableProvider( Class<E> t )
+    public InjectableProvider( Class<E> t )
     {
         this.t = t;
     }

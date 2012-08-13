@@ -38,13 +38,13 @@ public class SecurityRulesModule implements ServerModule {
 
 	private final ArrayList<SecurityFilter> mountedFilters = new ArrayList<SecurityFilter>();
 
-	public SecurityRulesModule(WebServer webServer, Configuration config)
+    public SecurityRulesModule(WebServer webServer, Configuration config)
 	{
 		this.webServer = webServer;
 		this.config = config;
 	}
-	
-	@Override
+
+    @Override
 	public void start(StringLogger logger) {
 		for(SecurityRule rule : getSecurityRules())
 		{
@@ -87,7 +87,7 @@ public class SecurityRulesModule implements ServerModule {
             }
         }
 
-        return rules.toArray( new SecurityRule[0] );
+        return rules.toArray( new SecurityRule[rules.size()] );
     }
 
 }

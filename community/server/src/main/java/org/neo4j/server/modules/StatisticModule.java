@@ -40,7 +40,7 @@ public class StatisticModule implements ServerModule
         this.filter = new StatisticFilter( requestStatistics );
     }
 
-	@Override
+    @Override
 	public void start(StringLogger logger)
     {
         if (isStatisticsEnabled())

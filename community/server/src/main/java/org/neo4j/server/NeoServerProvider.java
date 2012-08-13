@@ -21,12 +21,12 @@ package org.neo4j.server;
 
 import javax.ws.rs.ext.Provider;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
+import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
 @Provider
-public class NeoServerProvider extends AbstractInjectableProvider<NeoServer>
+public class NeoServerProvider extends InjectableProvider<NeoServer>
 {
     public NeoServer neoServer;
 

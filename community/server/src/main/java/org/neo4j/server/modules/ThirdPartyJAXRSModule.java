@@ -21,12 +21,16 @@ package org.neo4j.server.modules;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.web.WebServer;
 
 public class ThirdPartyJAXRSModule implements ServerModule
@@ -36,21 +40,26 @@ public class ThirdPartyJAXRSModule implements ServerModule
 	private final Configurator configurator;
 	private final WebServer webServer;
 
+    private ExtensionInitializer extensionInitializer;
 	private Set<ThirdPartyJaxRsPackage> packages;
 
-    public ThirdPartyJAXRSModule(WebServer webServer, Configurator configurator)
+
+    public ThirdPartyJAXRSModule( WebServer webServer, Configurator configurator, NeoServer neoServer )
     {
     	this.webServer = webServer;
     	this.configurator = configurator;
+        extensionInitializer = new ExtensionInitializer( neoServer );
     }
-    
+
     @Override
 	public void start(StringLogger logger)
     {
-    	this.packages = configurator.getThirdpartyJaxRsClasses();
+        this.packages = configurator.getThirdpartyJaxRsClasses();
         for ( ThirdPartyJaxRsPackage tpp : packages )
         {
-            webServer.addJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
+            List<String> packageNames = packagesFor( tpp );
+            Collection<Injectable<?>> injectables = extensionInitializer.initializePackages( packageNames );
+            webServer.addJAXRSPackages( packageNames, tpp.getMountPoint(), injectables );
             log.info( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
             if ( logger != null )
                 logger.logMessage( String.format( "Mounted third-party JAX-RS package [%s] at [%s]",
@@ -58,15 +67,21 @@ public class ThirdPartyJAXRSModule implements ServerModule
         }
     }
 
+    private List<String> packagesFor( ThirdPartyJaxRsPackage tpp )
+    {
+        return listFrom( new String[] { tpp.getPackageName() } );
+    }
+
     @Override
 	public void stop()
     {
-    	if(packages != null)
-    	{
-	    	for ( ThirdPartyJaxRsPackage tpp : packages )
-	    	{
-	    		webServer.removeJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
-	    	}
-    	}
+        if ( packages == null )  return;
+
+        for ( ThirdPartyJaxRsPackage tpp : packages )
+        {
+            webServer.removeJAXRSPackages( packagesFor( tpp ), tpp.getMountPoint() );
+        }
+
+        extensionInitializer.stop();
     }
 }
