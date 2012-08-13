@@ -37,11 +37,15 @@ One way to do this is to, while standing on your local branch with your changes,
     # Then reword the commit description to accurately depict what your commit does.
     # If applicable, include any issue numbers like so: #760
 
+For more details, see the git manual: http://git-scm.com/book/en/Git-Tools-Rewriting-History#Changing-Multiple-Commit-Messages
+
 If you are asked to modify parts of your code, work in your original branch (the one with multiple commits), and follow the above process to create a fixed single commit.
 
 ### Rebase against master
 
 Once you have a single commit, make sure it is rebased against the latest Neo4j Master.
+
+Git manual on rebase: http://git-scm.com/book/en/Git-Branching-Rebasing
 
 ### Run all applicable tests
 
