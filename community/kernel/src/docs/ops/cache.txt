@@ -124,9 +124,6 @@ Objects will be evicted from cache when the maximum size is about to be reached,
 Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
 The overhead of the GC resistant cache is also much smaller as well as insert/lookup times faster than for reference caches.
 
-[WARNING]
-The GC resistant cache is experimental. Production use is only advisable after extensive user testing.
-
 [TIP]
 The use of heap memory is subject to the java garbage collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
 Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
