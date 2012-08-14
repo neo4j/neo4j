@@ -12,11 +12,6 @@ The Neo4j community is an open community, in so far as it welcomes any member th
 Contribution can be in many forms (documentation, discussions, bug reports).
 This document outlines the rules of governance for a contributor of code.
 
-[[community-contributing-code-intro-the-fast-track]]
-== The Fast Track ==
-
-One crucial aspect of contributing is the <<cla,Contributor License Agreement>>.
-In short: make sure to sign the CLA, or the Neo4j project won't be able to accept your contribution.
 
 [[community-contributing-code-governance-fundamentals]]
 == Governance fundamentals ==
@@ -30,6 +25,7 @@ In a nutshell, you need to be aware of the following fundamentals if you wish to
 * The Neo4j software is split into components.
   A Git repository holds either a single or multiple components.
 * The source code should follow the Neo4j <<community-contributing-code-code-style,Code Style>> and ``fit in'' with the Neo4j infrastructure as much as is reasonable for the specific component.
+
 
 [[community-contributing-code-contributor-roles]]
 == Contributor roles ==
@@ -50,40 +46,48 @@ The role defines their responsibilities and privileges:
 ** define new components and assign component maintainership,
 ** drive, mentor and coach Neo4j component development.
 
+
+[[community-contributing-code-workflow]]
+== Contribution workflow ==
+
+Code contributions to Neo4j are normally done via Github Pull Requests, following the workflow shown below.
+Please check the <<community-contributing-code-pull-requests,pull request checklist>> before sending off a pull request as well.
+
+. Fork the appropriate Github repository
+. Create a new branch for your specific feature or fix
+. <<community-contributing-code-tests,Write unit tests for your code, even for small contributions>>
+. <<community-contributing-code-code-style,Write code>>
+. Write appropriate Javadocs and <<community-docs,Manual entries>>
+. <<community-contributing-code-commit-messages,Commit changes>>
+. <<community-contributing-code-pull-requests,Send pull request>>
+
+
+[[community-contributing-code-pull-requests]]
+== Pull request checklist ==
+
+. <<community-contributing-code-intro-the-fast-track,Sign the CLA>
+. <<community-contributing-code-no-merging,Ensure that you have not added any merge commits>>
+. <<community-contributing-code-single-commit,Squash all your changes into a single commit>>
+. <<community-contributing-code-no-merging,Rebase against the latest master>>
+. <<community-contributing-code-tests,Run all relevant tests>>
+. Send the request!
+
+
+[[community-contributing-code-tests]]
+== Unit Tests ==
+
+You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests covering the code you've written.
+Also, make sure your code doesn't break any existing tests.
+_Note that there may be downstream components that need to be tested as well,_ depending on what you change.
+
+To run tests, use Maven rather than your IDE to ensure others can replicate your test run.
+The command for running Neo4j tests in any given component is `mvn clean validate`.
+
+
 [[community-contributing-code-code-style]]
 == Code Style ==
 
 The Neo4j Code style is maintained on GitHub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
-
-== Unit Tests ==
-
-You have a much higher chance of getting your changes accepted if you supply us with small, readable unit tests that test the code you've written.
-Also, make sure your code doesn't break any existing tests.
-See the advice on building below.
-_Note that there may be downstream components that need to be tested as well,_ depending on what you change.
-
-[[community-contributing-code-workflow]]
-== Workflow ==
-
-* Fork the appropriate repository on GitHub, and clone it.
-* Create a new, appropriately named branch in your local repository for that specific feature or bugfix.
-  Keeping a new branch for each feature ensures we can easily pull in your changes without pulling in any other commits that are not supposed to be pulled.
-* Modify the code to do what you want (e.g. fix a bug, implement a feature).
-* Make sure your changeset has unit tests that are readable and relevant for your change.
-  Try to do this even for small fixes.
-  You never know whether you have introduced some weird bug without testing.
-* Run the Maven build frequently so you know if you've introduced any unexpected issues (`mvn clean verify`).
-  Running tests from your IDE isn't repeatable enough, even if you run all of the tests in the project.
-* When adding new functionality or changing existing code significantly, be sure to add or update Javadoc comments to non-trivial classes and methods. 
-  Also check if the manual is affected by your change and needs to be updated, see <<community-docs>>.
-* Give each commit an appropriate commit message, so that others who are not familiar with the matter get a good idea of what you have changed.
-* Once you are satisfied with your changes, merge with our upstream repository.
-  We can pull your stuff, but since you know best what you changed, you should do the merge. 
-  Use rebase and/or squash commits as appropriate!
-* This is a good point to do one last clean build to see that the merge hasn't broken your code.
-* Push to your remote repository on GitHub.
-* Send a Pull Request with a description of what you changed via the button in the GitHub interface of your repository.
-  If you know the person responsible for the component, be sure to mention him in the Pull Request (e.g. @user) so he will be notified.
 
 [[community-contributing-code-commit-messages]]
 == Commit messages ==
@@ -94,11 +98,11 @@ Use your common sense. In particular:
 * Use _english_. This includes proper punctuation and correct spelling.
   Commit messages are supposed to convey some information at a glance -- they're not a chat room.
 * Remember that a commit is a _changeset_, which describes a cohesive set of changes across potentially many files.
-  Try to group every commit as a logical change. 
+  Try to group every commit as a logical change.
   Explain what it changes.
   If you have to redo work, you might want to clean up your commit log before doing a pull request.
 * If you fix a bug or an issue that's related to a ticket, then refer to the ticket in the message.
-  For example, _``Added this and then changed that. This fixes #14.''_ 
+  For example, _``Added this and then changed that. This fixes #14.''_
   Just mentioning #xxx in the commit will connect  it to the GitHub issue with that number, see https://github.com/blog/831-issues-2-0-the-next-generation[GitHub issues].
   Any of these synonyms will also work:
   ** fixes #xxx
@@ -108,6 +112,50 @@ Use your common sense. In particular:
   ** close #xxx
   ** closed #xxx.
 * Remember to convey _intent_.
-  Don't be too brief but don't provide too much detail, either. 
+  Don't be too brief but don't provide too much detail, either.
   That's what `git diff` is for.
+
+
+[[community-contributing-code-intro-the-fast-track]]
+== Signing the CLA ==
+
+One crucial aspect of contributing is the <<cla,Contributor License Agreement>>.
+In short: make sure to sign the CLA, or the Neo4j project won't be able to accept your contribution.
+
+
+[[community-contributing-code-no-merging]]
+== Don't merge, use rebase instead! ==
+
+Because we would like each contribution to be contained in a single commit, merge commits are not allowed inside a pull request.
+Merges are messy, and should only be done when necessary, eg. when merging a branch into master to remember where the code came from.
+
+If you want to update your development branch to incorporate the latest changes from master, use git rebase.
+For details on how to use rebase, see Git manual on rebase: http://git-scm.com/book/en/Git-Branching-Rebasing[the Git Manual].
+
+
+[[community-contributing-code-single-commit]]
+== Single commit ==
+
+If you have multiple commits, you should squash them into a single one for the pull request, unless there is some extraordinary reason not to.
+Keeping your changes in a single commit makes the commit history easier to read, it also makes it easy to revert and move features around.
+
+One way to do this is to, while standing on your local branch with your changes, create a new branch and then interactively rebase your commits into a single one.
+
+.Interactive rebasing with Git
+[source,shell]
+--------------------------------------------
+# On branch mychanges
+git checkout -b mychanges-clean
+
+# Assuming you have 4 commits, rebase the last four commits interactively:
+git rebase -i HEAD~4
+
+# In the dialog git gives you, keep your first commit, and squash all others into it.
+# Then reword the commit description to accurately depict what your commit does.
+# If applicable, include any issue numbers like so: #760
+--------------------------------------------
+
+For more details, see the git manual: http://git-scm.com/book/en/Git-Tools-Rewriting-History#Changing-Multiple-Commit-Messages
+
+If you are asked to modify parts of your code, work in your original branch (the one with multiple commits), and follow the above process to create a fixed single commit.
 
