@@ -32,6 +32,8 @@ def __new__(GraphDatabase, resourceUri, **settings):
         value = settings[key]
         if isinstance(value, str):
             config.put(key, value)
+    jpype.java.lang.System.setProperty("neo4j.ext.udc.source", "neo4py")
+
     return EmbeddedGraphDatabase(resourceUri, config)
     
 
