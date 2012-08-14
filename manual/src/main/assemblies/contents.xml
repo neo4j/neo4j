@@ -21,24 +21,31 @@
 
 -->
 <assembly>
-  <id>manual-source</id>
+  <id>contents</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>jar</format>
   </formats>
   <fileSets>
-
-    <!-- non-maven jars -->
     <fileSet>
-      <directory>.</directory>
+      <directory>target</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>fop-pom.xml</include>
-        <include>check.sh</include>
-        <include>Makefile</include>
-        <include>src/bin/**</include>
-        <include>src/build/**</include>
+        <include>classes/**</include>
+        <include>sources/**</include>
+        <include>test-sources/**</include>
       </includes>
+    </fileSet>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>docs/**</include>
+      </includes>
+      <excludes>
+        <exclude>**/images/**</exclude>
+      </excludes>
     </fileSet>
   </fileSets>
 </assembly>
+
