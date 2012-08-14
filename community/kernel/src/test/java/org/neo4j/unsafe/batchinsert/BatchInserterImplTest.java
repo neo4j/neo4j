@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.test.ReflectionUtil;
+import org.neo4j.test.TargetDirectory;
 
 public class BatchInserterImplTest
 {
@@ -50,7 +51,8 @@ public class BatchInserterImplTest
 
     private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
-        BatchInserterImpl inserter = new BatchInserterImpl( "target/batch-inserter-test", initialConfig );
+        BatchInserterImpl inserter = new BatchInserterImpl(
+                TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );
         inserter.shutdown();
