@@ -390,14 +390,14 @@
             </configuration>
           </execution>
           <execution>
-            <id>manual-source</id>
+            <id>contents</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assemblies/manual-source.xml</descriptor>
+                <descriptor>src/main/assemblies/contents.xml</descriptor>
               </descriptors>
               <finalName>${project.artifactId}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
