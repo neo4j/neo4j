@@ -53,23 +53,23 @@ The role defines their responsibilities and privileges:
 Code contributions to Neo4j are normally done via Github Pull Requests, following the workflow shown below.
 Please check the <<community-contributing-code-pull-requests,pull request checklist>> before sending off a pull request as well.
 
-. Fork the appropriate Github repository
-. Create a new branch for your specific feature or fix
-. <<community-contributing-code-tests,Write unit tests for your code, even for small contributions>>
-. <<community-contributing-code-code-style,Write code>>
-. Write appropriate Javadocs and <<community-docs,Manual entries>>
-. <<community-contributing-code-commit-messages,Commit changes>>
-. <<community-contributing-code-pull-requests,Send pull request>>
+. Fork the appropriate Github repository.
+. Create a new branch for your specific feature or fix.
+. <<community-contributing-code-tests,Write unit tests for your code, even for small contributions>>.
+. <<community-contributing-code-code-style,Write code>>.
+. Write appropriate Javadocs and <<community-docs,Manual entries>>.
+. <<community-contributing-code-commit-messages,Commit changes>>.
+. <<community-contributing-code-pull-requests,Send pull request>>.
 
 
 [[community-contributing-code-pull-requests]]
 == Pull request checklist ==
 
-. <<community-contributing-code-intro-the-fast-track,Sign the CLA>
-. <<community-contributing-code-no-merging,Ensure that you have not added any merge commits>>
-. <<community-contributing-code-single-commit,Squash all your changes into a single commit>>
-. <<community-contributing-code-no-merging,Rebase against the latest master>>
-. <<community-contributing-code-tests,Run all relevant tests>>
+. <<community-contributing-code-intro-the-fast-track,Sign the CLA>>.
+. <<community-contributing-code-no-merging,Ensure that you have not added any merge commits>>.
+. <<community-contributing-code-single-commit,Squash all your changes into a single commit>>.
+. <<community-contributing-code-no-merging,Rebase against the latest master>>.
+. <<community-contributing-code-tests,Run all relevant tests>>.
 . Send the request!
 
 
