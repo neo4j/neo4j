@@ -17,7 +17,7 @@ This robustness extends from single instance embedded graphs to multi-server hig
 For details, see <<transactions>>.
 
 Reliable graph storage can easily be added to any application.
-A property graph can scale in size and complexity as the application evolves, with little impact on performance.
+A graph can scale in size and complexity as the application evolves, with little impact on performance.
 Whether starting new development, or augmenting existing functionality, Neo4j is only limited by physical hardware.
 
 A single server instance can handle a graph of billions of nodes and relationships.
