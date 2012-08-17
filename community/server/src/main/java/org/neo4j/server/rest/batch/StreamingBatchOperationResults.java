@@ -145,7 +145,7 @@ public class StreamingBatchOperationResults
     public void writeError( int status, String message ) throws IOException {
         if (bytesWritten == 0 || bytesWritten == IS_ERROR) g.writeRaw( "null" );
         g.writeNumberField( "status",  status );
-        if (message!=null)  g.writeStringField( "message", message);
+        if (message!=null && !message.trim().isEmpty())  g.writeStringField( "message", message);
         else {
             if (errorStream!=null) {
                 g.writeStringField( "message", errorStream.toString());
