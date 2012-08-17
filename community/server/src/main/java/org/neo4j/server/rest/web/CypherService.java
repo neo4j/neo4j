@@ -29,6 +29,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
@@ -41,17 +42,28 @@ public class CypherService {
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
 
-    private ExecutionEngine executionEngine;
+    private static volatile ExecutionEngine executionEngine;
     private OutputFormat output;
     private InputFormat input;
+    private static volatile GraphDatabaseAPI usedGraphDb;
+
 
     public CypherService(@Context Database database, @Context InputFormat input,
             @Context OutputFormat output) {
-        this.executionEngine = new ExecutionEngine(database.getGraph());
+        initEngine(database.getGraph());
         this.input = input;
         this.output = output;
     }
-    
+
+    private static void initEngine(GraphDatabaseAPI graphDb) {
+        if (usedGraphDb == graphDb) return;
+        synchronized (CypherService.class) {
+            if (usedGraphDb == graphDb) return;
+            usedGraphDb = graphDb;
+            executionEngine = new ExecutionEngine(usedGraphDb);
+        }
+    }
+
     @POST
     @SuppressWarnings({ "unchecked" })
     public Response cypher(String body) throws BadInputException {
