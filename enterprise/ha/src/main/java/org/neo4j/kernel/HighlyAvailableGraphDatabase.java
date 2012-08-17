@@ -49,6 +49,7 @@ import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.ToFileStoreWriter;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
+import org.neo4j.kernel.ha.DatabaseNotRunningException;
 import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.Master;
@@ -174,6 +176,27 @@ public class HighlyAvailableGraphDatabase
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
             new CopyOnWriteArraySet<TransactionEventHandler<?>>();
     protected final FileSystemAbstraction fileSystemAbstraction;
+
+    // TODO: This should extend or delegate to the DR that exists in {@link InternalAbstractGraphDatabase}
+    // The idea is to replace getXX-type dependency resolution methods with this.
+    private DependencyResolver haDependencyResolver = new DependencyResolver()
+    {
+        @Override
+        public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+        {
+            if(type.equals( MasterGraphDatabase.class ) && internalGraphDatabase instanceof MasterGraphDatabase)
+            {
+                return (T) internalGraphDatabase;
+            } else if(type.equals( SlaveGraphDatabase.class ) && internalGraphDatabase instanceof SlaveGraphDatabase)
+            {
+                return (T) internalGraphDatabase;
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+            }
+        }
+    };
 
     /**
      * Default IndexProviders and KernelExtensions by calling Service.load
@@ -542,7 +565,7 @@ public class HighlyAvailableGraphDatabase
     void makeWayForNewDb()
     {
         this.messageLog.logMessage( "Cleaning database " + storeDir + " (" + branchedDataPolicy.name() +
-                                         ") to make way for new db from master" );
+                ") to make way for new db from master" );
         branchedDataPolicy.handle( this );
     }
 
@@ -827,12 +850,12 @@ public class HighlyAvailableGraphDatabase
 
         if ( causeOfShutdown != null )
         {
-            throw new RuntimeException( "Graph database not started", causeOfShutdown );
+            throw new DatabaseNotRunningException( "Graph database not started", causeOfShutdown );
         }
         else
         {
-            throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
-                    "maybe not started yet or in the middle of master/slave swap?" );
+            throw new DatabaseNotRunningException( "Graph database not assigned and no cause of shutdown, " +
+                    "maybe not started yet or in the middle of master/slave swap?", null );
         }
     }
 
@@ -1054,7 +1077,16 @@ public class HighlyAvailableGraphDatabase
         return slaveGraphDatabase;
     }
 
-    private InternalAbstractGraphDatabase startAsMaster()
+    // Note: Made this protected in order to write tests that can provide modified versions of MasterGraphDatabase.
+    // Specifically, I need to write a test that verifies that internalShutdown does not leak references to GDB's it
+    // is about to call shutdown on (which I think it does). I can either use the breakpoint approach, or provide
+    // a modified implementation here.
+    // Opted for this b/c it appeared that it will be easier to follow for others (since it does not require multiple
+    // processes and gives compilation errors that are easy to debug). However, it sucks to open up stuff like this for
+    // testing. This seems to be an artifact of architecture problems. I'm not sure quite what the issue is though, or
+    // how to resolve it. Would love to discuss.
+    // /jake
+    protected InternalAbstractGraphDatabase startAsMaster()
     {
         messageLog.logMessage( "Starting[" + machineId + "] as master", true );
 
@@ -1233,14 +1265,20 @@ public class HighlyAvailableGraphDatabase
         }
         if ( this.internalGraphDatabase != null )
         {
+            // User-level calls to the database will check if internalGraphDatabase is null,
+            // and block until the field has been populated again if so. Therefore, set it to null
+            // ASAP to block external calls. Keep a local reference to do shutdown work.
+            InternalAbstractGraphDatabase localRefToInternalDb = internalGraphDatabase;
+            this.internalGraphDatabase = null;
+
             if ( rotateLogs )
             {
-                internalGraphDatabase.getXaDataSourceManager().rotateLogicalLogs();
+                localRefToInternalDb.getXaDataSourceManager().rotateLogicalLogs();
             }
+
             messageLog.logMessage( "Internal shutdown localGraph", true );
-            this.internalGraphDatabase.shutdown();
+            localRefToInternalDb.shutdown();
             messageLog.logMessage( "Internal shutdown localGraph DONE", true );
-            this.internalGraphDatabase = null;
         }
         messageLog.flush();
     }
@@ -1426,6 +1464,12 @@ public class HighlyAvailableGraphDatabase
     public String getStoreDir()
     {
         return storeDir;
+    }
+
+    // To replace all getXX-style dependency resolution methods.
+    public DependencyResolver getDependencyResolver()
+    {
+        return haDependencyResolver;
     }
 
     @Override
