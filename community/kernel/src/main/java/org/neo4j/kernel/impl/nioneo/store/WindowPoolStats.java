@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+
 public class WindowPoolStats
 {
     private final String name;
@@ -32,11 +34,17 @@ public class WindowPoolStats
     private final int hitCount;
     private final int missCount;
     private final int oomCount;
+
+    private final int switchCount;
+    private final int avgRefreshTime;
+    private final int refreshCount;
+    private final int avertedRefreshCount;
     
     public WindowPoolStats( String name, long memAvail, long memUsed, int windowCount,
-            int windowSize, int hitCount, int missCount, int oomCount )
+            int windowSize, int hitCount, int missCount, int oomCount, int switchCount, int avgRefreshTime,
+            int refreshCount, int avertedRefreshCount )
     {
-        this.name = name;
+        this.name = extractName( name );
         this.memAvail = memAvail;
         this.memUsed = memUsed;
         this.windowCount = windowCount;
@@ -44,8 +52,17 @@ public class WindowPoolStats
         this.hitCount = hitCount;
         this.missCount = missCount;
         this.oomCount = oomCount;
+        this.switchCount = switchCount;
+        this.avgRefreshTime = avgRefreshTime;
+        this.refreshCount = refreshCount;
+        this.avertedRefreshCount = avertedRefreshCount;
     }
     
+    private String extractName( String name )
+    {
+        return new File( name ).getName();
+    }
+
     public String getName()
     {
         return name;
@@ -86,16 +103,41 @@ public class WindowPoolStats
         return oomCount;
     }
     
+    public int getSwitchCount()
+    {
+        return switchCount;
+    }
+    
+    public int getAvgRefreshTime()
+    {
+        return avgRefreshTime;
+    }
+    
+    public int getRefreshCount()
+    {
+        return refreshCount;
+    }
+    
+    public int getAvertedRefreshCount()
+    {
+        return avertedRefreshCount;
+    }
+    
     @Override
     public String toString()
     {
-        return "WindowPoolStats[" +
-                "mem available:" + memAvail + " " +
-                "mem used:" + memUsed + " " +
-                "windows:" + windowCount + " " +
-                "win size:" + windowSize + " " +
-                "hits:" + hitCount + " " +
-                "misses:" + missCount + " " +
-                "ooms:" + oomCount + "]";
+        return "WindowPoolStats['" + name + "', " +
+                "memAvail:" + memAvail + ", " +
+                "memUsed:" + memUsed + ", " +
+                "windowCount:" + windowCount + ", " +
+                "windowSize:" + windowSize + ", " +
+                "hitCount:" + hitCount + ", " +
+                "missCount:" + missCount + ", " +
+                "oomCount:" + oomCount + ", " +
+                "switchCount:" + switchCount + ", " +
+                "avgRefreshTime:" + avgRefreshTime + ", " +
+                "refreshCount:" + refreshCount + ", " +
+                "avertedRefreshCount:" + avertedRefreshCount +
+                "]";
     }
 }
