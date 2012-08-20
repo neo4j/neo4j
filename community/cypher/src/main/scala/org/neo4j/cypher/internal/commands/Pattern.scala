@@ -24,15 +24,15 @@ import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
 
-abstract class Pattern extends TypeSafe {
+trait Pattern extends TypeSafe {
   def optional: Boolean
   def predicate: Predicate
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
   protected def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
-  protected def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
-  protected def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
+  protected def leftArrow(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
+  protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
   def equalOrUnnamed(name1: String, name2: String) = name1 == name2 || (name1.startsWith("  UNNAMED") && name2.startsWith("  UNNAMED"))
@@ -54,7 +54,7 @@ case class RelatedTo(left: String,
                      direction: Direction,
                      optional: Boolean,
                      predicate: Predicate) extends Pattern {
-  override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
+  override def toString = node(left) + leftArrow(direction) + relInfo + rightArrow(direction) + node(right)
 
   private def relInfo: String = {
     var info = relName
@@ -119,7 +119,7 @@ case class VarLengthRelatedTo(pathName: String,
                               optional: Boolean,
                               predicate: Predicate) extends PathPattern {
 
-  override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
+  override def toString: String = pathName + "=" + node(start) + leftArrow(direction) + relInfo + rightArrow(direction) + node(end)
 
   def symbolTableDependencies = predicate.symbolTableDependencies
 
@@ -179,7 +179,7 @@ case class ShortestPath(pathName: String,
                         relIterator: Option[String],
                         predicate: Predicate = True())
   extends PathPattern {
-  override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
+  override def toString: String = pathName + "=" + algo + "(" + start + leftArrow(dir) + relInfo + rightArrow(dir) + end + ")"
 
   private def algo = if (single) "singleShortestPath" else "allShortestPath"
 

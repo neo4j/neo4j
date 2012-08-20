@@ -76,16 +76,32 @@ case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") wi
     }
   }
 
-  private def traverseNextStep(nextSteps: Seq[(String, PropertyContainer)], oldContext: ExecutionContext): ExecutionContext = {
-    val uniqueKVPs = nextSteps.distinct
-    val uniqueKeys = nextSteps.toMap
+  case class TraverseResult(identifier: String, element: PropertyContainer, link: UniqueLink)
+
+  private def traverseNextStep(nextSteps: Seq[TraverseResult], oldContext: ExecutionContext): ExecutionContext = {
+    val uniqueKVPs = nextSteps.map(x => x.identifier -> x.element).distinct
+    val uniqueKeys = uniqueKVPs.toMap
 
     if (uniqueKeys.size != uniqueKVPs.size) {
-      //We can only go forward following a unique path. Fail.
-      throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+      fail(nextSteps)
     } else {
       oldContext.newWith(uniqueKeys)
     }
+  }
+
+  private def fail(nextSteps: Seq[TraverseResult]): Nothing = {
+    //We can only go forward following a unique path. Fail.
+    val problemResultsByIdentifier: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.identifier).
+      filter(_._2.size > 1)
+
+    val message = problemResultsByIdentifier.map {
+      case (identifier, links: Seq[TraverseResult]) =>
+        val hits = links.map(result => "%s found by : %s".format(result.element, result.link))
+
+        "Nodes for identifier: `%s` were found with differing values by these pattern relationships: %s".format(identifier, hits.mkString("\n  ", "\n  ", "\n"))
+    }
+
+    throw new UniquePathNotUniqueException(message.mkString("CREATE UNIQUE error\n", "\n", "\n"))
   }
 
   private def runUpdateCommands(cmds: Seq[UpdateWrapper], oldContext: ExecutionContext, state: QueryState): ExecutionContext = {
@@ -122,10 +138,12 @@ case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") wi
       case _ => None
     }
 
-  private def extractTraversals(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[(String, PropertyContainer)] =
+  private def extractTraversals(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[TraverseResult] =
     results.flatMap {
-      case (_, Traverse(ctx@_*)) => ctx
-      case _ => None
+      case (link, Traverse(ctx@_*)) => ctx.map {
+        case (key, element) => TraverseResult(key, element, link)
+      }
+      case _                        => None
     }
 
   private def executeAllRemainingPatterns(linksToDo: Seq[UniqueLink], ctx: ExecutionContext, state: QueryState): Seq[(UniqueLink, CreateUniqueResult)] = linksToDo.flatMap(link => link.exec(ctx, state))

@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal, Expression}
-import org.neo4j.cypher.internal.commands.{CreateNodeStartItem, CreateRelationshipStartItem, IterableSupport}
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands._
+import expressions.Identifier
+import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.{CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
 import collection.Map
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import scala.Some
 
 case class NamedExpectation(name: String, properties: Map[String, Expression])
   extends GraphElementPropertyFunctions
@@ -62,7 +67,7 @@ object UniqueLink {
 }
 
 case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
-  extends GraphElementPropertyFunctions {
+  extends GraphElementPropertyFunctions with Pattern {
   lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
@@ -127,7 +132,6 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     }
   }
 
-
   private def createUpdateActions(dir: Direction, startNode: Node, end: NamedExpectation): Seq[UpdateWrapper] = {
     val createRel = if (dir == Direction.OUTGOING) {
       CreateRelationshipStartItem(rel.name, (Literal(startNode),Map()), (Identifier(end.name),Map()), relType, rel.properties)
@@ -161,6 +165,16 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     UniqueLink(s, e, r, relType, dir)
   }
 
+  override def toString = node(start.name) + leftArrow(dir) + relInfo + rightArrow(dir) + node(end.name)
+
+  private def relInfo: String = {
+    val relName = if (rel.name.startsWith("  UNNAMED")) "" else "`" + rel.name + "`"
+
+    "[%s:`%s`]".format(relName, relType)
+  }
+
+
+
   def filter(f: (Expression) => Boolean) = Seq.empty
 
   def assertTypes(symbols: SymbolTable) {
@@ -168,4 +182,19 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     checkTypes(end.properties, symbols)
     checkTypes(rel.properties, symbols)
   }
+
+  def optional: Boolean = false
+
+  def possibleStartPoints = Seq(
+    start.name -> NodeType(),
+    end.name -> NodeType(),
+    rel.name -> RelationshipType())
+
+  def predicate = True()
+
+  def relTypes = Seq(relType)
+
+  def nodes = Seq(start.name, end.name)
+
+  def rels = Seq(rel.name)
 }
