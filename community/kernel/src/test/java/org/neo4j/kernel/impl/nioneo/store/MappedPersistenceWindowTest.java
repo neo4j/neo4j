@@ -24,6 +24,8 @@ import java.io.RandomAccessFile;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
 import org.neo4j.test.TargetDirectory;
 
@@ -77,16 +79,27 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
 
         window.markAsInUse();
-        window.lock();
+        OtherThreadExecutor<Void> executor = new OtherThreadExecutor<Void>(null);
+        executor.execute( new WorkerCommand<Void, Void>()
+        {
+            @Override
+            public Void doWork( Void state )
+            {
+                window.lock( OperationType.WRITE );
+                return null;
+            }
+        } );
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
 
         // then
         assertFalse( wasClosed );
+
+        executor.shutdown();
     }
 
     @Test
@@ -98,7 +111,7 @@ public class MappedPersistenceWindowTest
         MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
 
         window.markAsInUse();
-        window.lock();
+        window.lock( OperationType.WRITE );
         window.unLock();
 
         // when

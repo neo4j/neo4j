@@ -31,6 +31,7 @@ import java.nio.channels.FileChannel;
  */
 class PersistenceRow extends LockableWindow
 {
+    private State bufferState = State.EMPTY;
     private int recordSize = -1;
     private final long position;
     private final Buffer buffer;
@@ -45,7 +46,31 @@ class PersistenceRow extends LockableWindow
         this.position = position;
         this.recordSize = recordSize;
         this.buffer = new Buffer( this, ByteBuffer.allocate( recordSize ) );
-        // this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
+        markAsInUse();
+    }
+
+    @Override
+    void lock( OperationType operationType )
+    {
+        super.lock( operationType );
+        boolean success = false;
+        try
+        {
+            bufferState = bufferState.transition( operationType, this );
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                unLock();
+            }
+        }
+    }
+
+    public boolean isDirty()
+    {
+        return bufferState == State.DIRTY;
     }
 
     @Override
@@ -77,27 +102,61 @@ class PersistenceRow extends LockableWindow
         return position;
     }
 
+    private static enum State
+    {
+        EMPTY
+        {
+            @Override
+            State transition( OperationType operationType, PersistenceRow persistenceRow )
+            {
+                switch ( operationType)
+                {
+                    case READ:
+                        persistenceRow.readFullWindow();
+                        return CLEAN;
+                    case WRITE:
+                        return DIRTY;
+                    default:
+                        throw new IllegalStateException( "Unknown operation type: " + operationType );
+                }
+            }
+        },
+        CLEAN
+        {
+            @Override
+            State transition( OperationType operationType, PersistenceRow persistenceRow )
+            {
+                switch ( operationType)
+                {
+                    case READ:
+                        return CLEAN;
+                    case WRITE:
+                        return DIRTY;
+                    default:
+                        throw new IllegalStateException( "Unknown operation type: " + operationType );
+                }
+            }
+        },
+        DIRTY
+        {
+            @Override
+            State transition( OperationType operationType, PersistenceRow persistenceRow )
+            {
+                return DIRTY;
+            }
+        };
+
+        abstract State transition( OperationType operationType, PersistenceRow persistenceRow );
+    }
+
     void readFullWindow()
     {
         try
         {
-            // long fileSize = getFileChannel().size();
-            // long recordCount = fileSize / recordSize;
-            // possible last element not written completely, therefore if
-            // fileSize % recordSize can be non 0 and we check > instead of >=
-            // if ( position > recordCount )
-            // {
-                // use new buffer since it will contain only zeros
-            //    return;
-            // }
             ByteBuffer byteBuffer = buffer.getBuffer();
             byteBuffer.clear();
-            int count = getFileChannel().read( byteBuffer,
-                position * recordSize );
-//            if ( position < recordCount )
-//            {
-//                assert count == recordSize;
-//            }
+            int count = getFileChannel().read( byteBuffer, position * recordSize );
+            assert count == recordSize;
             byteBuffer.clear();
         }
         catch ( IOException e )
@@ -110,7 +169,7 @@ class PersistenceRow extends LockableWindow
     private void writeContents()
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
-        if ( getOperationType() == OperationType.WRITE )
+        if ( isDirty() )
         {
             byteBuffer.clear();
             try
@@ -126,13 +185,6 @@ class PersistenceRow extends LockableWindow
             }
         }
         byteBuffer.clear();
-    }
-    
-    @Override
-    protected synchronized void writeOutAndClose()
-    {
-        writeContents();
-        closed = true;
     }
 
     @Override
@@ -174,5 +226,10 @@ class PersistenceRow extends LockableWindow
     {
         buffer.close();
         closed = true;
+    }
+
+    public void reset()
+    {
+        buffer.reset();
     }
 }
