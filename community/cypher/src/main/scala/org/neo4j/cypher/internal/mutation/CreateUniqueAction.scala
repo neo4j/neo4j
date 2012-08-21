@@ -27,7 +27,8 @@ import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 
-case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") with Mutator with UpdateAction {
+case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noooes") with Mutator with UpdateAction {
+
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
     var ctx = context
@@ -56,6 +57,18 @@ case class CreateUniqueAction(links: UniqueLink*) extends StartItem("noooes") wi
     }
 
     Stream(ctx)
+  }
+
+  /**
+   * Here we take the incoming links and prepare them to be used, by making sure that
+   * no named expectations contradict each other
+   */
+  val links:Seq[UniqueLink] = {
+    val nodesWithProperties: Seq[NamedExpectation] = incomingLinks.flatMap(_.nodesWProps)
+
+    nodesWithProperties.foldLeft(incomingLinks) {
+      case (bunchOfLinks, nodeExpectation) => bunchOfLinks.map(link => link.expect(nodeExpectation))
+    }
   }
 
   private def tryAgain(linksToDo: Seq[UniqueLink], context: ExecutionContext, state: QueryState): ExecutionContext = {

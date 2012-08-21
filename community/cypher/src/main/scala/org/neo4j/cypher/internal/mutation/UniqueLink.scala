@@ -23,43 +23,14 @@ import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands._
 import expressions.Identifier
 import expressions.Literal
-import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable, TypeSafe}
-import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction, PropertyContainer}
+import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
+import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.cypher.{CypherTypeException, UniquePathNotUniqueException}
+import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
 import org.neo4j.cypher.internal.commands.CreateNodeStartItem
-import scala.Some
-
-case class NamedExpectation(name: String, properties: Map[String, Expression])
-  extends GraphElementPropertyFunctions
-  with IterableSupport
-  with TypeSafe {
-  def this(name: String) = this(name, Map.empty)
-
-  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = properties.forall {
-    case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
-      case (k, value) => pc.hasProperty(k) && pc.getProperty(k) == value
-    }
-    case (k, exp) =>
-      if (!pc.hasProperty(k)) false
-      else {
-        val expectationValue = exp(ctx)
-        val elementValue = pc.getProperty(k)
-
-        if (expectationValue == elementValue) true
-        else isCollection(expectationValue) && isCollection(elementValue) && makeTraversable(expectationValue).toList == makeTraversable(elementValue).toList
-      }
-  }
-
-  def symbolTableDependencies = symbolTableDependencies(properties)
-
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(properties, symbols)
-  }
-}
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -73,13 +44,10 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
     // We haven't yet figured out if we already have both elements in the context
     // so let's start by finding that first
-
     val s = getNode(context, start.name)
     val e = getNode(context, end.name)
 
     (s, e) match {
-      case (None, None) => Some(this->CanNotAdvance())
-
       case (Some(startNode), None) => oneNode(startNode, context, dir, state, end)
       case (None, Some(startNode)) => oneNode(startNode, context, dir.reverse(), state, start)
 
@@ -89,8 +57,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         else
           twoNodes(startNode, endNode, context, state)
       }
+
+      case _ => Some(this -> CanNotAdvance())
     }
   }
+
+  // These are the nodes that have properties defined. They should always go first,
+  // so any other links that use these nodes have to have them locked.
+  def nodesWProps:Seq[NamedExpectation] = Seq(start,end).filter(_.properties.nonEmpty)
 
   // This method sees if a matching relationship already exists between two nodes
   // If any matching rels are found, they are returned. Otherwise, a new one is
@@ -173,8 +147,6 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     "[%s:`%s`]".format(relName, relType)
   }
 
-
-
   def filter(f: (Expression) => Boolean) = Seq.empty
 
   def assertTypes(symbols: SymbolTable) {
@@ -197,4 +169,30 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   def nodes = Seq(start.name, end.name)
 
   def rels = Seq(rel.name)
+
+  /**
+   * Either returns a unique link where the expectation is respected,
+   * or throws an exception if a contradiction is found.
+   * @param expectation The named expectation to follow
+   * @return
+   */
+  def expect(expectation: NamedExpectation): UniqueLink =
+    if ((expectation.name != start.name) && (expectation.name != end.name)) {
+      this
+    } else {
+      val s = compareAndMatch(expectation, start)
+      val e = compareAndMatch(expectation, end)
+      copy(start = s, end = e)
+    }
+
+  private def compareAndMatch(expectation: NamedExpectation, current: NamedExpectation): NamedExpectation = {
+    if (current.name == expectation.name) {
+      if (current.properties.nonEmpty && current.properties != expectation.properties)
+        throw new SyntaxException("`%s` can't have properties assigned to it more than once in the CREATE UNIQUE statement".format(current.name))
+      else
+        expectation
+    } else {
+      current
+    }
+  }
 }

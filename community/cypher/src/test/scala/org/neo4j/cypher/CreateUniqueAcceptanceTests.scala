@@ -266,6 +266,39 @@ FOREACH(name in ['a','b','c'] :
     assert(bookTags === Set("a", "b", "c"))
   }
 
+  @Test def should_find_nodes_with_properties_first() {
+    createNode()
+    val b = createNode()
+    val wrongX = createNode("foo" -> "absolutely not bar")
+    relate(b, wrongX, "X")
+
+    val result = parseAndExecute("""
+START a = node(1), b = node(2)
+CREATE UNIQUE
+  a-[:X]->()-[:X]->(x {foo:'bar'}),
+  b-[:X]->x
+RETURN x""")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesSet = 1)
+  }
+
+  @Test def should_find_nodes_with_properties_first2() {
+    createNode()
+    val b = createNode()
+    val wrongX = createNode("foo" -> "absolutely not bar")
+    relate(b, wrongX, "X")
+
+    val result = parseAndExecute("""
+START a = node(1), b = node(2)
+CREATE UNIQUE
+  a-[:X]->z-[:X]->(x {foo:'bar'}),
+  b-[:X]->x-[:X]->(z {foo:'buzz'})
+RETURN x""")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 2)
+  }
+
+
   @Test
   def two_outgoing_parts() {
     val a = createNode()
