@@ -40,7 +40,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
     database.getConfig.getParams.asScala.get("cypher_parser_version") match {
       case None => new CypherParser()
-      case Some(v) => new CypherParser(v.toString)
+      case Some(v) => new CypherParser(v)
     }
   }
   else {

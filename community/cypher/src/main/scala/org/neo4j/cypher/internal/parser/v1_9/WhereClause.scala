@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser.v1_9
 
-import internal.commands.Query
+import org.neo4j.cypher.internal.commands.Predicate
 
-class CypherParser(version: String) {
-  def this() = this("1.9")
 
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
-
-  val v17 = new internal.parser.v1_7.CypherParserImpl
-  val v18 = new internal.parser.v1_8.CypherParserImpl
-  val v19 = new internal.parser.v1_9.CypherParserImpl
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = {
-
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
-    }
-
-    v match {
-      case "1.7" => v17.parse(q)
-      case "1.8" => v18.parse(q)
-      case "1.9" => v19.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.7, 1.8 and 1.9")
-    }
-  }
+trait WhereClause extends Base with Expressions {
+  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
 }
+
+
+
+
+
+
+
+
+
+
+

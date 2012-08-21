@@ -125,6 +125,12 @@
                         <phase>process-test-resources</phase>
                     </execution>
                 </executions>
+                <configuration>
+                    <jvmArgs>
+                        <jvmArg>-Xms64m</jvmArg>
+                        <jvmArg>-Xmx1024m</jvmArg>
+                    </jvmArgs>
+                </configuration>    
             </plugin>
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
