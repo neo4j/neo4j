@@ -2119,6 +2119,17 @@ RETURN x0.name?
     assert(result.toList === List(Map("sum(foo)" -> 8)))
   }
 
+  @Test
+  def with_should_not_forget_parameters() {
+    graph.index().forNodes("test")
+    val id = "bar"
+    val result = parseAndExecute("start n=node:test(name={id}) with count(*) as c where c=0 create x={name:{id}} return c, x", "id" -> id).toList
+
+    assert(result.size === 1)
+    assert(result(0)("c").asInstanceOf[Long] === 0)
+    assert(result(0)("x").asInstanceOf[Node].getProperty("name") === id)
+  }
+
   @Ignore("This pattern is currently not supported. Revisit when we do support it.")
   @Test
   def two_double_optional_paths_with_shared_relationships() {
