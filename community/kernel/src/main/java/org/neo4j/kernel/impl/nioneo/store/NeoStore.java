@@ -588,6 +588,16 @@ public class NeoStore extends AbstractStore
         return list;
     }
 
+    @Override
+    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
+    {
+        super.logAllWindowPoolStats( logger );
+        nodeStore.logAllWindowPoolStats( logger );
+        relStore.logAllWindowPoolStats( logger );
+        relTypeStore.logAllWindowPoolStats( logger );
+        propStore.logAllWindowPoolStats( logger );
+    }
+
     public boolean isStoreOk()
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&

@@ -230,4 +230,9 @@ public abstract class AbstractStore extends CommonAbstractStore
     }
 
     public abstract List<WindowPoolStats> getAllWindowPoolStats();
+
+    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
+    {
+        logger.logLine( getWindowPoolStats().toString() );
+    }
 }
