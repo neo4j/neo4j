@@ -1,3 +1,7 @@
+1.8
+--------------------
+o Removed the /../ literal for regular expressions. Now a normal string literal is used instead
+
 1.8.M07 (2012-08-08)
 --------------------
 o Added escape characters to string literals

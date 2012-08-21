@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.parser.v1_8
 
-import org.neo4j.cypher.internal.commands.{Expression, Literal}
+import org.neo4j.cypher.internal.commands.Literal
 
 trait StringLiteral extends Base {
-  def stringLit: Parser[Expression] = Parser {
+  def stringLit: Parser[Literal] = Parser {
     case in if in.atEnd => Failure("out of string", in)
     case in =>
       val start = handleWhiteSpace(in.source, in.offset)
@@ -35,7 +35,7 @@ trait StringLiteral extends Base {
         var ls = string.toList.tail
         val sb = new StringBuilder(ls.length)
         var idx = start
-        var result: Option[ParseResult[Expression]] = None
+        var result: Option[ParseResult[Literal]] = None
 
         while (!ls.isEmpty && result.isEmpty) {
           val (pref, suf) = ls span {
@@ -77,7 +77,7 @@ trait StringLiteral extends Base {
       }
   }
 
-  case class EscapeProduct(result: Option[ParseResult[Expression]])
+  case class EscapeProduct(result: Option[ParseResult[Literal]])
 
   private def parseEscapeChars(suf: List[Char], in:Input): Either[Char, Failure] = suf match {
     case '\\' :: tail => Left('\\')

@@ -19,25 +19,22 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.GraphDescription;
+import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TestData;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
+
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class IntroExamplesTest implements GraphHolder
 {
@@ -84,7 +81,7 @@ public class IntroExamplesTest implements GraphHolder
                 + data.get().get( "Maria" ).getId()
                 + ","
                 + data.get().get( "Steve" ).getId()
-                + ") MATCH user-[:friend]->follower WHERE follower.name =~ /S.*/ RETURN user, follower.name ";
+                + ") MATCH user-[:friend]->follower WHERE follower.name =~ 'S.*' RETURN user, follower.name ";
         fw.append( "\n" );
         fw.append( createCypherSnippet( query ) );
         fw.append( "\nResulting in\n" );

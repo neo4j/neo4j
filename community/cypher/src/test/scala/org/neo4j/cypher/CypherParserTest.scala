@@ -277,8 +277,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Entity("a"), "a")))
   }
 
-  @Test def shouldHandleRegularComparison() {
-    testFrom_1_7(
+  @Test def shouldHandleRegularComparisonOld() {
+    test_1_7(
       "start a = node(1) where \"Andres\" =~ /And.*/ return a",
       Query.
         start(NodeById("a", 1)).
@@ -287,8 +287,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleMultipleRegularComparison1_6() {
-    testFrom_1_7(
+  @Test def shouldHandleRegularComparison() {
+    testFrom_1_8(
+      "start a = node(1) where \"Andres\" =~ 'And.*' return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(LiteralRegularExpression(Literal("Andres"), Literal("And.*"))).
+        returns(ReturnItem(Entity("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleMultipleRegularComparison1_7() {
+    test_1_7(
       """start a = node(1) where a.name =~ /And.*/ AnD a.name =~ /And.*/ return a""",
       Query.
         start(NodeById("a", 1)).
@@ -298,6 +308,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldHandleMultipleRegularComparison() {
+    testFrom_1_8(
+      """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(And(LiteralRegularExpression(Property("a", "name"), Literal("And.*")), LiteralRegularExpression(Property("a", "name"), Literal("And.*")))).
+        returns(ReturnItem(Entity("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleMultipleRegularComparison1_6() {
     test_1_6(
       """start a = node(1) where a.name =~ /And.*/ AnD a.name =~ /And.*/ return a""",
       Query.
@@ -317,9 +337,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleEscapedRegexs() {
-    testFrom_1_7(
+  @Test def shouldHandleEscapedRegexs1_7() {
+    test_1_7(
       """start a = node(1) where a.name =~ /And\/.*/ return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(LiteralRegularExpression(Property("a", "name"), Literal("And\\/.*"))).
+        returns(ReturnItem(Entity("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleEscapedRegexs() {
+    testFrom_1_8(
+      """start a = node(1) where a.name =~ 'And\\/.*' return a""",
       Query.
         start(NodeById("a", 1)).
         where(LiteralRegularExpression(Property("a", "name"), Literal("And\\/.*"))).
