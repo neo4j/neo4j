@@ -105,7 +105,6 @@ public class PersistenceWindowPool
         this.mapMode = readOnly ? MapMode.READ_ONLY : MapMode.READ_WRITE;
         setupBricks();
         dumpStatus();
-        System.out.println( getStats().toString() );
     }
 
     /**
