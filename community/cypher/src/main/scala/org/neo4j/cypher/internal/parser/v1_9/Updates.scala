@@ -48,7 +48,7 @@ trait Updates extends Base with Expressions with StartClause {
 
   def set: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("set") ~> commaList(propertySet) ^^ ((_,Seq()))
 
-  def propertySet = property ~ "=" ~ expression ^^ {
+  def propertySet = property ~ "=" ~ expressionOrPredicate ^^ {
     case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
   }
 }

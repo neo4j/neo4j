@@ -29,17 +29,22 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
 
-abstract class Predicate extends TypeSafe {
+abstract class Predicate extends Expression {
+  def apply(m: Map[String, Any]) = isMatch(m)
   def ++(other: Predicate): Predicate = And(this, other)
   def isMatch(m: Map[String, Any]): Boolean
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
   def atoms: Seq[Predicate]
-  def exists(f: Expression => Boolean): Boolean
   def rewrite(f: Expression => Expression): Predicate
   def containsIsNull: Boolean
   def filter(f: Expression => Boolean): Seq[Expression]
+  def assertInnerTypes(symbols: SymbolTable)
+  protected def calculateType(symbols: SymbolTable) = {
+    assertInnerTypes(symbols)
+    BooleanType()
+  }
 }
 
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
@@ -55,8 +60,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
   }
 
   def atoms = Seq(this)
-  override def toString = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
-  def exists(f: (Expression) => Boolean) = inner.exists(f)
+  override def toString() = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
   def containsIsNull = inner.containsIsNull
 
   def rewrite(f: (Expression) => Expression) = NullablePredicate(inner.rewrite(f), exp.map {
@@ -65,7 +69,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
 
   def filter(f: (Expression) => Boolean) = exp.flatMap { case (e,_) => e.filter(f)  }
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     inner.assertTypes(symbols)
   }
 
@@ -76,13 +80,12 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
 case class And(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
   def atoms: Seq[Predicate] = a.atoms ++ b.atoms
-  override def toString: String = "(" + a + " AND " + b + ")"
-  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
+  override def toString(): String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.assertTypes(symbols)
     b.assertTypes(symbols)
   }
@@ -93,13 +96,12 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
 case class Or(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = "(" + a + " OR " + b + ")"
-  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
+  override def toString(): String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.assertTypes(symbols)
     b.assertTypes(symbols)
   }
@@ -110,12 +112,11 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 case class Not(a: Predicate) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = !a.isMatch(m)
   def atoms: Seq[Predicate] = a.atoms.map(Not(_))
-  override def toString: String = "NOT(" + a + ")"
-  def exists(f: (Expression) => Boolean) = a.exists(f)
+  override def toString(): String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
   def filter(f: (Expression) => Boolean) = a.filter(f)
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.assertTypes(symbols)
   }
 
@@ -141,12 +142,11 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  def exists(f: (Expression) => Boolean) = from.exists(f) || to.exists(f)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = HasRelationshipTo(from.rewrite(f), to.rewrite(f), dir, relType)
   def filter(f: (Expression) => Boolean) = from.filter(f) ++ to.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     from.assertTypes(symbols)
     to.assertTypes(symbols)
   }
@@ -169,11 +169,10 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  def exists(f: (Expression) => Boolean) = from.exists(f)
   def containsIsNull = false
   def filter(f: (Expression) => Boolean) = from.filter(f)
   def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     from.assertTypes(symbols)
   }
 
@@ -183,12 +182,11 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 case class IsNull(expression: Expression) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = expression(m) == null
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = expression + " IS NULL"
-  def exists(f: (Expression) => Boolean) = expression.exists(f)
+  override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
   def filter(f: (Expression) => Boolean) = expression.filter(f)
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     expression.assertTypes(symbols)
   }
   def symbolTableDependencies = expression.symbolTableDependencies
@@ -197,12 +195,14 @@ case class IsNull(expression: Expression) extends Predicate {
 case class True() extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = true
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = "true"
-  def exists(f: (Expression) => Boolean) = false
+  override def toString(): String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
-  def filter(f: (Expression) => Boolean) = Seq()
-  def assertTypes(symbols: SymbolTable) {}
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this)
+  else
+    Seq()
+  def assertInnerTypes(symbols: SymbolTable) {}
   def symbolTableDependencies = Set()
 }
 
@@ -215,15 +215,14 @@ case class Has(property: Property) extends Predicate {
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = "hasProp(" + property + ")"
+  override def toString(): String = "hasProp(" + property + ")"
   def containsIsNull = false
-  def exists(f: (Expression) => Boolean) = false
   def rewrite(f: (Expression) => Expression) = property.rewrite(f) match {
     case prop:Property => Has(prop)
     case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong rewriting a Has(Property)")
   }
   def filter(f: (Expression) => Boolean) = property.filter(f)
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     property.assertTypes(symbols)
   }
 
@@ -235,7 +234,6 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
   
   def isMatch(m: Map[String, Any]) = pattern.matcher(a(m).asInstanceOf[String]).matches()
   def atoms = Seq(this)
-  def exists(f: (Expression) => Boolean) = a.exists(f) || regex.exists(f)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
@@ -243,7 +241,7 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
   }
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ regex.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
     regex.evaluateType(StringType(), symbols)
   }
@@ -260,8 +258,7 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
-  def exists(f: (Expression) => Boolean) = a.exists(f)||regex.exists(f)
+  override def toString(): String = a.toString() + " ~= /" + regex.toString() + "/"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
@@ -269,7 +266,7 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
   }
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ regex.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
     regex.evaluateType(StringType(), symbols)
   }
@@ -286,13 +283,12 @@ case class NonEmpty(collection:Expression) extends Predicate with IterableSuppor
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString: String = "nonEmpty(" + collection + ")"
+  override def toString(): String = "nonEmpty(" + collection + ")"
   def containsIsNull = false
-  def exists(f: (Expression) => Boolean) = collection.exists(f)
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
   def filter(f: (Expression) => Boolean) = collection.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     collection.evaluateType(AnyIterableType(), symbols)
   }
 

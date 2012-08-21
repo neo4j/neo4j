@@ -44,17 +44,15 @@ abstract class InIterable(collection: Expression, id: String, predicate: Predica
 
   def atoms: Seq[Predicate] = Seq(this)
 
-  def exists(f: (Expression) => Boolean) = collection.exists(f) || predicate.exists(f)
-
   def name: String
 
-  override def toString = name + "(" + id + " in " + collection + " where " + predicate + ")"
+  override def toString() = name + "(" + id + " in " + collection + " where " + predicate + ")"
 
   def containsIsNull = predicate.containsIsNull
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = collection.filter(f) ++ predicate.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
+  def assertInnerTypes(symbols: SymbolTable) {
     val innerType = collection.evaluateType(AnyIterableType(), symbols).iteratedType
     predicate.assertTypes(symbols.add(id, innerType))
   }

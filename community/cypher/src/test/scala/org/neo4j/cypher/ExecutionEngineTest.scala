@@ -2184,5 +2184,10 @@ RETURN x0.name?
     assert(result.endNode() === a)
   }
 
+  @Test
+  def should_be_able_to_return_predicate_result() {
+    val result = parseAndExecute("START a=node(0) return id(a) = 0, a is null").toList
 
+    assert(result === List(Map("id(a) = 0" -> true, "a is null" -> false)))
+  }
 }
