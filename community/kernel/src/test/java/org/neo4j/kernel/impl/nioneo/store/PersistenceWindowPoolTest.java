@@ -19,15 +19,22 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.util.concurrent.Future;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertNotSame;
 
 public class PersistenceWindowPoolTest
 {
@@ -53,5 +60,80 @@ public class PersistenceWindowPoolTest
 
         // then
         assertNotSame( initialWindow, window );
+    }
+    
+    @Test
+    public void handOverDirtyPersistenceRowToReaderShouldWriteWhenClosing() throws Exception
+    {
+        String filename = new File( target.graphDbDir( true ), "dirty" ).getAbsolutePath();
+        RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        final int blockSize = 8;
+        final PersistenceWindowPool pool = new PersistenceWindowPool( "test.store", blockSize, file.getChannel(), 0, false, false );
+        
+        // The gist:
+        // T1 acquires position 0 as WRITE
+        // T2 would like to acquire position 0 as READ, marks it and goes to wait in lock()
+        // T1 writes stuff to the buffer and releases it
+        // T2 gets the PR handed over from T1, reads and verifies that it got the changes made by T1
+        // T2 releases it
+        // Verify that what T1 wrote is on disk
+        
+        final PersistenceWindow t1Row = pool.acquire( 0, OperationType.WRITE );
+        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( null ); 
+        Future<Throwable> future = otherThread.executeDontWait( new WorkerCommand<Void, Throwable>()
+        {
+            @Override
+            public Throwable doWork( Void state )
+            {
+                PersistenceWindow t2Row = pool.acquire( 0, OperationType.READ ); // Will block until t1Row is released.
+                try
+                {
+                    assertTrue( t1Row == t2Row );
+                    assertBufferContents( blockSize, t2Row );
+                    return null;
+                }
+                catch ( Throwable t )
+                {
+                    return t;
+                }
+                finally
+                {
+                    pool.release( t2Row );
+                }
+            }
+        } );
+        try
+        {
+            writeBufferContents( blockSize, t1Row );
+            otherThread.waitUntilWaiting();
+        }
+        finally
+        {
+            pool.release( t1Row );
+        }
+        Throwable failure = future.get();
+        if ( failure != null )
+            throw launderedException( failure );
+        
+        PersistenceWindow row = pool.acquire( 0, OperationType.READ );
+        assertFalse( t1Row == row );
+        assertBufferContents( blockSize, row );
+        
+        pool.close();
+        otherThread.shutdown();
+    }
+
+    private void writeBufferContents( final int blockSize, final PersistenceWindow t1Row )
+    {
+        Buffer buffer = t1Row.getBuffer();
+        for ( int i = 0; i < blockSize; i++ )
+            buffer.put( (byte) i );
+    }
+
+    private void assertBufferContents( final int blockSize, PersistenceWindow row )
+    {
+        Buffer buffer = row.getBuffer();
+        for ( int i = 0; i < blockSize; i++ )
+            assertEquals( (byte)i, buffer.get() );
     }
 }

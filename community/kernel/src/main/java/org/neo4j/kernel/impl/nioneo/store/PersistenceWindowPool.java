@@ -52,8 +52,8 @@ public class PersistenceWindowPool
     // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
-    private final ConcurrentMap<Integer,PersistenceRow> activeRowWindows =
-        new ConcurrentHashMap<Integer,PersistenceRow>();
+    private final ConcurrentMap<Long,PersistenceRow> activeRowWindows =
+        new ConcurrentHashMap<Long,PersistenceRow>();
     private long availableMem = 0;
     private long memUsed = 0;
     private int brickCount = 0;
@@ -126,7 +126,6 @@ public class PersistenceWindowPool
         {
             refreshBricks();
         }
-        boolean readFullRow = false;
         while ( window == null )
         {
             if ( brickSize > 0 )
@@ -159,12 +158,9 @@ public class PersistenceWindowPool
                 miss++;
                 brickMiss++;
     
-                if ( operationType == OperationType.READ )
-                    readFullRow = true;
-                
                 // Lock-free implementation of instantiating an active window for this position
                 // See if there's already an active window for this position
-                PersistenceRow dpw = activeRowWindows.get( (int) position );
+                PersistenceRow dpw = activeRowWindows.get( position );
                 if ( dpw != null && dpw.markAsInUse() )
                 {   // ... there was and we managed to mark it as in use
                     window = dpw;
@@ -175,20 +171,19 @@ public class PersistenceWindowPool
                 // closed right before we managed to mark it as in use.
                 // Either way instantiate a new active window for this position
                 dpw = new PersistenceRow( position, blockSize, fileChannel );
-                PersistenceRow existing = activeRowWindows.putIfAbsent( (int) position, dpw );
-                if ( existing == null && dpw.markAsInUse() )
+                PersistenceRow existing = activeRowWindows.putIfAbsent( position, dpw );
+                if ( existing == null )
                 {
-                    // No one else made it here before us. We also marked it as in use
-                    // before anyone else potentially acquired and released it
+                    // No other thread managed to create an active window for
+                    // this position before us.
                     window = dpw;
                 }
                 else
                 {
-                    // Someone else put it there before us, or managed to get and release it
-                    // after we put it but before we marked it. Close this row
-                    // which was unnecessarily opened.
+                    // Someone else put it there before us. Close this row
+                    // which was unnecessarily opened. The next go in this loop
+                    // will get that one instead.
                     dpw.close();
-                    readFullRow = false;
                 }
             }
             else
@@ -196,27 +191,8 @@ public class PersistenceWindowPool
                 hit++;
             }
         }
-        
-        window.lock();
-        if ( readFullRow )
-        {
-            PersistenceRow dpw = (PersistenceRow) window;
-            boolean success = false;
-            try
-            {
-                dpw.readFullWindow();
-                success = true;
-            }
-            finally
-            {
-                if ( !success )
-                {
-                    activeRowWindows.remove( (int) dpw.position() );
-                    window.unLock();
-                }
-            }
-        }
-        window.setOperationType( operationType );
+
+        window.lock( operationType );
         return window;
     }
 
@@ -250,19 +226,22 @@ public class PersistenceWindowPool
         if ( window instanceof PersistenceRow )
         {
             PersistenceRow dpw = (PersistenceRow) window;
-            dpw.writeOutAndClose();
             
             // If the corresponding window has been instantiated while we had
             // this active row we need to hand over the changes to that
             // window if the window isn't memory mapped.
-            if ( brickSize > 0 && dpw.getOperationType() == OperationType.WRITE )
+            if ( brickSize > 0 && dpw.isDirty() )
                 applyChangesToWindowIfNecessary( dpw );
 
-            dpw.unLock();
-            if ( dpw.isFree() )
+            if ( dpw.writeOutAndCloseIfFree( readOnly ) )
             {
-                activeRowWindows.remove( (int) dpw.position(), dpw );
+                activeRowWindows.remove( dpw.position(), dpw );
             }
+            else
+            {
+                dpw.reset();
+            }
+            dpw.unLock();
         }
         else
         {
@@ -280,7 +259,7 @@ public class PersistenceWindowPool
         {
             // There is a non-mapped brick window here, let's have it
             // know about my changes.
-            existingBrickWindow.lock();
+            existingBrickWindow.lock( OperationType.WRITE );
             try
             {
                 existingBrickWindow.acceptContents( dpw );

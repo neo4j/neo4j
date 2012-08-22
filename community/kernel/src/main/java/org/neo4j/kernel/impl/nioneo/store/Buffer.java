@@ -72,6 +72,11 @@ public class Buffer
     {
         return buf;
     }
+    
+    public void reset()
+    {
+        buf.clear();
+    }
 
     /**
      * Sets the offset from persistence window position in the underlying byte
