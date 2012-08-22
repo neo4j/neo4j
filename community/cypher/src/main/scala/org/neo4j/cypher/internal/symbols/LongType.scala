@@ -25,7 +25,9 @@ object LongType {
   def apply() = instance
 }
 
-class LongType extends NumberType
+class LongType extends NumberType {
+  override def toString = "Long"
+}
 
 
 

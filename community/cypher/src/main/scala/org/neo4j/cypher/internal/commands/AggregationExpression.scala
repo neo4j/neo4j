@@ -153,7 +153,7 @@ case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInn
 }
 
 case class Collect(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
-  def typ = new IterableType(anInner.identifier.typ)
+  def typ = new CollectionType(anInner.identifier.typ)
 
   def name = "collect"
 

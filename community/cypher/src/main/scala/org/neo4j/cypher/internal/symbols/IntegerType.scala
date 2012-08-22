@@ -26,7 +26,9 @@ object IntegerType {
   def apply() = instance
 }
 
-class IntegerType extends NumberType
+class IntegerType extends NumberType {
+  override def toString = "Integer"
+}
 
 
 

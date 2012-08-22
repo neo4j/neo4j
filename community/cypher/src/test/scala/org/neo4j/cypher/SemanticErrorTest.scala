@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.junit.Assert._
 import org.junit.Test
 
-class SematicErrorTest extends ExecutionEngineHelper {
+class SemanticErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
     expectedError("start x=node(0) return bar",
       """Unknown identifier `bar`.""")
@@ -45,12 +45,12 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def cantUseTYPEOnNodes() {
     expectedError("start r=node(0) return type(r)",
-      "Expected `r` to be a RelationshipType but it was NodeType")
+      "Expected `r` to be a Relationship but it was a Node")
   }
 
   @Test def cantUseLENGTHOnNodes() {
     expectedError("start n=node(0) return length(n)",
-      "Expected `n` to be a IterableType<AnyType> but it was NodeType")
+      "Expected `n` to be a Collection but it was a Node")
   }
 
   @Test def cantReUseRelationshipIdentifier() {
@@ -60,7 +60,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
     expectedError("start a=node(0) where a.age =~ 13 return a",
-      "13 expected to be of type StringType but it is of type NumberType")
+      "`13` expected to be a String but it is a Number")
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {

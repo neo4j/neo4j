@@ -26,7 +26,9 @@ object RelationshipType {
 }
 
 
-class RelationshipType extends MapType
+class RelationshipType extends MapType {
+  override def toString = "Relationship"
+}
 
 
 

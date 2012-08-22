@@ -1464,7 +1464,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testFrom_1_8("start a = node(1) with a create (b {age : a.age * 2}) return b", q)
   }
 
-  @Test def variable_length_path_with_iterable_name() {
+  @Test def variable_length_path_with_collection_for_relationships() {
     testAll("start a=node(0) match a -[r?*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).

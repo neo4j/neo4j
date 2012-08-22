@@ -48,7 +48,7 @@ class SymbolTable(val identifiers: Identifier*) {
       case None           => throwMissingKey(expected.name)
       case Some(existing) =>
         if (!(expected.typ.isAssignableFrom(existing.typ) || existing.typ.isAssignableFrom(expected.typ))) {
-          throw new CypherTypeException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
+          throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(expected.name, expected.typ, existing.typ))
         }
     }
   }

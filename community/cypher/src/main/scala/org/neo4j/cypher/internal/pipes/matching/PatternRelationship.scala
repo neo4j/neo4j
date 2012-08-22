@@ -119,8 +119,8 @@ class VariableLengthPatternRelationship(pathName: String,
   override def identifiers : Seq[Identifier] = Seq(
     Identifier(startNode.key, NodeType()),
     Identifier(endNode.key, NodeType()),
-    Identifier(key, new IterableType(RelationshipType()))) ++
-                                               relIterable.toSeq.map(Identifier(_, new IterableType(RelationshipType())))
+    Identifier(key, new CollectionType(RelationshipType()))) ++
+                                               relIterable.toSeq.map(Identifier(_, new CollectionType(RelationshipType())))
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
 

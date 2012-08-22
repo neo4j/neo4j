@@ -38,7 +38,16 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 
   private def identifiers:Seq[Identifier] = patternGraph.patternRels.values.flatMap(p => p.identifiers).toSeq
 
-  lazy val symbols = boundIdentifiers.add(identifiers: _*)
+  lazy val symbols = {
+    val ids = identifiers
+
+    val identifiersAlreadyInContext = ids.filter(identifier => boundIdentifiers.keys.contains(identifier.name))
+
+    identifiersAlreadyInContext.foreach( boundIdentifiers.assertHas )
+
+    boundIdentifiers.keys.filter(_)
+    boundIdentifiers.add(ids: _*)
+  }
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     builder.getMatches(sourceRow)

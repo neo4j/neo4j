@@ -20,6 +20,6 @@
 package org.neo4j.cypher.internal.symbols
 
 object AnyIterableType {
-  val instance = new IterableType(AnyType())
+  val instance = new CollectionType(AnyType())
   def apply() = instance
 }

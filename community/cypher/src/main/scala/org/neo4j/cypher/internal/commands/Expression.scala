@@ -34,7 +34,7 @@ abstract class Expression extends (Map[String, Any] => Any) {
   def dependencies(expectedType: AnyType): Seq[Identifier] = {
     val myType = identifier.typ
     if (!expectedType.isAssignableFrom(myType))
-      throw new SyntaxException(identifier.name + " expected to be of type " + expectedType + " but it is of type " + identifier.typ)
+      throw new SyntaxException("`%s` expected to be a %s but it is a %s".format(identifier.name, expectedType, identifier.typ))
     declareDependencies(expectedType)
   }
 
@@ -238,7 +238,9 @@ case class Entity(entityName: String) extends CastableExpression {
 
 case class Collection(expressions:Expression*) extends CastableExpression {
   def compute(m: Map[String, Any]): Any = expressions.map(e=>e(m))
+
   val identifier: Identifier = Identifier(name, AnyIterableType())
+
   private def name = expressions.map(_.identifier.name).mkString("[", ", ", "]")
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.declareDependencies(AnyType()))
   def rewrite(f: (Expression) => Expression): Expression = f(Collection(expressions.map(f):_*))
