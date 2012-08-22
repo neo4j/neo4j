@@ -155,8 +155,7 @@ class PersistenceRow extends LockableWindow
         {
             ByteBuffer byteBuffer = buffer.getBuffer();
             byteBuffer.clear();
-            int count = getFileChannel().read( byteBuffer, position * recordSize );
-            assert count == recordSize;
+            getFileChannel().read( byteBuffer, position * recordSize );
             byteBuffer.clear();
         }
         catch ( IOException e )
