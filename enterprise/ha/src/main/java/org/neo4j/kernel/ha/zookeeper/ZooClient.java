@@ -1190,7 +1190,7 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 // It's OK. We're in a state where we cannot accept incoming events.
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 msgLog.logMessage( "Error in ZooClient.process", e, true );
                 throw Exceptions.launderedException( e );
