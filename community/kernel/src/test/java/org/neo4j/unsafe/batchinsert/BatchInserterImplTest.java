@@ -21,6 +21,8 @@ package org.neo4j.unsafe.batchinsert;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.util.Map;
@@ -34,9 +36,22 @@ import org.neo4j.test.TargetDirectory;
 
 public class BatchInserterImplTest
 {
+    private void assumeNotWindows()
+    {
+        // Windows doesn't work well at all with memory mapping. The problem being that
+        // in Java there's no way to unmap a memory mapping from a file, instead that
+        // is handed over to GC and GC isn't deterministic. Well, actually there is a way
+        // unmap if using reflection. Anyways Windows has problems with truncating a file
+        // or similar if a memory mapped section of it is still open, i.e. hasn't yet
+        // been GCed... which may happen from time to time.
+        assumeTrue( !osIsWindows() );
+    }
+    
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
+        assumeNotWindows();
+        
         Boolean memoryMappingConfig = createInserterAndGetMemoryMappingConfig( stringMap( GraphDatabaseSettings
                 .use_memory_mapped_buffers.name(), "true" ) );
         assertTrue( "memory mapped config is active", memoryMappingConfig );
@@ -45,6 +60,8 @@ public class BatchInserterImplTest
     @Test
     public void testDefaultsToNoMemoryMapping() throws Exception
     {
+        assumeNotWindows();
+        
         Boolean memoryMappingConfig = createInserterAndGetMemoryMappingConfig( stringMap() );
         assertFalse( "memory mapped config is active", memoryMappingConfig );
     }
