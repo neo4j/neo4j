@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.symbols
 import java.lang.String
 
 
-class IterableType(val iteratedType: AnyType) extends AnyType {
+class CollectionType(val iteratedType: AnyType) extends AnyType {
 
-  override def toString: String = "IterableType<" + iteratedType + ">"
+  override def toString: String =
+    if (iteratedType.isInstanceOf[AnyType])
+      "Collection"
+    else
+      "Collection<" + iteratedType + ">"
 
-  override def isAssignableFrom(other:AnyType):Boolean = super.isAssignableFrom(other) && iteratedType.isAssignableFrom(other.asInstanceOf[IterableType].iteratedType)
+  override def isAssignableFrom(other: AnyType): Boolean = super.isAssignableFrom(other) && iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
 }
 
 

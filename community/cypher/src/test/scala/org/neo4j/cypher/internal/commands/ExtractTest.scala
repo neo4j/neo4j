@@ -29,10 +29,10 @@ class ExtractTest extends Assertions {
 
     val l = Seq("x", "xxx", "xx")
     val expression = LengthFunction(Entity("n"))
-    val iterable = Entity("l")
+    val collection = Entity("l")
     val m = Map("l" -> l)
 
-    val extract = ExtractFunction(iterable, "n", expression)
+    val extract = ExtractFunction(collection, "n", expression)
 
     assert(extract.apply(m) === Seq(1, 3, 2))
   }

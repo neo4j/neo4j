@@ -36,8 +36,8 @@ abstract class NullInNullOutExpression(argument: Expression) extends Expression 
   }
 }
 
-case class ExtractFunction(iterable: Expression, id: String, expression: Expression)
-  extends NullInNullOutExpression(iterable)
+case class ExtractFunction(collection: Expression, id: String, expression: Expression)
+  extends NullInNullOutExpression(collection)
   with IterableSupport
 {
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).map(iterValue => {
@@ -45,19 +45,19 @@ case class ExtractFunction(iterable: Expression, id: String, expression: Express
       expression(innerMap)
     }).toList
 
-  val identifier = Identifier("extract(" + id + " in " + iterable.identifier.name + " : " + expression.identifier.name + ")", new IterableType(expression.identifier.typ))
+  val identifier = Identifier("extract(" + id + " in " + collection.identifier.name + " : " + expression.identifier.name + ")", new CollectionType(expression.identifier.typ))
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] =
   // Extract depends on everything that the iterable and the expression depends on, except
   // the new identifier inserted into the expression context, named with id
-    iterable.dependencies(AnyIterableType()) ++ expression.dependencies(AnyType()).filterNot(_.name == id)
+    collection.dependencies(AnyIterableType()) ++ expression.dependencies(AnyType()).filterNot(_.name == id)
 
-  def rewrite(f: (Expression) => Expression) = f(ExtractFunction(iterable.rewrite(f), id, expression.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
   def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ iterable.filter(f) ++ expression.filter(f)
+    Seq(this) ++ collection.filter(f) ++ expression.filter(f)
   else
-    iterable.filter(f) ++ expression.filter(f)
+    collection.filter(f) ++ expression.filter(f)
 }
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
@@ -66,7 +66,7 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 
-  val identifier = Identifier("RELATIONSHIPS(" + path.identifier.name + ")", new IterableType(RelationshipType()))
+  val identifier = Identifier("RELATIONSHIPS(" + path.identifier.name + ")", new CollectionType(RelationshipType()))
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 
@@ -160,7 +160,7 @@ case class HeadFunction(collection: Expression) extends NullInNullOutExpression(
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head
 
   private def myType = collection.identifier.typ match {
-    case x: IterableType => x.iteratedType
+    case x: CollectionType => x.iteratedType
     case _ => ScalarType()
   }
 
@@ -214,7 +214,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 
-  val identifier = Identifier("NODES(" + path.identifier.name + ")", new IterableType(NodeType()))
+  val identifier = Identifier("NODES(" + path.identifier.name + ")", new CollectionType(NodeType()))
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 

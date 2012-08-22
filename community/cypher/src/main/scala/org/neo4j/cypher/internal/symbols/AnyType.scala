@@ -55,7 +55,7 @@ class AnyType {
 
   def isAssignableFrom(other: AnyType): Boolean = this.getClass.isAssignableFrom(other.getClass)
 
-  override def toString: String = this.getClass.getSimpleName
+  override def toString: String = "Any"
 }
 
 

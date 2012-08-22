@@ -19,11 +19,7 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-/**
- * TODO
- */
-
 object PathType {
-  lazy val instance = new IterableType(MapType())
+  lazy val instance = new CollectionType(MapType())
   def apply() = instance
 }

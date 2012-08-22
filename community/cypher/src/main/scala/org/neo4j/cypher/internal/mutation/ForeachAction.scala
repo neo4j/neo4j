@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols.AnyIterableType
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
 
-case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[UpdateAction])
+case class ForeachAction(collection: Expression, symbol: String, actions: Seq[UpdateAction])
   extends UpdateAction
   with IterableSupport {
   def dependencies = {
@@ -34,13 +34,13 @@ case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[Upda
       filterNot(_.name == symbol). //remove dependencies to the symbol we're introducing
       filterNot(ownIdentifiers contains) //remove dependencies to identifiers we are introducing
 
-    iterable.dependencies(AnyIterableType()) ++ updateDeps
+    collection.dependencies(AnyIterableType()) ++ updateDeps
   }
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val before = context.get(symbol)
 
-    val seq = makeTraversable(iterable(context))
+    val seq = makeTraversable(collection(context))
     seq.foreach(element => {
       context.put(symbol, element)
 
@@ -59,9 +59,9 @@ case class ForeachAction(iterable: Expression, symbol: String, actions: Seq[Upda
     Stream(context)
   }
 
-  def filter(f: (Expression) => Boolean) = Some(iterable).filter(f).toSeq ++ actions.flatMap(_.filter(f))
+  def filter(f: (Expression) => Boolean) = Some(collection).filter(f).toSeq ++ actions.flatMap(_.filter(f))
 
-  def rewrite(f: (Expression) => Expression) = ForeachAction(f(iterable), symbol, actions.map(_.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), symbol, actions.map(_.rewrite(f)))
 
   def identifier = Seq.empty
 }

@@ -27,13 +27,13 @@ trait Updates extends Base with Expressions with StartClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] = rep(delete | set | foreach) ^^ (cmds => reduce(cmds))
 
   def foreach: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
-    case id ~ in ~ iterable ~ ":" ~ creates ~ innerUpdates => {
+    case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates => {
       val createCmds = creates.toSeq.map(_._1.map(_.asInstanceOf[UpdateAction])).flatten
       val reducedItems: (Seq[UpdateAction], Seq[NamedPath]) = reduce(innerUpdates.toSeq)
       val updateCmds = reducedItems._1
       val namedPaths = reducedItems._2  ++ creates.toSeq.flatMap(_._2)
       if(namedPaths.nonEmpty) throw new SyntaxException("Paths can't be created inside of foreach")
-      (Seq(ForeachAction(iterable, id, createCmds ++ updateCmds)), Seq())
+      (Seq(ForeachAction(collection, id, createCmds ++ updateCmds)), Seq())
     }
   }
 

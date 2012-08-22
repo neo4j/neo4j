@@ -45,8 +45,8 @@ class SymbolTableTest extends JUnitSuite {
   }
 
   @Test def givenSymbolTableWithIterableOfStringWhenAskForIterableOfAnyThenReturn() {
-    val symbols = new SymbolTable(Identifier("x", new IterableType(StringType())))
-    symbols.assertHas(Identifier("x", new IterableType(AnyType())))
+    val symbols = new SymbolTable(Identifier("x", new CollectionType(StringType())))
+    symbols.assertHas(Identifier("x", new CollectionType(AnyType())))
   }
 
   @Test def givenSymbolTableWithStringIdentifierWhenMergedWithNumberIdentifierThenContainsBoth() {

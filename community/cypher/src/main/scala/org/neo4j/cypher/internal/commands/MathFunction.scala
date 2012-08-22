@@ -85,7 +85,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     }
   }
 
-  val identifier = Identifier("range("+ start + "," + end + "," + step + ")", new IterableType(NumberType()))
+  val identifier = Identifier("range("+ start + "," + end + "," + step + ")", new CollectionType(NumberType()))
 
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 }

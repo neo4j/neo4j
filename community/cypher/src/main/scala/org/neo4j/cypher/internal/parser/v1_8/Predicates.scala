@@ -47,7 +47,7 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas) }
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ collection ~ where ~ klas => (collection, symbol, klas) }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in: Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {

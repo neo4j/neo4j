@@ -2212,6 +2212,4 @@ RETURN x0.name?
     assert(result.startNode() === b)
     assert(result.endNode() === a)
   }
-
-
 }

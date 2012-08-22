@@ -26,7 +26,9 @@ object MapType {
 }
 
 
-class MapType extends AnyType
+class MapType extends AnyType {
+  override def toString = "Map"
+}
 
 
 
