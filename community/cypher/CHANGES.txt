@@ -7,6 +7,7 @@ o Better type error messages
 o Renamed iterable to collection
 o Fixed #795: so that WITH keeps parameters also for empty aggregation results
 o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on already created elements
+o Added error when using != instead of <>
 
 1.8.M07 (2012-08-08)
 --------------------

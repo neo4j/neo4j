@@ -214,7 +214,11 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Expected `users` to be a Node but it was a Collection")
   }
 
-
+  @Test def warn_about_exclamation_mark() {
+    expectError(
+      "start n=node(0) where n.foo != 2 return n",
+      "Cypher does not support != for inequality comparisons. It's used for nullable properties instead.\nYou probably meant <> instead. Read more about this in the operators chapter in the manual.")
+  }
 
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
