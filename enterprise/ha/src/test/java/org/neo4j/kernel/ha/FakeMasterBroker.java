@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -67,7 +69,7 @@ public class FakeMasterBroker extends AbstractBroker
             .getInteger( HaSettings.read_timeout );
         return new MasterServer( new MasterImpl( graphDb, timeOut ), Protocol.PORT, graphDb.getMessageLog(),
                 config.getInteger( HaSettings.max_concurrent_channels_per_slave ),
-                timeOut, TxChecksumVerifier.ALWAYS_MATCH );
+                timeOut, TxChecksumVerifier.ALWAYS_MATCH, DEFAULT_FRAME_LENGTH );
     }
     
     public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )

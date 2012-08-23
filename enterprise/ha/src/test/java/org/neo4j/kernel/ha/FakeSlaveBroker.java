@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.ConnectionLostHandler;
 import org.neo4j.com.Protocol;
@@ -42,7 +44,7 @@ public class FakeSlaveBroker extends AbstractBroker
     {
         this( new MasterClient18( "localhost", Protocol.PORT, log, storeId, ConnectionLostHandler.NO_ACTION,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), masterMachineId, config );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, DEFAULT_FRAME_LENGTH ), masterMachineId, config );
     }
 
     public Pair<Master, Machine> getMaster()
@@ -71,6 +73,6 @@ public class FakeSlaveBroker extends AbstractBroker
     public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
     {
         return new SlaveServer( new SlaveImpl( graphDb, this, ops ),
-                LOW_SLAVE_PORT + getMyMachineId(), graphDb.getMessageLog() );
+                LOW_SLAVE_PORT + getMyMachineId(), graphDb.getMessageLog(), DEFAULT_FRAME_LENGTH );
     }
 }

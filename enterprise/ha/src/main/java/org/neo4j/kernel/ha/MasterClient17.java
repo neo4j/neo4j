@@ -63,11 +63,11 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     private final int lockReadTimeout;
 
     public MasterClient17( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId, ConnectionLostHandler connectionLostHandler,
-            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler );
+                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 

@@ -19,11 +19,15 @@
  */
 package org.neo4j.com;
 
+import java.nio.channels.ReadableByteChannel;
+
 public interface MadeUpCommunicationInterface
 {
     Response<Integer> multiply( int value1, int value2 );
     
-    Response<Void> streamSomeData( MadeUpWriter writer, int dataSize );
+    Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize );
+    
+    Response<Void> sendDataStream( ReadableByteChannel data );
     
     Response<Integer> throwException( String messageInException );
 }

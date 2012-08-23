@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
+
 import org.jboss.netty.channel.Channel;
-import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
-import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.SlaveClient.SlaveRequestType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -32,10 +32,10 @@ public class SlaveServer extends Server<Slave, Void>
 {
     public static final byte APPLICATION_PROTOCOL_VERSION = 1;
     
-    public SlaveServer( Slave requestTarget, int port, StringLogger logger )
+    public SlaveServer( Slave requestTarget, int port, StringLogger logger, int chunkSize )
     {
-        super( requestTarget, port, logger, Protocol.DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, 1,
-                20, TxChecksumVerifier.ALWAYS_MATCH );
+        super( requestTarget, port, logger, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, 1,
+                20, ALWAYS_MATCH, chunkSize );
     }
 
     @Override

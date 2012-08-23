@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -28,13 +30,14 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     private volatile boolean responseWritten;
     private volatile boolean responseFailureEncountered;
     private final byte internalProtocolVersion;
-    public static final int FRAME_LENGTH = 10000;
+    public static final int FRAME_LENGTH = 1024*1024*1;
 
     public MadeUpServer( MadeUpCommunicationInterface requestTarget, int port, byte internalProtocolVersion,
-            byte applicationProtocolVersion, TxChecksumVerifier txVerifier )
+            byte applicationProtocolVersion, TxChecksumVerifier txVerifier, int chunkSize )
     {
         super( requestTarget, port, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion,
-                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, txVerifier );
+                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                txVerifier, chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
@@ -93,14 +96,40 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             }
         }, Protocol.INTEGER_SERIALIZER ),
         
-        STREAM_SOME_DATA( new TargetCaller<MadeUpCommunicationInterface, Void>()
+        FETCH_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
         {
             @Override
             public Response<Void> call( MadeUpCommunicationInterface master,
                     RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 int dataSize = input.readInt();
-                return master.streamSomeData( new ToChannelBufferWriter( target ), dataSize );
+                return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
+            }
+        }, Protocol.VOID_SERIALIZER ),
+        
+        SEND_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
+        {
+            @Override
+            public Response<Void> call( MadeUpCommunicationInterface master,
+                    RequestContext context, ChannelBuffer input, ChannelBuffer target )
+            {
+                BlockLogReader reader = new BlockLogReader( input );
+                try
+                {
+                    Response<Void> response = master.sendDataStream( reader );
+                    return response;
+                }
+                finally
+                {
+                    try
+                    {
+                        reader.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
             }
         }, Protocol.VOID_SERIALIZER ),
         

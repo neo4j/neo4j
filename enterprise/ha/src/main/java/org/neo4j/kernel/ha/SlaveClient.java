@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import static java.lang.Integer.parseInt;
+import static org.neo4j.com.ConnectionLostHandler.NO_ACTION;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
@@ -45,10 +46,12 @@ public class SlaveClient extends Client<Slave> implements Slave
 {
     private final int machineId;
     
-    public SlaveClient( int machineId, String hostNameOrIp, int port, StringLogger logger, StoreId storeId, int maxConcurrentChannels )
+    public SlaveClient( int machineId, String hostNameOrIp, int port, StringLogger logger, StoreId storeId,
+            int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, logger, storeId, Protocol.DEFAULT_FRAME_LENGTH, SlaveServer.APPLICATION_PROTOCOL_VERSION,
-                parseInt( getDefault( read_timeout, HaSettings.class ) ), maxConcurrentChannels, maxConcurrentChannels );
+                parseInt( getDefault( read_timeout, HaSettings.class ) ), maxConcurrentChannels, maxConcurrentChannels,
+                NO_ACTION, chunkSize );
         this.machineId = machineId;
     }
 

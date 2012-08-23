@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import static org.neo4j.kernel.ha.HaSettings.allow_init_cluster;
 import static org.neo4j.kernel.ha.HaSettings.cluster_name;
+import static org.neo4j.kernel.ha.HaSettings.com_chunk_size;
 import static org.neo4j.kernel.ha.HaSettings.lock_read_timeout;
 import static org.neo4j.kernel.ha.HaSettings.max_concurrent_channels_per_slave;
 import static org.neo4j.kernel.ha.HaSettings.read_timeout;
@@ -181,10 +182,10 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
     {
-        int timeOut = conf.isSet( lock_read_timeout ) ? conf.getInteger( lock_read_timeout ) : conf.getInteger( read_timeout );
+        int timeOut = conf.isSet( lock_read_timeout ) ? conf.get( lock_read_timeout ) : conf.get( read_timeout );
         return new MasterServer( new MasterImpl( graphDb, timeOut ), Machine.splitIpAndPort( haServer ).other(),
-                graphDb.getMessageLog(), conf.getInteger( max_concurrent_channels_per_slave ), timeOut,
-                new BranchDetectingTxVerifier( graphDb ) );
+                graphDb.getMessageLog(), conf.get( max_concurrent_channels_per_slave ), timeOut,
+                new BranchDetectingTxVerifier( graphDb ), conf.get( com_chunk_size ) );
     }
 
     @Override
@@ -196,7 +197,7 @@ public class ZooClient extends AbstractZooKeeperManager
     public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, Broker broker, SlaveDatabaseOperations ops )
     {
         return new SlaveServer( new SlaveImpl( graphDb, broker, ops ), Machine.splitIpAndPort( haServer ).other(),
-                graphDb.getMessageLog() );
+                graphDb.getMessageLog(), conf.get( com_chunk_size ) );
     }
 
     @Override
@@ -1296,7 +1297,7 @@ public class ZooClient extends AbstractZooKeeperManager
                         {
                             cachedSlaves.put( id, Pair.of( new SlaveClient( machine.getMachineId(), machine.getServer().first(),
                                     machine.getServer().other().intValue(), msgLog, storeId,
-                                    conf.get( HaSettings.max_concurrent_channels_per_slave ) ),
+                                    conf.get( HaSettings.max_concurrent_channels_per_slave ), conf.get( com_chunk_size ) ),
                                     machine ) );
                         }
                     }

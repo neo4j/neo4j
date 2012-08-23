@@ -93,15 +93,16 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 
     private final Map<ProtocolVersionCombo, MasterClientFactory> protocolToFactoryMapping;
 
-    public MasterClientResolver( StringLogger messageLogger, int readTimeout, int lockReadTimeout, int channels )
+    public MasterClientResolver( StringLogger messageLogger, int readTimeout, int lockReadTimeout, int channels,
+            int chunkSize )
     {
         protocolToFactoryMapping = new HashMap<ProtocolVersionCombo, MasterClientFactory>();
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_153, new F153( messageLogger, readTimeout, lockReadTimeout,
-                channels ) );
+                channels, chunkSize ) );
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_17, new F17( messageLogger, readTimeout, lockReadTimeout,
-                channels ) );
+                channels, chunkSize ) );
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_18, new F18( messageLogger, readTimeout, lockReadTimeout,
-                channels ) );
+                channels, chunkSize ) );
     }
 
     public MasterClientFactory getFor( int applicationProtocol, int internalProtocol )
@@ -135,59 +136,64 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         protected final int readTimeoutSeconds;
         protected final int lockReadTimeout;
         protected final int maxConcurrentChannels;
+        protected final int chunkSize;
 
         StaticMasterClientFactory( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout,
-                int maxConcurrentChannels )
+                int maxConcurrentChannels, int chunkSize )
         {
             this.stringLogger = stringLogger;
             this.readTimeoutSeconds = readTimeoutSeconds;
             this.lockReadTimeout = lockReadTimeout;
             this.maxConcurrentChannels = maxConcurrentChannels;
+            this.chunkSize = chunkSize;
         }
     }
 
     public static final class F153 extends StaticMasterClientFactory
     {
-        public F153( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+        public F153( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+                int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
         {
             return new MasterClient153( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     };
 
     public static final class F17 extends StaticMasterClientFactory
     {
-        public F17( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+        public F17( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+                int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
         {
             return new MasterClient17( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     };
 
     public static final class F18 extends StaticMasterClientFactory
     {
-        public F18( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+        public F18( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+                int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
         {
             return new MasterClient18( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels );
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
     }
 

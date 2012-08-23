@@ -85,12 +85,12 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
 
     public MasterClient153( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
             ConnectionLostHandler connectionLostHandler, int readTimeoutSeconds, int lockReadTimeout,
-            int maxConcurrentChannels )
+            int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min(
                         maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
-                connectionLostHandler );
+                        connectionLostHandler, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 

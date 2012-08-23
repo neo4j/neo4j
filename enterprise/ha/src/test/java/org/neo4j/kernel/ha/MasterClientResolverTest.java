@@ -22,15 +22,23 @@ package org.neo4j.kernel.ha;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class MasterClientResolverTest
 {
+    private MasterClientResolver resolver;
+    
+    @Before
+    public void before() throws Exception
+    {
+        resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0, 1000 );
+    }
+    
     @Test
     public void testDefault()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         assertEquals( "default was not the latest one", MasterClientResolver.F18.class,
                 resolver.getDefault().getClass() );
     }
@@ -38,7 +46,6 @@ public class MasterClientResolverTest
     @Test
     public void testAskedVersionWorks()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         assertEquals( "wrong version returned for version 2", MasterClientResolver.F153.class,
                 resolver.getFor( 2, 2 ).getClass() );
         assertEquals( "wrong version returned for version 3", MasterClientResolver.F17.class,
@@ -50,21 +57,18 @@ public class MasterClientResolverTest
     @Test
     public void testUnknownVersionReturnsNull()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         assertNull( "Should return nothing on unknwon version", resolver.getFor( -1, -1 ) );
     }
 
     @Test( expected = NullPointerException.class )
     public void testNonBootstrappedDoesNotReturn()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         resolver.instantiate( "", 0, null );
     }
 
     @Test
     public void testUnknownVersionLeavesPreviousInPlace()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         resolver.getDefault();
         MasterClient currentClient = resolver.instantiate( "", 0, null );
         Class previousClass = currentClient.getClass();
@@ -76,8 +80,6 @@ public class MasterClientResolverTest
     @Test
     public void testAskedVersionSticks()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
-
         resolver.getFor( 2, 2 );
         MasterClient currentClient = resolver.instantiate( "", 0, null );
         assertEquals( "wrong version returned for version 2", MasterClient153.class, currentClient.getClass() );
@@ -97,8 +99,6 @@ public class MasterClientResolverTest
     @Test
     public void testDowngradesArePossibleIfNotLocked()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
-
         resolver.getFor( 4, 2 );
         MasterClient currentClient = resolver.instantiate( "", 0, null );
         assertEquals( "wrong version returned for version 4", MasterClient18.class, currentClient.getClass() );
@@ -118,8 +118,6 @@ public class MasterClientResolverTest
     @Test
     public void testDowngradesArePossibleUntilLocked()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
-
         resolver.getFor( 4, 2 );
         MasterClient currentClient = resolver.instantiate( "", 0, null );
         assertEquals( "wrong version returned for version 4", MasterClient18.class, currentClient.getClass() );
@@ -141,7 +139,6 @@ public class MasterClientResolverTest
     @Test
     public void downgradeDoesNotHappenWhenLocked()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         resolver.getFor( 3, 2 );
         resolver.enableDowngradeBarrier();
         resolver.getFor( 2, 2 );
@@ -153,7 +150,6 @@ public class MasterClientResolverTest
     @Test
     public void lockingShouldNotPreventBootstrapping()
     {
-        MasterClientResolver resolver = new MasterClientResolver( StringLogger.SYSTEM, 0, 0, 0 );
         resolver.enableDowngradeBarrier();
 
         resolver.getFor( 3, 2 );

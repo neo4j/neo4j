@@ -40,7 +40,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     {
         super( requestTarget, port, logger, FRAME_LENGTH, PROTOCOL_VERSION,
                 DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                TxChecksumVerifier.ALWAYS_MATCH );
+                TxChecksumVerifier.ALWAYS_MATCH, FRAME_LENGTH );
     }
 
     @Override
