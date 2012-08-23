@@ -2212,4 +2212,10 @@ RETURN x0.name?
     assert(result.startNode() === b)
     assert(result.endNode() === a)
   }
+
+  @Test
+  def literal_collection() {
+    val result = parseAndExecute("START a=node(0) return length([[],[]]+[[]]) as l").toList
+    assert(result === List(Map("l" -> 3)))
+  }
 }

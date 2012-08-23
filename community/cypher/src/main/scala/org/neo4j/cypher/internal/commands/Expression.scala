@@ -64,7 +64,14 @@ case class Null() extends Expression {
 }
 
 case class Add(a: Expression, b: Expression) extends Expression {
-  val identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+  val identifier = Identifier("%s + %s".format(a.identifier.name, b.identifier.name), myType)
+
+  private def myType = if(a.identifier.typ.isAssignableFrom(b.identifier.typ))
+    a.identifier.typ
+  else if(b.identifier.typ.isAssignableFrom(a.identifier.typ))
+    b.identifier.typ
+  else ScalarType()
+
 
   def compute(m: Map[String, Any]) = {
     val aVal = a(m)
