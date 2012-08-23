@@ -624,6 +624,32 @@ public abstract class GraphDatabaseSetting<T>
         }
     }
     
+    public static class IntegerRangeNumberOfBytesSetting extends GraphDatabaseSetting<Integer>
+    {
+        private final GraphDatabaseSetting<Long> fullRange;
+        
+        public IntegerRangeNumberOfBytesSetting( String name )
+        {
+            super( name, "" );
+            this.fullRange = new NumberOfBytesSetting( name );
+        }
+
+        @Override
+        public void validate( Locale locale, String value )
+        {
+            fullRange.validate( locale, value );
+        }
+
+        @Override
+        public Integer valueOf( String rawValue, Config config )
+        {
+            Long fullValue = fullRange.valueOf( rawValue, config );
+            if ( fullValue.longValue() > Integer.MAX_VALUE )
+                throw new IllegalArgumentException( "Size '" + rawValue + "' too big, keep within integer range (2^32-1)" );
+            return fullValue.intValue();
+        }
+    }
+    
     public static class ListSetting<T>
         extends GraphDatabaseSetting<List<T>>
     {
