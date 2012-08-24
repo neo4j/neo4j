@@ -477,43 +477,30 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             java.util.Collections.sort( propCommands, sorter );
             executeCreated( isRecovered, propCommands, relCommands, nodeCommands );
             executeModified( isRecovered, propCommands, relCommands, nodeCommands );
+            executeDeleted( isRecovered, propCommands, relCommands, nodeCommands );
             if ( isRecovered )
-            {
                 neoStore.setRecoveredStatus( true );
-            }
             try
             {
                 if ( neoStoreCommand != null )
                 {
                     neoStoreCommand.execute();
                     if ( isRecovered )
-                    {
                         removeGraphPropertiesFromCache();
-                    }
                 }
-                if ( isRecovered )
+                if ( !isRecovered )
                 {
-                    neoStore.setLastCommittedTx( getCommitTxId() );
+                    updateFirstRelationships();
+                    lockReleaser.commitCows(); // updates the cached primitives
                 }
+                neoStore.setLastCommittedTx( getCommitTxId() );
             }
             finally
             {
-                if ( isRecovered )
-                {
-                    neoStore.setRecoveredStatus( false );
-                }
+                neoStore.setRecoveredStatus( false );
             }
-            executeDeleted( isRecovered, propCommands, relCommands, nodeCommands );
             if ( isRecovered )
-            {
                 neoStore.updateIdGenerators();
-            }
-            else
-            {
-                updateFirstRelationships();
-                lockReleaser.commitCows(); // updates the cached primitives
-                neoStore.setLastCommittedTx( getCommitTxId() );
-            }
         }
         finally
         {
