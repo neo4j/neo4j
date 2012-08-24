@@ -92,10 +92,11 @@ public class DebugUtil
     public static class StackTracer
     {
         private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<Stack, AtomicInteger>();
+        private boolean considerMessages = true;
         
         public void add( Throwable t )
         {
-            Stack key = new Stack( t );
+            Stack key = new Stack( t, considerMessages );
             AtomicInteger count = uniqueStackTraces.get( key );
             if ( count == null )
             {
@@ -130,23 +131,32 @@ public class DebugUtil
             } );
             return this;
         }
+        
+        public StackTracer ignoreMessages()
+        {
+            considerMessages = false;
+            return this;
+        }
     }
     
     private static class Stack
     {
         private final Throwable stackTrace;
         private final StackTraceElement[] elements;
+        private boolean considerMessage;
 
-        Stack( Throwable stackTrace )
+        Stack( Throwable stackTrace, boolean considerMessage )
         {
             this.stackTrace = stackTrace;
+            this.considerMessage = considerMessage;
             this.elements = stackTrace.getStackTrace();
         }
         
         @Override
         public int hashCode()
         {
-            int hashCode = stackTrace.getMessage().hashCode();
+            int hashCode = stackTrace.getMessage() == null || !considerMessage ? 31 :
+                stackTrace.getMessage().hashCode();
             for ( StackTraceElement element : stackTrace.getStackTrace() )
                 hashCode = hashCode * 9 + element.hashCode();
             return hashCode;
@@ -158,7 +168,14 @@ public class DebugUtil
             if ( !( obj instanceof Stack) ) return false;
             
             Stack o = (Stack) obj;
-            if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) ) return false;
+            if ( considerMessage )
+            {
+                if ( stackTrace.getMessage() == null )
+                {
+                    if ( o.stackTrace.getMessage() != null ) return false;
+                }
+                else if ( !stackTrace.getMessage().equals( o.stackTrace.getMessage() ) ) return false;
+            }
             if ( elements.length != o.elements.length ) return false;
             for ( int i = 0; i < elements.length; i++ )
                 if ( !elements[i].equals( o.elements[i] ) ) return false;

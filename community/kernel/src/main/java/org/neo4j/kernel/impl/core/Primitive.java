@@ -26,6 +26,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -64,7 +65,7 @@ abstract class Primitive
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
             ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp, NodeManager nodeManager );
-    
+
     @Override
     public int hashCode()
     {
@@ -563,19 +564,33 @@ abstract class Primitive
 
     private void ensureFullProperties( NodeManager nodeManager )
     {
-        // double checked locking
-        if ( allProperties() == null ) synchronized ( this )
-        {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ), nodeManager );
-        }
+       ensureFullProperties( nodeManager, /* light = */ false );
     }
 
     private void ensureFullLightProperties( NodeManager nodeManager )
     {
+       ensureFullProperties( nodeManager, /* light = */ true );
+    }
+
+    private void ensureFullProperties(NodeManager nodeManager, boolean light )
+    {
         // double checked locking
         if ( allProperties() == null ) synchronized ( this )
         {
-            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ), nodeManager );
+            if ( allProperties() == null )
+            {
+                try
+                {
+                    ArrayMap<Integer, PropertyData> loadedProperties = loadProperties( nodeManager, light );
+                    setProperties( loadedProperties, nodeManager );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    throw new NotFoundException( asProxy( nodeManager ) + " not found. This can be because someone " +
+                            "else deleted this entity while we were trying to read properties from it, or because of " +
+                            "concurrent modification of other properties on this entity. The problem should be temporary.", e );
+                }
+            }
         }
     }
 
