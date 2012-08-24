@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.pipes.{FilterPipe, Pipe}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
 
 class FilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -53,7 +54,18 @@ class FilterBuilder extends PlanBuilder {
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
-    case Unsolved(pred: Predicate) => p.symbols.satisfies(pred.dependencies)
+    case Unsolved(pred: Predicate) => {
+
+      val dependencies = pred.dependencies
+
+      dependencies.forall(i => try {
+        p.symbols.assertHas(i)
+        true
+      } catch {
+        case e: CypherTypeException => throw e  // If we have a mismatch in identifier type, throw directly
+        case _: CypherException     => false
+      })
+    }
     case _ => false
   }
 
