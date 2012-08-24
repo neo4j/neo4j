@@ -190,16 +190,16 @@ public class ShellTest
         doc.add( "set name \"The Architect\"", "", "set the name" );
         doc.add( "cd", "", "go to the first node in the history stack" );
 
-        doc.add( "","","Now, let's ask some questions" );
+        doc.add( "","","" );
         doc.add( "start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
-                "return zionist.name",
-                "",
+                "return zionist.name;",
+                "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 1.5 start morpheus = node:node_auto_index(name='Morpheus') " +
+        doc.add( "cypher 1.6 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
-                "return zionist.name",
-                "",
+                "return zionist.name;",
+                "Cypher",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
         doc.run();
         server.shutdown();

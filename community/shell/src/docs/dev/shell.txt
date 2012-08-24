@@ -233,7 +233,10 @@ See <<shell-options-enum>> for the traversal order option. Even relationship typ
 === Query with Cypher ===
 You can use Cypher to query the graph. For that, use the +start+ command.
 
-* +start n = (0) return n+ will give you a listing of the node with ID 0
+[TIP]
+Cypher queries need to be terminated by a semicolon `;`.
+
+* +start n = (0) return n;+ will give you a listing of the node with ID 0
 
 
 === Indexing ===
