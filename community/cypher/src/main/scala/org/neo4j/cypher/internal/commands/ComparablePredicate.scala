@@ -50,7 +50,11 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   def isMatch(m: Map[String, Any]): Boolean = {
     val a1 = a(m)
     val b1 = b(m)
-    a1 == b1
+
+    (a1, b1) match {
+      case (IsIterable(l), IsIterable(r)) => l == r
+      case _                              => a1 == b1
+    }
   }
   def atoms = Seq(this)
   def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)

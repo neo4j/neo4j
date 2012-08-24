@@ -2218,4 +2218,22 @@ RETURN x0.name?
     val result = parseAndExecute("START a=node(0) return length([[],[]]+[[]]) as l").toList
     assert(result === List(Map("l" -> 3)))
   }
+
+  @Test
+  def shouldAllowArrayComparison() {
+    val node = createNode("lotteryNumbers" -> Array(42, 87))
+
+    val result = parseAndExecute("start n=node(1) where n.lotteryNumbers = [42, 87] return n")
+
+    assert(result.toList === List(Map("n" -> node)))
+  }
+
+  @Test
+  def shouldSupportArrayOfArrayOfPrimitivesAsParameterForInKeyword() {
+    val node = createNode("lotteryNumbers" -> Array(42, 87))
+
+    val result = parseAndExecute("start n=node(1) where n.lotteryNumbers in [[42, 87], [13], [42]] return n")
+
+    assert(result.toList === List(Map("n" -> node)))
+  }
 }
