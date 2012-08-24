@@ -117,13 +117,6 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     }
     
     @Override
-    protected synchronized void writeOutAndClose()
-    {
-        writeContents();
-        closed = true;
-    }
-
-    @Override
     public int size()
     {
         return windowSize;

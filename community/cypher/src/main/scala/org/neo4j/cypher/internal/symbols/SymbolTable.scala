@@ -35,7 +35,7 @@ class SymbolTable(val identifiers: Map[String, CypherType]) {
   def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
     case Some(typ) if (expectedType.isAssignableFrom(typ)) => typ
     case Some(typ) if (typ.isAssignableFrom(expectedType)) => typ
-    case Some(typ)                                         => throw new CypherTypeException("Expected `%s` to be a %s but it was %s".format(name, expectedType, typ))
+    case Some(typ)                                         => throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))
     case None                                              => throw new SyntaxException("Unknown identifier `%s`.".format(name))
   }
 

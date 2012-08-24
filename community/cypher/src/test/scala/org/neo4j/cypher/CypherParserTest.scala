@@ -260,8 +260,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def shouldHandleRegularComparison() {
-    testAll(
+  @Test def shouldHandleRegularComparisonOld() {
+    test_1_7(
       "start a = node(1) where \"Andres\" =~ /And.*/ return a",
       Query.
         start(NodeById("a", 1)).
@@ -270,8 +270,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleMultipleRegularComparison() {
-    testAll(
+  @Test def shouldHandleRegularComparison() {
+    testFrom_1_8(
+      "start a = node(1) where \"Andres\" =~ 'And.*' return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(LiteralRegularExpression(Literal("Andres"), Literal("And.*"))).
+        returns(ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleMultipleRegularComparison1_7() {
+    test_1_7(
       """start a = node(1) where a.name =~ /And.*/ AnD a.name =~ /And.*/ return a""",
       Query.
         start(NodeById("a", 1)).
@@ -280,9 +290,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleEscapedRegexs() {
-    testAll(
+  @Test def shouldHandleMultipleRegularComparison() {
+    testFrom_1_8(
+      """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(And(LiteralRegularExpression(Property("a", "name"), Literal("And.*")), LiteralRegularExpression(Property("a", "name"), Literal("And.*")))).
+        returns(ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleEscapedRegexs1_7() {
+    test_1_7(
       """start a = node(1) where a.name =~ /And\/.*/ return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(LiteralRegularExpression(Property("a", "name"), Literal("And\\/.*"))).
+        returns(ReturnItem(Identifier("a"), "a"))
+    )
+  }
+
+  @Test def shouldHandleEscapedRegexs() {
+    testFrom_1_8(
+      """start a = node(1) where a.name =~ 'And\\/.*' return a""",
       Query.
         start(NodeById("a", 1)).
         where(LiteralRegularExpression(Property("a", "name"), Literal("And\\/.*"))).
@@ -894,7 +924,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(SingleInIterable(NodesFunction(Identifier("p")), "x", Equals(Property("x", "name"),
+        where(SingleInCollection(NodesFunction(Identifier("p")), "x", Equals(Property("x", "name"),
         Literal("Andres"))))
         returns (ReturnItem(Identifier("b"), "b")))
   }
@@ -1198,7 +1228,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start x = NODE(1) where x.prop in ['a','b'] return x",
       Query.
         start(NodeById("x", 1)).
-        where(AnyInIterable(Collection(Literal("a"), Literal("b")), "-_-INNER-_-", Equals(Property("x", "prop"), Identifier("-_-INNER-_-")))).
+        where(AnyInCollection(Collection(Literal("a"), Literal("b")), "-_-INNER-_-", Equals(Property("x", "prop"), Identifier("-_-INNER-_-")))).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -1278,7 +1308,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testFrom_1_8("start a = node(1) with a create (b {age : a.age * 2}) return b", q)
   }
 
-  @Test def variable_length_path_with_iterable_name() {
+  @Test def variable_length_path_with_collection_for_relationships() {
     testAll("start a=node(0) match a -[r?*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -1726,8 +1756,8 @@ create a-[r:REL]->b
   @Test def full_path_in_create() {
     val secondQ = Query.
       start(
-        CreateRelationshipStartItem("r1", (Identifier("a"),Map()), (Identifier("  UNNAMED1"),Map()), "KNOWS", Map()),
-        CreateRelationshipStartItem("r2", (Identifier("b"),Map()), (Identifier("  UNNAMED1"),Map()), "LOVES", Map())).
+      CreateRelationshipStartItem("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()),
+      CreateRelationshipStartItem("r2", (Identifier("  UNNAMED1"), Map()), (Identifier("b"), Map()), "LOVES", Map())).
       returns()
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
@@ -1746,6 +1776,14 @@ create a-[r:REL]->b
       start(CreateRelationshipStartItem("r", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map())).
       namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
       returns(ReturnItem(Identifier("p"), "p")))
+  }
+
+  @Test def undirected_relationship() {
+    testFrom_1_8(
+      "create (a {name:'A'})-[:KNOWS]-(b {name:'B'})",
+      Query.
+        start(CreateRelationshipStartItem("  UNNAMED1", (Identifier("a"), Map("name" -> Literal("A"))), (Identifier("b"), Map("name" -> Literal("B"))), "KNOWS", Map())).
+        returns())
   }
 
   @Test def relate_and_assign_to_path_identifier() {

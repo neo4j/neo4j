@@ -96,13 +96,15 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     }).toList
 
     rels match {
-      case List() =>
+      case List()  =>
         val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
-        Some(this ->Update(createUpdateActions(dir, startNode, end), () => {
+        Some(this -> Update(createUpdateActions(dir, startNode, end), () => {
           Seq(tx.acquireWriteLock(startNode))
         }))
-      case List(r) => Some(this->Traverse(rel.name -> r, end.name -> r.getOtherNode(startNode)))
-      case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
+
+      case List(r) => Some(this -> Traverse(rel.name -> r, end.name -> r.getOtherNode(startNode)))
+
+      case _       => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
     }
   }
 

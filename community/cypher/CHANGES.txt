@@ -6,6 +6,16 @@ o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same proper
 
 1.8
 --------------------
+o Removed the /../ literal for regular expressions. Now a normal string literal is used instead
+o Concatenation handles types better
+o Changed how the graph-matching module is used, to make it safe for concurrent use
+o Better type error messages
+o Renamed iterable to collection
+o Fixed #795: so that WITH keeps parameters also for empty aggregation results
+o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on already created elements
+
+1.8.M07 (2012-08-08)
+--------------------
 o Added escape characters to string literals
 o Renamed `RELATE` to `CREATE UNIQUE`
 

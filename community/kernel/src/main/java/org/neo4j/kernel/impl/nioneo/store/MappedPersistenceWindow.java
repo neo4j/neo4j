@@ -103,15 +103,6 @@ class MappedPersistenceWindow extends LockableWindow
         return position() == ((MappedPersistenceWindow) o).position();
     }
 
-    @Override
-    protected synchronized void writeOutAndClose()
-    {
-        ((java.nio.MappedByteBuffer) buffer.getBuffer()).force();
-        buffer.close();
-        position = -1;
-        closed = true;
-    }
-
     private volatile int hashCode = 0;
 
     @Override
@@ -135,6 +126,7 @@ class MappedPersistenceWindow extends LockableWindow
     public synchronized void close()
     {
         buffer.close();
+        position = -1;
         closed = true;
     }
 

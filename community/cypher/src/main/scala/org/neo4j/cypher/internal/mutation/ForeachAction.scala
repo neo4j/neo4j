@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.IterableSupport
-import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyIterableType}
+import org.neo4j.cypher.internal.commands.{CollectionSupport}
+import org.neo4j.cypher.internal.symbols.{AnyCollectionType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
   extends UpdateAction
-  with IterableSupport {
+  with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
     val before = context.get(id)
 
@@ -56,7 +56,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   def identifier2 = Seq.empty
 
   def assertTypes(symbols: SymbolTable) {
-    val t = collection.evaluateType(AnyIterableType(), symbols).iteratedType
+    val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
 

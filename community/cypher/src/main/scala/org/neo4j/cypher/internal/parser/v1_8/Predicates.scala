@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Property, Identifier, Nullable, Expression}
 
 
-trait Predicates extends Base with ParserPattern {
+trait Predicates extends Base with ParserPattern with StringLiteral {
   def predicate: Parser[Predicate] = predicateLvl1 ~ rep( ignoreCase("or") ~> predicateLvl1 ) ^^ {
     case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
   }
@@ -48,17 +48,17 @@ trait Predicates extends Base with ParserPattern {
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas) }
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ collection ~ where ~ klas => (collection, symbol, klas) }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in: Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => nullable(AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
+    case checkee ~ in ~ collection => nullable(AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
   }
 
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInIterable(x._1, x._2, x._3), x._1))
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInIterable(x._1, x._2, x._3), x._1))
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInIterable(x._1, x._2, x._3), x._1))
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInIterable(x._1, x._2, x._3), x._1))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInCollection(x._1, x._2, x._3), x._1))
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInCollection(x._1, x._2, x._3), x._1))
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInCollection(x._1, x._2, x._3), x._1))
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInCollection(x._1, x._2, x._3), x._1))
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
@@ -67,7 +67,7 @@ trait Predicates extends Base with ParserPattern {
       expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => nullable(GreaterThan(l, r),l,r) } |
       expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => nullable(LessThanOrEqual(l, r),l,r) } |
       expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => nullable(GreaterThanOrEqual(l, r),l,r) } |
-      expression ~ "=~" ~ regularLiteral ^^ { case a ~ "=~" ~ b => nullable(LiteralRegularExpression(a, b),a,b) } |
+      expression ~ "=~" ~ stringLit ^^ { case a ~ "=~" ~ b => nullable(LiteralRegularExpression(a, b),a,b) } |
       expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) } |
       expression ~> "!" ~> failure("The exclamation symbol is used as a nullable property operator in Cypher. The 'not equal to' operator is <>"))
 

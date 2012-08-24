@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.helpers.Predicate;
+
 public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
     public enum Event
@@ -178,15 +180,57 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             }
         };
     }
+    
+    public static final Predicate<StackTraceElement[]> ALL = new Predicate<StackTraceElement[]>()
+    {
+        @Override
+        public boolean accept( StackTraceElement[] item )
+        {
+            return true;
+        }
+    };
+    
+    private static Predicate<StackTraceElement[]> reversed( final Predicate<StackTraceElement[]> predicate )
+    {
+        return new Predicate<StackTraceElement[]>()
+        {
+            @Override
+            public boolean accept( StackTraceElement[] item )
+            {
+                return !predicate.accept( item );
+            }
+        };
+    }
+    
+    public static Predicate<StackTraceElement[]> stackTraceMustContainClass( final Class<?> cls )
+    {
+        return new Predicate<StackTraceElement[]>()
+        {
+            @Override
+            public boolean accept( StackTraceElement[] item )
+            {
+                for ( StackTraceElement element : item )
+                    if ( element.getClassName().equals( cls.getName() ) )
+                        return true;
+                return false;
+            }
+        };
+    }
 
+    public static Predicate<StackTraceElement[]> stackTraceMustNotContainClass( final Class<?> cls )
+    {
+        return reversed( stackTraceMustContainClass( cls ) );
+    }
+    
     public static BreakPoint thatCrashesTheProcess( final CountDownLatch crashNotification,
             final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
     {
-        return thatCrashesTheProcess( Event.ENTRY, crashNotification, letNumberOfCallsPass, type, method, args );
+        return thatCrashesTheProcess( Event.ENTRY, crashNotification, letNumberOfCallsPass, ALL, type, method, args );
     }
     
     public static BreakPoint thatCrashesTheProcess( Event event, final CountDownLatch crashNotification,
-            final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
+            final int letNumberOfCallsPass, final Predicate<StackTraceElement[]> stackTraceMustContain, Class<?> type,
+            String method, Class<?>... args )
     {
         return new BreakPoint( event, type, method, args )
         {
@@ -196,10 +240,11 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             protected void callback( DebugInterface debug ) throws KillSubProcess
             {
                 if ( ++numberOfCalls <= letNumberOfCallsPass )
-                {
                     return;
-                }
 
+                if ( !stackTraceMustContain.accept( debug.thread().getStackTrace() ) )
+                    return;
+                
                 debug.thread().suspend( null );
                 this.disable();
                 crashNotification.countDown();

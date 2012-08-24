@@ -273,10 +273,10 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
   def symbolTableDependencies = a.symbolTableDependencies ++ regex.symbolTableDependencies
 }
 
-case class NonEmpty(collection:Expression) extends Predicate with IterableSupport {
+case class NonEmpty(collection:Expression) extends Predicate with CollectionSupport {
   def isMatch(m: Map[String, Any]): Boolean = {
     collection(m) match {
-      case IsIterable(x) => this.makeTraversable(collection(m)).nonEmpty
+      case IsCollection(x) => this.makeTraversable(collection(m)).nonEmpty
       case null          => false
       case x             => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
     }
@@ -289,7 +289,7 @@ case class NonEmpty(collection:Expression) extends Predicate with IterableSuppor
   def filter(f: (Expression) => Boolean) = collection.filter(f)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    collection.evaluateType(AnyIterableType(), symbols)
+    collection.evaluateType(AnyCollectionType(), symbols)
   }
 
   def symbolTableDependencies = collection.symbolTableDependencies

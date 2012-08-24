@@ -417,6 +417,15 @@ return distinct center""")
 
     assert(r1 === r2)
   }
+  @Test
+  def create_unique_relationship_and_use_created_identifier_in_set() {
+    createNode()
+    createNode()
+
+    val r1 = executeScalar[Relationship]("start a=node(1), b=node(2) create unique a-[r:FOO]->b set r.foo = 'bar' return r")
+
+    assert("bar" === r1.getProperty("foo"))
+  }
 
   @Test
   def create_unique_twice_with_array_prop() {
@@ -467,12 +476,17 @@ return distinct center""")
   }
 
   @Test
+  def create_with_parameters_is_not_ok_when_identifier_already_exists() {
+    intercept[SyntaxException](parseAndExecute("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
+  }
+
+  @Test
   def failure_only_fails_inner_transaction() {
     val tx = graph.beginTx()
     try {
       parseAndExecute("start a=node({id}) set a.foo = 'bar' return a","id"->"0")
     } catch {
-      case _ => tx.failure()
+      case _: Throwable => tx.failure()
     }
     finally tx.finish()
   }
@@ -489,6 +503,10 @@ return distinct center""")
     intercept[SyntaxException](parseAndExecute("create a-[:test]->b, (a {name:'a'})-[:test2]->c"))
   }
 
+  @Test
+  def cant_set_properties_after_node_is_already_created2() {
+    intercept[SyntaxException](parseAndExecute("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
+  }
 }
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,

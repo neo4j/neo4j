@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.{IterableSupport, IsIterable}
+import internal.commands.{CollectionSupport, IsCollection}
 import internal.StringExtras
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
@@ -31,7 +31,7 @@ import collection.immutable.{Map => ImmutableMap}
 class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List[String])
   extends ExecutionResult
   with StringExtras
-  with IterableSupport {
+  with CollectionSupport {
 
   lazy val immutableResult = r.map(m => m.toMap)
 
@@ -133,7 +133,7 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List
   private def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
     case x: Relationship => ":" + x.getType.toString + "[" + x.getId + "] " + props(x)
-    case IsIterable(coll) => coll.map(text).mkString("[", ",", "]")
+    case IsCollection(coll) => coll.map(text).mkString("[", ",", "]")
     case x: String => "\"" + x + "\""
     case Some(x) => x.toString
     case null => "<null>"

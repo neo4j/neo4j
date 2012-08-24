@@ -55,8 +55,8 @@ class WhereTest extends DocumentingTestBase {
   @Test def regular_expressions() {
     testQuery(
       title = "Regular expressions",
-      text = "You can match on regular expressions by using `=~ /regexp/`, like this:",
-      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Tob.*/ return n""",
+      text = "You can match on regular expressions by using `=~ \"regexp\"`, like this:",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ 'Tob.*' return n""",
       returns = """The "+Tobias+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
@@ -64,8 +64,9 @@ class WhereTest extends DocumentingTestBase {
   @Test def regular_expressions_escaped() {
     testQuery(
       title = "Escaping in regular expressions",
-      text = "If you need a forward slash inside of your regular expression, escape it using a backslash (+\\+).",
-      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Some\/thing/ return n""",
+      text = "If you need a forward slash inside of your regular expression, escape it. Remember that back slash needs " +
+             "to be escaped in string literals",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ 'Some\\/thing' return n""",
       returns = """No nodes match this regular expression.""",
       assertions = (p) => assertEquals(List(), p.toList))
   }
@@ -74,7 +75,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Case insensitive regular expressions",
       text = "By pre-pending a regular expression with `(?i)`, the whole expression becomes case insensitive.",
-      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /(?i)ANDR.*/ return n""",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ '(?i)ANDR.*' return n""",
       returns = """The node with name "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
@@ -113,7 +114,7 @@ class WhereTest extends DocumentingTestBase {
       text = "You can put the exact relationship type in the `MATCH` pattern, but sometimes you want to be able to do more " +
         "advanced filtering on the type. You can use the special property `TYPE` to compare the type with something else. " +
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
-      queryText = """start n=node(%Andres%) match (n)-[r]->() where type(r) =~ /K.*/ return r""",
+      queryText = """start n=node(%Andres%) match (n)-[r]->() where type(r) =~ 'K.*' return r""",
       returns = """This returns relationships that has a type whose name starts with K.""",
       assertions = (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }

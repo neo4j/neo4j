@@ -19,24 +19,26 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import collection.Map
+import collection.{immutable, Map}
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode}
+import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship=>SimplePatternRelationship, PatternGroup}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.MutableMaps
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
-  val patternNodes = pattern.patternNodes.map {
-    case (key, pn) => {
-      key -> {
-        new SimplePatternNode(pn.key)
+  def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
+    pattern.patternNodes.map {
+      case (key, pn) => {
+        key -> {
+          new SimplePatternNode(pn.key)
+        }
       }
     }
   }
 
-  val patternRels = pattern.patternRels.map {
+  def createPatternRels(patternNodes:immutable.Map[String, SimplePatternNode]):immutable.Map[String, SimplePatternRelationship]  = pattern.patternRels.map {
     case (key, pr) => {
       val start = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
@@ -55,7 +57,9 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
     }
   }
 
-  def setAssociations(sourceRow: Map[String, Any]) {
+  def setAssociations(sourceRow: Map[String, Any]): (immutable.Map[String, SimplePatternNode], immutable.Map[String, SimplePatternRelationship]) = {
+    val patternNodes = createPatternNodes
+    val patternRels = createPatternRels(patternNodes)
     patternNodes.values.foreach(pn => {
       sourceRow.get(pn.getLabel) match {
         case Some(node: Node) => pn.setAssociation(node)
@@ -69,10 +73,12 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
         case _ => pr.setAssociation(null)
       }
     })
+
+    (patternNodes, patternRels)
   }
 
   def getMatches(sourceRow: Map[String, Any]) = {
-    setAssociations(sourceRow)
+    val (patternNodes, patternRels) = setAssociations(sourceRow)
     val result = MutableMaps.create(sourceRow)
     val validPredicates = predicates.filter(p => p.checkTypes(symbolTable))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get

@@ -43,10 +43,10 @@ class PatternNode(key: String) extends PatternElement(key) {
                                     maxHops: Option[Int],
                                     relType: Seq[String],
                                     dir: Direction,
-                                    iterableRel: Option[String],
+                                    collectionOfRels: Option[String],
                                     optional: Boolean,
                                     predicate: Predicate): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional, predicate)
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, dir, optional, predicate)
     relationships.add(rel)
     end.relationships.add(rel)
     rel

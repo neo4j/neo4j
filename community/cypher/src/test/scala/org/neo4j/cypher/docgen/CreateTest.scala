@@ -92,7 +92,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     )
   }
 
-  @Test def set_property_to_an_iterable() {
+  @Test def set_property_to_a_collection() {
     val (aId, bId) = db.inTx(() => {
       val a = db.createNode()
       val b = db.createNode()

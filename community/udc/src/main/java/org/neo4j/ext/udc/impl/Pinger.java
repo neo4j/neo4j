@@ -29,26 +29,28 @@ import static org.neo4j.ext.udc.UdcConstants.PING;
 public class Pinger {
 
     private final String address;
-    private final Map<String, String> usageDataMap;
+    private final UdcInformationCollector collector;
     private int pingCount = 0;
 
-    public Pinger( String address, Map<String, String> usageDataMap, boolean crashPing )
+    public Pinger( String address, UdcInformationCollector collector )
     {
         this.address = address;
-        this.usageDataMap = usageDataMap;
-        if ( crashPing ) pingCount = -1;
+        this.collector = collector;
+        if ( collector.getCrashPing() ) pingCount = -1;
     }
 
 
     public void ping() throws IOException {
         pingCount++;
 
-        StringBuffer uri = new StringBuffer("http://" + address + "/" + "?");
+        Map<String, String> usageDataMap = collector.getUdcParams();
+
+        StringBuilder uri = new StringBuilder("http://" + address + "/" + "?");
 
         for (String key : usageDataMap.keySet()) {
             uri.append(key);
             uri.append("=");
-            uri.append(usageDataMap.get(key));
+            uri.append( usageDataMap.get( key ));
             uri.append("+");
         }
 

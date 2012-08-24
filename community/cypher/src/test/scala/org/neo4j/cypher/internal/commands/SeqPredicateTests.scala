@@ -27,7 +27,7 @@ class SeqPredicateTests extends Assertions {
   @Test def allStringsBeginWithA() {
     val strings = Seq("Andres", "Andres")
     val inner = Equals(Literal("Andres"), Identifier("x"))
-    val all = new AllInIterable(Identifier("strings"), "x", inner)
+    val all = new AllInCollection(Identifier("strings"), "x", inner)
 
     assert(all.isMatch(Map("strings" -> strings)))
   }

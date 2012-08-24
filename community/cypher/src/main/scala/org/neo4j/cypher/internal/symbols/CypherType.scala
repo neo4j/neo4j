@@ -34,7 +34,7 @@ trait CypherType {
 
   def parentType: CypherType
 
-  val isIterable: Boolean = false
+  val isCollection: Boolean = false
 }
 
 object CypherType {
@@ -49,7 +49,7 @@ object CypherType {
       return BooleanType()
 
     if (obj.isInstanceOf[Seq[_]] || obj.isInstanceOf[Array[_]])
-      return AnyIterableType()
+      return AnyCollectionType()
 
     AnyType()
   }

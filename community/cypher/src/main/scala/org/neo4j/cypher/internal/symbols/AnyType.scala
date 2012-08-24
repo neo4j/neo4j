@@ -28,14 +28,15 @@ case class AnyType() extends CypherType {
   else
     other match {
       case x: AnyRef => x.getClass == this.getClass
-      case _ => false
+      case _         => false
     }
 
   override val iteratedType: CypherType = this
 
-  override def toString: String = this.getClass.getSimpleName
+  def parentType: CypherType = this
 
-  def parentType:CypherType = this //This is the root of all
+  //This is the root of all
+  override def toString: String = "Any"
 }
 
 

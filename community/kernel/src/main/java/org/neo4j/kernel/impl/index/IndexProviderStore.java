@@ -220,6 +220,11 @@ public class IndexProviderStore
         return this.lastCommittedTx;
     }
     
+    public synchronized void flush()
+    {
+        writeOut();
+    }
+    
     private void writeOut()
     {
         try

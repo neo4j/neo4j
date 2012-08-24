@@ -31,13 +31,12 @@ import org.neo4j.kernel.impl.transaction.LockException;
  */
 abstract class LockableWindow implements PersistenceWindow
 {
-    private OperationType type = null;
     private final FileChannel fileChannel;
 
     private Thread lockingThread = null;
     private final LinkedList<LockElement> waitingThreadList = 
         new LinkedList<LockElement>();
-    private int lockCount = 0;
+    private boolean locked;
     private int marked = 0;
     protected boolean closed;
 
@@ -56,20 +55,14 @@ abstract class LockableWindow implements PersistenceWindow
         return fileChannel;
     }
 
-    OperationType getOperationType()
-    {
-        return type;
-    }
-    
     /**
      * Writes out any changes to the underlying {@link FileChannel} and is then
      * considered unusable.
      */
-    protected abstract void writeOutAndClose();
-
-    void setOperationType( OperationType type )
+    protected final void writeOutAndClose()
     {
-        this.type = type;
+        force();
+        close();
     }
 
     /**
@@ -95,11 +88,11 @@ abstract class LockableWindow implements PersistenceWindow
         }
     }
     
-    synchronized void lock()
+    synchronized void lock( OperationType operationType )
     {
         Thread currentThread = Thread.currentThread();
         LockElement le = new LockElement( currentThread );
-        while ( lockCount > 0 && lockingThread != currentThread )
+        while ( locked && lockingThread != currentThread )
         {
             waitingThreadList.addFirst( le );
             try
@@ -111,7 +104,7 @@ abstract class LockableWindow implements PersistenceWindow
                 Thread.interrupted();
             }
         }
-        lockCount++;
+        locked = true;
         lockingThread = currentThread;
         le.movedOn = true;
         marked--;
@@ -120,34 +113,34 @@ abstract class LockableWindow implements PersistenceWindow
     synchronized void unLock()
     {
         Thread currentThread = Thread.currentThread();
-        if ( lockCount == 0 )
+        if ( !locked )
         {
             throw new LockException( "" + currentThread
                 + " don't have window lock on " + this );
         }
-        lockCount--;
-        if ( lockCount == 0 )
+        locked = false;
+        lockingThread = null;
+        while ( !waitingThreadList.isEmpty() )
         {
-            lockingThread = null;
-            if ( waitingThreadList.size() > 0 )
+            LockElement le = waitingThreadList.removeLast();
+            if ( !le.movedOn )
             {
-                LockElement le = waitingThreadList.removeLast();
-                if ( !le.movedOn )
-                {
-                    le.thread.interrupt();
-                }
+                le.thread.interrupt();
+                break;
             }
         }
     }
 
-    synchronized boolean isFree()
+    private boolean isFree( boolean assumingOwnerUnlockedIt )
     {
-        return lockCount == 0 && marked == 0;
+        return assumingOwnerUnlockedIt ?
+                marked == 0 :           // excluding myself (the owner) no other must have marked this window
+                marked == 0 && !locked; // no one must have this marked and it mustn't be locked
     }
 
     synchronized boolean writeOutAndCloseIfFree( boolean readOnly )
     {
-        if ( isFree() )
+        if ( isFree( lockingThread == Thread.currentThread() ) )
         {
             if ( !readOnly )
                 writeOutAndClose();

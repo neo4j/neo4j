@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.transaction.TransactionManager;
 
@@ -30,13 +29,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class RelationshipTypeHolder
 {
-    private ArrayMap<String,Integer> relTypes = 
-        new ArrayMap<String,Integer>( (byte)5, true, true );
-    private Map<Integer, RelationshipTypeImpl> relTranslation = new ConcurrentHashMap<Integer, RelationshipTypeImpl>();
+    private Map<String,Integer> relTypes = new CopyOnWriteHashMap<String, Integer>();
+    private Map<Integer, RelationshipTypeImpl> relTranslation = new CopyOnWriteHashMap<Integer, RelationshipTypeImpl>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;

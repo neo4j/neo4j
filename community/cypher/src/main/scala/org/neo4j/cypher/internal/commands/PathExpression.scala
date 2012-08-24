@@ -65,7 +65,7 @@ case class PathExpression(pathPattern: Seq[Pattern])
 
   def calculateType(symbols: SymbolTable): CypherType = {
     pathPattern.foreach(_.assertTypes(symbols))
-    new IterableType( PathType() )
+    new CollectionType(PathType())
   }
 
   def symbolTableDependencies = {

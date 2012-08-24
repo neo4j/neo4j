@@ -38,7 +38,7 @@ trait UpdateAction extends TypeSafe {
   def filter(f: Expression => Boolean): Seq[Expression]
 }
 
-trait GraphElementPropertyFunctions extends IterableSupport {
+trait GraphElementPropertyFunctions extends CollectionSupport {
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)

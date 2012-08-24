@@ -48,7 +48,7 @@ import org.neo4j.ext.udc.UdcConstants;
  * Unit tests for the UDC statistics pinger.
  */
 public class PingerTest {
-    private final String EXPTECTED_KERNEL_VERSION = "1.0";
+    private final String EXPECTED_KERNEL_VERSION = "1.0";
     private final String EXPECTED_STORE_ID = "CAFE";
     private String hostname = "localhost";
     private String serverUrl;
@@ -92,15 +92,49 @@ public class PingerTest {
         assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
     }
 
+    static class TestUdcCollector implements UdcInformationCollector {
+        private final Map<String, String> params;
+        private boolean crashed;
+
+
+        TestUdcCollector( Map<String, String> params )
+        {
+            this.params = params;
+        }
+
+        @Override
+        public Map<String, String> getUdcParams()
+        {
+            return params;
+        }
+
+        @Override
+        public String getStoreId()
+        {
+            return getUdcParams().get(ID);
+        }
+
+        @Override
+        public boolean getCrashPing()
+        {
+            return crashed;
+        }
+
+        public UdcInformationCollector withCrash()
+        {
+            crashed=true;
+            return this;
+        }
+    }
 
     @Test
     public void shouldPingServer() {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String,String> udcFields = new HashMap<String, String>();
         udcFields.put(ID, EXPECTED_STORE_ID);
-        udcFields.put(UdcConstants.VERSION, EXPTECTED_KERNEL_VERSION);
+        udcFields.put(UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
 
-        Pinger p = new Pinger( hostURL, udcFields, false );
+        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
         Exception thrownException = null;
         try {
             p.ping();
@@ -122,7 +156,7 @@ public class PingerTest {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String,String> udcFields = new HashMap<String, String>();
 
-        Pinger p = new Pinger( hostURL, udcFields, false );
+        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
         for (int i=0; i<EXPECTED_PING_COUNT; i++) {
             p.ping();
         }
@@ -140,7 +174,7 @@ public class PingerTest {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
-        Pinger p = new Pinger( hostURL, udcFields, false );
+        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
         for ( int i = 0; i < expectedSequence.length; i++ )
         {
             p.ping();
@@ -156,7 +190,7 @@ public class PingerTest {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
-        Pinger p = new Pinger( hostURL, udcFields, true );
+        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );
         for ( int i = 0; i < expectedSequence.length; i++ )
         {
             p.ping();

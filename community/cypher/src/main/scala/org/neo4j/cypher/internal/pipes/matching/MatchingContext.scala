@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
+import collection.{immutable, Map}
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -35,9 +35,17 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
-  private def identifiers = patternGraph.patternRels.values.flatMap(p => p.identifiers2).toMap
+  private def identifiers: immutable.Map[String, CypherType] = patternGraph.patternRels.values.flatMap(p => p.identifiers2).toMap
 
-  lazy val symbols = boundIdentifiers.add(identifiers)
+  lazy val symbols = {
+    val ids = identifiers
+
+    val identifiersAlreadyInContext = ids.filter(identifier => boundIdentifiers.hasIdentifierNamed(identifier._1))
+
+    identifiersAlreadyInContext.foreach( identifier => boundIdentifiers.evaluateType(identifier._1, identifier._2) )
+
+    boundIdentifiers.add(ids)
+  }
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     builder.getMatches(sourceRow)

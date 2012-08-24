@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.IterableSupport
+import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
-  with IterableSupport
+  with CollectionSupport
   with Closure {
 
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).map {
@@ -42,7 +42,7 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
     collection.filter(f) ++ expression.filter(f)
 
 
-  def calculateType(symbols: SymbolTable): CypherType = collection.evaluateType(AnyIterableType(), symbols)
+  def calculateType(symbols: SymbolTable): CypherType = collection.evaluateType(AnyCollectionType(), symbols)
 
   def symbolTableDependencies = symbolTableDependencies(collection, expression, id)
 }

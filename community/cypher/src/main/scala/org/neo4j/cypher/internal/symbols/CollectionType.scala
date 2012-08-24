@@ -19,7 +19,24 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-object AnyIterableType {
-  val instance = new IterableType(AnyType())
-  def apply() = instance
+import java.lang.String
+
+class CollectionType(override val iteratedType: CypherType) extends AnyType {
+
+  override def toString: String =
+    if (iteratedType.isInstanceOf[AnyType])
+      "Collection"
+    else
+      "Collection<" + iteratedType + ">"
+
+  override def isAssignableFrom(other:CypherType):Boolean = super.isAssignableFrom(other) &&
+                                                            iteratedType.isAssignableFrom(other.asInstanceOf[CollectionType].iteratedType)
+  // Here we'll first try lowering the generic type all the way down to AnyType. If that doesn't work, let's move up
+  // to AnyType
+  override def parentType = iteratedType match {
+    case AnyType() => AnyType()
+    case _         => new CollectionType(iteratedType.parentType)
+  }
+
+  override val isCollection = true
 }

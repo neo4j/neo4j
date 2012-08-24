@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 import collection.Map
-import org.neo4j.cypher.internal.commands.IterableSupport
+import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.symbols._
 
-case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with IterableSupport {
+case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head
 
   def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
@@ -34,7 +34,7 @@ case class HeadFunction(collection: Expression) extends NullInNullOutExpression(
 
   def identifierDependencies(expectedType: CypherType) = null
 
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyIterableType(), symbols).iteratedType
+  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 
   def symbolTableDependencies = collection.symbolTableDependencies
 }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.IsIterable
+import org.neo4j.cypher.internal.commands.IsCollection
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 
@@ -32,9 +32,9 @@ case class Add(a: Expression, b: Expression) extends Expression {
     (aVal, bVal) match {
       case (x: Number, y: Number)         => x.doubleValue() + y.doubleValue()
       case (x: String, y: String)         => x + y
-      case (IsIterable(x), IsIterable(y)) => x ++ y
-      case (IsIterable(x), y)             => x ++ Seq(y)
-      case (x, IsIterable(y))             => Seq(x) ++ y
+      case (IsCollection(x), IsCollection(y)) => x ++ y
+      case (IsCollection(x), y)             => x ++ Seq(y)
+      case (x, IsCollection(y))             => Seq(x) ++ y
       case _                              => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
     }
   }
@@ -50,7 +50,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
     val aT = a.getType(symbols)
     val bT = a.getType(symbols)
 
-    (aT.isIterable, bT.isIterable) match {
+    (aT.isCollection, bT.isCollection) match {
       case (true,false) => mergeWithCollection(collection = aT, singleElement = bT)
       case (false,true) => mergeWithCollection(collection = bT, singleElement = aT)
       case _ => aT.mergeWith(bT)
@@ -58,9 +58,9 @@ case class Add(a: Expression, b: Expression) extends Expression {
   }
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
-    val iterableType = collection.asInstanceOf[IterableType]
-    val mergedInnerType = iterableType.iteratedType.mergeWith(singleElement)
-    new IterableType(mergedInnerType)
+    val collectionType = collection.asInstanceOf[CollectionType]
+    val mergedInnerType = collectionType.iteratedType.mergeWith(singleElement)
+    new CollectionType(mergedInnerType)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies

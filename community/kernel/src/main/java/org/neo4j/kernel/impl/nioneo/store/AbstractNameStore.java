@@ -383,4 +383,10 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         return list;
     }
 
+    @Override
+    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
+    {
+        super.logAllWindowPoolStats( logger );
+        logger.logLine( nameStore.getWindowPoolStats().toString() );
+    }
 }

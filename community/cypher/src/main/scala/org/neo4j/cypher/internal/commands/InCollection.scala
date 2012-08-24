@@ -27,9 +27,9 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 import collection.JavaConverters._
 
-abstract class InIterable(collection: Expression, id: String, predicate: Predicate)
+abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
   extends Predicate
-  with IterableSupport
+  with CollectionSupport
   with Closure {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
@@ -53,46 +53,46 @@ abstract class InIterable(collection: Expression, id: String, predicate: Predica
   def filter(f: (Expression) => Boolean): Seq[Expression] = collection.filter(f) ++ predicate.filter(f)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    val innerType = collection.evaluateType(AnyIterableType(), symbols).iteratedType
+    val innerType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
     predicate.assertTypes(symbols.add(id, innerType))
   }
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }
 
-case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
+case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 
   def name = "all"
 
-  def rewrite(f: (Expression) => Expression) = AllInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = AllInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class AnyInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
+case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
 
   def name = "any"
 
-  def rewrite(f: (Expression) => Expression) = AnyInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = AnyInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class NoneInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
+case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
 
   def name = "none"
 
-  def rewrite(f: (Expression) => Expression) = NoneInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = NoneInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class SingleInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
+case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
 
   def name = "single"
 
-  def rewrite(f: (Expression) => Expression) = SingleInIterable(iterable.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = SingleInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-object IsIterable extends IterableSupport {
+object IsCollection extends CollectionSupport {
   def unapply(x: Any):Option[Traversable[Any]] = if (isCollection(x)) {
     Some(castToTraversable(x))
   } else {
@@ -100,7 +100,7 @@ object IsIterable extends IterableSupport {
   }
 }
 
-trait IterableSupport {
+trait CollectionSupport {
   def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
 
   def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {

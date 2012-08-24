@@ -62,14 +62,12 @@ case class AllNodes(columnName: String)
 case class AllRelationships(columnName: String)
   extends StartItem(columnName) with ReadOnlyStartItem
 
-
-
 case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   extends StartItem(key)
   with Mutator
   with UpdateAction
   with GraphElementPropertyFunctions
-  with IterableSupport {
+  with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
     val db = state.db
     if (props.size == 1 && props.head._1 == "*") {
@@ -104,7 +102,10 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   def symbolTableDependencies = symbolTableDependencies(props)
 }
 
-case class CreateRelationshipStartItem(key: String, from: (Expression, Map[String, Expression]), to: (Expression, Map[String, Expression]), typ: String, props: Map[String, Expression])
+case class CreateRelationshipStartItem(key: String,
+                                       from: (Expression, Map[String, Expression]),
+                                       to: (Expression, Map[String, Expression]),
+                                       typ: String, props: Map[String, Expression])
   extends StartItem(key)
   with Mutator
   with UpdateAction

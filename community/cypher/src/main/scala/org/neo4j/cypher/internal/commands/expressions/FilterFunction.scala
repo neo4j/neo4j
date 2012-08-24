@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.{IterableSupport, Predicate}
+import org.neo4j.cypher.internal.commands.{CollectionSupport, Predicate}
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
-  with IterableSupport
+  with CollectionSupport
   with Closure {
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).filter(element => predicate.isMatch(m + (id -> element)))
 
@@ -37,7 +37,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
     collection.filter(f)
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    val t = collection.evaluateType(AnyIterableType(), symbols)
+    val t = collection.evaluateType(AnyCollectionType(), symbols)
 
     predicate.assertTypes(symbols.add(id, t.iteratedType))
 

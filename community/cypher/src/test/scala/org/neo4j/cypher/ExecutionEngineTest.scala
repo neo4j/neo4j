@@ -754,7 +754,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
       namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
-      where(AllInIterable(NodesFunction(Identifier("p")), "i", Equals(Property("i", "foo"), Literal("bar")))).
+      where(AllInCollection(NodesFunction(Identifier("p")), "i", Equals(Property("i", "foo"), Literal("bar")))).
       returns(ReturnItem(Identifier("pB"), "pB"))
 
     val result = execute(query)
@@ -1210,7 +1210,7 @@ return x, p""")
 
     val result = parseAndExecute( """
 start a  = node(1)
-where a.name =~ /And.*/ AND a.name =~ /And.*/
+where a.name =~ 'And.*' AND a.name =~ 'And.*'
 return a""")
 
     assert(List(a) === result.columnAs[Node]("a").toList)
@@ -1414,7 +1414,7 @@ order by a.COL1
   @Test def shouldAllowStringComparisonsInArray() {
     val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
 
-    val result = parseAndExecute("start a = node(1) where single(x in a.array where x =~ /.*the.*/) return a")
+    val result = parseAndExecute("start a = node(1) where single(x in a.array where x =~ '.*the.*') return a")
 
     assert(List(Map("a" -> a)) === result.toList)
   }
@@ -1634,7 +1634,7 @@ RETURN x0.name?
   @Test def shouldHandleAllOperatorsWithNull() {
     val a = createNode()
 
-    val result = parseAndExecute("start a=node(1) where a.x? =~ /.*?blah.*?/ and a.x? = 13 and a.x? <> 13 and a.x? > 13 return a")
+    val result = parseAndExecute("start a=node(1) where a.x? =~ '.*?blah.*?' and a.x? = 13 and a.x? <> 13 and a.x? > 13 return a")
     assert(List(Map("a" -> a)) === result.toList)
   }
 
@@ -2111,6 +2111,27 @@ RETURN x0.name?
     assert(result.toList === List(Map("sum(foo)" -> 8)))
   }
 
+  @Test
+  def with_should_not_forget_parameters() {
+    graph.index().forNodes("test")
+    val id = "bar"
+    val result = parseAndExecute("start n=node:test(name={id}) with count(*) as c where c=0 create x={name:{id}} return c, x", "id" -> id).toList
+
+    assert(result.size === 1)
+    assert(result(0)("c").asInstanceOf[Long] === 0)
+    assert(result(0)("x").asInstanceOf[Node].getProperty("name") === id)
+  }
+
+  @Test
+  def with_should_not_forget_parameters2() {
+    val a = createNode()
+    val id = a.getId
+    val result = parseAndExecute("start n=node({id}) with n set n.foo={id} return n", "id" -> id).toList
+
+    assert(result.size === 1)
+    assert(result(0)("n").asInstanceOf[Node].getProperty("foo") === id)
+  }
+
   @Ignore("This pattern is currently not supported. Revisit when we do support it.")
   @Test
   def two_double_optional_paths_with_shared_relationships() {
@@ -2187,7 +2208,11 @@ RETURN x0.name?
   @Test
   def should_be_able_to_return_predicate_result() {
     val result = parseAndExecute("START a=node(0) return id(a) = 0, a is null").toList
-
     assert(result === List(Map("id(a) = 0" -> true, "a is null" -> false)))
+  }
+
+  @Test def literal_collection() {
+    val result = parseAndExecute("START a=node(0) return length([[],[]]+[[]]) as l").toList
+    assert(result === List(Map("l" -> 3)))
   }
 }

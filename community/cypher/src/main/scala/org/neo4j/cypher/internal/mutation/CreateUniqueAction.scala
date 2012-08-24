@@ -47,7 +47,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
       } else if (updateCommands.nonEmpty) {
         val locks = updateCommands.flatMap(_.lock()) //Failed to find a way forward - lock stuff up, and check again
         try {
-           tryAgain(linksToDo, ctx, state)
+          ctx = tryAgain(linksToDo, ctx, state)
         } finally {
           locks.foreach(_.release())
         }

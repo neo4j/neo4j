@@ -196,6 +196,26 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "START a=node(0) SET a.name = missing RETURN a",
       "Unknown identifier `missing`")
   }
+
+  @Test def create_with_identifier_already_existing() {
+    expectError(
+      "START a=node(0) CREATE a = {name:'foo'} RETURN a",
+      "Can't create `a` with properties here. It already exists in this context")
+  }
+
+  @Test def create_with_identifier_already_existing2() {
+    expectError(
+      "START a=node(0) CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
+      "Can't create `a` with properties here. It already exists in this context")
+  }
+
+  @Test def type_of_identifier_is_wrong() {
+    expectError(
+      "start n=node(0) with [n] as users MATCH users-->messages RETURN messages",
+      "Expected `users` to be a Node but it was a Collection")
+  }
+
+
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
     val s = """

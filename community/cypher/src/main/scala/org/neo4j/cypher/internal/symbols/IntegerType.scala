@@ -28,6 +28,7 @@ object IntegerType {
 
 class IntegerType extends NumberType {
   override def parentType:CypherType = NumberType()
+  override def toString = "Integer"
 }
 
 

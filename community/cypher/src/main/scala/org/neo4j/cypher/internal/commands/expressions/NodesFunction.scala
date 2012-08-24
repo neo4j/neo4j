@@ -39,8 +39,9 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
     path.filter(f)
 
   def calculateType(symbols: SymbolTable) = {
-    path.evaluateType(new IterableType(MapType()), symbols)
-    new IterableType(NodeType())
+    path.evaluateType(new CollectionType(MapType()), symbols)
+
+    new CollectionType(NodeType())
   }
 
   def symbolTableDependencies = path.symbolTableDependencies

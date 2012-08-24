@@ -1,10 +1,11 @@
-1.8 (2012-06-??)
+1.8.M07 (2012-08-08)
 ----------------
 o Added edition information (community, advanced, enterprise)
 o Added a cluster-name hash so that stores originating from the same cluster can be aggregated
 o Fixed release version and revision
 o Changed precedence of database configuration over internal udc configuration
 o Added distribution information (dpkg, rpm, unknown)
+o Added User-Agent header for tracking usage of REST client drivers
 
 1.7 (2012-04-18)
 ----------------

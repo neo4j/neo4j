@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.IterableSupport
+import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.PropertyContainer
@@ -28,7 +28,7 @@ import collection.Map
 
 case class NamedExpectation(name: String, properties: Map[String, Expression])
   extends GraphElementPropertyFunctions
-  with IterableSupport
+  with CollectionSupport
   with TypeSafe {
   def this(name: String) = this(name, Map.empty)
 

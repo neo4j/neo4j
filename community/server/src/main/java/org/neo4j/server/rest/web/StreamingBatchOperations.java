@@ -77,8 +77,8 @@ public class StreamingBatchOperations extends BatchOperations
         else
         {
             final String message = "Error " + status + " executing batch operation: " + ((id!=null) ? id + ". ":"") + method + " " + path + " " + body;
-            results.writeError( status, null );
-            throw new BatchOperationFailedException(status, message, null );
+            results.writeError( status, res.getReason() );
+            throw new BatchOperationFailedException(status, message, new OperationFailureException(res.getReason()) );
         }
     }
 

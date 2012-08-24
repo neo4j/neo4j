@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.commands.expressions
 
-import expressions.Expression
 import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
@@ -80,12 +79,12 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     start.evaluateType(NumberType(), symbols)
     end.evaluateType(NumberType(), symbols)
     step.evaluateType(NumberType(), symbols)
-    new IterableType(NumberType())
+    new CollectionType(NumberType())
   }
 
   def symbolTableDependencies = start.symbolTableDependencies ++
-        end.symbolTableDependencies ++
-        step.symbolTableDependencies
+    end.symbolTableDependencies ++
+    step.symbolTableDependencies
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {

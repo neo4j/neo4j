@@ -56,13 +56,11 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       functions.foreach(func => func(ctx))
     })
 
-    val resultContext = if (result.isEmpty && keyNames.isEmpty) {
-      createEmptyResult(aggregationNames)
+    if (result.isEmpty && keyNames.isEmpty) {
+      createEmptyResult(aggregationNames, state)
     } else result.map {
       case (key, (ctx, aggregator)) => createResults(keyNames, key, aggregationNames, aggregator, ctx)
     }
-
-    resultContext
   }
 
 
@@ -78,8 +76,9 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     ctx.newFrom(newMap)
   }
 
-  private def createEmptyResult(aggregationNames: Seq[String]): Traversable[ExecutionContext] = {
-    val newMap = MutableMaps.create
+
+  private def createEmptyResult(aggregationNames: Seq[String], state : QueryState): Traversable[ExecutionContext] = {
+    val newMap = MutableMaps.create(Parameters.createParamContextMap(state))
     val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
     aggregationNamesAndFunctions.toMap
       .foreach {

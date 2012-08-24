@@ -35,11 +35,11 @@ case class Collection(expressions: Expression*) extends Expression {
   def calculateType(symbols: SymbolTable): CypherType = {
     expressions.map(_.getType(symbols)) match {
 
-      case Seq() => AnyIterableType()
+      case Seq() => AnyCollectionType()
 
       case types =>
         val innerType = types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeWith _)
-        new IterableType(  innerType )
+        new CollectionType( innerType )
     }
 
   }

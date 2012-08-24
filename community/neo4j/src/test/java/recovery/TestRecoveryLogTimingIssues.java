@@ -19,16 +19,28 @@
  */
 package recovery;
 
+import static java.lang.Integer.parseInt;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import org.junit.Ignore;
+
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -37,9 +49,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
-
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
 
 /**
  * Tries to trigger log file version errors that could happen if the db was killed
@@ -65,12 +74,14 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
             XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
-    private final BreakPoint EXIT_RENAME_LOG_FILE = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
-            XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+    private final BreakPoint EXIT_RENAME_LOG_FILE_LUCENE = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
+            BreakPoint.stackTraceMustContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+    private final BreakPoint EXIT_RENAME_LOG_FILE_NIONEO = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
+            BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
     
     private final BreakPoint[] breakpoints = new BreakPoint[] {
             SET_VERSION, RELEASE_CURRENT_LOG_FILE, RENAME_LOG_FILE,
-            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2, EXIT_RENAME_LOG_FILE };
+            SET_VERSION_2, RELEASE_CURRENT_LOG_FILE_2, RENAME_LOG_FILE_2, EXIT_RENAME_LOG_FILE_LUCENE, EXIT_RENAME_LOG_FILE_NIONEO };
     
     @Override
     protected BreakPoint[] breakpoints( int id )
@@ -109,17 +120,58 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         }
     }
     
+    static class DoGraphAndIndexTransaction implements Task
+    {
+        @Override
+        public void run( GraphDatabaseAPI graphdb )
+        {
+            Transaction tx = graphdb.beginTx();
+            try
+            {
+                Node parent = graphdb.createNode();
+                graphdb.index().forNodes( "index" ).add( parent, "name", "test" );
+                for ( int i = 0; i < 10; i++ )
+                {
+                    Node child = graphdb.createNode();
+                    parent.createRelationshipTo( child, TYPE );
+                }
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+        }
+    }
+    
     static class RotateLogs implements Task
     {
+        private final Set<String> dataSources = new HashSet<String>();
+        
+        RotateLogs( String... dataSources )
+        {
+            this.dataSources.addAll( Arrays.asList( dataSources ) );
+        }
+        
         @Override
         public void run( GraphDatabaseAPI graphdb )
         {
             try
             {
-                graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+                if ( dataSources.isEmpty() )
+                    graphdb.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+                else
+                {
+                    for ( XaDataSource ds : graphdb.getXaDataSourceManager().getAllRegisteredDataSources() )
+                    {
+                        if ( dataSources.contains( ds.getName() ) )
+                            ds.rotateLogicalLog();
+                    }
+                }
             }
             catch ( IOException e )
             {
+                e.printStackTrace();
                 throw new RuntimeException( e );
             }
         }
@@ -173,6 +225,24 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         public void run( GraphDatabaseAPI graphdb )
         {
             graphdb.shutdown();
+        }
+    }
+    
+    private static class VerifyLastTxId implements Task
+    {
+        private long tx;
+        private String dataSource;
+
+        VerifyLastTxId( String dataSource, long tx )
+        {
+            this.dataSource = dataSource;
+            this.tx = tx;
+        }
+        
+        @Override
+        public void run( GraphDatabaseAPI graphdb )
+        {
+            assertEquals( tx, graphdb.getXaDataSourceManager().getXaDataSource( dataSource ).getLastCommittedTxId() );
         }
     }
 
@@ -250,15 +320,65 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         run( new Shutdown() );
     }
 
-    @Ignore( "Investigate why this fails" )
     @Test
-    public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersion() throws Exception
+    public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInCloseShouldBeTheNextOne() throws Exception
     {
         breakpoints[6].enable();
         runInThread( new Shutdown() );
         breakpointNotification.await();
         startSubprocesses();
-        run( new RotateLogs() );
         run( new Shutdown() );
+        assertLuceneLogVersionsExists( 0, 1 );
+    }
+
+    @Test
+    public void nextLogVersionAfterCrashBetweenRenameAndIncrementVersionInRotateShouldBeTheNextOne() throws Exception
+    {
+        breakpoints[7].enable();
+        run( new DoSimpleTransaction() );
+        runInThread( new RotateLogs( LuceneDataSource.DEFAULT_NAME ) );
+        breakpointNotification.await();
+        startSubprocesses();
+        run( new Shutdown() );
+        assertLuceneLogVersionsExists( 0, 1 );
+    }
+    
+    @Test
+    public void lastLuceneTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
+    {
+        breakpoints[6].enable();
+        run( new DoGraphAndIndexTransaction() );
+        runInThread( new Shutdown() );
+        breakpointNotification.await();
+        startSubprocesses();
+        run( new VerifyLastTxId( LuceneDataSource.DEFAULT_NAME, 3 ) );
+    }
+    
+    @Test
+    public void lastNeoTxAfterRecoveredCrashBetweenRenameAndIncrementVersionInCloseShouldBeCorrect() throws Exception
+    {
+        breakpoints[7].enable();
+        run( new DoSimpleTransaction() );
+        runInThread( new Shutdown() );
+        breakpointNotification.await();
+        startSubprocesses();
+        run( new VerifyLastTxId( Config.DEFAULT_DATA_SOURCE_NAME, 3 ) );
+    }
+    
+    private void assertLuceneLogVersionsExists( int... versions ) throws Exception
+    {
+        Set<Integer> versionSet = new HashSet<Integer>();
+        for ( int version : versions )
+            versionSet.add( version );
+        File path = new File( getStoreDir( this, 0, false ), "index" );
+        for ( File file : path.listFiles() )
+        {
+            if ( file.getName().contains( ".log.v" ) )
+            {
+                int v = parseInt( file.getName().substring( file.getName().lastIndexOf( ".v" )+2 ) );
+                assertTrue( "Unexpected version found " + v, versionSet.remove( v ) );
+            }
+        }
+        assertTrue( "These versions weren't found " + versionSet, versionSet.isEmpty() );
     }
 }

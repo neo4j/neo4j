@@ -8,6 +8,10 @@ Neo4j is built using Maven - http://maven.apache.org/
 
 *Maven 3 is now supported*
 
+Contributing
+============
+
+For helping out improving Neo4j, check out [the intro on contributing code](http://docs.neo4j.org/chunked/milestone/community-contributing-code.html).
 
 Requirements
 ============

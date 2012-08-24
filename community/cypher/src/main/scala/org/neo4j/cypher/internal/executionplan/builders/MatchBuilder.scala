@@ -105,10 +105,10 @@ trait PatternGraphBuilder {
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional, predicate)
       }
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, iterableRel, optional, predicate) => {
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional, predicate) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, iterableRel, optional, predicate)
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional, predicate)
       }
       case _ =>
     })

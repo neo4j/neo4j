@@ -182,20 +182,20 @@ trait Expressions extends Base {
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas) }
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ collection ~ where ~ klas => (collection, symbol, klas) }
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in : Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-")))
+    case checkee ~ in ~ collection => AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-")))
   }
   
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInCollection(x._1, x._2, x._3))
 
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInIterable(x._1, x._2, x._3))
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInCollection(x._1, x._2, x._3))
 
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => NoneInIterable(x._1, x._2, x._3))
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => NoneInCollection(x._1, x._2, x._3))
 
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInCollection(x._1, x._2, x._3))
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |

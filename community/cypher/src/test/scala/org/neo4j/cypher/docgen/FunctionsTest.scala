@@ -39,17 +39,17 @@ class FunctionsTest extends DocumentingTestBase {
   def section = "functions"
 
   val common_arguments = List(
-    "iterable" -> "An array property, or an iterable symbol, or an iterable function.",
+    "collection" -> "An expression that returns a collection",
     "identifier" -> "This is the identifier that can be used from the predicate.",
-    "predicate" -> "A predicate that is tested against all items in iterable."
+    "predicate" -> "A predicate that is tested against all items in the collection."
   )
 
   @Test def all() {
     testThis(
       title = "ALL",
-      syntax = "ALL(identifier in iterable WHERE predicate)",
+      syntax = "ALL(identifier in collection WHERE predicate)",
       arguments = common_arguments,
-      text = """Tests whether a predicate holds for all element of this iterable collection.""",
+      text = """Tests whether a predicate holds for all element of this collection collection.""",
       queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) WHERE x.age > 30) return p""",
       returns = """All nodes in the returned paths will have an `age` property of at least 30.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
@@ -58,9 +58,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "ANY",
-      syntax = "ANY(identifier in iterable WHERE predicate)",
+      syntax = "ANY(identifier in collection WHERE predicate)",
       arguments = common_arguments,
-      text = """Tests whether a predicate holds for at least one element of this iterable collection.""",
+      text = """Tests whether a predicate holds for at least one element in the collection.""",
       queryText = """start a=node(%E%) where any(x in a.array WHERE x = "one") return a""",
       returns = """All nodes in the returned paths has at least one `one` value set in the array property named `array`.""",
       assertions = (p) => assertEquals(List(Map("a"->node("E"))), p.toList))
@@ -69,9 +69,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "NONE",
-      syntax = "NONE(identifier in iterable WHERE predicate)",
+      syntax = "NONE(identifier in collection WHERE predicate)",
       arguments = common_arguments,
-      text = """Returns true if the predicate holds for no element in the iterable.""",
+      text = """Returns true if the predicate holds for no element in the collection.""",
       queryText = """start n=node(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) WHERE x.age = 25) return p""",
       returns = """No nodes in the returned paths has a `age` property set to `25`.""",
       assertions = (p) => assertEquals(2, p.toSeq.length))
@@ -80,9 +80,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "SINGLE",
-      syntax = "SINGLE(identifier in iterable WHERE predicate)",
+      syntax = "SINGLE(identifier in collection WHERE predicate)",
       arguments = common_arguments,
-      text = """Returns true if the predicate holds for exactly one of the elements in the iterable.""",
+      text = """Returns true if the predicate holds for exactly one of the elements in the collection.""",
       queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
       returns = """Exactly one node in every returned path will have the `eyes` property set to `"blue"`.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
@@ -102,9 +102,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def length() {
     testThis(
       title = "LENGTH",
-      syntax = "LENGTH( iterable )",
-      arguments = List("iterable" -> "An iterable, value or function call."),
-      text = """To return or filter on the length of a path, use the `LENGTH()` function.""",
+      syntax = "LENGTH( collection )",
+      arguments = List("collection" -> "An expression that returns a collection"),
+      text = """To return or filter on the length of a collection, use the `LENGTH()` function.""",
       queryText = """start a=node(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
@@ -113,15 +113,15 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def extract() {
     testThis(
       title = "EXTRACT",
-      syntax = "EXTRACT( identifier in iterable : expression )",
+      syntax = "EXTRACT( identifier in collection : expression )",
       arguments = List(
-        "iterable" -> "An array property, or an iterable identifier, or an iterable function.",
+        "collection" -> "An expression that returns a collection",
         "identifier" -> "The closure will have an identifier introduced in it's context. Here you decide which identifier to use.",
-        "expression" -> "This expression will run once per value in the iterable, and produces the result iterable."
+        "expression" -> "This expression will run once per value in the collection, and produces the result collection."
       ),
-      text = """To return a single property, or the value of a function from an iterable of nodes or relationships,
- you can use `EXTRACT`. It will go through all enitities in the iterable, and run an expression, and return the results
- in an iterable with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
+      text = """To return a single property, or the value of a function from a collection of nodes or relationships,
+ you can use `EXTRACT`. It will go through a collection, run an expression on every element, and return the results
+ in an collection with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
       queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return extract(n in nodes(p) : n.age)""",
       returns = """The age property of all nodes in the path are returned.""",
       assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) : n.age)" -> List(38, 25, 54))), p.toList))
@@ -172,9 +172,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def filter() {
     testThis(
       title = "FILTER",
-      syntax = "FILTER(identifier in iterable : predicate)",
+      syntax = "FILTER(identifier in collection : predicate)",
       arguments = common_arguments,
-      text = "`FILTER` returns all the elements in an iterable that comply to a predicate.",
+      text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
       queryText = """start a=node(%E%) return a.array, filter(x in a.array : length(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
       assertions = (p) => {

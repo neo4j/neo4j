@@ -27,10 +27,10 @@ class ExtractTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
     val l = Seq("x", "xxx", "xx")
     val expression = LengthFunction(Identifier("n"))
-    val iterable = Identifier("l")
+    val collection = Identifier("l")
     val m = Map("l" -> l)
 
-    val extract = ExtractFunction(iterable, "n", expression)
+    val extract = ExtractFunction(collection, "n", expression)
 
     assert(extract.apply(m) === Seq(1, 3, 2))
   }

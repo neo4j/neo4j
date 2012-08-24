@@ -34,7 +34,7 @@ import collection.Map
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.Equals
-import org.neo4j.cypher.internal.commands.AllInIterable
+import org.neo4j.cypher.internal.commands.AllInCollection
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null
@@ -498,7 +498,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel", Map("foo" -> "bar"))
     relate(b, c, "rel", Map("foo" -> "notBar"))
 
-    val pred = AllInIterable(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
     val patterns = Seq(VarLengthRelatedTo("p", "a", "b", Some(2), Some(2), Seq(), Direction.OUTGOING, None, true, pred))
     val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"))
 

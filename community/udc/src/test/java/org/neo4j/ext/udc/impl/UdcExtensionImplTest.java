@@ -23,8 +23,18 @@ package org.neo4j.ext.udc.impl;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-import static org.neo4j.ext.udc.UdcConstants.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.SOURCE;
+import static org.neo4j.ext.udc.UdcConstants.TAGS;
+import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
+import static org.neo4j.ext.udc.UdcConstants.VERSION;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +48,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,6 +55,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.server.rest.web.CollectUserAgentFilter;
 // import org.neo4j.kernel.ha.HaSettings;
 
 /**
@@ -210,6 +220,56 @@ public class UdcExtensionImplTest
         destroy( graphdb );
     }
 
+    @Test
+    public void shouldBeAbleToDetermineUserAgent() throws Exception
+    {
+        CollectUserAgentFilter.addUserAgent( "test/1.0" );
+        setupServer();
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "test/1.0", handler.getQueryMap().get( USER_AGENTS ) );
+
+
+        destroy( graphdb );
+    }
+    @Test
+    public void shouldBeAbleToDetermineUserAgents() throws Exception
+    {
+        CollectUserAgentFilter.addUserAgent("test/1.0");
+        CollectUserAgentFilter.addUserAgent("foo/bar");
+        setupServer();
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String userAgents = handler.getQueryMap().get( USER_AGENTS );
+        assertEquals( true, userAgents.contains( "test/1.0" ) );
+        assertEquals( true, userAgents.contains( "foo/bar" ));
+
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldUpdateTheUserAgentsPerPing() throws Exception
+    {
+        CollectUserAgentFilter.addUserAgent("test/1.0");
+        setupServer();
+        config.put(GraphDatabaseSettings.interval.name(), "1000");
+        GraphDatabaseService graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String userAgents = handler.getQueryMap().get( USER_AGENTS );
+        assertEquals( true, userAgents.contains( "test/1.0" ) );
+
+        CollectUserAgentFilter.addUserAgent("foo/bar");
+
+        Thread.sleep( 1000 );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+
+        userAgents = handler.getQueryMap().get( USER_AGENTS );
+        assertEquals( true, userAgents.contains( "foo/bar" ));
+
+        destroy( graphdb );
+    }
+
     /*
     @Test
     public void shouldBeAbleToDetermineClusterFromSettings() throws Exception
@@ -272,7 +332,7 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
 
-        assertEquals(UdcInformationCollector.searchForPackageSystems(),handler.getQueryMap().get("dist"));
+        assertEquals( DefaultUdcInformationCollector.searchForPackageSystems(),handler.getQueryMap().get("dist"));
 
         destroy( graphdb );
     }
