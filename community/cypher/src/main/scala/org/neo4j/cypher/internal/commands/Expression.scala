@@ -33,7 +33,8 @@ abstract class Expression extends (Map[String, Any] => Any) {
   def declareDependencies(expectedType: AnyType): Seq[Identifier]
   def dependencies(expectedType: AnyType): Seq[Identifier] = {
     val myType = identifier.typ
-    if (!expectedType.isAssignableFrom(myType))
+    if (!expectedType.isAssignableFrom(myType) &&
+        !myType.isAssignableFrom(expectedType))
       throw new SyntaxException("`%s` expected to be a %s but it is a %s".format(identifier.name, expectedType, identifier.typ))
     declareDependencies(expectedType)
   }
@@ -222,7 +223,7 @@ case class Property(entity: String, property: String) extends CastableExpression
     }
   }
 
-  val identifier: Identifier = Identifier(entity + "." + property, ScalarType())
+  val identifier: Identifier = Identifier(entity + "." + property, AnyType())
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
   def rewrite(f: (Expression) => Expression) = f(this)
   def filter(f: (Expression) => Boolean) = if(f(this))
