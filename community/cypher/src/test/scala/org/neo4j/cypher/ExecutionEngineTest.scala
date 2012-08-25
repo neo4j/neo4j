@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
+import collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -2236,4 +2237,15 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("n" -> node)))
   }
+
+  @Test
+  def array_property_should_be_accessible_as_collection() {
+    val result = parseAndExecute("START n=node(0) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
+      toList.
+      head("tail(tail(n.array))").
+      asInstanceOf[mutable.WrappedArray[_]]
+
+    assert(result.toList === List(3,4,5))
+  }
+
 }
