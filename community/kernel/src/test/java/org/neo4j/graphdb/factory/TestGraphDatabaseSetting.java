@@ -208,6 +208,33 @@ public class TestGraphDatabaseSetting
         assertThat(setting.valueOf("12 g", config), equalTo(12l * 1024 * 1024 * 1024));
         
     }
+    
+    @Test
+    public void testIntegerNumberOfBytesSetting() throws Exception
+    {
+        Config config = mock( Config.class );
+        
+        GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting withoutMin =
+                new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "mysize" );
+        assertValidationPasses( withoutMin, "1" );
+        assertValidationPasses( withoutMin, "100k" );
+        assertValidationPasses( withoutMin, "100M" );
+        assertValidationPasses( withoutMin, "1G" );
+        assertValidationFails( withoutMin, "" + (Integer.MAX_VALUE + 1) );
+        assertValidationFails( withoutMin, "3g" );
+        assertThat( withoutMin.valueOf( "2 g", config ), equalTo( 2 * 1024 * 1024 * 1024 ) );
+
+        GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting withMin =
+                new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "mysize", 10 * 1024 );
+        assertValidationFails( withMin, "1" );
+        assertValidationFails( withMin, "9k" );
+        assertValidationPasses( withMin, "10k" );
+        assertValidationPasses( withMin, "100k" );
+        assertValidationPasses( withMin, "1G" );
+        assertValidationFails( withMin, "" + (Integer.MAX_VALUE + 1) );
+        assertValidationFails( withMin, "3g" );
+        assertThat( withMin.valueOf( "2 g", config ), equalTo( 2 * 1024 * 1024 * 1024 ) );
+    }
 
 	private void assertValidationPasses(GraphDatabaseSetting<?> setting,
 			String value) 

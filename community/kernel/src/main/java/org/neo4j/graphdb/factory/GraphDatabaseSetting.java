@@ -627,10 +627,17 @@ public abstract class GraphDatabaseSetting<T>
     public static class IntegerRangeNumberOfBytesSetting extends GraphDatabaseSetting<Integer>
     {
         private final GraphDatabaseSetting<Long> fullRange;
+        private final int atLeast;
         
         public IntegerRangeNumberOfBytesSetting( String name )
         {
+            this( name, 0 );
+        }
+        
+        public IntegerRangeNumberOfBytesSetting( String name, int atLeast )
+        {
             super( name, "" );
+            this.atLeast = atLeast;
             this.fullRange = new NumberOfBytesSetting( name );
         }
 
@@ -638,15 +645,18 @@ public abstract class GraphDatabaseSetting<T>
         public void validate( Locale locale, String value )
         {
             fullRange.validate( locale, value );
+            Long bytes = fullRange.valueOf( value, null );
+            if ( bytes.longValue() > Integer.MAX_VALUE )
+                throw illegalValue( locale, value, "Size too big, keep withing interger range (2^32-1)", "" + bytes );
+            int result = bytes.intValue();
+            if ( result < atLeast )
+                throw illegalValue( locale, value, "Size too low, must be at least " + atLeast );
         }
 
         @Override
         public Integer valueOf( String rawValue, Config config )
         {
-            Long fullValue = fullRange.valueOf( rawValue, config );
-            if ( fullValue.longValue() > Integer.MAX_VALUE )
-                throw new IllegalArgumentException( "Size '" + rawValue + "' too big, keep within integer range (2^32-1)" );
-            return fullValue.intValue();
+            return fullRange.valueOf( rawValue, config ).intValue();
         }
     }
     
