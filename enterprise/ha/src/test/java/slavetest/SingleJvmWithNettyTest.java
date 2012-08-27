@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.BufferedReader;
@@ -122,7 +123,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 AbstractBroker.storeId,
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, HaSettings.lock_read_timeout.name(), readTimeout ),
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, DEFAULT_FRAME_LENGTH );
         return new AbstractBroker( new Config( new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config ) ))
         {
             public boolean iAmMaster()
@@ -158,8 +159,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 int machineId = getMyMachineId();
                 int port = FakeSlaveBroker.LOW_SLAVE_PORT + machineId;
                 SlaveServer server = new SlaveServer( new SlaveImpl( graphDb, this, ops ),
-                        port, graphDb.getMessageLog() );
-                masterBroker.addSlave( new SlaveClient(  machineId, "localhost", port, graphDb.getMessageLog(), getClusterStoreId( false ), 10 ) );
+                        port, graphDb.getMessageLog(), DEFAULT_FRAME_LENGTH );
+                masterBroker.addSlave( new SlaveClient(  machineId, "localhost", port, graphDb.getMessageLog(), getClusterStoreId( false ), 10, DEFAULT_FRAME_LENGTH ) );
                 return server;
             }
         };

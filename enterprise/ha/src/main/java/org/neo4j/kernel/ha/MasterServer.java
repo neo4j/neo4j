@@ -43,10 +43,10 @@ public class MasterServer extends Server<Master, Void>
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
     public MasterServer( Master requestTarget, final int port, StringLogger logger, int maxConcurrentTransactions,
-            int oldChannelThreshold, TxChecksumVerifier txVerifier )
+            int oldChannelThreshold, TxChecksumVerifier txVerifier, int chunkSize )
     {
         super( requestTarget, port, logger, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, maxConcurrentTransactions,
-                oldChannelThreshold, txVerifier );
+                oldChannelThreshold, txVerifier, chunkSize );
     }
 
     @Override

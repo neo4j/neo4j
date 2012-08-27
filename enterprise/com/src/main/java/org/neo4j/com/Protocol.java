@@ -147,4 +147,11 @@ public abstract class Protocol
         }
         return new String( chars );
     }
+
+    public static void assertChunkSizeIsWithinFrameSize( int chunkSize, int frameLength )
+    {
+        if ( chunkSize > frameLength )
+            throw new IllegalArgumentException( "Chunk size " + chunkSize +
+                    " needs to be equal or less than frame length " + frameLength );
+    }
 }

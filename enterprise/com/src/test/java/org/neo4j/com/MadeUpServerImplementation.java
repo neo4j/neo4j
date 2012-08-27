@@ -19,14 +19,18 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-public class MadeUpImplementation implements MadeUpCommunicationInterface
+public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {
     private final StoreId storeIdToRespondWith;
     private boolean gotCalled;
 
-    public MadeUpImplementation( StoreId storeIdToRespondWith )
+    public MadeUpServerImplementation( StoreId storeIdToRespondWith )
     {
         this.storeIdToRespondWith = storeIdToRespondWith;
     }
@@ -40,11 +44,43 @@ public class MadeUpImplementation implements MadeUpCommunicationInterface
     }
 
     @Override
-    public Response<Void> streamSomeData( MadeUpWriter writer, int dataSize )
+    public Response<Void> fetchDataStream( MadeUpWriter writer, int dataSize )
     {
+        // Reversed on the server side. This will send data back to the client.
         writer.write( new KnownDataByteChannel( dataSize ) );
+        return emptyResponse();
+    }
+
+    private Response<Void> emptyResponse()
+    {
         return new Response<Void>( null, storeIdToRespondWith,
                 TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+    }
+    
+    @Override
+    public Response<Void> sendDataStream( ReadableByteChannel data )
+    {
+        // TOOD Verify as well?
+        readFully( data );
+        return emptyResponse();
+    }
+
+    private void readFully( ReadableByteChannel data )
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( 1000 );
+        try
+        {
+            while ( true )
+            {
+                buffer.clear();
+                if ( data.read( buffer ) == -1 )
+                    break;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

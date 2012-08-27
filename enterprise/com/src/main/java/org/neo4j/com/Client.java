@@ -22,6 +22,7 @@ package org.neo4j.com;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.Server.assertChunkSizeIsWithinFrameSize;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -55,6 +56,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * A means for a client to communicate with a {@link Server}. It
  * serializes requests and sends them to the server and waits for
  * a response back.
+ * 
+ * @see Server
  */
 public abstract class Client<T> implements ChannelPipelineFactory
 {
@@ -76,27 +79,22 @@ public abstract class Client<T> implements ChannelPipelineFactory
     private final StoreId storeId;
     private final ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
-
-    public Client( String hostNameOrIp, int port, StringLogger logger,
-            StoreId storeId, int frameLength, byte applicationProtocolVersion, int readTimeout,
-            int maxConcurrentChannels, int maxUnusedPoolSize )
-    {
-        this( hostNameOrIp, port, logger, storeId, frameLength,
-                applicationProtocolVersion, readTimeout, maxConcurrentChannels,
-                maxUnusedPoolSize, ConnectionLostHandler.NO_ACTION );
-    }
+    private int chunkSize;
 
     public Client( String hostNameOrIp, int port, StringLogger logger,
             StoreId storeId, int frameLength,
             byte applicationProtocolVersion, int readTimeout,
             int maxConcurrentChannels, int maxUnusedPoolSize,
-            final ConnectionLostHandler connectionLostHandler )
+            final ConnectionLostHandler connectionLostHandler, int chunkSize )
     {
+        assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
+        
         this.msgLog = logger;
         this.storeId = storeId;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
+        this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentChannels, maxUnusedPoolSize )
@@ -194,7 +192,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
             Channel channel = channelContext.first();
             channelContext.second().clear();
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
-                    channel, frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
+                    channel, chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
             chunkingBuffer.writeByte( type.id() );
             writeContext( type, context, chunkingBuffer );
             serializer.write( chunkingBuffer, channelContext.third() );

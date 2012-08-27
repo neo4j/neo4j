@@ -73,7 +73,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private final byte applicationProtocolVersion;
     private final byte internalProtocolVersion;
 
-    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity, byte internalProtocolVersion, byte applicationProtocolVersion )
+    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity,
+            byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         this.buffer = buffer;
         this.channel = channel;

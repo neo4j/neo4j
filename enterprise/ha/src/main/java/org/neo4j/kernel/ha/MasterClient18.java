@@ -64,18 +64,23 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     private final int lockReadTimeout;
 
     public MasterClient18( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId, ConnectionLostHandler connectionLostHandler,
-            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
+            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler );
+                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 
     @Override
     protected int getReadTimeout( RequestType<Master> type, int readTimeout )
     {
-        return ( (HaRequestType18) type ).isLock() ? lockReadTimeout : readTimeout;
+        HaRequestType18 specificType = (HaRequestType18) type;
+        if ( specificType.isLock() )
+            return lockReadTimeout;
+        if ( specificType == HaRequestType18.COPY_STORE )
+            return readTimeout*2;
+        return readTimeout;
     }
 
     @Override

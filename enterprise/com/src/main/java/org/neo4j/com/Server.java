@@ -65,6 +65,18 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
  * of a specified communication interface, injected in the constructor.
+ * 
+ * frameLength vs. chunkSize: frameLength is the maximum and hardcoded size in each
+ * Netty buffer created by this server and handed off to a {@link Client}. If the
+ * client has got a smaller frameLength than this server it will fail on reading a frame
+ * that is bigger than what its frameLength.
+ * chunkSize is the max size a buffer will have before it's sent off and a new buffer
+ * allocated to continue writing to.
+ * frameLength should be a constant for an implementation and must have the same value
+ * on server as well as clients connecting to that server, whereas chunkSize very well
+ * can be configurable and vary between server and client.
+ * 
+ * @see Client
  */
 public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory
 {
@@ -102,12 +114,15 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     private final byte applicationProtocolVersion;
     private final int oldChannelThresholdMillis;
     private TxChecksumVerifier txVerifier;
+    private int chunkSize;
 
     public Server( T requestTarget, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
-            int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier )
+            int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier, int chunkSize )
     {
+        assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
         this.requestTarget = requestTarget;
         this.frameLength = frameLength;
+        this.chunkSize = chunkSize;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = logger;
         this.txVerifier = txVerifier;
@@ -367,7 +382,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength,
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, chunkSize,
                     getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( targetCallExecutor, targetCaller( type, channel, context, chunkingBuffer, bufferToReadFrom ) );
         }
@@ -384,7 +399,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         catch ( final IllegalProtocolVersionException e )
         {   // Version mismatch, fail with a good exception back to the client
             final ChunkingChannelBuffer failureResponse = new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(), channel,
-                    frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
+                    chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( targetCallExecutor, new Runnable()
             {
                 @Override

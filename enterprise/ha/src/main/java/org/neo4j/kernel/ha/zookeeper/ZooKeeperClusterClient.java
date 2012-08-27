@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
 import static org.neo4j.com.Server.DEFAULT_BACKUP_PORT;
 
 import java.io.IOException;
@@ -62,7 +63,7 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
         this( zooKeeperServers, StringLogger.SYSTEM, clusterName, Integer.parseInt( ConfigurationDefaults.getDefault(
                 HaSettings.zk_session_timeout, HaSettings.class ) ), new MasterClientResolver.F18( StringLogger.SYSTEM,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, DEFAULT_FRAME_LENGTH ) );
     }
 
     public ZooKeeperClusterClient( String zooKeeperServers, StringLogger msgLog, String clusterName,

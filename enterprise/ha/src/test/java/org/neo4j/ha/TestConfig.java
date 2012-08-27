@@ -21,6 +21,8 @@ package org.neo4j.ha;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.test.TargetDirectory.forTest;
 
@@ -34,6 +36,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
@@ -130,6 +133,53 @@ public class TestConfig
         for ( int i = 0; i < dbs.size(); i++ )
             if ( i != master )
                 dbs.get( i ).shutdown();
+    }
+    
+    @Test
+    public void configureChunkSize() throws Exception
+    {
+        testSimpleCommunicationWithConfiguredChunkSize( "" + (DEFAULT_FRAME_LENGTH-10) );
+        testSimpleCommunicationWithConfiguredChunkSize( "1M" );
+        
+        try
+        {
+            new EnterpriseGraphDatabaseFactory()
+                .newHighlyAvailableDatabaseBuilder( dir.directory( "chunk_size", true ).getAbsolutePath() )
+                .setConfig( HaSettings.com_chunk_size, "" + (DEFAULT_FRAME_LENGTH+10) )
+                .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
+                .setConfig( HaSettings.server_id, "1" )
+                .newGraphDatabase();
+            fail( "Shouldn't be able to operate with such a high chunk size" );
+        }
+        catch ( Exception e )
+        {   // Good
+            e.printStackTrace();
+        }
+    }
+
+    private void testSimpleCommunicationWithConfiguredChunkSize( String chunkSize )
+    {
+        GraphDatabaseService master = new EnterpriseGraphDatabaseFactory()
+            .newHighlyAvailableDatabaseBuilder( dir.directory( "chunk_size1", true ).getAbsolutePath() )
+            .setConfig( HaSettings.com_chunk_size, chunkSize )
+            .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
+            .setConfig( HaSettings.server, "localhost:6361" )
+            .setConfig( HaSettings.server_id, "1" )
+            .newGraphDatabase();
+        GraphDatabaseService slave = new EnterpriseGraphDatabaseFactory()
+            .newHighlyAvailableDatabaseBuilder( dir.directory( "chunk_size2", true ).getAbsolutePath() )
+            .setConfig( HaSettings.com_chunk_size, chunkSize )
+            .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
+            .setConfig( HaSettings.server, "localhost:6362" )
+            .setConfig( HaSettings.server_id, "2" )
+            .newGraphDatabase();
+        
+        pullUpdates( (HighlyAvailableGraphDatabase) slave );
+        
+        // Wow, this is poor. No verification on chunk size.
+        
+        slave.shutdown();
+        master.shutdown();
     }
 
     private void pullUpdates( HighlyAvailableGraphDatabase db )

@@ -86,6 +86,12 @@ public class HaSettings
                     " or fixed (\"fixed\") selecting the slave with highest machine id first" )
     @Default( "fixed" )
     public static final OptionsSetting tx_push_strategy = new TxPushStrategySetting();
+    
+    @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase throughput," +
+    		"but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance for bandwidth variations. " +
+            "Examples: 500k or 3M. Must be within 1k-16M" )
+    @Default( "2M" )
+    public static final GraphDatabaseSetting<Integer> com_chunk_size = new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "ha.com_chunk_size", 1 * 1024 );
 
     public static class TxPushStrategySetting
         extends OptionsSetting
