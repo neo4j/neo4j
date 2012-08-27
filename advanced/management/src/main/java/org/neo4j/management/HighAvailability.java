@@ -31,8 +31,8 @@ public interface HighAvailability
     @Description( "The identifier used to identify this machine in the HA cluster" )
     String getMachineId();
 
-    @Description( "Whether this instance is master or not" )
-    boolean isMaster();
+    @Description( "What state this instance is currently at" )
+    String getInstanceState();
 
     @Description( "The time when the data on this instance was last updated from the master" )
     String getLastUpdateTime();
