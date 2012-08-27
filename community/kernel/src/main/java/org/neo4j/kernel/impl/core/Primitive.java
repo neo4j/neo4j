@@ -94,13 +94,13 @@ abstract class Primitive
             {
                 continue;
             }
-            values.add( property.getValue() );
+            values.add( getPropertyValue( nodeManager, property ) );
         }
         if ( addMap != null )
         {
             for ( PropertyData property : addMap.values() )
             {
-                values.add( property.getValue() );
+                values.add( getPropertyValue( nodeManager, property ) );
             }
         }
         return values;

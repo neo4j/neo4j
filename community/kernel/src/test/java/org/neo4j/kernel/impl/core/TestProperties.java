@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -28,11 +34,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
-
 public class TestProperties extends AbstractNeo4jTestCase
 {
-
     @Test
     public void addAndRemovePropertiesWithinOneTransaction() throws Exception
     {
@@ -258,5 +261,24 @@ public class TestProperties extends AbstractNeo4jTestCase
         newTransaction();
         clearCache();
         assertEquals( "value", node.getProperty( "property 0" ) );
+    }
+
+    @Test
+    public void getPropertyValuesShouldReturnCorrectValues() throws Exception
+    {
+        String key = "title";
+        // value1 fits in an inlined record
+        String value1 = "123456789123456789123456789123456789123456789123456789";
+        // value2 requires a dynamic record
+        String value2 = "12345678912345678912345678912345678912345678912345678912";
+        Node node1 = getGraphDb().createNode();
+        node1.setProperty( key, value1 );
+        Node node2 = getGraphDb().createNode();
+        node2.setProperty( key, value2 );
+        newTransaction();
+        clearCache();
+        
+        assertEquals( value1, first( node1.getPropertyValues() ) );
+        assertEquals( value2, first( node2.getPropertyValues() ) );
     }
 }
