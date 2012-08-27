@@ -25,7 +25,7 @@ Note that this profile can't be used together with the `package` goal.
 
 === With brew on OSX ===
 
-  brew install docbook asciidoc w3m fop graphviz
+  brew install docbook asciidoc w3m fop graphviz libtool
 
   sudo docbook-register
 
