@@ -21,15 +21,20 @@ package org.neo4j.management.impl;
 
 import java.io.File;
 import java.io.IOException;
+
 import javax.management.NotCompliantMBeanException;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.StoreFile;
 
-@Service.Implementation( ManagementBeanProvider.class )
+@Service.Implementation(ManagementBeanProvider.class)
 public final class StoreFileBean extends ManagementBeanProvider
 {
     public StoreFileBean()
@@ -52,31 +57,58 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String STRING_STORE = "neostore.propertystore.db.strings";
         private static final String LOGICAL_LOG1 = "nioneo_logical.log.1";
         private static final String LOGICAL_LOG2 = "nioneo_logical.log.2";
-        private final File storePath;
+        private File storePath;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            NeoStoreXaDataSource nioneodb = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource();
-            File path;
-            try
+
+            XaDataSourceManager xaDataSourceManager = management.getKernelData().graphDatabase()
+                    .getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+            xaDataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
             {
-                path = new File( nioneodb.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
-            }
-            catch ( IOException e )
-            {
-                path = new File( nioneodb.getStoreDir() ).getAbsoluteFile();
-            }
-            this.storePath = path;
+                @Override
+                public void registeredDataSource( XaDataSource ds )
+                {
+                    if ( ds instanceof NeoStoreXaDataSource )
+                    {
+                        NeoStoreXaDataSource nioneodb = (NeoStoreXaDataSource) ds;
+                        File path;
+                        try
+                        {
+                            path = new File( nioneodb.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+                        }
+                        catch ( IOException e )
+                        {
+                            path = new File( nioneodb.getStoreDir() ).getAbsoluteFile();
+                        }
+                        storePath = path;
+                    }
+                }
+
+                @Override
+                public void unregisteredDataSource( XaDataSource ds )
+                {
+                    if ( ds instanceof NeoStoreXaDataSource )
+                    {
+                        storePath = null;
+                    }
+                }
+            } );
         }
 
         public long getTotalStoreSize()
         {
-            return sizeOf( storePath );
+            return storePath == null ? 0 : sizeOf( storePath );
         }
 
         public long getLogicalLogSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             File logicalLog = new File( storePath, LOGICAL_LOG1 );
             if ( !logicalLog.isFile() )
             {
@@ -110,26 +142,51 @@ public final class StoreFileBean extends ManagementBeanProvider
 
         public long getArrayStoreSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             return sizeOf( ARRAY_STORE );
         }
 
         public long getNodeStoreSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             return sizeOf( NODE_STORE );
         }
 
         public long getPropertyStoreSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             return sizeOf( PROPERTY_STORE );
         }
 
         public long getRelationshipStoreSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             return sizeOf( RELATIONSHIP_STORE );
         }
 
         public long getStringStoreSize()
         {
+            if ( storePath == null )
+            {
+                return 0;
+            }
+
             return sizeOf( STRING_STORE );
         }
     }

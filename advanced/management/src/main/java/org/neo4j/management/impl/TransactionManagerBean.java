@@ -25,11 +25,12 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.management.TransactionManager;
 
-@Service.Implementation( ManagementBeanProvider.class )
+@Service.Implementation(ManagementBeanProvider.class)
 public final class TransactionManagerBean extends ManagementBeanProvider
 {
     public TransactionManagerBean()
@@ -46,13 +47,14 @@ public final class TransactionManagerBean extends ManagementBeanProvider
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
         private final TxManager txManager;
-        private final NeoStore neoStore;
+        private final XaDataSourceManager xadsm;
 
         TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
             this.txManager = (TxManager) management.getKernelData().graphDatabase().getTxManager();
-            this.neoStore = management.getKernelData().graphDatabase().getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
+            this.xadsm = management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency(
+                    XaDataSourceManager.class );
         }
 
         public int getNumberOfOpenTransactions()
@@ -82,7 +84,15 @@ public final class TransactionManagerBean extends ManagementBeanProvider
 
         public long getLastCommittedTxId()
         {
-            return neoStore.getLastCommittedTx();
+            NeoStoreXaDataSource neoStoreDataSource = xadsm.getNeoStoreDataSource();
+            if ( neoStoreDataSource == null )
+            {
+                return -1;
+            }
+            else
+            {
+                return neoStoreDataSource.getNeoStore().getLastCommittedTx();
+            }
         }
     }
 }
