@@ -23,27 +23,43 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
 import org.neo4j.server.web.WebServer;
+import org.apache.commons.configuration.Configuration;
+
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
 
 public class StatisticModule implements ServerModule
 {
     private final StatisticFilter filter;
 	private final WebServer webServer;
-    
-    public StatisticModule(WebServer webServer, StatisticCollector requestStatistics)
+    private final Configuration config;
+
+    public StatisticModule(WebServer webServer, StatisticCollector requestStatistics, Configuration config)
     {
     	this.webServer = webServer;
-    	this.filter = new StatisticFilter( requestStatistics );
+        this.config = config;
+        this.filter = new StatisticFilter( requestStatistics );
     }
 
 	@Override
 	public void start(StringLogger logger)
     {
-        webServer.addFilter(filter, "/*");
+        if (isStatisticsEnabled())
+        {
+            webServer.addFilter(filter, "/*");
+        }
     }
 
     @Override
 	public void stop()
     {
-    	webServer.removeFilter(filter, "/*");
+        if (isStatisticsEnabled())
+        {
+            webServer.removeFilter(filter, "/*");
+        }
+    }
+
+    private boolean isStatisticsEnabled()
+    {
+        return config.getBoolean(WEBSERVER_ENABLE_STATISTICS_COLLECTION, false);
     }
 }

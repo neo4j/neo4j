@@ -70,7 +70,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         		new ManagementApiModule(webServer, configurator.configuration()),
                 new ThirdPartyJAXRSModule(webServer, configurator), 
                 new WebAdminModule(webServer, configurator.configuration(), database), 
-                new StatisticModule(webServer, statisticsCollector ), 
+                new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
                 new SecurityRulesModule(webServer, configurator.configuration()));
 	}
 
