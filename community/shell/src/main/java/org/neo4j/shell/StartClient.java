@@ -222,63 +222,9 @@ public class StartClient
         }
         catch ( Exception e )
         {
-            if ( storeWasLocked( e ) )
-            {
-                if ( wantToConnectReadOnlyInstead() )
-                {
-                    try
-                    {
-                        tryStartLocalServerAndClient( dbPath, true, args );
-                    }
-                    catch ( Exception innerException )
-                    {
-                        handleException( innerException, args );
-                    }
-                }
-                else
-                {
-                    handleException( e, args );
-                }
-            }
-            else
-            {
-                handleException( e, args );
-            }
+            handleException( e, args );
         }
         System.exit( 0 );
-    }
-
-    private static boolean wantToConnectReadOnlyInstead()
-    {
-        Console console = new StandardConsole();
-        console.format( "\nThe store seem locked. Start a read-only client " +
-            "instead (y/n) [y]? " );
-        String input = console.readLine( "" );
-        return input.length() == 0 || input.equals( "y" );
-    }
-
-    private static boolean storeWasLocked( Exception e )
-    {
-        // TODO Fix this when a specific exception is thrown
-        return mineException( e, IllegalStateException.class,
-            "Unable to lock store" );
-    }
-
-    private static boolean mineException( Throwable e,
-        Class<IllegalStateException> eClass, String startOfMessage )
-    {
-        if ( eClass.isInstance( e ) &&
-            e.getMessage().startsWith( startOfMessage ) )
-        {
-            return true;
-        }
-
-        Throwable cause = e.getCause();
-        if ( cause != null )
-        {
-            return mineException( cause, eClass, startOfMessage );
-        }
-        return false;
     }
 
     private void tryStartLocalServerAndClient( String dbPath,

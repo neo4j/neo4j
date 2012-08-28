@@ -35,7 +35,6 @@ REMOTE OPTIONS
 
 *-readonly*::
   Access the database in read-only mode.
-  The read-only mode enables browsing a database that is used by other processes.
 
 [[shell-manpage-local-options]]    
 LOCAL OPTIONS
@@ -49,7 +48,6 @@ LOCAL OPTIONS
 
 *-readonly*::
   Access the database in read-only mode.
-  The read-only mode enables browsing a database that is used by other processes.
 
 *-c* 'COMMAND'::
   Command line to execute. After executing it the shell exits.

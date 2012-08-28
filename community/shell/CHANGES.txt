@@ -1,3 +1,7 @@
+1.8.M08
+--------------------
+o Remove read only fallback when DB is locked.
+
 1.8.M03
 --------------------
 o Added BEGIN TRANSACTION/COMMIT/ROLLBACK
