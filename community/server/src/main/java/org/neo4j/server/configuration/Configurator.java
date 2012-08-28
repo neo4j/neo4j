@@ -51,6 +51,7 @@ public interface Configurator
     String WEBSERVER_ADDRESS_PROPERTY_KEY = "org.neo4j.server.webserver.address";
     String WEBSERVER_MAX_THREADS_PROPERTY_KEY = "org.neo4j.server.webserver.maxthreads";
     String WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY = "org.neo4j.server.webserver.limit.executiontime";
+    String WEBSERVER_ENABLE_STATISTICS_COLLECTION = "org.neo4j.server.webserver.statistics";
 
     String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
     String REST_API_PACKAGE = "org.neo4j.server.rest.web";
