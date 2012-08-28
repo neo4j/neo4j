@@ -61,7 +61,6 @@ import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -181,8 +180,6 @@ public abstract class InternalAbstractGraphDatabase
     protected RecoveryVerifier recoveryVerifier;
     protected Guard guard;
 
-    protected MeasureDoNothing monitorGc;
-
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
@@ -255,10 +252,10 @@ public abstract class InternalAbstractGraphDatabase
         for( Map.Entry<String, String> autoConfig : autoConfiguration.entrySet() )
         {
             // Don't override explicit settings
-            if( !params.containsKey( autoConfig.getKey() ) )
+            String key = autoConfig.getKey();
+            if( !params.containsKey( key ) )
             {
-            	String key = autoConfig.getKey();
-                configParams.put( autoConfig.getKey(), autoConfig.getValue() );
+                configParams.put( key, autoConfig.getValue() );
             }
         }
 

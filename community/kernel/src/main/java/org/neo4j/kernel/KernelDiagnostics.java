@@ -20,6 +20,9 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Format;
@@ -68,28 +71,36 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
     private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger>
     {
         private final File storeDir;
+        private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
+        final private SimpleDateFormat dateFormat;
 
         private StoreFiles( String storeDir )
         {
-            this.storeDir = new File(storeDir);
+            this.storeDir = new File( storeDir );
+            TimeZone tz = TimeZone.getDefault();
+            dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
+            dateFormat.setTimeZone( tz );
         }
 
         @Override
         void dump( StringLogger logger )
         {
-            logger.logLongMessage( "Storage files:", this, true );
+            logger.logLongMessage( getDiskSpace( storeDir ) + "\nStorage files: (filename : modification date - size)", this, true );
         }
 
         @Override
         public boolean visit( StringLogger.LineLogger logger )
         {
-            logStoreFiles( logger, "",  storeDir );
+            logStoreFiles( logger, "  ", storeDir );
             return false;
         }
 
-        private static long logStoreFiles( StringLogger.LineLogger logger, String prefix, File dir )
+        private long logStoreFiles( StringLogger.LineLogger logger, String prefix, File dir )
         {
-            if ( !dir.isDirectory() ) return 0;
+            if ( !dir.isDirectory() )
+            {
+                return 0;
+            }
             File[] files = dir.listFiles();
             if ( files == null )
             {
@@ -106,17 +117,36 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
                     logger.logLine( prefix + filename + ":" );
                     size = logStoreFiles( logger, prefix + "  ", file );
                     filename = "- Total";
-                }
-                else
+                } else
                 {
                     size = file.length();
                 }
-                logger.logLine( prefix + filename + ": " + Format.bytes( size ) );
+
+                String fileModificationDate = getFileModificationDate( file );
+                String bytes = Format.bytes( size );
+                String fileInformation = String.format( "%s%s: %s - %s", prefix, filename, fileModificationDate, bytes );
+                logger.logLine( fileInformation );
+
                 total += size;
             }
             return total;
         }
+
+        private String getFileModificationDate( File file )
+        {
+            Date modifiedDate = new Date( file.lastModified() );
+            return dateFormat.format( modifiedDate );
+        }
+
+        private String getDiskSpace( File storeDir )
+        {
+            long free = storeDir.getFreeSpace();
+            long total = storeDir.getTotalSpace();
+            long percentage = ((total - free) * 100 / total);
+            return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
+        }
     }
+
 
     @Override
     public String getDiagnosticsIdentifier()
