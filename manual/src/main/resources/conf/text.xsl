@@ -18,11 +18,15 @@
   <xsl:param name="callout.unicode" select="0"/>
   <xsl:param name="section.autolabel" select="1"/>
   <xsl:param name="section.label.includes.component.label" select="1"/>
+
+  <xsl:param name="toc.max.depth" select="2"></xsl:param>
+  <xsl:param name="generate.section.toc.level" select="1"></xsl:param>
+
   <xsl:param name="generate.toc">
   appendix  title
   article/appendix  nop
   article   toc,title
-  book      toc,title,figure,table,example,equation
+  book      toc,title
   chapter   title
   part      toc,title
   preface   toc,title

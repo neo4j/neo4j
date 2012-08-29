@@ -6,6 +6,7 @@ The Neo4j Manual v{revnumber}
 :neo4j-git-tag: {gitversion}
 
 :lucene-version: 3_5_0
+:lucene-version-printed: 3.5.0
 
 :console: 0
 
