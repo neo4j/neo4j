@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyDynamicStoreReader
 {
@@ -46,7 +47,7 @@ public class LegacyDynamicStoreReader
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
     private final FileChannel fileChannel;
 
-    public LegacyDynamicStoreReader( String fileName, String fromVersionArray ) throws IOException
+    public LegacyDynamicStoreReader( String fileName, String fromVersionArray, StringLogger log ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         long fileSize = fileChannel.size();
@@ -63,7 +64,7 @@ public class LegacyDynamicStoreReader
 
         windowPool = new PersistenceWindowPool( fileName,
                 blockSize, fileChannel, 0,
-                true, true );
+                true, true, log );
     }
 
     public List<LegacyDynamicRecord> getPropertyChain( long startBlockId )

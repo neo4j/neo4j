@@ -222,7 +222,7 @@ public abstract class CommonAbstractStore
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory(configuration.getParams(), storageFileName ),
-            configuration.get( Configuration.use_memory_mapped_buffers ), isReadOnly() && !isBackupSlave() ) );
+            configuration.get( Configuration.use_memory_mapped_buffers ), isReadOnly() && !isBackupSlave(), stringLogger ) );
     }
 
     protected abstract int getEffectiveRecordSize();

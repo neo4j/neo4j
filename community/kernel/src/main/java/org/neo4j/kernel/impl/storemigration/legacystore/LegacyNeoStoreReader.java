@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyNeoStoreReader
 {
@@ -36,12 +37,12 @@ public class LegacyNeoStoreReader
     private FileChannel fileChannel;
     private PersistenceWindowPool windowPool;
 
-    public LegacyNeoStoreReader( String fileName ) throws FileNotFoundException
+    public LegacyNeoStoreReader( String fileName, StringLogger log ) throws FileNotFoundException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, 0,
-                true, true );
+                true, true, log );
     }
 
     private long getRecord( long id )

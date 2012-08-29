@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -60,7 +58,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class TxManager extends AbstractTransactionManager
     implements Lifecycle
 {
-    private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
     /*
      * TODO
@@ -91,7 +88,7 @@ public class TxManager extends AbstractTransactionManager
     private final AtomicInteger rolledBackTxCount = new AtomicInteger( 0 );
     private int peakConcurrentTransactions = 0;
 
-    private final StringLogger msgLog;
+    private final StringLogger log;
 
     final TxHook finishHook;
     private XaDataSourceManager xaDataSourceManager;
@@ -101,14 +98,14 @@ public class TxManager extends AbstractTransactionManager
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
                       TxHook finishHook,
-                      StringLogger msgLog,
+                      StringLogger log,
                       FileSystemAbstraction fileSystem
     )
     {
         this.txLogDir = txLogDir;
         this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
-        this.msgLog = msgLog;
+        this.log = log;
         this.kpe = kpe;
         this.finishHook = finishHook;
     }
@@ -122,7 +119,7 @@ public class TxManager extends AbstractTransactionManager
     {
         try
         {
-            msgLog.logMessage(msg,exception,true);
+            log.logMessage( msg, exception, true );
         } catch(Throwable t)
         {
             // ignore
@@ -155,8 +152,8 @@ public class TxManager extends AbstractTransactionManager
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found."));
                 }
-                txLog = new TxLog( currentTxLog, fileSystem, msgLog );
-                msgLog.logMessage( "TM opening log: " + currentTxLog, true );
+                txLog = new TxLog( currentTxLog, fileSystem, log );
+                log.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
             {
@@ -175,8 +172,8 @@ public class TxManager extends AbstractTransactionManager
                     .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem, msgLog );
-                msgLog.logMessage( "TM new log: " + txLog1FileName, true );
+                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem, log );
+                log.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
             }
@@ -184,7 +181,7 @@ public class TxManager extends AbstractTransactionManager
         }
         catch ( IOException e )
         {
-            log.log(Level.SEVERE, "Unable to start TM", e);
+            log.logMessage( "Unable to start TM", e );
             throw logAndReturn("TM startup failure",
                     new TransactionFailureException("Unable to start TM", e));
         }
@@ -200,17 +197,12 @@ public class TxManager extends AbstractTransactionManager
         boolean danglingRecordFound = danglingRecordList.hasNext();
         if ( danglingRecordFound )
         {
-            log.info( "Unresolved transactions found, " +
-                "recovery started ..." );
-
-            msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+            log.logMessage("TM non resolved transactions found in " + txLog.getName() );
 
             // Recover DataSources
             xaDataSourceManager.recover(danglingRecordList);
 
-            log.info( "Recovery completed, all transactions have been " +
-                "resolved to a consistent state." );
-            msgLog.logMessage( "Recovery completed, all transactions have been " +
+            log.logMessage("Recovery completed, all transactions have been " +
                 "resolved to a consistent state." );
         }
         getTxLog().truncate();
@@ -233,10 +225,10 @@ public class TxManager extends AbstractTransactionManager
             }
             catch ( IOException e )
             {
-                log.log( Level.WARNING, "Unable to close tx log[" + txLog.getName() + "]", e );
+                log.logMessage( "Unable to close tx log[" + txLog.getName() + "]" );
             }
         }
-        msgLog.logMessage( "TM shutting down", true );
+        log.logMessage( "TM shutting down", true );
     }
 
     synchronized TxLog getTxLog() throws IOException
@@ -256,8 +248,6 @@ public class TxManager extends AbstractTransactionManager
             else {
                 setTmNotOk( new Exception( "Unknown active tx log file[" + txLog.getName()
                         + "], unable to switch." ) );
-                log.severe("Unknown active tx log file[" + txLog.getName()
-                        + "], unable to switch.");
                 final IOException ex = new IOException("Unknown txLogFile[" + txLog.getName()
                         + "] not equals to either [" + txLog1FileName + "] or ["
                         + txLog2FileName + "]");
@@ -282,14 +272,14 @@ public class TxManager extends AbstractTransactionManager
     void setTmNotOk( Throwable cause )
     {
         tmOk = false;
-        msgLog.logMessage( "setting TM not OK", cause );
+        log.logMessage( "setting TM not OK", cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
 
     @Override
     public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
     {
-        msgLog.logMessage( "TxManager is blocking new transactions and waiting for active to fail..." );
+        log.logMessage( "TxManager is blocking new transactions and waiting for active to fail..." );
         blocked = true;
         List<Transaction> failedTransactions = new ArrayList<Transaction>();
         synchronized ( txThreadMap )
@@ -314,7 +304,7 @@ public class TxManager extends AbstractTransactionManager
                 }
             }
         }
-        msgLog.logMessage( "TxManager blocked transactions" + ((failedTransactions.isEmpty() ? "" :
+        log.logMessage( "TxManager blocked transactions" + ((failedTransactions.isEmpty() ? "" :
                 ", but failed for: " + failedTransactions.toString())) );
 
         long endTime = System.currentTimeMillis()+maxWaitTimeMillis;
@@ -373,7 +363,7 @@ public class TxManager extends AbstractTransactionManager
         }
         catch ( IOException e )
         {
-            log.log( Level.SEVERE, "Error writing transaction log", e );
+            log.logMessage( "Error writing transaction log", e );
             setTmNotOk( e );
             throw logAndReturn("TM error write start record",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                              + " error writing transaction log," ), e ));
@@ -451,7 +441,7 @@ public class TxManager extends AbstractTransactionManager
             catch ( XAException e )
             {
                 xaErrorCode = e.errorCode;
-                log.log( Level.SEVERE, "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
+                log.logMessage( "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
                         ", errorCode=" + xaErrorCode, e );
                 if ( tx.getStatus() == Status.STATUS_COMMITTED )
                 {
@@ -463,7 +453,7 @@ public class TxManager extends AbstractTransactionManager
             }
             catch ( Throwable t )
             {
-                log.log( Level.SEVERE, "Commit failed", t );
+                log.logMessage( "Commit failed", t );
                 commitFailureCause = t;
             }
         }
@@ -475,10 +465,10 @@ public class TxManager extends AbstractTransactionManager
             }
             catch ( Throwable e )
             {
-                log.log( Level.SEVERE, "Unable to rollback transaction. "
-                    + "Some resources may be commited others not. "
-                    + "Neo4j kernel should be SHUTDOWN for "
-                                       + "resource maintance and transaction recovery ---->", e );
+                log.logMessage( "Unable to rollback transaction. "
+                        + "Some resources may be commited others not. "
+                        + "Neo4j kernel should be SHUTDOWN for "
+                        + "resource maintance and transaction recovery ---->", e );
                 setTmNotOk( e );
                 String commitError;
                 if ( commitFailureCause != null )
@@ -509,7 +499,7 @@ public class TxManager extends AbstractTransactionManager
             }
             catch ( IOException e )
             {
-                log.log( Level.SEVERE, "Error writing transaction log", e );
+                log.logMessage("Error writing transaction log", e );
                 setTmNotOk( e );
                 throw logAndReturn("TM error tx commit",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                  + " error writing transaction log" ), e ));
@@ -539,7 +529,7 @@ public class TxManager extends AbstractTransactionManager
         }
         catch ( IOException e )
         {
-            log.log( Level.SEVERE, "Error writing transaction log", e );
+            log.logMessage("Error writing transaction log", e );
             setTmNotOk( e );
             throw logAndReturn("TM error tx commit",
                     Exceptions.withCause( new SystemException( "TM encountered a problem, "
@@ -557,10 +547,10 @@ public class TxManager extends AbstractTransactionManager
         }
         catch ( XAException e )
         {
-            log.log( Level.SEVERE, "Unable to rollback marked transaction. "
-                + "Some resources may be commited others not. "
-                + "Neo4j kernel should be SHUTDOWN for "
-                                   + "resource maintance and transaction recovery ---->", e );
+            log.logMessage( "Unable to rollback marked transaction. "
+                    + "Some resources may be commited others not. "
+                    + "Neo4j kernel should be SHUTDOWN for "
+                    + "resource maintance and transaction recovery ---->", e );
             setTmNotOk( e );
             throw logAndReturn("TM error tx rollback commit",Exceptions.withCause(
                     new HeuristicMixedException( "Unable to rollback " + " ---> error code for rollback: "
@@ -578,7 +568,7 @@ public class TxManager extends AbstractTransactionManager
         }
         catch ( IOException e )
         {
-            log.log( Level.SEVERE, "Error writing transaction log", e );
+            log.logMessage( "Error writing transaction log", e );
             setTmNotOk( e );
             throw logAndReturn("TM error tx rollback commit",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                              + " error writing transaction log" ), e ));
@@ -619,10 +609,10 @@ public class TxManager extends AbstractTransactionManager
                 }
                 catch ( XAException e )
                 {
-                    log.log( Level.SEVERE, "Unable to rollback marked or active transaction. "
-                        + "Some resources may be commited others not. "
-                        + "Neo4j kernel should be SHUTDOWN for "
-                                           + "resource maintance and transaction recovery ---->", e );
+                    log.logMessage("Unable to rollback marked or active transaction. "
+                            + "Some resources may be commited others not. "
+                            + "Neo4j kernel should be SHUTDOWN for "
+                            + "resource maintance and transaction recovery ---->", e );
                     setTmNotOk( e );
                     throw logAndReturn("TM error tx rollback", Exceptions.withCause(
                             new SystemException( "Unable to rollback " + " ---> error code for rollback: "
@@ -639,7 +629,7 @@ public class TxManager extends AbstractTransactionManager
                 }
                 catch ( IOException e )
                 {
-                    log.log( Level.SEVERE, "Error writing transaction log", e );
+                    log.logMessage("Error writing transaction log", e );
                     setTmNotOk( e );
                     throw logAndReturn("TM error tx rollback", Exceptions.withCause(
                             new SystemException( "TM encountered a problem, "
@@ -841,4 +831,5 @@ public class TxManager extends AbstractTransactionManager
     {
         return peakConcurrentTransactions;
     }
+
 }

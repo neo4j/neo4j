@@ -6,6 +6,8 @@ o Removed contention around allocating and moving persistence windows so that a 
 o Removed contention around translating a key (as String) into the ID by using copy-on-write map instead
   of a concurrent hash map. Used in property key as well as relationship type translation.
 o Fix for Node/Relationship#getPropertyValues() sometimes returning null values from the iterator.
+o Important log messages from the transaction manager and the persistence window pool are now logged
+  to messages.log, rather than to java.util.logging.
 
 1.8.M07 (2012-08-08)
 --------------------

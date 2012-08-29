@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Tests or rather measures contention imposed by
@@ -67,7 +68,7 @@ public class TestPersistenceWindowPoolContention
         file.delete();
         channel = new RandomAccessFile( file, "rw" ).getChannel();
         write( channel, fileSize );
-        pool = new PersistenceWindowPool( "contention test", recordSize, channel, mappingSize, true, false );
+        pool = new PersistenceWindowPool( "contention test", recordSize, channel, mappingSize, true, false, StringLogger.DEV_NULL );
     }
 
     private void write( FileChannel channel, long bytes ) throws IOException
