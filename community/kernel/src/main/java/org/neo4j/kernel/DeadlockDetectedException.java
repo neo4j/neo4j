@@ -26,6 +26,15 @@ public class DeadlockDetectedException extends RuntimeException
 {
     public DeadlockDetectedException( String message )
     {
-        super( message );
+        super( "Don't panic.\n" +
+                "\n" +
+                "A deadlock scenario has been detected and avoided. This means that two or more transactions, which were " +
+                "holding locks, were wanting to await locks held by one another, which would have resulted in a deadlock " +
+                "between these transactions. This exception was thrown instead of ending up in that deadlock.\n" +
+                "\n" +
+                "See the deadlock section in the Neo4j manual for how to avoid this: " +
+                "http://docs.neo4j.org/chunked/stable/transactions-deadlocks.html\n" +
+                "\n" +
+                "Details: '" + message + "'." );
     }
 }
