@@ -27,6 +27,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.UnknownReevaluationCause;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
@@ -55,7 +56,7 @@ public class HaKernelDataTest
         KernelData kernelData = haGraphDb.getKernelData();
 
         // when -- force internal restart
-        haGraphDb.internalShutdown( false );
+        haGraphDb.internalShutdown( UnknownReevaluationCause.fromDescription( "Test" ), false );
         haGraphDb.reevaluateMyself();
 
         // then

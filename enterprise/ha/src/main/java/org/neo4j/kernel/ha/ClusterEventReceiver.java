@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha;
 
 public interface ClusterEventReceiver
 {
-    void newMaster( Exception cause );
+    void newMaster( ReevaluationCause cause );
 
-    void reconnect( Exception cause );
+    void reconnect( ReevaluationCause cause );
 }

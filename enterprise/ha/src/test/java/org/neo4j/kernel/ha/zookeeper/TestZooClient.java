@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClientResolver;
+import org.neo4j.kernel.ha.ReevaluationCause;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
@@ -44,15 +45,15 @@ public class TestZooClient
     private static final ClusterEventReceiver DummyClusterReceiver = new ClusterEventReceiver()
     {
         @Override
-        public void reconnect( Exception cause )
+        public void reconnect( ReevaluationCause cause )
         {
-            StringLogger.SYSTEM.logMessage( "reconnect called", cause );
+            cause.log( StringLogger.SYSTEM, "reconnect called" );
         }
 
         @Override
-        public void newMaster( Exception cause )
+        public void newMaster( ReevaluationCause cause )
         {
-            StringLogger.SYSTEM.logMessage( "newMaster called", cause );
+            cause.log( StringLogger.SYSTEM, "newMaster called" );
         }
     };
 

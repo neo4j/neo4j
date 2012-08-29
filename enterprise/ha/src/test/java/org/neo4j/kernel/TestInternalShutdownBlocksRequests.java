@@ -27,6 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.ha.DatabaseNotRunningException;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.KnownReevaluationCauses;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -84,7 +85,7 @@ public class TestInternalShutdownBlocksRequests
         } );
 
         // Do internal shutdown, triggering the lifecycle listener above
-        db.internalShutdown( false );
+        db.internalShutdown( KnownReevaluationCauses.SHUTDOWN, false );
 
     }
 

@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.ha;
 
-/**
- * Preferably used when there's a place where you'd like to capture the call path leading up
- * to a certain point.
- * 
- * @author Mattias Persson
- */
-public class InformativeStackTrace extends Exception
+import org.neo4j.kernel.impl.util.StringLogger;
+
+public interface ReevaluationCause
 {
-    public InformativeStackTrace( String message )
-    {
-        super( message );
-    }
+    String name();
+    
+    String getDescription();
+    
+    void log( StringLogger logger, String message );
 }

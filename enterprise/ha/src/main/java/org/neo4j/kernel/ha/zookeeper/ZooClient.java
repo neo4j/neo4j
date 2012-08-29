@@ -63,13 +63,13 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.InformativeStackTrace;
 import org.neo4j.kernel.SlaveUpdateMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.KnownReevaluationCauses;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClientFactory;
 import org.neo4j.kernel.ha.MasterImpl;
@@ -85,7 +85,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class ZooClient extends AbstractZooKeeperManager
+public class
+        ZooClient extends AbstractZooKeeperManager
 {
     static final String MASTER_NOTIFY_CHILD = "master-notify";
     static final String MASTER_REBOUND_CHILD = "master-rebound";
@@ -1050,7 +1051,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
                 {
                     keeperState = KeeperState.Expired;
-                    clusterReceiver.reconnect( new InformativeStackTrace( "Reconnect due to session expired" ) );
+                    clusterReceiver.reconnect( KnownReevaluationCauses.ZK_SESSION_EXPIRED );
                 }
                 else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
                 {
@@ -1064,7 +1065,7 @@ public class ZooClient extends AbstractZooKeeperManager
                             int previousMaster = getCurrentMasterNotify(); // used in check below
                             if ( sessionId != -1 )
                             {
-                                clusterReceiver.newMaster( new InformativeStackTrace( "Got SyncConnected event from ZK" ) );
+                                clusterReceiver.newMaster( KnownReevaluationCauses.ZK_INITIAL_SYNC_CONNECTED );
                                 if (getCurrentMasterNotify() == getMyMachineId() && previousMaster == getMyMachineId())
                                 {
                                     /*
@@ -1106,8 +1107,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     if ( path.contains( currentMaster.getZooKeeperPath() ) )
                     {
                         msgLog.logMessage("Acting on it, calling newMaster()");
-                                clusterReceiver.newMaster( new InformativeStackTrace(
-                                        "NodeDeleted event received (a machine left the cluster)" ) );
+                                clusterReceiver.newMaster( KnownReevaluationCauses.ZK_MACHINE_LEFT );
                     }
                 }
                 else if ( event.getType() == Watcher.Event.EventType.NodeChildrenChanged )
@@ -1140,8 +1140,7 @@ public class ZooClient extends AbstractZooKeeperManager
                             try
                             {
                                 electionHappening = true;
-                                clusterReceiver.newMaster( new InformativeStackTrace(
-                                        "NodeDataChanged event received (someone thought I should be the master)" ) );
+                                clusterReceiver.newMaster( KnownReevaluationCauses.ZK_ELECTED_MASTER );
                                 serversRefreshed = true;
                             }
                             finally
@@ -1160,8 +1159,7 @@ public class ZooClient extends AbstractZooKeeperManager
                             try
                             {
                                 electionHappening = true;
-                                clusterReceiver.newMaster( new InformativeStackTrace(
-                                        "NodeDataChanged event received (new master ensures I'm slave)" ) );
+                                clusterReceiver.newMaster( KnownReevaluationCauses.ZK_MASTER_AVAILABLE );
                                 serversRefreshed = true;
                             }
                             finally

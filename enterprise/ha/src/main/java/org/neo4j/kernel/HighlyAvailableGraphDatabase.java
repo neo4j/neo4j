@@ -75,13 +75,16 @@ import org.neo4j.kernel.ha.ClusterEventReceiver;
 import org.neo4j.kernel.ha.DatabaseNotRunningException;
 import org.neo4j.kernel.ha.HaCaches;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.KnownReevaluationCauses;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClientResolver;
 import org.neo4j.kernel.ha.MasterGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.ReevaluationCause;
 import org.neo4j.kernel.ha.SlaveDatabaseOperations;
 import org.neo4j.kernel.ha.SlaveGraphDatabase;
 import org.neo4j.kernel.ha.SlaveServer;
+import org.neo4j.kernel.ha.UnknownReevaluationCause;
 import org.neo4j.kernel.ha.shell.ZooClientFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.NoMasterException;
@@ -474,7 +477,7 @@ public class HighlyAvailableGraphDatabase
             Pair<Master, Machine> master = createClusterClient().getMasterClient();
 
             // Assume it's shut down at this point
-            internalShutdown( false );
+            internalShutdown( KnownReevaluationCauses.COPY_STORE_FROM_MASTER, false );
 
             if ( branched )
             {
@@ -619,7 +622,7 @@ public class HighlyAvailableGraphDatabase
             }
         }
         storeId = broker.getClusterStoreId( true );
-        newMaster( new InformativeStackTrace( "Starting up [" + machineId + "] for the first time" ) );
+        newMaster( KnownReevaluationCauses.INITIAL_STARTUP );
         localGraph();
         masterClientResolver.enableDowngradeBarrier();
     }
@@ -879,13 +882,11 @@ public class HighlyAvailableGraphDatabase
                      */
                     messageLog.logMessage(
                             "ZooKeeper broker returned null master" );
-                    newMaster( new NullPointerException(
-                            "master returned from broker" ) );
+                    newMaster( KnownReevaluationCauses.NO_MASTER_IN_PULL_UPDATES );
                 }
                 else if ( broker.getMaster().first() == null )
                 {
-                    newMaster( new NullPointerException(
-                            "master returned from broker" ) );
+                    newMaster( KnownReevaluationCauses.NO_MASTER_IN_PULL_UPDATES );
                 }
 
                 RequestContext slaveContext = null;
@@ -912,12 +913,12 @@ public class HighlyAvailableGraphDatabase
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( e );
+            newMaster( UnknownReevaluationCause.fromException( e ) );
             throw e;
         }
         catch ( NoMasterException e )
         {
-            newMaster( e );
+            newMaster( UnknownReevaluationCause.fromException( e ) );
             throw e;
         }
         catch ( ComException e )
@@ -975,14 +976,16 @@ public class HighlyAvailableGraphDatabase
         getMessageLog().logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + internalGraphDatabase + ")" );
         pullUpdates = false;
+        boolean firstReevaluation = this.internalGraphDatabase == null;
         InternalAbstractGraphDatabase newDb = null;
         try
         {
             if ( master.other().getMachineId() == machineId )
             { // I am the new master
-                if ( this.internalGraphDatabase == null || !iAmCurrentlyMaster )
+                if ( firstReevaluation|| !iAmCurrentlyMaster )
                 { // I am currently a slave, so restart as master
-                    internalShutdown( true );
+                    internalShutdown( firstReevaluation ? KnownReevaluationCauses.STARTING_AS_MASTER :
+                        KnownReevaluationCauses.SWITCHING_FROM_SLAVE_TO_MASTER, true );
                     newDb = startAsMaster();
                 }
                 // fire rebound event
@@ -991,10 +994,11 @@ public class HighlyAvailableGraphDatabase
             else
             { // Someone else is master
                 broker.notifyMasterChange( master.other() );
-                if ( this.internalGraphDatabase == null || iAmCurrentlyMaster )
+                if ( firstReevaluation || iAmCurrentlyMaster )
                 { // I am currently master, so restart as slave.
                     // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
-                    internalShutdown( true );
+                    internalShutdown( firstReevaluation ? KnownReevaluationCauses.STARTING_AS_SLAVE :
+                        KnownReevaluationCauses.SWITCHING_FROM_MASTER_TO_SLAVE, true );
                     newDb = startAsSlave();
                 }
                 else
@@ -1225,9 +1229,9 @@ public class HighlyAvailableGraphDatabase
         return localGraph().tx();
     }
 
-    public synchronized void internalShutdown( boolean rotateLogs )
+    public synchronized void internalShutdown( ReevaluationCause cause, boolean rotateLogs )
     {
-        messageLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new InformativeStackTrace( "Internal shutdown" ), true );
+        cause.log( messageLog, "Internal shutdown of HA db[" + machineId + "]" );
         pullUpdates = false;
         if ( this.updatePuller != null )
         {
@@ -1291,7 +1295,7 @@ public class HighlyAvailableGraphDatabase
         {
             this.broker.shutdown();
         }
-        internalShutdown( false );
+        internalShutdown( KnownReevaluationCauses.SHUTDOWN, false );
 
         life.shutdown();
     }
@@ -1343,25 +1347,16 @@ public class HighlyAvailableGraphDatabase
         }
     }
 
-    private synchronized void newMaster( Exception e )
+    private synchronized void newMaster( ReevaluationCause cause )
     {
-        /* MP: This is from BranchDetectingTxVerifier which can report branched data via a
-         * BranchedDataException embedded inside a ComException (just to pass through the usual
-         * code paths w/o any additional code). Feel free to refactor to get rid of this packing */
-        if ( e instanceof ComException && e.getCause() instanceof BranchedDataException )
-        {
-            BranchedDataException bde = (BranchedDataException) e.getCause();
-            getMessageLog().logMessage( "Master says I've got branched data: " + bde );
-        }
-
-        Throwable cause = null;
+        Throwable causeOfFailure = null;
         int i = 0;
         boolean unexpectedException = false;
         while ( i++ < NEW_MASTER_STARTUP_RETRIES )
         {
             try
             {
-                getMessageLog().logMessage( "newMaster called", e, true );
+                cause.log( messageLog, "newMaster called" );
                 reevaluateMyself();
                 return;
             }
@@ -1369,8 +1364,7 @@ public class HighlyAvailableGraphDatabase
             {
                 getMessageLog().logMessage(
                         "ZooKeeper exception in newMaster, retry #" + i, zke );
-                e = zke;
-                cause = zke;
+                causeOfFailure = zke;
                 sleepWithoutInterruption( 500, "" );
                 continue;
             }
@@ -1378,46 +1372,41 @@ public class HighlyAvailableGraphDatabase
             {
                 getMessageLog().logMessage(
                         "Got wrong protocol version during newMaster, expected " + pe.getExpected() + " but got "
-                                + pe.getReceived(), e );
+                                + pe.getReceived(), pe );
                 broker.restart();
-                e = pe;
-                cause = pe;
+                causeOfFailure = pe;
                 continue;
             }
             catch ( ComException ce )
             {
                 getMessageLog().logMessage(
                         "Communication exception in newMaster, retry #" + i, ce );
-                e = ce;
-                cause = ce;
+                causeOfFailure = ce;
                 sleepWithoutInterruption( 500, "" );
                 continue;
             }
             catch ( BranchedDataException bde )
             {
                 getMessageLog().logMessage(
-                        "Branched data occurred, during newMaster retry #" + i,
-                        bde );
+                        "Branched data occurred, during newMaster retry #" + i, bde );
                 getFreshDatabaseFromMaster( true /*branched*/);
-                e = bde;
-                cause = bde;
+                causeOfFailure = bde;
                 continue;
             }
             catch ( Throwable t )
             {
-                cause = t;
+                causeOfFailure = t;
                 unexpectedException = true;
                 break;
             }
         }
-        if ( cause != null && unexpectedException )
+        if ( causeOfFailure != null && unexpectedException )
         {
             getMessageLog().logMessage(
-                    "Reevaluation ended in unknown exception " + cause
-                    + " so shutting down", cause, true );
-            shutdown( cause, false );
+                    "Reevaluation ended in unknown exception so shutting down", causeOfFailure, true );
+            shutdown( causeOfFailure, false );
         }
-        throw Exceptions.launderedException( cause );
+        throw Exceptions.launderedException( causeOfFailure );
     }
 
     public MasterServer getMasterServerIfMaster()
@@ -1663,7 +1652,7 @@ public class HighlyAvailableGraphDatabase
             }
             catch ( IOException e )
             {
-                newMaster( e );
+                newMaster( UnknownReevaluationCause.fromException( e ) );
                 throw new RuntimeException( e );
             }
             finally
@@ -1675,7 +1664,7 @@ public class HighlyAvailableGraphDatabase
         @Override
         public void handle( Exception e )
         {
-            newMaster( e );
+            newMaster( UnknownReevaluationCause.fromException( e ) );
         }
 
         @Override
@@ -1683,15 +1672,15 @@ public class HighlyAvailableGraphDatabase
         {
             if ( e instanceof ZooKeeperException || e instanceof ComException )
             {
-                slaveOperations.newMaster( e );
+                slaveOperations.newMaster( UnknownReevaluationCause.fromException( e ) );
                 throw e;
             }
         }
 
         @Override
-        public void newMaster( Exception e )
+        public void newMaster( ReevaluationCause cause )
         {
-            HighlyAvailableGraphDatabase.this.newMaster( e );
+            HighlyAvailableGraphDatabase.this.newMaster( cause );
         }
 
         /**
@@ -1702,13 +1691,13 @@ public class HighlyAvailableGraphDatabase
          * ZK ended up in during our absence is respected.
          */
         @Override
-        public synchronized void reconnect( Exception e )
+        public synchronized void reconnect( ReevaluationCause cause )
         {
             if ( broker != null )
             {
                 broker.restart();
             }
-            newMaster( e );
+            newMaster( cause );
         }
 
         @Override
@@ -1739,8 +1728,8 @@ public class HighlyAvailableGraphDatabase
             if( error == ErrorState.TX_MANAGER_NOT_OK )
             {
                 messageLog.logMessage( "TxManager not ok, doing internal restart" );
-                internalShutdown( true );
-                newMaster( new InformativeStackTrace( "Tx manager not ok" ) );
+                internalShutdown( KnownReevaluationCauses.KERNEL_PANIC, true );
+                newMaster( KnownReevaluationCauses.KERNEL_PANIC );
             }
         }
 
