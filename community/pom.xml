@@ -44,6 +44,7 @@
     <module>graphviz</module>
     <module>server</module>
     <module>server-examples</module>
+    <module>licensecheck-config</module>
   </modules>
 
   <licenses>
@@ -143,6 +144,11 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.examples</groupId>
           <artifactId>neo4j-server-examples</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.build</groupId>
+          <artifactId>licensecheck-config</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
