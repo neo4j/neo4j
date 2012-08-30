@@ -52,9 +52,9 @@ trait ParserPattern extends Base {
         val concretePattern = abstractPattern.map(p => translator(p))
 
         concretePattern.find(!_.success) match {
-          case Some(No(msg)) => Failure(msg.mkString("\n"), rest)
-          case None => Success(concretePattern.flatMap(_.values), rest)
-          case _ => throw new ThisShouldNotHappenError("Andres", "This is here to stop compiler warnings.")
+          case Some(No(msg)) => Failure(msg.mkString("\n"), rest.rest)
+          case None          => Success(concretePattern.flatMap(_.values), rest)
+          case _             => throw new ThisShouldNotHappenError("Andres", "This is here to stop compiler warnings.")
         }
 
       case Failure(msg, rest) => Failure(msg, rest)

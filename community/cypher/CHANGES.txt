@@ -9,8 +9,9 @@ o Fixed #795: so that WITH keeps parameters also for empty aggregation results
 o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on already created elements
 o Added error when using != instead of <>
 o Fixed #787: Issue when comparing array properties with literal collections
-o Fixes #751: Better error message for some type errors
-o Fixed #818: problem where properties could only have scalar values (they can be arrays as well)
+o Fixed #751: Better error message for some type errors
+o Fixed #818: Problem where properties could only have scalar values (they can be arrays as well)
+o Fixed #834: Gives relevant syntax exception when properties are entered in MATCH
 
 1.8.M07 (2012-08-08)
 --------------------

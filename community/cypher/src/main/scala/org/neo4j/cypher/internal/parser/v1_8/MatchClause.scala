@@ -38,20 +38,34 @@ trait MatchClause extends Base with ParserPattern {
   }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
-    case ParsedNamedPath(name, patterns) =>
-      val namedPathPatterns = patterns.map(matchTranslator)
-      val result = namedPathPatterns.reduce(_ ++ _)
-      result.seqMap(p => Seq(NamedPath(name, p.map(_.asInstanceOf[Pattern]):_*)))
+    case ParsedNamedPath(name, patterns) => parsedPath(name, patterns)
 
     case ParsedRelation(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate) =>
-      successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+      if (props.isEmpty && startProps.isEmpty && endProps.isEmpty)
+        successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+      else
+        No(Seq("Properties on pattern elements are not allowed in MATCH"))
 
     case ParsedVarLengthRelation(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate, min, max, relIterator) =>
+      if (props.isEmpty && startProps.isEmpty && endProps.isEmpty)
+        successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+      else
+        No(Seq("Properties on pattern elements are not allowed in MATCH"))
       successIfEntities(left, right)((l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
 
     case ParsedShortestPath(name, props, ParsedEntity(left, startProps, True()), ParsedEntity(right, endProps, True()), relType, dir, optional, predicate, max, single, relIterator) =>
+      if (props.isEmpty && startProps.isEmpty && endProps.isEmpty)
+        successIfEntities(left, right)((l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+      else
+        No(Seq("Properties on pattern elements are not allowed in MATCH"))
       successIfEntities(left, right)((l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
 
     case x => No(Seq("failed to parse MATCH pattern"))
+  }
+
+  def parsedPath(name: String, patterns: Seq[AbstractPattern]): Maybe[NamedPath] = {
+    val namedPathPatterns = patterns.map(matchTranslator)
+    val result = namedPathPatterns.reduce(_ ++ _)
+    result.seqMap(p => Seq(NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)))
   }
 }

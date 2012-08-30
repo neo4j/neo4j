@@ -102,19 +102,19 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def badMatch5() {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
-      "failed to parse MATCH pattern", 23)
+      "failed to parse MATCH pattern", 24)
   }
 
   @Test def badMatch7() {
     expectSyntaxError(
       "start p=node(2) match p->dude return dude.name",
-      "expected [ or -", 24)
+      "failed to parse MATCH pattern", 24)
   }
 
   @Test def badMatch8() {
     expectSyntaxError(
       "start p=node(2) match p->dude return dude.name",
-      "expected [ or -", 24)
+      "failed to parse MATCH pattern", 24)
   }
 
   @Ignore @Test def missingComaBetweenColumns() {
@@ -224,6 +224,18 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     expectError(
       "START p=node(0) MATCH p-[r*]->() WHERE r.foo = 'apa' RETURN r",
       "Expected `r` to be a Map but it was a Collection")
+  }
+
+  @Test def error_when_using_properties_on_relationships_in_match() {
+    expectError(
+      "START p=node(0) MATCH p-[r {a:'foo'}]->() RETURN r",
+      "Properties on pattern elements are not allowed in MATCH")
+  }
+
+  @Test def error_when_using_properties_on_relationships_in_match2() {
+    expectError(
+      "START p=node(0) MATCH p-[r]->({a:'foo'}) RETURN r",
+      "Properties on pattern elements are not allowed in MATCH")
   }
 
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
