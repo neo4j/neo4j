@@ -57,6 +57,9 @@ Apache Software License, Version 2.0
   Servlet Specification API
   StAX API
 
+BSD - Scala License
+  Scala Library
+
 BSD - seedrandom.js
   seedrandom.js
 
@@ -74,7 +77,6 @@ BSD License
   Janino
   Pipes: A Lazy Data Flow Framework
   Pure Feature Detection Library (has.js)
-  Scala Library
 
 Bouncy Castle License
   Legion of the Bouncy Castle Java Cryptography APIs

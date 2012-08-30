@@ -130,6 +130,32 @@ terms of the relevant Commercial Agreement.
         </executions>
       </plugin>
 
+       <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>list-all-licenses-win</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE-win.txt</thirdPartyLicensingFilename>
+              <checkExistingNoticeFile>${project.build.directory}/../src/main/distribution/text/advanced/NOTICE.txt</checkExistingNoticeFile>
+              <listPrependText>list-prefix.txt</listPrependText>
+              <listReport>${project.artifactId}-${neo4j.version}-LICENSES-win.txt</listReport>
+              <checkExistingLicensesFile>${project.build.directory}/../src/main/distribution/text/advanced/LICENSES.txt</checkExistingLicensesFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 
