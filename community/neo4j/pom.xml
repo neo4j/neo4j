@@ -179,9 +179,9 @@ the relevant Commercial Agreement.
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
-              <doctitle>${project.name} API</doctitle>
+              <doctitle>${project.name} ${project.version} API</doctitle>
               <skip>${javadoc.skip}</skip>
-              <windowtitle>${project.name} API</windowtitle>
+              <windowtitle>${project.name} ${project.version} API</windowtitle>
                <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
               <groups>
                 <group>
