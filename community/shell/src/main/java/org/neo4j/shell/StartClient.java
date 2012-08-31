@@ -38,7 +38,6 @@ import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
-import org.neo4j.shell.impl.StandardConsole;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
