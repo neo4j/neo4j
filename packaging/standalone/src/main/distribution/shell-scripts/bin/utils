@@ -250,9 +250,15 @@ remove_user() {
     else
       yn="y"
     fi
+
+    if [ -x '/usr/sbin/deluser' ]; then
+      DELETE_CMD='/usr/sbin/deluser'
+    else
+      DELETE_CMD='/usr/sbin/userdel'
+    fi
     
     case $yn in
-      [Yy]* ) deluser $wrapper_user
+      [Yy]* ) $DELETE_CMD $wrapper_user
               modify_user_config "" created=true
         ;;
       * ) echo "OK, we'll let that user live, for now." 
@@ -266,6 +272,7 @@ remove_user() {
 removeservice() {
     detectos
     checkstatus
+    selectinittool
 
     PLIST_FILE=$LAUNCHD_NAME.plist
 
@@ -278,7 +285,12 @@ removeservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
-	        update-rc.d -f ${SERVICE_NAME} remove
+
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --del ${SERVICE_NAME}
+          else
+            update-rc.d -f ${SERVICE_NAME} remove
+          fi
           rm /etc/init.d/${SERVICE_NAME}
         fi
 
@@ -325,3 +337,12 @@ checklimits() {
       fi
     fi
 }
+
+selectinittool() {
+  if [ -x '/sbin/chkconfig' ]; then
+    INIT_TOOL='chkconfig'
+  else
+    INIT_TOOL='update-rc.d'
+  fi
+}
+

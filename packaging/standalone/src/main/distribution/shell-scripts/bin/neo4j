@@ -1,4 +1,8 @@
 #!/bin/bash
+### BEGIN REDHAT INFO
+# chkconfig: 2345 99 20
+# description: The Neo4J graph database server. See http://neo4j.org
+### END REDHAT INFO
 ### BEGIN INIT INFO
 # Provides:          neo4j-service
 # Required-Start:
@@ -6,8 +10,8 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 ### END INIT INFO
-
 # Copyright (c) 2002-2012 "Neo Technology,"
+
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -90,7 +94,7 @@ SCRIPT_NAME="${NEO4J_HOME}/bin/neo4j"
 SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
 LAUNCHD_DIR=~/Library/LaunchAgents/
 
-TIMEOUT=20
+TIMEOUT=120
 
 PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
 buildclasspath() {
@@ -222,7 +226,7 @@ startit() {
 	if [ $WAIT = "true" ] ; then
 	echo -n "... waiting for server to be ready."
 	    x=0
-	    while ( [ $x -lt 120 ] ) ; do
+	    while ( [ $x -lt $TIMEOUT ] ) ; do
 	      ## wait for start, pick up the server listening on the port
 	      detectrunning
 	      if [ $newpid ] ; then
@@ -239,7 +243,9 @@ startit() {
 	      if [ "$newpid" != "$STARTED_PID" ] ; then
 		    rm "$PID_FILE"
 	        kill -9 $STARTED_PID
-	        echo " BAD."
+	        echo " Failed to start within $TIMEOUT seconds."
+	        echo "$FRIENDLY_NAME failed to start, please check the logs for details."
+	        echo "If startup is blocked on a long recovery, use '$0 start-no-wait' to give the startup more time."
 	        exit 2
 	      fi
 
@@ -248,7 +254,7 @@ startit() {
 	      exit 0
 	    fi
 
-	    echo " BAD."
+	    echo " Failed to start within $TIMEOUT seconds."
 	    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
 	    rm "$PID_FILE"
 	    exit 1
@@ -307,6 +313,7 @@ modify_user_config() {
 installservice() {
     detectos
     findjava
+    selectinittool
     if [ ! -x "$JAVACMD" ] ; then
       if [[ $HEADLESS == false ]]; then
         read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
@@ -362,7 +369,11 @@ installservice() {
             modify_user_config $proposed_user
           fi
           ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
-          update-rc.d ${SERVICE_NAME} defaults
+          if [ $INIT_TOOL == 'chkconfig' ]; then
+            chkconfig --add ${SERVICE_NAME}
+          else
+            update-rc.d ${SERVICE_NAME} defaults
+          fi
           chown -R $proposed_user: "$NEO4J_HOME/data" "$NEO4J_HOME/conf"
         fi
       fi
