@@ -1,3 +1,12 @@
+1.8.M08
+--------------------
+o Removed contention around allocating and moving persistence windows so that a thread won't need to await
+  another thread doing this refresh, instead just continue knowing that the windows will be optimally
+  placed in a very near future.
+o Removed contention around translating a key (as String) into the ID by using copy-on-write map instead
+  of a concurrent hash map. Used in property key as well as relationship type translation.
+o Fix for Node/Relationship#getPropertyValues() sometimes returning null values from the iterator.
+
 1.8.M07 (2012-08-08)
 --------------------
 o Traversal framework backwards compatibility
