@@ -27,7 +27,7 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import org.neo4j.graphdb.GraphDatabaseService;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class SpringTransactionManager implements TransactionManager
