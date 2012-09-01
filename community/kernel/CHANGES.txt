@@ -1,4 +1,4 @@
-1.8.M08
+1.8.M08 (2012-09-03)
 --------------------
 o Removed contention around allocating and moving persistence windows so that a thread won't need to await
   another thread doing this refresh, instead just continue knowing that the windows will be optimally
