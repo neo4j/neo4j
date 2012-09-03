@@ -1,3 +1,9 @@
+1.8.M08 (2012-09-03)
+--------------------
+o Upgraded Jackson JAXRS to version 1.9.7 
+o Keeping the Cypher execution engine between calls makes it possible to re-use execution plans
+o added User-Agent header tracking to udc to determine rest-driver usage
+
 1.8.M07 (2012-08-08)
 --------------------
 o Consoles in webadmin can now be disabled.
