@@ -21,6 +21,8 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.util.Map;
@@ -160,7 +162,9 @@ public class TestRecovery
         } );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
         
-        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() );
+        assertFalse( db.index().existsForNodes( "index" ) );
+        assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
         db.shutdown();
     }
 }

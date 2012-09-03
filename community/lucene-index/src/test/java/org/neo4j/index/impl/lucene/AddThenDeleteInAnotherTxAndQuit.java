@@ -35,6 +35,7 @@ public class AddThenDeleteInAnotherTxAndQuit
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
         Index<Node> index = db.index().forNodes( "index" );
+        Index<Node> index2 = db.index().forNodes( "index2" );
         Transaction tx = db.beginTx();
         try
         {
@@ -51,6 +52,7 @@ public class AddThenDeleteInAnotherTxAndQuit
         try
         {
             index.delete();
+            index2.add( db.createNode(), "key", "value" );
             tx.success();
         }
         finally
