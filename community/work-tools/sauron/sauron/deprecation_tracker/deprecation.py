@@ -19,7 +19,7 @@ def find_deprecations():
 
             # Split to get file name and line no
             parts = dep_line.split(':')
-            if len(parts) is 3:
+            if len(parts) > 1:
                 yield parts[0], parts[1]
             else:
                 print "Unable to comprehend grep output '%s'" % dep_line
