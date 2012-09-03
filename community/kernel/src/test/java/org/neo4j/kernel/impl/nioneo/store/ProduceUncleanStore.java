@@ -19,23 +19,36 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ProcessStreamHandler;
-
-import static org.junit.Assert.*;
 
 public class ProduceUncleanStore
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws Exception
     {
         String storeDir = args[0];
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir )
+        {
+            @Override
+            protected Logging createStringLogger()
+            {
+                // Create a dev/null logging service due there being a locking problem
+                // on windows (this class being run as a separate JVM from another test).
+                // TODO investigate.
+                return new DevNullLoggingService();
+            }
+        };
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
