@@ -20,7 +20,6 @@
 
 package org.neo4j.kernel.impl.cache;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;

@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

@@ -33,7 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
