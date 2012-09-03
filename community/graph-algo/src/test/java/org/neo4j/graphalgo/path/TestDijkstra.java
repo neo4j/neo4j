@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphalgo.path;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphalgo.GraphAlgoFactory.dijkstra;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Ignore;
@@ -33,8 +36,12 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.InitialStateFactory;
 import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
@@ -188,6 +195,56 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         WeightedPath wPath = pathFinder.findSinglePath( node0, node4 );
 
         assertPath( wPath, node0, node1, node2, node3, node4 );
+    }
+    
+    @Test
+    public void withState() throws Exception
+    {
+        /* Graph
+         * 
+         * (a)-[1]->(b)-[2]->(c)-[5]->(d)
+         */
+        
+        graph.makeEdgeChain( "a,b,c,d" );
+        setWeight( "a", "b", 1 );
+        setWeight( "b", "c", 2 );
+        setWeight( "c", "d", 5 );
+        
+        InitialStateFactory<Integer> state = new InitialStateFactory<Integer>()
+        {
+            @Override
+            public Integer initialState( Path path )
+            {
+                return 0;
+            }
+        };
+        final Map<Node, Integer> encounteredState = new HashMap<Node, Integer>();
+        PathExpander<Integer> expander = new PathExpander<Integer>()
+        {
+            @Override
+            public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
+            {
+                if ( path.length() > 0 )
+                {
+                    int newState = state.getState() + ((Number)path.lastRelationship().getProperty( "weight" )).intValue();
+                    state.setState( newState );
+                    encounteredState.put( path.endNode(), newState );
+                }
+                return path.endNode().getRelationships();
+            }
+
+            @Override
+            public PathExpander<Integer> reverse()
+            {
+                return this;
+            }
+        };
+        
+        assertPaths( dijkstra( expander, state, "weight" ).findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ),
+                "a,b,c,d" );
+        assertEquals( 1, encounteredState.get( graph.getNode( "b" ) ).intValue() );
+        assertEquals( 3, encounteredState.get( graph.getNode( "c" ) ).intValue() );
+        assertEquals( 8, encounteredState.get( graph.getNode( "d" ) ).intValue() );
     }
 
     private void setWeight( String start, String end, double weight )
