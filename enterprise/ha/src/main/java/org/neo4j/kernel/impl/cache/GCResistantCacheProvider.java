@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.gcr_cache_min_log_interval;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_array_fraction;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_cache_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_array_fraction;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_cache_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
 
+import org.neo4j.graphdb.factory.Default;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -35,7 +35,38 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class GCResistantCacheProvider extends CacheProvider
 {
     public static final String NAME = "gcr";
-    
+
+    public static class Configuration
+    {
+        public static GraphDatabaseSetting<Long> node_cache_size = new GCRMemoryUsageSetting("node_cache_size");
+        public static GraphDatabaseSetting<Long> relationship_cache_size = new GCRMemoryUsageSetting("relationship_cache_size");
+
+        @Default( "1.0" )
+        public static GraphDatabaseSetting<Float> node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid floating point number.", 1.0f, 10.0f );
+
+        @Default( "1.0" )
+        public static GraphDatabaseSetting<Float> relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid floating point number.", 1.0f, 10.0f );
+
+        @Default( "60s" )
+        public static GraphDatabaseSetting<Long> log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval" );
+
+        private static final class GCRMemoryUsageSetting extends NumberOfBytesSetting implements org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue
+        {
+
+            public GCRMemoryUsageSetting(String name) {
+                super(name);
+            }
+
+            @Override
+            public String getDefaultValue() {
+                long available = Runtime.getRuntime().maxMemory();
+                long defaultMem = ( available / 4);
+                return ""+defaultMem;
+            }
+
+        }
+    }
+
     public GCResistantCacheProvider()
     {
         super( NAME, "GC resistant cache" );
@@ -44,20 +75,20 @@ public class GCResistantCacheProvider extends CacheProvider
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        long node = config.get( node_cache_size );
-        long rel = config.get( relationship_cache_size );
+        long node = config.get( Configuration.node_cache_size );
+        long rel = config.get( Configuration.relationship_cache_size );
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<NodeImpl>( node, config.get( node_cache_array_fraction ), config.get( gcr_cache_min_log_interval ),
+        return new GCResistantCache<NodeImpl>( node, config.get( Configuration.node_cache_array_fraction ), config.get( Configuration.log_interval ),
                 NODE_CACHE_NAME, logger );
     }
 
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
     {
-        long node = config.get( node_cache_size );
-        long rel = config.get( relationship_cache_size );
+        long node = config.get( Configuration.node_cache_size );
+        long rel = config.get( Configuration.relationship_cache_size );
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<RelationshipImpl>( rel, config.get( relationship_cache_array_fraction ), config.get( gcr_cache_min_log_interval ),
+        return new GCResistantCache<RelationshipImpl>( rel, config.get( Configuration.relationship_cache_array_fraction ), config.get( Configuration.log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger );
     }
 
@@ -72,11 +103,23 @@ public class GCResistantCacheProvider extends CacheProvider
         rel = Math.max( GCResistantCache.MIN_SIZE, rel );
         total += rel;
         if ( total > available )
+        {
             throw new IllegalArgumentException(
-                    String.format( "Configured cache memory limits (node=%s, relationship=%s, total=%s) exceeds available heap space (%s)",
+                    String.format( "Configured cache memory limits (node=%s, relationship=%s, " +
+                            "total=%s) exceeds available heap space (%s)",
                             node, rel, total, available ) );
+        }
         if ( total > advicedMax )
-            logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, total=%s) exceeds recommended limit (%s)",
+        {
+            logger.logMessage( String.format( "Configured cache memory limits(node=%s, relationship=%s, " +
+                    "total=%s) exceeds recommended limit (%s)",
                     node, rel, total, advicedMax ) );
+        }
+    }
+
+    @Override
+    public Class getSettingsClass()
+    {
+        return Configuration.class;
     }
 }

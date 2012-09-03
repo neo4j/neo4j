@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -29,8 +30,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
-import org.neo4j.graphdb.factory.Migrator;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.impl.cache.GCResistantCacheProvider;
 
 /**
  * Settings for high availability mode
@@ -92,6 +94,13 @@ public class HaSettings
             "Examples: 500k or 3M. Must be within 1k-16M" )
     @Default( "2M" )
     public static final GraphDatabaseSetting<Integer> com_chunk_size = new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "ha.com_chunk_size", 1 * 1024 );
+
+    public static final Setting gcr_node_cache_size = GCResistantCacheProvider.Configuration.node_cache_size;
+    public static final Setting gcr_relationship_cache_size = GCResistantCacheProvider.Configuration.relationship_cache_size;
+    public static final Setting gcr_node_cache_array_fraction = GCResistantCacheProvider.Configuration.node_cache_array_fraction;
+    public static final Setting gcr_relationship_cache_array_fraction = GCResistantCacheProvider.Configuration.relationship_cache_array_fraction;
+
+    public static final Setting gcr_log_interval = GCResistantCacheProvider.Configuration.log_interval;
 
     public static class TxPushStrategySetting
         extends OptionsSetting

@@ -174,4 +174,5 @@ public class TestGcrCacheRemoveSizeDiverge
         
         assertEquals( "Invalid cache size for " + nodeCache, 0, nodeCache.size() );
     }
+
 }

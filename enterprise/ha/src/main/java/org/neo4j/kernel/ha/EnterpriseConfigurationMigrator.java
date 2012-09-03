@@ -20,12 +20,12 @@
 
 package org.neo4j.kernel.ha;
 
-import org.neo4j.graphdb.factory.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 
 // TODO: This shouldn't extend GraphDatabaseConfigurationMigrator,
 // the migrations there will be applied when we load config from GraphDatabaseSettings.
 // We need to move the migration of online backup settings out before this can be done.
-public class EnterpriseConfigurationMigrator extends GraphDatabaseConfigurationMigrator 
+public class EnterpriseConfigurationMigrator extends GraphDatabaseConfigurationMigrator
 {
     {
         add(propertyRenamed(
