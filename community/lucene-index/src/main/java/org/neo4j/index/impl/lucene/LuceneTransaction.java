@@ -265,10 +265,15 @@ class LuceneTransaction extends XaTransaction
                 if ( type == null && isRecovered() )
                 {
                     if ( commandList.isDeletion() )
+                    {
                         dataSource.removeExpectedFutureDeletion( identifier );
+                        continue;
+                    }
                     else if ( commandList.containsWrites() )
+                    {
                         dataSource.addExpectedFutureDeletion( identifier );
-                    continue;
+                        continue;
+                    }
                 }
                 
                 CommitContext context = null;
