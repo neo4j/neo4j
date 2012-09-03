@@ -1,5 +1,4 @@
 from xml.dom.minidom import parse
-from deprep.report import report_deprecations
 import sys
 
 def determine_project_version():
