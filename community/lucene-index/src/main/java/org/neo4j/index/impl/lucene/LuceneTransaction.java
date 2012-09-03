@@ -255,7 +255,22 @@ class LuceneTransaction extends XaTransaction
                 IndexIdentifier identifier = entry.getKey();
                 CommandList commandList = entry.getValue();
                 IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER
-                                 || !commandList.containsWrites() ? null : dataSource.getType( identifier );
+                                 || !commandList.containsWrites() ? null : dataSource.getType( identifier, isRecovered() );
+                
+                // This is for an issue where there are changes to and index which in a later
+                // transaction becomes deleted and crashes before the next rotation.
+                // The next recovery process will then recover that log and do those changes
+                // to the index, which at this point doesn't exist. So just don't do those
+                // changes as it will be deleted "later" anyway.
+                if ( type == null && isRecovered() )
+                {
+                    if ( commandList.isDeletion() )
+                        dataSource.removeExpectedFutureDeletion( identifier );
+                    else if ( commandList.containsWrites() )
+                        dataSource.addExpectedFutureDeletion( identifier );
+                    continue;
+                }
+                
                 CommitContext context = null;
                 try
                 {
@@ -461,6 +476,11 @@ class LuceneTransaction extends XaTransaction
         boolean containsWrites()
         {
             return containsWrites;
+        }
+        
+        boolean isDeletion()
+        {
+            return commands.size() == 1 && commands.get( 0 ) instanceof DeleteCommand;
         }
 
         void clear()

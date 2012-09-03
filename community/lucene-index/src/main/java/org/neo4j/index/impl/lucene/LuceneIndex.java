@@ -72,7 +72,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     {
         this.service = service;
         this.identifier = identifier;
-        this.type = service.dataSource().getType( identifier );
+        this.type = service.dataSource().getType( identifier, false );
     }
 
     LuceneXaConnection getConnection()
