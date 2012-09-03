@@ -37,13 +37,19 @@ class IndexTypeCache
         this.indexStore = indexStore;
     }
     
-    IndexType getIndexType( IndexIdentifier identifier )
+    IndexType getIndexType( IndexIdentifier identifier, boolean recovery )
     {
         Pair<Integer, IndexType> type = cache.get( identifier );
         Map<String, String> config = indexStore.get( identifier.entityType.getType(), identifier.indexName );
         if ( type != null && config.hashCode() == type.first() )
         {
             return type.other();
+        }
+        if ( config == null )
+        {
+            if ( recovery )
+                return null;
+            throw new IllegalArgumentException( "Unknown index " + identifier );
         }
         type = Pair.of( config.hashCode(), IndexType.getIndexType( identifier, config ) );
         cache.put( identifier, type );

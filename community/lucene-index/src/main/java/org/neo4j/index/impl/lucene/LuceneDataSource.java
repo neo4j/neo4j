@@ -30,9 +30,11 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -63,6 +65,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
@@ -162,6 +165,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
     final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
             new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
     private final DirectoryGetter directoryGetter;
+    
+    // Used for assertion after recovery has been completed.
+    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
 
     /**
      * Constructs this data source.
@@ -236,9 +242,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    IndexType getType( IndexIdentifier identifier )
+    IndexType getType( IndexIdentifier identifier, boolean recovery )
     {
-        return typeCache.getIndexType( identifier );
+        return typeCache.getIndexType( identifier, recovery );
     }
 
     private void cleanWriteLocks( String directory )
@@ -395,6 +401,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
                     throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
                 }
             }
+        }
+        
+        @Override
+        public void recoveryComplete()
+        {
+            if ( !expectedFutureRecoveryDeletions.isEmpty() )
+                throw new TransactionFailureException( "Recovery discovered transactions which couldn't " +
+                		"be applied due to a future index deletion, however some expected deletions " +
+                		"weren't encountered: " + expectedFutureRecoveryDeletions );
         }
 
         @Override
@@ -643,7 +658,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             Directory dir = directoryGetter.getDirectory( baseStorePath, identifier ); //getDirectory( baseStorePath, identifier );
             directoryExists( dir );
-            IndexType type = getType( identifier );
+            IndexType type = getType( identifier, false );
             IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
             writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
             Similarity similarity = type.getSimilarity();
@@ -904,5 +919,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
         };
 
         abstract Directory getDirectory( String baseStorePath, IndexIdentifier identifier ) throws IOException;
+    }
+
+    void addExpectedFutureDeletion( IndexIdentifier identifier )
+    {
+        expectedFutureRecoveryDeletions.add( identifier );
+    }
+    
+    void removeExpectedFutureDeletion( IndexIdentifier identifier )
+    {
+        expectedFutureRecoveryDeletions.remove( identifier );
     }
 }

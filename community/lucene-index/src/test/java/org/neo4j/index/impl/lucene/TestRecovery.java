@@ -144,4 +144,21 @@ public class TestRecovery
                                                    new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID));
         ds.close();
     }
+
+    @Test
+    public void recoveryOnDeletedIndex() throws Exception
+    {
+        GraphDatabaseService db = newGraphDbService();
+        db.index().forNodes( "index" );
+        db.shutdown();
+
+        Process process = Runtime.getRuntime().exec( new String[]{
+            "java", "-cp", System.getProperty( "java.class.path" ),
+            AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath()
+        } );
+        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
+        
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
+        db.shutdown();
+    }
 }
