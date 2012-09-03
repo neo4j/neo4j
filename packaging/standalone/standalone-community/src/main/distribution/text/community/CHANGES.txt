@@ -1,3 +1,32 @@
+1.8.M08 (2012-09-03)
+--------------------
+Kernel:
+ o Removed contention around allocating and moving persistence windows so that a thread won't need to await
+   another thread doing this refresh, instead just continue knowing that the windows will be optimally
+   placed in a very near future.
+ o Removed contention around translating a key (as String) into the ID by using copy-on-write map instead
+   of a concurrent hash map. Used in property key as well as relationship type translation.
+ o Fix for Node/Relationship#getPropertyValues() sometimes returning null values from the iterator.
+
+Server:
+ o Upgraded Jackson JAXRS to version 1.9.7 
+ o Keeping the Cypher execution engine between calls makes it possible to re-use execution plans
+ o added User-Agent header tracking to udc to determine rest-driver usage
+
+Cypher:
+ o Removed the /../ literal for regular expressions. Now a normal string literal is used instead
+ o Concatenation handles types better
+ o Changed how the graph-matching module is used, to make it safe for concurrent use
+ o Better type error messages
+ o Renamed iterable to collection
+ o Fixed #795: so that WITH keeps parameters also for empty aggregation results
+ o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on already created elements
+ o Added error when using != instead of <>
+ o Fixed #787: Issue when comparing array properties with literal collections
+ o Fixed #751: Better error message for some type errors
+ o Fixed #818: Problem where properties could only have scalar values (they can be arrays as well)
+ o Fixed #834: Gives relevant syntax exception when properties are entered in MATCH
+
 1.8.M07 (2012-08-08)
 --------------------
 Kernel:
