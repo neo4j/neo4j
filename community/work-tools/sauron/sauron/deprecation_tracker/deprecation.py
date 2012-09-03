@@ -18,9 +18,11 @@ def find_deprecations():
             # ./neo4j-community/target/javadoc-sources/org/neo4j/kernel/configuration/Config.java:376:    @Deprecated
 
             # Split to get file name and line no
-            filename, lineno, gunk = dep_line.split(':')
-
-            yield filename, lineno
+            parts = dep_line.split(':')
+            if len(parts) is 3:
+                yield parts[0], parts[1]
+            else:
+                print "Unable to comprehend grep output '%s'" % dep_line
 
 def get_time_added(filename, line):
     # Get the timestamp for when a given line in a given file was added
