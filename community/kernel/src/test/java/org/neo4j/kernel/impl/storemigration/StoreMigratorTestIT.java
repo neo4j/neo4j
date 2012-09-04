@@ -61,7 +61,7 @@ public class StoreMigratorTestIT
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
 
-        LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
+        LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile(), StringLogger.DEV_NULL );
 
         Config config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );

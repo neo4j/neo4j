@@ -29,16 +29,22 @@ import java.util.Map;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyDynamicRecordFetcher
 {
     private LegacyDynamicStoreReader stringPropertyStore;
     private LegacyDynamicStoreReader arrayPropertyStore;
 
-    public LegacyDynamicRecordFetcher( String stringStoreFileName, String arrayStoreFileName ) throws IOException
+    public LegacyDynamicRecordFetcher(String stringStoreFileName, String arrayStoreFileName) throws IOException
     {
-        stringPropertyStore = new LegacyDynamicStoreReader( stringStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_STRING );
-        arrayPropertyStore = new LegacyDynamicStoreReader( arrayStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_ARRAY );
+        this(stringStoreFileName, arrayStoreFileName, StringLogger.DEV_NULL);
+    }
+
+    public LegacyDynamicRecordFetcher( String stringStoreFileName, String arrayStoreFileName, StringLogger log ) throws IOException
+    {
+        stringPropertyStore = new LegacyDynamicStoreReader( stringStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
+        arrayPropertyStore = new LegacyDynamicStoreReader( arrayStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_ARRAY, log );
     }
 
     public List<LegacyDynamicRecord> readDynamicRecords( LegacyPropertyRecord record )
