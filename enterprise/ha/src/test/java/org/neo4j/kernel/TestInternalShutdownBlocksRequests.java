@@ -20,7 +20,6 @@
 package org.neo4j.kernel;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
