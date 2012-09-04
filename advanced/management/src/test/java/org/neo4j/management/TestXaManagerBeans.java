@@ -19,19 +19,20 @@
  */
 package org.neo4j.management;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.impl.XaManagerBean;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class TestXaManagerBeans
 {
@@ -43,13 +44,17 @@ public class TestXaManagerBeans
     public synchronized void startGraphDb()
     {
         graphDb = new EmbeddedGraphDatabase( dir.directory( "test" ).getAbsolutePath() );
-        xaManager = graphDb.getSingleManagementBean( XaManager.class );
+        xaManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( XaManager.class );
     }
 
     @After
     public synchronized void stopGraphDb()
     {
-        if ( graphDb != null ) graphDb.shutdown();
+        if ( graphDb != null )
+        {
+            graphDb.shutdown();
+        }
         graphDb = null;
     }
 
@@ -59,7 +64,7 @@ public class TestXaManagerBeans
         assertNotNull( "no XA manager bean", xaManager );
         assertTrue( "no XA resources", xaManager.getXaResources().length > 0 );
     }
-    
+
     @Test
     public void hasAllXaManagerBeans()
     {
@@ -67,11 +72,11 @@ public class TestXaManagerBeans
         {
             XaResourceInfo info = getByName( xaDataSource.getName() );
             assertEquals( "wrong branchid for XA data source " + xaDataSource.getName(),
-                XaManagerBean.toHexString( xaDataSource.getBranchId() ), info.getBranchId() );
+                    XaManagerBean.toHexString( xaDataSource.getBranchId() ), info.getBranchId() );
             assertEquals( "wrong log version for XA data source " + xaDataSource.getName(),
-                xaDataSource.getCurrentLogVersion(), info.getLogVersion() );
+                    xaDataSource.getCurrentLogVersion(), info.getLogVersion() );
             assertEquals( "wrong last tx ID for XA data source " + xaDataSource.getName(),
-                xaDataSource.getLastCommittedTxId(), info.getLastTxId() );
+                    xaDataSource.getLastCommittedTxId(), info.getLastTxId() );
         }
     }
 
@@ -84,7 +89,7 @@ public class TestXaManagerBeans
                 return xaResourceInfo;
             }
         }
-        fail( "no such XA resource: "  + name );
+        fail( "no such XA resource: " + name );
         return null;
     }
 

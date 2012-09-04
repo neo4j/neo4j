@@ -32,6 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -42,8 +43,8 @@ public class ManagementBeansTest
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-		graphDb = new EmbeddedGraphDatabase("target" + File.separator + "var"
-				+ File.separator + ManagementBeansTest.class.getSimpleName());
+        graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var"
+                + File.separator + ManagementBeansTest.class.getSimpleName() );
     }
 
     @AfterClass
@@ -60,7 +61,8 @@ public class ManagementBeansTest
     public void canAccessKernelBean() throws Exception
     {
         // START SNIPPET: getKernel
-        Kernel kernel = graphDb.getManagementBean( Kernel.class );
+        Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( Kernel.class );
         // END SNIPPET: getKernel
         assertNotNull( "kernel bean is null", kernel );
         assertNotNull( "MBeanQuery of kernel bean is null", kernel.getMBeanQuery() );
@@ -69,7 +71,8 @@ public class ManagementBeansTest
     @Test
     public void canAccessPrimitivesBean() throws Exception
     {
-        Primitives primitives = graphDb.getManagementBean( Primitives.class );
+        Primitives primitives = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( Primitives.class );
         assertNotNull( "primitives bean is null", primitives );
         primitives.getNumberOfNodeIdsInUse();
     }
@@ -91,7 +94,8 @@ public class ManagementBeansTest
 
     private Neo4jManager getManager()
     {
-        return new Neo4jManager( graphDb.getManagementBean( Kernel.class ) );
+        return new Neo4jManager( graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( Kernel.class ) );
     }
 
     @Test

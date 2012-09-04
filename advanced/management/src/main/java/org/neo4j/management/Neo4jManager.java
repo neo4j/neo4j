@@ -48,8 +48,6 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.ConfigurationBean;
-import org.neo4j.jmx.impl.JmxExtension;
-import org.neo4j.kernel.KernelData;
 import org.neo4j.management.impl.KernelProxy;
 
 public final class Neo4jManager extends KernelProxy implements Kernel
@@ -80,18 +78,18 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     }
 
     public static Neo4jManager get( JMXServiceURL url, String username, String password,
-            String kernelIdentifier )
+                                    String kernelIdentifier )
     {
         return get( connect( url, username, password ), kernelIdentifier );
     }
 
     private static MBeanServerConnection connect( JMXServiceURL url, String username,
-            String password )
+                                                  String password )
     {
         Map<String, Object> environment = new HashMap<String, Object>();
         if ( username != null && password != null )
         {
-            environment.put( JMXConnector.CREDENTIALS, new String[] { username, password } );
+            environment.put( JMXConnector.CREDENTIALS, new String[]{username, password} );
         }
         else if ( username != password )
         {
@@ -196,12 +194,12 @@ public final class Neo4jManager extends KernelProxy implements Kernel
             InvocationHandler handler = Proxy.getInvocationHandler( kernel );
             if ( handler instanceof MBeanServerInvocationHandler )
             {
-                return ( (MBeanServerInvocationHandler) handler ).getMBeanServerConnection();
+                return ((MBeanServerInvocationHandler) handler).getMBeanServerConnection();
             }
         }
         else if ( kernel instanceof Neo4jManager )
         {
-            return ( (Neo4jManager) kernel ).server;
+            return ((Neo4jManager) kernel).server;
         }
         throw new UnsupportedOperationException( "Cannot get server for kernel: " + kernel );
     }
@@ -213,12 +211,12 @@ public final class Neo4jManager extends KernelProxy implements Kernel
             InvocationHandler handler = Proxy.getInvocationHandler( kernel );
             if ( handler instanceof MBeanServerInvocationHandler )
             {
-                return ( (MBeanServerInvocationHandler) handler ).getObjectName();
+                return ((MBeanServerInvocationHandler) handler).getObjectName();
             }
         }
         else if ( kernel instanceof Neo4jManager )
         {
-            return ( (Neo4jManager) kernel ).kernel;
+            return ((Neo4jManager) kernel).kernel;
         }
         throw new UnsupportedOperationException( "Cannot get name for kernel: " + kernel );
     }
@@ -322,7 +320,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public List<Object> allBeans()
     {
         List<Object> beans = super.allBeans();
-        @SuppressWarnings( "hiding" ) Kernel kernel = null;
+        @SuppressWarnings("hiding") Kernel kernel = null;
         for ( Object bean : beans )
         {
             if ( bean instanceof Kernel )
@@ -330,7 +328,10 @@ public final class Neo4jManager extends KernelProxy implements Kernel
                 kernel = (Kernel) bean;
             }
         }
-        if ( kernel != null ) beans.remove( kernel );
+        if ( kernel != null )
+        {
+            beans.remove( kernel );
+        }
         return beans;
     }
 
@@ -372,10 +373,5 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public boolean isReadOnly()
     {
         return proxy.isReadOnly();
-    }
-
-    public static JMXServiceURL getConnectionURL( KernelData kernel )
-    {
-        return new JmxExtension().getConnectionURL( kernel );
     }
 }

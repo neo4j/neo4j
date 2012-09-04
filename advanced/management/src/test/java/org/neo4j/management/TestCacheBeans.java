@@ -31,6 +31,7 @@ import java.util.Iterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -43,14 +44,18 @@ public class TestCacheBeans
     public synchronized void startGraphDb()
     {
         graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
-                                             + ManagementBeansTest.class.getSimpleName() );
-        caches = graphDb.getManagementBeans( Cache.class );
+                + ManagementBeansTest.class.getSimpleName() );
+        caches = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getManagementBeans(
+                Cache.class );
     }
 
     @After
     public synchronized void stopGraphDb()
     {
-        if ( graphDb != null ) graphDb.shutdown();
+        if ( graphDb != null )
+        {
+            graphDb.shutdown();
+        }
         graphDb = null;
     }
 
@@ -90,31 +95,29 @@ public class TestCacheBeans
     private enum CacheBean
     {
         NUMBER_OF_CACHED_ELEMENTS
-        {
-            @Override
-            long get( Cache bean )
-            {
-                return bean.getCacheSize();
-            }
-        },
+                {
+                    @Override
+                    long get( Cache bean )
+                    {
+                        return bean.getCacheSize();
+                    }
+                },
         HIT_COUNT
-        {
-
-            @Override
-            long get( Cache bean )
-            {
-                return bean.getHitCount();
-            }
-        },
+                {
+                    @Override
+                    long get( Cache bean )
+                    {
+                        return bean.getHitCount();
+                    }
+                },
         MISS_COUNT
-        {
-
-            @Override
-            long get( Cache bean )
-            {
-                return bean.getMissCount();
-            }
-        };
+                {
+                    @Override
+                    long get( Cache bean )
+                    {
+                        return bean.getMissCount();
+                    }
+                };
 
         abstract long get( Cache bean );
     }

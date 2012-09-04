@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.info.LockInfo;
@@ -50,7 +51,8 @@ public class TestLockManagerBean
     @Before
     public void setupLockManager()
     {
-        lockManager = graphDb.getSingleManagementBean( LockManager.class );
+        lockManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( LockManager.class );
     }
 
     @Test
@@ -145,20 +147,20 @@ public class TestLockManagerBean
             {
                 switch ( l.getResourceType() )
                 {
-                case NODE:
-                    if ( "0".equals( l.getResourceId() ) )
-                    {
-                        assertEquals( "read count", 1, l.getReadCount() );
-                        assertEquals( "write count", 0, l.getWriteCount() );
-                    }
-                    else
-                    {
-                        assertEquals( "read count", 0, l.getReadCount() );
-                        assertEquals( "write count", 1, l.getWriteCount() );
-                    }
-                    break;
-                default:
-                    fail( "Unexpected locked resource type: " + l.getResourceType() );
+                    case NODE:
+                        if ( "0".equals( l.getResourceId() ) )
+                        {
+                            assertEquals( "read count", 1, l.getReadCount() );
+                            assertEquals( "write count", 0, l.getWriteCount() );
+                        }
+                        else
+                        {
+                            assertEquals( "read count", 0, l.getReadCount() );
+                            assertEquals( "write count", 1, l.getWriteCount() );
+                        }
+                        break;
+                    default:
+                        fail( "Unexpected locked resource type: " + l.getResourceType() );
                 }
             }
             final CountDownLatch latch = new CountDownLatch( 1 );
@@ -188,24 +190,24 @@ public class TestLockManagerBean
             {
                 switch ( l.getResourceType() )
                 {
-                case NODE:
-                    if ( "0".equals( l.getResourceId() ) )
-                    {
-                        assertEquals( "read count", 1, l.getReadCount() );
-                        assertEquals( "write count", 0, l.getWriteCount() );
-                        List<WaitingThread> waiters = l.getWaitingThreads();
-                        assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
-                        WaitingThread waiter = waiters.get( 0 );
-                        assertNotNull( waiter );
-                    }
-                    else
-                    {
-                        assertEquals( "read count", 0, l.getReadCount() );
-                        assertEquals( "write count", 1, l.getWriteCount() );
-                    }
-                    break;
-                default:
-                    fail( "Unexpected locked resource type: " + l.getResourceType() );
+                    case NODE:
+                        if ( "0".equals( l.getResourceId() ) )
+                        {
+                            assertEquals( "read count", 1, l.getReadCount() );
+                            assertEquals( "write count", 0, l.getWriteCount() );
+                            List<WaitingThread> waiters = l.getWaitingThreads();
+                            assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
+                            WaitingThread waiter = waiters.get( 0 );
+                            assertNotNull( waiter );
+                        }
+                        else
+                        {
+                            assertEquals( "read count", 0, l.getReadCount() );
+                            assertEquals( "write count", 1, l.getWriteCount() );
+                        }
+                        break;
+                    default:
+                        fail( "Unexpected locked resource type: " + l.getResourceType() );
                 }
             }
             locks = lockManager.getContendedLocks( 0 );
@@ -232,6 +234,7 @@ public class TestLockManagerBean
     private void awaitWaitingStateIn( Thread t )
     {
         while ( t.getState() != State.WAITING )
+        {
             try
             {
                 Thread.sleep( 1 );
@@ -240,6 +243,7 @@ public class TestLockManagerBean
             {
                 Thread.interrupted();
             }
+        }
     }
 
     private LockInfo getSingleLock()
@@ -257,7 +261,7 @@ public class TestLockManagerBean
     public static synchronized void startGraphDb()
     {
         graphDb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
-                                             + ManagementBeansTest.class.getSimpleName() );
+                + ManagementBeansTest.class.getSimpleName() );
     }
 
     @AfterClass
@@ -265,7 +269,10 @@ public class TestLockManagerBean
     {
         try
         {
-            if ( graphDb != null ) graphDb.shutdown();
+            if ( graphDb != null )
+            {
+                graphDb.shutdown();
+            }
         }
         finally
         {
