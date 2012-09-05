@@ -1,4 +1,4 @@
-1.8.M08
+1.8.RC1 (2012-09-05)
 --------------------
 o Remove read only fallback when DB is locked.
 

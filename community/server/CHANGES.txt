@@ -1,4 +1,4 @@
-1.8.M08 (2012-09-03)
+1.8.RC1 (2012-09-05)
 --------------------
 o Upgraded Jackson JAXRS to version 1.9.7 
 o Keeping the Cypher execution engine between calls makes it possible to re-use execution plans

@@ -1,4 +1,4 @@
-1.8
+1.8.RC1 (2012-09-05)
 --------------------
 o Removed the /../ literal for regular expressions. Now a normal string literal is used instead
 o Concatenation handles types better
