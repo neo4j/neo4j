@@ -1,4 +1,4 @@
-1.8.M08 (2012-09-03)
+1.8.RC1 (2012-09-05)
 --------------------
 HA:
  o Configurable chunk size via ha.com_chunk_size for communication chunks

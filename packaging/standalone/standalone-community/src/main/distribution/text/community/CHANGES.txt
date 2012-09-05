@@ -1,4 +1,4 @@
-1.8.M08 (2012-09-03)
+1.8.RC1 (2012-09-05)
 --------------------
 Kernel:
  o Removed contention around allocating and moving persistence windows so that a thread won't need to await
