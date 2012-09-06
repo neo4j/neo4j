@@ -131,23 +131,21 @@ public class PersistenceWindowPool
             if ( brickSize > 0 )
             {
                 int brickIndex = positionToBrickIndex( position );
-                if ( brickIndex < brickArray.length )
-                {
-                    BrickElement brick = brickArray[brickIndex];
-                    window = brick.getWindow();
-                    if ( window != null && !window.markAsInUse() )
-                        // Oops, a refreshBricks call from another thread just closed
-                        // this window, treat it as if we hadn't even found it.
-                        window = null;
-                    
-                    // assert window == null || window.encapsulates( position );
-                    brick.setHit();
-                }
-                else
+                if ( brickIndex >= brickArray.length )
                 {
                     expandBricks( brickIndex + 1 );
-                    window = brickArray[brickIndex].getWindow();
                 }
+                BrickElement brick = brickArray[brickIndex];
+                window = brick.getWindow();
+                if ( window != null && !window.markAsInUse() )
+                {
+                    // Oops, a refreshBricks call from another thread just closed
+                    // this window, treat it as if we hadn't even found it.
+                    window = null;
+                }
+
+                // assert window == null || window.encapsulates( position );
+                brick.setHit();
             }
             if ( window == null )
             {
@@ -209,7 +207,7 @@ public class PersistenceWindowPool
     void dumpStatistics()
     {
         log.logMessage( storeName + " hit=" + hit + " miss=" + miss + " switches="
-            + switches + " ooe=" + ooe );
+                        + switches + " ooe=" + ooe );
     }
 
     /**
@@ -632,8 +630,8 @@ public class PersistenceWindowPool
         try
         {
             log.logMessage( "[" + storeName + "] brickCount=" + brickCount
-                    + " brickSize=" + brickSize + "b mappedMem=" + availableMem
-                    + "b (storeSize=" + fileChannel.size() + "b)" );
+                            + " brickSize=" + brickSize + "b mappedMem=" + availableMem
+                            + "b (storeSize=" + fileChannel.size() + "b)" );
         }
         catch ( IOException e )
         {
