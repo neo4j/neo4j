@@ -20,12 +20,15 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 
 import org.junit.Test;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
@@ -42,6 +45,9 @@ public class TestGrowingFileMemoryMapping
     @Test
     public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() throws Exception
     {
+        // don't run on windows because memory mapping doesn't work properly there
+        assumeTrue(!osIsWindows());
+
         // given
         int NUMBER_OF_RECORDS = 1000000;
 
