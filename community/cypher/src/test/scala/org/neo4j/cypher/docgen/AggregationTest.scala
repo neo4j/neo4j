@@ -112,10 +112,10 @@ class AggregationTest extends DocumentingTestBase {
   @Test def collect() {
     testQuery(
       title = "COLLECT",
-      text = "+COLLECT+ collects all the values into a list.",
-      queryText = "start n=node(%A%,%B%,%C%) return collect(n.property)",
+      text = "+COLLECT+ collects all the values into a list. It will ignore null values,",
+      queryText = "start n=node(%A%,%B%,%C%,%D%) return collect(n.property?)",
       returns = "Returns a single row, with all the values collected.",
-      assertions = p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
+      assertions = p => assertEquals(Map("collect(n.property?)" -> Seq(13, 33, 44)), p.toList.head))
   }
 
   @Test def count_distinct() {
