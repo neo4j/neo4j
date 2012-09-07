@@ -2,7 +2,7 @@
 Social network
 ==============
 
-NOTE: The following example uses the new experimental traversal API.
+NOTE: The following example uses the new enhanced traversal API.
 
 Social networks (know as social graphs out on the web) are natural to model with a graph.
 This example shows a very simple social model that connects friends and keeps track of status updates.
