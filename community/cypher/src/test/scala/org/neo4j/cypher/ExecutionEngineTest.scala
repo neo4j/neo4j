@@ -2248,11 +2248,4 @@ RETURN x0.name?
     assert(result.toList === List(3,4,5))
   }
 
-  @Test
-  def empty_collect_should_not_contain_null() {
-    val result = parseAndExecute("START n=node(0) MATCH n-[?:NOT_EXIST]->x RETURN n, collect(x)")
-
-    assert(result.toList === List(Map("n" -> refNode, "collect(x)" -> List())))
-  }
-
 }

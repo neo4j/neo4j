@@ -20,22 +20,14 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.junit.Test
+import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.Expression
-import org.scalatest.Assertions
 
-class CollectFunctionTest extends AggregateTest with Assertions {
+class CollectFunctionTest extends AggregateTest {
 
   def createAggregator(inner: Expression) = new CollectFunction(inner)
 
   @Test def singleOne() {
-    assert(Seq(1) === aggregateOn(1))
-  }
-
-  @Test def empty_returns_empty_seq() {
-    assert(Seq() === aggregateOn())
-  }
-
-  @Test def doesnt_collect_null_values() {
-    assert(Seq() === aggregateOn(null))
+    assertEquals(Seq(1), aggregateOn(1))
   }
 }

@@ -28,10 +28,7 @@ class CollectFunction(value:Expression) extends AggregationFunction {
   val collection = new ListBuffer[Any]()
 
   def apply(data: Map[String, Any]) {
-    val v = value(data)
-    if (v != null) {
-      collection += v
-    }
+    collection += value(data)
   }
 
   def result: Any = collection.toSeq
