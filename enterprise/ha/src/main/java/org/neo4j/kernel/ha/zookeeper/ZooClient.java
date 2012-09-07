@@ -1141,7 +1141,7 @@ public class ZooClient extends AbstractZooKeeperManager
                             {
                                 electionHappening = true;
                                 clusterReceiver.newMaster( new InformativeStackTrace(
-                                        "NodeDataChanged event received (someone though I should be the master)" ) );
+                                        "NodeDataChanged event received (someone thought I should be the master)" ) );
                                 serversRefreshed = true;
                             }
                             finally
