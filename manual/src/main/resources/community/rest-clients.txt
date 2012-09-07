@@ -16,6 +16,7 @@
 | neoid | Ruby | https://github.com/elado/neoid
 | node.js | JavaScript | https://github.com/thingdom/node-neo4j
 | Neocons | Clojure | https://github.com/michaelklishin/neocons
+| Neo4p | Perl | http://search.cpan.org/search?query=REST::Neo4p
 |===============================================================================
 
 
