@@ -70,11 +70,13 @@ public abstract class Bootstrapper
         return start( new String[0] );
     }
 
+    // TODO: This does not use args, check if it is safe to remove them
     public Integer start( String[] args )
     {
         try
         {
         	configurator = createConfigurator();
+        	
             server = createNeoServer();
             server.start();
 
@@ -100,7 +102,7 @@ public abstract class Bootstrapper
         }
     }
 
-    protected abstract NeoServer createNeoServer();
+	protected abstract NeoServer createNeoServer();
 
 	public void stop()
     {

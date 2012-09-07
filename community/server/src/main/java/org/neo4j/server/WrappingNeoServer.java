@@ -25,7 +25,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.preflight.PreFlightTasks;
 
 public class WrappingNeoServer extends CommunityNeoServer {
 
@@ -45,8 +45,8 @@ public class WrappingNeoServer extends CommunityNeoServer {
 	}
 
 	@Override
-	protected StartupHealthCheck createHealthCheck() {
-		return new StartupHealthCheck();
+	protected PreFlightTasks createPreflightTasks() {
+		return new PreFlightTasks();
 	}
 
 	@Override

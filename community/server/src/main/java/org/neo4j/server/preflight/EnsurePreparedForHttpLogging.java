@@ -17,37 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-public class HTTPLoggingPreparednessRule implements StartupHealthCheckRule
+public class EnsurePreparedForHttpLogging implements PreflightTask
 {
     private String failureMessage = "";
+	private Configuration config;
 
-    @Override
-    public boolean execute( Properties properties )
+    public EnsurePreparedForHttpLogging(Configuration config)
     {
-        boolean enabled = new Boolean( String.valueOf( properties.getProperty( Configurator.HTTP_LOGGING ) ) )
-            .booleanValue();
+    	this.config = config;
+    }
+    
+    @Override
+    public boolean run()
+    {
+        boolean enabled = config.getBoolean( Configurator.HTTP_LOGGING, Configurator.DEFAULT_HTTP_LOGGING );
 
         if ( !enabled )
         {
             return true;
         }
 
-        File logLocation = extractLogLocationFromConfig(
-            String.valueOf( properties.get( Configurator.HTTP_LOG_CONFIG_LOCATION ) ) );
+        File logLocation = extractLogLocationFromConfig(config.getString( Configurator.HTTP_LOG_CONFIG_LOCATION ) );
 
 
         if ( logLocation != null )

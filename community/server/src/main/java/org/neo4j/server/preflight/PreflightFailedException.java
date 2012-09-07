@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
-import org.junit.Test;
-
-public class ConfigFileMustBeSpecifiedAsASystemPropertyRuleTest
+@SuppressWarnings( "serial" )
+public class PreflightFailedException extends RuntimeException
 {
-    @Test
-    public void shouldFailWhenSystemPropertyNotSet()
+    public PreflightFailedException( PreflightTask task )
     {
-
+        super( String.format( "Startup failed due to preflight task [%s]: %s", task.getClass(),
+                task.getFailureMessage() ) );
     }
-
 }

@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.neo4j.server.storemigration;
+package org.neo4j.server.preflight;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.Map;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -43,63 +41,48 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationExce
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
-import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
-public class PreStartupStoreUpgrader
-{
-    public static void main( String[] args ) throws IOException
-    {
-        PreStartupStoreUpgrader preStartupStoreUpgrader =
-                new PreStartupStoreUpgrader( System.getProperties(), System.out );
-        int exit = preStartupStoreUpgrader.run();
-        if ( exit != 0 )
+public class PerformUpgradeIfNecessary implements PreflightTask {
+
+	private final Logger logger = Logger.getLogger( PerformUpgradeIfNecessary.class );
+	private String failureMessage = "Unable to upgrade database";
+	private Configuration config;
+	private PrintStream out;
+	private Map<String, String> dbConfig;
+
+	public PerformUpgradeIfNecessary(Configuration serverConfig, Map<String,String> dbConfig, PrintStream out)
+	{
+		this.config = serverConfig;
+		this.dbConfig = dbConfig;
+		this.out = out;
+	}
+	
+	@Override
+	public boolean run() {
+		try
         {
-            System.exit( exit );
-        }
-    }
-
-    private final Logger logger = Logger.getLogger( PreStartupStoreUpgrader.class );
-    private Properties systemProperties;
-    private PrintStream out;
-
-    public PreStartupStoreUpgrader( Properties systemProperties, PrintStream out )
-    {
-        this.systemProperties = systemProperties;
-        this.out = out;
-    }
-
-    public int run()
-    {
-        try
-        {
-            Configurator configurator = getConfigurator();
-            HashMap<String, String> config = new HashMap<String, String>( configurator.getDatabaseTuningProperties() );
-
-            String dbLocation = new File( configurator.configuration()
-                    .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
+            String dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
 
             if ( new CurrentDatabase().storeFilesAtCurrentVersion( new File( dbLocation ) ) )
             {
-                return 0;
+                return true;
             }
 
             String separator = System.getProperty( "file.separator" );
             String store = dbLocation + separator + NeoStore.DEFAULT_NAME;
-            config.put( "store_dir", dbLocation );
-            config.put( "neo_store", store );
+            dbConfig.put( "store_dir", dbLocation );
+            dbConfig.put( "neo_store", store );
 
             if ( !new UpgradableDatabase().storeFilesUpgradeable( new File( store ) ) )
             {
                 logger.info( "Store files missing, or not in suitable state for upgrade. " +
                         "Leaving this problem for main server process to resolve." );
-                return 0;
+                return true;
             }
             
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            Config conf = new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(config) );
+            Config conf = new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(dbConfig) );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
                     new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );
@@ -111,28 +94,27 @@ public class PreStartupStoreUpgrader
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
                 logger.info( e.getMessage() );
-                out.println( e.getMessage() );
-                return 1;
+                out.println(e.getMessage());
+                failureMessage = e.getMessage();
+                return false;
             }
             catch ( StoreUpgrader.UnableToUpgradeException e )
             {
                 logger.error( e );
-                return 1;
+                return false;
             }
-            return 0;
+            return true;
         }
         catch ( Exception e )
         {
             logger.error( e );
-            return 1;
+            return false;
         }
-    }
+	}
 
-    protected Configurator getConfigurator()
-    {
-        File configFile = new File( systemProperties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY,
-                Configurator.DEFAULT_CONFIG_DIR ) );
-        return new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile );
-    }
+	@Override
+	public String getFailureMessage() {
+		return failureMessage;
+	}
 
 }

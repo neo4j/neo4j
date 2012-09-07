@@ -45,11 +45,11 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
+import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManagerProvider;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 public class ServerBuilder
 {
@@ -58,7 +58,7 @@ public class ServerBuilder
     protected String dbDir = null;
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
-    protected StartupHealthCheck startupHealthCheck;
+    protected PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
     private final Properties arbitraryProperties = new Properties();
 
@@ -91,9 +91,9 @@ public class ServerBuilder
         }
         File configFile = createPropertiesFiles();
         
-        if ( startupHealthCheck == null )
+        if ( preflightTasks == null )
         {
-            startupHealthCheck = new StartupHealthCheck()
+            preflightTasks = new PreFlightTasks()
             {
                 @Override
 				public boolean run()
@@ -111,8 +111,8 @@ public class ServerBuilder
         return new CommunityNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
 	    {
         	@Override
-        	protected StartupHealthCheck createHealthCheck() {
-        		return startupHealthCheck;
+        	protected PreFlightTasks createPreflightTasks() {
+        		return preflightTasks;
         	}
 
         	@Override
@@ -319,9 +319,9 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withFailingStartupHealthcheck()
+    public ServerBuilder withFailingPreflightTasks()
     {
-        startupHealthCheck = new StartupHealthCheck()
+        preflightTasks = new PreFlightTasks()
         {
             @Override
 			public boolean run()
@@ -330,9 +330,9 @@ public class ServerBuilder
             }
 
             @Override
-			public StartupHealthCheckRule failedRule()
+			public PreflightTask failedTask()
             {
-                return new StartupHealthCheckRule()
+                return new PreflightTask()
                 {
 
                     @Override
@@ -342,7 +342,7 @@ public class ServerBuilder
                     }
 
                     @Override
-					public boolean execute( Properties properties )
+					public boolean run()
                     {
                         return false;
                     }
@@ -418,9 +418,9 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withStartupHealthCheckRules( StartupHealthCheckRule... rules )
+    public ServerBuilder withPreflightTasks( PreflightTask... tasks )
     {
-        this.startupHealthCheck = new StartupHealthCheck( arbitraryProperties, rules );
+        this.preflightTasks = new PreFlightTasks( tasks );
         return this;
     }
 }

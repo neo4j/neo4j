@@ -17,13 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server;
 
-import java.util.Properties;
+import static org.junit.Assert.fail;
 
-public interface StartupHealthCheckRule
-{
-    public boolean execute( Properties properties );
+import org.junit.Test;
 
-    public String getFailureMessage();
+
+public class TestInterruptThreadTimer {
+
+	@Test
+	public void shouldInterruptIfTimeoutIsReached()
+	{
+		try {
+			InterruptThreadTimer timer = InterruptThreadTimer.createTimer(100, Thread.currentThread());
+			timer.startCountdown();
+			Thread.sleep(3000);
+			fail("Should have been interrupted.");
+		} catch(InterruptedException e)
+		{
+			// ok
+		}
+	}
+
+	@Test
+	public void shouldNotInterruptIfTimeoutIsNotReached()
+	{
+		try {
+			InterruptThreadTimer timer = InterruptThreadTimer.createTimer(1000 * 10, Thread.currentThread());
+			timer.startCountdown();
+			Thread.sleep(1);
+			timer.stopCountdown();
+		} catch(InterruptedException e)
+		{
+			fail("Should not have been interrupted.");
+		}
+	}
+	
 }

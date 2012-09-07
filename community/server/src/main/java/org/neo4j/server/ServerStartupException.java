@@ -23,7 +23,7 @@ package org.neo4j.server;
  * Thrown during start-up of the server, with an explicit error code.
  */
 @SuppressWarnings( "serial" )
-public class ServerStartupException extends Exception
+public class ServerStartupException extends RuntimeException
 {
     private Integer errorCode;
 

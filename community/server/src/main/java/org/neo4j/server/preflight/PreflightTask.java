@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
-@SuppressWarnings( "serial" )
-public class StartupHealthCheckFailedException extends RuntimeException
+
+public interface PreflightTask
 {
-    public StartupHealthCheckFailedException( StartupHealthCheckRule failedRule )
-    {
-        super( String.format( "Startup health check failed due to rule [%s]. %s", failedRule.getClass(),
-                failedRule.getFailureMessage() ) );
-    }
+    public boolean run();
+
+    public String getFailureMessage();
 }

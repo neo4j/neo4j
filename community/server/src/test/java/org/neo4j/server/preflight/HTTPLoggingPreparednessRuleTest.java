@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -28,12 +28,13 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Properties;
 import java.util.UUID;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
 
 public class HTTPLoggingPreparednessRuleTest
@@ -42,12 +43,12 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenExplicitlyDisabled()
     {
         // given
-        HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
-        final Properties properties = new Properties();
-        properties.put( Configurator.HTTP_LOGGING, "false" );
+    	Configuration config = new MapBasedConfiguration();
+        config.setProperty( Configurator.HTTP_LOGGING, "false" );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
 
         // when
-        boolean result = rule.execute( properties );
+        boolean result = rule.run( );
 
         // then
         assertTrue( result );
@@ -58,11 +59,11 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenImplicitlyDisabled()
     {
         // given
-        HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
-        final Properties properties = new Properties();
+    	Configuration config = new MapBasedConfiguration();
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
 
         // when
-        boolean result = rule.execute( properties );
+        boolean result = rule.run( );
 
         // then
         assertTrue( result );
@@ -76,15 +77,14 @@ public class HTTPLoggingPreparednessRuleTest
         final File logDir = TargetDirectory.forTest( this.getClass() ).directory( "logDir" );
         final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
 
-
-        HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
-        final Properties properties = new Properties();
-        properties.put( Configurator.HTTP_LOGGING, "true" );
-        properties.put( Configurator.HTTP_LOG_CONFIG_LOCATION,
-            createConfigFile( createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() );
+        Configuration config = new MapBasedConfiguration();
+        config.setProperty( Configurator.HTTP_LOGGING, "true" );
+        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
+                createConfigFile( createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
 
         // when
-        boolean result = rule.execute( properties );
+        boolean result = rule.run( );
 
         // then
         assertTrue( result );
@@ -97,16 +97,15 @@ public class HTTPLoggingPreparednessRuleTest
         // given
         final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
 
-
-        HTTPLoggingPreparednessRule rule = new HTTPLoggingPreparednessRule();
-        final Properties properties = new Properties();
-        properties.put( Configurator.HTTP_LOGGING, "true" );
+        Configuration config = new MapBasedConfiguration();
+        config.setProperty( Configurator.HTTP_LOGGING, "true" );
         final File unwritableDirectory = createUnwritableDirectory();
-        properties.put( Configurator.HTTP_LOG_CONFIG_LOCATION,
+        config.setProperty( Configurator.HTTP_LOG_CONFIG_LOCATION,
             createConfigFile( createLogbackConfigXml( unwritableDirectory ), confDir ).getAbsolutePath() );
+        EnsurePreparedForHttpLogging rule = new EnsurePreparedForHttpLogging(config);
 
         // when
-        boolean result = rule.execute( properties );
+        boolean result = rule.run( );
 
         // then
         assertFalse( result );

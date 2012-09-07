@@ -32,10 +32,10 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.StatisticModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
-import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
-import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
+import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
+import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
+import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 
@@ -54,11 +54,15 @@ public class CommunityNeoServer extends AbstractNeoServer
     }
 
 	@Override
-	protected StartupHealthCheck createHealthCheck() {
-		return new StartupHealthCheck(
-				new ConfigFileMustBePresentRule(), 
-				new Neo4jPropertiesMustExistRule(),
-				new HTTPLoggingPreparednessRule() );
+	protected PreFlightTasks createPreflightTasks() {
+		return new PreFlightTasks(
+				// TODO: Move the config check into bootstrapper
+				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
+				new EnsurePreparedForHttpLogging(configurator.configuration()),
+				new PerformUpgradeIfNecessary(getConfiguration(), 
+						configurator.getDatabaseTuningProperties(), System.out),
+				new PerformRecoveryIfNecessary(getConfiguration(), 
+						configurator.getDatabaseTuningProperties(), System.out));
 	}
 
 	@Override

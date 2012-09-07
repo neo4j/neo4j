@@ -19,23 +19,21 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class StartupHealthcheckFunctionalTest extends ExclusiveServerTestBase
+public class PreflightTasksFunctionalTest extends ExclusiveServerTestBase
 {
 
     private NeoServer server;
 
-    @Test( expected = StartupHealthCheckFailedException.class )
-    public void shouldExitWhenFailedStartupHealthCheck() throws IOException
+    @Test( expected = PreflightFailedException.class )
+    public void shouldExitWhenFailedStartupHealthCheck() throws Throwable
     {
         server = ServerBuilder.server()
-                .withFailingStartupHealthcheck()
+                .withFailingPreflightTasks()
                 .build();
         server.start();
     }

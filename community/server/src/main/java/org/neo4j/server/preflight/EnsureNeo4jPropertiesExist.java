@@ -17,27 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 
-public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
+public class EnsureNeo4jPropertiesExist implements PreflightTask
 {
     private static final String EMPTY_STRING = "";
     private boolean passed = false;
     private boolean ran = false;
     protected String failureMessage = EMPTY_STRING;
+	private Configuration config;
+    
+    public EnsureNeo4jPropertiesExist(Configuration config)
+    {
+    	this.config = config;
+    }
 
-    public boolean execute( Properties properties )
+    @Override
+	public boolean run()
     {
         ran = true;
 
-        String configFilename = properties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+        String configFilename = config.getString( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
 
+        if(configFilename == null)
+        {
+        	failureMessage = String.format( "No server configuration file set, unable to load configuration. Expected system property '%s' to point to config file.", Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+            return false;
+        }
+        
         Properties configProperties = new Properties();
         FileInputStream inputStream = null;
         try
@@ -74,7 +88,8 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
         return true;
     }
 
-    public String getFailureMessage()
+    @Override
+	public String getFailureMessage()
     {
         if ( passed )
         {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.logging;
+package org.neo4j.server.web.logging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -33,20 +33,22 @@ import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
+import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
+import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRule;
-import org.neo4j.server.startup.healthcheck.HTTPLoggingPreparednessRuleTest;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -141,8 +143,12 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
             HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
 
+        Configuration config = new MapBasedConfiguration();
+        config.setProperty(Configurator.HTTP_LOGGING, "true");
+        config.setProperty(Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath());
+        
         server = ServerBuilder.server().withDefaultDatabaseTuning()
-            .withStartupHealthCheckRules( new HTTPLoggingPreparednessRule() )
+            .withPreflightTasks( new EnsurePreparedForHttpLogging(config) )
             .withProperty( Configurator.HTTP_LOGGING, "true" )
             .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
             .build();
@@ -153,7 +159,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
             server.start();
             fail( "should have thrown exception" );
         }
-        catch ( StartupHealthCheckFailedException e )
+        catch ( PreflightFailedException e )
         {
             // then
             assertThat( e.getMessage(),

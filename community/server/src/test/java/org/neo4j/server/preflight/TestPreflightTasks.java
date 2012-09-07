@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.healthcheck;
+package org.neo4j.server.preflight;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
@@ -25,40 +25,40 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Properties;
-
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.preflight.PreflightTask;
 
-public class StartupHealthCheckTest
+public class TestPreflightTasks
 {
 
     @Test
     public void shouldPassWithNoRules()
     {
-        StartupHealthCheck check = new StartupHealthCheck();
+        PreFlightTasks check = new PreFlightTasks();
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldRunAllHealthChecksToCompletionIfNonFail()
     {
-        StartupHealthCheck check = new StartupHealthCheck( getPassingRules() );
+        PreFlightTasks check = new PreFlightTasks( getPassingRules() );
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldFailIfOneOrMoreHealthChecksFail()
     {
-        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
         assertFalse( check.run() );
     }
 
     @Test
     public void shouldLogFailedRule()
     {
-        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
-        InMemoryAppender appender = new InMemoryAppender( StartupHealthCheck.log );
+        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
+        InMemoryAppender appender = new InMemoryAppender( PreFlightTasks.log );
         check.run();
 
         // Previously we tested on "SEVERE: blah blah" but that's a string
@@ -70,21 +70,21 @@ public class StartupHealthCheckTest
     @Test
     public void shouldAdvertiseFailedRule()
     {
-        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
         check.run();
-        assertNotNull( check.failedRule() );
+        assertNotNull( check.failedTask() );
     }
 
-    private StartupHealthCheckRule[] getWithOneFailingRule()
+    private PreflightTask[] getWithOneFailingRule()
     {
-        StartupHealthCheckRule[] rules = new StartupHealthCheckRule[5];
+        PreflightTask[] rules = new PreflightTask[5];
 
         for ( int i = 0; i < rules.length; i++ )
         {
-            rules[i] = new StartupHealthCheckRule()
+            rules[i] = new PreflightTask()
             {
                 @Override
-                public boolean execute( Properties properties )
+                public boolean run()
                 {
                     return true;
                 }
@@ -97,10 +97,10 @@ public class StartupHealthCheckTest
             };
         }
 
-        rules[rules.length / 2] = new StartupHealthCheckRule()
+        rules[rules.length / 2] = new PreflightTask()
         {
             @Override
-            public boolean execute( Properties properties )
+            public boolean run()
             {
                 return false;
             }
@@ -115,16 +115,16 @@ public class StartupHealthCheckTest
         return rules;
     }
 
-    private StartupHealthCheckRule[] getPassingRules()
+    private PreflightTask[] getPassingRules()
     {
-        StartupHealthCheckRule[] rules = new StartupHealthCheckRule[5];
+        PreflightTask[] rules = new PreflightTask[5];
 
         for ( int i = 0; i < rules.length; i++ )
         {
-            rules[i] = new StartupHealthCheckRule()
+            rules[i] = new PreflightTask()
             {
                 @Override
-                public boolean execute( Properties properties )
+                public boolean run()
                 {
                     return true;
                 }

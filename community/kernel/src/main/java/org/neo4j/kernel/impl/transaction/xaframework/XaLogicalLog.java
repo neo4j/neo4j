@@ -133,7 +133,6 @@ public class XaLogicalLog implements LogLoader
 
     synchronized void open() throws IOException
     {
-        
         switch(logFiles.determineState()) 
         {
         case LEGACY_WITHOUT_LOG_ROTATION:
@@ -1019,7 +1018,8 @@ public class XaLogicalLog implements LogLoader
      * @return The channel
      * @throws IOException If an IO error occurs when reading the log file
      */
-    public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
+    @Override
+	public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
             throws IOException
     {
         synchronized ( this )
@@ -1592,7 +1592,8 @@ public class XaLogicalLog implements LogLoader
         return this.rotateAtSize;
     }
 
-    public String getFileName( long version )
+    @Override
+	public String getFileName( long version )
     {
         return fileName + ".v" + version;
     }
@@ -1640,7 +1641,8 @@ public class XaLogicalLog implements LogLoader
         return nonCleanShutdown;
     }
 
-    public long getHighestLogVersion()
+    @Override
+	public long getHighestLogVersion()
     {
         return logVersion;
     }

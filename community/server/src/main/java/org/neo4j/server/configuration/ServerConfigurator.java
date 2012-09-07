@@ -56,6 +56,11 @@ public class ServerConfigurator implements Configurator
     {
         config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
     }
+    
+    public ServerConfigurator( String dbDir )
+    {
+        config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, dbDir );
+    }
 
     @Override
     public Configuration configuration()

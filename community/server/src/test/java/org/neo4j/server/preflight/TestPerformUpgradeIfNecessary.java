@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.storemigration;
+package org.neo4j.server.preflight;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
@@ -30,32 +32,36 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.MapBasedConfiguration;
 
-public class PreStartupStoreUpgraderTest
+public class TestPerformUpgradeIfNecessary
 {
-    public static final String HOME_DIRECTORY = "target/" + PreStartupStoreUpgraderTest.class.getSimpleName();
+    public static final String HOME_DIRECTORY = "target/" + TestPerformUpgradeIfNecessary.class.getSimpleName();
     public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
 
     @Test
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
     {
-        Properties systemProperties = buildProperties( false );
+        Configuration serverConfig = buildProperties( false );
         new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY ).newGraphDatabase().shutdown();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PreStartupStoreUpgrader upgrader = new PreStartupStoreUpgrader( systemProperties,
-                new PrintStream( outputStream ) );
+        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
+        		loadNeo4jProperties(), new PrintStream( outputStream ) );
 
-        int exit = upgrader.run();
+        boolean exit = upgrader.run();
 
-        assertEquals( 0, exit );
+        assertEquals( true, exit );
 
         assertEquals( "", new String( outputStream.toByteArray() ) );
     }
@@ -63,20 +69,21 @@ public class PreStartupStoreUpgraderTest
     @Test
     public void shouldGiveHelpfulMessageIfAutoUpgradeParameterNotSet() throws IOException
     {
-        Properties systemProperties = buildProperties( false );
+        Configuration serverProperties = buildProperties( false );
         prepareSampleLegacyDatabase( new File( STORE_DIRECTORY ) );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PreStartupStoreUpgrader upgrader = new PreStartupStoreUpgrader( systemProperties,
-                new PrintStream( outputStream ) );
+        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
+        		loadNeo4jProperties(), new PrintStream( outputStream ) );
 
-        int exit = upgrader.run();
+        boolean exit = upgrader.run();
 
-        assertEquals( 1, exit );
-
+        assertEquals( false, exit );
+        
         String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
-        assertTrue( lines[0].contains( "To enable automatic upgrade, please set configuration parameter " +
-                "\"allow_store_upgrade=true\"" ) );
+        assertThat( "'" + lines[0] + "' contains '" + "To enable automatic upgrade, please set configuration parameter " +
+                "\"allow_store_upgrade=true\"", lines[0].contains("To enable automatic upgrade, please set configuration parameter " +
+                "\"allow_store_upgrade=true\""), is(true) );
     }
 
     @Test
@@ -84,12 +91,12 @@ public class PreStartupStoreUpgraderTest
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PreStartupStoreUpgrader upgrader = new PreStartupStoreUpgrader( buildProperties( true ),
-                new PrintStream( outputStream ) );
+        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( buildProperties( true ),
+        		loadNeo4jProperties(), new PrintStream( outputStream ) );
 
-        int exit = upgrader.run();
+        boolean exit = upgrader.run();
 
-        assertEquals( 0, exit );
+        assertEquals( true, exit );
 
         assertEquals( "", new String( outputStream.toByteArray() ) );
     }
@@ -97,16 +104,16 @@ public class PreStartupStoreUpgraderTest
     @Test
     public void shouldUpgradeDatabase() throws IOException
     {
-        Properties systemProperties = buildProperties( true );
+        Configuration serverConfig = buildProperties( true );
         prepareSampleLegacyDatabase( new File( STORE_DIRECTORY ) );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        PreStartupStoreUpgrader upgrader = new PreStartupStoreUpgrader( systemProperties,
-                new PrintStream( outputStream ) );
+        PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
+        		loadNeo4jProperties(), new PrintStream( outputStream ) );
 
-        int exit = upgrader.run();
+        boolean exit = upgrader.run();
 
-        assertEquals( 0, exit );
+        assertEquals( true, exit );
 
         String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
         assertEquals( "Starting upgrade of database store files", lines[0] );
@@ -114,7 +121,7 @@ public class PreStartupStoreUpgraderTest
         assertEquals( "Finished upgrade of database store files", lines[2] );
     }
 
-    private Properties buildProperties(boolean allowStoreUpgrade) throws IOException
+    private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException
     {
         FileUtils.deleteRecursively( new File( HOME_DIRECTORY ) );
         new File( HOME_DIRECTORY + "/conf" ).mkdirs();
@@ -127,15 +134,17 @@ public class PreStartupStoreUpgraderTest
         String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
-        Properties serverProperties = new Properties();
+        Configuration serverProperties = new MapBasedConfiguration();
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
-        String serverPropertiesFileName = HOME_DIRECTORY + "/conf/neo4j-server.properties";
-        serverProperties.store( new FileWriter( serverPropertiesFileName ), null );
 
-        Properties systemProperties = new Properties();
-        systemProperties.put( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFileName );
-        return systemProperties;
+        return serverProperties;
+    }
+    
+    private Map<String,String> loadNeo4jProperties() throws IOException
+    {
+        String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
+        return MapUtil.load(new File(databasePropertiesFileName));
     }
 
     public static void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
@@ -150,7 +159,7 @@ public class PreStartupStoreUpgraderTest
 
     public static File findOldFormatStoreDirectory()
     {
-        URL legacyStoreResource = PreStartupStoreUpgraderTest.class.getResource( "legacystore/exampledb/neostore" );
+        URL legacyStoreResource = TestPerformUpgradeIfNecessary.class.getResource( "legacystore/exampledb/neostore" );
         return new File( legacyStoreResource.getFile() ).getParentFile();
     }
 
