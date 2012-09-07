@@ -80,10 +80,13 @@ public interface GraphDatabaseService
      * node space organizational patterns, see the design guide at <a
      * href="http://wiki.neo4j.org/content/Design_Guide"
      * >wiki.neo4j.org/content/Design_Guide</a>.
-     * 
+     *
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node
+     * @deprecated The reference node concept is obsolete - indexes are the
+     *              canonical way of getting hold of entry points in the graph.
      */
+    @Deprecated
     public Node getReferenceNode();
     
     /**

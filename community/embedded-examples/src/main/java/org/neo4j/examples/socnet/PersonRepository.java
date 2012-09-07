@@ -19,7 +19,6 @@
 package org.neo4j.examples.socnet;
 
 import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
-import static org.neo4j.examples.socnet.RelTypes.REF_PERSONS;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -27,6 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IterableWrapper;
 
 public class PersonRepository
@@ -45,26 +45,24 @@ public class PersonRepository
 
     private Node getPersonsRootNode( GraphDatabaseService graphDb )
     {
-        Relationship rel = graphDb.getReferenceNode().getSingleRelationship(
-                REF_PERSONS, Direction.OUTGOING );
-        if ( rel != null )
+        Index<Node> referenceIndex = graphDb.index().forNodes( "reference");
+        IndexHits<Node> result = referenceIndex.get( "reference", "person" );
+        if (result.hasNext())
         {
-            return rel.getEndNode();
-        } else
+            return result.next();
+        }
+        Transaction tx = this.graphDb.beginTx();
+        try
         {
-            Transaction tx = this.graphDb.beginTx();
-            try
-            {
-                Node refNode = this.graphDb.createNode();
-                this.graphDb.getReferenceNode().createRelationshipTo( refNode,
-                        REF_PERSONS );
-                tx.success();
-                return refNode;
-            }
-            finally
-            {
-                tx.finish();
-            }
+            Node refNode = this.graphDb.createNode();
+            refNode.setProperty( "reference", "persons" );
+            referenceIndex.add( refNode, "reference", "persons" );
+            tx.success();
+            return refNode;
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 

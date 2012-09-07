@@ -56,7 +56,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        assertNotNull( map.get( "reference_node" ) );
+        assertNotNull( map.get( "reference_node" ) ); // See DatabaseRepresentation#serialize
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
@@ -140,6 +140,6 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         String body = responseEntity.entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        assertNotNull(map.get("reference_node"));
+        assertNotNull(map.get("reference_node")); // See DatabaseRepresentation#serialize
     }
 }

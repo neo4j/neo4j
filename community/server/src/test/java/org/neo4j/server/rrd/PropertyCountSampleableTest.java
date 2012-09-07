@@ -39,6 +39,19 @@ public class PropertyCountSampleableTest
 {
     public Database db;
     public PropertyCountSampleable sampleable;
+    public long referenceNodeId;
+
+    @Before
+    public void setupReferenceNode()
+    {
+        db = new WrappingDatabase( new ImpermanentGraphDatabase() );
+        sampleable = new PropertyCountSampleable( db.getGraph() );
+
+        Transaction tx = db.getGraph().beginTx();
+        referenceNodeId = db.getGraph().createNode().getId();
+        tx.success();
+        tx.finish();
+    }
 
     @Test
     public void emptyDbHasZeroNodesInUse()
@@ -62,7 +75,7 @@ public class PropertyCountSampleableTest
     private void addNodeIntoGraph()
     {
         Transaction tx = db.getGraph().beginTx();
-        Node referenceNode = db.getGraph().getReferenceNode();
+        Node referenceNode = db.getGraph().getNodeById( referenceNodeId );
         Node myNewNode = db.getGraph().createNode();
         myNewNode.setProperty( "id", UUID.randomUUID().toString() );
         myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
@@ -81,17 +94,10 @@ public class PropertyCountSampleableTest
     private void addPropertyToReferenceNode()
     {
         Transaction tx = db.getGraph().beginTx();
-        Node n = db.getGraph().getReferenceNode();
+        Node n = db.getGraph().getNodeById( referenceNodeId );
         n.setProperty( "monkey", "rock!" );
         tx.success();
         tx.finish();
-    }
-
-    @Before
-    public void setUp() throws Exception
-    {
-        db = new WrappingDatabase( new ImpermanentGraphDatabase() );
-        sampleable = new PropertyCountSampleable( db.getGraph() );
     }
 
     @After

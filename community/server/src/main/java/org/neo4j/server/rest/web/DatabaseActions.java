@@ -260,6 +260,10 @@ public class DatabaseActions
         }
     }
 
+    /**
+     * @deprecated reference node is a deprecated concept
+     */
+    @Deprecated
     public NodeRepresentation getReferenceNode()
     {
         return new NodeRepresentation( graphDb.getReferenceNode() );

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellServer;
@@ -109,8 +110,9 @@ public class Neo4jShell
             System.out.println( "Creating example node space ..." );
             Random random = new Random();
             Node usersReferenceNode = graphDb.createNode();
-            graphDb.getReferenceNode().createRelationshipTo(
-                usersReferenceNode, RelTypes.USERS_REFERENCE );
+            Index<Node> references = graphDb.index().forNodes( "references" );
+            usersReferenceNode.setProperty( "reference", "users" );
+            references.add( usersReferenceNode, "reference", "users" );
             // Create some users and index their names with the IndexService
             List<Node> users = new ArrayList<Node>();
             for ( int id = 0; id < 100; id++ )
@@ -150,9 +152,7 @@ public class Neo4jShell
         {
             // Delete the persons and remove them from the index
             System.out.println( "Deleting example node space ..." );
-            Node usersReferenceNode = graphDb.getReferenceNode()
-                .getSingleRelationship( RelTypes.USERS_REFERENCE,
-                    Direction.OUTGOING ).getEndNode();
+            Node usersReferenceNode = graphDb.index().forNodes( "references" ).get( "reference", "users" ).getSingle();
             for ( Relationship relationship : usersReferenceNode
                 .getRelationships( RelTypes.USER, Direction.OUTGOING ) )
             {

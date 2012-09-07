@@ -39,6 +39,7 @@ import org.neo4j.kernel.Traversal;
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class FunctionalTestPlugin extends ServerPlugin
 {
+    // TODO Remove this when the reference node is removed and fix the rest of the plugin tests
     public static final String GET_REFERENCE_NODE = "reference_node_uri";
     public static final String GET_CONNECTED_NODES = "connected_nodes";
     static String _string;
@@ -56,7 +57,8 @@ public class FunctionalTestPlugin extends ServerPlugin
     static String[] stringArray;
     public static int[] intArray;
 
-    @Description( "Get the reference node from the graph database" )
+    // TODO remove when the reference node is no more
+    @Description( "Get the reference node from the graph database - deprecated functionality" )
     @PluginTarget( GraphDatabaseService.class )
     @Name( GET_REFERENCE_NODE )
     public Node getReferenceNode( @Source GraphDatabaseService graphDb )
