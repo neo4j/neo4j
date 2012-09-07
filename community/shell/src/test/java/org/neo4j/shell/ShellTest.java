@@ -196,7 +196,7 @@ public class ShellTest
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 1.6 start morpheus = node:node_auto_index(name='Morpheus') " +
+        doc.add( "cypher 1.8 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name;",
                 "Cypher",
