@@ -42,19 +42,21 @@ public class TestPerformRecoveryIfNecessary {
 
 	public static final String HOME_DIRECTORY = "target/" + TestPerformRecoveryIfNecessary.class.getSimpleName();
     public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
-	
+
+    private static final String LINEBREAK = System.getProperty("line.separator");
+
 	@Test
 	public void shouldNotDoAnythingIfNoDBPresent() throws Exception
 	{
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		Configuration config = buildProperties();
 		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
-		
+
 		assertThat("Recovery task runs successfully.", task.run(), is(true));
 		assertThat("No database should have been created.", new File(STORE_DIRECTORY).exists(), is(false));
 		assertThat("Recovery task should not print anything.", outputStream.toString(), is(""));
 	}
-	
+
 	@Test
 	public void doesNotPrintAnythingIfDatabaseWasCorrectlyShutdown() throws Exception
 	{
@@ -62,14 +64,14 @@ public class TestPerformRecoveryIfNecessary {
 		Configuration config = buildProperties();
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		new GraphDatabaseFactory().newEmbeddedDatabase(STORE_DIRECTORY).shutdown();
-		
+
 		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
-		
+
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
 		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
 		assertThat("Recovery should not print anything.", outputStream.toString(), is(""));
 	}
-	
+
 	@Test
 	public void shouldPerformRecoveryIfNecessary() throws Exception
 	{
@@ -80,16 +82,16 @@ public class TestPerformRecoveryIfNecessary {
 		new GraphDatabaseFactory().newEmbeddedDatabase(STORE_DIRECTORY).shutdown();
 		// Make this look incorrectly shut down
 		new File(STORE_DIRECTORY, "nioneo_logical.log.active").delete();
-	
-		assertThat("Store should not be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()), 
+
+		assertThat("Store should not be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()),
 				is(true));
-		
+
 		// Run recovery
 		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
 		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
-		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery..\n"));
-		assertThat("Store should be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()), 
+		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));
+		assertThat("Store should be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()),
 				is(false));
 	}
 
@@ -99,7 +101,7 @@ public class TestPerformRecoveryIfNecessary {
         new File( HOME_DIRECTORY + "/conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
-        
+
         String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
@@ -109,5 +111,5 @@ public class TestPerformRecoveryIfNecessary {
 
         return serverProperties;
     }
-	
+
 }
