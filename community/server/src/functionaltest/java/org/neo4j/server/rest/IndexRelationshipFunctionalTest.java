@@ -596,17 +596,10 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
    }
    
    /**
-    * Backward Compatibility Test (using old syntax ?unique)
-	*
-    * Get or create unique relationship (existing).
-    * 
-    * Here, in case
-    * of an already existing relationship, the sent data is ignored and the
-    * existing relationship returned.
+    * This can be safely removed in version 1.11 an onwards.
     */
-   @Documented
    @Test
-   public void get_or_create_unique_relationship_existing_create() throws Exception
+   public void createUniqueShouldBeBackwardsCompatibleWith1_8() throws Exception
    {
     final String index = "rels", key = "name", value = "Peter";
 

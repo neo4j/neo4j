@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.ConfigurationProvider;
@@ -42,13 +43,13 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.plugins.TypedInjectable;
+import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.paging.LeaseManagerProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rrd.RrdDbProvider;
-import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
@@ -70,9 +71,31 @@ public abstract class AbstractNeoServer implements NeoServer
 	protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     private PreFlightTasks preflight;
-
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
+    private InterruptThreadTimer interruptStartupTimer;
+
+    private DependencyResolver dependencyResolver = new DependencyResolver()
+    {
+        @Override
+        public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+        {
+            if(type.equals( Database.class ))
+            {
+                return (T) database;
+            } else if(type.equals( PreFlightTasks.class ))
+            {
+                return (T) preflight;
+            } else if(type.equals( InterruptThreadTimer.class ))
+            {
+                return (T) interruptStartupTimer;
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+            }
+        }
+    };
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -100,7 +123,7 @@ public abstract class AbstractNeoServer implements NeoServer
 	@Override
     public void start() throws ServerStartupException
     {
-		InterruptThreadTimer interruptStartupTimer = createInterruptStartupTimer();
+        interruptStartupTimer = createInterruptStartupTimer();
 		
 		try 
 		{
@@ -132,10 +155,10 @@ public abstract class AbstractNeoServer implements NeoServer
 	        
 		} catch(Throwable t)
 		{
-			if(interruptStartupTimer.wasTriggered())
+			if( interruptStartupTimer.wasTriggered())
 			{
 				throw new ServerStartupException(
-						"Startup took longer than "+interruptStartupTimer.getTimeoutMillis()+"ms, and was stopped. You can disable this behavior by setting '" + Configurator.STARTUP_TIMEOUT + "' to 0.",
+						"Startup took longer than "+ interruptStartupTimer.getTimeoutMillis()+"ms, and was stopped. You can disable this behavior by setting '" + Configurator.STARTUP_TIMEOUT + "' to 0.",
 						1);
 			}
 			
@@ -144,9 +167,14 @@ public abstract class AbstractNeoServer implements NeoServer
 				throw (RuntimeException)t;
 			} else 
 			{
-				throw new RuntimeException("Starting neo server failed, see nested exception.",t);
+				throw new ServerStartupException("Starting neo server failed, see nested exception.",t);
 			}
 		}
+    }
+
+    public DependencyResolver getDependencyResolver()
+    {
+        return dependencyResolver;
     }
 
 	protected InterruptThreadTimer createInterruptStartupTimer() {

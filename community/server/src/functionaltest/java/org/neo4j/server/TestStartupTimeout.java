@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 import java.io.File;
@@ -72,22 +73,25 @@ public class TestStartupTimeout {
 	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException 
 	{
 		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 5);
+		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 100);
 		server = new CommunityNeoServer(configurator){
 			@Override
 			protected Iterable<ServerModule> createServerModules(){
 				return Arrays.asList();
 			}
 		};
-		
+
+        // When
 		try {
 			server.start();
-			Thread.sleep(1000 * 6);
 		} catch(ServerStartupException e) {
 			fail("Should not have been interupted.");
-		} catch (InterruptedException e) {
-			fail("Should not have been interupted.");
 		}
+
+        // Then
+        InterruptThreadTimer timer = server.getDependencyResolver().resolveDependency( InterruptThreadTimer.class );
+
+        assertThat(timer.getState(), is( InterruptThreadTimer.State.IDLE));
 	}
     
 	@Test
@@ -114,7 +118,7 @@ public class TestStartupTimeout {
 						try {
 							Thread.sleep(1000 * 5);
 						} catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
+                            throw new RuntimeException( e );
 						}
 					}
 

@@ -40,6 +40,12 @@ public class ServerStartupException extends RuntimeException
         this.errorCode = errorCode;
     }
 
+    public ServerStartupException( String message, Throwable t )
+    {
+        super( message, t);
+        this.errorCode = -1;
+    }
+
     public Integer getErrorCode()
     {
         return errorCode;
