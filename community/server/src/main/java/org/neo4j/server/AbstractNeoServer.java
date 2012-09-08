@@ -130,7 +130,7 @@ public abstract class AbstractNeoServer implements NeoServer
 	        
         	interruptStartupTimer.stopCountdown();
 	        
-		}catch(Throwable t)
+		} catch(Throwable t)
 		{
 			if(interruptStartupTimer.wasTriggered())
 			{

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -96,12 +96,12 @@ public class TestStartupTimeout {
 		Configurator configurator = buildProperties();
 		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 0);
 		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		}
+
+        // When
+        server.start();
+
+        // Then
+        // No exceptions should have been thrown
 	}
 
 	private CommunityNeoServer createSlowServer(Configurator configurator) {
@@ -114,7 +114,7 @@ public class TestStartupTimeout {
 						try {
 							Thread.sleep(1000 * 5);
 						} catch (InterruptedException e) {
-							throw new RuntimeException(e);
+                            Thread.currentThread().interrupt();
 						}
 					}
 
