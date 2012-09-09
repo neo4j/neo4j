@@ -29,20 +29,23 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.test.TargetDirectory;
 
 public class TestStartupTimeout {
-	
-	public static final String HOME_DIRECTORY = "target/" + TestStartupTimeout.class.getSimpleName();
-    public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
-    
+
+    TargetDirectory target = TargetDirectory.forTest( TestStartupTimeout.class );
+
+    @Rule
+    public TargetDirectory.TestDirectory test = target.cleanTestDirectory();
+
     public CommunityNeoServer server;
-    
+
     @After
     public void stopServer()
     {
@@ -133,16 +136,15 @@ public class TestStartupTimeout {
 	
 	private Configurator buildProperties() throws IOException
     {
-        FileUtils.deleteRecursively( new File( HOME_DIRECTORY ) );
-        new File( HOME_DIRECTORY + "/conf" ).mkdirs();
+        new File( test.directory().getAbsolutePath() + "/conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
+        String databasePropertiesFileName = test.directory().getAbsolutePath() + "/conf/neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = HOME_DIRECTORY + "/conf/neo4j-server.properties";
-        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY );
+        String serverPropertiesFilename = test.directory().getAbsolutePath() + "/conf/neo4j-server.properties";
+        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, test.directory().getAbsolutePath() + "data/graph.db" );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
         serverProperties.store( new FileWriter(serverPropertiesFilename), null);
