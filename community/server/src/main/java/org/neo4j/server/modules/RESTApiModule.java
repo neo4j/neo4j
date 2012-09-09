@@ -24,7 +24,6 @@ import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUT
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
@@ -34,7 +33,6 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.web.WebServer;
 

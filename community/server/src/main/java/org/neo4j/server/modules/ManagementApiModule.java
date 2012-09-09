@@ -24,14 +24,12 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.web.WebServer;
 
 public class ManagementApiModule implements ServerModule

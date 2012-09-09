@@ -29,7 +29,6 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 

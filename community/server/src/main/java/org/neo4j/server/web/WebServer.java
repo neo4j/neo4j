@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.security.SecurityRule;

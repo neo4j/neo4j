@@ -22,19 +22,7 @@ package org.neo4j.server.web;
 import java.util.Collection;
 import java.util.Set;
 
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.NeoServerProvider;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.GraphDatabaseServiceProvider;
-import org.neo4j.server.plugins.PluginInvocatorProvider;
-import org.neo4j.server.rest.paging.LeaseManagerProvider;
-import org.neo4j.server.rest.repr.InputFormatProvider;
-import org.neo4j.server.rest.repr.OutputFormatProvider;
-import org.neo4j.server.rest.repr.RepresentationFormatRepository;
-import org.neo4j.server.rrd.RrdDbProvider;
 
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;

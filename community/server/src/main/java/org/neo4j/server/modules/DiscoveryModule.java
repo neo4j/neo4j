@@ -21,13 +21,11 @@ package org.neo4j.server.modules;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.web.WebServer;
 
 public class DiscoveryModule implements ServerModule

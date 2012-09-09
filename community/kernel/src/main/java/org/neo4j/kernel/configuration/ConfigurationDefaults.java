@@ -29,7 +29,6 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Provides defaults for database settings.
