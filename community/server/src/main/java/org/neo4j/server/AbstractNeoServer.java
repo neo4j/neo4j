@@ -182,6 +182,7 @@ public abstract class AbstractNeoServer implements NeoServer
 		InterruptThreadTimer stopStartupTimer;
 		if(startupTimeout > 0) 
         {
+            log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, -1));
 			stopStartupTimer = InterruptThreadTimer.createTimer(
 					startupTimeout,
 					Thread.currentThread());
