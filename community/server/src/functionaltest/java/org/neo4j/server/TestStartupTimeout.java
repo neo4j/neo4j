@@ -40,6 +40,7 @@ import org.neo4j.test.TargetDirectory;
 public class TestStartupTimeout {
 
     TargetDirectory target = TargetDirectory.forTest( TestStartupTimeout.class );
+    private static final String DIRSEP = File.separator;
 
     @Rule
     public TargetDirectory.TestDirectory test = target.cleanTestDirectory();
@@ -136,15 +137,17 @@ public class TestStartupTimeout {
 	
 	private Configurator buildProperties() throws IOException
     {
-        new File( test.directory().getAbsolutePath() + "/conf" ).mkdirs();
+        new File( test.directory().getAbsolutePath() + DIRSEP + "conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = test.directory().getAbsolutePath() + "/conf/neo4j.properties";
+        String databasePropertiesFileName = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = test.directory().getAbsolutePath() + "/conf/neo4j-server.properties";
-        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, test.directory().getAbsolutePath() + "data/graph.db" );
+        String serverPropertiesFilename = test.directory().getAbsolutePath() + DIRSEP + "conf"+ DIRSEP +"neo4j-server.properties";
+        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, test.directory().getAbsolutePath()
+                + DIRSEP + "data"+ DIRSEP +"graph.db" );
+
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
         serverProperties.store( new FileWriter(serverPropertiesFilename), null);
