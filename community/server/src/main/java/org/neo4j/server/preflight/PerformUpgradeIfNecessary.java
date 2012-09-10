@@ -76,8 +76,6 @@ public class PerformUpgradeIfNecessary implements PreflightTask {
 
             if ( !new UpgradableDatabase().storeFilesUpgradeable( new File( store ) ) )
             {
-                logger.info( "Store files missing, or not in suitable state for upgrade. " +
-                        "Leaving this problem for main server process to resolve." );
                 return true;
             }
             

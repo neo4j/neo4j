@@ -29,13 +29,13 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.test.TargetDirectory;
 
 public class TestStartupTimeout {
@@ -58,7 +58,6 @@ public class TestStartupTimeout {
     	}
     }
 
-    @Ignore
 	@Test
 	public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException 
 	{
@@ -116,23 +115,28 @@ public class TestStartupTimeout {
 
 	private CommunityNeoServer createSlowServer(Configurator configurator) {
 		CommunityNeoServer server = new CommunityNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				ServerModule slowModule = new ServerModule() {
-					@Override
-					public void start(StringLogger logger) {
-						try {
-							Thread.sleep(1000 * 5);
-						} catch (InterruptedException e) {
-                            throw new RuntimeException( e );
-						}
-					}
 
-					@Override
-					public void stop() { }
-        		};
-				return Arrays.asList(slowModule);
-			}
+            @Override
+            protected PreFlightTasks createPreflightTasks() {
+                return new PreFlightTasks(new PreflightTask() {
+                    @Override
+                    public boolean run()
+                    {
+                        try {
+                            Thread.sleep(1000 * 5);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException( e );
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public String getFailureMessage()
+                    {
+                        return "Slow preflight task failed!";
+                    }
+                });
+            }
 		};
 		return server;
 	}
