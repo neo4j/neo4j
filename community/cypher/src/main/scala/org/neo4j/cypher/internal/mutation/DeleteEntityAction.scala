@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
-import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.cypher.internal.symbols.AnyType
+import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
 
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
@@ -57,11 +58,25 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
     }
   }
-  def identifier = Seq.empty
+
+  def identifier2: Seq[(String, CypherType)] = Seq.empty
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
 
   def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
 
-  def dependencies = elementToDelete.dependencies(AnyType())
+  def assertTypes(symbols: SymbolTable) {
+    val elementType = elementToDelete.getType(symbols)
+
+    checkTypes(elementType)
+  }
+
+  private def checkTypes(t:CypherType) {
+    t match {
+      case x:MapType =>
+      case x:CollectionType => checkTypes(x.iteratedType)
+    }
+  }
+
+  def symbolTableDependencies = elementToDelete.symbolTableDependencies
 }

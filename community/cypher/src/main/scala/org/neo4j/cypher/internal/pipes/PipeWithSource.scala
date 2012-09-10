@@ -19,15 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import collection.Seq
-import org.neo4j.cypher.internal.symbols.Identifier
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
+abstract class PipeWithSource(val source: Pipe) extends Pipe {
+  def assertTypes(symbols: SymbolTable)
 
-abstract class PipeWithSource(val source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
-
-trait Dependant {
-  def dependencies: Seq[Identifier]
+  assertTypes(source.symbols)
 }

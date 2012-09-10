@@ -27,6 +27,7 @@ object NumberType {
 }
 
 class NumberType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
   override def toString = "Number"
 }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{Identifier, Literal, Expression}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
 import scala.Long
@@ -27,32 +28,46 @@ import org.neo4j.graphdb.{DynamicRelationshipType, Node}
 import org.neo4j.cypher.internal.symbols._
 
 
-abstract class StartItem(val identifierName: String) {
+abstract class StartItem(val identifierName: String) extends TypeSafe {
   def mutating = false
 }
 
-case class RelationshipById(varName: String, expression: Expression) extends StartItem(varName)
+trait ReadOnlyStartItem extends TypeSafe {
+  def assertTypes(symbols: SymbolTable) {}
 
-case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends StartItem(varName)
+  def symbolTableDependencies = Set()
+}
 
-case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression) extends StartItem(varName)
+case class RelationshipById(varName: String, expression: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
 
-case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression) extends StartItem(varName)
+case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
 
-case class NodeByIndexQuery(varName: String, idxName: String, query: Expression) extends StartItem(varName)
+case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
 
-case class NodeById(varName: String, expression: Expression) extends StartItem(varName)
+case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
 
-case class AllNodes(columnName: String) extends StartItem(columnName)
+case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
 
-case class AllRelationships(columnName: String) extends StartItem(columnName)
+case class NodeById(varName: String, expression: Expression)
+  extends StartItem(varName) with ReadOnlyStartItem
+
+case class AllNodes(columnName: String)
+  extends StartItem(columnName) with ReadOnlyStartItem
+
+case class AllRelationships(columnName: String)
+  extends StartItem(columnName) with ReadOnlyStartItem
 
 case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   extends StartItem(key)
   with Mutator
   with UpdateAction
   with GraphElementPropertyFunctions
-  with IterableSupport {
+  with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
     val db = state.db
     if (props.size == 1 && props.head._1 == "*") {
@@ -74,13 +89,17 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
     }
   }
 
-  def dependencies = propDependencies(props)
-
-  def identifier = Seq(Identifier(key, NodeType()))
+  def identifier2 = Seq(key -> NodeType())
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = props.values.flatMap(_.filter(f)).toSeq
 
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
+
+  def assertTypes(symbols: SymbolTable) {
+    checkTypes(props, symbols)
+  }
+
+  def symbolTableDependencies = symbolTableDependencies(props)
 }
 
 case class CreateRelationshipStartItem(key: String,
@@ -92,18 +111,6 @@ case class CreateRelationshipStartItem(key: String,
   with UpdateAction
   with GraphElementPropertyFunctions {
   private lazy val relationshipType = DynamicRelationshipType.withName(typ)
-
-  def dependencies = {
-    val fromDeps = nodeDependencies(from._1)
-    val toDeps = nodeDependencies(to._1)
-    val propDeps = propDependencies(props)
-    fromDeps ++ toDeps ++ propDeps
-  }
-
-  private def nodeDependencies(e:Expression):Seq[Identifier] = e match {
-    case Entity(_) => Seq()
-    case x => x.dependencies(NodeType())
-  }
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = from._1.filter(f) ++ props.values.flatMap(_.filter(f))
 
@@ -119,7 +126,17 @@ case class CreateRelationshipStartItem(key: String,
     Stream(context)
   }
 
-  def identifier = Seq(Identifier(key, RelationshipType()))
+  def identifier2 = Seq(key-> RelationshipType())
+
+  def assertTypes(symbols: SymbolTable) {
+    checkTypes(from._2, symbols)
+    checkTypes(to._2, symbols)
+    checkTypes(props, symbols)
+  }
+
+  def symbolTableDependencies = (from._2.flatMap(_._2.symbolTableDependencies) ++
+                                to._2.flatMap(_._2.symbolTableDependencies) ++
+                                props.flatMap(_._2.symbolTableDependencies)).toSet
 }
 
 trait Mutator extends StartItem {

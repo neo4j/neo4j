@@ -28,16 +28,17 @@ import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.commands._
+import expressions.Expression
 
-trait UpdateAction {
+trait UpdateAction extends TypeSafe {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
-  def dependencies:Seq[Identifier]
-  def identifier:Seq[Identifier]
+  def assertTypes(symbols:SymbolTable)
+  def identifier2:Seq[(String,CypherType)]
   def rewrite(f: Expression => Expression):UpdateAction
   def filter(f: Expression => Boolean): Seq[Expression]
 }
 
-trait GraphElementPropertyFunctions extends IterableSupport {
+trait GraphElementPropertyFunctions extends CollectionSupport {
   def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
@@ -45,7 +46,11 @@ trait GraphElementPropertyFunctions extends IterableSupport {
     }
   }
 
-  def propDependencies(props: Map[String, Expression]) = props.values.flatMap(_.dependencies(AnyType())).toSeq.distinct
+  def checkTypes(props: Map[String, Expression], symbols:SymbolTable) {
+    props.values.foreach(_.checkTypes(symbols))
+  }
+
+  def symbolTableDependencies(props: Map[String, Expression]):Set[String] = props.values.flatMap(_.symbolTableDependencies).toSet
 
   def rewrite(props: Map[String, Expression], f: (Expression) => Expression): Map[String, Expression] = props.map{ case (k,v) => k->v.rewrite(f) }
 

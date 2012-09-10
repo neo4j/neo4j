@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import commands._
+import expressions.{Identifier, Expression}
 
 
 /*
@@ -38,15 +39,15 @@ object ReattachAliasedExpressions {
   }
 
   private def expressionRewriter(returnColumns: Seq[ReturnColumn])(expression: Expression): Expression = expression match {
-    case e: Entity => {
+    case e@Identifier(entityName) =>
       val returnItems = keepReturnItems(returnColumns)
       val found = returnItems.find(_.name == e.entityName)
 
       found match {
-        case None => e
+        case None             => e
         case Some(returnItem) => returnItem.expression
       }
-    }
+
     case somethingElse => somethingElse
   }
 

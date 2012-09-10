@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions._
 import org.neo4j.cypher.SyntaxException
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
@@ -78,7 +79,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     Literal(value)
   })
 
-  def entity: Parser[Entity] = identity ^^ (x => Entity(x))
+  def entity: Parser[Identifier] = identity ^^ (x => Identifier(x))
 
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
@@ -90,10 +91,10 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def nullableProperty: Parser[Expression] = (
     property ~> "!=" ^^^ (throw new SyntaxException("Cypher does not support != for inequality comparisons. " +
-      "It's used for nullable properties instead.\n" +
-      "You probably meant <> instead. Read more about this in the operators chapter in the manual.")) |
-      property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
-      property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
+                                                    "It's used for nullable properties instead.\n" +
+                                                    "You probably meant <> instead. Read more about this in the operators chapter in the manual.")) |
+    property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
+    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
 
   def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)

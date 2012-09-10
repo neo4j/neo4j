@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.ShortestPathExpression
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test

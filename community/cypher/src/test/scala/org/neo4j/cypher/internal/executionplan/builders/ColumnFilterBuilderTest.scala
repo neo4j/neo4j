@@ -23,7 +23,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, Literal, SortItem}
+import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, SortItem}
+import org.neo4j.cypher.internal.commands.expressions.Literal
 
 class ColumnFilterBuilderTest extends BuilderTest {
 

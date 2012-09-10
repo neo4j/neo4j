@@ -26,5 +26,6 @@ object BooleanType {
 }
 
 class BooleanType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
   override def toString = "Boolean"
 }

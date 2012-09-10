@@ -21,12 +21,9 @@ package org.neo4j.cypher
 
 import java.io.PrintWriter
 import java.lang.String
-import internal.symbols.SymbolTable
-
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
-  def symbols: SymbolTable
   def javaColumns: java.util.List[String]
   def javaColumnAs[T](column: String): java.util.Iterator[T]
   def columnAs[T](column: String): Iterator[T]

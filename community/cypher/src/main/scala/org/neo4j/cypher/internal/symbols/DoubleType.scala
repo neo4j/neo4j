@@ -26,6 +26,7 @@ object DoubleType {
 }
 
 class DoubleType extends NumberType {
+  override def parentType:CypherType = NumberType()
   override def toString = "Double"
 }
 

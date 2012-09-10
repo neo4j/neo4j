@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternGraph) extends Pipe {
   val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph)
   val symbols = matchingContext.symbols
+//  val symbols = new SymbolTable(symbols2.identifiers.map(x => Identifier(x._1, x._2)).toSeq:_*)
 
   def createResults(state: QueryState) =
     source.createResults(state).flatMap(ctx => {

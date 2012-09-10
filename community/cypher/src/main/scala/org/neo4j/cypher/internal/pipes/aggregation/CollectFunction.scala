@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import collection.mutable.ListBuffer
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import collection.Map
 
 

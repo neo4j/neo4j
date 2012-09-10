@@ -80,8 +80,9 @@ class PredicateHolder(var predicates: Seq[Predicate]) {
   def getMatchingClauses(keys: Seq[String]) = {
 
     val (matchingPredicates, predicatesLeft) = predicates.partition(x => {
-      !x.containsIsNull && x.dependencies.map(_.name).filterNot(keys.contains).isEmpty
+      !x.containsIsNull && x.symbolTableDependencies.forall(keys contains)
     })
+
     predicates = predicatesLeft
 
     val result = if (matchingPredicates.isEmpty)

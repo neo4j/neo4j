@@ -24,18 +24,23 @@ import org.neo4j.cypher.internal.commands.SortItem
 import java.lang.String
 import org.neo4j.cypher.internal.Comparer
 import collection.mutable.Map
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
-  val symbols = source.symbols
+class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with Comparer {
+  def symbols = source.symbols
 
-  assertDependenciesAreMet()
+  def assertTypes(symbols: SymbolTable) {
+    sortDescription.foreach {
+      case SortItem(e,_) => e.assertTypes(source.symbols)
+    }
+  }
 
   def createResults(state:QueryState) = source.createResults(state).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
 
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false
     case head :: tail => {
-      val key = head.expression.identifier.name
+      val key = head.columnName
       val aVal = a(key)
       val bVal = b(key)
       signum(compare(aVal, bVal)) match {
@@ -47,8 +52,4 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with 
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
-
-  private def assertDependenciesAreMet() {
-    sortDescription.map(_.expression.identifier).foreach( source.symbols.assertHas )
-  }
 }

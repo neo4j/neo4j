@@ -45,7 +45,8 @@ public class CypherParser
         return new org.neo4j.cypher.CypherParser().parse( query );
     }
 
+    @Deprecated
     public static Query parseConsole(String query) throws SyntaxException {
-        return new org.neo4j.cypher.internal.parser.v1_6.ConsoleCypherParser().parse( query );
+        return new org.neo4j.cypher.CypherParser().parse( query );
     }
 }

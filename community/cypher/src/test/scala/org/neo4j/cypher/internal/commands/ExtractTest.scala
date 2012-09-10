@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{ExtractFunction, Identifier, LengthFunction}
 import org.scalatest.Assertions
 import org.junit.Test
 
 class ExtractTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
-
-    //extract( n in ["x", "xxx", "xx"] : length(n) )
-
     val l = Seq("x", "xxx", "xx")
-    val expression = LengthFunction(Entity("n"))
-    val collection = Entity("l")
+    val expression = LengthFunction(Identifier("n"))
+    val collection = Identifier("l")
     val m = Map("l" -> l)
 
     val extract = ExtractFunction(collection, "n", expression)

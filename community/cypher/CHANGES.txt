@@ -1,3 +1,10 @@
+1.9
+--------------------
+o Refactored the type system from the bottom up
+o Predicates can now be returned and used to set properties
+o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if 
+  they are re-used without the properties
+
 1.8.RC1 (2012-09-05)
 --------------------
 o Removed the /../ literal for regular expressions. Now a normal string literal is used instead

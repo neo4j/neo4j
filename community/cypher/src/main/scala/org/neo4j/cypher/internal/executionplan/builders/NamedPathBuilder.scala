@@ -40,11 +40,11 @@ class NamedPathBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.namedPaths.exists(yesOrNo(_, plan.pipe))
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
-    case Unsolved(np: NamedPath) => {
-      p.symbols.satisfies(np.pathPattern.flatMap(_.possibleStartPoints))
-    }
-    case _ => false
-  }
+    case Unsolved(np: NamedPath) =>
+      val pathPoints = np.pathPattern.flatMap(_.possibleStartPoints)
+      pathPoints.forall(x => p.symbols.checkType(x._1, x._2))
 
+    case _                       => false
+  }
   def priority: Int = PlanBuilder.NamedPath
 }

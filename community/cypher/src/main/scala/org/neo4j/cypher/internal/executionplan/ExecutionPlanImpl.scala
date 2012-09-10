@@ -25,7 +25,6 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
-import collection.mutable.{Map => MutableMap}
 import internal.symbols.SymbolTable
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
@@ -36,7 +35,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
 
     var continue = true
-    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), false)
+    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
 
     while (continue) {
       while (builders.exists(_.canWorkWith(planInProgress))) {
@@ -82,7 +81,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     }
 
     val columns = query.returns.columns.flatMap {
-      case "*" => currentSymbols.identifiers.map(_.name).toList
+      case "*" => currentSymbols.identifiers.keys
       case x => Seq(x)
     }
 
@@ -92,7 +91,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
       val state = new QueryState(graph, MutableMaps.create ++ params)
-      new PipeExecutionResult(pipe.createResults(state), pipe.symbols, columns)
+      new PipeExecutionResult(pipe.createResults(state), columns)
     }
 
     func
@@ -101,7 +100,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
       val state = new QueryState(graph, MutableMaps.create ++ params)
-      new EagerPipeExecutionResult(pipe.createResults(state), pipe.symbols, columns, state, graph)
+      new EagerPipeExecutionResult(pipe.createResults(state), columns, state, graph)
     }
 
     func
@@ -136,8 +135,6 @@ The Neo4j Team
     new FilterBuilder,
     new NamedPathBuilder,
     new ExtractBuilder,
-    //TODO: Reintroduce this when the problems with SlicePipe are solved.
-    //new SortedAggregationBuilder,
     new MatchBuilder,
     new SortBuilder,
     new ColumnFilterBuilder,

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-object ScalarType
-{
+object ScalarType {
   val instance = new ScalarType()
 
   def apply() = instance
 }
 
 class ScalarType extends AnyType {
+  override def parentType:CypherType = AnyType()
   override def toString = "Scalar"
 }
 

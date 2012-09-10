@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ExtractPipe
-import org.neo4j.cypher.internal.commands.{CachedExpression, Expression}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
 
 class ExtractBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
-    val expressions = plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).distinct
+
+    val expressions: Map[String, Expression] =
+      plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
+
     ExtractBuilder.extractIfNecessary(plan, expressions)
   }
 
@@ -38,16 +41,21 @@ class ExtractBuilder extends PlanBuilder {
 }
 
 object ExtractBuilder {
+  def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression]): ExecutionPlanInProgress = {
 
-  def extractIfNecessary(plan: ExecutionPlanInProgress, expressions: Seq[Expression]): (ExecutionPlanInProgress) = {
-    val missing = plan.pipe.symbols.missingExpressions(expressions)
+    val expressions = expressionsToExtract.filter {
+      case (k, CachedExpression(_, _)) => false
+      case (k, Identifier(_))              => false
+      case _                           => true
+    }
+
     val query = plan.query
     val pipe = plan.pipe
 
-    if (missing.nonEmpty) {
+    if (expressions.nonEmpty) {
       val newPsq = expressions.foldLeft(query)((psq, exp) => psq.rewrite(fromQueryExpression =>
-        if (exp == fromQueryExpression)
-          CachedExpression(fromQueryExpression.identifier.name, fromQueryExpression.identifier)
+        if (exp._2 == fromQueryExpression)
+          CachedExpression(exp._1, fromQueryExpression.getType(plan.pipe.symbols))
         else
           fromQueryExpression
       ))

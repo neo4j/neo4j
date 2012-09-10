@@ -21,12 +21,22 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.SortPipe
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
+import org.neo4j.cypher.CypherTypeException
 
 class SortBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
-    val sortExpressionsToExtract = plan.query.sort.map(_.token).map(_.expression)
+    val sortExpressionsToExtract: Seq[(String, Expression)] = plan.query.sort.flatMap(x => x.token.expression match {
+      case _: CachedExpression => None
+      case _: Identifier       => None
+      case e                   => Some("  INTERNAL_SORT" + e.## -> e)
+    })
 
-    val newPlan = ExtractBuilder.extractIfNecessary(plan, sortExpressionsToExtract)
+    val newPlan = try {
+      ExtractBuilder.extractIfNecessary(plan, sortExpressionsToExtract.toMap)
+    } catch {
+      case e: CypherTypeException => throw new CypherTypeException(e.getMessage + " - maybe aggregation removed it?")
+    }
 
     val q = newPlan.query
     val sortItems = q.sort.map(_.token)

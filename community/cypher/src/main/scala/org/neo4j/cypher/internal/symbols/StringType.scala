@@ -27,6 +27,7 @@ object StringType
 }
 
 class StringType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
   override def toString = "String"
 }
 

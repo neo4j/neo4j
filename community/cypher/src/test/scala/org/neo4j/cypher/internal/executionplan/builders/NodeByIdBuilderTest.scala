@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
-import org.neo4j.cypher.internal.commands.{RelationshipById, ParameterExpression, NodeById}
+import org.neo4j.cypher.internal.commands.{RelationshipById, NodeById}
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
 
 class NodeByIdBuilderTest extends BuilderTest {
 

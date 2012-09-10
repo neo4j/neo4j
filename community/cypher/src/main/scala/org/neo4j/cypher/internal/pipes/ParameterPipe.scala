@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.commands.ParameterValue
+import org.neo4j.cypher.internal.commands.expressions.ParameterValue
 import collection.mutable.Map
 
 class ParameterPipe() extends Pipe {
@@ -30,6 +30,7 @@ class ParameterPipe() extends Pipe {
   }
 
   val identifiers = Seq()
+//  val symbols = new SymbolTable()
   val symbols = new SymbolTable()
 
   override def executionPlan(): String = "Parameters()"

@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.{True, Entity, Expression}
+import org.neo4j.cypher.internal.commands.True
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 
 trait ParserPattern extends Base {
 
@@ -87,11 +88,11 @@ trait ParserPattern extends Base {
 
 
   private def singleNodeEqualsMap = identity ~ "=" ~ properties ^^ {
-    case name ~ "=" ~ map => ParsedEntity(Entity(name), map, True())
+    case name ~ "=" ~ map => ParsedEntity(Identifier(name), map, True())
   }
 
   private def nodeInParenthesis = parens(opt(identity) ~ props) ^^ {
-    case id ~ props => ParsedEntity(Entity(namer.name(id)), props, True())
+    case id ~ props => ParsedEntity(Identifier(namer.name(id)), props, True())
   }
 
   private def nodeFromExpression = Parser {
@@ -103,7 +104,7 @@ trait ParserPattern extends Base {
   }
 
   private def nodeIdentifier = identity ^^ {
-    case name => ParsedEntity(Entity(name), Map[String, Expression](), True())
+    case name => ParsedEntity(Identifier(name), Map[String, Expression](), True())
   }
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath

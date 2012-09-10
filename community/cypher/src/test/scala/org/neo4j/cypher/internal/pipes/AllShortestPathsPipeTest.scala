@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
 import collection.Traversable
 import collection.mutable.Map
+import org.neo4j.cypher.internal.symbols.NodeType
 
 class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
   def runThroughPipeAndGetPath(a: Node, b: Node): Traversable[Path] = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> NodeType(), "b" -> NodeType())
 
     val pipe = new ShortestPathPipe(source, ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = false, relIterator = None))
     pipe.createResults(QueryState()).map(m => m("p").asInstanceOf[Path])

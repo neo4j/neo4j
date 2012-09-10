@@ -23,7 +23,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{ReturnItem, Literal}
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.commands.expressions.Literal
 
 class ExtractBuilderTest extends BuilderTest {
 

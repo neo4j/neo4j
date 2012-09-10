@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, NamedExpectation, UpdateAction}
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
-import org.neo4j.cypher.internal.commands.{Entity, Expression, CreateRelationshipStartItem, CreateNodeStartItem}
+import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNodeStartItem}
 import collection.Map
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
   extends PipeWithSource(source) {
@@ -66,8 +68,8 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   def extractIfEntity(from: (Expression, Map[String, Expression])): Option[NamedExpectation] = {
     from match {
-      case (Entity(key), props) => Some(NamedExpectation(key, props))
-      case _                    => None
+      case (Identifier(key), props) => Some(NamedExpectation(key, props))
+      case _                        => None
     }
   }
 
@@ -82,7 +84,9 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
 
-  def symbols = source.symbols.add(commands.flatMap(_.identifier): _*)
+  def symbols = source.symbols.add(commands.flatMap(_.identifier2).toMap)
 
-  def dependencies = commands.flatMap(_.dependencies)
+  def assertTypes(symbols: SymbolTable) {
+    commands.foreach(_.assertTypes(symbols))
+  }
 }

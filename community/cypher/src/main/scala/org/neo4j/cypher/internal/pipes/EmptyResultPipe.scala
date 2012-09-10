@@ -30,9 +30,15 @@ class EmptyResultPipe(source: Pipe)
     Seq()
   }
 
-  def symbols = new SymbolTable()
+//  def symbols = new SymbolTable()
 
   override def executionPlan(): String = source.executionPlan() + "\nEmptyResult()"
 
   def dependencies = Seq()
+
+  def deps = Map()
+
+  def symbols = new SymbolTable()
+
+  def assertTypes(symbols: SymbolTable) {}
 }

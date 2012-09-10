@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.CypherTypeException
 
 trait NumericExpressionOnly {
@@ -31,7 +31,7 @@ trait NumericExpressionOnly {
     obj match {
       case null =>
       case number: Number => f(number)
-      case _ => throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value.identifier.name))
+      case _ => throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))
     }
   }
 }

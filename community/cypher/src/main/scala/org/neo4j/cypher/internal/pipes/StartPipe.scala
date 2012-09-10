@@ -21,17 +21,16 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import java.lang.String
-import org.neo4j.cypher.internal.symbols.{AnyType, NodeType, RelationshipType, Identifier}
-import collection.mutable.Map
+import org.neo4j.cypher.internal.symbols._
 import collection.{Traversable, Iterable}
 
 abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: ExecutionContext => Iterable[T]) extends Pipe {
   def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, m => sourceIterable)
 
-  def identifierType: AnyType
+  def identifierType: CypherType
 
-  val symbols = inner.symbols.add(Identifier(name, identifierType))
-
+//  val symbols = inner.symbols.add(Identifier(name, identifierType))
+  val symbols = inner.symbols.add(name, identifierType)
 
   def createResults(state: QueryState): Traversable[ExecutionContext] = {
     val map = inner.createResults(state).flatMap(ctx => {

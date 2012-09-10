@@ -23,15 +23,17 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Direction, Node, Path}
 import org.neo4j.cypher.internal.commands._
+import expressions.{Literal, Property, Identifier, RelationshipFunction}
 import org.junit.{Ignore, Test}
 import collection.mutable.Map
+import org.neo4j.cypher.internal.symbols.NodeType
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
-  val path = ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = true, None, True())
+  val path = ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = true, relIterator = None, predicate = True())
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->NodeType(), "b"->NodeType())
 
 
     val pipe = new ShortestPathPipe(source, path)
@@ -78,7 +80,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, c, "rel", Map("foo" -> "notBar"))
 
-    val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
     val path = ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, Some("r"), pred)
 
 

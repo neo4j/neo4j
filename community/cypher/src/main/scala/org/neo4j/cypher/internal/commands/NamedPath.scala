@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.Expression
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.cypher.PathImpl
 import scala.collection.JavaConverters._

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{Literal, Add}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException

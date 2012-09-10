@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
+import expressions.{Property, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 

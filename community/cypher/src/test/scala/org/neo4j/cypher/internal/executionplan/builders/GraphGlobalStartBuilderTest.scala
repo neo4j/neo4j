@@ -23,8 +23,9 @@ import org.scalatest.Assertions
 import org.junit.Assert._
 import org.neo4j.cypher.internal.pipes.NullPipe
 import org.junit.{Ignore, Test}
-import org.neo4j.cypher.internal.commands.{AllNodes, RelationshipById, ParameterExpression, NodeById}
+import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.commands.{NodeById, RelationshipById, AllNodes}
 
 class GraphGlobalStartBuilderTest extends Assertions {
 

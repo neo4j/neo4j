@@ -49,24 +49,12 @@ class FilterBuilder extends PlanBuilder {
     val unsolvedPredicates = querySoFar.where.filter(_.unsolved).map(_.token)
 
     unsolvedPredicates.
-      flatMap(pred => pipe.symbols.missingDependencies(pred.dependencies)).
-      map(_.name).distinct
+      flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred))
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
-    case Unsolved(pred: Predicate) => {
-
-      val dependencies = pred.dependencies
-
-      dependencies.forall(i => try {
-        p.symbols.assertHas(i)
-        true
-      } catch {
-        case e: CypherTypeException => throw e  // If we have a mismatch in identifier type, throw directly
-        case _: CypherException     => false
-      })
-    }
-    case _ => false
+    case Unsolved(pred: Predicate) => pred.symbolDependenciesMet(p.symbols)
+    case _                         => false
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))

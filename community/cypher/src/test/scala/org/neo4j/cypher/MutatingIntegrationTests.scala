@@ -87,9 +87,6 @@ class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions wit
       nodesCreated = 1,
       propertiesSet = 1
     )
-
-    val txt = result.dumpToString()
-    println(txt)
   }
 
   @Test

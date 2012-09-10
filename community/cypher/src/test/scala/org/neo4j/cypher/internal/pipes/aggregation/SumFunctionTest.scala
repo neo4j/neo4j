@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.CypherTypeException
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
 class SumFunctionTest extends AggregateTest with Assertions {
   def createAggregator(inner: Expression) = new SumFunction(inner)

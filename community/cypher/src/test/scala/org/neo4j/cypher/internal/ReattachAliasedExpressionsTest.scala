@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import commands._
+import expressions.{CountStar, Property, Identifier}
 import org.scalatest.Assertions
 import org.junit.Test
 
@@ -30,7 +31,7 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
     val q = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Entity("newAlias"), true)).
+      orderBy(SortItem(Identifier("newAlias"), true)).
       returns(ReturnItem(Property("a", "x"), "newAlias"))
 
     val expected = Query.
@@ -47,7 +48,7 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
     val q = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Entity("foo"), true)).
+      orderBy(SortItem(Identifier("foo"), true)).
       returns(ReturnItem(CountStar(), "foo"))
 
     val expected = Query.

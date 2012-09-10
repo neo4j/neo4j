@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
+import expressions.{Expression, AggregationExpression}
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)

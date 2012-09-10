@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{Identifier, Literal}
 import org.junit.Test
 import org.scalatest.Assertions
 
 class SeqPredicateTests extends Assertions {
   @Test def allStringsBeginWithA() {
     val strings = Seq("Andres", "Andres")
-    val inner = Equals(Literal("Andres"), Entity("x"))
-    val all = new AllInIterable(Entity("strings"), "x", inner)
+    val inner = Equals(Literal("Andres"), Identifier("x"))
+    val all = new AllInCollection(Identifier("strings"), "x", inner)
 
     assert(all.isMatch(Map("strings" -> strings)))
   }

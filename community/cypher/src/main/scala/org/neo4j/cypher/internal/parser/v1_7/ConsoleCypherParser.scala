@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.v1_7
 
-import org.neo4j.cypher.internal.commands.Nullable
+import org.neo4j.cypher.internal.commands.expressions.Nullable
 import org.neo4j.cypher.internal.parser.ActualParser
 
 class ConsoleCypherParser extends CypherParserImpl with ActualParser {

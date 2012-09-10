@@ -36,7 +36,6 @@ class FunctionsTest extends DocumentingTestBase {
     "E" -> Map("age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
   )
 
-
   def section = "functions"
 
   val common_arguments = List(
