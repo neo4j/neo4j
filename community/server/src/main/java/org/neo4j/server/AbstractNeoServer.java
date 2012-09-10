@@ -169,7 +169,10 @@ public abstract class AbstractNeoServer implements NeoServer
 			{
 				throw new ServerStartupException("Starting neo server failed, see nested exception.",t);
 			}
-		}
+		} finally {
+            // Make sure this does not trigger interrupts outside of this method.
+            interruptStartupTimer.stopCountdown();
+        }
     }
 
     public DependencyResolver getDependencyResolver()
