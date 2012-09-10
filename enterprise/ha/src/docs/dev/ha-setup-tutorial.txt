@@ -182,29 +182,27 @@ org.neo4j.server.webserver.https.port=7471
 org.neo4j.server.database.mode=HA
 ----
 
-To avoid JMX port clashes adjust the assigned ports for all instances under 'conf/neo4j-wrapper.properties':
+To avoid JMX port clashes adjust the assigned ports for all instances in 'conf/neo4j-wrapper.properties'.
+The paths to the 'jmx.password' and 'jmx.access' files also needs to be set.
+Note that the 'jmx.password' file needs the correct permissions set, see the configuration file for further information.
 
 [source]
 ----
-#$NEO4J_HOME1/conf/neo4j-wrapper.properties
+#$NEO4J_HOME1/conf/neo4j-wrapper.conf
 ...
-# Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
+wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
+wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.access
 ...
 ----
 
 [source]
 ----
-#$NEO4J_HOME2/conf/neo4j-wrapper.properties
+#$NEO4J_HOME2/conf/neo4j-wrapper.conf
 ...
-# Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
+wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
+wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.access
 ...
 ----
 
@@ -212,11 +210,9 @@ wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
-# Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3639
+wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
+wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.access
 ...
 ----
 
@@ -316,7 +312,8 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 enable_remote_shell = port=1331
 ----
 
-First we need to create a database that can be used for replication. This is easiest done by just starting a normal embedded graph database, pointing out a path and shutdown.
+First we need to create a database that can be used for replication.
+This is easiest done by just starting a normal embedded graph database, pointing out a path and shutdown.
 
 [source,java]
 ----
@@ -325,7 +322,8 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabase( path, config );
 ----
 
 
-We created a config file with machine id=1 and enabled remote shell. The main method will expect the path to the db as first parameter and the configuration file as the second parameter. 
+We created a config file with machine id=1 and enabled remote shell.
+The main method will expect the path to the db as first parameter and the configuration file as the second parameter. 
 
 It should now be possible to connect to the instance using <<shell>>:
 
@@ -340,7 +338,8 @@ I'm currently master
 Connected slaves:
 ----
 
-Since it is the first instance to join the cluster it is elected master. Starting another instance would require a second configuration and another path to the db.
+Since it is the first instance to join the cluster it is elected master.
+Starting another instance would require a second configuration and another path to the db.
 
 [source]
 ----
