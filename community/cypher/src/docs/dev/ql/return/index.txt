@@ -14,5 +14,6 @@ include::return-all-elements.txt[]
 include::identifier-with-uncommon-characters.txt[]
 include::column-alias.txt[]
 include::optional-properties.txt[]
+include::other-expressions.txt[]
 include::unique-results.txt[]
 
