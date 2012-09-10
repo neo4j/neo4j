@@ -155,6 +155,13 @@ public abstract class AbstractNeoServer implements NeoServer
 	        
 		} catch(Throwable t)
 		{
+            // Make sure this does not trigger interrupts outside of this method.
+            interruptStartupTimer.stopCountdown();
+
+            // Guard against poor operating systems that don't clear interrupt flags
+            // after having handled interrupts (looking at you, Bill).
+            Thread.interrupted();
+
 			if( interruptStartupTimer.wasTriggered())
 			{
 				throw new ServerStartupException(
@@ -169,10 +176,7 @@ public abstract class AbstractNeoServer implements NeoServer
 			{
 				throw new ServerStartupException("Starting neo server failed, see nested exception.",t);
 			}
-		} finally {
-            // Make sure this does not trigger interrupts outside of this method.
-            interruptStartupTimer.stopCountdown();
-        }
+		}
     }
 
     public DependencyResolver getDependencyResolver()
