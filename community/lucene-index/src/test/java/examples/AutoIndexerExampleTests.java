@@ -37,7 +37,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.ReadableIndex;
@@ -79,8 +78,8 @@ public class AutoIndexerExampleTests implements GraphHolder
             newEmbeddedDatabaseBuilder( storeDirectory ).
             setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
             setConfig( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ).
-            setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
-            setConfig( GraphDatabaseSettings.relationship_auto_indexing, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
+            setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" ).
             newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
@@ -230,7 +229,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         GraphDatabaseService graphDb = new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( storeDirectory ).
             setConfig( GraphDatabaseSettings.node_keys_indexable, "nodeProp1,nodeProp2" ).
-            setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
+            setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
             newGraphDatabase();
 
         Transaction tx = graphDb.beginTx();
