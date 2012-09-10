@@ -121,16 +121,16 @@ public abstract class GraphDatabaseSettings
     public static final GraphDatabaseSetting.IntegerSetting threshold_for_logging_rotation = new GraphDatabaseSetting.IntegerSetting( "logging.threshold_for_rotation", "Must be valid number", 1, null );
     
     // Indexing
-    @Description( "Controls the auto indexing feature for nodes. Setting to false shuts it down unconditionally, while true enables it for every property, "+
-                  "subject to restrictions in the configuration." )
+    @Description( "Controls the auto indexing feature for nodes. Setting to false shuts it down, while true enables it by default for properties "
+                  + "listed in the node_keys_indexable setting." )
     @Default(FALSE)
     public static final BooleanSetting node_auto_indexing = new BooleanSetting( "node_auto_indexing" );
 
     @Description( "A list of property names (comma separated) that will be indexed by default. This applies to Nodes only." )
     public static final StringSetting node_keys_indexable = new StringSetting("node_keys_indexable",ANY,"Must be a comma-separated list of keys to be indexed");
 
-    @Description( "Controls the auto indexing feature for relationships. Setting to false shuts it down unconditionally, while true enables it for every property, "+
-                  "subject to restrictions in the configuration." )
+    @Description( "Controls the auto indexing feature for relationships. Setting to false shuts it down, while true enables it by default for properties "
+                  + "listed in the relationship_keys_indexable setting." )
     @Default(FALSE)
     public static final BooleanSetting relationship_auto_indexing = new BooleanSetting( "relationship_auto_indexing" );
 
