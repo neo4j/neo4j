@@ -56,7 +56,8 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             try
             {
                 Method importRemoteFrom = cal.getMethod( "importRemoteFrom", int.class );
-                @SuppressWarnings( "unchecked" ) Map<String, String> remote = (Map<String, String>) importRemoteFrom.invoke(
+                @SuppressWarnings("unchecked") Map<String, String> remote = (Map<String,
+                        String>) importRemoteFrom.invoke(
                         null, Integer.valueOf( 0 ) );
                 url = getUrlFrom( remote );
             }
@@ -85,37 +86,32 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         // No previous connection server -- create one!
         if ( url == null )
         {
-            Object portObj = kernel.getParam( "jmx.port" );
+            String portObj = kernel.getConfig().getParams().get( "jmx.port" );
             int port = 0;
-            if ( portObj instanceof Integer )
+
+            try
             {
-                port = ( (Integer) portObj ).intValue();
+                port = Integer.parseInt( (String) portObj );
             }
-            else if ( portObj instanceof String )
+            catch ( NumberFormatException ok )
             {
-                try
-                {
-                    port = Integer.parseInt( (String) portObj );
-                }
-                catch ( NumberFormatException ok )
-                {
-                    // handled by 0-check
-                }
+                // handled by 0-check
             }
+
             if ( port > 0 )
             {
-                Object useSslObj = kernel.getParam( "jmx.use_ssl" );
+                Object useSslObj = kernel.getConfig().getParams().get( "jmx.use_ssl" );
                 boolean useSSL = false;
                 if ( useSslObj instanceof Boolean )
                 {
-                    useSSL = ( (Boolean) useSslObj ).booleanValue();
+                    useSSL = ((Boolean) useSslObj).booleanValue();
                 }
                 else if ( useSslObj instanceof String )
                 {
                     useSSL = Boolean.parseBoolean( (String) useSslObj );
                 }
-                log.log( Level.CONFIG, "Creating new MBean server on port %s%s", new Object[] {
-                        Integer.valueOf( port ), useSSL ? " using ssl" : "" } );
+                log.log( Level.CONFIG, "Creating new MBean server on port %s%s", new Object[]{
+                        Integer.valueOf( port ), useSSL ? " using ssl" : ""} );
                 JMXConnectorServer server = createServer( port, useSSL );
                 if ( server != null )
                 {
@@ -155,9 +151,15 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             if ( key.startsWith( "sun.management.JMXConnectorServer" ) )
             {
                 int end = key.lastIndexOf( '.' );
-                if ( end < 0 ) continue;
+                if ( end < 0 )
+                {
+                    continue;
+                }
                 int start = key.lastIndexOf( '.', end );
-                if ( start < 0 ) continue;
+                if ( start < 0 )
+                {
+                    continue;
+                }
                 final int id;
                 try
                 {
@@ -209,7 +211,10 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
 
     private JMXServiceURL getUrlFrom( String url )
     {
-        if ( url == null ) return null;
+        if ( url == null )
+        {
+            return null;
+        }
         JMXServiceURL jmxUrl;
         try
         {
