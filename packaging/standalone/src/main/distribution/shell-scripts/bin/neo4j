@@ -142,27 +142,6 @@ buildclasspath() {
   CLASSPATH=${ALL_JARS}
 }
 
-checkupgrade() {
-    if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
-        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
-        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
-        org.neo4j.server.storemigration.PreStartupStoreUpgrader"
-    else
-      checkwriteaccess
-      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
-        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
-        org.neo4j.server.storemigration.PreStartupStoreUpgrader
-    fi
-
-    if [ $? -ne 0 ] ; then
-      exit 1
-    fi
-}
-
 detectrunning() {
   ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
   ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
@@ -200,7 +179,6 @@ startit() {
     printf "Starting $FRIENDLY_NAME..."
 
     buildclasspath
-    checkupgrade
     checkandrepairenv
 
     if [ $UID == 0 ] ; then
@@ -225,18 +203,15 @@ startit() {
 
 	if [ $WAIT = "true" ] ; then
 	echo -n "... waiting for server to be ready."
-	    x=0
-	    while ( [ $x -lt $TIMEOUT ] ) ; do
+	    while kill -0 $STARTED_PID 2> /dev/null ; do
 	      ## wait for start, pick up the server listening on the port
 	      detectrunning
 	      if [ $newpid ] ; then
 	         break
 	      fi
 
-	      kill -0 $STARTED_PID 2> /dev/null || break
 	      printf "."
 	      sleep 1
-	      x=$[$x +1]
 	    done
 
 	    if kill -0 $STARTED_PID 2>/dev/null ; then
