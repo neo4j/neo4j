@@ -248,7 +248,7 @@ terms of the relevant Commercial Agreement.
           <dependency>
             <groupId>org.neo4j.build</groupId>
             <artifactId>licensecheck-config</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>${neo4j.version}</version>
           </dependency>
         </dependencies>
       </plugin>
