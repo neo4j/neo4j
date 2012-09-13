@@ -1,0 +1,25 @@
+["dot", "graphdb-compare-kvstore-g.svg", "meta"]
+----
+rankdir="LR"
+
+gV1 [label="V1"]
+gV2 [label="V2"]
+gV3 [label="V3"]
+
+subgraph cluster_0 {
+  color="invis"
+  rank="same"
+  K1 [fillcolor="NODEHIGHLIGHT"]
+  K2 [fillcolor="NODEHIGHLIGHT"]
+  K3 [fillcolor="NODEHIGHLIGHT"]
+}
+
+K1 -> gV1
+gV1 -> gV2
+gV2 -> gV1
+gV2 -> gV3
+gV3 -> gV1
+K2 -> gV2
+K3 -> gV3
+----
+

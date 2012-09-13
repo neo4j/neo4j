@@ -9,7 +9,7 @@ This part gives a bird's eye view of what a graph database is, and then outlines
 
 :leveloffset: 1
 
-include::highlights.txt[]
+include::highlights.asciidoc[]
 
 [[graphdb-concepts]]
 Graph Database Concepts
@@ -19,13 +19,13 @@ This chapter contains an introduction to the graph data model and also compares 
 
 :leveloffset: 2
 
-include::what-is-a-graphdb.txt[]
+include::what-is-a-graphdb.asciidoc[]
 
 :leveloffset: 2
 
-include::comparing.txt[]
+include::comparing.asciidoc[]
 
 :leveloffset: 1
 
-include::the-neo4j-graphdb.txt[]
+include::the-neo4j-graphdb.asciidoc[]
 

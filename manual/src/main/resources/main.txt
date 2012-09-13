@@ -14,7 +14,7 @@ include::preface/preface.txt[]
 
 :leveloffset: 0
 
-include::introduction/index.txt[]
+include::introduction/index.asciidoc[]
 
 :leveloffset: 0
 

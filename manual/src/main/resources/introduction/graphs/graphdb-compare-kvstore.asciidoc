@@ -1,0 +1,14 @@
+["dot", "graphdb-compare-kvstore.svg", "meta"]
+----
+rankdir="LR"
+
+K [shape="record" label="<1>K1|<2>K2|<3>K3" fillcolor="NODEHIGHLIGHT"]
+V1 [shape="record" label="<v>V1|K2"]
+V2 [shape="record" label="<v>V2|K1|K3"]
+V3 [shape="record" label="<v>V3|K1"]
+
+K:1 -> V1:v
+K:2 -> V2:v
+K:3 -> V3:v
+----
+
