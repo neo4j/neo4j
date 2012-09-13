@@ -19,20 +19,18 @@
  */
 package org.dummy.web.service;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import org.mortbay.util.ajax.JSON;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Path( "/" )
 public class DummyThirdPartyWebService
@@ -79,7 +77,7 @@ public class DummyThirdPartyWebService
             Map.Entry<String, List<String>> header = headerIt.next();
             if (header.getValue().size() != 1)
             {
-                throw new IllegalArgumentException( "Mutlivalued header: "
+                throw new IllegalArgumentException( "Multivalued header: "
                                                     + header.getKey() );
             }
             theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" ).append(
@@ -91,6 +89,39 @@ public class DummyThirdPartyWebService
         }
         theEntity.append( "}" );
         return Response.ok().entity( theEntity.toString() ).build();
+    }
+
+    @POST
+    @Path( "json-parse" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response readJson( String json )
+    {
+        Map jsonObject = (Map) JSON.parse(json);
+        return Response.ok().entity( jsonObject.get("text") ).build();
+    }
+
+    @POST
+    @Path( "json-bean" )
+    @Consumes( MediaType.APPLICATION_JSON )
+    @Produces( MediaType.APPLICATION_JSON )
+    public Response readBeanJson( Input input )
+    {
+        return Response.ok().entity( new Output( input.text + input.numbers.get(1) ) ).build();
+    }
+
+    public static class Input
+    {
+        public String text;
+        public List<Long> numbers;
+    }
+
+    public static class Output
+    {
+        public String out;
+
+        public Output(String out) {
+            this.out = out;
+        }
     }
 
     private int countNodesIn( GraphDatabaseService db )

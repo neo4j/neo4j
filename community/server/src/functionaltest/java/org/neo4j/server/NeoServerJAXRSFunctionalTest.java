@@ -19,11 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
-import java.net.URI;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
@@ -31,14 +26,15 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.helpers.Transactor;
-import org.neo4j.server.helpers.UnitOfWork;
+import org.neo4j.server.helpers.*;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import java.net.URI;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
 {
@@ -92,6 +88,21 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
         response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
         assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
+
+        String json = "{\"text\":\"abc\"}";
+        thirdPartyServiceUri = new URI( server.baseUri()
+                .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/json-parse" ).normalize();
+        response = CLIENT.resource( thirdPartyServiceUri.toString() )
+                .post(String.class, json);
+        assertEquals( "abc", response );
+
+        json = "{\"text\":\"abc\", \"numbers\":[1,2,3]}";
+        thirdPartyServiceUri = new URI( server.baseUri()
+                .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/json-bean" ).normalize();
+        response = CLIENT.resource( thirdPartyServiceUri.toString() ).header("Content-Type", "application/json")
+                .post(String.class, json);
+        assertEquals( "{\"out\":\"abc2\"}", response.replaceAll(" ", ""));
+
     }
     
     private int createSimpleDatabase( final GraphDatabaseAPI graph )
