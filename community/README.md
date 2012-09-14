@@ -3,6 +3,9 @@
 For more information, visit:
 http://neo4j.org/
 
+Travis build status:
+[![Build Status](https://secure.travis-ci.org/peterneubauer/community-experiments.png)](http://travis-ci.org/peterneubauer/community-experiments)
+
 # Building
 Neo4j is built using Maven - http://maven.apache.org/
 
