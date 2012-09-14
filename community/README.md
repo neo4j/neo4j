@@ -6,10 +6,6 @@ http://neo4j.org/
 Travis build status:
 [![Build Status](https://secure.travis-ci.org/peterneubauer/community-experiments.png)](http://travis-ci.org/peterneubauer/community-experiments)
 
-# Building
-Neo4j is built using Maven - http://maven.apache.org/
-
-*Maven 3 is now supported*
 
 Contributing
 ============
@@ -52,6 +48,8 @@ Build Steps Community:
 To build all of the Neo4j Distribution
 ======================================
 
+# Building
+Neo4j is built using Maven - http://maven.apache.org/
 
 These instructions are for OS X, with https://github.com/mxcl/homebrew installed.
 
@@ -109,6 +107,6 @@ Build the standalone distributions
 Working with the source code in Eclipse IDE
 ===========================================
 
-Have a look at the readme file in cypher/ for how to get that project to work in Eclipse IDE.
-If it isn't setup properly, other projects (submodules) that depend on it will not get built by Eclipse.
+Neo4j is mounted in Eclipse using the M2E Eclipse Maven plugin, as "Import->Existing Maven Projects", see a vidoe by
+Paul De Velder: [Neo4j development setup in Eclipse](http://youtu.be/cFczTgsxktQ)
 
