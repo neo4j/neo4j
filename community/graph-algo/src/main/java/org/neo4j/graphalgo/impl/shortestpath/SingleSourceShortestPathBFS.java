@@ -211,7 +211,7 @@ public class SingleSourceShortestPathBFS implements
 
     /**
      * Iterator-style "next" method.
-     * @return True if advance was made. False if no more computation could be
+     * @return True if evaluate was made. False if no more computation could be
      *         done.
      */
     public boolean processNextNode()

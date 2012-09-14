@@ -30,7 +30,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.graphdb.traversal.InitialStateFactory;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -50,9 +50,9 @@ class AsOneStartBranch implements TraversalBranch
     private Iterator<TraversalBranch> branches;
     private int expanded;
     private final TraversalContext context;
-    private final InitialStateFactory initialState;
+    private final InitialBranchState initialState;
 
-    AsOneStartBranch( TraversalContext context, Iterable<Node> nodes, InitialStateFactory initialState )
+    AsOneStartBranch( TraversalContext context, Iterable<Node> nodes, InitialBranchState initialState )
     {
         this.context = context;
         this.initialState = initialState;
@@ -171,5 +171,11 @@ class AsOneStartBranch implements TraversalBranch
     public void prune()
     {
         branches = Collections.<TraversalBranch>emptyList().iterator();
+    }
+    
+    @Override
+    public Object state()
+    {
+        throw new UnsupportedOperationException();
     }
 }

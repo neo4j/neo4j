@@ -22,18 +22,18 @@ package org.neo4j.graphdb.traversal;
 import org.neo4j.graphdb.Path;
 
 /**
- * An Evaluator controls what's to be returned from a traversal and also how
- * pruning is done. It looks at a {@link Path} and decides whether or not it
- * should be included in the traversal result. It also decides whether the traverser
- * should continue down that path or if it should be pruned so that the traverser
- * won't continue down that path.
- * 
+ * A PathEvaluator controls what's to be returned from a traversal and also how
+ * pruning is done. It looks at a {@link Path} and {@link BranchState}and decides
+ * whether or not it should be included in the traversal result. It also decides
+ * whether the traverser should continue down that path or if it should be pruned
+ * so that the traverser won't continue down that path.
+ *
  * @author Mattias Persson
  * @see Evaluation
  * @see Evaluators
- * @see TraversalDescription#evaluator(Evaluator)
+ * @see TraversalDescription#evaluator(PathEvaluator)
  */
-public interface Evaluator
+public interface PathEvaluator<STATE> extends Evaluator
 {
     /**
      * Evaluates a {@link Path} and returns an {@link Evaluation} containing
@@ -44,35 +44,23 @@ public interface Evaluator
      * by {@code path}.
      * 
      * @param path the {@link Path} to evaluate.
+     * @param state the state of this branch in the current traversal.
      * @return an {@link Evaluation} containing information about whether or not
      * to return it from the {@link Traverser} and whether or not to continue
      * down that path.
      */
-    Evaluation evaluate( Path path );
+    Evaluation evaluate( Path path, BranchState<STATE> state );
 
     /**
-     * Exposes an {@link Evaluator} as a {@link PathEvaluator}.
-     * @param <STATE> the type of state passed into the evaluator.
+     * Adapter for {@link PathEvaluator}.
+     * @param <STATE>
      */
-    public static class AsPathEvaluator<STATE> implements PathEvaluator<STATE>
+    public static abstract class Adapter<STATE> implements PathEvaluator<STATE>
     {
-        private final Evaluator evaluator;
-
-        public AsPathEvaluator( Evaluator evaluator )
-        {
-            this.evaluator = evaluator;
-        }
-
-        @Override
-        public Evaluation evaluate( Path path, BranchState<STATE> state )
-        {
-            return evaluator.evaluate( path );
-        }
-
         @Override
         public Evaluation evaluate( Path path )
         {
-            return evaluator.evaluate( path );
+            return evaluate( path, BranchState.NO_STATE );
         }
     }
 }

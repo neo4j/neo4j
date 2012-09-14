@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,11 +40,13 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Traversal;
+
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -311,7 +311,7 @@ public class ShortestPath implements PathFinder<Path>
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
-                    return expander.expand( DirectionData.this, Traversal.NO_BRANCH_STATE ).iterator();
+                    return expander.expand( DirectionData.this, BranchState.NO_STATE ).iterator();
                 }
             };
             this.currentDepth++;

@@ -100,6 +100,15 @@ public interface BidirectionalTraversalDescription
     BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator );
     
     /**
+     * Sets the {@link PathEvaluator} to use for branch collisions. The outcome
+     * returned from the evaluator affects the colliding branches.
+     * @param collisionEvaluator the {@link PathEvaluator} to use for evaluating
+     * branch collisions.
+     * @return a new traversal description with the new modifications.
+     */
+    BidirectionalTraversalDescription collisionEvaluator( PathEvaluator collisionEvaluator );
+    
+    /**
      * In a bidirectional traversal the traverser alternates which side
      * (start or end) to move further for each step. This sets the
      * {@link SideSelectorPolicy} to use.

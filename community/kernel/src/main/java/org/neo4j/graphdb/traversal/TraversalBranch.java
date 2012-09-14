@@ -89,4 +89,15 @@ public interface TraversalBranch extends Path
      * @param metadata {@link TraversalContext} to update on progress.
      */
     void initialize( PathExpander expander, TraversalContext metadata );
+    
+    /**
+     * Returns the state associated with this branch.
+     * 
+     * Why is this of type {@link Object}? The state object type only exists when
+     * specifying the expander in the {@link TraversalDescription}, not anywhere
+     * else. So in the internals of the traversal the state type is unknown and ignored.
+     * 
+     * @return the state assocuated with this branch.
+     */
+    Object state();
 }

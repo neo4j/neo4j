@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.BidirectionalUniquenessFilter;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.SideSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -177,9 +178,9 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     }
 
     @Override
-    public Evaluation evaluate( TraversalBranch branch )
+    public Evaluation evaluate( TraversalBranch branch, BranchState state )
     {
-        return currentSideDescription().description.evaluator.evaluate( branch );
+        return currentSideDescription().description.evaluator.evaluate( branch, state );
     }
 
     @Override

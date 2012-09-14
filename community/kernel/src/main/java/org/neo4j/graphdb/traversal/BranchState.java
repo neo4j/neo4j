@@ -47,4 +47,23 @@ public interface BranchState<STATE>
      * children.
      */
     void setState( STATE state );
+
+    /**
+     * Instance representing no state, usage resulting in
+     * {@link IllegalStateException} being thrown.
+     */
+    public static final BranchState NO_STATE = new BranchState()
+    {
+        @Override
+        public Object getState()
+        {
+            throw new IllegalStateException( "Branch state disabled, pass in an initial state to enable it" );
+        }
+
+        @Override
+        public void setState( Object state )
+        {
+            throw new IllegalStateException( "Branch state disabled, pass in an initial state to enable it" );
+        }
+    };
 }

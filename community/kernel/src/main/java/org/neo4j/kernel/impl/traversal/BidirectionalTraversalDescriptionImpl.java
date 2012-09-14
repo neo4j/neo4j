@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -38,13 +39,13 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
 {
     final TraversalDescription start;
     final TraversalDescription end;
-    final Evaluator collisionEvaluator;
+    final PathEvaluator collisionEvaluator;
     final SideSelectorPolicy sideSelector;
     final BranchCollisionPolicy collisionPolicy;
     final int maxDepth;
 
     private BidirectionalTraversalDescriptionImpl( TraversalDescription start,
-            TraversalDescription end, BranchCollisionPolicy collisionPolicy, Evaluator collisionEvaluator,
+            TraversalDescription end, BranchCollisionPolicy collisionPolicy, PathEvaluator collisionEvaluator,
             SideSelectorPolicy sideSelector, int maxDepth )
     {
         this.start = start;
@@ -91,11 +92,17 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     }
 
     @Override
-    public BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator )
+    public BidirectionalTraversalDescription collisionEvaluator( PathEvaluator collisionEvaluator )
     {
         nullCheck( collisionEvaluator, Evaluator.class, "RETURN_ALL" );
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end, this.collisionPolicy,
                 addEvaluator( this.collisionEvaluator, collisionEvaluator ), this.sideSelector, maxDepth );
+    }
+    
+    @Override
+    public BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator )
+    {
+        return collisionEvaluator( new Evaluator.AsPathEvaluator( collisionEvaluator ) );
     }
 
     @Override

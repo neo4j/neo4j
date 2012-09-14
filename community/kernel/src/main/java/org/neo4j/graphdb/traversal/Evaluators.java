@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.traversal;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,27 +40,24 @@ import org.neo4j.graphdb.RelationshipType;
  */
 public abstract class Evaluators
 {
-    private static final Evaluator ALL = new Evaluator()
+    @SuppressWarnings( "rawtypes" )
+    private static final PathEvaluator ALL = new PathEvaluator.Adapter()
     {
-        public Evaluation evaluate( Path path )
+        public Evaluation evaluate( Path path, BranchState state )
         {
-            return Evaluation.INCLUDE_AND_CONTINUE;
+            return INCLUDE_AND_CONTINUE;
         }
     };
 
-    private static final Evaluator ALL_BUT_START_POSITION = new Evaluator()
-    {
-        public Evaluation evaluate( Path path )
-        {
-            return path.length() == 0 ? Evaluation.EXCLUDE_AND_CONTINUE : Evaluation.INCLUDE_AND_CONTINUE;
-        }
-    };
+    @SuppressWarnings( "rawtypes" )
+    private static final PathEvaluator ALL_BUT_START_POSITION = fromDepth( 1 );
 
     /**
      * @return an evaluator which includes everything it encounters and doesn't prune
      *         anything.
      */
-    public static Evaluator all()
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator all()
     {
         return ALL;
     }
@@ -68,7 +66,8 @@ public abstract class Evaluators
      * @return an evaluator which never prunes and includes everything except
      *         the first position, i.e. the the start node.
      */
-    public static Evaluator excludeStartPosition()
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator excludeStartPosition()
     {
         return ALL_BUT_START_POSITION;
     }
@@ -81,11 +80,12 @@ public abstract class Evaluators
      * @return Returns an {@link Evaluator} which includes positions down to
      *         {@code depth} and prunes everything deeper than that.
      */
-    public static Evaluator toDepth( final int depth )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator toDepth( final int depth )
     {
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 int pathLength = path.length();
                 return Evaluation.of( pathLength <= depth, pathLength < depth );
@@ -101,13 +101,14 @@ public abstract class Evaluators
      * @return Returns an {@link Evaluator} which only includes positions from
      *         {@code depth} and deeper and never prunes anything.
      */
-    public static Evaluator fromDepth( final int depth )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator fromDepth( final int depth )
     {
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
-                return path.length() >= depth ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
+                return Evaluation.ofIncludes( path.length() >= depth );
             }
         };
     }
@@ -120,11 +121,12 @@ public abstract class Evaluators
      * @return Returns an {@link Evaluator} which only includes positions at
      *         {@code depth} and prunes everything deeper than that.
      */
-    public static Evaluator atDepth( final int depth )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator atDepth( final int depth )
     {
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 return path.length() == depth ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.EXCLUDE_AND_CONTINUE;
             }
@@ -142,11 +144,12 @@ public abstract class Evaluators
      *         depths {@code minDepth} and {@code maxDepth}. It prunes everything deeper
      *         than {@code maxDepth}.
      */
-    public static Evaluator includingDepths( final int minDepth, final int maxDepth )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includingDepths( final int minDepth, final int maxDepth )
     {
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 int length = path.length();
                 return Evaluation.of( length >= minDepth && length <= maxDepth, length < maxDepth );
@@ -172,20 +175,19 @@ public abstract class Evaluators
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
      */
-    public static Evaluator lastRelationshipTypeIs( final Evaluation evaluationIfMatch,
-                                                    final Evaluation evaluationIfNoMatch, final RelationshipType type,
-                                                    RelationshipType... orAnyOfTheseTypes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator lastRelationshipTypeIs( final Evaluation evaluationIfMatch,
+            final Evaluation evaluationIfNoMatch, final RelationshipType type, RelationshipType... orAnyOfTheseTypes )
     {
         if ( orAnyOfTheseTypes.length == 0 )
         {
-            return new Evaluator()
+            return new PathEvaluator.Adapter()
             {
                 @Override
-                public Evaluation evaluate( Path path )
+                public Evaluation evaluate( Path path, BranchState state )
                 {
                     Relationship rel = path.lastRelationship();
-                    if ( rel == null ) return evaluationIfNoMatch;
-                    return rel.isType( type ) ? evaluationIfMatch : evaluationIfNoMatch;
+                    return rel != null && rel.isType( type ) ? evaluationIfMatch : evaluationIfNoMatch;
                 }
             };
         }
@@ -197,10 +199,10 @@ public abstract class Evaluators
             expectedTypes.add( otherType.name() );
         }
 
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
             @Override
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 Relationship lastRelationship = path.lastRelationship();
                 if ( lastRelationship == null )
@@ -234,8 +236,9 @@ public abstract class Evaluators
      *      Uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
      *      and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      */
-    public static Evaluator includeWhereLastRelationshipTypeIs( RelationshipType type,
-                                                                RelationshipType... orAnyOfTheseTypes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includeWhereLastRelationshipTypeIs( RelationshipType type,
+            RelationshipType... orAnyOfTheseTypes )
     {
         return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE,
                 type, orAnyOfTheseTypes );
@@ -252,8 +255,9 @@ public abstract class Evaluators
      *      Uses {@link Evaluation#INCLUDE_AND_PRUNE} for {@code evaluationIfMatch}
      *      and {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      */
-    public static Evaluator pruneWhereLastRelationshipTypeIs( RelationshipType type,
-                                                              RelationshipType... orAnyOfTheseTypes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator pruneWhereLastRelationshipTypeIs( RelationshipType type,
+            RelationshipType... orAnyOfTheseTypes )
     {
         return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE,
                 type, orAnyOfTheseTypes );
@@ -272,16 +276,17 @@ public abstract class Evaluators
      *         {@link Path#endNode()} for a given path is any of {@code nodes},
      *         else {@code evaluationIfNoMatch}.
      */
-    public static Evaluator endNodeIs( final Evaluation evaluationIfMatch,
-                                       final Evaluation evaluationIfNoMatch, Node... possibleEndNodes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator endNodeIs( final Evaluation evaluationIfMatch, final Evaluation evaluationIfNoMatch,
+            Node... possibleEndNodes )
     {
         if ( possibleEndNodes.length == 1 )
         {
             final Node target = possibleEndNodes[0];
-            return new Evaluator()
+            return new PathEvaluator.Adapter()
             {
                 @Override
-                public Evaluation evaluate( Path path )
+                public Evaluation evaluate( Path path, BranchState state )
                 {
                     return target.equals( path.endNode() ) ? evaluationIfMatch : evaluationIfNoMatch;
                 }
@@ -289,10 +294,10 @@ public abstract class Evaluators
         }
 
         final Set<Node> endNodes = new HashSet<Node>( asList( possibleEndNodes ) );
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
         {
             @Override
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 return endNodes.contains( path.endNode() ) ? evaluationIfMatch : evaluationIfNoMatch;
             }
@@ -313,12 +318,14 @@ public abstract class Evaluators
      *      uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
      *      and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      */
-    public static Evaluator includeWhereEndNodeIs( Node... nodes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includeWhereEndNodeIs( Node... nodes )
     {
         return endNodeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE, nodes );
     }
 
-    public static Evaluator pruneWhereEndNodeIs( Node... nodes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator pruneWhereEndNodeIs( Node... nodes )
     {
         return endNodeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE, nodes );
     }
@@ -333,14 +340,15 @@ public abstract class Evaluators
      *         exist in a given {@link Path}, otherwise
      *         {@link Evaluation#EXCLUDE_AND_CONTINUE}.
      */
-    public static Evaluator includeIfContainsAll( final Node... nodes )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includeIfContainsAll( final Node... nodes )
     {
         if ( nodes.length == 1 )
         {
-            return new Evaluator()
+            return new PathEvaluator.Adapter()
             {
                 @Override
-                public Evaluation evaluate( Path path )
+                public Evaluation evaluate( Path path, BranchState state )
                 {
                     for ( Node node : path.reverseNodes() )
                     {
@@ -356,10 +364,10 @@ public abstract class Evaluators
         else
         {
             final Set<Node> fullSet = new HashSet<Node>( Arrays.asList( nodes ) );
-            return new Evaluator()
+            return new PathEvaluator.Adapter()
             {
                 @Override
-                public Evaluation evaluate( Path path )
+                public Evaluation evaluate( Path path, BranchState state )
                 {
                     Set<Node> set = new HashSet<Node>( fullSet );
                     for ( Node node : path.reverseNodes() )
@@ -384,12 +392,43 @@ public abstract class Evaluators
      * @return an {@link Evaluator} which decides to include a path if any of the supplied
      *         evaluators wants to include it.
      */
-    public static Evaluator includeIfAcceptedByAny( final Evaluator... evaluators )
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includeIfAcceptedByAny( final PathEvaluator... evaluators )
     {
-        return new Evaluator()
+        return new PathEvaluator.Adapter()
+        {
+            @SuppressWarnings( "unchecked" )
+            @Override
+            public Evaluation evaluate( Path path, BranchState state )
+            {
+                for ( PathEvaluator evaluator : evaluators )
+                {
+                    if ( evaluator.evaluate( path, state ).includes() )
+                    {
+                        return Evaluation.INCLUDE_AND_CONTINUE;
+                    }
+                }
+                return Evaluation.EXCLUDE_AND_CONTINUE;
+            }
+        };
+    }
+
+    /**
+     * Whereas adding {@link Evaluator}s to a {@link TraversalDescription} puts those
+     * evaluators in {@code AND-mode} this can group many evaluators in {@code OR-mode}.
+     *
+     * @param evaluators represented as one evaluators. If any of the evaluators decides
+     *                   to include a path it will be included.
+     * @return an {@link Evaluator} which decides to include a path if any of the supplied
+     *         evaluators wants to include it.
+     */
+    @SuppressWarnings( "rawtypes" )
+    public static PathEvaluator includeIfAcceptedByAny( final Evaluator... evaluators )
+    {
+        return new PathEvaluator.Adapter()
         {
             @Override
-            public Evaluation evaluate( Path path )
+            public Evaluation evaluate( Path path, BranchState state )
             {
                 for ( Evaluator evaluator : evaluators )
                 {

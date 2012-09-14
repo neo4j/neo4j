@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,9 +44,11 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Traversal;
+
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 public class AStar implements PathFinder<WeightedPath>
 {
@@ -220,7 +220,7 @@ public class AStar implements PathFinder<WeightedPath>
         @SuppressWarnings( "unchecked" )
         private void expand()
         {
-            for ( Relationship rel : expander.expand( this, Traversal.NO_BRANCH_STATE ) )
+            for ( Relationship rel : expander.expand( this, BranchState.NO_STATE ) )
             {
                 lastMetadata.rels++;
                 Node node = rel.getOtherNode( this.lastNode );

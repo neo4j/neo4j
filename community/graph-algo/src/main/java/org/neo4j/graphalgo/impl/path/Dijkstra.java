@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.graphdb.traversal.InitialStateFactory.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.traversal;
@@ -36,7 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.InitialStateFactory;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
@@ -53,16 +52,16 @@ public class Dijkstra implements PathFinder<WeightedPath>
     private static final TraversalDescription TRAVERSAL = traversal().uniqueness( Uniqueness.NONE );
 
     private final PathExpander expander;
-    private final InitialStateFactory stateFactory;
+    private final InitialBranchState stateFactory;
     private final CostEvaluator<Double> costEvaluator;
     private Traverser lastTraverser;
 
     public Dijkstra( PathExpander expander, CostEvaluator<Double> costEvaluator )
     {
-        this( expander, NO_STATE, costEvaluator );
+        this( expander, InitialBranchState.NO_STATE, costEvaluator );
     }
 
-    public Dijkstra( PathExpander expander, InitialStateFactory stateFactory, CostEvaluator<Double> costEvaluator )
+    public Dijkstra( PathExpander expander, InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator )
     {
         this.expander = expander;
         this.costEvaluator = costEvaluator;

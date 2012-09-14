@@ -146,4 +146,11 @@ public final class FinalTraversalBranch implements TraversalBranch
         // TODO Auto-generated method stub
         return null;
     }
+    
+    @Override
+    public Object state()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

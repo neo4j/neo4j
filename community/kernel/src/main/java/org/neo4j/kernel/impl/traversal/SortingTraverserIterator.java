@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
@@ -83,16 +84,10 @@ class SortingTraverserIterator extends PrefetchingIterator<Path>
     }
 
     @Override
-    public Evaluation evaluate( TraversalBranch branch )
+    public Evaluation evaluate( TraversalBranch branch, BranchState state )
     {
-        return source.evaluate( branch );
+        return source.evaluate( branch, state );
     }
-
-//    @Override
-//    public TraversalBranch create( Node... nodes )
-//    {
-//        return source.create( nodes );
-//    }
 
     @Override
     protected Path fetchNextOrNull()

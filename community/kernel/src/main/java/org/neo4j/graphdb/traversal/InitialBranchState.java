@@ -20,65 +20,70 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PathExpander;
 
 /**
  * Factory for initial state of {@link TraversalBranch}es in a traversal.
  *
  * @param <STATE> type of initial state to produce.
- * 
- * @deprecated use {@link InitialBranchState} instead, which has got
- * {@link InitialBranchState#reverse()} as well.
  */
-public interface InitialStateFactory<STATE>
+public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
 {
-    /**
-     * An {@link InitialStateFactory} which returns {@code null} as state.
-     */
     @SuppressWarnings( "rawtypes" )
-    public static final InitialStateFactory NO_STATE = new InitialStateFactory()
+    public static final InitialBranchState NO_STATE = new InitialBranchState()
     {
         @Override
         public Object initialState( Path path )
         {
             return null;
         }
-    };
-    
-    /**
-     * Returns an initial state for a {@link Path}. All paths entering this method
-     * are start paths(es) of a traversal. State is passed down along traversal
-     * branches as the traversal progresses and can be changed at any point by a
-     * {@link PathExpander} to becomes the new state from that point in that branch
-     * and downwards.
-     * 
-     * @param path the start branch to return the initial state for.
-     * @return an initial state for the traversal branch.
-     */
-    STATE initialState( Path path );
-
-    /**
-     * Wraps an {@link InitialStateFactory} in a {@link InitialBranchState}
-     */
-    public static class AsInitialBranchState<STATE> implements InitialBranchState<STATE>
-    {
-        private final InitialStateFactory<STATE> factory;
-
-        public AsInitialBranchState( InitialStateFactory<STATE> factory )
+        
+        public InitialBranchState reverse()
         {
-            this.factory = factory;
+            return this;
         }
+    };
 
+    /**
+     * Creates a version of this state factory which produces reversed initial state,
+     * used in bidirectional traversals.
+     * @return an instance which produces reversed initial state.
+     */
+    InitialBranchState<STATE> reverse();
+
+    public static abstract class Adapter<STATE> implements InitialBranchState<STATE>
+    {
         @Override
         public InitialBranchState<STATE> reverse()
         {
             return this;
         }
+    }
+
+    /**
+     * Branch state evaluator for an initial state.
+     * @param <STATE>
+     */
+    public static class State<STATE> extends Adapter<STATE>
+    {
+        private final STATE initialState;
+        private final STATE reversedInitialState;
+
+        public State( STATE initialState, STATE reversedInitialState )
+        {
+            this.initialState = initialState;
+            this.reversedInitialState = reversedInitialState;
+        }
+        
+        @Override
+        public InitialBranchState<STATE> reverse()
+        {
+            return new State( reversedInitialState, initialState );
+        }
 
         @Override
         public STATE initialState( Path path )
         {
-            return factory.initialState( path );
+            return initialState;
         }
     }
 }

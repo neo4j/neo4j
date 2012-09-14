@@ -98,6 +98,27 @@ public interface TraversalDescription
     TraversalDescription evaluator( Evaluator evaluator );
 
     /**
+     * Adds {@code evaluator} to the list of evaluators which will control the
+     * behaviour of the traversal. Each {@link PathEvaluator} can decide whether or
+     * not to include a position in the traverser result, i.e. return it from
+     * the {@link Traverser} iterator and also whether to continue down that
+     * path or to prune, so that the traverser won't continue further down that
+     * path.
+     *
+     * Multiple {@link PathEvaluator}s can be added. For a path to be included in
+     * the result, all evaluators must agree to include it, i.e. returning
+     * either {@link Evaluation#INCLUDE_AND_CONTINUE} or
+     * {@link Evaluation#INCLUDE_AND_PRUNE}. For making the traversal continue
+     * down that path all evaluators must agree to continue from that path, i.e.
+     * returning either {@link Evaluation#INCLUDE_AND_CONTINUE} or
+     * {@link Evaluation#EXCLUDE_AND_CONTINUE}.
+     *
+     * @param evaluator
+     * @return a new traversal description with the new modifications.
+     */
+    TraversalDescription evaluator( PathEvaluator evaluator );
+
+    /**
      * Sets the {@link BranchOrderingPolicy} to use. A {@link BranchSelector}
      * is the basic decisions in the traversal of "where to go next".
      * Examples of default implementations are "breadth first" and
@@ -178,6 +199,22 @@ public interface TraversalDescription
      * @return a new traversal description with the new modifications.
      */
     <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialStateFactory<STATE> initialState );
+    
+    /**
+     * Sets the {@link PathExpander} as the expander of relationships,
+     * discarding all previous calls to
+     * {@link #relationships(RelationshipType)} and
+     * {@link #relationships(RelationshipType, Direction)} or any other expand method.
+     * The supplied {@link InitialBranchState} will provide the initial traversal branches
+     * with state values which flows down throughout the traversal and can be changed
+     * for child branches by the {@link PathExpander} at any level.
+     *
+     * @param expander the {@link PathExpander} to use.
+     * @param initialState factory for supplying the initial traversal branches with
+     * state values potentially used by the {@link PathExpander}.
+     * @return a new traversal description with the new modifications.
+     */
+    <STATE> TraversalDescription expand( PathExpander<STATE> expander, InitialBranchState<STATE> initialState );
     
     /**
      * Sets the {@link RelationshipExpander} as the expander of relationships,

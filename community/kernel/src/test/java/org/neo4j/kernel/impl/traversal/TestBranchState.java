@@ -19,17 +19,23 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static junit.framework.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.initialState;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.graphdb.traversal.PathEvaluator;
+
+import static junit.framework.Assert.assertEquals;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.traversal.Evaluation.ofIncludes;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.initialState;
+import static org.neo4j.kernel.Traversal.traversal;
+import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 
 public class TestBranchState extends AbstractTestBase
 {
@@ -90,6 +96,46 @@ public class TestBranchState extends AbstractTestBase
             if ( path.length() % 2 == 1 )
                 state.setState( ((Integer) state.getState())+1 );
             return path.endNode().getRelationships( Direction.OUTGOING );
+        }
+
+        @Override
+        public PathExpander<Integer> reverse()
+        {
+            return this;
+        }
+    }
+    
+    @Test
+    public void evaluateState() throws Exception
+    {
+        /*
+         * (a)-1->(b)-2->(c)-3->(d)
+         *   \           ^
+         *    4         6
+         *    (e)-5->(f)
+         */
+        createGraph( "a TO b", "b TO c", "c TO d", "a TO e", "e TO f", "f TO c" );
+
+        PathEvaluator<Integer> evaluator = new PathEvaluator.Adapter<Integer>()
+        {
+            @Override
+            public Evaluation evaluate( Path path, BranchState<Integer> state )
+            {
+                return ofIncludes( path.endNode().getProperty( "name" ).equals( "c" ) && state.getState() == 3 );
+            }
+        };
+        
+        expectPaths( traversal( NODE_PATH ).expand( new RelationshipWeightExpander(), new InitialBranchState.State<Integer>( 1, 1 ) )
+                .evaluator( evaluator ).traverse( getNodeWithName( "a" ) ), "a,b,c" );
+    }
+    
+    private static class RelationshipWeightExpander implements PathExpander<Integer>
+    {
+        @Override
+        public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
+        {
+            state.setState( state.getState() + 1 );
+            return path.endNode().getRelationships( OUTGOING );
         }
 
         @Override
