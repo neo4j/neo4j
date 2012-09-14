@@ -77,7 +77,7 @@ public interface WebServer
     @Deprecated
     void addSecurityRules( SecurityRule... rules );
 
-    /** 
+    /**
      * Please use {@link #addFilter instead}, this will be removed
      * in version 1.10
      * @param timeout

@@ -26,15 +26,6 @@ import java.rmi.RemoteException;
  */
 public interface AppShellServer extends ShellServer
 {
-    /**
-     * Adds an {@link App} (given its class) to the list of apps this
-     * shell server can execute.
-     * @param appClass the class of the {@link App} to add to the list.
-     * @throws RemoteException if an RMI exception occurs.
-     */
-    @Deprecated
-    void addApp( Class<? extends App> appClass ) throws RemoteException;
-
 	/**
 	 * Finds and returns an {@link App} implementation with a given name.
 	 * @param name the name of the app.

@@ -671,7 +671,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1)).
       namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Identifier("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+      returns(ReturnItem(Identifier("p"), "p"))
 
     val result = execute(query)
 
@@ -689,7 +689,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       namedPaths(NamedPath("p",
       RelatedTo("a", "b", "rel1", Seq(), Direction.OUTGOING, false, True()),
       RelatedTo("b", "c", "rel2", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Identifier("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+      returns(ReturnItem(Identifier("p"), "p"))
 
     val result = execute(query)
 

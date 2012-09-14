@@ -21,8 +21,6 @@ package org.neo4j.shell;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.shell.apps.extra.Gsh;
-import org.neo4j.shell.apps.extra.Jsh;
 import org.neo4j.shell.impl.AbstractAppServer;
 
 /**
@@ -39,29 +37,4 @@ public class SimpleAppServer extends AbstractAppServer
 	{
 		super();
 	}
-
-    @Deprecated
-    protected void addStandardApps()
-    {
-    }
-
-    @Deprecated
-    protected void addExtraApps()
-    {
-        addApp( Gsh.class );
-        addApp( Jsh.class );
-    }
-
-    @Deprecated
-    protected App findBuiltInApp( String command )
-    {
-        return null;
-    }
-
-    @Override
-    public App findApp( String command )
-    {
-        App app = this.findBuiltInApp( command );
-        return app != null ? app : super.findApp( command );
-    }
 }

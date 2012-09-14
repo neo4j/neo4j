@@ -67,18 +67,6 @@ public abstract class AbstractAppServer extends AbstractServer
         }
 	}
 
-    @Deprecated
-    public void addApp( Class<? extends App> appClass )
-    {
-        try
-        {
-            addApp( appClass.newInstance() );
-        }
-        catch ( Exception ignored )
-        {
-        }
-    }
-
     private void addApp( App app )
     {
         apps.put( app.getName(), app );
