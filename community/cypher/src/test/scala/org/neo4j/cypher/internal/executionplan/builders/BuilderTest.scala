@@ -25,7 +25,7 @@ import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.pipes.{MutableMaps, Pipe, NullPipe, FakePipe}
 
-abstract class BuilderTest extends Assertions {
+trait BuilderTest extends Assertions {
   def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()) = {
     val nodeIdentifiers = nodes.map(x => x -> NodeType())
     val relIdentifiers = relationships.map(x => x -> RelationshipType())

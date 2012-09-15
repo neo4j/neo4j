@@ -26,13 +26,34 @@ class SymbolTable(val identifiers: Map[String, CypherType]) {
   def hasIdentifierNamed(name: String): Boolean = identifiers.contains(name)
   def size: Int = identifiers.size
   def this() = this(Map())
-  def add(key: String, typ: CypherType): SymbolTable = new SymbolTable(identifiers + (key -> typ))
-  def add(value: Map[String, CypherType]): SymbolTable = new SymbolTable(identifiers ++ value)
+
+  def add(key: String, typ: CypherType): SymbolTable = identifiers.get(key) match {
+    case Some(existingType) if typ.isAssignableFrom(existingType) =>
+      new SymbolTable(identifiers + (key -> typ.mergeWith(existingType)))
+    case Some(existingType)                                       =>
+      throw new CypherTypeException("An identifier is used with different types. The identifier `%s` is used both as %s and as %s".format(key, typ, existingType))
+    case None                                                     =>
+      new SymbolTable(identifiers + (key -> typ))
+  }
+
+  def add(value: Map[String, CypherType]): SymbolTable = {
+    checkNoOverlapsExist(value)
+
+    new SymbolTable(identifiers ++ value)
+  }
+
+
+  private def checkNoOverlapsExist(value: Map[String, CypherType]) {
+    value.foreach {
+      case (id, t) => add(id, t)
+    }
+  }
+
   def filter(f: String => Boolean): SymbolTable = new SymbolTable(identifiers.filterKeys(f))
   def keys: Seq[String] = identifiers.map(_._1).toSeq
   def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
 
-  def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
+    def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
     case Some(typ) if (expectedType.isAssignableFrom(typ)) => typ
     case Some(typ) if (typ.isAssignableFrom(expectedType)) => typ
     case Some(typ)                                         => throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))

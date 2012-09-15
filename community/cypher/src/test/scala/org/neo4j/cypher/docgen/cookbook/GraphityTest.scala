@@ -59,7 +59,7 @@ class GraphityTest extends DocumentingTestBase {
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
       returns = "The activity stream for Jane.",
-      (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "length(p)" -> 1),
+      assertions = (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "length(p)" -> 1),
           Map("status.name" -> "Joe_s1", "friend.name" -> "Joe", "me.name" -> "Jane", "length(p)" -> 2),
           Map("status.name" -> "Bob_s1", "friend.name" -> "Bob", "me.name" -> "Jane", "length(p)" -> 3)
           ), p.toList))

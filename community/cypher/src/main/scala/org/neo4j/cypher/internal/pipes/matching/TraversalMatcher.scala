@@ -17,20 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.pipes.matching
 
-import matching.{PatternGraph, MatchingContext}
-import java.lang.String
-import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
+import org.neo4j.graphdb.Path
 
-class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternGraph) extends Pipe {
-  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph)
-  val symbols = matchingContext.symbols
-
-  def createResults(state: QueryState) =
-    source.createResults(state).flatMap(ctx => {
-      matchingContext.getMatches(ctx.toMap).map(pm => ctx.newWith(pm))
-    })
-
-  override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patternGraph + ")"
+trait TraversalMatcher {
+  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path]
 }

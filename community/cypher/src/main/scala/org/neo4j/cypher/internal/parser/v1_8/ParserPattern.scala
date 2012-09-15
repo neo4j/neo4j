@@ -218,7 +218,7 @@ trait ParserPattern extends Base {
     def seqMap[B](f:Seq[T]=>Seq[B]): Maybe[B]
   }
 
-  case class Yes[T](values: Seq[T]) extends Maybe[T] {
+  final case class Yes[T](values: Seq[T]) extends Maybe[T] {
     def success = true
 
     def ++[B >: T](other: Maybe[B]): Maybe[B] = other match {
@@ -231,7 +231,7 @@ trait ParserPattern extends Base {
     def seqMap[B](f: (Seq[T]) => Seq[B]): Maybe[B] = Yes(f(values))
   }
 
-  case class No(messages: Seq[String]) extends Maybe[Nothing] {
+  final case class No(messages: Seq[String]) extends Maybe[Nothing] {
     def values = throw new Exception("No values exists")
     def success = false
 

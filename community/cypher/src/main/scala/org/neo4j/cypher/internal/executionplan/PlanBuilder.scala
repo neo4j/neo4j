@@ -37,6 +37,7 @@ trait PlanBuilder {
 // Lower priority wins
 object PlanBuilder extends Enumeration {
   val CachedExpressions = -100
+  val TraversalMatcher = -11
   val Filter = -10
   val NamedPath = -9
   val Mutation = -1

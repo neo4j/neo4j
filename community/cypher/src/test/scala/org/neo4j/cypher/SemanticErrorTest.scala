@@ -77,7 +77,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
     try {
       val result = parseAndExecute(query)
       result.toList
-      fail("Did not get the expected syntax error, expected: " + message)
+      fail("Did not get the expected syntax error, expected: %s".format(message))
     } catch {
       case x: CypherException => assertEquals(message, x.getMessage)
     }

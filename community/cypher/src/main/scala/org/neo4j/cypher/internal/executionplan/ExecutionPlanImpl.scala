@@ -25,17 +25,17 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.commands._
-import internal.symbols.SymbolTable
+import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 
-class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan {
+class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
   def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
 
   private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
-
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
+    checkFirstQueryPattern(planInProgress)
 
     while (continue) {
       while (builders.exists(_.canWorkWith(planInProgress))) {
@@ -56,8 +56,10 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       }
 
       planInProgress.query.tail match {
-        case None => continue = false
-        case Some(q) => planInProgress = planInProgress.copy(query = q)
+        case None    => continue = false
+        case Some(q) =>
+          planInProgress = planInProgress.copy(query = q)
+          validatePattern(planInProgress.pipe.symbols, planInProgress.query.patterns.map(_.token))
       }
     }
 
@@ -74,7 +76,38 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     (func, executionPlan)
   }
 
-  private def getQueryResultColumns(q: Query, currentSymbols:SymbolTable) = {
+
+  private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {
+    val startPoints = getStartPointsFromPlan(planInProgress.query)
+    validatePattern(startPoints, planInProgress.query.patterns.map(_.token))
+  }
+
+  private def validatePattern(symbols:SymbolTable, patterns:Seq[Pattern])={
+    //We build the graph here, because the pattern graph builder finds problems with the pattern
+    //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
+    buildPatternGraph(symbols, patterns)
+  }
+
+  private def getStartPointsFromPlan(query: PartiallySolvedQuery): SymbolTable = {
+    val startMap = query.start.map(_.token).map {
+      case RelationshipById(varName, _)                     => varName -> RelationshipType()
+      case RelationshipByIndex(varName, _, _, _)            => varName -> RelationshipType()
+      case RelationshipByIndexQuery(varName, _, _)          => varName -> RelationshipType()
+      case AllRelationships(varName: String)                => varName -> RelationshipType()
+      case CreateRelationshipStartItem(varName, _, _, _, _) => varName -> RelationshipType()
+
+      case NodeByIndex(varName: String, _, _, _)            => varName -> NodeType()
+      case NodeByIndexQuery(varName: String, _, _)          => varName -> NodeType()
+      case NodeById(varName: String, _)                     => varName -> NodeType()
+      case AllNodes(varName: String)                        => varName -> NodeType()
+      case CreateNodeStartItem(varName: String, _)          => varName -> NodeType()
+    }.toMap
+
+    val symbols = new SymbolTable(startMap)
+    symbols
+  }
+
+  private def getQueryResultColumns(q: Query, currentSymbols: SymbolTable) = {
     var query = q
     while (query.tail.isDefined) {
       query = query.tail.get
@@ -82,7 +115,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
     val columns = query.returns.columns.flatMap {
       case "*" => currentSymbols.identifiers.keys
-      case x => Seq(x)
+      case x   => Seq(x)
     }
 
     columns
@@ -113,12 +146,11 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     }
 
     if (errors.isEmpty) {
-      throw new SyntaxException("""Somehow, Cypher was not able to construct a valid execution plan from your query.
+      throw new SyntaxException( """Somehow, Cypher was not able to construct a valid execution plan from your query.
 The Neo4j team is very interested in knowing about this query. Please, consider sending a copy of it to cypher@neo4j.org.
 Thank you!
 
-The Neo4j Team
-""")
+The Neo4j Team""")
     }
 
     val prio = errors.head._1.priority
@@ -144,7 +176,8 @@ The Neo4j Team
     new RelationshipByIdBuilder(graph),
     new CreateNodesAndRelationshipsBuilder(graph),
     new UpdateActionBuilder(graph),
-    new EmptyResultBuilder
+    new EmptyResultBuilder,
+    new TraversalMatcherBuilder(graph)
   )
 
   override def toString = executionPlanText

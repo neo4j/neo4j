@@ -86,11 +86,11 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
 }
 
 trait PatternGraphBuilder {
-  def buildPatternGraph(boundIdentifiers: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
+  def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
-    boundIdentifiers.identifiers.
+    symbols.identifiers.
       filter(_._2 == NodeType()). //Find all bound nodes...
       foreach(id => patternNodeMap(id._1) = new PatternNode(id._1)) //...and create patternNodes for them
 
@@ -113,6 +113,6 @@ trait PatternGraphBuilder {
       case _ =>
     })
 
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, boundIdentifiers.keys)
+    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys)
   }
 }

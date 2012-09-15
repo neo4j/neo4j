@@ -43,7 +43,6 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
     )
   }
 
-
   lazy val hasBoundRelationships: Boolean = boundElements.exists(patternRels.keys.toSeq.contains)
   lazy val hasVarLengthPaths: Boolean = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
 
