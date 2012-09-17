@@ -72,7 +72,9 @@ public abstract class GraphDatabaseSettings
     @Default( FALSE)
     public static final BooleanSetting read_only = new BooleanSetting("read_only");
 
-    @Description("The type of cache to use for nodes and relationships.")
+    @Description( "The type of cache to use for nodes and relationships. "
+                  + "Note that the Neo4j Enterprise Edition has the additional 'gcr' cache type. "
+                  + "See the chapter on caches in the manual for more information." )
     @Default( CacheTypeSetting.soft )
     public static final CacheTypeSetting cache_type = new CacheTypeSetting();
 
