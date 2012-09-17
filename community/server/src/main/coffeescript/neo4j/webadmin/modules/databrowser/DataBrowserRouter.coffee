@@ -14,9 +14,10 @@ define(
     class DataBrowserRouter extends Router
 
       routes : 
-        "/data/visualization/settings/" : "visualizationSettings"
-        "/data/visualization/settings/profile/" : "createVisualizationProfile"
-        "/data/visualization/settings/profile/:id/" : "editVisualizationProfile"
+        "/data/"                                    : "onRoutedToDataURI"
+        "/data/visualization/settings/"             : "onRoutedToVisualizationSettings"
+        "/data/visualization/settings/profile/"     : "onRoutedToCreateVisualizationProfile"
+        "/data/visualization/settings/profile/:id/" : "onRoutedToEditVisualizationProfile"
 
       shortcuts : 
         "s" : "onEditorFocusShortcut"
@@ -49,20 +50,24 @@ define(
 
         if @_looksLikeReadOnlyQuery(query)
           @dataModel.executeCurrentQuery()
+          
+      onRoutedToDataURI : () =>
+        # Allows static links to /data/, that route to the current query URI
+        @_routeToCurrentQueryURI()
 
-      visualizationSettings : () =>
+      onRoutedToVisualizationSettings : () =>
         @saveLocation()
         @visualizationSettingsView ?= new VisualizationSettingsView
           dataBrowserSettings : @getDataBrowserSettings()
         @appState.set mainView : @visualizationSettingsView
         
-      createVisualizationProfile : () =>
+      onRoutedToCreateVisualizationProfile : () =>
         @saveLocation()
         v = @getVisualizationProfileView()
         v.setIsCreateMode(true)
         @appState.set mainView : v
         
-      editVisualizationProfile : (id) =>
+      onRoutedToEditVisualizationProfile : (id) =>
         @saveLocation()
         profiles = @getDataBrowserSettings().getVisualizationProfiles()
         profile = profiles.get id
@@ -98,10 +103,7 @@ define(
         #  location.hash = url
 
       onDataChangedInModel : =>
-        url = @_getCurrentQueryURI()
-
-        if location.hash != url
-          location.hash = url
+        @_routeToCurrentQueryURI()
 
       #
       # Internals
@@ -119,6 +121,11 @@ define(
       getDataBrowserSettings : ->
         @dataBrowserSettings ?= new DataBrowserSettings @appState.getSettings()
 
+      _routeToCurrentQueryURI : () =>
+        url = @_getCurrentQueryURI()
+
+        if location.hash != url
+          location.hash = url
 
       # We only auto-execute read-only queries,
       # and we determine if a query is read-only here.
@@ -131,10 +138,12 @@ define(
         pattern = ///^(
                     # Super basic cypher queries
                     (start 
-                     \s+ 
-                     [a-z]+=node\(\d+\)
-                     \s+
-                     return \s+ [a-z]+)    | # or
+                     \s+                     # White space
+                     [a-z]+=node\(\d+\)      # Node by id
+                     \s+                     # White space
+                     return \s+ [a-z]+)      # Return an identifier
+                     
+                                           | # or
  
                     # Direct node id lookups
                     ((node:)?\d+)          | # or
@@ -142,7 +151,7 @@ define(
                     # Direct rel id lookups 
                     (rel:\d+)              | # or
 
-                    # Direct rel id lookups
+                    # Direct rels for node id lookups
                     (rels:\d+)
                      )$
                   ///i
