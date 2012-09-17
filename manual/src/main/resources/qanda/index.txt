@@ -56,7 +56,7 @@ What is the best strategy for reading back your writes on HA?::
 What is the best strategy for get-or-create semantics?::
         1. Single thread.
         2. If not exists, pessimistically lock on a common node (or set of common nodes).
-        3. If not exists, optimistically create, and then double check afterwards. (explanation will be extended)
+        3. If not exists, optimistically create, and then double check afterwards.
 
 How does locking work?::
         Pessimistic locking.

@@ -17,6 +17,7 @@
 | node.js | JavaScript | https://github.com/thingdom/node-neo4j
 | Neocons | Clojure | https://github.com/michaelklishin/neocons
 | Neo4p | Perl | http://search.cpan.org/search?query=REST::Neo4p
+| Neo4j-GO | Go | https://github.com/davemeehan/Neo4j-GO
 |===============================================================================
 
 
