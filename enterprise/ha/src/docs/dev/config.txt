@@ -14,8 +14,7 @@ This means that the number of ZooKeeper instances should always be an odd number
 
 To further clarify the fault tolerance characteristics of Neo4j HA here are a few example setups:
 
-Small
------
+== Small ==
 
 * 3 physical (or virtual) machines
 * 1 Coordinator running on each machine
@@ -25,8 +24,7 @@ This setup is conservative in the use of hardware while being able to handle mod
 It can fully operate when at least 2 of the coordinator instances are running.
 Since the coordinator and Neo4j HA are running together on each machine this will in most scenarios mean that only one server is allowed to go down.
 
-Medium
-------
+== Medium ==
 
 * 5-7+ machines
 * Coordinator running on 3, 5 or 7 machines
@@ -37,8 +35,7 @@ The fault tolerance will depend on how many machines there are that are running 
 With 3 coordinators the cluster can survive one coordinator going down, with 5 it can survive 2 and with 7 it can handle 3 coordinators failing.
 The number of Neo4j HA instances that can fail for normal operations is theoretically all but 1 (but for each required master election the coordinator must be available).
 
-Large
------
+== Large ==
 
 * 8+ total machines
 * 3+ Neo4j HA machines
@@ -73,6 +70,9 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 | ha.tx_push_factor     | amount of slaves a tx will be pushed to whenever the master commits a transaction   | 1 (default)    | no
 | ha.tx_push_strategy   | either "fixed" (default) or "round_robin", fixed will push to the slaves with highest server id | fixed          | no
 |========================================================================================
+
+[NOTE]
+Note that the +org.neo4j.server.database.mode+ setting in the 'neo4j-server.properties' file has to be set to +HA+ to run Neo4j in High Availability mode.
 
 [CAUTION]
 Neo4j's HA setup depends on ZooKeeper a.k.a. Coordinator which makes certain assumptions about the state of the underlying operating system. In particular ZooKeeper expects 

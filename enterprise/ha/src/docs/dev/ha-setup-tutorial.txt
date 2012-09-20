@@ -17,7 +17,7 @@ This opens for scenarios where one application can insert and update data via a 
 
 Below, there will be 3 coordinator instances set up on one local machine.
 
-=== Download and unpack Neoj4 Enterprise ===
+=== Download and unpack Neo4j Enterprise ===
 
 Download and unpack three installations of Neo4j Enterprise 
 (called +$NEO4J_HOME1+, +$NEO4J_HOME2+, +$NEO4J_HOME3+) from http://neo4j.org/download[the Neo4j download site].
@@ -189,9 +189,11 @@ To avoid JMX port clashes adjust the assigned ports for all instances under 'con
 #$NEO4J_HOME1/conf/neo4j-wrapper.properties
 ...
 # Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+# Also make sure to update the jmx.access and jmx.password files with appropriate 
+# permission roles and passwords, the shipped configuration contains only a 
+# read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: 
+# http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
 ...
 ----
@@ -201,9 +203,11 @@ wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
 #$NEO4J_HOME2/conf/neo4j-wrapper.properties
 ...
 # Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+# Also make sure to update the jmx.access and jmx.password files with appropriate 
+# permission roles and passwords, the shipped configuration contains only a 
+# read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: 
+# http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
 ...
 ----
@@ -213,9 +217,11 @@ wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
 # Remote JMX monitoring, adjust the following lines if needed.
-# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
-# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
-# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+# Also make sure to update the jmx.access and jmx.password files with appropriate 
+# permission roles and passwords, the shipped configuration contains only a 
+# read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: 
+# http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3639
 ...
 ----
@@ -239,7 +245,8 @@ Alternatively, the REST API is exposing JMX, so you can check the HA JMX bean wi
 
 [source,shell]
 ----
-curl -H "Content-Type:application/json" -d '["org.neo4j:*"]' http://localhost:7474/db/manage/server/jmx/query
+curl -H "Content-Type:application/json" -d '["org.neo4j:*"]' \
+  http://localhost:7474/db/manage/server/jmx/query
 ----
 
 And find in the response
