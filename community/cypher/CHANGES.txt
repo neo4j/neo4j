@@ -1,3 +1,8 @@
+1.8 
+--------------------
+o Added synchronization to avoid race conditions in the Cypher parser
+
+
 1.8.RC1 (2012-09-05)
 --------------------
 o Removed the /../ literal for regular expressions. Now a normal string literal is used instead

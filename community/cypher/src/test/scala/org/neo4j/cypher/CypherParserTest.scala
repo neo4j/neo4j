@@ -1969,6 +1969,39 @@ foreach(x in [1,2,3] :
       returns(ReturnItem(Entity("p"), "p")))
   }
 
+  @Ignore("slow test") @Test def multi_thread_parsing() {
+    val q = """start root=node(0) return x"""
+    val parser = new CypherParser()
+
+    val runners = (1 to 10).toList.map(x => {
+      run(() => parser.parse(q))
+    })
+
+    val threads = runners.map(new Thread(_))
+    threads.foreach(_.start())
+    threads.foreach(_.join())
+
+    runners.foreach(_.report())
+  }
+
+  private def run(f: () => Unit) =
+    new Runnable() {
+      var error: Option[Throwable] = None
+
+      def run() {
+        try {
+          (1 until 500).foreach(x => f())
+        } catch {
+          case e: Throwable => error = Some(e)
+        }
+      }
+
+      def report() {
+        error.foreach(e => throw e)
+      }
+    }
+
+
   def test_1_8(query: String, expectedQuery: Query) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
