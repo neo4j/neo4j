@@ -60,9 +60,11 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
     public void document( String directory, String sectionName )
     {
         this.setSection( sectionName );
-        Writer fw = getFW( directory + File.separator + section, title );
         String name = title.replace( " ", "-" ).toLowerCase();
-        description = replaceSnippets( description );
+        File dir = new File( new File( directory ), section );
+        String filename = name + ".txt";
+        Writer fw = getFW( dir, filename );
+        description = replaceSnippets( description, dir, name );
         try
         {
             line( fw,

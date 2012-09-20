@@ -30,6 +30,7 @@ import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
 import org.neo4j.test.{GeoffService, ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.scalatest.Assertions
+import org.neo4j.test.AsciiDocGenerator
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
@@ -90,11 +91,17 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def text: String
 
-  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, possibleAssertion: Seq[String]) = {
-    val querySnippet = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
-    val consoleText = consoleSnippet(replaceNodeIds(query), emptyGraph)
+  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
+    val name = title.toLowerCase.replace(" ", "-")
+    val queryAsciidoc = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
+    val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
+    val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
+    val consoleText = if (!consoleAsciidoc.isEmpty)
+        AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-console", consoleAsciidoc)
+      else ""
     val queryOutput = runQuery(emptyGraph, query, possibleAssertion)
-    val resultSnippet = AsciidocHelper.createQueryResultSnippet(queryOutput)
+    val resultSnippetAsciiDoc = AsciidocHelper.createQueryResultSnippet(queryOutput)
+    val resultSnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-result", resultSnippetAsciiDoc)
 
     val queryText = """_Query_
 
@@ -195,7 +202,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
         val rest = query.split("\n").tail.mkString("\n")
         val q = rest.replaceAll("#", "")
-        producedText = producedText.replace(query, expandQuery(q, includeResults, emptyGraph, asserts))
+        producedText = producedText.replace(query, expandQuery(q, includeResults, emptyGraph, dir, asserts))
       }
     }
 

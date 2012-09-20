@@ -164,7 +164,8 @@ public class AsciidocHelper
 
     public static String createQueryResultSnippet( final String output )
     {
-        return "[queryresult]\n----\n" + output + "\n----\n";
+        return "[queryresult]\n----\n" + output
+               + ( output.endsWith( "\n" ) ? "" : "\n" ) + "----\n";
     }
 
     public static String createCypherSnippet( final String query )
@@ -188,7 +189,8 @@ public class AsciidocHelper
     {
         String formattedQuery = breakOnKeywords( query, keywordsToBreakOn );
         String result = "[source," + language + "]\n----\n" + formattedQuery
-                        + "\n----\n";
+                        + ( formattedQuery.endsWith( "\n" ) ? "" : "\n" )
+                        + "----\n";
         return limitChars( result );
     }
 
