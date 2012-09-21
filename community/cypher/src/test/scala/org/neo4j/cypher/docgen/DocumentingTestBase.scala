@@ -35,12 +35,15 @@ import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
+import org.neo4j.test.AsciiDocGenerator
 
 trait DocumentationHelper {
   def generateConsole:Boolean
   def db: GraphDatabaseService
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
+
+  def simpleName: String = this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase
 
   def createWriter(title: String, folder: String): (File, PrintWriter) = {
     val dir = new File(path + nicefy(folder))
@@ -54,7 +57,7 @@ trait DocumentationHelper {
 
   val path: String = "target/docs/dev/ql/"
 
-  val graphvizFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph.txt"
+  val graphvizFileName = "cypher-" + simpleName + "-graph.txt"
 
   def dumpGraphViz(dir: File, graphVizOptions:String) {
     val graphViz = new PrintWriter(new File(dir, graphvizFileName), "UTF-8")
@@ -92,7 +95,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     var query: String = r._2
 
     val (dir: File, writer: PrintWriter) = createWriter(title, section)
-    dumpToFile(writer, title, query, returns, text, result)
+    dumpToFile(dir, writer, title, query, returns, text, result)
 
     dumpGraphViz(dir, graphvizOptions)
   }
@@ -115,12 +118,13 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   def indexProps: List[String] = List()
 
-  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
-    writer.println("[[" + nicefy(section + " " + title) + "]]")
+  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
+    val testId = nicefy(section + " " + title)
+    writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    runQuery(writer, query, returns, result)
+    runQuery(dir, writer, testId, query, returns, result)
     writer.flush()
     writer.close()
   }
@@ -191,27 +195,34 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     })
   }
 
-  def runQuery(writer: PrintWriter, query: String, returns: String, result: ExecutionResult) {
-    writer.println("_Query_")
-    writer.println()
-    writer.println(AsciidocHelper.createCypherSnippet(query))
-    writer.println()
-    writer.println(returns)
-    writer.println()
+  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult) {
+    val output = new StringBuilder(2048)
+    output.append("_Query_\n\n")
+    output.append(AsciidocHelper.createCypherSnippet(query))
+    output.append('\n')
+    output.append(returns)
+    output.append('\n')
+    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString))
 
     val resultText = result.dumpToString()
-    writer.println(".Result")
-    writer.println(AsciidocHelper.createQueryResultSnippet(resultText))
-    writer.println()
-    writer.println()
+    output.clear
+    output.append(".Result\n")
+    output.append(AsciidocHelper.createQueryResultSnippet(resultText))
+    output.append('\n')
+    writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".result", output.toString))
+
     if (generateConsole) {
-      writer.println(".Try this query live")
-      writer.println("[console]")
-      writer.println("----\n" + (if (generateInitialGraphForConsole) new GeoffService(db).toGeoff else "start n=node(*) match n-[r?]->() delete n, r;") + "\n\n" + query + "\n----")
-      writer.println()
+      output.clear
+      output.append(".Try this query live\n")
+      output.append("[console]\n")
+      output.append("----\n")
+      output.append(if (generateInitialGraphForConsole) new GeoffService(db).toGeoff else "start n=node(*) match n-[r?]->() delete n, r;")
+      output.append("\n\n")
+      output.append(query)
+      output.append("\n----")
+      writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString))
     }
   }
-
 }
 
 

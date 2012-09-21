@@ -114,9 +114,9 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return new RESTDocsGenerator( title );
     }
 
-    private RESTDocsGenerator( String ti )
+    private RESTDocsGenerator( String title )
     {
-        super(ti, "rest-api");
+        super( title, "rest-api" );
     }
     
 
@@ -475,13 +475,16 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     protected void document( final DocumentationData data )
     {
         if (data.ignore) return;
-        data.description = replaceSnippets( data.description );
         Writer fw = null;
         try
         {
-            fw = AsciiDocGenerator.getFW("target" + File.separator + "docs"+ File.separator + section , data.title);
-            String name = title.replace( " ", "-" )
+            String name = data.title.replace( " ", "-" )
                     .toLowerCase();
+            String filename = name + ".txt";
+            File dir = new File( new File( new File( "target" ), "docs" ),
+                    section );
+            data.description = replaceSnippets( data.description, dir, name );
+            fw = AsciiDocGenerator.getFW( dir, filename );
             String longSection = section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" );
             if(longSection.indexOf( "/" )>0)
             {
