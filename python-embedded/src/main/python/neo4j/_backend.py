@@ -36,7 +36,7 @@ NEO4J_JAVA_CLASSES = (
     ('org.neo4j.graphdb.traversal',     ('Evaluation', 'Evaluator',)),
     ('org.neo4j.graphdb.index',         ('Index', 'IndexHits',)),
     ('org.neo4j.helpers.collection',    ('IterableWrapper',)),
-    ('org.neo4j.cypher.javacompat',     ('ExecutionEngine','CypherParser')),
+    ('org.neo4j.cypher.javacompat',     ('ExecutionEngine')),
     #('com.tinkerpop.blueprints.pgm.impls.neo4j', ('Neo4jGraph', 'Neo4jEdge', 'Neo4jVertex')),
     #('com.tinkerpop.gremlin', ('Gremlin')),
     ('java.util',                       ('HashMap',)),
