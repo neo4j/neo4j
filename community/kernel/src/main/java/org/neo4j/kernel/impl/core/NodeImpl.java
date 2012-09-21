@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,7 +55,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private volatile RelIdArray[] relationships;
 
-    private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 
     NodeImpl( long id, long firstRel, long firstProp )
@@ -132,9 +133,17 @@ public class NodeImpl extends ArrayBasedPrimitive
         return nodeManager.loadProperties( this, light );
     }
 
-    List<RelIdIterator> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
+    Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
     {
         ensureRelationshipMapNotNull( nodeManager );
+        
+        // We need to check if there are more relationships to load before grabbing
+        // the references to the RelIdArrays since otherwise there could be
+        // another concurrent thread exhausting the chain position in between the point
+        // where we got an empty iterator for a type that the other thread loaded and
+        // the point where we check whether or not there are more relationships to load.
+        boolean hasMore = hasMoreRelationshipsToLoad();
+        
         List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         ArrayMap<String,RelIdArray> addMap = null;
@@ -176,13 +185,22 @@ public class NodeImpl extends ArrayBasedPrimitive
                 }
             }
         }
-        return relTypeList;
+        
+        return new IntArrayIterator( relTypeList, this, direction, nodeManager, new RelationshipType[0], hasMore );
     }
 
-    List<RelIdIterator> getAllRelationshipsOfType( NodeManager nodeManager,
+    Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
         DirectionWrapper direction, RelationshipType... types)
     {
         ensureRelationshipMapNotNull( nodeManager );
+        
+        // We need to check if there are more relationships to load before grabbing
+        // the references to the RelIdArrays since otherwise there could be
+        // another concurrent thread exhausting the chain position in between the point
+        // where we got an empty iterator for a type that the other thread loaded and
+        // the point where we check whether or not there are more relationships to load.
+        boolean hasMore = hasMoreRelationshipsToLoad();
+        
         List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         for ( RelationshipType type : types )
@@ -204,51 +222,42 @@ public class NodeImpl extends ArrayBasedPrimitive
             }
             relTypeList.add( iterator );
         }
-        return relTypeList;
+        
+        return new IntArrayIterator( relTypeList, this, direction, nodeManager, types, hasMore );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
     {
-        return new IntArrayIterator( getAllRelationships( nodeManager, DirectionWrapper.BOTH ), this,
-            DirectionWrapper.BOTH, nodeManager, new RelationshipType[0], !hasMoreRelationshipsToLoad() );
+        return getAllRelationships( nodeManager, DirectionWrapper.BOTH );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
-        DirectionWrapper direction = RelIdArray.wrap( dir );
-        return new IntArrayIterator( getAllRelationships( nodeManager, direction ), this, direction,
-            nodeManager, new RelationshipType[0], !hasMoreRelationshipsToLoad() );
+        return getAllRelationships( nodeManager, wrap( dir ) );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
-        RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
-            this, DirectionWrapper.BOTH, nodeManager, types, !hasMoreRelationshipsToLoad() );
+        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, new RelationshipType[] { type } );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
             RelationshipType... types )
     {
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
-            this, DirectionWrapper.BOTH, nodeManager, types, !hasMoreRelationshipsToLoad() );
+        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
             Direction direction, RelationshipType... types )
     {
-        DirectionWrapper dir = RelIdArray.wrap( direction );
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, dir, types ),
-            this, dir, nodeManager, types, !hasMoreRelationshipsToLoad() );
+        return getAllRelationshipsOfType( nodeManager, wrap( direction ), types );
     }
 
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
-        DirectionWrapper direction = RelIdArray.wrap( dir );
-        RelationshipType types[] = new RelationshipType[] { type };
-        Iterator<Relationship> rels = new IntArrayIterator( getAllRelationshipsOfType( nodeManager,
-                direction, types ), this, direction, nodeManager, types, !hasMoreRelationshipsToLoad() );
+        Iterator<Relationship> rels = getAllRelationshipsOfType( nodeManager, wrap( dir ),
+                new RelationshipType[] { type } ).iterator();
         if ( !rels.hasNext() )
         {
             return null;
@@ -265,10 +274,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
-        RelationshipType types[] = new RelationshipType[] { type };
-        DirectionWrapper direction = RelIdArray.wrap( dir );
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, direction, types ),
-            this, direction, nodeManager, types, !hasMoreRelationshipsToLoad() );
+        return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[] { type } );
     }
 
     public void delete( NodeManager nodeManager, Node proxy )
@@ -439,25 +445,52 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return getRelChainPosition() != Record.NO_NEXT_RELATIONSHIP.intValue();
     }
+    
+    static enum LoadStatus
+    {
+        NOTHING( false, false ),
+        LOADED_END( true, false ),
+        LOADED_MORE( true, true );
+        
+        private final boolean loaded;
+        private final boolean more;
 
-    boolean getMoreRelationships( NodeManager nodeManager )
+        private LoadStatus( boolean loaded, boolean more )
+        {
+            this.loaded = loaded;
+            this.more = more;
+        }
+        
+        public boolean loaded()
+        {
+            return this.loaded;
+        }
+        
+        public boolean hasMoreToLoad()
+        {
+            return this.more;
+        }
+    }
+
+    LoadStatus getMoreRelationships( NodeManager nodeManager )
     {
         Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
-            return false;
+            return LoadStatus.NOTHING;
         }
+        boolean more = false;
         synchronized ( this )
         {
             if ( !hasMoreRelationshipsToLoad() )
             {
-                return false;
+                return LoadStatus.NOTHING;
             }
             rels = loadMoreRelationshipsFromNodeManager(nodeManager);
             ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
-                return false;
+                return LoadStatus.NOTHING;
             }
             for ( String type : addMap.keySet() )
             {
@@ -479,10 +512,11 @@ public class NodeImpl extends ArrayBasedPrimitive
                 }
             }
             setRelChainPosition( rels.third() );
+            more = hasMoreRelationshipsToLoad();
             updateSize( nodeManager );
         }
         nodeManager.putAllInRelCache( rels.second() );
-        return true;
+        return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
     }
 
     private Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long>

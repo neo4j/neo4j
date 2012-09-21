@@ -29,6 +29,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -44,14 +45,14 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
     private final List<RelIdIterator> rels;
     
     // This is just for optimization
-    private boolean isFullyLoaded;
+    private boolean lastTimeILookedThereWasMoreToLoad;
 
     IntArrayIterator( List<RelIdIterator> rels, NodeImpl fromNode,
         DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types,
-        boolean isFullyLoaded )
+        boolean hasMoreToLoad )
     {
         this.rels = rels;
-        this.isFullyLoaded = isFullyLoaded;
+        this.lastTimeILookedThereWasMoreToLoad = hasMoreToLoad;
         this.typeIterator = rels.iterator();
         this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
         this.fromNode = fromNode;
@@ -82,20 +83,22 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                 }
             }
             
+            LoadStatus status;
             while ( !currentTypeIterator.hasNext() )
             {
                 if ( typeIterator.hasNext() )
                 {
                     currentTypeIterator = typeIterator.next();
                 }
-                else if ( fromNode.getMoreRelationships( nodeManager ) ||
+                else if ( (status = fromNode.getMoreRelationships( nodeManager )).loaded()
                         // This is here to guard for that someone else might have loaded
                         // stuff in this relationship chain (and exhausted it) while I
                         // iterated over my batch of relationships. It will only happen
                         // for nodes which have more than <grab size> relationships and
                         // isn't fully loaded when starting iterating.
-                        !isFullyLoaded )
+                        || lastTimeILookedThereWasMoreToLoad )
                 {
+                    lastTimeILookedThereWasMoreToLoad = status.hasMoreToLoad();
                     Map<String,RelIdIterator> newRels = new HashMap<String,RelIdIterator>();
                     for ( RelIdIterator itr : rels )
                     {
@@ -138,7 +141,6 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                     
                     typeIterator = rels.iterator();
                     currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
-                    isFullyLoaded = !fromNode.hasMoreRelationshipsToLoad();
                 }
                 else
                 {
