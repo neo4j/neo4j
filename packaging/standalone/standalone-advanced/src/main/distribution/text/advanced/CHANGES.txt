@@ -1,3 +1,14 @@
+1.8.GA (2012-09-24)
+--------------------
+Kernel:
+ o Fix for issue where, under some conditions, an incorrect number of relationships were returned.
+
+Server:
+ o Fixed webadmin bug where clicking save in the visualization profiles did not change the page
+
+Cypher:H
+ o Added synchronization to avoid race conditions in the Cypher parser
+ 
 1.8.RC1 (2012-09-05)
 --------------------
 Kernel:
