@@ -10,7 +10,7 @@ The Neo4j Manual v{revnumber}
 
 :console: 0
 
-include::preface/preface.txt[]
+include::preface/preface.asciidoc[]
 
 :leveloffset: 0
 
@@ -18,32 +18,32 @@ include::introduction/index.asciidoc[]
 
 :leveloffset: 0
 
-include::tutorials/index.txt[]
+include::tutorials/index.asciidoc[]
 
 :leveloffset: 0
 
-include::reference/index.txt[]
+include::reference/index.asciidoc[]
 
 :leveloffset: 0
 
-include::operations/index.txt[]
+include::operations/index.asciidoc[]
 
 :leveloffset: 0
 
-include::tools/index.txt[]
+include::tools/index.asciidoc[]
 
 :leveloffset: 0
 
-include::community/index.txt[]
+include::community/index.asciidoc[]
 
 :leveloffset: 0
 :numbered!:
 
-include::manpages.txt[]
+include::manpages.asciidoc[]
 
 :leveloffset: 0
 
-include::qanda/index.txt[]
+include::qanda/index.asciidoc[]
 
 ////
 :leveloffset: 0

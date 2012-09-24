@@ -10,10 +10,10 @@ Read about how to get help from the community and how to contribute to it.
 
 :leveloffset: 1
 
-include::help.txt[]
+include::help.asciidoc[]
 
 :leveloffset: 1
 
-include::contributing.txt[]
+include::contributing.asciidoc[]
 
 

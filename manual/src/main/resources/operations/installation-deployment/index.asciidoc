@@ -4,15 +4,15 @@ Installation & Deployment
 
 :leveloffset: 2
 
-include::deployment.txt[]
+include::deployment.asciidoc[]
 
 :leveloffset: 2
 
-include::requirements.txt[]
+include::requirements.asciidoc[]
 
 :leveloffset: 2
 
-include::installation.txt[]
+include::installation.asciidoc[]
 
 :leveloffset: 2
 

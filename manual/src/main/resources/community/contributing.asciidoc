@@ -17,23 +17,23 @@ To document your efforts, we highly recommend to read <<community-docs>>.
 
 :leveloffset: 2
 
-include::cla.txt[]
+include::cla.asciidoc[]
 
 :leveloffset: 2
 
-include::contribution-areas.txt[]
+include::contribution-areas.asciidoc[]
 
 :leveloffset: 2
 
-include::docs.txt[]
+include::docs.asciidoc[]
 
 :leveloffset: 2
 
-include::contributing-code.txt[]
+include::contributing-code.asciidoc[]
 
 :leveloffset: 2
 
-include::contributors.txt[]
+include::contributors.asciidoc[]
 
 :leveloffset: 1
 

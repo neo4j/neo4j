@@ -10,7 +10,7 @@ This includes topics such as backing up the database and monitoring the health o
 
 :leveloffset: 1
 
-include::installation-deployment/index.txt[]
+include::installation-deployment/index.asciidoc[]
 
 :leveloffset: 1
 
@@ -26,7 +26,7 @@ include::{importdir}/neo4j-backup-docs-jar/ops/backup.txt[]
 
 :leveloffset: 1
 
-include::security.txt[]
+include::security.asciidoc[]
 
 :leveloffset: 1
 

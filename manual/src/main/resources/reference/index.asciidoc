@@ -9,7 +9,7 @@ It covers details on capabilities, transactions, indexing and queries among othe
 
 :leveloffset: 1
 
-include::capabilities/cap-details.txt[]
+include::capabilities/cap-details.asciidoc[]
 
 :leveloffset: 1
 
@@ -17,7 +17,7 @@ include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.txt[]
 
 :leveloffset: 1
 
-include::import/import.txt[]
+include::import/import.asciidoc[]
 
 :leveloffset: 1
 

@@ -4,7 +4,7 @@
 PROJECTNAME      = neo4j-manual
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
-SRCFILE          = $(SRCDIR)/$(PROJECTNAME).txt
+SRCFILE          = $(SRCDIR)/$(PROJECTNAME).asciidoc
 IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
