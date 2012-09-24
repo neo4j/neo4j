@@ -1,3 +1,5 @@
+For Release Notes, see http://neo4j.org/release-notes
+
 1.8.GA (2012-09-24)
 --------------------
 Kernel:
