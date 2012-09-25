@@ -43,11 +43,14 @@ Capabilities:
 
 
 Usage:
-  sauron deprecations <github_repo_url> <board_id> <list_id>
   sauron mordor
   sauron mordor <mordor_board_id> from <track_list_id>... [options]
   sauron trello boards [options]
   sauron trello lists [<board_id>] [options]
+  sauron deprecations <github_repo_url> <board_id> <list_id>
+  sauron deprecations before <git_tag>
+  sauron deprecations after <git_tag>
+  sauron deprecations removed between <one_git_tag> and <second_git_tag>
 
 
 Options:
@@ -62,6 +65,7 @@ from docopt import docopt
 from sauron.mordor import refresh_mordor
 from sauron.trello import list_boards, list_lists
 from sauron.deprecation_tracker import update_deprecated_card
+from sauron.deprecation_tracker.deprecation import list_deprecated_before, list_deprecated_after, list_removed_deprecations_between
 
 from trello import TrelloClient
 
@@ -120,7 +124,16 @@ def main():
         refresh_mordor(trello, mordor_board, track_lists)
 
     elif args['deprecations']:
-        update_deprecated_card(trello, 2, args['<github_repo_url>'], args['<board_id>'], args['<list_id>'])
+        if args['after']:
+            for filename, line in list_deprecated_after(args['<git_tag>']):
+                print '{0}:{1}'.format(filename, line)
+        elif args['before']:
+            for filename, line in list_deprecated_before(args['<git_tag>']):
+                print '{0}:{1}'.format(filename, line)
+        elif args['removed']:
+            list_removed_deprecations_between(args['<one_git_tag>'], args['<second_git_tag>'])
+        else:
+            update_deprecated_card(trello, 2, args['<github_repo_url>'], args['<board_id>'], args['<list_id>'])
 
 if __name__ == '__main__':
     main()

@@ -29,3 +29,4 @@ artifacts
 */pom-with-build-number.xml
 chromedriver.log
 webdriver-binaries
+*.egg-info
