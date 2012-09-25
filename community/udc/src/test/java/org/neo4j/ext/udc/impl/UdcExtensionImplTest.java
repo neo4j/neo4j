@@ -356,9 +356,25 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get(VERSION);
-        assertTrue(version.matches("\\d\\.\\d(\\.|\\-).*?"));
+        assertTrue(version.matches("\\d\\.\\d+((\\.|\\-).*)?"));
 
         destroy(graphdb);
+    }
+
+    @Test
+    public void shouldMatchAllValidVersions() throws Exception
+    {
+        String pattern = "\\d\\.\\d+((\\.|\\-).*)?";
+        assertTrue( "1.8.M07".matches( pattern ) );
+        assertTrue( "1.8.RC1".matches( pattern ) );
+        assertTrue( "1.8.GA".matches( pattern ) );
+        assertTrue( "1.8".matches( pattern ) );
+        assertTrue( "1.9".matches( pattern ) );
+        assertTrue( "1.9-SNAPSHOT".matches( pattern ) );
+        assertTrue( "1.9.M01".matches( pattern ) );
+        assertTrue( "1.10".matches( pattern ) );
+        assertTrue( "1.10-SNAPSHOT".matches( pattern ) );
+        assertTrue( "1.10.M01".matches( pattern ) );
     }
 
     private static interface Condition<T>
