@@ -72,10 +72,10 @@ What about indexing?::
         Neo4j supports composite property indices.
         Promote index providers over in-graph indices.
         Lucene engine manages index paging separately and requires some heap for itself
-	Neo4j currently supports one auto indexer and many individual indexes (search done via API)
+        Neo4j currently supports one auto indexer and many individual indexes (search done via API)
 
 How do I query the database?::
-	Core API, Traversal API, REST API, Cypher, Gremlin
+        Core API, Traversal API, REST API, Cypher, Gremlin
 
 Does Neo4j use journaling?::
         Based on write change delta between master and slaves in HA cluster.
