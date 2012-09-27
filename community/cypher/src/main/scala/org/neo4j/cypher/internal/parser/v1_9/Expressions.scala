@@ -54,6 +54,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | ignoreCase("null") ^^^ Literal(null)
       | pathExpression
       | extract
+      | reduce
       | function
       | aggregateExpression
       | coalesceFunc
@@ -100,6 +101,10 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
   }
 
+  def reduce: Parser[Expression] = ignoreCase("reduce") ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
+    case (acc ~ "=" ~ init ~ "," ~ id ~ in ~ iter ~ ":" ~ expression) => ReduceFunction(iter, id, expression, acc, init)
+  }
+
   def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(commaList(expression)) ^^ {
     case expressions => CoalesceFunction(expressions: _*)
   }
@@ -143,6 +148,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "sqrt" -> func(1, args => SqrtFunction(args.head)),
     "sign" -> func(1, args => SignFunction(args.head)),
     "head" -> func(1, args => HeadFunction(args.head)),
+    "sumcollect" -> func(1, args => SumCollectFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
     "shortestpath" -> Function(x => false, args => null),
