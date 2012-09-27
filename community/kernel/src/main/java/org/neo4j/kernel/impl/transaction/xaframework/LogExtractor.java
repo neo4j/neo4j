@@ -533,7 +533,7 @@ public class LogExtractor
                 if ( !fileSystem.fileExists( name ) )
                 {
                     name = activeLogFiles.get( version );
-                    if ( name == null ) throw new NoSuchLogVersionException( version );
+                    if ( name == null ) throw new NoSuchLogVersionException( version, name );
                 }
                 FileChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
