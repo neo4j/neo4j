@@ -40,7 +40,7 @@ import org.neo4j.test.ProcessStreamHandler;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
 
-public class TestBackupToolEmbedded
+public class BackupEmbeddedIT
 {
     public static final String PATH = "target/var/db";
     public static final String BACKUP_PATH = "target/var/backup-db";
@@ -70,39 +70,6 @@ public class TestBackupToolEmbedded
     {
         if ( osIsWindows() ) return;
         db.shutdown();
-    }
-
-    @Test
-    public void makeSureBackupCannotBePerformedWithInvalidArgs() throws Exception
-    {
-        if ( osIsWindows() ) return;
-        startDb( null );
-        // No args at all
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode() );
-        // no targets
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full" ) );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-incremental" ) );
-        // Invalid from and no to
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "-from", "localhost" ) );
-        // invalid from and no to
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        "foo:localhost:123" ) );
-        // no from with to
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-to", "some-dir" ) );
-        // all in place but both modes
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "foo://localhost", "-to", "some-dir", "-incremental" ) );
-        // all in place, typo in from uri
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "foo:/localhost", "-to", "some-dir" ) );
     }
 
     @Test

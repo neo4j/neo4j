@@ -123,7 +123,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( OnlineBackup.directoryContainsDb( target.getAbsolutePath() ) )
+                if ( BackupService.directoryContainsDb( target.getAbsolutePath() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
@@ -150,7 +150,7 @@ class RebuildFromLogs
         }
         long txCount = findLastTransactionId( source, LOGICAL_LOG_DEFAULT_NAME + ".v" + maxFileId );
         String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
-        InternalAbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb( target.getAbsolutePath(),
+        InternalAbstractGraphDatabase graphdb = BackupService.startTemporaryDb( target.getAbsolutePath(),
                                                                        new TxDiffLogConfig( full
                                                                                ? VerificationLevel.FULL_WITH_LOGGING
                                                                                : VerificationLevel.LOGGING, txdifflog ) );

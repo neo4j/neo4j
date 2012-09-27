@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
@@ -44,6 +45,21 @@ public class BackupTool
 
     public static void main( String[] args )
     {
+        new BackupTool( new BackupService(), System.out, new Runtime() ).run( args );
+    }
+
+    private final BackupService backupService;
+    private final PrintStream systemOut;
+    private final Runtime runtime;
+
+    BackupTool( BackupService backupService, PrintStream systemOut, Runtime runtime )
+    {
+        this.backupService = backupService;
+        this.systemOut = systemOut;
+        this.runtime = runtime;
+    }
+
+    void run( String[] args ) {
         Args arguments = new Args( args );
 
         checkArguments( arguments );
@@ -59,7 +75,8 @@ public class BackupTool
         }
         catch ( URISyntaxException e )
         {
-            exitAbnormally( "Please properly specify a location to backup as a valid URI in the form <scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
+            runtime.exitAbnormally( "Please properly specify a location to backup as a valid URI in the form " +
+                    "<scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
         }
         String module = backupURI.getScheme();
 
@@ -76,8 +93,9 @@ public class BackupTool
             }
             catch ( NoSuchElementException e )
             {
-                exitAbnormally( String.format(
-                        "%s was specified as a backup module but it was not found. Please make sure that the implementing service is on the classpath.",
+                runtime.exitAbnormally( String.format(
+                        "%s was specified as a backup module but it was not found. " +
+                                "Please make sure that the implementing service is on the classpath.",
                         module ) );
             }
         }
@@ -89,20 +107,19 @@ public class BackupTool
         doBackup( full, backupURI, to, verify );
     }
 
-    private static void checkArguments( Args arguments )
+    private void checkArguments( Args arguments )
     {
-
         boolean full = arguments.has( FULL );
         boolean incremental = arguments.has( INCREMENTAL );
         if ( full&incremental || !(full|incremental) )
         {
-            exitAbnormally( "Specify either " + dash( FULL ) + " or "
+            runtime.exitAbnormally( "Specify either " + dash( FULL ) + " or "
                             + dash( INCREMENTAL ) );
         }
 
         if ( arguments.get( FROM, null ) == null )
         {
-            exitAbnormally( "Please specify " + dash( FROM ) + ", examples:\n" +
+            runtime.exitAbnormally( "Please specify " + dash( FROM ) + ", examples:\n" +
                     "  " + dash( FROM ) + " single://192.168.1.34\n" +
                     "  " + dash( FROM ) + " single://192.168.1.34:1234\n" +
                     "  " + dash( FROM ) + " ha://192.168.1.15:2181\n" +
@@ -111,47 +128,45 @@ public class BackupTool
 
         if ( arguments.get( TO, null ) == null )
         {
-            exitAbnormally( "Specify target location with " + dash( TO )
+            runtime.exitAbnormally( "Specify target location with " + dash( TO )
                             + " <target-directory>" );
         }
     }
 
-    private static void doBackup( boolean trueForFullFalseForIncremental,
-            URI from, String to, boolean verify )
+    private void doBackup( boolean trueForFullFalseForIncremental,
+            URI from, String to, boolean checkConsistency )
     {
         if ( trueForFullFalseForIncremental )
         {
-            doBackupFull( from, to, verify );
+            doBackupFull( from, to, checkConsistency );
         }
         else
         {
-            doBackupIncremental( from, to, verify );
+            doBackupIncremental( from, to, checkConsistency );
         }
-        System.out.println( "Done" );
+        systemOut.println( "Done" );
     }
 
-    private static void doBackupFull( URI from, String to, boolean verify )
+    private void doBackupFull( URI from, String to, boolean checkConsistency )
     {
-        System.out.println( "Performing full backup from '" + from + "'" );
-        OnlineBackup backup = newOnlineBackup( from );
+        systemOut.println( "Performing full backup from '" + from + "'" );
         try
         {
-            backup.full( to, verify );
+            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency );
         }
         catch ( ComException e )
         {
-            exitAbnormally( "Couldn't connect to '" + from + "'", e );
+            runtime.exitAbnormally( "Couldn't connect to '" + from + "'", e );
         }
     }
 
-    private static void doBackupIncremental( URI from, String to, boolean verify )
+    private void doBackupIncremental( URI from, String to, boolean verify )
     {
-        System.out.println( "Performing incremental backup from '" + from + "'" );
-        OnlineBackup backup = newOnlineBackup( from );
+        systemOut.println( "Performing incremental backup from '" + from + "'" );
         boolean failedBecauseOfStoreVersionMismatch = false;
         try
         {
-            backup.incremental( to, verify );
+            backupService.doIncrementalBackup( from.getHost(), extractPort( from ),  to, verify );
         }
         catch ( TransactionFailureException e )
         {
@@ -161,28 +176,38 @@ public class BackupTool
             }
             else
             {
-                exitAbnormally( "TransactionFailureException from existing backup at '" + from + "'.", e);
+                runtime.exitAbnormally( "TransactionFailureException from existing backup at '" + from + "'.", e);
             }
         }
         catch ( ComException e )
         {
-            exitAbnormally( "Couldn't connect to '" + from + "' ", e );
+            runtime.exitAbnormally( "Couldn't connect to '" + from + "' ", e );
         }
         if ( failedBecauseOfStoreVersionMismatch )
         {
-            System.out.println( "The database present in the target directory is of an older version. Backing that up in "
-                        + "target"
-                        + " and performing a full backup from source" );
+            systemOut.println( "The database present in the target directory is of an older version. " +
+                    "Backing that up in target and performing a full backup from source" );
             try
             {
                 moveExistingDatabase( to );
             }
             catch ( IOException e )
             {
-                exitAbnormally( "There was a problem moving the old database out of the way - cannot continue, aborting.", e );
+                runtime.exitAbnormally( "There was a problem moving the old database out of the way" +
+                        " - cannot continue, aborting.", e );
             }
             doBackupFull( from, to, verify );
         }
+    }
+
+    private int extractPort( URI from )
+    {
+        int port = from.getPort();
+        if ( port == -1 )
+        {
+            port = BackupServer.DEFAULT_PORT;
+        }
+        return port;
     }
 
     private static void moveExistingDatabase( String to ) throws IOException
@@ -198,17 +223,20 @@ public class BackupTool
         LogFiles.move( toDir, backupDir );
     }
 
-    private static void exitAbnormally( String message, Exception ex )
+    static class Runtime
     {
-        System.out.println( message );
-        ex.printStackTrace( System.out );
-        System.exit( 1 );
-    }
-
-    private static void exitAbnormally( String message )
-    {
-        System.out.println( message );
-        System.exit( 1 );
+        void exitAbnormally( String message, Exception ex )
+        {
+            System.out.println( message );
+            ex.printStackTrace( System.out );
+            System.exit( 1 );
+        }
+    
+        void exitAbnormally( String message )
+        {
+            System.out.println( message );
+            System.exit( 1 );
+        }
     }
 
     private static String dash( String name )
@@ -216,13 +244,4 @@ public class BackupTool
         return "-" + name;
     }
 
-    private static OnlineBackup newOnlineBackup( URI from )
-    {
-        String host = from.getHost();
-        int port = from.getPort();
-        if ( port == -1 )
-            return OnlineBackup.from( host );
-        else
-            return OnlineBackup.from( host, port );
-    }
 }

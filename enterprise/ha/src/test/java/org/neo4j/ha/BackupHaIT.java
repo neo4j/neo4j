@@ -21,10 +21,10 @@
 package org.neo4j.ha;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.TestBackupToolEmbedded.BACKUP_PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
-import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.BackupEmbeddedIT.BACKUP_PATH;
+import static org.neo4j.backup.BackupEmbeddedIT.PATH;
+import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
+import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
-public class TestBackupToolHa
+public class BackupHaIT
 {
     private LocalhostZooKeeperCluster zk;
     private List<GraphDatabaseService> instances;
