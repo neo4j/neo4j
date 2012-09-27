@@ -45,16 +45,16 @@ import org.ops4j.pax.exam.testforge.WaitForService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
-public class OSGiTest
+public class OSGiIT
 {
 
-    public static final String NEO4J_VERSION = "1.8-SNAPSHOT";
+    public static final String NEO4J_VERSION = GraphDatabaseService.class.getPackage()
+            .getImplementationVersion();
     public static final String GERONIMO_JTA_VERSION = "1.1.1";
 
     @Test
     public void neo4jStartupTestFelix() throws Exception
     {
-
         Option[] options = testOptions();
         Player player = new Player().with( options );
         test( player, 19 );
@@ -109,7 +109,7 @@ public class OSGiTest
     {
         // create a proper ExamSystem with your options. Focus on
         // "createServerSystem"
-        OSGiTest instance = new OSGiTest();
+        OSGiIT instance = new OSGiIT();
         ArrayList<Option> ops = new ArrayList<Option>();
         ops.addAll( Arrays.asList( instance.testOptions() ) );
         ops.addAll( Arrays.asList( instance.gogoShellOptions() ) );
@@ -117,6 +117,5 @@ public class OSGiTest
         // create Container (you should have exactly one configured!) and start.
         TestContainer container = PaxExamRuntime.createContainer( system );
         container.start();
-
     }
 }
