@@ -30,8 +30,8 @@ class ReduceTest extends Assertions {
     val collection = Identifier("l")
     val m = Map("l" -> l)
 
-    val extract = ReduceFunction(collection, "n", expression, "acc", Literal(0))
+    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    assert(extract.apply(m) === 6)
+    assert(reduce.apply(m) === 6)
   }
 }
