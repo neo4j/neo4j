@@ -30,7 +30,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.8</version>
+  <version>1.8-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to
@@ -233,7 +233,7 @@ public class ComponentVersion extends Version
           <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant-launcher</artifactId>
-            <version>1.8.2</version>
+            <version>1.8-SNAPSHOT.2</version>
         </dependency>
       </dependencies>
       </plugin>
@@ -335,7 +335,7 @@ public class ComponentVersion extends Version
             <include>org/neo4j/graphdb/**</include>
           </includes>
 
-          <!-- These are temporary exceptions for the 1.8 release, please remove after that. -->
+          <!-- These are temporary exceptions for the 1.8-SNAPSHOT release, please remove after that. -->
           <excludeMessageCodes>
             <param>6006</param><!-- Field was made final. -->
           </excludeMessageCodes>
