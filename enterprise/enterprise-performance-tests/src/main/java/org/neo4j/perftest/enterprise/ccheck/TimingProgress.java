@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codehaus.jackson.JsonGenerationException;
 import org.neo4j.helpers.ProgressIndicator;
 
 public class TimingProgress implements ProgressIndicator.Factory

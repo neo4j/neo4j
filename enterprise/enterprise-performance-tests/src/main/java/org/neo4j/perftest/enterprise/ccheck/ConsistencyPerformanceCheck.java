@@ -19,6 +19,12 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,12 +42,6 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
 
 public class ConsistencyPerformanceCheck
 {

@@ -19,14 +19,14 @@
  */
 package org.neo4j.perftest.enterprise.util;
 
+import static java.util.Collections.addAll;
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import static java.util.Collections.addAll;
-import static java.util.Collections.emptyList;
 
 public abstract class Setting<T>
 {
