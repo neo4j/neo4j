@@ -8,13 +8,13 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise-performance-tests</artifactId>
-  <version>1.8</version>
+  <version>1.8-SNAPSHOT</version>
   <name>Neo4j - Enterprise Performance Tests</name>
   <description>Performance tests for modules in the Enterprise distribution of Neo4j.</description>
   <packaging>jar</packaging>
 
   <properties>
-    <neo4j.version>1.8</neo4j.version>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <bundle.namespace>org.neo4j.perftest.enterprise</bundle.namespace>
   </properties>
 
@@ -46,7 +46,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
-      <version>1.8</version>
+      <version>1.8-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
