@@ -66,5 +66,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Christophe Willemsen |https://github.com/kwattro[kwattro]
 |Tony Liu |https://github.com/kooyeed[kooyeed]
 |Michael Klishin |https://github.com/michaelklishin[michaelklishin]
+|Wes Freeman |https://github.com/wfreeman[wfreeman]
 |=======
 
