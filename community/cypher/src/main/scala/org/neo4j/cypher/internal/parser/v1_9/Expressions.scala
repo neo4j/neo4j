@@ -148,7 +148,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "sqrt" -> func(1, args => SqrtFunction(args.head)),
     "sign" -> func(1, args => SignFunction(args.head)),
     "head" -> func(1, args => HeadFunction(args.head)),
-    "sumcollect" -> func(1, args => SumCollectFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
     "shortestpath" -> Function(x => false, args => null),
