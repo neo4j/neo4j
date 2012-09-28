@@ -4,6 +4,10 @@ o Refactored the type system from the bottom up
 o Predicates can now be returned and used to set properties
 o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if 
   they are re-used without the properties
+o Added the traversal matcher, which uses the new traversal framework abilities to do
+  pattern matching. It should provide for nice performance benefits for a lot of queries.
+o Fixed #866: Changed the LRU cache to make it safe to use concurrently, and made the parser single threaded
+
 
 1.8.RC1 (2012-09-05)
 --------------------

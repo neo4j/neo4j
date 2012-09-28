@@ -19,19 +19,31 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.LinkedHashMap
-import scala.math._
-import java.util.Map.Entry
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
 
-class LRUCache[K, V](cacheSize: Int) extends LinkedHashMap[K, V](ceil(cacheSize / 0.75f).asInstanceOf[Int] + 1, 0.75f, true) {
-  def getOrElseUpdate(key: K, f: => V) = if (containsKey(key)) {
-    get(key)
-  }
-  else {
-    val value = f
-    put(key, value)
-    value
+class LRUCache[K, V](cacheSize: Int) {
+
+  class LazyValue(f: => V) {
+    lazy val value = f
   }
 
-  override def removeEldestEntry(p1: Entry[K, V]): Boolean = size > cacheSize
+  val inner = new ConcurrentLinkedHashMap.Builder[K, LazyValue]
+    .maximumWeightedCapacity(cacheSize)
+    .build()
+
+  def getOrElseUpdate(key: K, f: => V): V = {
+    val oldValue = inner.putIfAbsent(key, new LazyValue(f))
+    if (oldValue == null) {
+      f
+    } else {
+      oldValue.value
+    }
+  }
+
+  def get(key: K): Option[V] = Option(inner.get(key).value)
+
+  def put(key: K, value: V) = inner.put(key, new LazyValue(value))
+
+  def containsKey(key: K) = inner.containsKey(key)
 }
+
