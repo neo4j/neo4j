@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from _backend import extends, ExecutionEngine, from_java,to_java, strings
+from _backend import extends, from_java,to_java, strings, ExecutionEngine
 from neo4j.util import rethrow_current_exception_as, PythonicIterator
+
 
 
 class CypherEngine(object):
