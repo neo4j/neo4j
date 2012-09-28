@@ -127,6 +127,25 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) : n.age)" -> List(38, 25, 54))), p.toList))
   }
 
+  @Test def reduce() {
+    testThis(
+      title = "REDUCE",
+      syntax = "REDUCE( accumulator = initial,  identifier in collection : expression )",
+      arguments = List(
+        "accumulator" -> "An identifier that will hold the result and the partial results as the collection is iterated",
+        "initial"    -> "An expression that runs once to give a starting value to the accumulator",
+        "collection" -> "An expression that returns a collection",
+        "identifier" -> "The closure will have an identifier introduced in it's context. Here you decide which identifier to use.",
+        "expression" -> "This expression will run once per value in the collection, and produces the result value."
+      ),
+      text = """To run an expression against individual elements of a collection, and store the result of the expression in
+ an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result 
+ in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
+      queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
+      returns = """The age property of all nodes in the path are summed and returned as a single value.""",
+      assertions = (p) => assertEquals(List(Map("reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)" -> 117)), p.toList))
+  }
+
   @Test def head() {
     testThis(
       title = "HEAD",
