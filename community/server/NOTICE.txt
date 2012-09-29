@@ -52,6 +52,7 @@ The Apache Software License, Version 2.0:
   Commons Configuration, Commons Digester, Commons Lang, Commons Logging,
  Apache Log4j,
  Apache Felix:   Felix FileInstall, Felix Framework, Felix Main,
+ ConcurrentLinkedHashMap,
  JSON.simple,
  RRD4J,
  Geronimo Java Transaction API,

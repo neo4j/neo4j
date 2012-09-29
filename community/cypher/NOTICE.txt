@@ -23,6 +23,8 @@ Agreement.
 Third party libraries
 ---------------------
 
+ConcurrentLinkedHashMap, Apache License, version 2.0.
+
 Scala library:
 
 SCALA LICENSE

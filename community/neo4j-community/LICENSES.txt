@@ -4,6 +4,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 -----------------------------
 Apache License 2.0:
  Apache Lucene
+ ConcurrentLinkedHashMap
  Geronimo Java Transaction API
 -----------------------------
 

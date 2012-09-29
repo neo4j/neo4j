@@ -31,3 +31,4 @@ The bundled Apache Geronimo JTA library is copyright
 The Apache Software Foundation  (http://www.apache.org/)
 under the Apache License version 2.0.
 
+ConcurrentLinkedHashMap under Apache License version 2.0.

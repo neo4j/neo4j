@@ -895,6 +895,7 @@ Apache License 2.0:
  Apache Lucene,
  Apache Log4j,
  Apache Felix,
+ ConcurrentLinkedHashMap,
  JSON.simple,
  RRD4J,
  Geronimo Java Transaction API,

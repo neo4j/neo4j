@@ -699,7 +699,8 @@ Public License instead of this License.  But first, please read
 
 -----------------------------------------------
 License for the Apache Geronimo JTA library and
-the Lucene text search engine library
+the Lucene text search engine library and
+ConcurrentLinkedHashMap.
 -----------------------------------------------
 
                                  Apache License

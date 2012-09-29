@@ -36,3 +36,4 @@ The bundled Scala library is copyright 2002-2011 Programming Methods
 Laboratory of the Swiss Federal Institute of Technology (EPFL), Lausanne,
 under the Scala License.
 
+ConcurrentLinkedHashMap under Apache License version 2.0.
