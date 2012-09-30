@@ -52,7 +52,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.9-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

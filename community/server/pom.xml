@@ -98,14 +98,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -113,13 +113,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>server-api</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -138,7 +138,6 @@
             <groupId>janino</groupId>
             <artifactId>janino</artifactId>
             <version>2.5.10</version>
-
         </dependency>
 
         <dependency>
@@ -306,14 +305,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-shell</artifactId>
-            <version>1.9-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -685,7 +684,7 @@
             </executions>
             <dependencies>
               <dependency>
-              <groupId>ant-contrib</groupId>
+               <groupId>ant-contrib</groupId>
                 <artifactId>ant-contrib</artifactId>
                 <version>1.0b3</version>
                 <exclusions>
@@ -698,12 +697,12 @@
               <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant</artifactId>
-                <version>1.7.1</version>
+                <version>1.8.2</version>
               </dependency>
               <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant-apache-regexp</artifactId>
-                <version>1.7.1</version>
+                <version>1.8.2</version>
               </dependency>
             </dependencies>
           </plugin>
