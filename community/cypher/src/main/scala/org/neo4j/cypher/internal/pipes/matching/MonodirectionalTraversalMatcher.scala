@@ -21,11 +21,9 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
-import traversal._
-import java.lang.{Iterable => JIterable}
 import collection.JavaConverters._
 import org.neo4j.kernel.{Uniqueness, Traversal}
-import collection.Map
+import traversal._
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionContext) => Iterable[Node])
   extends TraversalMatcher {
@@ -34,7 +32,7 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionCont
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
   }
 
-  def baseTraversal(params:ExecutionContext): TraversalDescription = Traversal.
+  def baseTraversal(params: ExecutionContext): TraversalDescription = Traversal.
     traversal(Uniqueness.RELATIONSHIP_PATH).
     evaluator(new MyEvaluator).
     expand(new TraversalPathExpander(params), initialStartStep)
@@ -57,12 +55,11 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionCont
 }
 
 class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
-  def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = {
-    if (state.getState.isEmpty)
-      Evaluation.INCLUDE_AND_PRUNE
-    else
-      Evaluation.EXCLUDE_AND_CONTINUE
-  }
+  def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = state.getState match {
+      case Some(step: ExpanderStep) if step.shouldInclude() => Evaluation.INCLUDE_AND_CONTINUE
+      case None                                             => Evaluation.INCLUDE_AND_PRUNE
+      case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
+    }
 
   def evaluate(path: Path) = throw new RuntimeException
 }

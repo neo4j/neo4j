@@ -33,8 +33,8 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
   val A = withName("A")
   val B = withName("B")
 
-  val pr2 = ExpanderStep(0, Seq(B), OUTGOING, None, True(), True())
-  val pr1 = ExpanderStep(1, Seq(A), OUTGOING, Some(pr2), True(), True())
+  val pr2 = SingleStep(1, Seq(B), OUTGOING, None, True(), True())
+  val pr1 = SingleStep(0, Seq(A), OUTGOING, Some(pr2), True(), True())
 
   @Test def basic() {
     //Data nodes and rels

@@ -53,15 +53,21 @@ class NullPipe extends Pipe {
 }
 
 object MutableMaps {
-  def empty = collection.mutable.Map[String,Any]()
-  def create(size : Int) = new java.util.HashMap[String,Any](size).asScala
-  def create(input : scala.collection.Map[String,Any]) = new java.util.HashMap[String,Any](input.asJava).asScala
-  def create(input : Seq[(String,Any)]) = {
+  def empty = collection.mutable.Map[String, Any]()
+
+  def create(size: Int) = new java.util.HashMap[String, Any](size).asScala
+
+  def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
+
+  def create(input: (String, Any)*) = {
     val m: HashMap[String, Any] = new java.util.HashMap[String, Any]()
-    input.foreach( { case (k,v) =>  m.put(k,v) })
+    input.foreach{
+      case (k, v) => m.put(k, v)
+    }
     m.asScala
   }
 }
+
 object QueryState {
   def apply() = new QueryState(null, Map.empty)
 }
@@ -131,7 +137,7 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
   }
 
   def newFrom(newEntries : Seq[(String,Any)]) = {
-    copy(m = MutableMaps.create(newEntries))
+    copy(m = MutableMaps.create(newEntries:_*))
   }
 
   def newFrom(newEntries : scala.collection.Map[String,Any]) = {
