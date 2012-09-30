@@ -60,3 +60,20 @@ include::abs.txt[]
 include::round.txt[]
 include::sqrt.txt[]
 include::sign.txt[]
+
+== String functions ==
+These functions all operate on string expressions only, and will return an
+error if used on any other values. Except STR(), which converts to strings.
+
+:leveloffset: 3
+
+include::str.txt[]
+include::replace.txt[]
+include::substring.txt[]
+include::left.txt[]
+include::right.txt[]
+include::ltrim.txt[]
+include::rtrim.txt[]
+include::trim.txt[]
+include::lower.txt[]
+include::upper.txt[]
