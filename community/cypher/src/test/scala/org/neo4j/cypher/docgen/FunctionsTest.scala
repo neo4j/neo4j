@@ -316,6 +316,133 @@ class FunctionsTest extends DocumentingTestBase {
       )) === p.toList)
     )
   }
+
+  @Test def replace() {
+    testThis(
+      title = "REPLACE",
+      syntax = "REPLACE( original, search, replace )",
+      arguments = List("original" -> "An expression that returns a string",
+                       "search" -> "An expression that returns a string to search for",
+                       "replace" -> "An expression that returns the string to replace the search string with"),
+      text = "`REPLACE` returns a string with the search string replaced by the replace string. It replaces all occurrences.",
+      queryText = "start n=node(1) return replace(\"hello\", \"l\", \"w\")",
+      returns = "A string.",
+      assertions = (p) => assert(Seq("hewwo") === p.columnAs[String]("replace(\"hello\", \"l\", \"w\")").toSeq)
+    )
+  }
+
+  @Test def left() {
+    testThis(
+      title = "LEFT",
+      syntax = "LEFT( original, length )",
+      arguments = List("original" -> "An expression that returns a string",
+                       "n" -> "An expression that returns a positive number"),
+      text = "`LEFT` returns a string containing the left n characters of the original string.",
+      queryText = "start n=node(1) return left(\"hello\", 3)",
+      returns = "A String.",
+      assertions = (p) => assert(Seq("hel") === p.columnAs[String]("left(\"hello\", 3)").toSeq)
+    )
+  }
+
+  @Test def right() {
+    testThis(
+      title = "RIGHT",
+      syntax = "RIGHT( original, length )",
+      arguments = List("original" -> "An expression that returns a string",
+                       "n" -> "An expression that returns a positive number"),
+      text = "`RIGHT` returns a string containing the right n characters of the original string.",
+      queryText = "start n=node(1) return right(\"hello\", 3)",
+      returns = "A string.",
+      assertions = (p) => assert(Seq("llo") === p.columnAs[String]("right(\"hello\", 3)").toSeq)
+    )
+  }
+
+  @Test def substring() {
+    testThis(
+      title = "SUBSTRING",
+      syntax = "SUBSTRING( original, start [, length] )",
+      arguments = List("original" -> "An expression that returns a string",
+                       "start" -> "An expression that returns a positive number",
+                       "length" -> "An expression that returns a positive number"),
+      text = "`SUBSTRING` returns a substring of the original, with a 0-based index start and length. If length is omitted, it returns a substring from start until the end of the string.",
+      queryText = "start n=node(1) return substring(\"hello\", 1, 3), substring(\"hello\", 2)",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("substring(\"hello\", 1, 3)" -> "ell", "substring(\"hello\", 2)" -> "llo")) === p.toList)
+    )
+  }
+
+  @Test def lower() {
+    testThis(
+      title = "LOWER",
+      syntax = "LOWER( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`LOWER` returns the original string in lowercase.",
+      queryText = "start n=node(1) return lower(\"HELLO\")",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("lower(\"HELLO\")" -> "hello")) === p.toList)
+    )
+  }
+
+  @Test def upper() {
+    testThis(
+      title = "UPPER",
+      syntax = "UPPER( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`UPPER` returns the original string in uppercase.",
+      queryText = "start n=node(1) return upper(\"hello\")",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("upper(\"hello\")" -> "HELLO")) === p.toList)
+    )
+  }
+
+  @Test def ltrim() {
+    testThis(
+      title = "LTRIM",
+      syntax = "LTRIM( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`LTRIM` returns the original string with whitespace removed from the left side.",
+      queryText = "start n=node(1) return ltrim(\"   hello\")",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("ltrim(\"   hello\")" -> "hello")) === p.toList)
+    )
+  }
+
+  @Test def rtrim() {
+    testThis(
+      title = "RTRIM",
+      syntax = "RTRIM( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`RTRIM` returns the original string with whitespace removed from the right side.",
+      queryText = "start n=node(1) return rtrim(\"hello   \")",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("rtrim(\"hello   \")" -> "hello")) === p.toList)
+    )
+  }
+
+  @Test def trim() {
+    testThis(
+      title = "TRIM",
+      syntax = "TRIM( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`TRIM` returns the original string with whitespace removed from both sides.",
+      queryText = "start n=node(1) return trim(\"   hello   \")",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("trim(\"   hello   \")" -> "hello")) === p.toList)
+    )
+  }
+
+  @Test def str() {
+    testThis(
+      title = "STR",
+      syntax = "STR( expression )",
+      arguments = List("expression" -> "An expression that returns anything"),
+      text = "`STR` returns a string representation of the expression.",
+      queryText = "start n=node(1) return str(1)",
+      returns = "A string.",
+      assertions = (p) => assert(List(Map("str(1)" -> "1")) === p.toList)
+    )
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
