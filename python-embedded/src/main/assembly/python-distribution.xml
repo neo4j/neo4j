@@ -69,7 +69,6 @@
   <dependencySets>
     <dependencySet>
       <outputDirectory>/neo4j/javalib</outputDirectory>
-      <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
   </dependencySets>
 </assembly>

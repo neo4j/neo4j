@@ -36,7 +36,7 @@ NEO4J_JAVA_CLASSES = (
     ('org.neo4j.graphdb.traversal',     ('Evaluation', 'Evaluator',)),
     ('org.neo4j.graphdb.index',         ('Index', 'IndexHits',)),
     ('org.neo4j.helpers.collection',    ('IterableWrapper',)),
-    ('org.neo4j.cypher.javacompat',     ('ExecutionEngine',)),
+    ('org.neo4j.cypher.pycompat',       ('ExecutionEngine',)),
     #('com.tinkerpop.blueprints.pgm.impls.neo4j', ('Neo4jGraph', 'Neo4jEdge', 'Neo4jVertex')),
     #('com.tinkerpop.gremlin', ('Gremlin')),
     ('java.util',                       ('HashMap',)),
@@ -167,7 +167,7 @@ except: # this isn't jython (and doesn't have the java module)
         for m in CLASS.__javaclass__.getMethods():
             if isStatic(m.getModifiers()):
                 statics.append(m.getName())
-        
+                
         for key, val in inspect.getmembers(CLASS):
             if not key.startswith("__") and hasattr(val,'__call__'):
                 wrapped = add_jvm_connection_boilerplate(val)

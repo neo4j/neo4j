@@ -1,8 +1,8 @@
 [[python-embedded-tutorial-invoiceapp]]
-A sample app using traversals and indexes
+A sample app using cypher and indexes
 =========================================
 
-For detailed documentation on the concepts used here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-traversal>>.
+For detailed documentation on the concepts used here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-cypher>>.
 
 This example shows you how to get started building something like a simple invoice tracking application with Neo4j.
 
@@ -44,13 +44,13 @@ tag=invoiceapp-domainlogic-get-by-idx
 classifier=test-sources
 ----
 
-Lets say we also like to do something like finding all invoices for a given customer that are above some given amount. This could be done by writing a traversal, like this:
+Lets say we also like to do something like finding all invoices for a given customer that are above some given amount. This could be done by writing a cypher query, like this:
 
 [snippet,python]
 ----
 component=neo4j-python-embedded
 source=examples.py
-tag=invoiceapp-domainlogic-get-by-traversal
+tag=invoiceapp-domainlogic-get-by-cypher
 classifier=test-sources
 ----
 

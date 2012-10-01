@@ -149,12 +149,16 @@ class GraphDatabase(GraphDatabase):
         return self.getReferenceNode()
     
     def traversal(self):
+        ''' This is deprecated, please use cypher instead.'''
         return Traversal.description()
         
     def query(self, query, **params):
         return self._cypher_engine.execute(query, **params)
         
     def prepare_query(self, query):
+        ''' This is deprecated, Cypher internally caches query plans now,
+        use queries with parameters to take full advantage of thisself.
+        '''
         return self._cypher_engine.prepare(query)
         
     @property

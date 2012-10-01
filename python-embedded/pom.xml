@@ -93,7 +93,7 @@ the relevant Commercial Agreement.
 	</repositories>
 
 	<build>
-		<sourceDirectory>src/main/python</sourceDirectory>
+		<sourceDirectory>src/main/java</sourceDirectory>
 		<testSourceDirectory>src/test/python</testSourceDirectory>
 
 		<plugins>
@@ -205,6 +205,13 @@ the relevant Commercial Agreement.
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+          </configuration>
+        </plugin>
 			</plugins>
 		</pluginManagement>
 	</build>

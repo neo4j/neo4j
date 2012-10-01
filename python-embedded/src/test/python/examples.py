@@ -105,7 +105,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                     invoice = db.node(amount=amount)
                     invoice.INSTANCE_OF(invoices)
                     
-                    invoice.RECIPIENT(customer)
+                    invoice.SENT_TO(customer)
                 return customer
             # END SNIPPET: invoiceapp-domainlogic-create
             
@@ -114,19 +114,16 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                 return customer_idx['name'][name].single
             # END SNIPPET: invoiceapp-domainlogic-get-by-idx
             
-            # START SNIPPET: invoiceapp-domainlogic-get-by-traversal
-            def get_invoices_with_amount_over(customer, min_sum):
-                def evaluator(path):
-                    node = path.end
-                    if node.has_key('amount') and node['amount'] > min_sum:
-                        return Evaluation.INCLUDE_AND_CONTINUE
-                    return Evaluation.EXCLUDE_AND_CONTINUE
-                
-                return db.traversal()\
-                         .relationships('RECIPIENT', INCOMING)\
-                         .evaluator(evaluator)\
-                         .traverse(customer)\
-                         .nodes
+            # START SNIPPET: invoiceapp-domainlogic-get-by-cypher
+            def get_invoices_with_amount_over(customer, min_sum):       
+                # Find all invoices over a given sum for a given customer.
+                # Note that we return an iterator over the "invoice" column
+                # in the result (['invoice']).
+                return db.query('''START customer=node({customer_id})
+                                   MATCH invoice-[:SENT_TO]->customer
+                                   WHERE has(invoice.amount) and invoice.amount >= {min_sum}
+                                   RETURN invoice''',
+                                   customer_id = customer.id, min_sum = min_sum)['invoice']
             # END SNIPPET: invoiceapp-domainlogic-get-by-traversal
             
             # START SNIPPET: invoiceapp-create-and-search
@@ -143,11 +140,11 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             large_invoices = get_invoices_with_amount_over(get_customer('Acme Inc.'), 500)
             
             # Getting all invoices per customer:
-            for relationship in get_customer('Acme Inc.').RECIPIENT.incoming:
+            for relationship in get_customer('Acme Inc.').SENT_TO.incoming:
                 invoice = relationship.start
             # END SNIPPET: invoiceapp-create-and-search
             
-            self.assertEqual(len(large_invoices), 6)
+            self.assertEqual(len(large_invoices), 7)
             db.shutdown()
         finally:
            if os.path.exists(folder_to_put_db_in):
