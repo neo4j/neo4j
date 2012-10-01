@@ -126,7 +126,7 @@ tag=insideAddMetaToProp
 classifier=sources
 ----
 
-Assuming all goes well, we'll get a +200 OK+ response back from the server (which we can check by calling
+Assuming all goes well, we'll get a +204 OK+ response back from the server (which we can check by calling
 +ClientResponse.getStatus()+) and we've now established a very small graph that we can query.
 
 == Querying graphs ==
