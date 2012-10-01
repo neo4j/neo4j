@@ -30,6 +30,8 @@ case class Add(a: Expression, b: Expression) extends Expression {
     val bVal = b(m)
 
     (aVal, bVal) match {
+      case (null, _)                          => null
+      case (_, null)                          => null
       case (x: Number, y: Number)             => x.doubleValue() + y.doubleValue()
       case (x: String, y: String)             => x + y
       case (IsCollection(x), IsCollection(y)) => x ++ y

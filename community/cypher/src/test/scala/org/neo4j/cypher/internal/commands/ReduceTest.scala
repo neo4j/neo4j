@@ -34,4 +34,14 @@ class ReduceTest extends Assertions {
 
     assert(reduce.apply(m) === 6)
   }
+
+  @Test def returns_null_from_null_collection() {
+    val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
+    val collection = Literal(null)
+    val m:Map[String,Any] = Map.empty
+
+    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
+
+    assert(reduce(m) === null)
+  }
 }

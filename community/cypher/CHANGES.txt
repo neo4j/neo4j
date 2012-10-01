@@ -7,6 +7,9 @@ o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same proper
 o Added the traversal matcher, which uses the new traversal framework abilities to do
   pattern matching. It should provide for nice performance benefits for a lot of queries.
 o Fixed #866: Changed the LRU cache to make it safe to use concurrently, and made the parser single threaded
+o Added the reduce() functionality
+o Made addition automatically convert numbers to strings when adding the two together
+o Added the string functions: str(), replace(), substring(), left(), right(), ltrim(), rtrim(), trim(), lower(), upper()
 
 
 1.8.RC1 (2012-09-05)

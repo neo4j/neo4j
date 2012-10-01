@@ -22,7 +22,8 @@ import collection.Map
 import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.symbols._
 
-case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression ) extends NullInNullOutExpression(collection) with CollectionSupport {
+case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression )
+  extends NullInNullOutExpression(collection) with CollectionSupport {
   def compute(value: Any, m: Map[String, Any]) = {
     val initMap = m + (acc -> init(m))
     val computedMap = makeTraversable(value).foldLeft(initMap) { (accMap, k) => {

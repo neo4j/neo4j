@@ -33,6 +33,11 @@ class AddTest extends Assertions {
     assert(expr(m) === 2)
   }
 
+  @Test def with_null() {
+    assert(Add(Literal(null), Literal(1))(m) === null)
+    assert(Add(Literal(2), Literal(null))(m) === null)
+  }
+
   @Test def strings() {
     val expr = Add(Literal("hello"), Literal("world"))
     assert(expr(m) === "helloworld")
