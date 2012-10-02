@@ -32,11 +32,6 @@ The latest release is always available from http://neo4j.org/download, included 
 After selecting the appropriate version for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
 Either take the jar files from the 'lib/' directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/]. Stable and milestone releases are available there.
 
-For information on how to use Neo4j as a dependency with Maven and other dependency management tools, see the following table:
-
-
-NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
-
 .Maven dependency
 [source,xml] 
 --------------------------------------------
