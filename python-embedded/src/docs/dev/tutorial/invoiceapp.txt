@@ -1,6 +1,6 @@
 [[python-embedded-tutorial-invoiceapp]]
 A sample app using cypher and indexes
-=========================================
+=====================================
 
 For detailed documentation on the concepts used here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-cypher>>.
 
