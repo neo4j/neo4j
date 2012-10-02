@@ -57,6 +57,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | reduce
       | function
       | aggregateExpression
+      | percentileFunction
       | coalesceFunc
       | filterFunc
       | nullableProperty
@@ -193,6 +194,15 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         Distinct(aggregateExpression, inner)
       }
     }
+  }
+
+  def percentileFunctionNames: Parser[String] = ignoreCases("percentile_cont", "percentile_disc")
+
+  def percentileFunction: Parser[Expression] = percentileFunctionNames ~ parens(expression ~ "," ~ expression) ^^ {
+    case function ~ (property ~ "," ~ percentile) => function match {
+      case "percentile_cont" => PercentileCont(property, percentile)
+      case "percentile_disc" => PercentileDisc(property, percentile)
+    } 
   }
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()

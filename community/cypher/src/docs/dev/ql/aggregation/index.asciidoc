@@ -21,6 +21,8 @@ include::count-non-null-values.asciidoc[]
 
 include::sum.asciidoc[]
 include::avg.asciidoc[]
+include::percentile_disc.asciidoc[]
+include::percentile_cont.asciidoc[]
 include::max.asciidoc[]
 include::min.asciidoc[]
 include::collect.asciidoc[]
