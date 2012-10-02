@@ -52,12 +52,16 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
   def calculateType(symbols: SymbolTable): CypherType = {
     val aT = a.getType(symbols)
-    val bT = a.getType(symbols)
+    val bT = b.getType(symbols)
 
     (aT.isCollection, bT.isCollection) match {
-      case (true,false) => mergeWithCollection(collection = aT, singleElement = bT)
-      case (false,true) => mergeWithCollection(collection = bT, singleElement = aT)
-      case _ => aT.mergeWith(bT)
+      case (true, false) => mergeWithCollection(collection = aT, singleElement = bT)
+      case (false, true) => mergeWithCollection(collection = bT, singleElement = aT)
+      case _ => (aT, bT) match {
+        case (x:StringType, y:NumberType) => StringType()
+        case (x:NumberType, y:StringType) => StringType()
+        case _ => aT.mergeWith(bT)
+      }
     }
   }
 
