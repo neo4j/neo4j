@@ -253,6 +253,10 @@ public class ShortestPath implements PathFinder<Path>
                 else if ( stopAsap )
                 {   // This side found a hit, but wait for the other side to complete its current depth
                     // to see if it finds a shorter path. (i.e. stop this side and freeze the depth).
+
+                    // but only if the other side has not stopped, otherwise we might miss shorter paths
+                    if (otherSide.stop == true) return;
+
                     directionData.stop = true;
                 }
             }
