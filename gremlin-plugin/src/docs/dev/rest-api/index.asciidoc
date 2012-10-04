@@ -24,38 +24,38 @@ When returning results from pipes like `g.v(0).in()`, make sure to iterate throu
 
 :leveloffset: 1
 
-include::send-a-gremlin-script---url-encoded.txt[]
+include::send-a-gremlin-script---url-encoded.asciidoc[]
 
-include::load-a-sample-graph.txt[]
+include::load-a-sample-graph.asciidoc[]
 
-include::sort-a-result-using-raw-groovy-operations.txt[]
+include::sort-a-result-using-raw-groovy-operations.asciidoc[]
 
-include::send-a-gremlin-script---json-encoded-with-table-results.txt[]
+include::send-a-gremlin-script---json-encoded-with-table-results.asciidoc[]
 
-include::returning-nested-pipes.txt[]
+include::returning-nested-pipes.asciidoc[]
 
-include::set-script-variables.txt[]
+include::set-script-variables.asciidoc[]
 
-include::send-a-gremlin-script-with-variables-in-a-json-map.txt[]
+include::send-a-gremlin-script-with-variables-in-a-json-map.asciidoc[]
 
-include::return-paths-from-a-gremlin-script.txt[]
+include::return-paths-from-a-gremlin-script.asciidoc[]
 
-include::send-an-arbitrary-groovy-script---lucene-sorting.txt[]
+include::send-an-arbitrary-groovy-script---lucene-sorting.asciidoc[]
 
-include::emit-a-sample-graph.txt[]
+include::emit-a-sample-graph.asciidoc[]
 
-include::hyperedges---find-user-roles-in-groups.txt[]
+include::hyperedges---find-user-roles-in-groups.asciidoc[]
 
-include::group-count.txt[]
+include::group-count.asciidoc[]
 
-include::collect-multiple-traversal-results.txt[]
+include::collect-multiple-traversal-results.asciidoc[]
 
-include::collaborative-filtering.txt[]
+include::collaborative-filtering.asciidoc[]
 
-include::chunking-and-offsetting-in-gremlin.txt[]
+include::chunking-and-offsetting-in-gremlin.asciidoc[]
 
-include::modify-the-graph-while-traversing.txt[]
+include::modify-the-graph-while-traversing.asciidoc[]
 
-include::flow-algorithms-with-gremlin.txt[]
+include::flow-algorithms-with-gremlin.asciidoc[]
 
-include::script-execution-errors.txt[]
+include::script-execution-errors.asciidoc[]
