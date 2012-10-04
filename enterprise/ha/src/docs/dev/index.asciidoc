@@ -12,14 +12,14 @@ Neo4j High Availability or “Neo4j HA” provides the following two main featur
 
 :leveloffset: 2
 
-include::architecture.txt[]
+include::architecture.asciidoc[]
 
-include::config.txt[]
+include::config.asciidoc[]
 
-include::operation.txt[]
+include::operation.asciidoc[]
 
-include::upgrade-guide.txt[]
+include::upgrade-guide.asciidoc[]
 
-include::ha-setup-tutorial.txt[]
+include::ha-setup-tutorial.asciidoc[]
 
-include::haproxy.txt[]
+include::haproxy.asciidoc[]
