@@ -19,7 +19,7 @@ The cheatsheet is really useful!
 
 Each (sub)project has its own documentation, which will produce a 'docs.jar' file.
 By default this file is assembled from the contents in 'src/docs/'.
-Asciidoc documents have the +.txt+ file extension.
+Asciidoc documents have the +.asciidoc+ file extension.
 
 The documents can use code snippets which will extract code from the project.
 The corresponding code must be deployed to the 'sources.jar' or 'test-sources.jar' file.
@@ -33,7 +33,7 @@ Note that different ways to add documentation works best for different cases:
 
 * For detail level documentation, it works well to write the documentation as part of unit tests (in the JavaDoc comment).
   In this case, you typically do not want to link to the source code in the documentation.
-* For tutorial level documentation, the result will be best by writing a +.txt+ file containing the text.
+* For tutorial level documentation, the result will be best by writing a +.asciidoc+ file containing the text.
   Source snippets and output examples can then be included from there.
   In this case you typically want to link to the source code, and users should be able to run it without any special setup.
 
@@ -443,11 +443,11 @@ This is how it renders:
 For Java, there are a couple of premade utilities that keep code and documentation together in
 Javadocs and code snippets that generate Asciidoc for the rest of the toolchain.
 
-To illustrate this, look at the following documentation that generates the Asciidoc file +hello-world-title.txt+ with a content of:
+To illustrate this, look at the following documentation that generates the Asciidoc file +hello-world-title.asciidoc+ with a content of:
 
 [source]
 ------------------------------
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[]
 ------------------------------
 
 this file is included in this documentation via
@@ -455,14 +455,14 @@ this file is included in this documentation via
 [source]
 ----
   :leveloffset: 3
-  include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[] 
+  include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[] 
 ----
 
 which renders the following chapter: 
 
 :leveloffset: 3
 
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[]
 
 :leveloffset: 2
 

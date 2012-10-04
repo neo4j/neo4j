@@ -14,15 +14,15 @@ include::installation-deployment/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
+include::{importdir}/neo4j-kernel-docs-jar/ops/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-ha-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-backup-docs-jar/ops/backup.txt[]
+include::{importdir}/neo4j-backup-docs-jar/ops/backup.asciidoc[]
 
 :leveloffset: 1
 
@@ -30,5 +30,5 @@ include::security.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-management-docs-jar/ops/monitoring.txt[]
+include::{importdir}/neo4j-management-docs-jar/ops/monitoring.asciidoc[]
 

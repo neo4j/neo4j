@@ -13,7 +13,7 @@ include::capabilities/cap-details.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.txt[]
+include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.asciidoc[]
 
 :leveloffset: 1
 
@@ -21,33 +21,33 @@ include::import/import.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-server-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-server-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.txt[]
+include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/cypher-plugin-api/index.txt[]
+include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/cypher-plugin-api/index.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.txt[]
+include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-python-embedded-docs-jar/dev/index.asciidoc[]
 

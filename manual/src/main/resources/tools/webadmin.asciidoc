@@ -63,7 +63,7 @@ image::operations/webadmin-console-cypher.png["Queries with Cypher", scaledwidth
 
 //:leveloffset: 3
 
-//include::{importdir}/neo4j-server-docs-jar/webadmin/accessing-the-cypher-console.txt[]
+//include::{importdir}/neo4j-server-docs-jar/webadmin/accessing-the-cypher-console.asciidoc[]
 
 //:leveloffset: 1
 

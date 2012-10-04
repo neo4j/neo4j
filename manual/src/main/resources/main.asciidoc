@@ -47,6 +47,6 @@ include::qanda/index.asciidoc[]
 
 ////
 :leveloffset: 0
-include::glossary.txt[]
+include::glossary.asciidoc[]
 ////
 

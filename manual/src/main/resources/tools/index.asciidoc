@@ -11,5 +11,5 @@ The Tools part describes available Neo4j tools and how to use them.
 
 include::webadmin.asciidoc[]
 
-include::{importdir}/neo4j-shell-docs-jar/dev/shell.txt[]
+include::{importdir}/neo4j-shell-docs-jar/dev/shell.asciidoc[]
 

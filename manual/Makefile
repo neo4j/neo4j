@@ -283,7 +283,7 @@ upgrade:
 	#
 	#
 	mkdir -p "$(UPGRADE)"
-	"$(ASCIIDOC)" --backend docbook -a a2x-format=text --out-file "$(UPGRADE)/upgrades.xml" "$(BUILDDIR)/docs/neo4j-docs-jar/ops/upgrades.txt"
+	"$(ASCIIDOC)" --backend docbook -a a2x-format=text --out-file "$(UPGRADE)/upgrades.xml" "$(BUILDDIR)/docs/neo4j-docs-jar/ops/upgrades.asciidoc"
 	# swap out arrow glyph for plain -->
 	sed 's/&#8594;/--\&gt;/g' <"$(UPGRADE)/upgrades.xml" >"$(UPGRADE)/upgrades.xml.safe"
 	rm -f "$(UPGRADE)/upgrades.xml"

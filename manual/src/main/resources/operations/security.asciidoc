@@ -7,5 +7,5 @@ However, there are different aspects that should be considered when using Neo4j 
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-server-docs-jar/ops/security.txt[]
+include::{importdir}/neo4j-server-docs-jar/ops/security.asciidoc[]
 

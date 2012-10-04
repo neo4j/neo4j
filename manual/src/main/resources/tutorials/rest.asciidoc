@@ -5,10 +5,10 @@ Neo4j Remote Client Libraries
 The included Java example shows a ``low-level'' approach to using the Neo4j REST API from Java.
 For other options, see below.
 
-include::{docdir}/community/rest-clients.txt[]
+include::{docdir}/community/rest-clients.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.txt[]
+include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.asciidoc[]
 
 

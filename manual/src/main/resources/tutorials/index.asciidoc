@@ -10,11 +10,11 @@ It takes you from Hello World to advanced usage of graphs.
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.asciidoc[]
 
 :leveloffset: 1
 
@@ -22,11 +22,11 @@ include::rest.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-examples-docs-jar/dev/data-modeling-examples.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/data-modeling-examples.asciidoc[]
 
 :leveloffset: 1
 
@@ -34,10 +34,10 @@ include::languages.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
+include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-server-examples-docs-jar/dev/index.asciidoc[]
 
 

@@ -16,9 +16,9 @@ include::installation.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-docs-jar/ops/upgrades.txt[]
+include::{importdir}/neo4j-docs-jar/ops/upgrades.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-udc-docs-jar/ops/index.txt[]
+include::{importdir}/neo4j-udc-docs-jar/ops/index.asciidoc[]
 

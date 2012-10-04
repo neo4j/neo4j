@@ -9,10 +9,10 @@ Other ways to import data into Neo4j include using Gremlin graph import (see <<r
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.txt[]
+include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.asciidoc[]
 
 :leveloffset: 3
 
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsertindex.txt[]
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsertindex.asciidoc[]
 
 
