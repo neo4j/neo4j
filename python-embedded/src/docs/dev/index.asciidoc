@@ -10,13 +10,13 @@ The source code for this project lives on GitHub: https://github.com/neo4j/pytho
 
 :leveloffset: 2
 
-include::installation.txt[]
+include::installation.asciidoc[]
 
-include::reference/core.txt[]
+include::reference/core.asciidoc[]
 
-include::reference/indexes.txt[]
+include::reference/indexes.asciidoc[]
 
-include::reference/cypher.txt[]
+include::reference/cypher.asciidoc[]
 
-include::reference/traversal.txt[]
+include::reference/traversal.asciidoc[]
 

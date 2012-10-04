@@ -9,6 +9,6 @@ You have to have installed the neo4j-embedded python library to try these exampl
 
 :leveloffset: 2
 
-include::tutorial/helloworld.txt[]
+include::tutorial/helloworld.asciidoc[]
 
-include::tutorial/invoiceapp.txt[]
+include::tutorial/invoiceapp.asciidoc[]

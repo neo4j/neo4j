@@ -8,10 +8,10 @@ For general information on the Python language binding, see <<python-embedded>>.
 
 :leveloffset: 2
 
-include::helloworld.txt[]
+include::helloworld.asciidoc[]
 
 :leveloffset: 2
 
-include::invoiceapp.txt[]
+include::invoiceapp.asciidoc[]
 
 
