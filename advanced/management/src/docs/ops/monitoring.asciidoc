@@ -74,6 +74,6 @@ Once you have access to this information, you can use it to for instance expose 
 [[jmx-mxbeans]]
 == Reference of supported JMX MBeans ==
 
-include::{importdir}/neo4j-ha-docs-jar/ops/jmx.txt[]
+include::{importdir}/neo4j-ha-docs-jar/ops/jmx.asciidoc[]
 
 
