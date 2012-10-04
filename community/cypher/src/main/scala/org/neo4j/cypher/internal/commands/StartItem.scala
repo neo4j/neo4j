@@ -26,6 +26,7 @@ import scala.Long
 import collection.Map
 import org.neo4j.graphdb.{DynamicRelationshipType, Node}
 import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
 abstract class StartItem(val identifierName: String) extends TypeSafe {

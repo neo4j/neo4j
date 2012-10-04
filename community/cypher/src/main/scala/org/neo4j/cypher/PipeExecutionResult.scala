@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.{CollectionSupport, IsCollection}
+import internal.helpers.CollectionSupport
 import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import java.io.{StringWriter, PrintWriter}
-import java.lang.String
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
 

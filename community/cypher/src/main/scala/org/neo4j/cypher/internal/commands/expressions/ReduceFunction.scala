@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 import collection.Map
-import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression )
   extends NullInNullOutExpression(collection) with CollectionSupport {

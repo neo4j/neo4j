@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.Comparer
 import java.lang.String
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
+import org.neo4j.cypher.internal.helpers.IsCollection
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean

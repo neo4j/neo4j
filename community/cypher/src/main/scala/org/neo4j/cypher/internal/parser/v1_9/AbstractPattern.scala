@@ -43,7 +43,8 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 }
 
 
-case class ParsedEntity(expression: Expression,
+case class ParsedEntity(name: String,
+                        expression: Expression,
                         props: Map[String, Expression],
                         predicate: Predicate) extends AbstractPattern{
   def makeOutgoing = this

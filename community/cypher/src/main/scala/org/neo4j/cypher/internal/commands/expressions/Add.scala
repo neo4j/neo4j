@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.IsCollection
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
+import org.neo4j.cypher.internal.helpers.IsCollection
 
 case class Add(a: Expression, b: Expression) extends Expression {
   def apply(m: Map[String, Any]) = {

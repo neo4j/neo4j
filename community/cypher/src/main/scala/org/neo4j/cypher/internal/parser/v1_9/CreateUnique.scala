@@ -20,51 +20,58 @@
 package org.neo4j.cypher.internal.parser.v1_9
 
 import org.neo4j.cypher.internal.commands._
-import expressions.Identifier
+import expressions.Expression
 import org.neo4j.cypher.internal.mutation.UniqueLink
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.mutation.NamedExpectation
 import org.neo4j.cypher.internal.commands.True
-
+import collection.Map
 
 trait CreateUnique extends Base with ParserPattern {
   case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])
 
-  def relate: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("create unique") ~> usePattern(translate) ^^ (patterns => {
-    val (links, path)= reduce(patterns.map {
-      case PathAndRelateLink(p, l) => (l, p.toSeq)
+  def relate: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("create unique") ~> usePattern(translate) ^^
+    (patterns => {
+      val (links, path) = reduce(patterns.map {
+        case PathAndRelateLink(p, l) => (l, p.toSeq)
+      })
+
+      (Seq(CreateUniqueAction(links: _*)), path)
     })
 
-    (Seq(CreateUniqueAction(links:_*)), path)
-  })
+  private def translate(abstractPattern: AbstractPattern): Maybe[PathAndRelateLink] = {
 
-  private def translate(abstractPattern: AbstractPattern): Maybe[PathAndRelateLink] = abstractPattern match {
-    case ParsedNamedPath(name, patterns) =>
-      val namedPathPatterns = patterns.map(matchTranslator).reduce(_ ++ _)
-      val startItems = patterns.map(translate).reduce(_ ++ _)
+    def acceptAll[T](l: ParsedEntity, r: ParsedEntity, props: Map[String, Expression], f: (String, String) => T): Maybe[T] =
+      Yes(Seq(f(l.name, r.name)))
 
-      startItems match {
-        case No(msg) => No(msg)
-        case Yes(links) => namedPathPatterns.seqMap(p => {
-          val namedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
-          Seq(PathAndRelateLink(Some(namedPath), links.flatMap(_.links)))
-        })
-      }
+    abstractPattern match {
+      case ParsedNamedPath(name, patterns) =>
+        val namedPathPatterns = patterns.map(matchTranslator(acceptAll, _)).reduce(_ ++ _)
+        val startItems = patterns.map(translate).reduce(_ ++ _)
 
-    case ParsedRelation(name, props, ParsedEntity(Identifier(startName), startProps, True()),
-    ParsedEntity(Identifier(endName), endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
-      val link = UniqueLink(
-        start = NamedExpectation(startName, startProps),
-        end = NamedExpectation(endName, endProps),
-        rel = NamedExpectation(name, props),
-        relType = typ.head,
-        dir = dir
-      )
+        startItems match {
+          case No(msg)    => No(msg)
+          case Yes(links) => namedPathPatterns.seqMap(p => {
+            val namedPath = NamedPath(name, p.map(_.asInstanceOf[Pattern]): _*)
+            Seq(PathAndRelateLink(Some(namedPath), links.flatMap(_.links)))
+          })
+        }
 
-      Yes(Seq(PathAndRelateLink(None, Seq(link))))
-    case _ => No(Seq())
+      case ParsedRelation(name, props,
+      ParsedEntity(startName, startExp, startProps, True()),
+      ParsedEntity(endName, endExp, endProps, True()), typ, dir, map, True()) if typ.size == 1 =>
+        val link = UniqueLink(
+          start = NamedExpectation(startName, startExp, startProps),
+          end = NamedExpectation(endName, endExp, endProps),
+          rel = NamedExpectation(name, props),
+          relType = typ.head,
+          dir = dir
+        )
+
+        Yes(Seq(PathAndRelateLink(None, Seq(link))))
+      case _                                                                                   => No(Seq())
+    }
   }
-
-  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
+  def matchTranslator(transform: (ParsedEntity, ParsedEntity, Map[String, Expression], (String, String) => Pattern) => Maybe[Pattern], abstractPattern: AbstractPattern): Maybe[Any]
 }

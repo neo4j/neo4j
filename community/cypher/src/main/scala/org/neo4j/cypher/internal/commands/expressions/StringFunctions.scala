@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.CypherTypeException
 import scala.collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.commands.{CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.StringExtras

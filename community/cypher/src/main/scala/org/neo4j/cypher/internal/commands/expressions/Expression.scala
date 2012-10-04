@@ -32,6 +32,8 @@ with TypeSafe {
   def subExpressions = filter( _ != this)
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
+  /*When calculating the type of an expression, the expression should also
+  make sure to check the types of any downstream expressions*/
   protected def calculateType(symbols: SymbolTable): CypherType
 
   def evaluateType(expectedType: CypherType, symbols: SymbolTable): CypherType = {

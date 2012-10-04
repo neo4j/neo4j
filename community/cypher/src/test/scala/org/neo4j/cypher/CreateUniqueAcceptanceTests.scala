@@ -23,7 +23,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import collection.JavaConverters._
 import org.scalatest.Assertions
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.{Path, Node, Relationship}
 
 class CreateUniqueAcceptanceTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
@@ -35,6 +35,90 @@ class CreateUniqueAcceptanceTests extends ExecutionEngineHelper with Assertions 
     val b = createNode()
 
     val result = parseAndExecute("start a = node(1), b=node(2) create unique a-[r:X]->b return r")
+    val createdRel = result.columnAs[Relationship]("r").toList.head
+
+    assertStats(result, relationshipsCreated = 1)
+
+    val r = a.getRelationships.asScala.head
+
+    assert(createdRel === r)
+    assert(r.getStartNode === a)
+    assert(r.getEndNode === b)
+  }
+
+  @Test
+  def should_be_able_to_handle_a_param_as_map() {
+    val a = createNode()
+
+    val nodeProps = Map("name"->"Lasse")
+
+    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->({p}) return r", "p" -> nodeProps)
+    val createdRel = result.columnAs[Relationship]("r").toList.head
+
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
+
+    val r = a.getRelationships.asScala.head
+
+    assert(createdRel === r)
+    assert(r.getStartNode === a)
+    val endNode = r.getEndNode
+
+    assert(endNode.getProperty("name") === "Lasse")
+  }
+
+  @Test
+  def should_be_able_to_handle_a_param_as_map_in_a_path() {
+    val nodeProps = Map("name"->"Lasse")
+
+    val result = parseAndExecute("start a = node(0) create unique path=a-[:X]->({p}) return last(path)", "p" -> nodeProps)
+    val endNode = result.columnAs[Node]("last(path)").toList.head
+
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
+
+    assert(endNode.getProperty("name") === "Lasse")
+  }
+
+  @Test
+  def should_be_able_to_handle_two_params() {
+    val props1 = Map("name"->"Andres", "position"->"Developer")
+    val props2 = Map("name"->"Lasse", "awesome"->true)
+
+    val result = parseAndExecute("start n=node(0) create unique n-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
+
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
+    val resultMap = result.toList.head
+
+    assert(resultMap("a").asInstanceOf[Node].getProperty("name") === "Andres")
+    assert(resultMap("a").asInstanceOf[Node].getProperty("position") === "Developer")
+    assert(resultMap("b").asInstanceOf[Node].getProperty("name") === "Lasse")
+    assert(resultMap("b").asInstanceOf[Node].getProperty("awesome") === true)
+  }
+
+  @Test
+  def should_be_able_to_handle_two_params_without_named_nodes() {
+    val props1 = Map("name"->"Andres", "position"->"Developer")
+    val props2 = Map("name"->"Lasse", "awesome"->true)
+
+    val result = parseAndExecute("start n=node(0) create unique p=n-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
+
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
+    val path = result.toList.head("p").asInstanceOf[Path]
+
+    val lasse = path.endNode()
+    val andres = path.nodes().asScala.toList(1)
+
+    assert(andres.getProperty("name") === "Andres")
+    assert(andres.getProperty("position") === "Developer")
+    assert(lasse.getProperty("name") === "Lasse")
+    assert(lasse.getProperty("awesome") === true)
+  }
+
+  @Test
+  def should_be_able_to_handle_a_param_as_node() {
+    val a = createNode()
+    val b = createNode()
+
+    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->({p}) return r", "p" -> b)
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
     assertStats(result, relationshipsCreated = 1)
@@ -280,6 +364,18 @@ CREATE UNIQUE
 RETURN x""")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesSet = 1)
+  }
+
+  @Test def should_not_create_unnamed_parts_unnecessarily() {
+    val a = createNode()
+    val b = createNode()
+
+    val result = parseAndExecute("""
+START a = node(1), b = node(2)
+CREATE UNIQUE
+  a-[:X]->()-[:X]->()-[:X]->b""")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 3)
   }
 
   @Test def should_find_nodes_with_properties_first2() {

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.{CollectionSupport, Predicate}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 

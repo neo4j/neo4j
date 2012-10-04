@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands.expressions
+package org.neo4j.cypher.internal.helpers
+
 import collection.Map
-import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyCollectionType}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import java.util.{Map => JavaMap}
+import collection.JavaConverters._
 
-case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).tail
+object IsMap extends MapSupport {
+  def unapply(x: Any): Option[Map[String, Any]] = if (isMap(x)) {
+    Some(castToMap(x))
+  } else {
+    None
+  }
+}
 
-  def rewrite(f: (Expression) => Expression) = f(TailFunction(collection.rewrite(f)))
+trait MapSupport {
+  def isMap(x: Any) = castToMap.isDefinedAt(x)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f)
-  else
-    collection.filter(f)
-
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyCollectionType(), symbols)
-
-  def symbolTableDependencies = collection.symbolTableDependencies
+  def castToMap: PartialFunction[Any, Map[String,Any]] = {
+    case x: Map[String, Any]       => x
+    case x: JavaMap[String, Any]   => x.asScala
+  }
 }

@@ -23,9 +23,7 @@ import collection.Seq
 import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
-import java.lang.{Iterable => JavaIterable}
-import java.util.{Map => JavaMap}
-import collection.JavaConverters._
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
   extends Predicate
@@ -90,34 +88,4 @@ case class SingleInCollection(collection: Expression, symbolName: String, inner:
   def name = "single"
 
   def rewrite(f: (Expression) => Expression) = SingleInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
-}
-
-object IsCollection extends CollectionSupport {
-  def unapply(x: Any):Option[Traversable[Any]] = if (isCollection(x)) {
-    Some(castToTraversable(x))
-  } else {
-    None
-  }
-}
-
-trait CollectionSupport {
-  def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
-
-  def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {
-    castToTraversable(z)
-  } else {
-    Stream(z)
-  }
-
-  def castToTraversable: PartialFunction[Any, Traversable[Any]] = {
-    case x: Seq[_] => x
-    case x: Array[_] => x
-    case x: Map[_, _] => Stream(x)
-    case x: JavaMap[_, _] => Stream(x.asScala)
-    case x: Iterable[_] => x
-    case x: JavaIterable[_] => x.asScala.map {
-      case y: JavaMap[_, _] => y.asScala
-      case y => y
-    }
-  }
 }

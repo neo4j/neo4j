@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 
 abstract class Predicate extends Expression {
   def apply(m: Map[String, Any]) = isMatch(m)

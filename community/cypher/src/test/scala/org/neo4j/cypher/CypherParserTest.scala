@@ -1433,24 +1433,45 @@ create a-[r:REL]->b
     testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
   }
 
-  @Test def create_relationship_without_identifier() {
-    testFrom_1_8("create ({a})-[:REL]->({a})",
+  @Test def create_relationship_without_identifier_1_8() {
+    test_1_8("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map())).
         returns())
   }
 
-  @Test def create_relationship_with_properties_from_map() {
-    testFrom_1_8("create ({a})-[:REL {param}]->({a})",
+  @Test def create_relationship_without_identifier() {
+    testFrom_1_9("create ({a})-[:REL]->({a})",
+      Query.
+        start(CreateRelationshipStartItem("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map())).
+        returns())
+  }
+
+  @Test def create_relationship_with_properties_from_map_1_8() {
+    test_1_8("create ({a})-[:REL {param}]->({a})",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map("*" -> ParameterExpression("param")))).
         returns())
   }
 
-  @Test def create_relationship_without_identifier2() {
-    testFrom_1_8("create ({a})-[:REL]->({a})",
+  @Test def create_relationship_with_properties_from_map() {
+    testFrom_1_9("create ({a})-[:REL {param}]->({a})",
+      Query.
+        start(CreateRelationshipStartItem("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map("*" -> ParameterExpression("param")))).
+        returns())
+  }
+
+  @Test def create_relationship_without_identifier2_1_8() {
+    test_1_8("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map())).
+        returns())
+  }
+
+  @Test def create_relationship_without_identifier2() {
+    testFrom_1_9("create ({a})-[:REL]->({a})",
+      Query.
+        start(CreateRelationshipStartItem("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map())).
         returns())
   }
 
@@ -1664,7 +1685,7 @@ create a-[r:REL]->b
   @Test def relate_with_initial_values_for_node() {
     val secondQ = Query.
       unique(
-      UniqueLink(new NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), new NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
+      UniqueLink(NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
@@ -1677,7 +1698,7 @@ create a-[r:REL]->b
   @Test def relate_with_initial_values_for_rel() {
     val secondQ = Query.
       unique(
-      UniqueLink(new NamedExpectation("a"), new NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
+      UniqueLink(NamedExpectation("a"), NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
@@ -1817,7 +1838,6 @@ foreach(x in [1,2,3] :
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
-
   @Test def use_predicate_as_expression() {
     testFrom_1_9("start n=node(0) return id(n) = 0, n is null",
       Query.
@@ -1827,6 +1847,24 @@ foreach(x in [1,2,3] :
         ReturnItem(IsNull(Identifier("n")), "n is null")
       ))
   }
+
+  @Test def create_unique_should_support_parameter_maps() {
+    val start = NamedExpectation("n")
+    val rel = NamedExpectation("  UNNAMED2")
+    val end = NamedExpectation("  UNNAMED1", ParameterExpression("param"), Map.empty)
+
+    val secondQ = Query.
+                  unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
+                  returns(AllIdentifiers())
+
+    testFrom_1_9("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
+                 Query.
+                 start(NodeById("n", 0)).
+                 tail(secondQ).
+                 returns(AllIdentifiers()))
+  }
+
+
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""

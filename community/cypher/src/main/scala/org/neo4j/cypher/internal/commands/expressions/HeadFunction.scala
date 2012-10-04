@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 import collection.Map
-import org.neo4j.cypher.internal.commands.CollectionSupport
 import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
   def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.{CollectionSupport}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.symbols.{AnyCollectionType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
