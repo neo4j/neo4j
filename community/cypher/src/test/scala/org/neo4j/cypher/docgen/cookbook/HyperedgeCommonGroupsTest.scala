@@ -71,7 +71,7 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
 
 The graph for this looks like the following (nodes like +U1G2R23+ representing the HyperEdges):
 
-include::cypher-hyperedgecommongroups-graph.txt[]
+include::cypher-hyperedgecommongroups-graph.asciidoc[]
 
 To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common role in these two groups, the query looks like this:
                """,

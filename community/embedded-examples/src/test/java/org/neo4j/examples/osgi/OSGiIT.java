@@ -99,10 +99,11 @@ public class OSGiIT
     private void test( Player player, int expectedBundles ) throws Exception
     {
         player.test( WaitForService.class,
-                GraphDatabaseService.class.getName(), 10000 ).test(
-                WaitForService.class, Index.class.getName(), 15000 ).test(
-                CountBundles.class, expectedBundles ).test(
-                BundlesInState.class, Bundle.ACTIVE, Bundle.ACTIVE ).play();
+                GraphDatabaseService.class.getName(), 10000 )
+                .test( WaitForService.class, Index.class.getName(), 15000 )
+                .test( CountBundles.class, expectedBundles )
+                .test( BundlesInState.class, Bundle.ACTIVE, Bundle.ACTIVE )
+                .play();
     }
 
     public static void main( String[] args ) throws Exception

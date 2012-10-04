@@ -1,0 +1,16 @@
+[[server-extending]]
+Extending the Neo4j Server
+==========================
+
+The Neo4j Server can be extended by either plugins or unmanaged extensions.
+For more information on the server, see <<server>>.
+
+:leveloffset: 2
+
+include::server-plugins.asciidoc[]
+
+:leveloffset: 2
+
+include::server-unmanaged-extensions.asciidoc[]
+
+

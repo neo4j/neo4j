@@ -1,0 +1,79 @@
+[[query-function]]
+Functions
+=========
+Most functions in Cypher will return +null+ if the input parameter is +null+.
+
+Here is a list of the functions in Cypher, seperated into three different sections: Predicates, Scalar functions and Aggregated functions
+
+include::cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+== Predicates ==
+Predicates are boolean functions that return true or false for a given set of input.
+They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.
+
+:leveloffset: 3
+
+include::all.asciidoc[]
+include::any.asciidoc[]
+include::none.asciidoc[]
+include::single.asciidoc[]
+
+:leveloffset: 2
+
+== Scalar functions ==
+Scalar functions return a single value.
+
+:leveloffset: 3
+
+include::length.asciidoc[]
+include::type.asciidoc[]
+include::id.asciidoc[]
+include::coalesce.asciidoc[]
+include::head.asciidoc[]
+include::last.asciidoc[]
+
+:leveloffset: 2
+
+== Collection functions ==
+Collection functions return collections of things -- nodes in a path, and so on.
+
+:leveloffset: 3
+
+include::nodes.asciidoc[]
+include::relationships.asciidoc[]
+include::extract.asciidoc[]
+include::filter.asciidoc[]
+include::tail.asciidoc[]
+include::range.asciidoc[]
+
+:leveloffset: 2
+
+== Mathematical functions ==
+These functions all operate on numerical expressions only, and will return an
+error if used on any other values.
+
+:leveloffset: 3
+
+include::abs.asciidoc[]
+include::round.asciidoc[]
+include::sqrt.asciidoc[]
+include::sign.asciidoc[]
+
+== String functions ==
+These functions all operate on string expressions only, and will return an
+error if used on any other values. Except STR(), which converts to strings.
+
+:leveloffset: 3
+
+include::str.asciidoc[]
+include::replace.asciidoc[]
+include::substring.asciidoc[]
+include::left.asciidoc[]
+include::right.asciidoc[]
+include::ltrim.asciidoc[]
+include::rtrim.asciidoc[]
+include::trim.asciidoc[]
+include::lower.asciidoc[]
+include::upper.asciidoc[]

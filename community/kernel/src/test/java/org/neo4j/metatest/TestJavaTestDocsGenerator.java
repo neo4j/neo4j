@@ -68,7 +68,8 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet_2-1", snippet2 );
         doc.document( directory.getAbsolutePath(), sectionName );
 
-        String result = readFileAsString( new File(sectionDirectory, "title1.txt"));
+        String result = readFileAsString( new File( sectionDirectory,
+                "title1.asciidoc" ) );
         assertTrue( result.contains( "include::includes/title1-snippet1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title1-snippet_2-1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title1-snippet12.asciidoc[]" ) );
@@ -119,7 +120,8 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet1", snippet1 );
         doc.addSnippet( "snippet2", snippet2 );
         doc.document( directory.getAbsolutePath(), sectionName );
-        String result = readFileAsString( new File(sectionDirectory, "title2.txt"));
+        String result = readFileAsString( new File( sectionDirectory,
+                "title2.asciidoc" ) );
         assertTrue( result.contains( "include::includes/title2-snippet1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title2-snippet2.asciidoc[]" ) );
         result = readFileAsString( new File( new File( sectionDirectory,

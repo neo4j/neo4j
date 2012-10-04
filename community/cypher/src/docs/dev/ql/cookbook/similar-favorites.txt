@@ -1,9 +1,0 @@
-[[cypher-cookbook-similar-favorites]]
-== Find people based on similar favorites ==
-
-:leveloffset: 2
-
-include::cypher-peoplesimilarityfavorites-graph.txt[]
-
-include::find-people-based-on-similar-favorites.txt[]
-

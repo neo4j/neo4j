@@ -51,13 +51,13 @@ trait DocumentationHelper {
       dir.mkdirs()
     }
 
-    val writer = new PrintWriter(new File(dir, nicefy(title) + ".txt"), "UTF-8")
+    val writer = new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
     (dir, writer)
   }
 
   val path: String = "target/docs/dev/ql/"
 
-  val graphvizFileName = "cypher-" + simpleName + "-graph.txt"
+  val graphvizFileName = "cypher-" + simpleName + "-graph.asciidoc"
 
   def dumpGraphViz(dir: File, graphVizOptions:String) {
     val graphViz = new PrintWriter(new File(dir, graphvizFileName), "UTF-8")

@@ -1,0 +1,69 @@
+[[rest-api-traverse]]
+== Traversals ==
+
+[WARNING]
+The Traversal REST Endpoint executes arbitrary Groovy code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
+In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
+interesting traversals with the Java API ( see <<server-plugins>> ) or secure your server, see <<security-server>>.
+
+Traversals are performed from a start node.
+The traversal is controlled by the URI and the body sent with the request.
+
+returnType:: The kind of objects in the response is determined by 'traverse/\{returnType}' in the URL.
+ +returnType+ can have one of these values:
+ * +node+
+ * +relationship+
+ * +path+: contains full representations of start and end node, the rest are URIs.
+ * +fullpath+: contains full representations of all nodes and relationships.
+
+To decide how the graph should be traversed you can use these parameters in the request body:
+
+order:: Decides in which order to visit nodes. Possible values:
+ * +breadth_first+: see http://en.wikipedia.org/wiki/Breadth-first_search[Breadth-first search].
+ * +depth_first+: see http://en.wikipedia.org/wiki/Depth-first_search[Depth-first search]
+relationships:: Decides which relationship types and directions should be followed.
+ The direction can be one of:
+ * +all+
+ * +in+
+ * +out+
+uniqueness:: Decides how uniqueness should be calculated.
+ For details on different uniqueness values see the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html[Java API on Uniqueness].
+ Possible values:
+ * +node_global+
+ * +none+
+ * +relationship_global+
+ * +node_path+
+ * +relationship_path+
+prune_evaluator:: Decides whether the traverser should continue down that path or if it should be pruned so that the traverser won't continue down that path.
+ You can write your own prune evaluator as (see <<rest-api-traversal-using-a-return-filter>> or use the +built-in+ +none+ prune evaluator.
+return_filter:: Decides whether the current position should be included in the result.
+ You can provide your own code for this (see <<rest-api-traversal-using-a-return-filter>>), or use one of the built-in filters:
+ * +all+
+ * +all_but_start_node+
+max_depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
+ If not specified a max depth of 1 is used and if a +prune_evaluator+ is specified instead of a +max_depth+, no max depth limit is set.
+
+The +position+ object in the body of the +return_filter+ and +prune_evaluator+ is a
++http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
+object representing the path from the start node to the current traversal position.
+
+Out of the box, the REST API supports JavaScript code in filters and evaluators.
+The script body will be executed in a Java context which has access to the full Neo4j http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/[Java API].
+See the examples for the exact syntax of the request.
+
+include::traversal-using-a-return-filter.asciidoc[]
+
+include::return-relationships-from-a-traversal.asciidoc[]
+
+include::return-paths-from-a-traversal.asciidoc[]
+
+include::traversal-returning-nodes-below-a-certain-depth.asciidoc[]
+
+include::creating-a-paged-traverser.asciidoc[]
+
+include::paging-through-the-results-of-a-paged-traverser.asciidoc[]
+
+include::paged-traverser-page-size.asciidoc[]
+
+include::paged-traverser-timeout.asciidoc[]
+

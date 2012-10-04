@@ -480,7 +480,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         {
             String name = data.title.replace( " ", "-" )
                     .toLowerCase();
-            String filename = name + ".txt";
+            String filename = name + ".asciidoc";
             File dir = new File( new File( new File( "target" ), "docs" ),
                     section );
             data.description = replaceSnippets( data.description, dir, name );

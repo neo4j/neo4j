@@ -62,7 +62,7 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
         this.setSection( sectionName );
         String name = title.replace( " ", "-" ).toLowerCase();
         File dir = new File( new File( directory ), section );
-        String filename = name + ".txt";
+        String filename = name + ".asciidoc";
         Writer fw = getFW( dir, filename );
         description = replaceSnippets( description, dir, name );
         try

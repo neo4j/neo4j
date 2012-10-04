@@ -1,0 +1,10 @@
+[[query-delete]]
+Delete
+======
+Removing graph elements -- nodes, relationships and properties, is done with +DELETE+.
+
+:leveloffset: 2
+
+include::delete-single-node.asciidoc[]
+include::remove-a-node-and-connected-relationships.asciidoc[]
+include::remove-a-property.asciidoc[]

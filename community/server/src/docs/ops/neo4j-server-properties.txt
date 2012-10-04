@@ -1,5 +1,0 @@
-
-Property: 'org.neo4j.server.database.mode'
-Accepted values: 'standalone', 'ha'
-Default value: 'standalone'
-Effect: Instructs the Neo4j server to start the Neo4j Graph Database in high availability mode.

@@ -107,7 +107,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * example of modeling ACL structures can be found at 
      * http://www.xaprb.com/blog/2006/08/16/how-to-build-role-based-access-control-in-sql/[How to Build Role-Based Access Control in SQL].
      * 
-     * include::ACL-graph.txt[]
+     * include::ACL-graph.asciidoc[]
      * 
      * === Find all files in the directory structure ===
      * 

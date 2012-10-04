@@ -124,7 +124,7 @@ public abstract class AsciiDocGenerator
         {
             File dirs = new File( dir );
             String name = title.replace( " ", "-" )
-                    .toLowerCase() + ".txt";
+                    .toLowerCase() + ".asciidoc";
             return getFW( dirs, name );
         }
         catch ( Exception e )
@@ -228,7 +228,7 @@ public abstract class AsciiDocGenerator
             description = replaceSnippet( description, key, dir, title );
         }
         if(description.contains( SNIPPET_MARKER )) {
-            int indexOf = description.indexOf( "@@" );
+            int indexOf = description.indexOf( SNIPPET_MARKER );
             String snippet = description.substring( indexOf, description.indexOf( "\n", indexOf ) );
             log.severe( "missing snippet ["+snippet+"] in " + description);
         }

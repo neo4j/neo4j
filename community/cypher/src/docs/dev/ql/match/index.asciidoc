@@ -1,0 +1,35 @@
+[[query-match]]
+Match
+=====
+
+== Introduction ==
+
+[TIP]
+In the `MATCH` clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
+The following graph is used for the examples below:
+
+include::cypher-match-graph.asciidoc[]
+
+include::related-nodes.asciidoc[]
+include::outgoing-relationships.asciidoc[]
+include::directed-relationships-and-identifier.asciidoc[]
+include::match-by-relationship-type.asciidoc[]
+include::match-by-multiple-relationship-types.asciidoc[]
+include::match-by-relationship-type-and-use-an-identifier.asciidoc[]
+include::relationship-types-with-uncommon-characters.asciidoc[]
+include::multiple-relationships.asciidoc[]
+include::variable-length-relationships.asciidoc[]
+include::relationship-identifier-in-variable-length-relationships.asciidoc[]
+include::zero-length-paths.asciidoc[]
+include::optional-relationship.asciidoc[]
+include::optional-typed-and-named-relationship.asciidoc[]
+include::properties-on-optional-elements.asciidoc[]
+include::complex-matching.asciidoc[]
+include::shortest-path.asciidoc[]
+include::all-shortest-paths.asciidoc[]
+include::named-path.asciidoc[]
+include::matching-on-a-bound-relationship.asciidoc[]
+include::match-with-or.asciidoc[]
+

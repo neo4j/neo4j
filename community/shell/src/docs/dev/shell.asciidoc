@@ -1,0 +1,343 @@
+
+[[shell]]
+Neo4j Shell
+===========
+
+// If you're just looking for an example try the <<shell-example>>, otherwise read on.
+
+Neo4j shell is a command-line shell for browsing the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
+It consists of two parts:
+
+* a lightweight client that sends commands via RMI and
+* a server that processes those commands and sends the result back to the client.
+
+It's a nice tool for development and debugging.
+This guide will show you how to get it going!
+
+[[shell-starting]]
+== Starting the shell ==
+
+When used together with Neo4j started as a server, simply issue the following at the command line:
+
+[source,shell]
+----
+./bin/neo4j-shell
+----
+
+For the full list of options, see the reference in the <<shell-manpage,Shell manual page>>.
+
+To connect to a running Neo4j database, use <<read-only-mode>> for local databases
+and see <<shell-enabling-remote>> for remote databases.
+
+You need to make sure that the shell jar file is on the classpath when you start up your Neo4j instance.
+
+[[shell-enabling-remote]]
+=== Enabling the shell server ===
+
+Shell is enabled from the configuration of the Neo4j kernel, see <<server-configuration>>.
+Here's some sample configurations:
+
+[source,plain]
+----
+# Using default values
+enable_remote_shell = true
+# ...or specify custom port, use default values for the others
+enable_remote_shell = port=1234
+----
+
+When using the Neo4j server, see <<server-configuration>> for how to add configuration settings in that case.
+
+There are two ways to start the shell, either by connecting to a remote shell server or by pointing it to a Neo4j store path.
+
+=== Connecting to a shell server ===
+To start the shell and connect to a running server, run:
+[source,plain]
+----
+neo4j-shell 
+----
+
+Alternatively supply +-port+ and +-name+ options depending on how the remote shell server was enabled.
+Then you'll get the shell prompt like this:
+[source,plain]
+----
+neo4j-sh (0)$
+----
+
+=== Pointing the shell to a path ===
+
+To start the shell by just pointing it to a Neo4j store path you run the shell jar file.
+Given that the right neo4j-kernel-<version>.jar and jta jar files are in the same path as your neo4j-shell-<version>.jar file you run it with:
+[source,plain]
+----
+$ neo4j-shell -path path/to/neo4j-db
+----
+
+[[read-only-mode]]
+=== Read-only mode ===
+
+By issuing the +-readonly+ switch when starting the shell with a store path,
+changes cannot be made to the database during the session.
+
+[source,plain]
+----
+$ neo4j-shell -readonly -path path/to/neo4j-db
+----
+
+=== Run a command and then exit ===
+
+It is possible to tell the shell to just start, execute a command and then exit.
+This opens up for uses of background jobs and also handling of huge output of f.ex. an '''ls''' command where you then could pipe the output to '''less''' or another reader of your choice, or even to a file.
+So some examples of usage:
+[source,plain]
+----
+$ neo4j-shell -c "cd -a 24 && set name Mattias"
+$ neo4j-shell -c "trav -r KNOWS" | less
+----
+
+[[shell-options]]
+== Passing options and arguments ==
+
+Passing options and arguments to your commands is very similar to many CLI commands in an *nix environment.
+Options are prefixed with a +-+ and can contain one or more options.
+Some options expect a value to be associated with it.
+Arguments are string values which aren't prefixed with +-+.
+Let's look at +ls+ as an example:
+
++ls -r -f KNOWS:out -v 12345+ will make a verbose listing of node +12345+'s outgoing relationships of type +KNOWS+.
+The node id, +12345+, is an argument to +ls+ which tells it to do the listing on that node instead of the current node (see +pwd+ command).
+However a shorter version of this can be written:
+
++ls -rfv KNOWS:out 12345+. Here all three options are written together after a single '+-+' prefix.
+Even though +f+ is in the middle it gets associated with the +KNOWS:out+ value.
+The reason for this is that the +ls+ command doesn't expect any values associated with the +r+ or +v+ options.
+So, it can infer the right values for the rights options.
+
+[[shell-options-enum]]
+== Enum options ==
+
+Some options expects a value which is one of the values in an enum, f.ex. direction part of relationship type filtering where there's +INCOMING+, +OUTGOING+ and +BOTH+.
+All such values can be supplied in an easier way.
+It's enough that you write the start of the value and the interpreter will find what you really meant.
+F.ex. +out+, +in+, +i+ or even +INCOMING+.
+
+[[shell-filters]]
+== Filters ==
+
+Some commands makes use of filters for varying purposes.
+F.ex. +-f+ in +ls+ and in +trav+.
+A filter is supplied as a http://www.json.org/[json] object (w/ or w/o the surrounding +{}+ brackets.
+Both keys and values can contain regular expressions for a more flexible matching.
+An example of a filter could be +.\*url.\*:http.\*neo4j.*,name:Neo4j+.
+The filter option is also accompanied by the options +-i+ and +-l+ which stands for +ignore case+ (ignore casing of the characters) and +loose matching+ (it's considered a match even if the filter value just matches a part of the compared value, not necessarily the entire value).
+So for a case-insensitive, loose filter you can supply a filter with +-f -i -l+ or +-fil+ for short.
+
+[[shell-titles]]
+== Node titles ==
+
+To make it easier to navigate your graph the shell can display a title for each node, f.ex. in +ls -r+.
+It will display the relationships as well as the nodes on the other side of the relationships.
+The title is displayed together with each node and its best suited property value from a list of property keys.
+
+If you're standing on a node which has two +KNOWS+ relationships to other nodes it'd be difficult to know which friend is which.
+The title feature addresses this by reading a list of property keys and grabbing the first existing property value of those keys and displays it as a title for the node.
+So you may specify a list (with or without regular expressions), f.ex: +name,title.\*,caption+ and the title for each node will be the property value of the first existing key in that list.
+The list is defined by the client (you) using the +TITLE_KEYS+ <<shell-env-vars,environment variable>> and the default being +.\*name.\*,.\*title.*+
+
+[[shell-commands]]
+== How to use (individual commands) ==
+
+The shell is modeled after Unix shells like bash that you use to walk around your local file system.
+It has some of the same commands, like +cd+ and +ls+.
+When you first start the shell (see instructions above), you will get a list of all the available commands.
+Use +man <command>+ to get more info about a particular command. Some notes:
+
+[[shell-current-pos]]
+=== Current node/relationship and path ===
+You have a current node/relationship and a "current path" (like a current working directory in bash) that you've traversed so far.
+You start at the http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html#getReferenceNode()[reference node] and can then +cd+ your way through the graph (check your current path at any time with the +pwd+ command).
++cd+ can be used in different ways:
+
+* +cd <node-id>+ will traverse one relationship to the supplied node id. The node must have a direct relationship to the current node.
+* +cd -a <node-id>+ will do an absolute path change, which means the supplied node doesn't have to have a direct relationship to the current node.
+* +cd -r <relationship-id>+ will traverse to a relationship instead of a node. The relationship must have the current node as either start or end point. To see the relationship ids use the +ls -vr+ command on nodes.
+* +cd -ar <relationship-id>+ will do an absolute path change which means the relationship can be any relationship in the graph.
+* +cd+ will take you back to the reference node, where you started in the first place.
+* +cd ..+ will traverse back one step to the previous location, removing the last path item from your current path (+pwd+).
+* +cd start+ _(only if your current location is a relationship)_. Traverses to the start node of the relationship.
+* +cd end+ _(only if your current location is a relationship)_. Traverses to the end node of the relationship.
+
+[[shell-listing]]
+=== Listing the contents of a node/relationship ===
+List contents of the current node/relationship (or any other node) with the +ls+ command.
+Please note that it will give an empty output if the current node/relationship has no properties or relationships (for example in the case of a brand new graph).
++ls+ can take a node id as argument as well as filters, see <<shell-filters>> and for information about how to specify direction see <<shell-options-enum>>.
+Use +man ls+ for more info.
+
+=== Creating nodes and relationships ===
+You create new nodes by connecting them with relationships to the current node.
+For example, +mkrel -t A_RELATIONSHIP_TYPE -d OUTGOING -c+ will create a new node (+-c+) and draw to it an +OUTGOING+ relationship of type +A_RELATIONSHIP_TYPE+ from the current node.
+If you already have two nodes which you'd like to draw a relationship between (without creating a new node) you can do for example, +mkrel -t A_RELATIONSHIP_TYPE -d OUTGOING -n <other-node-id>+ and it will just create a new relationship between the current node and that other node.
+
+=== Setting, renaming and removing properties ===
+Property operations are done with the +set+, +mv+ and +rm+ commands.
+These commands operates on the current node/relationship.
+* +set <key> <value>+ with optionally the +-t+ option (for value type) sets a property.
+Supports every type of value that Neo4j supports. Examples of a property of type +int+:
+[source,plain]
+----
+$ set -t int age 29
+----
+
+And an example of setting a +double[]+ property:
+[source,plain]
+----
+$ set -t double[] my_values [1.4,12.2,13]
+----
+
+Example of setting a +String+ property containing a JSON string:
+[source,plain]
+----
+mkrel -c -d i -t DOMAIN_OF --np "{'app':'foobar'}"
+----
+
+* +rm <key>+ removes a property.
+* +mv <key> <new-key>+ renames a property from one key to another.
+
+=== Deleting nodes and relationships ===
+Deletion of nodes and relationships is done with the +rmnode+ and +rmrel+ commands.
++rmnode+ can delete nodes, if the node to be deleted still has relationships they can also be deleted by supplying -f option.
++rmrel+ can delete relationships, it tries to ensure connectedness in the graph, but relationships can be deleted regardless with the -f option.
++rmrel+ can also delete the node on the other side of the deleted relationship if it's left with no more relationships, see -d option.
+
+[[shell-env-vars]]
+=== Environment variables ===
+The shell uses environment variables a-la bash to keep session information, such as the current path and more.
+The commands for this mimics the bash commands +export+ and +env+. For example you can at anytime issue a +export STACKTRACES=true+ command to set the +STACKTRACES+ environment variable to +true+. This will then result in stacktraces being printed if an exception or error should occur. List environment variables using +env+
+
+=== Executing groovy/python scripts ===
+The shell has support for executing scripts, such as http://groovy.codehaus.org[Groovy] and http://www.python.org[Python] (via http://www.jython.org[Jython]).
+As of now the scripts (*.groovy, *.py) must exist on the server side and gets called from a client with for example, +gsh --renamePerson 1234 "Mathias" "Mattias" --doSomethingElse+ where the scripts renamePerson.groovy and doSomethingElse.groovy must exist on the server side in any of the paths given by the +GSH_PATH+ environment variable (defaults to .:src:src/script). This variable is like the java classpath, separated by a +:+. The python/jython scripts can be executed with the +jsh+ in a similar fashion, however the scripts have the .py extension and the environment variable for the paths is +JSH_PATH+.
+
+When writing the scripts assume that there's made available an +args+ variable (a String[]) which contains the supplied arguments.
+In the case of the +renamePerson+ example above the array would contain +["1234", "Mathias", "Mattias"]+.
+Also please write your outputs to the +out+ variable, such as +out.println( "My tracing text" )+ so that it will be printed at the shell client instead of the server.
+
+=== Traverse ===
+You can traverse the graph with the +trav+ command which allows for simple traversing from the current node.
+You can supply which relationship types (w/ regex matching) and optionally direction as well as property filters for matching nodes.
+In addition to that you can supply a command line to execute for each match.
+An example: +trav -o depth -r KNOWS:both,HAS_.\*:incoming -c "ls $n"+.
+Which means traverse depth first for relationships with type +KNOWS+ disregarding direction and incoming relationships with type matching +HAS_.\*+ and do a +ls <matching node>+ for each match. The node filtering is supplied with the +-f+ option, see <<shell-filters>>.
+See <<shell-options-enum>> for the traversal order option. Even relationship types/directions are supplied using the same format as filters.
+
+=== Query with Cypher ===
+You can use Cypher to query the graph. For that, use the +start+ command.
+
+[TIP]
+Cypher queries need to be terminated by a semicolon `;`.
+
+* +start n = node(0) return n;+ will give you a listing of the node with ID 0
+
+
+=== Indexing ===
+It's possible to query and manipulate indexes via the index command.
+Example: +index -i persons name+ (will index the name for the current node or relationship in the "persons" index).
+
+* +-g+ will do exact lookup in the index and display hits. You can supply +-c+ with a command to be executed for each hit. 
+* +-q+ will ask the index a query and display hits. You can supply +-c+ with a command to be executed for each hit.
+* +--cd+ will change current location to the hit from the query. It's just a convenience for using the +-c+ option.
+* +--ls+ will do a listing of the contents for each hit. It's just a convenience for using the +-c+ option.
+* +-i+ will index a key-value pair in an index for the current node/relationship. If no value is given the property value for that key for the current node is used as value.
+* +-r+ will remove a key-value pair (if it exists) from an index for the current node/relationship. Key and value is optional.
+* +-t+ will set the index type to work with, for example `index -t Relationship --delete friends` will delete the +friends+ relationship index. 
+
+=== Transactions ===
+It is useful to be able to test changes, and then being able to commit or rollback said changes.
+
+Transactions can be nested. With a nested transaction, a commit does not write any changes to disk, except for the
+top level transaction. A rollback, however works regardless of the level of the transaction. It will roll back
+all open transactions.
+
+* +begin transaction+  Starts a transaction.
+* +commit+ Commits a transaction.
+* +rollback+ Rollbacks all open transactions.
+
+[[shell-extending]]
+== Extending the shell: Adding your own commands ==
+
+Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/{neo4j-version}/apidocs/org/neo4j/shell/App.html[commands] do.
+
+So you say you'd like to start a Neo4j http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html[graph database], <<shell-enabling-remote,enable the remote shell>> and add your own apps to it so that your apps and the standard Neo4j apps co-exist side by side? Well, here's an example of how an app could look like:
+
+[source,java]
+----
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+
+@Service.Implementation( App.class )
+public class LsRelTypes extends GraphDatabaseApp
+{
+    @Override
+    protected String exec( AppCommandParser parser, Session session, Output out )
+            throws ShellException, RemoteException
+    {
+        GraphDatabaseService graphDb = getServer().getDb();
+        out.println( "Types:" );
+        for ( RelationshipType type : graphDb.getRelationshipTypes() )
+        {
+            out.println( type.name() );
+        }
+        return null;
+    }
+}
+----
+
+And you could now use it in the shell by typing +lsreltypes+ (its name is based on the class name) if +getName+ method isn't overridden.
+
+If you'd like it to display some nice help information when using the +help+ (or +man+) app, override the +getDescription+ method for a general description and use +addValueType+ method to add descriptions about (and logic to) the options you can supply when using your app.
+
+Know that the apps reside server-side so if you have a running server and starts a remote client to it from another JVM you can't add your apps on the client.
+
+[[shell-sample-session]]
+== An example shell session ==
+
+include::shell/sample-session.asciidoc[]
+
+[[shell-matrix-example]]
+== A Matrix example ==
+
+This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
+
+include::shell/shell-matrix-example-graph.asciidoc[]
+
+////
+["dot", "shell-matrix.svg"]
+----
+root[label="root"]
+neo[label="Mr Andersson"]
+morpheus[label="Morpheus"]
+trinity[label="Trinity"]
+cypher[label="Cypher"]
+agent [label="Agent Smith"]
+architect[label="The Architect"]
+root->neo[label="ROOT"]
+neo -> morpheus[label="KNOWS\nage=3"]
+morpheus->trinity[label="KNOWS\nage=90"]
+morpheus->cypher[label="KNOWS"]
+agent -> cypher [dir="back" label="KNOWS"]
+agent -> architect[label="CODED_BY"]
+----
+////
+
+Neo4j is configured for autoindexing, in this case with the following in the Neo4j configuration file:
+
+[source]
+----
+include::../autoindex.properties[]
+----
+
+The following is a sample shell session creating the Matrix graph and querying it.
+
+include::shell/a-matrix-example.asciidoc[]
+
+
