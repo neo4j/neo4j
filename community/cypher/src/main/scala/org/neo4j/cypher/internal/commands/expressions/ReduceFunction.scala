@@ -34,7 +34,7 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
     computedMap(acc)
   }
                     
-  def rewrite(f: (Expression) => Expression) = f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init))
+  def rewrite(f: (Expression) => Expression) = f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init.rewrite(f)))
 
   def filter(f: (Expression) => Boolean) = if (f(this))
     Seq(this) ++ collection.filter(f)
@@ -43,7 +43,13 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
 
   def identifierDependencies(expectedType: CypherType) = AnyType
 
-  def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+  def calculateType(symbols: SymbolTable) = {
+    val iteratorType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+    var innerSymbols = symbols.add(acc, init.evaluateType(AnyType(), symbols))
+    innerSymbols = innerSymbols.add(id, iteratorType)
+    // return expressions's type as the end result for reduce
+    expression.evaluateType(AnyType(), innerSymbols)
+  }
 
-  def symbolTableDependencies = collection.symbolTableDependencies
+  def symbolTableDependencies = (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
 }
