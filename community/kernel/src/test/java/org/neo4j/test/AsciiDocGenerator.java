@@ -165,9 +165,25 @@ public abstract class AsciiDocGenerator
     public static String dumpToSeparateFile( File dir, String testId,
             String content )
     {
+        if ( content == null || content.isEmpty() )
+        {
+            throw new IllegalArgumentException( "The content can not be empty("
+                                                + content + ")." );
+        }
         String filename = testId + ".asciidoc";
         Writer writer = AsciiDocGenerator.getFW( new File( dir, "includes" ),
                 filename );
+        String title = "";
+        char firstChar = content.charAt( 0 );
+        if ( firstChar == '.' || firstChar == '_' )
+        {
+            int pos = content.indexOf( '\n' );
+            if ( pos != -1 )
+            {
+                title = content.substring( 0, pos + 1 );
+                content = content.substring( pos + 1 );
+            }
+        }
         try
         {
             writer.write( content );
@@ -187,7 +203,7 @@ public abstract class AsciiDocGenerator
                 e.printStackTrace();
             }
         }
-        return "include::includes/" + filename + "[]\n";
+        return title + "include::includes/" + filename + "[]\n";
     }
 
     public static String dumpToSeparateFileWithType( File dir, String type,

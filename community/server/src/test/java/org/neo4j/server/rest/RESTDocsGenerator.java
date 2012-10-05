@@ -502,34 +502,57 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                fw.append( AsciidocHelper.createGraphVizWithNodeId(
-                        "Final Graph", graph, title ) );
+                fw.append( AsciiDocGenerator.dumpToSeparateFile( dir,
+                        name + ".graph",
+                        AsciidocHelper.createGraphVizWithNodeId( "Final Graph",
+                                graph, title ) ) );
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
             line( fw, "" );
-            line( fw, "* *+" + data.method + "+*  +" + data.uri + "+" );
+            StringBuilder sb = new StringBuilder( 512 );
+            sb.append( "* *+" )
+                    .append( data.method )
+                    .append( "+*  +" )
+                    .append( data.uri )
+                    .append( "+\n" );
             if ( data.requestHeaders != null )
             {
                 for ( Entry<String, String> header : data.requestHeaders.entrySet() )
                 {
-                    line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
+                    sb.append( "* *+" )
+                            .append( header.getKey() )
+                            .append( ":+* +" )
+                            .append( header.getValue() )
+                            .append( "+\n" );
                 }
             }
-            writeEntity( fw, data.getPayload() );
+            fw.append( AsciiDocGenerator.dumpToSeparateFile( dir, name
+                                                                  + ".request",
+                    sb.toString() ) );
+            sb = new StringBuilder( 2048 );
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
-            line( fw, "* *+" + data.status + ":+* +" + Response.Status.fromStatusCode( data.status )
-                    + "+" );
+            sb.append( "* *+" )
+                    .append( data.status )
+                    .append( ":+* +" )
+                    .append( Response.Status.fromStatusCode( data.status ) )
+                    .append( "+\n" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )
                 {
-                    line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
+                    sb.append( "* *+" )
+                            .append( header.getKey() )
+                            .append( ":+* +" )
+                            .append( header.getValue() )
+                            .append( "+\n" );
                 }
             }
-            writeEntity( fw, data.getPrettifiedEntity() );
+            writeEntity( sb, data.getPrettifiedEntity() );
+            fw.append( AsciiDocGenerator.dumpToSeparateFile( dir,
+                    name + ".response", sb.toString() ) );
             line( fw, "" );
         }
         catch ( IOException e )
@@ -560,20 +583,15 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return equalSigns + ' ' + heading + ' ' + equalSigns;
     }
 
-    public void writeEntity( final Writer fw, final String entity )
+    public void writeEntity( final StringBuilder sb, final String entity )
             throws IOException
     {
         if ( entity != null )
         {
-            line( fw, "[source,javascript]" );
-            line( fw, "----" );
-            line( fw, entity );
-            line( fw, "----" );
-            line( fw, "" );
+            sb.append( "\n[source,javascript]\n" )
+                    .append( "----\n" )
+                    .append( entity )
+                    .append( "\n----\n\n" );
         }
     }
-
-    
-   
-
 }

@@ -199,10 +199,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     val output = new StringBuilder(2048)
     output.append("_Query_\n\n")
     output.append(AsciidocHelper.createCypherSnippet(query))
-    output.append('\n')
-    output.append(returns)
-    output.append('\n')
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString))
+    writer.println
+    writer.println(returns)
+    writer.println
 
     val resultText = result.dumpToString()
     output.clear

@@ -40,9 +40,9 @@ public class AsciiDocGeneratorTest
     public void dumpToSeparateFile() throws IOException
     {
         String reference = AsciiDocGenerator.dumpToSeparateFile(
-                sectionDirectory, "test1",
-                "test1-content" );
-        assertEquals( "include::includes/test1.asciidoc[]\n", reference );
+                sectionDirectory, "test1", ".title1\ntest1-content" );
+        assertEquals( ".title1\ninclude::includes/test1.asciidoc[]\n",
+                reference );
         File includeDir = new File( sectionDirectory, "includes" );
         File includeFile = new File( includeDir, "test1.asciidoc" );
         assertTrue( includeFile.canRead() );
