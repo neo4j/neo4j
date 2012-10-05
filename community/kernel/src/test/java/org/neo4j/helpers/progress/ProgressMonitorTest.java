@@ -56,6 +56,9 @@ import static org.mockito.Mockito.when;
 
 public class ProgressMonitorTest
 {
+
+    public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
+
     @Test
     public void shouldReportProgressInTheSpecifiedIntervals() throws Exception
     {
@@ -301,7 +304,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + "\n" + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + LINE_SEPARATOR + EXPECTED_TEXTUAL_OUTPUT,
                       stream.toString( Charset.defaultCharset().name() ) );
     }
 
@@ -320,7 +323,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + "\n" + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + LINE_SEPARATOR + EXPECTED_TEXTUAL_OUTPUT,
                       writer.toString() );
     }
 
