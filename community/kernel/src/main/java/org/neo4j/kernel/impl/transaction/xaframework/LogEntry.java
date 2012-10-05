@@ -100,7 +100,7 @@ public abstract class LogEntry
             this.startPosition = position;
         }
         
-        long getTimeWritten()
+        public long getTimeWritten()
         {
             return timeWritten;
         }
