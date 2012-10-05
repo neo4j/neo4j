@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{ReduceFunction, Identifier, LengthFunction, Add, Literal}
+import org.neo4j.cypher.internal.symbols.{SymbolTable, StringType, NumberType, AnyCollectionType}
 import org.scalatest.Assertions
 import org.junit.Test
 
@@ -43,5 +44,35 @@ class ReduceTest extends Assertions {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
     assert(reduce(m) === null)
+  }
+
+  @Test def reduce_has_the_expected_type_string() {
+    val expression = Add(Identifier("acc"), Identifier("n"))
+    val collection = Literal(Seq(1,2,3))
+
+    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
+    val typ = reduce.calculateType(new SymbolTable())
+
+    assert(typ === StringType())
+  }
+
+  @Test def reduce_has_the_expected_type_number() {
+    val expression = Add(Identifier("acc"), Identifier("n"))
+    val collection = Literal(Seq(1,2,3))
+
+    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
+    val typ = reduce.calculateType(new SymbolTable())
+
+    assert(typ === NumberType())
+  }
+
+  @Test def reduce_has_the_expected_type_array() { 
+    val expression = Add(Identifier("acc"), Identifier("n"))
+    val collection = Literal(Seq(1,2,3))
+
+    val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
+    val typ = reduce.calculateType(new SymbolTable())
+
+    assert(typ === AnyCollectionType())
   }
 }
