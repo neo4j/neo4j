@@ -83,6 +83,14 @@ public class DiagnosticsBean extends ManagementBeanProvider
         }
 
         @Override
+        public String dumpAll(  )
+        {
+            StringBuffer result = new StringBuffer();
+            diagnostics.dumpAll(StringLogger.wrap( result ) );
+            return result.toString();
+        }
+
+        @Override
         public String extract( String providerId )
         {
             StringBuffer result = new StringBuffer();

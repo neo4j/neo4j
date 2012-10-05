@@ -36,6 +36,9 @@ public interface Diagnostics
     @Description( "Dump diagnostics information for the diagnostics provider with the specified id." )
     void dumpToLog( String providerId );
 
+    @Description("Dump diagnostics information to JMX")
+    String dumpAll(  );
+
     @Description( "Extract diagnostics information for the diagnostics provider with the specified id." )
     String extract( String providerId );
 
