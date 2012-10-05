@@ -241,7 +241,7 @@ public class Args
         {
             // ignore
         }
-        usage.append( main.getCanonicalName() );
+        usage.append( ' ' ).append( main.getCanonicalName() );
         for ( String param : params )
         {
             usage.append( ' ' ).append( param );

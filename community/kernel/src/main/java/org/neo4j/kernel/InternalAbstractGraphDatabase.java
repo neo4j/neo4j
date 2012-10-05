@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -576,7 +577,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, logging.getLogger( Loggers.NEOSTORE ), txHook);
+        return new StoreFactory(config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem, lastCommittedTxIdSetter, logging.getLogger( Loggers.NEOSTORE ), txHook );
     }
 
     protected RecoveryVerifier createRecoveryVerifier()

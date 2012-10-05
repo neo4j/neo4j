@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -42,9 +44,10 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     public static final int RECORD_SIZE = 9;
 
     public NodeStore(String fileName, Config config,
-                     IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                     FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super(fileName, config, IdType.NODE, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        super(fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
     }
 
     @Override
@@ -105,6 +108,12 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         {
             releaseWindow( window );
         }
+    }
+
+    @Override
+    public NodeRecord forceGetRaw( NodeRecord record )
+    {
+        return record;
     }
 
     @Override
@@ -199,6 +208,8 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
                 throw new InvalidRecordException( "NodeRecord[" + id + "] not in use" );
             case CHECK:
                 return null;
+            case FORCE:
+                break;
             }
         }
 

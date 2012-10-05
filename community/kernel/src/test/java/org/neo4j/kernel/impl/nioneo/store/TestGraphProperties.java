@@ -191,7 +191,7 @@ public class TestGraphProperties
         db.shutdown();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        NeoStore neoStore = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(Collections.<String,String>emptyMap())), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
+        NeoStore neoStore = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(Collections.<String,String>emptyMap())), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null ).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();

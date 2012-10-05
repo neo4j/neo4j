@@ -38,7 +38,7 @@ public class Buffer
     private final ByteBuffer buf;
     private final PersistenceWindow persistenceWindow;
 
-    Buffer( PersistenceWindow persistenceWindow, ByteBuffer buf )
+    public Buffer( PersistenceWindow persistenceWindow, ByteBuffer buf )
     {
         this.persistenceWindow = persistenceWindow;
         if ( buf == null )

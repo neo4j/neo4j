@@ -24,9 +24,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class AbstractNameStore<T extends AbstractNameRecord> extends AbstractStore implements Store, RecordStore<T>
@@ -41,10 +43,12 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     public AbstractNameStore(String fileName, Config configuration, IdType idType,
-                             IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                              DynamicStringStore nameStore)
     {
-        super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger );
         this.nameStore = nameStore;
     }
 
@@ -209,6 +213,12 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         {
             releaseWindow( window );
         }
+    }
+
+    @Override
+    public T forceGetRaw( T record )
+    {
+        return record;
     }
 
     @Override

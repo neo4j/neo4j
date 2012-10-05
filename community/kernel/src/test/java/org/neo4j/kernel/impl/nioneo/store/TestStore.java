@@ -34,6 +34,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.*;
@@ -42,6 +43,8 @@ public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
+    public static WindowPoolFactory WINDOW_POOL_FACTORY =
+            new DefaultWindowPoolFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
     
@@ -152,8 +155,9 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
-                                "store_dir", "target/var/teststore" ) )), IdType.NODE, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
+            super( fileName, new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
+                    MapUtil.stringMap( "store_dir", "target/var/teststore" ) )),
+                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
         }
 
         public int getRecordSize()
@@ -168,7 +172,7 @@ public class TestStore
 
         public static Store createStore( String fileName) throws IOException
         {
-            new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.DEV_NULL, null).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
+            new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM, null, StringLogger.DEV_NULL, null ).createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
             return new Store( fileName );
         }
 

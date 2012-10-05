@@ -25,12 +25,14 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -63,9 +65,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private int blockSize;
 
     public AbstractDynamicStore( String fileName, Config conf, IdType idType,
-                                 IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
-        super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
         this.conf = conf;
     }
 
@@ -398,6 +401,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             releaseWindow( window );
         }
+    }
+
+    @Override
+    public DynamicRecord forceGetRaw( DynamicRecord record )
+    {
+        return record;
     }
 
     @Override

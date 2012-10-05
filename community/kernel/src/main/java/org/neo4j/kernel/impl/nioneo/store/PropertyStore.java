@@ -32,6 +32,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -61,10 +62,14 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     private PropertyIndexStore propertyIndexStore;
     private DynamicArrayStore arrayPropertyStore;
 
-    public PropertyStore(String fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                         DynamicStringStore stringPropertyStore, PropertyIndexStore propertyIndexStore, DynamicArrayStore arrayPropertyStore)
+    public PropertyStore(String fileName, Config configuration,
+                         IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                         DynamicStringStore stringPropertyStore, PropertyIndexStore propertyIndexStore,
+                         DynamicArrayStore arrayPropertyStore)
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyIndexStore = propertyIndexStore;
         this.arrayPropertyStore = arrayPropertyStore;
@@ -391,6 +396,12 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         {
             releaseWindow( window );
         }
+    }
+
+    @Override
+    public PropertyRecord forceGetRaw( PropertyRecord record )
+    {
+        return record;
     }
 
     @Override

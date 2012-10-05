@@ -131,7 +131,7 @@ public class TestXa extends AbstractNeo4jTestCase
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
@@ -426,7 +426,7 @@ public class TestXa extends AbstractNeo4jTestCase
             InternalAbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
             InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( LOGICAL_LOG_DEFAULT_NAME ))));
 
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
 
         PlaceboTm txManager = new PlaceboTm();
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();

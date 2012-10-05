@@ -108,7 +108,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( new HashMap<String,String>(  ) ));
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.SYSTEM, null);
+        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.SYSTEM, null );
         sf.createNeoStore(file( "neo" )).close();
     }
 
@@ -163,7 +163,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             InternalAbstractGraphDatabase.Configuration.store_dir.name(), path(),
             InternalAbstractGraphDatabase.Configuration.neo_store.name(), file("neo"),
             InternalAbstractGraphDatabase.Configuration.logical_log.name(), file("nioneo_logical.log"))));
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
 
         ds = new NeoStoreXaDataSource(config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
@@ -1035,7 +1035,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(MapUtil.stringMap( "string_block_size", "62",
                                                                            "array_block_size", "302" )));
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
         sf.createNeoStore(file( "neo" )).close();
 
 
@@ -1058,7 +1058,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( new HashMap<String, String>(  )  )),
-                new DefaultIdGeneratorFactory(), fileSystem, null, StringLogger.DEV_NULL, null);
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
 
         NeoStore neoStore = sf.newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         assertEquals( 12, neoStore.getVersion() );

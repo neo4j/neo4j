@@ -40,6 +40,25 @@ public class AutoConfigurator
         this.fs = fs;
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
+        long mem = physicalMemory();
+        if ( mem != -1 )
+        {
+            totalPhysicalMemMb = (int) (mem / 1024 / 1024 );
+        }
+        else
+        {
+            totalPhysicalMemMb = -1;
+        }
+        mem = Runtime.getRuntime().maxMemory();
+        maxVmUsageMb = (int) ( mem / 1024 / 1024 );
+        if ( dump )
+        {
+            System.out.println( getNiceMemoryInformation() );
+        }
+    }
+
+    public static long physicalMemory()
+    {
         OperatingSystemMXBean osBean =
             ManagementFactory.getOperatingSystemMXBean();
         long mem = -1;
@@ -56,20 +75,7 @@ public class AutoConfigurator
         catch ( LinkageError e )
         { // ok we tried but probably 1.5 JVM or other class library implementation
         }
-        if ( mem != -1 )
-        {
-            totalPhysicalMemMb = (int) (mem / 1024 / 1024 );
-        }
-        else
-        {
-            totalPhysicalMemMb = -1;
-        }
-        mem = Runtime.getRuntime().maxMemory();
-        maxVmUsageMb = (int) ( mem / 1024 / 1024 );
-        if ( dump )
-        {
-            System.out.println( getNiceMemoryInformation() );
-        }
+        return mem;
     }
 
     public String getNiceMemoryInformation()
