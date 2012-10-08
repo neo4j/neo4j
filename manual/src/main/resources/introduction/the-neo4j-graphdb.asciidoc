@@ -194,6 +194,13 @@ A path of length one:
 "Node 1" -> "Node 2" [label="Relationship 1"]
 ----
 
+Another path of length one:
+
+["dot", "graphdb-path-example-loop.svg"]
+----
+"Node 1" -> "Node 1" [label="Relationship 1"]
+----
+
 [[graphdb-neo4j-traversal]]
 == Traversal ==
 
