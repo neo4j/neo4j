@@ -21,6 +21,7 @@ package org.neo4j.consistency.repair;
 
 import java.io.File;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -35,6 +36,11 @@ import static org.junit.Assert.assertEquals;
 
 public class RelationshipChainExplorerTest
 {
+    private static final TargetDirectory target = TargetDirectory.forTest( RelationshipChainExplorerTest.class );
+
+    @Rule
+    public TargetDirectory.TestDirectory storeLocation = target.cleanTestDirectory();
+
     @Test
     public void shouldLoadAllConnectedRelationshipRecordsAndTheirFullChainsOfRelationshipRecords() throws Exception
     {
@@ -86,7 +92,7 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        File storeDirectory = storeLocation.directory();
         EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( storeDirectory.getPath() );
         Transaction transaction = database.beginTx();
         try
