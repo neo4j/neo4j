@@ -22,13 +22,16 @@ package org.neo4j.graphalgo.path;
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static common.SimpleGraphBuilder.KEY_ID;
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.expanderForAllTypes;
 import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 import java.util.ArrayList;
@@ -516,6 +519,29 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node c = graph.getNode( "c" );
 
         assertPaths( new ShortestPath( 3, expanderForTypes( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
+    }
+
+    @Test
+    public void shouldFindShortestPathWhenOneSideFindsLongerPathFirst() throws Exception
+    {
+        /*
+        The order in which nodes are created matters when reproducing the original problem
+         */
+        graph.makeEdge( "start", "c" );
+        graph.makeEdge( "start", "a" );
+        graph.makeEdge( "b", "end" );
+        graph.makeEdge( "d", "end" );
+        graph.makeEdge( "c", "e" );
+        graph.makeEdge( "f", "end" );
+        graph.makeEdge( "c", "b" );
+        graph.makeEdge( "e", "end" );
+        graph.makeEdge( "a", "end" );
+
+        Node start = graph.getNode( "start" );
+        Node end = graph.getNode( "end" );
+
+        assertThat( new ShortestPath( 2, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+        assertThat( new ShortestPath( 3, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
     }
 
     private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth )
