@@ -28,7 +28,7 @@ public class MessageConsistencyLogger implements ConsistencyLogger
     private final StringLogger logger;
     private static final String ERROR = "ERROR:", WARNING = "WARNING:";
     public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
-    private static final String TAB = "\t";
+    public static final String TAB = "\t";
 
     public MessageConsistencyLogger( StringLogger logger )
     {
