@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertThat;
+import static org.neo4j.consistency.report.MessageConsistencyLogger.LINE_SEPARATOR;
 
 public class MessageConsistencyLoggerTest
 {
@@ -52,6 +53,18 @@ public class MessageConsistencyLoggerTest
         assertTextEquals( "ERROR: sample message",
                           "NeoStoreRecord[used=true,nextProp=-1]",
                           "Inconsistent with: 1 2" );
+    }
+
+    @Test
+    public void shouldFlattenAMultiLineMessageToASingleLine() throws Exception
+    {
+        // when
+        logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
+
+        // then
+        assertTextEquals( "ERROR: multiple line message",
+                "NeoStoreRecord[used=true,nextProp=-1]",
+                "Inconsistent with: 1 2" );
     }
 
     @Test
@@ -99,7 +112,7 @@ public class MessageConsistencyLoggerTest
         {
             expected.append( "\n\t" ).append( line );
         }
-        assertThat( writer.toString(), endsWith( expected.append( '\n' ).toString() ) );
+        assertThat( writer.toString(), endsWith( expected.append( LINE_SEPARATOR ).toString() ) );
     }
 
     private static Matcher<String> endsWith( final String suffix )

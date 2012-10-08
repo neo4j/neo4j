@@ -27,6 +27,8 @@ public class MessageConsistencyLogger implements ConsistencyLogger
 {
     private final StringLogger logger;
     private static final String ERROR = "ERROR:", WARNING = "WARNING:";
+    public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
+    private static final String TAB = "\t";
 
     public MessageConsistencyLogger( StringLogger logger )
     {
@@ -71,19 +73,20 @@ public class MessageConsistencyLogger implements ConsistencyLogger
 
     private static StringBuilder record( StringBuilder log, AbstractBaseRecord record )
     {
-        return log.append( "\n\t" ).append( record );
+        return log.append( LINE_SEPARATOR ).append( TAB ).append( record );
     }
 
     private static StringBuilder diff( StringBuilder log, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord )
     {
-        return log.append( "\n\t- " ).append( oldRecord ).append( "\n\t+ " ).append( newRecord );
+        return log.append( LINE_SEPARATOR ).append( TAB ).append( "- " ).append( oldRecord )
+                .append( LINE_SEPARATOR ).append( TAB ).append( "+ " ).append( newRecord );
     }
 
     private void log( StringBuilder log, Object[] args )
     {
         if ( args != null && args.length > 0 )
         {
-            log.append( "\n\tInconsistent with:" );
+            log.append( LINE_SEPARATOR ).append( TAB ).append( "Inconsistent with:" );
             for ( Object arg : args )
             {
                 log.append( ' ' ).append( arg );
