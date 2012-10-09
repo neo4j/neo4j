@@ -19,9 +19,9 @@
  */
 package org.neo4j.backup.check;
 
-import org.neo4j.consistency.Check;
+import org.neo4j.consistency.ConsistencyCheckTool;
 
-/** @deprecated use {@link org.neo4j.consistency.Check} instead. */
+/** @deprecated use {@link org.neo4j.consistency.ConsistencyCheckTool} instead. */
 @Deprecated
 class ConsistencyCheck
 {
@@ -29,7 +29,7 @@ class ConsistencyCheck
     public static void main( String[] args )
     {
         System.err.printf( "WARNING: %s has been deprecated, please use %s instead.%n",
-                           ConsistencyCheck.class.getName(), Check.class.getName() );
-        Check.main( args );
+                           ConsistencyCheck.class.getName(), ConsistencyCheckTool.class.getName() );
+        ConsistencyCheckTool.main( args );
     }
 }

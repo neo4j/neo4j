@@ -20,9 +20,15 @@
 
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.util.Map;
 
+import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 
 public class OnlineBackup
 {
@@ -48,13 +54,20 @@ public class OnlineBackup
 
     public OnlineBackup full( String targetDirectory )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig() );
         return this;
     }
 
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification, defaultConfig() );
+        return this;
+    }
+
+    public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
+    {
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
+                tuningConfiguration );
         return this;
     }
 
@@ -79,5 +92,11 @@ public class OnlineBackup
     public Map<String, Long> getLastCommittedTxs()
     {
         return outcome.getLastCommittedTxs();
+    }
+
+    private Config defaultConfig()
+    {
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
+                .apply( stringMap() ) );
     }
 }

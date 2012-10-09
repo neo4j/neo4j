@@ -33,6 +33,7 @@ import org.neo4j.consistency.checking.old.ConsistencyRecordProcessor;
 import org.neo4j.consistency.checking.old.ConsistencyReporter;
 import org.neo4j.consistency.checking.old.InconsistencyType;
 import org.neo4j.consistency.checking.old.MonitoringConsistencyReporter;
+import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -43,13 +44,10 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.consistency.store.windowpool.ScanResistantWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -126,57 +124,6 @@ public class ConsistencyPerformanceCheck
                 throws ConsistencyCheckIncompleteException;
     }
 
-    private enum WindowPoolImplementation
-    {
-        MOST_FREQUENTLY_USED
-        {
-            @Override
-            WindowPoolFactory windowPoolFactory( Config config, StringLogger logger )
-            {
-                return new DefaultWindowPoolFactory();
-            }
-        },
-        SCAN_RESISTANT
-        {
-            @Override
-            WindowPoolFactory windowPoolFactory( Config config, StringLogger logger )
-            {
-                return new ScanResistantWindowPoolFactory( config, logger );
-            }
-        };
-
-        abstract WindowPoolFactory windowPoolFactory( Config config, StringLogger logger );
-
-        StoreAccess createStoreAccess( Configuration configuration )
-        {
-            Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( stringMap(
-                    GraphDatabaseSettings.store_dir.name(),
-                            configuration.get( DataGenerator.store_dir ),
-                    GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(),
-                            configuration.get( all_stores_total_mapped_memory_size ),
-                    GraphDatabaseSettings.mapped_memory_page_size.name(),
-                            configuration.get( mapped_memory_page_size ),
-                    GraphDatabaseSettings.log_mapped_memory_stats.name(),
-                            configuration.get( log_mapped_memory_stats ).toString(),
-                    GraphDatabaseSettings.log_mapped_memory_stats_filename.name(),
-                            configuration.get( log_mapped_memory_stats_filename ),
-                    GraphDatabaseSettings.log_mapped_memory_stats_interval.name(),
-                            configuration.get( log_mapped_memory_stats_interval ).toString() ) ) );
-
-            StoreFactory factory = new StoreFactory(
-                    config,
-                    new DefaultIdGeneratorFactory(),
-                    windowPoolFactory( config, StringLogger.SYSTEM ),
-                    new DefaultFileSystemAbstraction(),
-                    new DefaultLastCommittedTxIdSetter(),
-                    StringLogger.DEV_NULL,
-                    new DefaultTxHook() );
-            NeoStore neoStore = factory.newNeoStore(
-                    new File( configuration.get( DataGenerator.store_dir ), NeoStore.DEFAULT_NAME ).getAbsolutePath() );
-            return new StoreAccess( neoStore );
-        }
-    }
-
     /**
      * Sample execution:
      * java -cp ... org.neo4j.perftest.enterprise.ccheck.ConsistencyPerformanceCheck
@@ -219,10 +166,43 @@ public class ConsistencyPerformanceCheck
             System.out.println( "Press return to start the checker..." );
             System.in.read();
         }
-        configuration.get( checker_version ).run( new TimingProgress( new TimeLogger( new JsonReportWriter(
-                configuration ) ), progress ),
-                configuration.get( window_pool_implementation).createStoreAccess( configuration ),
-                configuration.get( execution_order ) );
+        configuration.get( checker_version ).run(
+                new TimingProgress( new TimeLogger( new JsonReportWriter( configuration ) ), progress ),
+                createStoreAccess( configuration ), configuration.get( execution_order ) );
+    }
+
+    private static StoreAccess createStoreAccess( Configuration configuration )
+    {
+        Config config = buildTuningConfiguration( configuration );
+
+        StoreFactory factory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                configuration.get( window_pool_implementation ).windowPoolFactory( config, StringLogger.SYSTEM ),
+                new DefaultFileSystemAbstraction(),
+                new DefaultLastCommittedTxIdSetter(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook() );
+        NeoStore neoStore = factory.newNeoStore(
+                new File( configuration.get( DataGenerator.store_dir ), NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+        return new StoreAccess( neoStore );
+    }
+
+    private static Config buildTuningConfiguration( Configuration configuration )
+    {
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( stringMap(
+                    GraphDatabaseSettings.store_dir.name(),
+                    configuration.get( DataGenerator.store_dir ),
+                    GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(),
+                    configuration.get( all_stores_total_mapped_memory_size ),
+                    GraphDatabaseSettings.mapped_memory_page_size.name(),
+                    configuration.get( mapped_memory_page_size ),
+                    GraphDatabaseSettings.log_mapped_memory_stats.name(),
+                    configuration.get( log_mapped_memory_stats ).toString(),
+                    GraphDatabaseSettings.log_mapped_memory_stats_filename.name(),
+                    configuration.get( log_mapped_memory_stats_filename ),
+                    GraphDatabaseSettings.log_mapped_memory_stats_interval.name(),
+                    configuration.get( log_mapped_memory_stats_interval ).toString() ) ) );
     }
 
     private static class JsonReportWriter implements TimingProgress.Visitor

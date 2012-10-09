@@ -19,17 +19,25 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.com.ComException;
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -41,25 +49,33 @@ public class BackupTool
     private static final String INCREMENTAL = "incremental";
     private static final String FULL = "full";
     private static final String VERIFY = "verify";
+    private static final String CONFIG = "config";
     public static final String DEFAULT_SCHEME = "single";
 
     public static void main( String[] args )
     {
-        new BackupTool( new BackupService(), System.out, new Runtime() ).run( args );
+        BackupTool tool = new BackupTool( new BackupService(), System.out );
+        try
+        {
+            tool.run( args );
+        }
+        catch ( ToolFailureException e )
+        {
+            e.haltJVM();
+        }
     }
 
     private final BackupService backupService;
     private final PrintStream systemOut;
-    private final Runtime runtime;
 
-    BackupTool( BackupService backupService, PrintStream systemOut, Runtime runtime )
+    BackupTool( BackupService backupService, PrintStream systemOut )
     {
         this.backupService = backupService;
         this.systemOut = systemOut;
-        this.runtime = runtime;
     }
 
-    void run( String[] args ) {
+    void run( String[] args ) throws ToolFailureException
+    {
         Args arguments = new Args( args );
 
         checkArguments( arguments );
@@ -68,6 +84,7 @@ public class BackupTool
         String from = arguments.get( FROM, null );
         String to = arguments.get( TO, null );
         boolean verify = arguments.getBoolean( VERIFY, true, true );
+        Config tuningConfiguration = readTuningConfiguration( TO, arguments );
         URI backupURI = null;
         try
         {
@@ -75,7 +92,7 @@ public class BackupTool
         }
         catch ( URISyntaxException e )
         {
-            runtime.exitAbnormally( "Please properly specify a location to backup as a valid URI in the form " +
+            throw new ToolFailureException( "Please properly specify a location to backup as a valid URI in the form " +
                     "<scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
         }
         String module = backupURI.getScheme();
@@ -93,7 +110,7 @@ public class BackupTool
             }
             catch ( NoSuchElementException e )
             {
-                runtime.exitAbnormally( String.format(
+                throw new ToolFailureException( String.format(
                         "%s was specified as a backup module but it was not found. " +
                                 "Please make sure that the implementing service is on the classpath.",
                         module ) );
@@ -104,22 +121,22 @@ public class BackupTool
           // passed URI
             backupURI = service.resolve( backupURI, arguments );
         }
-        doBackup( full, backupURI, to, verify );
+        doBackup( full, backupURI, to, verify, tuningConfiguration );
     }
 
-    private void checkArguments( Args arguments )
+    private void checkArguments( Args arguments ) throws ToolFailureException
     {
         boolean full = arguments.has( FULL );
         boolean incremental = arguments.has( INCREMENTAL );
         if ( full&incremental || !(full|incremental) )
         {
-            runtime.exitAbnormally( "Specify either " + dash( FULL ) + " or "
+            throw new ToolFailureException( "Specify either " + dash( FULL ) + " or "
                             + dash( INCREMENTAL ) );
         }
 
         if ( arguments.get( FROM, null ) == null )
         {
-            runtime.exitAbnormally( "Please specify " + dash( FROM ) + ", examples:\n" +
+            throw new ToolFailureException( "Please specify " + dash( FROM ) + ", examples:\n" +
                     "  " + dash( FROM ) + " single://192.168.1.34\n" +
                     "  " + dash( FROM ) + " single://192.168.1.34:1234\n" +
                     "  " + dash( FROM ) + " ha://192.168.1.15:2181\n" +
@@ -128,39 +145,64 @@ public class BackupTool
 
         if ( arguments.get( TO, null ) == null )
         {
-            runtime.exitAbnormally( "Specify target location with " + dash( TO )
+            throw new ToolFailureException( "Specify target location with " + dash( TO )
                             + " <target-directory>" );
         }
     }
 
-    private void doBackup( boolean trueForFullFalseForIncremental,
-            URI from, String to, boolean checkConsistency )
+    public Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
+    {
+        Map<String, String> specifiedProperties = stringMap();
+
+        String propertyFilePath = arguments.get( CONFIG, null );
+        if ( propertyFilePath != null )
+        {
+            File propertyFile = new File( propertyFilePath );
+            try
+            {
+                specifiedProperties = MapUtil.load( propertyFile );
+            }
+            catch ( IOException e )
+            {
+                throw new ToolFailureException( String.format( "Could not read configuration properties file [%s]",
+                        propertyFilePath ), e );
+            }
+        }
+        specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
+                .apply( specifiedProperties ) );
+    }
+
+    private void doBackup( boolean trueForFullFalseForIncremental, URI from, String to, boolean checkConsistency,
+                           Config tuningConfiguration ) throws ToolFailureException
     {
         if ( trueForFullFalseForIncremental )
         {
-            doBackupFull( from, to, checkConsistency );
+            doBackupFull( from, to, checkConsistency, tuningConfiguration );
         }
         else
         {
-            doBackupIncremental( from, to, checkConsistency );
+            doBackupIncremental( from, to, checkConsistency, tuningConfiguration );
         }
         systemOut.println( "Done" );
     }
 
-    private void doBackupFull( URI from, String to, boolean checkConsistency )
+    private void doBackupFull( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
+
     {
         systemOut.println( "Performing full backup from '" + from + "'" );
         try
         {
-            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency );
+            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency, tuningConfiguration );
         }
         catch ( ComException e )
         {
-            runtime.exitAbnormally( "Couldn't connect to '" + from + "'", e );
+            throw new ToolFailureException( "Couldn't connect to '" + from + "'", e );
         }
     }
 
-    private void doBackupIncremental( URI from, String to, boolean verify )
+    private void doBackupIncremental( URI from, String to, boolean verify, Config tuningConfiguration )
+            throws ToolFailureException
     {
         systemOut.println( "Performing incremental backup from '" + from + "'" );
         boolean failedBecauseOfStoreVersionMismatch = false;
@@ -176,12 +218,12 @@ public class BackupTool
             }
             else
             {
-                runtime.exitAbnormally( "TransactionFailureException from existing backup at '" + from + "'.", e);
+                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'.", e);
             }
         }
         catch ( ComException e )
         {
-            runtime.exitAbnormally( "Couldn't connect to '" + from + "' ", e );
+            throw new ToolFailureException( "Couldn't connect to '" + from + "' ", e );
         }
         if ( failedBecauseOfStoreVersionMismatch )
         {
@@ -193,10 +235,10 @@ public class BackupTool
             }
             catch ( IOException e )
             {
-                runtime.exitAbnormally( "There was a problem moving the old database out of the way" +
+                throw new ToolFailureException( "There was a problem moving the old database out of the way" +
                         " - cannot continue, aborting.", e );
             }
-            doBackupFull( from, to, verify );
+            doBackupFull( from, to, verify, tuningConfiguration );
         }
     }
 
@@ -223,18 +265,25 @@ public class BackupTool
         LogFiles.move( toDir, backupDir );
     }
 
-    static class Runtime
+    static class ToolFailureException extends Exception
     {
-        void exitAbnormally( String message, Exception ex )
+        ToolFailureException( String message )
         {
-            System.out.println( message );
-            ex.printStackTrace( System.out );
-            System.exit( 1 );
+            super( message );
         }
-    
-        void exitAbnormally( String message )
+
+        ToolFailureException( String message, Throwable cause )
         {
-            System.out.println( message );
+            super( message, cause );
+        }
+        
+        void haltJVM()
+        {
+            System.out.println( getMessage() );
+            if ( getCause() != null )
+            {
+                getCause().printStackTrace( System.out );
+            }
             System.exit( 1 );
         }
     }

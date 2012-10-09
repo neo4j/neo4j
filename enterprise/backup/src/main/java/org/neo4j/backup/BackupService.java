@@ -21,7 +21,6 @@
 package org.neo4j.backup;
 
 import static java.util.Collections.emptyMap;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -48,8 +47,8 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
@@ -59,7 +58,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
@@ -85,7 +83,7 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                       boolean checkConsistency )
+                                boolean checkConsistency, Config tuningConfiguration )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -203,8 +201,10 @@ class BackupService
             {
                 try
                 {
-                    FullCheck.run( ProgressMonitorFactory.textual( System.err ), targetDirectory,
-                            new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( stringMap(  ) ) ),
+                    new ConsistencyCheckService().runFullConsistencyCheck(
+                            targetDirectory,
+                            tuningConfiguration,
+                            ProgressMonitorFactory.textual( System.err ),
                             StringLogger.SYSTEM );
                 }
                 catch ( ConsistencyCheckIncompleteException e )

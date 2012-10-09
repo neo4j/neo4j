@@ -20,17 +20,35 @@
 
 package org.neo4j.backup;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Properties;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.consistency.checking.full.TaskExecutionOrder;
+import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.TargetDirectory;
 
 public class BackupToolTest
 {
@@ -43,13 +61,85 @@ public class BackupToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new BackupTool( service, systemOut, null ).run( args );
+        new BackupTool( service, systemOut ).run( args );
 
         // then
         verify( service ).doFullBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ) );
+                eq( "my_backup" ), eq( true ), any( Config.class ) );
         verify( systemOut ).println( "Performing full backup from 'single://localhost'" );
         verify( systemOut ).println( "Done" );
+    }
+
+    @Test
+    public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
+    {
+        // given
+        String[] args = new String[]{"-full", "-from", "single://localhost",
+                "-to", "my_backup"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
+        verify( service ).doFullBackup( anyString(), anyInt(), anyString(), anyBoolean(), config.capture() );
+        assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
+        assertEquals( TaskExecutionOrder.MULTI_PASS,
+                config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
+        assertEquals( WindowPoolImplementation.SCAN_RESISTANT,
+                config.getValue().get( ConsistencyCheckSettings.consistency_check_window_pool_implementation ) );
+    }
+
+    @Test
+    public void passesOnConfigurationIfProvided() throws Exception
+    {
+        // given
+        File propertyFile = TargetDirectory.forTest( getClass() ).file( "neo4j.properties" );
+        Properties properties = new Properties();
+        properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
+        properties.store( new FileWriter( propertyFile ), null );
+
+        String[] args = new String[]{"-full", "-from", "single://localhost",
+                "-to", "my_backup", "-config", propertyFile.getPath()};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
+        verify( service ).doFullBackup( anyString(), anyInt(), anyString(), anyBoolean(), config.capture() );
+        assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
+    }
+
+    @Test
+    public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
+    {
+        // given
+        File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
+        String[] args = new String[]{"-full", "-from", "single://localhost",
+                "-to", "my_backup", "-config", propertyFile.getPath()};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+        BackupTool backupTool = new BackupTool( service, systemOut );
+
+        try
+        {
+            // when
+            backupTool.run( args );
+            fail( "should exit abnormally" );
+        }
+        catch ( BackupTool.ToolFailureException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( "Could not read configuration properties file" ) );
+            assertThat( e.getCause(), instanceOf( IOException.class ) );
+        }
+
+        verifyZeroInteractions( service );
     }
 
     @Test
@@ -59,23 +149,20 @@ public class BackupToolTest
         String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        BackupTool.Runtime runtime = mock( SystemExitAsException.class,
-                withSettings().defaultAnswer( CALLS_REAL_METHODS ) );
-        BackupTool backupTool = new BackupTool( service, systemOut, runtime );
+        BackupTool backupTool = new BackupTool( service, systemOut );
 
         try
         {
             // when
             backupTool.run( args );
-            fail( "should exit abnormally");
+            fail( "should exit abnormally" );
         }
-        catch ( SystemExit e )
+        catch ( BackupTool.ToolFailureException e )
         {
-            // expected
+            // then
+            assertEquals( e.getMessage(), "Specify either -full or -incremental" );
         }
 
-        // then
-        verify( runtime ).exitAbnormally( "Specify either -full or -incremental" );
         verifyZeroInteractions( service );
     }
 
@@ -86,23 +173,20 @@ public class BackupToolTest
         String[] args = new String[]{"-full", "-incremental", "-from", "single://localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        BackupTool.Runtime runtime = mock( SystemExitAsException.class,
-                withSettings().defaultAnswer( CALLS_REAL_METHODS ) );
-        BackupTool backupTool = new BackupTool( service, systemOut, runtime );
+        BackupTool backupTool = new BackupTool( service, systemOut );
 
         try
         {
             // when
             backupTool.run( args );
-            fail( "should exit abnormally");
+            fail( "should exit abnormally" );
         }
-        catch ( SystemExit e )
+        catch ( BackupTool.ToolFailureException e )
         {
-            // expected
+            // then
+            assertEquals( e.getMessage(), "Specify either -full or -incremental" );
         }
 
-        // then
-        verify( runtime ).exitAbnormally( "Specify either -full or -incremental" );
         verifyZeroInteractions( service );
     }
 
@@ -113,27 +197,25 @@ public class BackupToolTest
         String[] args = new String[]{"-full", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        BackupTool.Runtime runtime = mock( SystemExitAsException.class,
-                withSettings().defaultAnswer( CALLS_REAL_METHODS ) );
-        BackupTool backupTool = new BackupTool( service, systemOut, runtime );
+        BackupTool backupTool = new BackupTool( service, systemOut );
 
         try
         {
             // when
             backupTool.run( args );
-            fail( "should exit abnormally");
+            fail( "should exit abnormally" );
         }
-        catch ( SystemExit e )
+        catch ( BackupTool.ToolFailureException e )
         {
-            // expected
+            // then
+            assertEquals( "Please specify -from, examples:\n" +
+                    "  -from single://192.168.1.34\n" +
+                    "  -from single://192.168.1.34:1234\n" +
+                    "  -from ha://192.168.1.15:2181\n" +
+                    "  -from ha://192.168.1.15:2181,192.168.1.16:2181",
+                    e.getMessage() );
         }
 
-        // then
-        verify( runtime ).exitAbnormally( "Please specify -from, examples:\n" +
-                "  -from single://192.168.1.34\n" +
-                "  -from single://192.168.1.34:1234\n" +
-                "  -from ha://192.168.1.15:2181\n" +
-                "  -from ha://192.168.1.15:2181,192.168.1.16:2181" );
         verifyZeroInteractions( service );
     }
 
@@ -144,24 +226,22 @@ public class BackupToolTest
         String[] args = new String[]{"-full", "-from", "foo:localhost:123", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        BackupTool.Runtime runtime = mock( SystemExitAsException.class,
-                withSettings().defaultAnswer( CALLS_REAL_METHODS ) );
-        BackupTool backupTool = new BackupTool( service, systemOut, runtime );
+        BackupTool backupTool = new BackupTool( service, systemOut );
 
         try
         {
             // when
             backupTool.run( args );
-            fail( "should exit abnormally");
+            fail( "should exit abnormally" );
         }
-        catch ( SystemExit e )
+        catch ( BackupTool.ToolFailureException e )
         {
-            // expected
+            // then
+            assertEquals( "foo was specified as a backup module but it was not found. " +
+                    "Please make sure that the implementing service is on the classpath.",
+                    e.getMessage() );
         }
 
-        // then
-        verify( runtime ).exitAbnormally( "foo was specified as a backup module but it was not found. " +
-                "Please make sure that the implementing service is on the classpath." );
         verifyZeroInteractions( service );
     }
 
@@ -172,43 +252,21 @@ public class BackupToolTest
         String[] args = new String[]{"-full", "-from", "single://localhost"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        BackupTool.Runtime runtime = mock( SystemExitAsException.class,
-                withSettings().defaultAnswer( CALLS_REAL_METHODS ) );
-        BackupTool backupTool = new BackupTool( service, systemOut, runtime );
+        BackupTool backupTool = new BackupTool( service, systemOut );
 
         try
         {
             // when
             backupTool.run( args );
-            fail( "should exit abnormally");
+            fail( "should exit abnormally" );
         }
-        catch ( SystemExit e )
+        catch ( BackupTool.ToolFailureException e )
         {
-            // expected
+            // then
+            assertEquals( "Specify target location with -to <target-directory>",
+                    e.getMessage() );
         }
 
-        // then
-        verify( runtime ).exitAbnormally( "Specify target location with -to <target-directory>" );
         verifyZeroInteractions( service );
     }
-
-    public static class SystemExitAsException extends BackupTool.Runtime
-    {
-        @Override
-        void exitAbnormally( String message, Exception ex )
-        {
-            throw new SystemExit();
-        }
-
-        @Override
-        void exitAbnormally( String message )
-        {
-            throw new SystemExit();
-        }
-    }
-
-    static class SystemExit extends RuntimeException
-    {
-    }
-
 }

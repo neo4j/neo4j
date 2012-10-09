@@ -19,7 +19,14 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.io.File;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.ARRAYS_ONLY;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.EVERYTHING;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.NODES_ONLY;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.PROPERTIES_ONLY;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.RELATIONSHIPS_ONLY;
+import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.STRINGS_ONLY;
+import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_THREADED;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,17 +38,9 @@ import org.neo4j.consistency.report.MessageConsistencyLogger;
 import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
-import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -49,36 +48,10 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.consistency.store.windowpool.ScanResistantWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.ARRAYS_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.EVERYTHING;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.NODES_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.PROPERTIES_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.RELATIONSHIPS_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.STRINGS_ONLY;
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_PASS;
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_THREADED;
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.SINGLE_THREADED;
 
 public class FullCheck
 {
-    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
-    public static final GraphDatabaseSetting<Boolean> consistency_check_property_owners =
-            new GraphDatabaseSetting.BooleanSetting( "consistency_check_property_owners" );
-    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
-    public static final GraphDatabaseSetting<Boolean> consistency_check_single_threaded =
-            new GraphDatabaseSetting.BooleanSetting( "consistency_check_single_threaded" );
-    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
-    public static final GraphDatabaseSetting<Boolean> consistency_check_multiple_passes =
-            new GraphDatabaseSetting.BooleanSetting( "consistency_check_multiple_passes" );
-    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
-    public static final GraphDatabaseSetting<Boolean> use_scan_resistant_window_pools =
-            new GraphDatabaseSetting.BooleanSetting( "use_scan_resistant_window_pools" );
-
     private final boolean checkPropertyOwners;
     private final TaskExecutionOrder order;
     private final ProgressMonitorFactory progressFactory;
@@ -96,7 +69,8 @@ public class FullCheck
         this.progressFactory = progressFactory;
     }
 
-    public ConsistencySummaryStatistics execute( StoreAccess store, StringLogger logger ) throws ConsistencyCheckIncompleteException
+    public ConsistencySummaryStatistics execute( StoreAccess store, StringLogger logger )
+            throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
@@ -145,47 +119,6 @@ public class FullCheck
         order.execute( processEverything, tasks, progress.build() );
     }
 
-    public static void run( ProgressMonitorFactory progressFactory, String storeDir, Config config,
-                            StringLogger logger ) throws ConsistencyCheckIncompleteException
-    {
-        StoreFactory factory = new StoreFactory(
-                config,
-                new DefaultIdGeneratorFactory(),
-                windowPoolFactory( config, logger ),
-                new DefaultFileSystemAbstraction(),
-                new DefaultLastCommittedTxIdSetter(),
-                logger,
-                new DefaultTxHook() );
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
-        try
-        {
-            StoreAccess store = new StoreAccess( neoStore );
-            new FullCheck( config.get( consistency_check_property_owners ),
-                           executionMode( config ),
-                           progressFactory ).execute( store, logger );
-        }
-        finally
-        {
-            neoStore.close();
-        }
-    }
-
-    private static TaskExecutionOrder executionMode( Config config )
-    {
-        if ( config.get( consistency_check_multiple_passes ) )
-        {
-            return MULTI_PASS;
-        }
-        else if ( config.get( consistency_check_single_threaded ) )
-        {
-            return SINGLE_THREADED;
-        }
-        else
-        {
-            return MULTI_THREADED;
-        }
-    }
-
     static DiffRecordAccess recordAccess( StoreAccess store )
     {
         return new CacheSmallStoresRecordAccess(
@@ -205,15 +138,4 @@ public class FullCheck
         return records;
     }
 
-    private static WindowPoolFactory windowPoolFactory( Config config, StringLogger logger )
-    {
-        if ( config.get( use_scan_resistant_window_pools ) )
-        {
-            return new ScanResistantWindowPoolFactory( config, logger );
-        }
-        else
-        {
-            return new DefaultWindowPoolFactory();
-        }
-    }
 }
