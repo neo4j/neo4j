@@ -24,7 +24,7 @@
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>${neo_store}/messages.log</file>
     <encoder>
-      <pattern>%date{ISO8601} %-5level [%c]: %message%n</pattern>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%c]: %message%n</pattern>
     </encoder>
   </appender>
 
