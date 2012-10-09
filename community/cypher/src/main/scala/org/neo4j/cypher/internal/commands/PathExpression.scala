@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
+import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import collection.Map
@@ -31,13 +32,13 @@ case class PathExpression(pathPattern: Seq[Pattern])
   extends Expression
   with PathExtractor
   with PatternGraphBuilder {
-  val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filterNot(p => p._1.startsWith("  UNNAMED")))
+  val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
 
   val symbols2 = new SymbolTable(identifiers.toMap)
   val matchingContext = new MatchingContext(symbols2, Seq(), buildPatternGraph(symbols2, pathPattern))
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
-    filterNot(_.startsWith("  UNNAMED")).
+    filter(isNamed).
     distinct
 
   def apply(m: Map[String, Any]): Any = {
@@ -70,7 +71,7 @@ case class PathExpression(pathPattern: Seq[Pattern])
 
   def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
-    val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filterNot(_.startsWith("  UNNAMED")).toSet
+    val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filter(isNamed).toSet
     patternDependencies ++ startPointDependencies
   }
 }

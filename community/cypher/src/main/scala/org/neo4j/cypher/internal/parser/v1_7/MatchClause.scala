@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
+import expressions.Identifier._
 
 trait MatchClause extends Base with Expressions {
   val namer = new NodeNamer
@@ -58,7 +59,7 @@ trait MatchClause extends Base with Expressions {
   def singlePathSegment: Parser[Pattern] = onlyOne("expected single path segment", relatedTos)
 
   def optionRelName(relName: String): Option[String] =
-    if (relName.startsWith("  UNNAMED"))
+    if (notNamed(relName))
       None
     else
       Some(relName)

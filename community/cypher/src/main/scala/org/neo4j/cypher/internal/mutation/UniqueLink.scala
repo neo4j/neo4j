@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands._
 import expressions.Identifier
+import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction}
@@ -121,7 +122,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     Seq(nodeCreate, relUpdate)
   }
 
-  private def getNode(context: ExecutionContext, key: String): Option[Node] = if (key.startsWith("  UNAMED")) {
+  private def getNode(context: ExecutionContext, key: String): Option[Node] = if (isNamed(key)) {
     None
   } else context.get(key).map {
     case n: Node => n
@@ -144,7 +145,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   override def toString = node(start.name) + leftArrow(dir) + relInfo + rightArrow(dir) + node(end.name)
 
   private def relInfo: String = {
-    val relName = if (rel.name.startsWith("  UNNAMED")) "" else "`" + rel.name + "`"
+    val relName = if (notNamed(rel.name)) "" else "`" + rel.name + "`"
 
     "[%s:`%s`]".format(relName, relType)
   }

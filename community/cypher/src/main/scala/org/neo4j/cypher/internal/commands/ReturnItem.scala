@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{Identifier, Expression}
+import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 
@@ -31,7 +32,7 @@ abstract class ReturnColumn {
 
 case class AllIdentifiers() extends ReturnColumn {
   def expressions(symbols: SymbolTable): Map[String, Expression] = symbols.identifiers.keys.
-    filterNot(_.startsWith("  UNNAMED")).
+    filter(isNamed).
     map(n => n -> Identifier(n)).toMap
 
   def name = "*"

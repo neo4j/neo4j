@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
+import expressions.Identifier._
 import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
@@ -30,13 +31,13 @@ trait Pattern extends TypeSafe {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
-  protected def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
+  protected def node(name: String) = if (notNamed(name)) "()" else name
   protected def leftArrow(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
   protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
-  def equalOrUnnamed(name1: String, name2: String) = name1 == name2 || (name1.startsWith("  UNNAMED") && name2.startsWith("  UNNAMED"))
-  protected def filtered(x:Seq[String]): Seq[String] =x.filter(!_.startsWith("  UNNAMED"))
+  def equalOrUnnamed(name1: String, name2: String) = name1 == name2 || (notNamed(name1) && notNamed(name2))
+  protected def filtered(x:Seq[String]): Seq[String] =x.filter(isNamed)
 
   def nodes:Seq[String]
   def rels:Seq[String]

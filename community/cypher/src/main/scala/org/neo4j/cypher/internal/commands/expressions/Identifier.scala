@@ -24,6 +24,14 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 
+
+object Identifier {
+  def isNamed(x: String) = !notNamed(x)
+
+  def notNamed(x: String) = x.startsWith("  UNNAMED")
+}
+
+
 case class Identifier(entityName: String) extends Expression with Typed {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`".format(entityName)))
 
