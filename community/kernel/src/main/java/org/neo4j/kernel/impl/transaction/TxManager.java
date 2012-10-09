@@ -390,6 +390,8 @@ public class TxManager extends AbstractTransactionManager
                 throw logAndReturn("TM error tx commit",new IllegalStateException( "Tx status is: "
                     + getTxStatusAsString( tx.getStatus() ) ));
             }
+
+
             tx.doBeforeCompletion();
             // delist resources?
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
@@ -437,21 +439,52 @@ public class TxManager extends AbstractTransactionManager
             }
             catch ( XAException e )
             {
-                xaErrorCode = e.errorCode;
-                log.logMessage( "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
-                        ", errorCode=" + xaErrorCode, e );
-                if ( tx.getStatus() == Status.STATUS_COMMITTED )
+                // Behold, the error handling decision maker of great power.
+                //
+                // The thinking behind the code below is that there are certain types of errors that we understand,
+                // and know that we can safely roll back after they occur. An example would be a user trying to delete
+                // a node that still has relationships. For these errors, we keep a whitelist (the switch below),
+                // and roll back when they occur.
+                //
+                // For *all* errors that we don't know exactly what they mean, we panic and run around in circles.
+                // Other errors could involve out of disk space (can't recover) or out of memory (can't recover)
+                // or anything else. The point is that there is no way for us to trust the state of the system any
+                // more, so we set transaction manager to not ok and expect the user to fix the problem and do recovery.
+                switch(e.errorCode)
                 {
-                    // this should never be
-                    setTmNotOk( e );
-                    throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                        "commit threw exception but status is committed?", e ));
+                    // These are error states that we can safely recover from
+
+                    /*
+                     * User tried to delete a node that still had relationships, or in some other way violated
+                     * data model constraints.
+                     */
+                    case XAException.XA_RBINTEGRITY:
+
+                    /*
+                     *  A network error occurred.
+                     */
+                    case XAException.XA_HEURCOM:
+                        xaErrorCode = e.errorCode;
+                        commitFailureCause = e;
+                        log.logMessage( "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
+                                ", errorCode=" + xaErrorCode, e );
+                        break;
+
+                    // Error codes where we are not *certain* that we still know the state of the system
+                    default:
+                        setTmNotOk( e );
+                        throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                                "commit threw exception but status is committed?", e ));
                 }
             }
             catch ( Throwable t )
             {
                 log.logMessage( "Commit failed", t );
-                commitFailureCause = t;
+
+                setTmNotOk( t );
+                // this should never be
+                throw logAndReturn("TM error tx commit",new TransactionFailureException(
+                        "commit threw exception but status is committed?", t ));
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
@@ -476,7 +509,7 @@ public class TxManager extends AbstractTransactionManager
                 {
                     commitError = "error code in commit: " + xaErrorCode;
                 }
-                String rollbackErrorCode = "Uknown error code";
+                String rollbackErrorCode = "Unknown error code";
                 if ( e instanceof XAException )
                 {
                     rollbackErrorCode = Integer.toString( ( (XAException) e ).errorCode );
@@ -662,8 +695,9 @@ public class TxManager extends AbstractTransactionManager
     }
 
     @Override
-	public Transaction getTransaction()
+	public Transaction getTransaction() throws SystemException
     {
+        assertTmOk( "get transaction" );
         return txThreadMap.get( Thread.currentThread() );
     }
 
@@ -790,7 +824,16 @@ public class TxManager extends AbstractTransactionManager
      */
     public int getEventIdentifier()
     {
-        TransactionImpl tx = (TransactionImpl) getTransaction();
+        TransactionImpl tx = null;
+        try
+        {
+            tx = (TransactionImpl) getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         if ( tx != null )
         {
             return tx.getEventIdentifier();
@@ -801,7 +844,14 @@ public class TxManager extends AbstractTransactionManager
     @Override
     public ForceMode getForceMode()
     {
-        return ((TransactionImpl)getTransaction()).getForceMode();
+        try
+        {
+            return ((TransactionImpl)getTransaction()).getForceMode();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public int getStartedTxCount()

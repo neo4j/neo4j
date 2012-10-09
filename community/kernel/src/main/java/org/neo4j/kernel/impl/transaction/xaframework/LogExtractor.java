@@ -102,6 +102,19 @@ public class LogExtractor
         {
             return txStartPositionCache.get( txId );
         }
+
+        public synchronized TxPosition cacheStartPosition( long txId, LogEntry.Start startEntry, long logVersion )
+        {
+            if ( startEntry.getStartPosition() == -1 )
+            {
+                throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
+            }
+
+            TxPosition result = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
+                    startEntry.getStartPosition(), startEntry.getChecksum() );
+            putStartPosition( txId, result );
+            return result;
+        }
     }
     
     public static interface LogLoader
