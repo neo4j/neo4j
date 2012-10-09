@@ -29,7 +29,6 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
-import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
