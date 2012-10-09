@@ -419,7 +419,7 @@ public class XaResourceManager
     {
         XaTransaction xaTransaction;
         boolean isReadOnly;
-        
+
         synchronized ( this )
         {
             XidStatus status = xidMap.get( xid );
@@ -439,7 +439,7 @@ public class XaResourceManager
                     if ( !xaTransaction.isRecovered() )
                     {
                         xaTransaction.prepare();
-    
+
                         long txId = txIdGenerator.generate( dataSource,
                                 xaTransaction.getIdentifier() );
                         xaTransaction.setCommitTxId( txId );
@@ -499,7 +499,7 @@ public class XaResourceManager
                 checkIfRecoveryComplete();
             }
         }
-        
+
         if ( !xaTransaction.isRecovered() && !isReadOnly )
             txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
         return xaTransaction;
@@ -768,9 +768,17 @@ public class XaResourceManager
     public synchronized long applyPreparedTransaction(
             ReadableByteChannel transaction ) throws IOException
     {
-        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-        log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
-        return txId;
+        try
+        {
+            long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+
+            log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
+            return txId;
+        }
+        catch ( XAException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
     
     public synchronized long rotateLogicalLog() throws IOException

@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
+import javax.transaction.xa.XAException;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.ClosableIterable;
 
