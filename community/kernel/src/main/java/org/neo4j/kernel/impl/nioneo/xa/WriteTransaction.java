@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,9 +39,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.nioneo.store.ConstraintViolationException;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -71,8 +75,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -172,8 +174,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( !record.inUse() && record.getNextRel() !=
                 Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                throw new InvalidRecordException( "Node record " + record
-                    + " still has relationships" );
+                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ), new ConstraintViolationException("Node record " + record
+                        + " still has relationships"));
             }
             Command.NodeCommand command = new Command.NodeCommand(
                 neoStore.getNodeStore(), record );

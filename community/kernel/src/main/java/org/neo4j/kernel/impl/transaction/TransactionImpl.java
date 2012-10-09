@@ -547,7 +547,16 @@ class TransactionImpl implements Transaction
             ResourceElement re = itr.next();
             if ( re.getStatus() != RS_READONLY )
             {
-                re.getResource().commit( re.getXid(), onePhase );
+                try
+                {
+                    re.getResource().commit( re.getXid(), onePhase );
+                } catch(XAException e)
+                {
+                    throw e;
+                } catch(Throwable e)
+                {
+                    throw Exceptions.withCause( new XAException(XAException.XAER_RMERR), e );
+                }
             }
         }
         status = Status.STATUS_COMMITTED;
