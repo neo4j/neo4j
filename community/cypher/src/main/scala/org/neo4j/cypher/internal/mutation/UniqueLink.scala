@@ -122,9 +122,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     Seq(nodeCreate, relUpdate)
   }
 
-  private def getNode(context: ExecutionContext, key: String): Option[Node] = if (isNamed(key)) {
-    None
-  } else context.get(key).map {
+  private def getNode(context: ExecutionContext, key: String): Option[Node] = context.get(key).map {
     case n: Node => n
     case x => throw new CypherTypeException("Expected `" + key + "` to a node, but it is a " + x)
   }
