@@ -165,4 +165,23 @@ An example might be helpful:""",
       		"no real data in this case, an empty result is returned. See the sections below for real data.",
       assertions = p => assertTrue(true))
   }
+
+  @Test def percentile_disc() {
+    testQuery(
+      title = "PERCENTILE_DISC",
+      text = "+PERCENTILE_DISC+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a rounding method, returning the nearest value to the percentile. For interpolated values, see PERCENTILE_CONT.",
+      queryText = "start n=node(%A%,%B%,%C%) return percentile_disc(n.property, 0.5)",
+      returns = "The 50th percentile of the values in the property `property` is returned by the example query. In this case, 0.5 is the median, or 50th percentile.",
+      assertions = p => assertEquals(Map("percentile_disc(n.property, 0.5)" -> 33), p.toList.head))
+  }
+
+  @Test def percentile_cont() {
+    testQuery(
+      title = "PERCENTILE_CONT",
+      text = "+PERCENTILE_CONT+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them. For nearest values using a rounding method, see PERCENTILE_DISC.",
+      queryText = "start n=node(%A%,%B%,%C%) return percentile_cont(n.property, 0.4)",
+      returns = "The 40th percentile of the values in the property `property` is returned by the example query, calculated with a weighted average.",
+      assertions = p => assertEquals(Map("percentile_cont(n.property, 0.4)" -> 29), p.toList.head))
+  }
+
 }
