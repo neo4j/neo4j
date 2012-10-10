@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.util.HashMap;
@@ -175,5 +177,17 @@ public class TestClockCache
         {
             assertEquals( null, cache.get( key ) );
         }
+    }
+
+    @Test
+    public void shouldUpdateSizeWhenRemoving() throws Exception
+    {
+        ClockCache<String, Integer> cache = new ClockCache<String, Integer>( "foo", 3 );
+        cache.put( "bar", 42 );
+        cache.put( "baz", 87 );
+
+        cache.remove( "bar" );
+
+        assertThat( cache.size(), is( 1 ) );
     }
 }

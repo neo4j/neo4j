@@ -174,6 +174,7 @@ public class ClockCache<K, V>
         {
             return null;
         }
+        currentSize.decrementAndGet();
         V toReturn = toRemove.value;
         toRemove.value = null;
         toRemove.flag = false;

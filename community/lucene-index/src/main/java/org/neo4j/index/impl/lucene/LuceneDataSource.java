@@ -438,7 +438,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     private synchronized IndexReference[] getAllIndexes()
     {
-        return indexSearchers.values().toArray( new IndexReference[0] );
+        Collection<IndexReference> indexReferences = indexSearchers.values();
+
+        return indexReferences.toArray( new IndexReference[indexReferences.size()] );
     }
 
     void getReadLock()
@@ -469,7 +471,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * scratch.
      *
      * @param searcher the {@link IndexSearcher} to refresh.
-     * @param writer
      * @return a refreshed version of the searcher or, if nothing has changed,
      * {@code null}.
      * @throws IOException if there's a problem with the index.
