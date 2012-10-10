@@ -26,7 +26,7 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb._
 import java.util.HashMap
 
-class MutatingIntegrationTests extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
   val stats = QueryStatistics.empty
 

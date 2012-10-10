@@ -26,7 +26,7 @@ import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 
-class EagerVsLazyTests extends Assertions {
+class EagerVsLazyTest extends Assertions {
   var graph: SnitchGraphDatabaseService = _
 
   @Test

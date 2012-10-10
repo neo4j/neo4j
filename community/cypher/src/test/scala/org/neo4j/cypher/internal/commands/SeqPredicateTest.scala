@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.Property
-import org.scalatest.Assertions
+import expressions.{Identifier, Literal}
 import org.junit.Test
+import org.scalatest.Assertions
 
-class PropertyValueTests extends Assertions {
-  @Test def nullNodeShouldGiveNullProperty() {
-    val p = Property("identifier", "property")
+class SeqPredicateTest extends Assertions {
+  @Test def allStringsBeginWithA() {
+    val strings = Seq("Andres", "Andres")
+    val inner = Equals(Literal("Andres"), Identifier("x"))
+    val all = new AllInCollection(Identifier("strings"), "x", inner)
 
-    assert(p(Map("identifier" -> null)) === null)
+    assert(all.isMatch(Map("strings" -> strings)))
   }
 }

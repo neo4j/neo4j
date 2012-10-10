@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.cypher.internal.commands.True
 
 
-class TraversalMatcherTests extends GraphDatabaseTestBase {
+class TraversalMatcherTest extends GraphDatabaseTestBase {
 
   val A = withName("A")
   val B = withName("B")

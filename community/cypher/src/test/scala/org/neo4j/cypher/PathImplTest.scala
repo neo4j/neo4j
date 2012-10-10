@@ -26,7 +26,7 @@ import org.neo4j.graphdb._
 import org.scalatest.Spec
 import scala.collection.JavaConverters._
 
-class PathImplTests extends Spec {
+class PathImplTest extends Spec {
 
   val typ = DynamicRelationshipType.withName("a")
 
