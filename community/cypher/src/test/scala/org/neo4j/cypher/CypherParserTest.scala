@@ -1864,7 +1864,36 @@ foreach(x in [1,2,3] :
                  returns(AllIdentifiers()))
   }
 
+  @Test def with_limit() {
+    testFrom_1_9("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
+      Query.
+        start(NodeById("n", 0, 1, 2)).
+        limit(2).
+        tail(Query.
+          start().
+          where(Equals(IdFunction(Identifier("n")), Literal(1))).
+          returns(ReturnItem(Identifier("n"), "n"))
+        ).
+        returns(
+        ReturnItem(Identifier("n"), "n")
+      ))
+  }
 
+  @Test def with_sort_limit() {
+    testFrom_1_9("start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
+      Query.
+        start(NodeById("n", 0, 1, 2)).
+        orderBy(SortItem(IdFunction(Identifier("n")), false)).
+        limit(2).
+        tail(Query.
+          start().
+          where(Equals(IdFunction(Identifier("n")), Literal(1))).
+          returns(ReturnItem(Identifier("n"), "n"))
+        ).
+        returns(
+        ReturnItem(Identifier("n"), "n")
+      ))
+  }
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
