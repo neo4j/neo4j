@@ -37,7 +37,7 @@ This query can be used in the following fashion:
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=create_node_from_map
 classifier=test-sources
 ----
@@ -59,7 +59,7 @@ This query can be used in the following fashion:
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----
