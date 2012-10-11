@@ -74,8 +74,7 @@ trait DocumentationHelper {
     writer.emit(out, Walker.fullGraph(db))
 
     return """
-_Graph_
-
+.Graph
 ["dot", "%s.svg", "neoviz", "%s"]
 ----
 %s
@@ -197,7 +196,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult) {
     val output = new StringBuilder(2048)
-    output.append("_Query_\n\n")
+    output.append(".Query\n")
     output.append(AsciidocHelper.createCypherSnippet(query))
     writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString))
     writer.println

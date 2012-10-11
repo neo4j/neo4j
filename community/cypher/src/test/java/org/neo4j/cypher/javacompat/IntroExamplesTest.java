@@ -29,6 +29,7 @@ import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
@@ -54,19 +55,21 @@ public class IntroExamplesTest implements GraphHolder
         Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like the following one:\n\n" );
-        fw.append( AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
-                graphdb(),
-                "cypher-intro" ) );
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.graph", 
+                AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
+                graphdb(), "cypher-intro" ) ) );
 
-        fw.append( "For example, here is a query which finds a user called John in an index and then traverses the graph looking for friends of Johns friends (though not his direct friends) before returning both John and any friends-of-friends that are found." );
-        fw.append( "\n" );
+        fw.append( "\nFor example, here is a query which finds a user called John in an index and then traverses the graph looking for friends of Johns friends (though not his direct friends) before returning both John and any friends-of-friends that are found." );
+        fw.append( "\n\n" );
         String query = "START john=node:node_auto_index(name = 'John') "
                        + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
-        fw.append( createCypherSnippet( query ) );
-        fw.append( "\nResulting in:\n" );
-        fw.append( createQueryResultSnippet( engine.execute( query  ).toString() ) );
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.query",
+                createCypherSnippet( query ) ) );
+        fw.append( "\nResulting in:\n\n" );
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
+                createQueryResultSnippet( engine.execute( query  ).toString() ) ) );
 
-        fw.append( "Next up we will add filtering to set more parts "
+        fw.append( "\nNext up we will add filtering to set more parts "
                    + "in motion:\n\nIn this next example, we take a list of users "
                    + "(by node ID) and traverse the graph looking for those other "
                    + "users that have an outgoing +friend+ relationship, returning "
@@ -82,10 +85,12 @@ public class IntroExamplesTest implements GraphHolder
                 + ","
                 + data.get().get( "Steve" ).getId()
                 + ") MATCH user-[:friend]->follower WHERE follower.name =~ 'S.*' RETURN user, follower.name ";
-        fw.append( "\n" );
-        fw.append( createCypherSnippet( query ) );
-        fw.append( "\nResulting in\n" );
-        fw.append( createQueryResultSnippet( engine.execute( query ).toString() ) );
+        fw.append( "\n\n" );
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.query",
+                createCypherSnippet( query ) ) );
+        fw.append( "\nResulting in:\n\n" );
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
+                createQueryResultSnippet( engine.execute( query ).toString() ) ) );
         fw.close();
     }
 

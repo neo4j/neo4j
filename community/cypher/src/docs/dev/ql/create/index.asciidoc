@@ -25,8 +25,7 @@ You can also create a graph entity from a `Map<String,Object>` map. All
 the key/value pairs in the map will be set as properties on the created
 relationship or node.
 
-_Query_
-
+.Query
 [source,cypher]
 ----
 create ({props})
@@ -47,8 +46,7 @@ classifier=test-sources
 By providing an iterable of maps (`Iterable<Map<String,Object>>`), Cypher will create a node for each map
 in the iterable. When you do this, you can't create anything else in the same create statement.
 
-_Query_
-
+.Query
 [source,cypher]
 ----
 create (n {props}) return n

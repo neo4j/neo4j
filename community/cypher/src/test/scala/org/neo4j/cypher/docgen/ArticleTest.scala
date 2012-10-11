@@ -103,8 +103,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     val resultSnippetAsciiDoc = AsciidocHelper.createQueryResultSnippet(queryOutput)
     val resultSnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-result", resultSnippetAsciiDoc)
 
-    val queryText = """_Query_
-
+    val queryText = """.Query
 %s
 
 """.format(querySnippet)
