@@ -47,6 +47,7 @@ include::extract.asciidoc[]
 include::filter.asciidoc[]
 include::tail.asciidoc[]
 include::range.asciidoc[]
+include::reduce.asciidoc[]
 
 :leveloffset: 2
 
