@@ -8,6 +8,9 @@ just on properties on these.
 include::cypher-orderby-graph.asciidoc[]
 
 include::order-nodes-by-property.asciidoc[]
+
 include::order-nodes-by-multiple-properties.asciidoc[]
+
 include::order-nodes-in-descending-order.asciidoc[]
+
 include::ordering-null.asciidoc[]

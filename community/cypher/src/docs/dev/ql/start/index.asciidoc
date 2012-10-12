@@ -11,11 +11,18 @@ an exception.
 include::cypher-start-graph.asciidoc[]
 
 include::node-by-id.asciidoc[]
+
 include::relationship-by-id.asciidoc[]
+
 include::multiple-nodes-by-id.asciidoc[]
+
 include::all-nodes.asciidoc[]
+
 include::node-by-index-lookup.asciidoc[]
+
 include::relationship-by-index-lookup.asciidoc[]
+
 include::node-by-index-query.asciidoc[]
+
 include::multiple-starting-points.asciidoc[]
 

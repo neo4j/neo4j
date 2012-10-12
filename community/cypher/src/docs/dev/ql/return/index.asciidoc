@@ -8,12 +8,20 @@ interested in. It can be nodes, relationships, or properties on these.
 include::cypher-return-graph.asciidoc[]
 
 include::return-nodes.asciidoc[]
+
 include::return-relationships.asciidoc[]
+
 include::return-property.asciidoc[]
+
 include::return-all-elements.asciidoc[]
+
 include::identifier-with-uncommon-characters.asciidoc[]
+
 include::column-alias.asciidoc[]
+
 include::optional-properties.asciidoc[]
+
 include::other-expressions.asciidoc[]
+
 include::unique-results.asciidoc[]
 

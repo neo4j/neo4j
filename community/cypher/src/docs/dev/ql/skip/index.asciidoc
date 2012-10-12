@@ -9,5 +9,6 @@ Please note that no guarantees are made on the order of the result unless the qu
 include::cypher-skip-graph.asciidoc[]
 
 include::skip-first-three.asciidoc[]
+
 include::return-middle-two.asciidoc[]
 

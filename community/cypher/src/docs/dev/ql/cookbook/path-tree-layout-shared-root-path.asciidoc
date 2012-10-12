@@ -1,6 +1,5 @@
 
-_Graph_
-
+.Graph
 ["dot", "cypher-pathtree-layout-shared-root-path.svg", "neoviz"]
 ----
   root [label="Root"]

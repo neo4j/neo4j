@@ -16,8 +16,11 @@ They are most commonly used to filter out subgraphs in the +WHERE+ part of a que
 :leveloffset: 3
 
 include::all.asciidoc[]
+
 include::any.asciidoc[]
+
 include::none.asciidoc[]
+
 include::single.asciidoc[]
 
 :leveloffset: 2
@@ -28,10 +31,15 @@ Scalar functions return a single value.
 :leveloffset: 3
 
 include::length.asciidoc[]
+
 include::type.asciidoc[]
+
 include::id.asciidoc[]
+
 include::coalesce.asciidoc[]
+
 include::head.asciidoc[]
+
 include::last.asciidoc[]
 
 :leveloffset: 2
@@ -42,11 +50,17 @@ Collection functions return collections of things -- nodes in a path, and so on.
 :leveloffset: 3
 
 include::nodes.asciidoc[]
+
 include::relationships.asciidoc[]
+
 include::extract.asciidoc[]
+
 include::filter.asciidoc[]
+
 include::tail.asciidoc[]
+
 include::range.asciidoc[]
+
 include::reduce.asciidoc[]
 
 :leveloffset: 2
@@ -58,8 +72,11 @@ error if used on any other values.
 :leveloffset: 3
 
 include::abs.asciidoc[]
+
 include::round.asciidoc[]
+
 include::sqrt.asciidoc[]
+
 include::sign.asciidoc[]
 
 == String functions ==
@@ -69,12 +86,21 @@ error if used on any other values. Except STR(), which converts to strings.
 :leveloffset: 3
 
 include::str.asciidoc[]
+
 include::replace.asciidoc[]
+
 include::substring.asciidoc[]
+
 include::left.asciidoc[]
+
 include::right.asciidoc[]
+
 include::ltrim.asciidoc[]
+
 include::rtrim.asciidoc[]
+
 include::trim.asciidoc[]
+
 include::lower.asciidoc[]
+
 include::upper.asciidoc[]

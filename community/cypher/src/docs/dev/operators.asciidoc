@@ -6,7 +6,7 @@ Operators in Cypher are of three different varieties -- mathematical, equality a
 
 The mathematical operators are `+`, `-`, `*`, `/` and `%`. Of these, only the plus-sign works on strings and collections.
 
-The equality operators are `=`, `<>`, `<`, `>`, `<=`, `>=`.
+The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`.
 
 Since Neo4j is a schema-free graph database, Cypher has two special operators -- `?` and `!`.
 

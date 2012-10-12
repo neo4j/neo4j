@@ -1,6 +1,5 @@
 
-_Graph_
-
+.Graph
 ["dot", "cypher-pathtree-layout-full-range-path.svg", "neoviz"]
 ----
   root [label="Root"]

@@ -15,7 +15,11 @@ Read <<introduction-pattern>> for an introduction.
 :leveloffset: 2
 
 include::create-relationship-if-it-is-missing.asciidoc[]
+
 include::create-node-if-missing.asciidoc[]
+
 include::create-nodes-with-values.asciidoc[]
+
 include::create-relationship-with-values.asciidoc[]
+
 include::describe-complex-pattern.asciidoc[]
