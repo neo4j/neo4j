@@ -58,12 +58,12 @@
         <neo-server.external>false</neo-server.external>
         <neo-server.external.url>http://localhost:7474</neo-server.external.url>
 
-        <webdriver.version>2.20.0</webdriver.version>
+        <webdriver.version>2.24.1</webdriver.version>
         <webdriver.implementation>Firefox</webdriver.implementation>
 
         <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
-        <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
+        <webdriver.chrome.driver.download.url>http://chromedriver.googlecode.com/files/chromedriver_mac_23.0.1240.0.zip</webdriver.chrome.driver.download.url>
         <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
         
         <!-- Don't write new code using this, use neo-server.external instead -->
