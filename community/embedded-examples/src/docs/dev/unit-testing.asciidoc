@@ -7,10 +7,10 @@ The basic pattern of unit testing with Neo4j is illustrated by the following exa
 To access the Neo4j testing facilities you should have the +neo4j-kernel+ 'tests.jar' on the classpath during tests.
 You can download it from Maven Central: http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel].
 
-Using Maven as a dependency manager you would typically add this dependency as:
+Using Maven as a dependency manager you would typically add this dependency together with JUnit and Hamcrest like so:
 
 .Maven dependency
-[source,xml]
+["source","xml","unnumbered","2",presubs="attributes"]
 --------------------------------------------
 <project>
 ...
@@ -18,8 +18,20 @@ Using Maven as a dependency manager you would typically add this dependency as:
   <dependency>
    <groupId>org.neo4j</groupId>
    <artifactId>neo4j-kernel</artifactId>
-   <version>${neo4j-version}</version>
+   <version>{neo4j-version}</version>
    <type>test-jar</type>
+   <scope>test</scope>
+  </dependency>
+  <dependency>
+   <groupId>junit</groupId>
+   <artifactId>junit-dep</artifactId>
+   <version>4.10</version>
+   <scope>test</scope>
+  </dependency>
+  <dependency>
+   <groupId>org.hamcrest</groupId>
+   <artifactId>hamcrest-all</artifactId>
+   <version>1.1</version>
    <scope>test</scope>
   </dependency>
   ...
@@ -27,8 +39,6 @@ Using Maven as a dependency manager you would typically add this dependency as:
 ...
 </project>
 --------------------------------------------
-
-_Where +$\{neo4j-version}+ is the desired version of Neo4j._
 
 With that in place, we're ready to code our tests.
 
