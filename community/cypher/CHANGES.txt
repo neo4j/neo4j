@@ -13,6 +13,7 @@ o Added the string functions: str(), replace(), substring(), left(), right(), lt
 o Added the possibility to use ORDER BY, SKIP and LIMIT together with WITH
 o Fixes #904: CREATE UNIQUE doesn't work with parameter maps
 o Fixes #908: Parameters do not survive WITH if it has aggregation
+o SET can now be used to set properties on nodes and relationships from maps or other graph elements
 
 1.8.RC1 (2012-09-05)
 --------------------

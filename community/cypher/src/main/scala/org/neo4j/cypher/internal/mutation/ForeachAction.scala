@@ -53,7 +53,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 
-  def identifier2 = Seq.empty
+  def identifiers = Seq.empty
 
   def assertTypes(symbols: SymbolTable) {
     val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType

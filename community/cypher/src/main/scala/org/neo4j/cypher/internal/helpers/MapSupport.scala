@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import collection.Map
+import collection.{Iterator, Map}
 import java.util.{Map => JavaMap}
 import collection.JavaConverters._
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 object IsMap extends MapSupport {
   def unapply(x: Any): Option[Map[String, Any]] = if (isMap(x)) {
@@ -34,8 +36,22 @@ object IsMap extends MapSupport {
 trait MapSupport {
   def isMap(x: Any) = castToMap.isDefinedAt(x)
 
-  def castToMap: PartialFunction[Any, Map[String,Any]] = {
-    case x: Map[String, Any]       => x
-    case x: JavaMap[String, Any]   => x.asScala
+  def castToMap: PartialFunction[Any, Map[String, Any]] = {
+    case x: Map[String, Any]     => x
+    case x: JavaMap[String, Any] => x.asScala
+    case x: PropertyContainer    => new PropContainerMap(x)
   }
+
+  class PropContainerMap(pc: PropertyContainer) extends Map[String, Any] {
+    def +[B1 >: Any](kv: (String, B1)) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
+
+    def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
+
+    def get(key: String) = if (pc.hasProperty(key)) Some(pc.getProperty(key)) else None
+
+    def iterator: Iterator[(String, Any)] = pc.getPropertyKeys.asScala.map(k => k -> pc.getProperty(k)).toIterator
+
+    override def contains(key: String) = pc.hasProperty(key)
+  }
+
 }

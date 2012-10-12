@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 trait UpdateAction extends TypeSafe {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
   def assertTypes(symbols:SymbolTable)
-  def identifier2:Seq[(String,CypherType)]
+  def identifiers:Seq[(String,CypherType)]
   def rewrite(f: Expression => Expression):UpdateAction
   def filter(f: Expression => Boolean): Seq[Expression]
 }

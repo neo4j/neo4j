@@ -165,7 +165,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = links.flatMap(_.filter(f)).distinct
 
-  def identifier2: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
+  def identifiers: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
 
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 

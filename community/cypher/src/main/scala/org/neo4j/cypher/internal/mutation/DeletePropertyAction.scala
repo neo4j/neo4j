@@ -37,7 +37,7 @@ case class DeletePropertyAction(element: Expression, property: String)
     Stream(context)
   }
 
-  def identifier2 = Seq.empty
+  def identifiers = Seq.empty
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f)
 

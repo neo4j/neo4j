@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 
 case class PropertySetAction(prop: Property, e: Expression)
-  extends UpdateAction with GraphElementPropertyFunctions{
+  extends UpdateAction with GraphElementPropertyFunctions {
   val Property(entityKey, propertyKey) = prop
 
   def exec(context: ExecutionContext, state: QueryState) = {
@@ -34,7 +34,7 @@ case class PropertySetAction(prop: Property, e: Expression)
 
     value match {
       case null => entity.removeProperty(propertyKey)
-      case _ => entity.setProperty(propertyKey, value)
+      case _    => entity.setProperty(propertyKey, value)
     }
 
     state.propertySet.increase()
@@ -42,7 +42,7 @@ case class PropertySetAction(prop: Property, e: Expression)
     Stream(context)
   }
 
-  def identifier2 = Seq.empty
+  def identifiers = Seq.empty
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
 

@@ -90,7 +90,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
     }
   }
 
-  def identifier2 = Seq(key -> NodeType())
+  def identifiers = Seq(key -> NodeType())
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = props.values.flatMap(_.filter(f)).toSeq
 
@@ -127,7 +127,7 @@ case class CreateRelationshipStartItem(key: String,
     Stream(context)
   }
 
-  def identifier2 = Seq(key-> RelationshipType())
+  def identifiers = Seq(key-> RelationshipType())
 
   def assertTypes(symbols: SymbolTable) {
     checkTypes(from._2, symbols)

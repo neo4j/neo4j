@@ -185,7 +185,7 @@ public class JavaExecutionEngineTest
         // START SNIPPET: exampleWithStringLiteralAsParameter
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "name", "Johan" );
-        ExecutionResult result = 
+        ExecutionResult result =
                 engine.execute( "start n=node(0,1,2) where n.name = {name} return n", params );
         // END SNIPPET: exampleWithStringLiteralAsParameter
 
@@ -199,7 +199,7 @@ public class JavaExecutionEngineTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "key", "name" );
         params.put( "value", "Michaela" );
-        ExecutionResult result = 
+        ExecutionResult result =
                 engine.execute( "start n=node:people({key} = {value}) return n", params );
         // END SNIPPET: exampleWithParametersForIndexKeyAndValue
 
@@ -239,7 +239,7 @@ public class JavaExecutionEngineTest
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "s", 1 );
         params.put( "l", 1 );
-        ExecutionResult result = 
+        ExecutionResult result =
                 engine.execute( "start n=node(0,1,2) return n.name skip {s} limit {l}", params );
         // END SNIPPET: exampleWithParameterForSkipLimit
 
@@ -254,7 +254,7 @@ public class JavaExecutionEngineTest
         // START SNIPPET: exampleWithParameterRegularExpression
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "regex", ".*h.*" );
-        ExecutionResult result = 
+        ExecutionResult result =
                 engine.execute( "start n=node(0,1,2) where n.name =~ {regex} return n.name", params );
         // END SNIPPET: exampleWithParameterRegularExpression
 
@@ -294,13 +294,30 @@ public class JavaExecutionEngineTest
         n2.put( "position", "Developer" );
 
         Map<String, Object> params = new HashMap<String, Object>();
-        List<Map<String, Object>> maps = Arrays.asList(n1, n2);
-        params.put( "props", maps);
-        engine.execute("create (n {props}) return n", params);
+        List<Map<String, Object>> maps = Arrays.asList( n1, n2 );
+        params.put( "props", maps );
+        engine.execute( "create (n {props}) return n", params );
         // END SNIPPET: create_multiple_nodes_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
         assertThat( count( result ), is( 2 ) );
+    }
+
+    @Test
+    public void set_properties_on_a_node_from_a_map() throws Exception
+    {
+        // START SNIPPET: set_properties_on_a_node_from_a_map
+        Map<String, Object> n1 = new HashMap<String, Object>();
+        n1.put( "name", "Andres" );
+        n1.put( "position", "Developer" );
+
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put( "props", n1 );
+        engine.execute( "START n=node(0) SET n = {props}", params );
+        // END SNIPPET: set_properties_on_a_node_from_a_map
+
+        ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
+        assertThat( michaelaNode.getProperty( "name" ).toString(), is( "Andres" ) );
     }
 
     @Test

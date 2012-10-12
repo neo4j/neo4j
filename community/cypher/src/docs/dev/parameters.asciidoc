@@ -86,3 +86,12 @@ tag=exampleWithParameterRegularExpression
 classifier=test-sources
 ----
 
+.Parameter setting properties on node
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=set_properties_on_a_node_from_a_map
+classifier=test-sources
+----
+
