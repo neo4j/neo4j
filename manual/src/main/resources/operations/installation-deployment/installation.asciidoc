@@ -33,7 +33,7 @@ After selecting the appropriate version for your platform, embed Neo4j in your J
 Either take the jar files from the 'lib/' directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/]. Stable and milestone releases are available there.
 
 .Maven dependency
-[source,xml] 
+["source","xml","unnumbered","2",presubs="attributes"]
 --------------------------------------------
 <project>
 ...
@@ -41,7 +41,7 @@ Either take the jar files from the 'lib/' directory of the download, or directly
   <dependency>
    <groupId>org.neo4j</groupId>
    <artifactId>neo4j</artifactId>
-   <version>${neo4j-version}</version>
+   <version>{neo4j-version}</version>
   </dependency>
   ...
  </dependencies>
@@ -49,7 +49,7 @@ Either take the jar files from the 'lib/' directory of the download, or directly
 </project>
 --------------------------------------------
 
-_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
+_Where the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
 
 == Server Installation ==
 
