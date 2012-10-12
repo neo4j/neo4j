@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.expressions.{Expression, AggregationExpression}
+import org.neo4j.cypher.internal.commands.expressions.{ParameterValue, Expression, AggregationExpression}
 import collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
@@ -31,9 +31,9 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
   extends PipeWithSource(source) {
   def oldKeyExpressions = keyExpressions.values.toSeq
 
-  val symbols: SymbolTable = createSymbols2()
+  val symbols: SymbolTable = createSymbols()
 
-  private def createSymbols2() = {
+  private def createSymbols() = {
     val typeExtractor: ((String, Expression)) => (String, CypherType) = {
       case (id, exp) => id -> exp.getType(source.symbols)
     }
@@ -49,6 +49,33 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
     val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
+    val params = state.params.map {
+      case (k, v) => "-=PARAMETER=-" + k + "-=PARAMETER=-" -> ParameterValue(v)
+    }
+
+    def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {
+      val newMap = MutableMaps.create
+
+      //add key values
+      (keyNames zip key.original).foreach(newMap += _)
+
+      //add aggregated values
+      (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
+
+      ctx.newFrom(newMap)
+    }
+
+    def createEmptyResult(): Traversable[ExecutionContext] = {
+      val newMap = MutableMaps.create(Parameters.createParamContextMap(state))
+      val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
+      aggregationNamesAndFunctions.toMap
+        .foreach {
+        case (name, zeroValue) => newMap += name -> zeroValue
+      }
+      Traversable(ExecutionContext(newMap ++ params))
+    }
+
+
 
     source.createResults(state).foreach(ctx => {
       val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx(_)))
@@ -56,35 +83,15 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       functions.foreach(func => func(ctx))
     })
 
-    if (result.isEmpty && keyNames.isEmpty) {
-      createEmptyResult(aggregationNames, state)
-    } else result.map {
-      case (key, (ctx, aggregator)) => createResults(keyNames, key, aggregationNames, aggregator, ctx)
+    val a = if (result.isEmpty && keyNames.isEmpty) {
+      createEmptyResult()
+    } else {
+      result.map {
+        case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx).newWith(params)
+      }
     }
-  }
 
-
-  def createResults(keyNames: scala.Seq[String], key: NiceHasher, aggregationNames: scala.Seq[String], aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {
-    val newMap = MutableMaps.create
-
-    //add key values
-    (keyNames zip key.original).foreach(newMap += _)
-
-    //add aggregated values
-    (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
-
-    ctx.newFrom(newMap)
-  }
-
-
-  private def createEmptyResult(aggregationNames: Seq[String], state : QueryState): Traversable[ExecutionContext] = {
-    val newMap = MutableMaps.create(Parameters.createParamContextMap(state))
-    val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
-    aggregationNamesAndFunctions.toMap
-      .foreach {
-      case (name, zeroValue) => newMap += name -> zeroValue
-    }
-    Traversable(ExecutionContext(newMap))
+    a
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + oldKeyExpressions.mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"

@@ -10,8 +10,9 @@ o Fixed #866: Changed the LRU cache to make it safe to use concurrently, and mad
 o Added the reduce() functionality
 o Made addition automatically convert numbers to strings when adding the two together
 o Added the string functions: str(), replace(), substring(), left(), right(), ltrim(), rtrim(), trim(), lower(), upper()
+o Added the possibility to use ORDER BY, SKIP and LIMIT together with WITH
 o Fixes #904: CREATE UNIQUE doesn't work with parameter maps
-
+o Fixes #908: Parameters do not survive WITH if it has aggregation
 
 1.8.RC1 (2012-09-05)
 --------------------

@@ -2258,4 +2258,11 @@ RETURN x0.name?
     assert(result.toList === List(Map("n" -> refNode, "collect(x)" -> List())))
   }
 
+  @Test
+  def params_should_survive_with() {
+    val result = parseAndExecute("START n=node(0) WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
+
+    assert(result.toList === List(Map("coll" -> List(refNode))))
+  }
+
 }
