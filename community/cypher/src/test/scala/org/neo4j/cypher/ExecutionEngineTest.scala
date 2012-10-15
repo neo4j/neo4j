@@ -670,12 +670,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     val r = relate("A" -> "KNOWS" -> "B")
 
-    val query = Query.
-      start(NodeById("a", 1)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Identifier("p"), "p"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p=a-->b return p")
 
     assertEquals(List(PathImpl(node("A"), r, node("B"))), result.columnAs[Path]("p").toList)
   }
@@ -685,15 +680,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-
-    val query = Query.
-      start(NodeById("a", 1)).
-      namedPaths(NamedPath("p",
-      RelatedTo("a", "b", "rel1", Seq(), Direction.OUTGOING, false, True()),
-      RelatedTo("b", "c", "rel2", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Identifier("p"), "p"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p = a-[rel1]->b-[rel2]->c return p")
 
     assertEquals(List(PathImpl(node("A"), r1, node("B"), r2, node("C"))), result.columnAs[Path]("p").toList)
   }
@@ -755,12 +742,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(b, c, "rel")
     relate(c, d, "rel")
 
-    val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
-      where(AllInCollection(NodesFunction(Identifier("p")), "i", Equals(Property("i", "foo"), Literal("bar")))).
-      returns(ReturnItem(Identifier("pB"), "pB"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start pA = node(1), pB=node(4) match p = pA-[:rel*1..5]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
 
     assertEquals(List(d), result.columnAs[Node]("pB").toList)
   }
@@ -773,11 +755,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val query = Query.start(NodeById("pA", a.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(2), Some(2), "rel", Direction.OUTGOING))).
-      returns(ReturnItem(RelationshipFunction(Identifier("p")), "RELATIONSHIPS(p)"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p = a-[:rel*2..2]->b return RELATIONSHIPS(p)")
 
     assertEquals(List(r1, r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
   }

@@ -23,13 +23,14 @@ import expressions.{ReduceFunction, Identifier, LengthFunction, Add, Literal}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, StringType, NumberType, AnyCollectionType}
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class ReduceTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
     val l = Seq("x", "xxx", "xx")
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Identifier("l")
-    val m = Map("l" -> l)
+    val m = ExecutionContext.from("l" -> l)
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
@@ -39,7 +40,7 @@ class ReduceTest extends Assertions {
   @Test def returns_null_from_null_collection() {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Literal(null)
-    val m:Map[String,Any] = Map.empty
+    val m = ExecutionContext.empty
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 

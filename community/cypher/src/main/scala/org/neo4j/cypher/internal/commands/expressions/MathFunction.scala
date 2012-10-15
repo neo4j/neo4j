@@ -23,6 +23,7 @@ import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()
@@ -50,13 +51,13 @@ trait NumericHelper {
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.abs(asDouble(argument(m)))
+  def apply(m: ExecutionContext): Any = Math.abs(asDouble(argument(m)))
 
   def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
-  def apply(m: Map[String, Any]): Any = {
+  def apply(m: ExecutionContext): Any = {
     val startVal = asInt(start(m))
     val endVal = asInt(end(m))
     val stepVal = asInt(step(m))
@@ -88,19 +89,19 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.signum(asDouble(argument(m)))
+  def apply(m: ExecutionContext): Any = Math.signum(asDouble(argument(m)))
 
   def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
 }
 
 case class RoundFunction(expression: Expression) extends MathFunction(expression) {
-  def apply(m: Map[String, Any]): Any = math.round(asDouble(expression(m)))
+  def apply(m: ExecutionContext): Any = math.round(asDouble(expression(m)))
 
   def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: Map[String, Any]): Any = Math.sqrt(asDouble(argument(m)))
+  def apply(m: ExecutionContext): Any = Math.sqrt(asDouble(argument(m)))
 
   def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))
 }

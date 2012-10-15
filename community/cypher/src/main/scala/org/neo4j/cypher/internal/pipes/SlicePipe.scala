@@ -35,7 +35,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
     if(sourceTraversable.isEmpty)
       return Seq()
 
-    val first: Map[String, Any] = sourceTraversable.head
+    val first: ExecutionContext = sourceTraversable.head
 
     def asInt(v:Expression)=v(first).asInstanceOf[Int]
 

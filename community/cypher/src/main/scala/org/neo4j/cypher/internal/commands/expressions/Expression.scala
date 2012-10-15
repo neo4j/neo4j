@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher._
+import internal.pipes.ExecutionContext
 import internal.symbols._
 import collection.Map
 
-abstract class Expression extends (Map[String, Any] => Any)
+abstract class Expression extends (ExecutionContext => Any)
 with Typed
 with TypeSafe {
   def rewrite(f: Expression => Expression): Expression
@@ -55,7 +56,7 @@ with TypeSafe {
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(m: Map[String, Any]) = m(key)
+  def apply(m: ExecutionContext) = m(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
   def filter(f: (Expression) => Boolean) = if(f(this)) Seq(this) else Seq()
@@ -73,7 +74,7 @@ abstract class Arithmetics(left: Expression, right: Expression)
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
 
-  def apply(m: Map[String, Any]) = {
+  def apply(m: ExecutionContext) = {
     val aVal = left(m)
     val bVal = right(m)
 

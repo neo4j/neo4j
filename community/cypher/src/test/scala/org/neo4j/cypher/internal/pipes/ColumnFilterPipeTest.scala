@@ -33,7 +33,7 @@ class ColumnFilterPipeTest extends JUnitSuite {
     val returnItems = List(ReturnItem(Identifier(col), col))
     val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), col -> NodeType())
 
-    val columnPipe = new ColumnFilterPipe(source, returnItems, true)
+    val columnPipe = new ColumnFilterPipe(source, returnItems)
 
     Assert.assertEquals(Map(col -> NodeType()), columnPipe.symbols.identifiers)
     Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(QueryState()).toList)

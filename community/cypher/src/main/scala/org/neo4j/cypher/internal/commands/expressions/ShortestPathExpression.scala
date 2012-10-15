@@ -29,11 +29,12 @@ import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
 import scala.Some
 import org.neo4j.cypher.internal.commands.{Pattern, PathExtractor, ShortestPath}
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ShortestPathExpression(ast: ShortestPath) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(ast)
 
-  def apply(m: Map[String, Any]): Stream[Path] = {
+  def apply(m: ExecutionContext): Stream[Path] = {
     if (anyStartpointsContainNull(m)) {
       null
     } else {

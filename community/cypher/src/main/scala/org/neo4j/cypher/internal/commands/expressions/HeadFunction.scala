@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import collection.Map
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).head
+  def compute(value: Any, m: ExecutionContext) = makeTraversable(value).head
 
   def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
 

@@ -32,7 +32,7 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
     val action = CreateNodeStartItem("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))))
 
     val tx = graph.beginTx()
-    action.exec(ExecutionContext.empty, new QueryState(graph, MutableMaps.create))
+    action.exec(ExecutionContext.empty, new QueryState(graph, Map.empty))
     tx.success()
     tx.finish()
 

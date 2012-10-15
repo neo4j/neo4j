@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
   with CollectionSupport
   with Closure {
 
-  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).map {
+  def compute(value: Any, m: ExecutionContext) = makeTraversable(value).map {
     case iterValue =>
-      val innerMap = m + (id -> iterValue)
+      val innerMap = m.newWith(id -> iterValue)
       expression(innerMap)
   }.toList
 

@@ -26,11 +26,12 @@ import java.lang.String
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
-  def isMatch(m: Map[String, Any]): Boolean = {
+  def isMatch(m: ExecutionContext): Boolean = {
     val l: Any = left(m)
     val r: Any = right(m)
 
@@ -55,7 +56,7 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
 
-  def isMatch(m: Map[String, Any]): Boolean = {
+  def isMatch(m: ExecutionContext): Boolean = {
     val a1 = a(m)
     val b1 = b(m)
 

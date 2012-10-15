@@ -49,7 +49,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val queryState = new QueryState(graph, MutableMaps.create)
+    val queryState = new QueryState(graph, Map.empty)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext.empty).toSeq
 
@@ -88,7 +88,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
-    val queryState = new QueryState(graph, MutableMaps.create)
+    val queryState = new QueryState(graph, Map.empty)
 
     val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext.empty).toSeq
 

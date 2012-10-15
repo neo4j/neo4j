@@ -18,17 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import collection.Map
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression )
   extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: Map[String, Any]) = {
-    val initMap = m + (acc -> init(m))
+  def compute(value: Any, m: ExecutionContext) = {
+    val initMap = m.newWith(acc -> init(m))
     val computedMap = makeTraversable(value).foldLeft(initMap) { (accMap, k) => {
-        val innerMap = accMap + (id -> k)
-        innerMap + (acc -> expression(innerMap))
+        val innerMap = accMap.newWith(id -> k)
+        innerMap.newWith(acc -> expression(innerMap))
       }
     }
     computedMap(acc)

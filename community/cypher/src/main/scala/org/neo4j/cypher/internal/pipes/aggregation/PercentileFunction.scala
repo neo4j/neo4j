@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands.expressions.NumericHelper
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class PercentileContFunction(val value: Expression, val percentile: Expression)
   extends AggregationFunction
@@ -50,7 +51,7 @@ class PercentileContFunction(val value: Expression, val percentile: Expression)
     }
   }
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     actOnNumber(value(data), (number) => {
       if(count < 1) perc = asDouble(percentile(data))
       count += 1
@@ -86,7 +87,7 @@ class PercentileDiscFunction(val value: Expression, val percentile: Expression)
     }
   }
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     actOnNumber(value(data), (number) => {
       if(count < 1) perc = asDouble(percentile(data))
       count += 1

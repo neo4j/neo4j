@@ -25,9 +25,10 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.SyntaxException
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract class AggregationExpression extends Expression {
-  def apply(m: Map[String, Any]) = throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")
+  def apply(m: ExecutionContext) = throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")
 
   def createAggregationFunction: AggregationFunction
 }

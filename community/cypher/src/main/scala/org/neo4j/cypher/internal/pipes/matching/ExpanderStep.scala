@@ -24,6 +24,7 @@ import collection.mutable
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{True, Predicate}
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ExpanderStep(id: Int,
                         typ: Seq[RelationshipType],
@@ -45,12 +46,12 @@ case class ExpanderStep(id: Int,
     reversed.get
   }
 
-  def filter(r: Relationship, n: Node, parameters: Map[String, Any]): Boolean = {
+  def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
     val m = new MiniMap(r, n, parameters)
     relPredicate.isMatch(m) && nodePredicate.isMatch(m)
   }
 
-  def expand(node: Node, parameters: Map[String, Any]): Iterable[Relationship] = typ match {
+  def expand(node: Node, parameters: ExecutionContext): Iterable[Relationship] = typ match {
     case Seq() => node.getRelationships(direction).asScala.filter(r => filter(r, r.getOtherNode(node), parameters))
     case x     => node.getRelationships(direction, x: _*).asScala.filter(r => filter(r, r.getOtherNode(node), parameters))
   }
@@ -111,8 +112,9 @@ case class ExpanderStep(id: Int,
   }
 }
 
-class MiniMap(r: Relationship, n: Node, parameters: Map[String,Any]) extends Map[String, Any] {
-  def get(key: String): Option[Any] =
+class MiniMap(r: Relationship, n: Node, parameters: ExecutionContext)
+  extends ExecutionContext(params = parameters.params) {
+  override def get(key: String): Option[Any] =
     if (key == "r")
       Some(r)
     else if (key == "n")
@@ -120,9 +122,19 @@ class MiniMap(r: Relationship, n: Node, parameters: Map[String,Any]) extends Map
     else
       parameters.get(key)
 
-  def iterator = throw new RuntimeException
+  override def iterator = throw new RuntimeException
 
-  def -(key: String) = throw new RuntimeException
+  override def -(key: String) = throw new RuntimeException
 
-  def +[B1 >: Any](kv: (String, B1)) = throw new RuntimeException
+  override def +[B1 >: Any](kv: (String, B1)) = throw new RuntimeException
+
+  override def newWith(newEntries: Seq[(String, Any)]) = throw new RuntimeException
+
+  override def newWith(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
+
+  override def newFrom(newEntries: Seq[(String, Any)]) = throw new RuntimeException
+
+  override def newFrom(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
+
+  override def newWith(newEntry: (String, Any)) = throw new RuntimeException
 }

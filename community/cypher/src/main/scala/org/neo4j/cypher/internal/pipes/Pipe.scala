@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import collection.Iterator
+import collection.{mutable, Iterator}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import collection.mutable.{Queue, Map => MutableMap}
 import scala.collection.JavaConverters._
 import java.util.HashMap
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.cypher.ParameterNotFoundException
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -52,7 +53,7 @@ class NullPipe extends Pipe {
 }
 
 object MutableMaps {
-  def create = collection.mutable.Map[String,Any]()
+  def empty = collection.mutable.Map[String,Any]()
   def create(size : Int) = new java.util.HashMap[String,Any](size).asScala
   def create(input : scala.collection.Map[String,Any]) = new java.util.HashMap[String,Any](input.asJava).asScala
   def create(input : Seq[(String,Any)]) = {
@@ -62,11 +63,11 @@ object MutableMaps {
   }
 }
 object QueryState {
-  def apply() = new QueryState(null, MutableMaps.create)
+  def apply() = new QueryState(null, Map.empty)
 }
 
 class QueryState(val db: GraphDatabaseService,
-                 val params: MutableMap[String, Any],
+                 val params: Map[String, Any],
                  var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter
   val createdRelationships = new Counter
@@ -92,16 +93,22 @@ class Counter {
 
 object ExecutionContext {
   def empty = new ExecutionContext()
+  def from(x:(String,Any)*)=new ExecutionContext().newWith(x)
 }
 
-case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.create,
-                            mutationCommands: Queue[UpdateAction] = Queue[UpdateAction]())
+case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
+                            mutationCommands: Queue[UpdateAction] = Queue.empty,
+                            params: Map[String,Any] = Map.empty)
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
+  def getParam(key: String): Any =
+    params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def iterator: Iterator[(String, Any)] = m.iterator
 
   override def size = m.size
+
+  def ++(other: ExecutionContext): ExecutionContext = copy(m = m ++ other.m)
 
   override def foreach[U](f: ((String, Any)) => U) { m.foreach(f) }
 
@@ -114,15 +121,19 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.create,
     m -= key
     this
   }
+
   def newWith(newEntries : Seq[(String,Any)]) = {
     copy(m = (MutableMaps.create(this.m) ++= newEntries))
   }
+
   def newWith(newEntries : scala.collection.Map[String,Any]) = {
     copy(m = (MutableMaps.create(this.m) ++= newEntries))
   }
+
   def newFrom(newEntries : Seq[(String,Any)]) = {
     copy(m = MutableMaps.create(newEntries))
   }
+
   def newFrom(newEntries : scala.collection.Map[String,Any]) = {
     copy(m = MutableMaps.create(newEntries))
   }
@@ -130,4 +141,6 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.create,
   def newWith(newEntry : (String,Any)) = {
     copy(m = (MutableMaps.create(this.m) += newEntry))
   }
+
+  override def clone:ExecutionContext=newFrom(m)
 }

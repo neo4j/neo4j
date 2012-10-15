@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.symbols._
 import collection.{immutable, Map}
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -47,7 +48,7 @@ class MatchingContext(boundIdentifiers: SymbolTable,
     boundIdentifiers.add(ids)
   }
 
-  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
+  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {
     builder.getMatches(sourceRow)
   }
 
@@ -61,6 +62,6 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 }
 
 trait MatcherBuilder {
-  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]]
+  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext]
 }
 

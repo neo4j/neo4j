@@ -33,11 +33,12 @@ trait MatchClause extends Base with Expressions {
 
   def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
     case matching =>
-      val unamedPaths: Seq[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
-      val namedPaths: Seq[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val patterns = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++
+                     matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern]) ++
+                     namedPaths.flatMap(_.pathPattern)
 
-      (unamedPaths, namedPaths)
-
+      (patterns.distinct, namedPaths)
   }
 
   def path: Parser[Any] =

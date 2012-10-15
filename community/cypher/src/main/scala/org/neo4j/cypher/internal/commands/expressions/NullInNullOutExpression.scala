@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
-  def compute(value: Any, m: Map[String, Any]): Any
+  def compute(value: Any, m: ExecutionContext): Any
 
-  def apply(m: Map[String, Any]): Any = argument(m) match {
+  def apply(m: ExecutionContext): Any = argument(m) match {
     case null => null
     case x    => compute(x, m)
   }

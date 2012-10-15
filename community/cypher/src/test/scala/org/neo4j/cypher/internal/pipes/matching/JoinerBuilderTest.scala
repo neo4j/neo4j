@@ -24,6 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
@@ -43,6 +44,6 @@ class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode()
     val r = relate(a, b)
 
-    assert(builder.getMatches(Map("a" -> a)) === List(Map("a" -> a, "b" -> b, "r" -> r)))
+    assert(builder.getMatches(ExecutionContext.from("a" -> a)) === List(Map("a" -> a, "b" -> b, "r" -> r)))
   }
 }

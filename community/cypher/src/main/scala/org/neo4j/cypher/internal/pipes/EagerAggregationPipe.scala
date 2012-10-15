@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.commands.expressions.{ParameterValue, Expression, AggregationExpression}
+import org.neo4j.cypher.internal.commands.expressions.{Expression, AggregationExpression}
 import collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
@@ -49,12 +49,9 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
     val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
-    val params = state.params.map {
-      case (k, v) => "-=PARAMETER=-" + k + "-=PARAMETER=-" -> ParameterValue(v)
-    }
 
     def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {
-      val newMap = MutableMaps.create
+      val newMap = MutableMaps.empty
 
       //add key values
       (keyNames zip key.original).foreach(newMap += _)
@@ -65,14 +62,13 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       ctx.newFrom(newMap)
     }
 
-    def createEmptyResult(): Traversable[ExecutionContext] = {
-      val newMap = MutableMaps.create(Parameters.createParamContextMap(state))
+    def createEmptyResult(params:Map[String,Any]): Traversable[ExecutionContext] = {
+      val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
+
       aggregationNamesAndFunctions.toMap
-        .foreach {
-        case (name, zeroValue) => newMap += name -> zeroValue
-      }
-      Traversable(ExecutionContext(newMap ++ params))
+        .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
+      Traversable(ExecutionContext(newMap, params = params))
     }
 
 
@@ -84,10 +80,10 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     })
 
     val a = if (result.isEmpty && keyNames.isEmpty) {
-      createEmptyResult()
+      createEmptyResult(state.params)
     } else {
       result.map {
-        case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx).newWith(params)
+        case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx)
       }
     }
 

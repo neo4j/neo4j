@@ -23,6 +23,7 @@ import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 object Identifier {
@@ -33,7 +34,7 @@ object Identifier {
 
 
 case class Identifier(entityName: String) extends Expression with Typed {
-  def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`".format(entityName)))
+  def apply(m: ExecutionContext): Any = m.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`".format(entityName)))
 
   override def toString(): String = entityName
 

@@ -22,18 +22,10 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
 import org.neo4j.cypher.ParameterNotFoundException
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def compute(m: Map[String, Any]): Any = {
-    val getFromMap: Any = m.getOrElse("-=PARAMETER=-" + parameterName + "-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
-
-    getFromMap match {
-      case ParameterValue(x) => x
-      case _                 => throw new ParameterNotFoundException("Expected a parameter named " + parameterName)
-    }
-  }
-
-  override def apply(m: Map[String, Any]) = compute(m)
+  def apply(m: ExecutionContext) = m.getParam(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
 
@@ -48,5 +40,3 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def symbolTableDependencies = Set()
 }
-
-case class ParameterValue(value: Any)

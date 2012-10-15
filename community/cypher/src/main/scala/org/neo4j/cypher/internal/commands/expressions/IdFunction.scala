@@ -23,9 +23,10 @@ import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
+  def compute(value: Any, m: ExecutionContext) = value match {
     case node: Node        => node.getId
     case rel: Relationship => rel.getId
     case x => throw new CypherTypeException("Expected `%s` to be a node or relationship, but it was ``".format(inner, x.getClass.getSimpleName))

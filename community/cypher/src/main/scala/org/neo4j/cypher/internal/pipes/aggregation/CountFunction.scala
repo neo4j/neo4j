@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class CountFunction(value: Expression) extends AggregationFunction {
   var count: Long = 0
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     value(data) match {
       case null =>
       case _ => count += 1

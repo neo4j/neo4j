@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 import collection.immutable.Set
 import collection.Seq
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 /*
 Normally, when we encounter an optional relationship, we can try with null and see if that's enough. But for
@@ -34,13 +35,13 @@ This class takes care of double optional patterns
 class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    predicates: Seq[Predicate],
                                    includeOptionals: Boolean,
-                                   source: Map[String, Any],
+                                   source: ExecutionContext,
                                    doubleOptionalPaths: Seq[DoubleOptionalPath])
   extends PatternMatcher(bindings, predicates, includeOptionals, source) {
 
   override protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                                      history: History,
-                                                     yielder: (Map[String, Any]) => U,
+                                                     yielder: ExecutionContext => U,
                                                      current: MatchingPair,
                                                      alreadyInExtraWork: Boolean): Boolean = {
     val initialResult = super.traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
@@ -87,7 +88,7 @@ DoubleOP  = %s
   We're only looking for paths that we would not find during our normal pattern matching. This yielder protects us
   from yielding subgraphs that have already been found.
    */
-  private def createYielder[A](inner: Map[String, Any] => A, dop: DoubleOptionalPath, current: MatchingPair)(m: Map[String, Any]) {
+  private def createYielder[A](inner: ExecutionContext => A, dop: DoubleOptionalPath, current: MatchingPair)(m: ExecutionContext) {
     val Relationships(closestRel, oppositeRel) = dop.relationshipsSeenFrom(current.patternElement.key)
 
     val weShouldYield = m.get(closestRel) != Some(null) && m.get(oppositeRel) == Some(null)

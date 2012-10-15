@@ -28,6 +28,7 @@ class ColumnFilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val p = plan.pipe
+
     val isLastPipe = q.tail.isEmpty
 
     if (!isLastPipe && q.returns == Seq(Unsolved(AllIdentifiers()))) {
@@ -44,9 +45,9 @@ class ColumnFilterBuilder extends PlanBuilder {
 
       val newPlan = ExtractBuilder.extractIfNecessary(plan, expressionsToExtract)
 
-      val filterPipe = new ColumnFilterPipe(newPlan.pipe, returnItems, isLastPipe)
+      val filterPipe = new ColumnFilterPipe(newPlan.pipe, returnItems)
 
-      val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
+      val resultPipe = if (filterPipe.symbols != p.symbols) {
         filterPipe
       } else {
         p

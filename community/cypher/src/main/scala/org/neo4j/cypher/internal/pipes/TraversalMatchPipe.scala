@@ -25,23 +25,26 @@ import collection.JavaConverters._
 import org.neo4j.cypher.internal.executionplan.builders.Trail
 
 class TraversalMatchPipe(source: Pipe, matcher:TraversalMatcher, trail:Trail) extends PipeWithSource(source) {
-  def createResults(state: QueryState) =
-    source.createResults(state).flatMap {
-      context =>
-        val paths = matcher.findMatchingPaths(state, context)
+  def createResults(state: QueryState) =    {
+      val input = source.createResults(state)
 
-        paths.map {
-          path => val seq = path.iterator().asScala.toSeq.reverse
-          val m = trail.decompose(seq)
-          context.newWith(m)
-        }
+      input.flatMap {
+        context =>
+          // Find the matching paths
+          val paths = matcher.findMatchingPaths(state, context)
+
+          // transform the paths to ExecutionContexts
+          paths.map {
+            path => val seq = path.iterator().asScala.toSeq.reverse
+            val m = trail.decompose(seq)
+            context.newWith(m)
+          }
+      }
     }
 
   def symbols = trail.symbols(source.symbols)
 
   def executionPlan() = "TraversalMatcher()"
 
-  def assertTypes(symbols: SymbolTable) {
-
-  }
+  def assertTypes(symbols: SymbolTable) {}
 }

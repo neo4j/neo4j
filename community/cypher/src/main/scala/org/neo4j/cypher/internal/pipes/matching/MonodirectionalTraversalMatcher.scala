@@ -34,24 +34,19 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionCont
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
   }
 
-  def baseTraversal(params:Map[String,Any]): TraversalDescription = Traversal.
+  def baseTraversal(params:ExecutionContext): TraversalDescription = Traversal.
     traversal(Uniqueness.RELATIONSHIP_PATH).
     evaluator(new MyEvaluator).
     expand(new TraversalPathExpander(params), initialStartStep)
 
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path] = {
-    val params = extractParams(context)
-
     val arr = start(context).toArray
 
-    val traverse = baseTraversal(params).traverse(arr: _*).asScala.toList
+    val traverse = baseTraversal(context).traverse(arr: _*).asScala.toList
     traverse
   }
 
-  private def extractParams(m:Map[String,Any]):Map[String,Any]=m.filter {
-    case (key,value) => key.startsWith("-=PARAMETER=-")
-  }
 
   class ExpanderEvaluator extends PathEvaluator[Option[ExpanderStep]] {
     def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = Evaluation.ofIncludes(state.getState.isEmpty)

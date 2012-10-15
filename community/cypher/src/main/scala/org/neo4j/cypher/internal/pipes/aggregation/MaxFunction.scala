@@ -24,6 +24,7 @@ import java.lang.Boolean
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.SyntaxException
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 trait MinMax extends AggregationFunction with Comparer {
   def value: Expression
@@ -33,7 +34,7 @@ trait MinMax extends AggregationFunction with Comparer {
 
   def result: Any = biggestSeen
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     value(data) match {
       case null =>
       case x: Comparable[_] => checkIfLargest(x)

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = new QueryState(graph, MutableMaps.create)
+  def createQueryState = new QueryState(graph, Map.empty)
 
   @Test
   def create_node() {
@@ -133,7 +133,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 }
 
 case class InjectValue(value:Any, typ:CypherType) extends Expression {
-  def apply(v1: CollectionMap[String, Any]) = value
+  def apply(v1: ExecutionContext) = value
 
   def filter(f: (Expression) => Boolean) = Seq(this)
 

@@ -27,6 +27,7 @@ import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class PathExpression(pathPattern: Seq[Pattern])
   extends Expression
@@ -41,21 +42,23 @@ case class PathExpression(pathPattern: Seq[Pattern])
     filter(isNamed).
     distinct
 
-  def apply(m: Map[String, Any]): Any = {
+  def apply(m: ExecutionContext): Any = {
+    // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => m.get(key) match {
-      case None => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
+      case None       => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
       case Some(null) => true
-      case Some(x) => false
+      case Some(x)    => false
     })
+
 
     if (returnNull) {
       null
     } else {
-      getMatches(m.filterKeys(interestingPoints.contains)) //Only pass on to the pattern matcher
-    }                                                      //the points it should care about, nothing else.
+      getMatches(m)
+    }
   }
 
-  def getMatches(v1: Map[String, Any]): Traversable[Path] = {
+  def getMatches(v1: ExecutionContext): Traversable[Path] = {
     val matches = matchingContext.getMatches(v1)
     matches.map(getPath)
   }

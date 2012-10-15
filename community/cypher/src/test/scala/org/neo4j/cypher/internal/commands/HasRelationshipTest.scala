@@ -25,6 +25,7 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
@@ -46,7 +47,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.BOTH, Seq())
 
-    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 
   @Test def checksTheRelationshipType() {
@@ -54,7 +55,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.BOTH, Seq("FEELS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 
   @Test def checksTheRelationshipTypeAndDirection() {
@@ -62,6 +63,6 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.INCOMING, Seq("KNOWS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 }

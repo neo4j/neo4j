@@ -30,7 +30,7 @@ trait BuilderTest extends Assertions {
     val nodeIdentifiers = nodes.map(x => x -> NodeType())
     val relIdentifiers = relationships.map(x => x -> RelationshipType())
 
-    new FakePipe(Seq(MutableMaps.create), (nodeIdentifiers ++ relIdentifiers): _*)
+    new FakePipe(Seq(MutableMaps.empty), (nodeIdentifiers ++ relIdentifiers): _*)
   }
 
   def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(new NullPipe, q)

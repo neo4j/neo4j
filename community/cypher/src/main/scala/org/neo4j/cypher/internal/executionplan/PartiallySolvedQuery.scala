@@ -32,8 +32,7 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val patterns = q.matching.map(Unsolved(_)) ++
-      q.namedPaths.flatMap(_.pathPattern.map(Unsolved(_)))
+    val patterns = q.matching.map(Unsolved(_))
 
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),

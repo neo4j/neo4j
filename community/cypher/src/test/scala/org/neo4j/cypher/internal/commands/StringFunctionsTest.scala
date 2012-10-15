@@ -23,90 +23,117 @@ import expressions._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class StringFunctionsTest extends Assertions {
   @Test def replaceTests() {
-    assert(ReplaceFunction(Literal("hello"), Literal("l"), Literal("w"))(Map()) === "hewwo")
-    assert(ReplaceFunction(Literal("hello"), Literal("ell"), Literal("ipp"))(Map()) === "hippo")
-    assert(ReplaceFunction(Literal("hello"), Literal("a"), Literal("x"))(Map()) === "hello")
-    assert(ReplaceFunction(Literal(null), Literal("a"), Literal("x"))(Map()) === null)
-    intercept[CypherTypeException](ReplaceFunction(Literal(1042), Literal("10"), Literal("30"))(Map()))
+    def replace(orig: Any, from: Any, to: Any) =
+      ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)
+
+    assert(replace("hello", "l", "w") === "hewwo")
+    assert(replace("hello", "ell", "ipp") === "hippo")
+    assert(replace("hello", "a", "x") === "hello")
+    assert(replace(null, "a", "x") === null)
+    assert(replace("hello", null, "x") === null)
+    assert(replace("hello", "o", null) === null)
+    intercept[CypherTypeException](replace(1042, "10", "30"))
   }
 
   @Test def leftTests() {
-    assert(LeftFunction(Literal("hello"), Literal(2))(Map()) === "he")
-    assert(LeftFunction(Literal("hello"), Literal(4))(Map()) === "hell")
-    assert(LeftFunction(Literal("hello"), Literal(8))(Map()) === "hello")
-    assert(LeftFunction(Literal(null), Literal(8))(Map()) === null)
-    intercept[CypherTypeException](LeftFunction(Literal(1042), Literal(2))(Map()))
-    intercept[StringIndexOutOfBoundsException](LeftFunction(Literal("hello"), Literal(-4))(Map()))
+    def left(from: Any, r: Any) =
+      LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)
+
+    assert(left("hello", 2) === "he")
+    assert(left("hello", 4) === "hell")
+    assert(left("hello", 8) === "hello")
+    assert(left(null, 8) === null)
+    intercept[CypherTypeException](left(1042, 2))
+    intercept[StringIndexOutOfBoundsException](left("hello", -4))
   }
 
   @Test def rightTests() {
-    assert(RightFunction(Literal("hello"), Literal(2))(Map()) === "lo")
-    assert(RightFunction(Literal("hello"), Literal(4))(Map()) === "ello")
-    assert(RightFunction(Literal("hello"), Literal(8))(Map()) === "hello")
-    assert(RightFunction(Literal(null), Literal(8))(Map()) === null)
-    intercept[CypherTypeException](RightFunction(Literal(1042), Literal(2))(Map()))
-    intercept[StringIndexOutOfBoundsException](RightFunction(Literal("hello"), Literal(-4))(Map()))
+    def right(from: Any, r: Any) =
+      RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)
+
+    assert(right("hello", 2) === "lo")
+    assert(right("hello", 4) === "ello")
+    assert(right("hello", 8) === "hello")
+    assert(right(null, 8) === null)
+    intercept[CypherTypeException](right(1024, 2))
+    intercept[StringIndexOutOfBoundsException](right("hello", -4))
   }
 
   @Test def substringTests() {
-    assert(SubstringFunction(Literal("hello"), Literal(2), Literal(5))(Map()) === "llo")
-    assert(SubstringFunction(Literal("hello"), Literal(4), Literal(5))(Map()) === "o")
-    assert(SubstringFunction(Literal("hello"), Literal(1), Literal(3))(Map()) === "ell")
-    assert(SubstringFunction(Literal("hello"), Literal(8), Literal(5))(Map()) === "")
-    assert(SubstringFunction(Literal(null), Literal(8), Literal(5))(Map()) === null)
-    intercept[CypherTypeException](SubstringFunction(Literal(1042), Literal(1), Literal(2))(Map()))
-    intercept[StringIndexOutOfBoundsException](SubstringFunction(Literal("hello"), Literal(-4), Literal(5))(Map()))
+    def substring(orig: Any, from: Any, to: Any) =
+      SubstringFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)
+
+    assert(substring("hello", 2, 5) === "llo")
+    assert(substring("hello", 4, 5) === "o")
+    assert(substring("hello", 1, 3) === "ell")
+    assert(substring("hello", 8, 5) === "")
+    assert(substring(null, 8, 5) === null)
+    intercept[CypherTypeException](assert(substring(1024, 1, 2) === null))
+    intercept[StringIndexOutOfBoundsException](assert(substring("hello", -4, 2) === null))
   }
 
   @Test def lowerTests() {
-    assert(LowerFunction(Literal("HELLO"))(Map()) === "hello")
-    assert(LowerFunction(Literal("Hello"))(Map()) === "hello")
-    assert(LowerFunction(Literal("hello"))(Map()) === "hello")
-    assert(LowerFunction(Literal(null))(Map()) === null)
-    intercept[CypherTypeException](LowerFunction(Literal(1042))(Map()))
+    def lower(x: Any) = LowerFunction(Literal(x))(ExecutionContext.empty)
+
+    assert(lower("HELLO") === "hello")
+    assert(lower("Hello") === "hello")
+    assert(lower("hello") === "hello")
+    assert(lower(null) === null)
+    intercept[CypherTypeException](lower(1024) === null)
   }
 
   @Test def upperTests() {
-    assert(UpperFunction(Literal("HELLO"))(Map()) === "HELLO")
-    assert(UpperFunction(Literal("Hello"))(Map()) === "HELLO")
-    assert(UpperFunction(Literal("hello"))(Map()) === "HELLO")
-    assert(UpperFunction(Literal(null))(Map()) === null)
-    intercept[CypherTypeException](UpperFunction(Literal(1042))(Map()))
+    def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)
+
+    assert(upper("HELLO") === "HELLO")
+    assert(upper("Hello") === "HELLO")
+    assert(upper("hello") === "HELLO")
+    assert(upper(null) === null)
+    intercept[CypherTypeException](upper(1024) === null)
   }
 
   @Test def ltrimTests() {
-    assert(LTrimFunction(Literal("  HELLO"))(Map()) === "HELLO")
-    assert(LTrimFunction(Literal(" Hello"))(Map()) === "Hello")
-    assert(LTrimFunction(Literal("  hello"))(Map()) === "hello")
-    assert(LTrimFunction(Literal("  hello  "))(Map()) === "hello  ")
-    assert(LTrimFunction(Literal(null))(Map()) === null)
-    intercept[CypherTypeException](LTrimFunction(Literal(1042))(Map()))
+    def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty)
+
+    assert(ltrim("  HELLO") === "HELLO")
+    assert(ltrim(" Hello") === "Hello")
+    assert(ltrim("  hello") === "hello")
+    assert(ltrim("  hello  ") === "hello  ")
+    assert(ltrim(null) === null)
+    intercept[CypherTypeException](ltrim(1024))
   }
 
   @Test def rtrimTests() {
-    assert(RTrimFunction(Literal("HELLO  "))(Map()) === "HELLO")
-    assert(RTrimFunction(Literal("Hello   "))(Map()) === "Hello")
-    assert(RTrimFunction(Literal("  hello  "))(Map()) === "  hello")
-    assert(RTrimFunction(Literal(null))(Map()) === null)
-    intercept[CypherTypeException](RTrimFunction(Literal(1042))(Map()))
+    def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty)
+
+    assert(rtrim("HELLO  ") === "HELLO")
+    assert(rtrim("Hello   ") === "Hello")
+    assert(rtrim("  hello   ") === "  hello")
+    assert(rtrim(null) === null)
+    intercept[CypherTypeException](rtrim(1024))
   }
 
   @Test def trimTests() {
-    assert(TrimFunction(Literal("  hello  "))(Map()) === "hello")
-    assert(TrimFunction(Literal("  hello "))(Map()) === "hello")
-    assert(TrimFunction(Literal("hello  "))(Map()) === "hello")
-    assert(TrimFunction(Literal("  hello  "))(Map()) === "hello")
-    assert(TrimFunction(Literal("  hello"))(Map()) === "hello")
-    assert(TrimFunction(Literal(null))(Map()) === null)
-    intercept[CypherTypeException](TrimFunction(Literal(1042))(Map()))
+    def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty)
+
+    assert(trim("  hello  ") === "hello")
+    assert(trim("  hello ") === "hello")
+    assert(trim("hello  ") === "hello")
+    assert(trim("  hello  ") === "hello")
+    assert(trim("  hello") === "hello")
+    assert(trim(null) === null)
+    intercept[CypherTypeException](trim(1042))
   }
 
   @Test def stringTests() {
-    assert(StrFunction(Literal(1234))(Map()) === "1234")
-    assert(StrFunction(Literal(List(1,2,3,4)))(Map()) === "[1,2,3,4]")
-    assert(StrFunction(Literal(null))(Map()) === null)
+    def str(x: Any) = StrFunction(Literal(x)).apply(ExecutionContext.empty)
+
+    assert(str(1234) === "1234")
+    assert(str(List(1, 2, 3, 4)) === "[1,2,3,4]")
+    assert(str(null) === null)
   }
 }

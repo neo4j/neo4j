@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.commands
 import expressions.Property
 import org.scalatest.Assertions
 import org.junit.Test
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class PropertyValueTest extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {
     val p = Property("identifier", "property")
 
-    assert(p(Map("identifier" -> null)) === null)
+    assert(p(ExecutionContext.from("identifier" -> null)) === null)
   }
 }

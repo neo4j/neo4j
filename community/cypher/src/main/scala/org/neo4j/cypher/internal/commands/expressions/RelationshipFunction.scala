@@ -18,14 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import collection.Map
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
-  def compute(value: Any, m: Map[String, Any]) = value match {
+  def compute(value: Any, m: ExecutionContext) = value match {
     case p: Path => p.relationships().asScala.toSeq
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }

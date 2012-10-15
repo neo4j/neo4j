@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Add(a: Expression, b: Expression) extends Expression {
-  def apply(m: Map[String, Any]) = {
+  def apply(m: ExecutionContext) = {
     val aVal = a(m)
     val bVal = b(m)
 

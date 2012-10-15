@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.internal.commands.expressions.Identifier.isNamed
 import org.neo4j.cypher.internal.commands.expressions.CachedExpression
-import org.neo4j.cypher.internal.commands.expressions.ParameterValue
 import org.neo4j.cypher.internal.commands.ReturnItem
 
-class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe: Boolean)
+class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   extends PipeWithSource(source) {
   val returnItemNames = returnItems.map(_.name)
   val symbols = new SymbolTable(identifiers2.toMap)
@@ -38,16 +38,9 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem], lastPipe:
       val newMap = MutableMaps.create(ctx.size)
 
       returnItems.foreach {
-        case ReturnItem(Identifier(oldName), newName, _)          => newMap.put(newName, ctx(oldName))
-        case ReturnItem(CachedExpression(oldName, _), newName, _) => newMap.put(newName, ctx(oldName))
-        case ReturnItem(_, name, _)                               => newMap.put(name, ctx(name))
-      }
-
-      if (!lastPipe) {
-        ctx.foreach {
-          case (k, p: ParameterValue) => newMap.put(k, p)
-          case _ =>
-        }
+        case ReturnItem(Identifier(oldName), newName, _) if isNamed(newName) => newMap.put(newName, ctx(oldName))
+        case ReturnItem(CachedExpression(oldName, _), newName, _)            => newMap.put(newName, ctx(oldName))
+        case ReturnItem(_, name, _)                                          => newMap.put(name, ctx(name))
       }
 
       ctx.newFrom( newMap )

@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import collection.mutable.ListBuffer
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 class CollectFunction(value:Expression) extends AggregationFunction {
   val collection = new ListBuffer[Any]()
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     val v = value(data)
     if (v != null) {
       collection += v

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
@@ -116,5 +117,5 @@ class TestExpression extends Expression {
 
   def symbolTableDependencies = Set()
 
-  def apply(v1: Map[String, Any]) = null
+  def apply(v1: ExecutionContext) = null
 }

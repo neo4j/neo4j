@@ -24,9 +24,12 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 class JoinerTest extends GraphDatabaseTestBase with Assertions {
+
+  private def ctx(x:(String,Any))=ExecutionContext.empty.newWith(x)
 
   @Test def simpleJoin() {
     val a = createNode()
@@ -34,7 +37,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val r = relate(a, b, "X")
 
     val joiner = new Joiner(new Start(Seq("A")), "A", Direction.OUTGOING, "B", Seq(), "r", True())
-    assert(joiner.getResult(Map("A" -> a)).toList === List(Map("A" -> a, "B" -> b, "r" -> r)))
+    assert(joiner.getResult(ctx("A" -> a)).toList === List(Map("A" -> a, "B" -> b, "r" -> r)))
   }
 
   @Test def bothWays() {
@@ -45,7 +48,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val r2 = relate(b, c, "X")
 
     val joiner = new Joiner(new Start(Seq("A")), "A", Direction.BOTH, "B", Seq(), "r", True())
-    val traversable = joiner.getResult(Map("A" -> b))
+    val traversable = joiner.getResult(ctx("A" -> b))
     assert(traversable.toSet === Set(
       Map("A" -> b, "B" -> a, "r" -> r1),
       Map("A" -> b, "B" -> c, "r" -> r2))
@@ -63,7 +66,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val joiner2 = new Joiner(joiner, "B", Direction.OUTGOING, "C", Seq(), "r2", True())
 
 
-    val traversable = joiner2.getResult(Map("A" -> a))
+    val traversable = joiner2.getResult(ctx("A" -> a))
     assert(traversable.toSet === Set(Map("A" -> a, "B" -> b, "r" -> r1, "C" -> c, "r2" -> r2)))
   }
 
@@ -78,7 +81,7 @@ class JoinerTest extends GraphDatabaseTestBase with Assertions {
     val joiner2 = new Joiner(joiner, "A", Direction.OUTGOING, "C", Seq(), "r2", True())
 
 
-    val traversable = joiner2.getResult(Map("A" -> a))
+    val traversable = joiner2.getResult(ctx("A" -> a))
     assert(traversable.toList === List(Map("A" -> a, "B" -> b, "C" -> c, "r" -> r1, "r2" -> r2), Map("A" -> a, "B" -> c, "C" -> b, "r" -> r2, "r2" -> r1)))
   }
 }

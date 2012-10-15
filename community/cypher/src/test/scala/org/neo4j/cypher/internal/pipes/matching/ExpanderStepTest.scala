@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.Map
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.transaction.LockType
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class ExpanderStepTest extends Assertions {
 
@@ -120,7 +121,7 @@ class ExpanderStepTest extends Assertions {
 
 
   case class Pred(identifier: String) extends Predicate {
-    def isMatch(m: Map[String, Any]) = false
+    def isMatch(m: ExecutionContext) = false
 
     def atoms = Seq(this)
 

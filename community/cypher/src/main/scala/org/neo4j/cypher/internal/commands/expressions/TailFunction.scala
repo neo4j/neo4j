@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import collection.Map
 import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyCollectionType}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: Map[String, Any]) = makeTraversable(value).tail
+  def compute(value: Any, m: ExecutionContext) = makeTraversable(value).tail
 
   def rewrite(f: (Expression) => Expression) = f(TailFunction(collection.rewrite(f)))
 

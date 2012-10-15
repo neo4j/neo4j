@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{Identifier, Literal}
 import org.junit.Test
 import org.scalatest.Assertions
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class SeqPredicateTest extends Assertions {
   @Test def allStringsBeginWithA() {
@@ -29,6 +30,6 @@ class SeqPredicateTest extends Assertions {
     val inner = Equals(Literal("Andres"), Identifier("x"))
     val all = new AllInCollection(Identifier("strings"), "x", inner)
 
-    assert(all.isMatch(Map("strings" -> strings)))
+    assert(all.isMatch(ExecutionContext.from("strings" -> strings)))
   }
 }

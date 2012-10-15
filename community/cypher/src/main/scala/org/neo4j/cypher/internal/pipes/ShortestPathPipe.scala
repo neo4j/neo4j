@@ -33,14 +33,8 @@ import org.neo4j.cypher.internal.commands.ShortestPath
  * It's also the base class for all shortest paths
  */
 class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
-  private def startName = ast.start
-  private def endName = ast.end
-  private def relType = ast.relTypes
-  private def dir = ast.dir
-  private def maxDepth = ast.maxDepth
   private def optional = ast.optional
   private def pathName = ast.pathName
-  private def returnItems: Seq[ReturnItem] = Seq()
   private val expression = ShortestPathExpression(ast)
 
   def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {

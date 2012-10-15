@@ -123,7 +123,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
   private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, MutableMaps.create ++ params)
+      val state = new QueryState(graph, params)
       new PipeExecutionResult(pipe.createResults(state), columns)
     }
 
@@ -132,7 +132,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, MutableMaps.create ++ params)
+      val state = new QueryState(graph, params)
       new EagerPipeExecutionResult(pipe.createResults(state), columns, state, graph)
     }
 

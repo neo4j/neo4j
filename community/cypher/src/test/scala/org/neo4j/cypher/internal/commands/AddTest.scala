@@ -23,10 +23,11 @@ import expressions.{Literal, Add}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class AddTest extends Assertions {
   
-  val m = Map[String, Any]()
+  val m = ExecutionContext.empty
   
   @Test def numbers() {
     val expr = Add(Literal(1), Literal(1))
