@@ -450,18 +450,18 @@ public abstract class GraphDatabaseSettings
     public static class CypherParserSetting
         extends OptionsSetting
     {
-        @Description( "Cypher v1.5 syntax." )
-        public static final String v1_5 = "1.5";
-
-        @Description( "Cypher v1.6 syntax." )
-        public static final String v1_6 = "1.6";
-
         @Description( "Cypher v1.7 syntax." )
         public static final String v1_7 = "1.7";
 
+        @Description( "Cypher v1.8 syntax." )
+        public static final String v1_8 = "1.8";
+
+        @Description( "Cypher v1.9 syntax." )
+        public static final String v1_9 = "1.9";
+
         public CypherParserSetting( )
         {
-            super( "cypher_parser_version", v1_5, v1_6, v1_7);
+            super( "cypher_parser_version", v1_7, v1_8, v1_9);
         }
     }
 
