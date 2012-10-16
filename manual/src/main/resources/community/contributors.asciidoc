@@ -67,5 +67,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Tony Liu |https://github.com/kooyeed[kooyeed]
 |Michael Klishin |https://github.com/michaelklishin[michaelklishin]
 |Wes Freeman |https://github.com/wfreeman[wfreeman]
+|Abdul Azeez Shaik |https://github.com/abdulazeezsk[abdulazeezsk]
 |=======
 
