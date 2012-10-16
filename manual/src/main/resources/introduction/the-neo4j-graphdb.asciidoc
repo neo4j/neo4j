@@ -17,6 +17,7 @@ Nodes are often used to represent _entities,_ but depending on the domain relati
 "A Node" [fillcolor="NODEHIGHLIGHT"]
 "A Node" -> "Relationships" [label="can have"]
 "A Node" -> "Properties" [label="can have"]
+"Relationships" -> "Properties" [label="can have"]
 ----
 
 Let's start out with a really simple graph, containing only a single node with one property:
