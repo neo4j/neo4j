@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.util.DefaultPrettyPrinter;
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
@@ -86,7 +87,7 @@ public class ConsistencyPerformanceCheck
         OLD
         {
             @Override
-            void run( ProgressMonitorFactory progress, StoreAccess storeAccess, TaskExecutionOrder order )
+            void run( ProgressMonitorFactory progress, StoreAccess storeAccess, Config tuningConfiguration )
             {
                 new ConsistencyRecordProcessor(
                         storeAccess,
@@ -114,13 +115,13 @@ public class ConsistencyPerformanceCheck
         NEW
         {
             @Override
-            void run( ProgressMonitorFactory progress, StoreAccess storeAccess, TaskExecutionOrder order ) throws ConsistencyCheckIncompleteException
+            void run( ProgressMonitorFactory progress, StoreAccess storeAccess, Config tuningConfiguration ) throws ConsistencyCheckIncompleteException
             {
-                new FullCheck( false, order, progress ).execute( storeAccess, StringLogger.DEV_NULL );
+                new FullCheck( tuningConfiguration, progress ).execute( storeAccess, StringLogger.DEV_NULL );
             }
         };
 
-        abstract void run( ProgressMonitorFactory progress, StoreAccess storeAccess, TaskExecutionOrder order )
+        abstract void run( ProgressMonitorFactory progress, StoreAccess storeAccess, Config tuningConfiguration )
                 throws ConsistencyCheckIncompleteException;
     }
 
@@ -166,25 +167,30 @@ public class ConsistencyPerformanceCheck
             System.out.println( "Press return to start the checker..." );
             System.in.read();
         }
+
+        Config tuningConfiguration = buildTuningConfiguration( configuration );
+        StoreAccess storeAccess = createStoreAccess( configuration.get( DataGenerator.store_dir ), tuningConfiguration );
+
         configuration.get( checker_version ).run(
                 new TimingProgress( new TimeLogger( new JsonReportWriter( configuration ) ), progress ),
-                createStoreAccess( configuration ), configuration.get( execution_order ) );
+                storeAccess, tuningConfiguration );
     }
 
-    private static StoreAccess createStoreAccess( Configuration configuration )
+    private static StoreAccess createStoreAccess( String storeDir, Config tuningConfiguration )
     {
-        Config config = buildTuningConfiguration( configuration );
-
+        StringLogger logger = StringLogger.DEV_NULL;
         StoreFactory factory = new StoreFactory(
-                config,
+                tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
-                configuration.get( window_pool_implementation ).windowPoolFactory( config, StringLogger.SYSTEM ),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
+                        .windowPoolFactory( tuningConfiguration, logger ),
                 new DefaultFileSystemAbstraction(),
                 new DefaultLastCommittedTxIdSetter(),
-                StringLogger.DEV_NULL,
+                logger,
                 new DefaultTxHook() );
-        NeoStore neoStore = factory.newNeoStore(
-                new File( configuration.get( DataGenerator.store_dir ), NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+
         return new StoreAccess( neoStore );
     }
 
@@ -195,6 +201,10 @@ public class ConsistencyPerformanceCheck
                     configuration.get( DataGenerator.store_dir ),
                     GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(),
                     configuration.get( all_stores_total_mapped_memory_size ),
+                    ConsistencyCheckSettings.consistency_check_execution_order.name(),
+                    configuration.get( execution_order ).name(),
+                    ConsistencyCheckSettings.consistency_check_window_pool_implementation.name(),
+                    configuration.get( window_pool_implementation ).name(),
                     GraphDatabaseSettings.mapped_memory_page_size.name(),
                     configuration.get( mapped_memory_page_size ),
                     GraphDatabaseSettings.log_mapped_memory_stats.name(),

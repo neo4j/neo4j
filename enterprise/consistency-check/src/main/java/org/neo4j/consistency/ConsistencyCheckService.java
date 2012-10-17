@@ -54,9 +54,7 @@ public class ConsistencyCheckService
         try
         {
             StoreAccess store = new StoreAccess( neoStore );
-            new FullCheck( tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ),
-                           tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order ),
-                           progressFactory ).execute( store, logger );
+            new FullCheck( tuningConfiguration, progressFactory ).execute( store, logger );
         }
         finally
         {

@@ -45,6 +45,7 @@ import org.neo4j.test.GraphStoreFixture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -79,7 +80,7 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( StoreAccess access ) throws ConsistencyCheckIncompleteException
     {
-        FullCheck checker = new FullCheck( true, TaskExecutionOrder.SINGLE_THREADED, ProgressMonitorFactory.NONE );
+        FullCheck checker = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ), ProgressMonitorFactory.NONE );
         return checker.execute( access, StringLogger.wrap( log ) );
     }
 

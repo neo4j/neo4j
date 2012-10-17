@@ -58,7 +58,6 @@ public abstract class Page<T>
             {
                 prevPage.nextPage = this;
             }
-            nextPage = null;
             targetList.tail = this;
             if ( targetList.head == null )
             {
@@ -66,7 +65,8 @@ public abstract class Page<T>
             }
             targetList.incrementSize();
         }
-        this.currentList = targetList;
+        nextPage = null;
+        currentList = targetList;
 
         return this;
     }

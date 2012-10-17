@@ -19,26 +19,28 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.ARRAYS_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.EVERYTHING;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.NODES_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.PROPERTIES_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.RELATIONSHIPS_ONLY;
-import static org.neo4j.consistency.checking.full.FilteringStoreProcessor.STRINGS_ONLY;
-import static org.neo4j.consistency.checking.full.TaskExecutionOrder.MULTI_THREADED;
+import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
+import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.report.ConsistencyLogger;
+import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.MessageConsistencyLogger;
 import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -55,17 +57,13 @@ public class FullCheck
     private final boolean checkPropertyOwners;
     private final TaskExecutionOrder order;
     private final ProgressMonitorFactory progressFactory;
+    private final Long totalMappedMemory;
 
-    public FullCheck( boolean checkPropertyOwners, ProgressMonitorFactory progressFactory )
+    public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory )
     {
-        this(checkPropertyOwners, MULTI_THREADED, progressFactory);
-    }
-
-    public FullCheck( boolean checkPropertyOwners, TaskExecutionOrder order,
-               ProgressMonitorFactory progressFactory )
-    {
-        this.checkPropertyOwners = checkPropertyOwners;
-        this.order = order;
+        this.checkPropertyOwners = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners );
+        this.order = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order );
+        this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.all_stores_total_mapped_memory_size );
         this.progressFactory = progressFactory;
     }
 
@@ -87,32 +85,36 @@ public class FullCheck
                   ConsistencyLogger logger, ConsistencySummaryStatistics summary )
             throws ConsistencyCheckIncompleteException
     {
-        FilteringStoreProcessor.Factory processorFactory = new FilteringStoreProcessor.Factory(
-                decorator, logger, recordAccess, summary );
-        StoreProcessor processEverything = processorFactory.create( EVERYTHING );
+        StoreProcessor processEverything = new StoreProcessor( decorator,
+                new ConsistencyReporter( logger, recordAccess, summary ) );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
         List<StoreProcessorTask> tasks = new ArrayList<StoreProcessorTask>( 9 );
 
+        MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
+                decorator, logger, totalMappedMemory, store, recordAccess, summary );
+
         tasks.add( new StoreProcessorTask<NodeRecord>( store.getNodeStore(), progress,
-                                                       processorFactory.createAll( PROPERTIES_ONLY,
-                                                                                   RELATIONSHIPS_ONLY ) ) );
+                                                       processorFactory.createAll( PROPERTIES,
+                                                                                   RELATIONSHIPS ) ) );
         tasks.add( new StoreProcessorTask<RelationshipRecord>( store.getRelationshipStore(), progress,
-                                                               processorFactory.createAll( NODES_ONLY,
-                                                                                           PROPERTIES_ONLY,
-                                                                                           RELATIONSHIPS_ONLY ) ) );
+                                                               processorFactory.createAll( NODES,
+                                                                                           PROPERTIES,
+                                                                                           RELATIONSHIPS ) ) );
         tasks.add( new StoreProcessorTask<PropertyRecord>( store.getPropertyStore(), progress,
-                                                           processorFactory.createAll( PROPERTIES_ONLY,
-                                                                                       STRINGS_ONLY,
-                                                                                       ARRAYS_ONLY ) ) );
+                                                           processorFactory.createAll( PROPERTIES,
+                                                                                       STRINGS,
+                                                                                       ARRAYS ) ) );
+
+        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getStringStore(), progress,
+                                                          processorFactory.createAll( STRINGS ) ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getArrayStore(), progress,
+                                                          processorFactory.createAll( ARRAYS ) ) );
 
         tasks.add( new StoreProcessorTask<RelationshipTypeRecord>( store.getRelationshipTypeStore(), progress,
                                                                    processEverything ) );
         tasks.add( new StoreProcessorTask<PropertyIndexRecord>( store.getPropertyIndexStore(), progress,
                                                                 processEverything ) );
-
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getStringStore(), progress, processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getArrayStore(), progress, processEverything ) );
         tasks.add( new StoreProcessorTask<DynamicRecord>( store.getTypeNameStore(), progress, processEverything ) );
         tasks.add( new StoreProcessorTask<DynamicRecord>( store.getPropertyKeyStore(), progress, processEverything ) );
 

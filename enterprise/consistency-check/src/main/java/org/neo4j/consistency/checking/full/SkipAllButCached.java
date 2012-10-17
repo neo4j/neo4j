@@ -17,38 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.store.paging;
+package org.neo4j.consistency.checking.full;
 
-class CachedPageList
+import org.neo4j.consistency.store.DiffRecordAccess;
+import org.neo4j.consistency.store.RecordReference;
+import org.neo4j.consistency.store.SkippingRecordAccess;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+
+class SkipAllButCached extends SkippingRecordAccess
 {
-    Page head, tail;
-    int size = 0;
+    final DiffRecordAccess recordAccess;
 
-    public int size()
+    SkipAllButCached( DiffRecordAccess recordAccess )
     {
-        return size;
-    }
-
-    public Page removeHead()
-    {
-        Page removedPage = head;
-        head.moveToTailOf( null );
-        return removedPage;
-    }
-
-    public void incrementSize()
-    {
-        size++;
-    }
-
-    public void decrementSize()
-    {
-        size--;
+        this.recordAccess = recordAccess;
     }
 
     @Override
-    public String toString()
+    public RecordReference<PropertyIndexRecord> propertyKey( int id )
     {
-        return String.format( "CachedPageList{head=%s, tail=%s, size=%d}", head, tail, size );
+        return recordAccess.propertyKey( id );
+    }
+
+    @Override
+    public RecordReference<RelationshipTypeRecord> relationshipLabel( int id )
+    {
+        return recordAccess.relationshipLabel( id );
     }
 }

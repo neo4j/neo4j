@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -41,7 +42,10 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -58,6 +62,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -93,10 +98,10 @@ public class ExecutionOrderIntegrationTest
         StoreAccess store = fixture.storeAccess();
         DiffRecordAccess access = FullCheck.recordAccess( store );
 
-        FullCheck singlePass = new FullCheck( false, TaskExecutionOrder.SINGLE_THREADED,
-                                              ProgressMonitorFactory.NONE );
-        FullCheck multiPass = new FullCheck( false, TaskExecutionOrder.MULTI_PASS,
-                                             ProgressMonitorFactory.NONE );
+        FullCheck singlePass = new FullCheck( config( TaskExecutionOrder.SINGLE_THREADED ),
+                ProgressMonitorFactory.NONE );
+        FullCheck multiPass = new FullCheck( config( TaskExecutionOrder.MULTI_PASS ),
+                ProgressMonitorFactory.NONE );
 
         ConsistencySummaryStatistics multiPassSummary = new ConsistencySummaryStatistics();
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
@@ -125,6 +130,15 @@ public class ExecutionOrderIntegrationTest
                                    singlePassChecks.duplicates, multiPassChecks.duplicates );
             }
         }
+    }
+
+    static Config config( TaskExecutionOrder executionOrder )
+    {
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
+                .apply( stringMap(
+                        ConsistencyCheckSettings.consistency_check_execution_order.name(),
+                        executionOrder.name())
+                ) );
     }
 
     private static class InvocationLog

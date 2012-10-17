@@ -19,11 +19,17 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DiffStore;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class FullDiffCheck extends DiffCheck
@@ -36,6 +42,8 @@ public class FullDiffCheck extends DiffCheck
     @Override
     public ConsistencySummaryStatistics execute( DiffStore diffs ) throws ConsistencyCheckIncompleteException
     {
-        return new FullCheck( false, ProgressMonitorFactory.NONE ).execute( diffs, logger );
+        Config tuningConfiguration = new Config( new ConfigurationDefaults(
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class ).apply( stringMap() ) );
+        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( diffs, logger );
     }
 }
