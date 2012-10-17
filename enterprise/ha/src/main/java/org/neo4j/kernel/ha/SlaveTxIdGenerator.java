@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -64,7 +67,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         this.txManager = (TxManager) txManager;
     }
 
-    public long generate( final XaDataSource dataSource, final int identifier )
+    public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
     {
         try
         {
@@ -100,6 +103,9 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                         }
                     });
             return databaseOperations.receive( response );
+        } catch(ComException ex)
+        {
+            throw Exceptions.withCause( new XAException(XAException.XA_HEURCOM), ex );
         }
         catch ( RuntimeException e )
         {

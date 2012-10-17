@@ -74,7 +74,7 @@ public class SlaveLockManager extends LockManager
                 return;
             }
 
-            initializeTxIfFirst();
+            initializeTxIfFirst(tx);
             LockResult result = null;
             do
             {
@@ -99,11 +99,10 @@ public class SlaveLockManager extends LockManager
         }
     }
 
-    private void initializeTxIfFirst()
+    private void initializeTxIfFirst(Transaction tx)
     {
         // The main point of initializing transaction (for HA) is in TransactionImpl, so this is
         // for that extra point where grabbing a lock
-        Transaction tx = tm.getTransaction();
         if ( !txHook.hasAnyLocks( tx ) ) txHook.initializeTransaction( tm.getEventIdentifier() );
     }
 
@@ -126,7 +125,7 @@ public class SlaveLockManager extends LockManager
                 return;
             }
 
-            initializeTxIfFirst();
+            initializeTxIfFirst(tx);
             LockResult result = null;
             do
             {
