@@ -34,7 +34,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Christopher Schmidt |https://github.com/FaKod[FaKod]
 |Pascal Rehfeldt |https://github.com/prehfeldt[prehfeldt]
 |Björn Söderqvist |https://github.com/cybear[cybear]
-|Abdul Azeez Shaik |https://github.com/abdulazeez1984[abdulazeez1984]
+|Abdul Azeez Shaik |https://github.com/abdulazeezsk[abdulazeezsk]
 |James Thornton |https://github.com/espeed[espeed]
 |Radhakrishna Kalyan |https://github.com/nrkkalyan[nrkkalyan]
 |Michel van den Berg |https://github.com/promontis[promontis]
@@ -67,6 +67,5 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Tony Liu |https://github.com/kooyeed[kooyeed]
 |Michael Klishin |https://github.com/michaelklishin[michaelklishin]
 |Wes Freeman |https://github.com/wfreeman[wfreeman]
-|Abdul Azeez Shaik |https://github.com/abdulazeezsk[abdulazeezsk]
 |=======
 
