@@ -1,0 +1,51 @@
+[[community-translating]]
+Translating the Neo4j Manual
+===========================
+
+To translate the Neo4j Manual, there's a special project setup to use.
+See the French translation project for an example:
+https://github.com/neo4j/manual-french
+
+The project contains:
+
+* 'conf/' -- configuration for the project.
+* 'docs/' -- translated files for content provided by Neo4j modules.
+* 'po/' -- translation files and po4a configuration files.
+* 'src/' -- translated files for content provided by the original manual.
+* 'Makefile' -- a makefile with project-specific configuration.
+* 'pom.xml' -- Maven build configuration.
+
+== Build flow and file layout ==
+
+The build is essentially a two-step process.
+The first step generates or copies translated documents, while the second step is an ordinary AsciiDoc build using the output from the first step as sources.
+
+Other than the 'src/' and 'docs/' diirectories of the project, the build generates files with the same layout in two more places:
+
+. 'target/original/(src|docs)/' -- the contents of the original manual. Note that's it easier to look for content here than to dig into the original manual itself.
+. 'target/(src|docs)/' -- the translated source to use for the AsciiDoc build.
+
+The translated documents in 'target/(src|docs)/' are generated in three steps:
+
+. It starts out as a copy of the original manual.
+. Next, any static translated files fromt the 'src/' and 'docs/' directories of the project are copied.
+. Finally, the translation files in the 'po/' directory are used to generate translated documents.
+
+Files produced by later steps will overwrite existing files from earlier steps.
+
+
+== Adding a chapter to a translation file ==  
+
+
+
+== Translation tools ==
+
+There are different editors for '.po' files containing the translations 
+Below is a list of editors.
+
+* http://projects.gnome.org/gtranslator/[Gtranslator]
+* http://userbase.kde.org/Lokalize[Lokalize]
+* http://translate.sourceforge.net/wiki/virtaal/index[Virtaal]
+* http://www.poedit.net/[Poedit]
+
+
