@@ -91,7 +91,7 @@ FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% 
 )
 
 if "%javaVersion%" == "" (
-  set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry. Please make sure you either have %JAVA_HOME% defined and pointing to a JRE installation, or the registry key defined.
+  set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry. Please make sure you either have %JAVA_HOME% ennvironment variable defined and pointing to a JRE installation, or the registry key defined.
   goto:eof
 )
 
