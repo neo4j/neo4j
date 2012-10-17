@@ -54,9 +54,9 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * The traversal factory methods instantiate a {@link Traverser traverser} that
  * starts traversing from this node.
  * <p>
- * A node's id is unique, but may not be unique over time since neo4j reuses
- * deleted ids. See <a href="http://wiki.neo4j.org/content/Id_Reuse">
- * wiki.neo4j.org/content/Id_Reuse</a>.
+ * A node's id is unique, but note the following: Neo4j reuses its internal ids
+ * when nodes and relationships are deleted, which means it's bad practice to
+ * refer to them this way. Instead, use application generated ids.
  */
 public interface Node extends PropertyContainer
 {

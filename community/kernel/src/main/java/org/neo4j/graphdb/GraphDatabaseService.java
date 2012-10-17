@@ -56,7 +56,9 @@ public interface GraphDatabaseService
     public Node createNode();
 
     /**
-     * Looks up a node by id.
+     * Looks up a node by id. Please note: Neo4j reuses its internal ids when
+     * nodes and relationships are deleted, which means it's bad practice to
+     * refer to them this way. Instead, use application generated ids.
      * 
      * @param id the id of the node
      * @return the node with id <code>id</code> if found
@@ -65,7 +67,9 @@ public interface GraphDatabaseService
     public Node getNodeById( long id );
 
     /**
-     * Looks up a relationship by id.
+     * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
+     * when nodes and relationships are deleted, which means it's bad practice
+     * to refer to them this way. Instead, use application generated ids.
      * 
      * @param id the id of the relationship
      * @return the relationship with id <code>id</code> if found
@@ -76,10 +80,7 @@ public interface GraphDatabaseService
     /**
      * Returns the reference node, which is a "starting point" in the node
      * space. Usually, a client attaches relationships to this node that leads
-     * into various parts of the node space. For more information about common
-     * node space organizational patterns, see the design guide at <a
-     * href="http://wiki.neo4j.org/content/Design_Guide"
-     * >wiki.neo4j.org/content/Design_Guide</a>.
+     * into various parts of the node space.
      *
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node

@@ -40,19 +40,19 @@ package org.neo4j.graphdb;
  * relationship's start node and end node and their relation to
  * {@link Direction#OUTGOING} and {@link Direction#INCOMING} are defined so that
  * the assertions in the following code are <code>true</code>:
- *
+ * 
  * <pre>
  * <code>
  * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
  * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
- *
+ * 
  * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
  * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
  * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </code>
  * </pre>
- *
+ * 
  * Even though all relationships have a direction they are equally well
  * traversed in both directions so there's no need to create duplicate
  * relationships in the opposite direction (with regard to traversal or
@@ -63,8 +63,9 @@ package org.neo4j.graphdb;
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
  * return valid, non-null nodes.
  * <p>
- * The id of a relationship is unique, but may not be unique over time since
- * neo4j reuses deleted ids. See http://wiki.neo4j.org/content/Id_Reuse
+ * A node's id is unique, but note the following: Neo4j reuses its internal ids
+ * when nodes and relationships are deleted, which means it's bad practice to
+ * refer to them this way. Instead, use application generated ids.
  */
 public interface Relationship extends PropertyContainer
 {

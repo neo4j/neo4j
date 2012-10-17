@@ -6,4 +6,4 @@ statistics about a Neo4j Server.
 
 For details, please see the [wiki page][1].
 
-[1]: http://wiki.neo4j.org/content/UDC  "UDC Wiki" 
+[1]: http://docs.neo4j.org/chunked/stable/usage-data-collector.html  "UDC Docs" 

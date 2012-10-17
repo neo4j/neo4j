@@ -41,9 +41,6 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-
 public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
@@ -76,7 +73,7 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
      * 
      * With this rule registered, any access to the server will be
      * denied. In a production-quality implementation the rule
-     * will likely lookup credentials/claims in a 3rd party
+     * will likely lookup credentials/claims in a 3rd-party
      * directory service (e.g. LDAP) or in a local database of
      * authorized users.
      */
@@ -135,7 +132,31 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                 functionalTestHelper.nodeUri()).response();
     }
 
+    /**
+     * In this example, a security rule is registered to deny
+     * access to all URIs to the server by listing the rule(s) class(es) in
+     * 'neo4j-server.properties'.
+     * In this case, the rule is registered
+     * using a wildcard URI path (where `*` characters can be used to signify
+     * any part of the path). For example `/users*` means the rule
+     * will be bound to any resources under the `/users` root path. Similarly
+     * `/users*type*` will bind the rule to resources matching
+     * URIs like `/users/fred/type/premium`.
+     *
+     * @@config
+     * 
+     * with the rule source code of:
+     * 
+     * @@failingRuleWithWildcardPath
+     * 
+     * With this rule registered, any access to URIs under /protected/ will be
+     * denied by the server. Using wildcards allows flexible targeting of security rules to
+     * arbitrary parts of the server's API, including any unmanaged extensions or managed
+     * plugins that have been registered.
+     */
     @Test
+    @Documented
+    @Title("Using Wildcards to Target Security Rules")
     public void aSimpleWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {
@@ -148,44 +169,43 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
                               .build();
         server.start();
 
+        gen.get()
+                .addSnippet(
+                        "config",
+                        "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithWildcardPath\n----\n" );
+
         gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithWildcardPath.class,
                         "failingRuleWithWildcardPath" );
 
+        gen.get().setSection("ops");
+
         functionalTestHelper = new FunctionalTestHelper(server);
 
-        ClientResponse clientResponse = Client.create().resource(
-                trimTrailingSlash(functionalTestHelper.baseUri()) + mountPoint + "/more/stuff").accept(
-                MediaType.TEXT_PLAIN).get(ClientResponse.class);
+        JaxRsResponse clientResponse = gen.get()
+                .expectedStatus( 401 )
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedHeader( "WWW-Authenticate" )
+                .get( trimTrailingSlash( functionalTestHelper.baseUri() )
+                      + mountPoint + "/more/stuff" )
+                .response();
 
-        assertEquals(401, clientResponse.getStatus());
+        assertEquals( 401, clientResponse.getStatus() );
     }
 
-
     /**
-     * In this example, a (dummy) failing security rule is registered to deny
-     * access to all URIs to the server by listing the rule(s) class(es) in
-     * +neo4j-server.properties+
-     * In this case, the rule is registered
-     * using a wildcard URI path (where * characters can be used to signify
-     * any part of the path). For example +/users*+ means the rule
-     * will be bound to any resources under the +/users+ root path. Similarly
-     * +/users*type*+ will bind the rule to resources matching
-     * the URIs like +/users/fred/type/premium+
+     * In this example, a security rule is registered to deny
+     * access to all URIs matching a complex pattern.
+     * The config looks like this:
      *
      * @@config
      * 
      * with the rule source code of:
      * 
-     * @@failingRuleWithWildcardPath
-     * 
-     * With this rule registered, any access to the server will be
-     * denied. Using wildcards allows flexible targeting of security rules to
-     * arbitrary parts of the server's API, including any unmanaged extensions or managed
-     * plugins that have been registered.
+     * @@failingRuleWithComplexWildcardPath
      */
     @Test
     @Documented
-    @Title("Using Wildcards to Target Security Rules")
+    @Title("Using Complex Wildcards to Target Security Rules")
     public void aComplexWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {
@@ -199,16 +219,20 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithWildcardPath\n----\n");
-        gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithWildcardPath.class,
-                                        "failingRuleWithWildcardPath");
+                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n");
+        gen.get().addTestSourceSnippets(PermanentlyFailingSecurityRuleWithComplexWildcardPath.class,
+                                        "failingRuleWithComplexWildcardPath");
         gen.get().setSection("ops");
 
         functionalTestHelper = new FunctionalTestHelper(server);
 
-        JaxRsResponse clientResponse = gen.get().expectedStatus(401).expectedType(
-                MediaType.TEXT_PLAIN_TYPE).expectedHeader("WWW-Authenticate").get(
-                trimTrailingSlash(functionalTestHelper.baseUri()) + mountPoint + "/more/stuff").response();
+        JaxRsResponse clientResponse = gen.get()
+                .expectedStatus( 401 )
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedHeader( "WWW-Authenticate" )
+                .get( trimTrailingSlash( functionalTestHelper.baseUri() )
+                      + mountPoint + "/more/stuff" )
+                .response();
 
         assertEquals(401, clientResponse.getStatus());
     }

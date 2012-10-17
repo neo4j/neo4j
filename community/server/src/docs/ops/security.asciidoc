@@ -6,7 +6,7 @@ Securing access to the Neo4j Server
 
 By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
 
-This is configured in the +conf/neo4j-server.properties+ file:
+This is configured in the 'conf/neo4j-server.properties' file:
 
 [source]
 ----
@@ -19,7 +19,7 @@ org.neo4j.server.webserver.port=7474
 #org.neo4j.server.webserver.address=0.0.0.0
 ---- 
 
-If you need to enable access from external hosts, configure the Web server in the +conf/neo4j-server.properties+ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
+If you need to enable access from external hosts, configure the Web server in the 'conf/neo4j-server.properties' by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
 == Arbitrary code execution ==
 
@@ -30,10 +30,10 @@ Also, the http://docs.oracle.com/javase/1.4.2/docs/api/java/lang/SecurityManager
 == HTTPS support ==
 
 The Neo4j server includes built in support for SSL encrypted communication over HTTPS. 
-The first time the server starts, it automatically generates a self-signed ssl certificate and a private key.
+The first time the server starts, it automatically generates a self-signed SSL certificate and a private key.
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
-To provide your own key and certificate, replace the generated key and certificate, or change the neo4j-server.properties file to set the location of your certififacate and key:
+To provide your own key and certificate, replace the generated key and certificate, or change the neo4j-server.properties file to set the location of your certificate and key:
 
 [source]
 ----
@@ -45,9 +45,9 @@ org.neo4j.server.webserver.https.key.location=ssl/snakeoil.key
 ----
 
 Note that the key should be unencrypted. 
-Make sure you set correct permissions to the private key, so that only the neo4j server user can read/write it.
+Make sure you set correct permissions on the private key, so that only the Neo4j server user can read/write it.
 
-You can set what port the https connector should bind to in the same configuration file, as well as turn https off:
+You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS off:
 
 [source]
 ----
@@ -63,12 +63,15 @@ org.neo4j.server.webserver.https.port=443
 Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.  Neo4j server supports 
 administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
 
-To facilitate domain-specific authorization policies in Neo4j Server, SecurityRules can be implemented and
+To facilitate domain-specific authorization policies in Neo4j Server, +http://components.neo4j.org/neo4j-server/{neo4j-version}/apidocs/org/neo4j/server/rest/security/SecurityRule.html[SecurityRules]+ can be implemented and
 registered with the server. This makes scenarios like user and role based security and
 authentication against external lookup services possible.
 
 include::enforcing-server-authorization-rules.asciidoc[]
+
 include::using-wildcards-to-target-security-rules.asciidoc[]
+
+include::using-complex-wildcards-to-target-security-rules.asciidoc[]
 
 == Hosted Scripting ==
 
@@ -82,7 +85,7 @@ Although the Neo4j server has a number of security features built-in (see the ab
 
 This provides a number of advantages:
 
-* Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
+* Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the '/db/data' namespace accessible to non-local clients, while the '/db/admin' URLs only respond to a specific IP address.
 +
 [source]
 ---------------
@@ -119,7 +122,7 @@ ProxyPass /test balancer://mycluster
 When installing Neo4j Server behind proxies, you need to enable rewriting of the JSON calls, 
 otherwise they will point back to the servers own base URL (normally http://localhost:7474).
 
-To do this, you can use http://httpd.apache.org/docs/2.2/mod/mod_substitute.html[Apache mod_substitute]
+To do this, you can use http://httpd.apache.org/docs/2.2/mod/mod_substitute.html[Apache mod_substitute].
 
 [source]
 ----

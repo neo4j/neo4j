@@ -59,9 +59,6 @@ import java.util.Iterator;
  *
  * Relationships are equally well traversed regardless of their direction,
  * performance-wise.
- * <p>
- * For more usage examples please refer to the <a
- * href="http://wiki.neo4j.org/content/Traversal">wiki documentation</a>.
  *
  * @see Node#traverse
  * @deprecated because of an unnatural and too tight coupling with

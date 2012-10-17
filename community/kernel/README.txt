@@ -7,5 +7,3 @@ o javadoc for the Neo4j API can be found at http://api.neo4j.org/current
   (in eclipse right click the neo4j-kernel jar file Properties->Javadoc location)
 o see javadoc for org.neo4j.graphdb.GraphDatabaseService to get started
 
-Also see the Getting Started Guides at http://wiki.neo4j.org.
-

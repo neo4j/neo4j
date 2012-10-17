@@ -105,8 +105,7 @@ public class Neo4jShell
         Transaction tx = graphDb.beginTx();
         try
         {
-            // Create users sub reference node (see design guide lines on
-            // http://wiki.neo4j.org)
+            // Create users sub reference node.
             System.out.println( "Creating example node space ..." );
             Random random = new Random();
             Node usersReferenceNode = graphDb.createNode();
