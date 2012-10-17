@@ -22,48 +22,32 @@ package org.neo4j.management;
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.Arrays;
 
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Pair;
 
-public class InstanceInfo implements Serializable
+/**
+ * This class captures the least amount of information available for a cluster member to any
+ * cluster participant.
+ */
+public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
-    private final String address;
     private final String instanceId;
-    private final int machineId;
-    private final boolean master;
-    private final long lastTxId;
+    private final String status;
+    private final String[] roles;
+    private final String[] uris;
 
-    @ConstructorProperties( { "address", "instanceId", "machineId", "master",
-            "lastCommittedTransactionId" } )
-    public InstanceInfo( String address, String instanceId, int machineId, boolean master,
-            long lastTxId )
+    @ConstructorProperties( { "instanceId", "status", "roles", "uris" } )
+    public ClusterMemberInfo( String instanceId, String status, String[] roles, String[] uris )
     {
-        this.address = address;
         this.instanceId = instanceId;
-        this.machineId = machineId;
-        this.master = master;
-        this.lastTxId = lastTxId;
-    }
-
-    @Override
-    @SuppressWarnings( "boxing" )
-    public String toString()
-    {
-        return String.format( "Neo4jHaInstance[id=%s,address=%s,machineId=%s,lastTxId=%s]",
-                instanceId, address, machineId, lastTxId );
-    }
-
-    public boolean isMaster()
-    {
-        return master;
-    }
-
-    public String getAddress()
-    {
-        return address;
+        this.status = status;
+        this.roles = roles;
+        this.uris = uris;
     }
 
     public String getInstanceId()
@@ -71,14 +55,27 @@ public class InstanceInfo implements Serializable
         return instanceId;
     }
 
-    public int getMachineId()
+    public String getStatus()
     {
-        return machineId;
+        return status;
     }
 
-    public long getLastCommittedTransactionId()
+    public String[] getRoles()
     {
-        return lastTxId;
+        return roles;
+    }
+
+    public String[] getUris()
+    {
+        return uris;
+    }
+
+    @Override
+    @SuppressWarnings( "boxing" )
+    public String toString()
+    {
+        return String.format( "Neo4jHaInstance[id=%s,status=%s,roles=%s,URI List=%s]",
+                instanceId, status, Arrays.toString( roles ), Arrays.toString( uris ) );
     }
 
     public Pair<Neo4jManager, HighAvailability> connect()
@@ -88,19 +85,27 @@ public class InstanceInfo implements Serializable
 
     public Pair<Neo4jManager, HighAvailability> connect( String username, String password )
     {
+        URI address = null;
+        for (String uri : uris)
+        {
+            if (uri.startsWith( "jmx" ))
+            {
+//                address = uri;
+            }
+        }
         if ( address == null )
         {
             throw new IllegalStateException( "The instance does not have a public JMX server." );
         }
-        Neo4jManager manager = Neo4jManager.get( url(), username, password, instanceId );
+        Neo4jManager manager = Neo4jManager.get( url(address), username, password, instanceId );
         return Pair.of( manager, manager.getHighAvailabilityBean() );
     }
 
-    private JMXServiceURL url()
+    private JMXServiceURL url( URI address )
     {
         try
         {
-            return new JMXServiceURL( address );
+            return new JMXServiceURL( address.toASCIIString() );
         }
         catch ( MalformedURLException e )
         {

@@ -37,11 +37,8 @@ public interface HighAvailability
     @Description( "The time when the data on this instance was last updated from the master" )
     String getLastUpdateTime();
 
-    @Description( "(If this is a master) Information about the instances connected to this instance" )
-    SlaveInfo[] getConnectedSlaves();
-
     @Description( "Information about all instances in this cluster" )
-    InstanceInfo[] getInstancesInCluster();
+    ClusterMemberInfo[] getInstancesInCluster();
 
     @Description( "(If this is a slave) Update the database on this "
                   + "instance with the latest transactions from the master" )
