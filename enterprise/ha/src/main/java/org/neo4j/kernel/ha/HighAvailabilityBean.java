@@ -83,7 +83,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
-        public String getMachineId()
+        public String getServerId()
         {
             return kernelData.getMemberInfo().getInstanceId();
         }

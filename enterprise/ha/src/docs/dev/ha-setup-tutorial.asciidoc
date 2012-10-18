@@ -202,8 +202,8 @@ Which will get a response along the lines of the following:
         "name" : "lastCommittedTransactionId",
         "value" : 1
       }, {
-        "description" : "machineId",
-        "name" : "machineId",
+        "description" : "serverId",
+        "name" : "serverId",
         "value" : 1
       }, {
         "description" : "master",
@@ -247,7 +247,7 @@ in 'neo4j.properties' but will also have to contain:
 [source]
 ----
 #HA instance1
-#unique machine id for this graph database
+#unique server id for this graph database
 #can not be negative id and must be unique
 ha.server_id = 1
 
@@ -260,10 +260,9 @@ ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 remote_shell_enabled = true
 ----
 
-First we need to create a database that can be used for replication.
-This is easiest done by just starting a normal embedded graph database, pointing out a path and configuration, as shown above.
+First we start up one highly available database instance, pointing out a path and configuration, as shown above.
 
-We created a config file with machine id=1 and enabled the remote shell. It should now be possible to connect to the instance using <<shell>>:
+We created a config file with server id=1 and enabled the remote shell. It should now be possible to connect to the instance using <<shell>>:
 
 [source,shell]
 ----
@@ -271,9 +270,8 @@ neo4j_home1$ ./bin/neo4j-shell -port 1337
 NOTE: Remote Neo4j graph database service 'shell' at port 1337
 Welcome to the Neo4j Shell! Enter 'help' for a list of commands
 
-neo4j-sh (0)$ hainfo
-I'm currently master
-Connected slaves:
+neo4j-sh (0)$ set name "Master says Hi"
+neo4j-sh (Master says Hi,0)$
 ----
 
 Since it is the first instance to join the cluster it is elected master.
@@ -282,7 +280,7 @@ Starting another instance would require a second configuration and another path 
 [source]
 ----
 #HA instance2
-#unique machine id for this graph database
+#unique server id for this graph database
 #can not be negative id and must be unique
 ha.server_id = 2
 
@@ -304,8 +302,17 @@ neo4j_home1$ ./bin/neo4j-shell -port 1338
 NOTE: Remote Neo4j graph database service 'shell' at port 1338
 Welcome to the Neo4j Shell! Enter 'help' for a list of commands
 
-neo4j-sh (0)$ hainfo
-I'm currently slave
+neo4j-sh (Master says Hi,0)$ set name "Slave says Hi"
+neo4j-sh (Slave says Hi,0)$
 ----
 
-You can start sending requests to either master or slaves members of the cluster, and they will be coordinated and replicated for you.
+Quickly going over to the master's shell will yield
+
+[source,shell]
+----
+neo4j-sh (Master says Hi,0)$ ls -p
+*name=[Slave says Hi]
+neo4j-sh (Slave says Hi,0)$
+----
+
+You can start sending requests to either master or slave members of the cluster, and they will be coordinated and replicated for you.

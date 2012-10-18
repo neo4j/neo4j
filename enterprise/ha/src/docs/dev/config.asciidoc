@@ -13,7 +13,7 @@ For reaching quorum among the members in the cluster the number of members shoul
 
 For installation instructions of a High Availability cluster see <<ha-setup-tutorial>>.
 
-Note that while the the HA version of Neo4j supports the same API as the single instance embedded version, it does have additional configuration parameters.
+Note that while the HA version of Neo4j supports the same API as the single instance embedded version, it does have additional configuration parameters.
 Although there are many parameters, most of them have defaults that should work in most cases.
 
 .HA configuration parameters
