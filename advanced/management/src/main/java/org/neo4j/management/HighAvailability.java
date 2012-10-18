@@ -28,8 +28,8 @@ public interface HighAvailability
 {
     final String NAME = "High Availability";
 
-    @Description( "The identifier used to identify this machine in the HA cluster" )
-    String getMachineId();
+    @Description( "The identifier used to identify this server in the HA cluster" )
+    String getServerId();
 
     @Description( "What state this instance is currently at" )
     String getInstanceState();
