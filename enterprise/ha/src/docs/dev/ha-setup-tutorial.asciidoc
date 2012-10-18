@@ -27,7 +27,7 @@ In your 'conf/neo4j.properties' file, enable HA by setting the necessary paramet
 ports, one for transmitting data and one for cluster coordination. The cluster coordination port is by default set to a range, and Neo4j will try to bind in this range on startup,
 so there is no need to specify port nr for that. The :
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME1/conf/neo4j.properties
 #unique server id for this graph database
@@ -41,7 +41,7 @@ ha.server = localhost:6361
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME2/conf/neo4j.properties
 #unique server id for this graph database
@@ -55,7 +55,7 @@ ha.server = localhost:6362
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME3/conf/neo4j.properties
 #unique server id for this graph database
@@ -71,7 +71,7 @@ ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 
 To avoid port clashes when starting the servers, adjust the ports for the REST endpoints in all instances under 'conf/neo4j-server.properties' and enable HA mode:
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME1/conf/neo4j-server.properties
 ...
@@ -89,7 +89,7 @@ org.neo4j.server.webserver.https.port=7473
 org.neo4j.server.database.mode=HA
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME2/conf/neo4j-server.properties
 ...
@@ -107,7 +107,7 @@ org.neo4j.server.webserver.https.port=7472
 org.neo4j.server.database.mode=HA
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
@@ -130,7 +130,7 @@ To avoid JMX port clashes adjust the assigned ports for all instances in 'conf/n
 The paths to the 'jmx.password' and 'jmx.access' files also needs to be set.
 Note that the 'jmx.password' file needs the correct permissions set, see the configuration file for further information.
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME1/conf/neo4j-wrapper.conf
 ...
@@ -140,7 +140,7 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME2/conf/neo4j-wrapper.conf
 ...
@@ -150,7 +150,7 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
-[source,properties]
+[source]
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
@@ -244,7 +244,7 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory().
 The configuration can contain the standard configuration parameters (provided as part of the +config+ above or
 in 'neo4j.properties' but will also have to contain:
 
-[source,properties]
+[source]
 ----
 #HA instance1
 #unique machine id for this graph database
@@ -279,7 +279,7 @@ Connected slaves:
 Since it is the first instance to join the cluster it is elected master.
 Starting another instance would require a second configuration and another path to the db.
 
-[source,properties]
+[source]
 ----
 #HA instance2
 #unique machine id for this graph database
