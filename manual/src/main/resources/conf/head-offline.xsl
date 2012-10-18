@@ -31,6 +31,7 @@
 <script type="text/javascript" src="js/shBrushScala.js"></script>
 <script type="text/javascript" src="js/shBrushSql.js"></script>
 <script type="text/javascript" src="js/shBrushPython.js"></script>
+<script type="text/javascript" src="js/shBrushProperties.js"></script>
 
 <!-- activate when needed
 <script type="text/javascript" src="js/shBrushRuby.js"></script>
