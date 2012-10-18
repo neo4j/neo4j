@@ -23,11 +23,12 @@ Download and unpack three installations of Neo4j Enterprise
 
 == Start the Neo4j Servers in HA mode ==
 
-In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances. Neo4j HA uses two
-ports, one for transmitting data and one for cluster coordination. The cluster coordination port is by default set to a range, and Neo4j will try to bind in this range on startup,
-so there is no need to specify port nr for that. The :
+In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances.
+Neo4j HA uses two ports, one for transmitting data and one for cluster coordination.
+The cluster coordination port is by default set to a range, and Neo4j will try to bind in this range on startup, so there is no need to specify port number for that.
+The config files should include the following:
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME1/conf/neo4j.properties
 #unique server id for this graph database
@@ -41,7 +42,7 @@ ha.server = localhost:6361
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME2/conf/neo4j.properties
 #unique server id for this graph database
@@ -55,7 +56,7 @@ ha.server = localhost:6362
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME3/conf/neo4j.properties
 #unique server id for this graph database
@@ -71,7 +72,7 @@ ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 
 To avoid port clashes when starting the servers, adjust the ports for the REST endpoints in all instances under 'conf/neo4j-server.properties' and enable HA mode:
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME1/conf/neo4j-server.properties
 ...
@@ -89,7 +90,7 @@ org.neo4j.server.webserver.https.port=7473
 org.neo4j.server.database.mode=HA
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME2/conf/neo4j-server.properties
 ...
@@ -107,7 +108,7 @@ org.neo4j.server.webserver.https.port=7472
 org.neo4j.server.database.mode=HA
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
@@ -130,7 +131,7 @@ To avoid JMX port clashes adjust the assigned ports for all instances in 'conf/n
 The paths to the 'jmx.password' and 'jmx.access' files also needs to be set.
 Note that the 'jmx.password' file needs the correct permissions set, see the configuration file for further information.
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME1/conf/neo4j-wrapper.conf
 ...
@@ -140,7 +141,7 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME2/conf/neo4j-wrapper.conf
 ...
@@ -150,7 +151,7 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
-[source]
+[source,properties]
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
@@ -218,16 +219,14 @@ Which will get a response along the lines of the following:
 
 If you are using Maven and Neo4j Embedded, simply add the following dependency to your project:
 
-[source,xml]
+["source","xml","unnumbered","2",presubs="attributes"]
 ----
 <dependency>
    <groupId>org.neo4j</groupId>
    <artifactId>neo4j-ha</artifactId>
-   <version>${neo4j-version}</version>
+   <version>{neo4j-version}</version>
 </dependency>
 ----
-_Where +$\{neo4j-version}+ is the Neo4j version used._
-
 
 If you prefer to download the jar files manually, they are included in the http://neo4j.org/download/[Neo4j distribution].
 
@@ -244,7 +243,7 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory().
 The configuration can contain the standard configuration parameters (provided as part of the +config+ above or
 in 'neo4j.properties' but will also have to contain:
 
-[source]
+[source,properties]
 ----
 #HA instance1
 #unique server id for this graph database
@@ -277,7 +276,7 @@ neo4j-sh (Master says Hi,0)$
 Since it is the first instance to join the cluster it is elected master.
 Starting another instance would require a second configuration and another path to the db.
 
-[source]
+[source,properties]
 ----
 #HA instance2
 #unique server id for this graph database

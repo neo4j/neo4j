@@ -3,7 +3,8 @@ Upgrading a Neo4j HA Cluster
 ============================
 
 [WARNING]
-Upgrades in a HA scenario starting from (even upgrading _to_) 1.9.M01 is temporarily not working due to a new cluster coordination implementation being in an early stage.
+Rolling upgrades in a HA scenario starting from (even upgrading _to_) 1.9.M01 is temporarily not working due to a new cluster coordination implementation being in an early stage.
+Offline upgrades work as normally.
 
 This document describes the steps required to upgrade a Neo4j cluster from a previous version to 1.8 without disrupting its operation, a process referred to as a rolling upgrade.
 The starting assumptions are that there exists a cluster running Neo4j version 1.5.3 or newer with the corresponding ZooKeeper instances and that the machine which is currently the master is known. 
