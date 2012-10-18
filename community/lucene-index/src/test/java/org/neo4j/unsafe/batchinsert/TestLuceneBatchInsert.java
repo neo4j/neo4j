@@ -42,9 +42,14 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -307,6 +312,56 @@ public class TestLuceneBatchInsert
         
         provider.shutdown();
         inserter.shutdown();
+    }
+
+    
+    @Test
+    public void shouldCreateAutoIndexThatIsUsableInEmbedded() throws Exception
+    {
+        String path = new File( PATH, "10" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "node_auto_index", EXACT_CONFIG );
+        
+        long id = inserter.createNode( null );
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "name", "peter" );
+        index.add( id, props );
+        index.flush();
+        provider.shutdown();
+        inserter.shutdown();
+        GraphDatabaseService db = new GraphDatabaseFactory().
+                newEmbeddedDatabaseBuilder( path ).
+                setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
+                setConfig( GraphDatabaseSettings.relationship_keys_indexable, "relProp1,relProp2" ).
+                setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
+                setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" ).
+                newGraphDatabase();
+        Transaction tx = db.beginTx();
+        try
+        {
+            // Create the primitives
+            Node node1 = db.createNode();
+         
+            // Add indexable and non-indexable properties
+            node1.setProperty( "name", "bob" );
+         
+            // Make things persistent
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            tx.failure();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "peter" ).hasNext());
+        assertTrue(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "bob" ).hasNext());
+        assertFalse(db.index().getNodeAutoIndexer().getAutoIndex().get( "name", "joe" ).hasNext());
+        
     }
 
     @Test
