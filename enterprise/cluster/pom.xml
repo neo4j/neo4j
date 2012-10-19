@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.cluster</bundle.namespace>
     <short-name>backup</short-name>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-cluster.html</docs.url>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/ha.html</docs.url>
   </properties>
 
   <scm>

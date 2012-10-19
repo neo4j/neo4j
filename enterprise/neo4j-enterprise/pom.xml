@@ -155,7 +155,7 @@
               <doctitle>${project.name} ${project.version} API</doctitle>
               <windowtitle>${project.name} ${project.version} API</windowtitle>
               <excludePackageNames>
-                *.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*
+                *.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.consistency:org.neo4j.consistency.*
               </excludePackageNames>
               <groups>
                 <group>
@@ -232,7 +232,7 @@
           <doctitle>${project.name} ${project.version} API</doctitle>
           <windowtitle>${project.name} ${project.version} API</windowtitle>
           <excludePackageNames>
-            *.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*
+*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.consistency:org.neo4j.consistency.*
           </excludePackageNames>
           <groups>
             <group>
