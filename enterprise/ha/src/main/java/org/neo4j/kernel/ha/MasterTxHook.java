@@ -19,37 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import javax.transaction.Transaction;
+import org.neo4j.kernel.DefaultTxHook;
 
-import org.neo4j.kernel.impl.transaction.TxHook;
-
-public class MasterTxHook implements TxHook
+public class MasterTxHook extends DefaultTxHook
 {
-    private TxHook defaultHook;
-
-    public MasterTxHook( TxHook defaultHook )
-    {
-        this.defaultHook = defaultHook;
-    }
-
-    @Override
-    public void initializeTransaction( int eventIdentifier )
-    {
-        defaultHook.initializeTransaction( eventIdentifier );
-    }
-
-    @Override
-    public boolean hasAnyLocks( Transaction tx )
-    {
-        return defaultHook.hasAnyLocks( tx );
-    }
-
-    @Override
-    public void finishTransaction( int eventIdentifier, boolean success )
-    {
-        defaultHook.finishTransaction( eventIdentifier, success );
-    }
-
     @Override
     public boolean freeIdsDuringRollback()
     {

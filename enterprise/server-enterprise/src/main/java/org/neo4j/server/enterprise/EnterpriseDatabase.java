@@ -19,67 +19,87 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
 
-public class EnterpriseDatabase extends CommunityDatabase {
+public class EnterpriseDatabase extends CommunityDatabase
+{
 
-	enum DatabaseMode implements GraphDatabaseFactory
+    enum DatabaseMode implements GraphDatabaseFactory
     {
         SINGLE
-        {
-            @Override
-            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                    Map<String, String> databaseProperties )
-            {
-                return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
-            }
-        },
+                {
+                    @Override
+                    public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
+                                                            Map<String, String> databaseProperties )
+                    {
+                        return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+                    }
+                },
         HA
-        {
-            @Override
-            public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                    Map<String, String> databaseProperties )
-            {
-                return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
-            }
-        };
+                {
+                    @Override
+                    public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
+                                                            Map<String, String> databaseProperties )
+                    {
+                        List<IndexProvider> indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
+                        List<KernelExtensionFactory<?>> kernelExtensions = Iterables.toList( Iterables
+                                .<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
+                                        KernelExtensionFactory
+                                .class ) ) );
+                        List<CacheProvider> cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
+                        List<TransactionInterceptorProvider> txInterceptorProviders =
+                                Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
+                        return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
+                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+                    }
+                };
 
         @Override
         public abstract GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                Map<String, String> databaseProperties );
+                                                         Map<String, String> databaseProperties );
     }
-	
-	public EnterpriseDatabase(Configuration serverConfig) {
-		super(serverConfig);
-	}
-	
-	@Override
-	@SuppressWarnings("deprecation")
-	public void start() throws Throwable
-	{
-		try
+
+    public EnterpriseDatabase( Configuration serverConfig )
+    {
+        super( serverConfig );
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void start() throws Throwable
+    {
+        try
         {
-			GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfig.getString( Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
-			
-			this.graph = (AbstractGraphDatabase) factory.createDatabase(
-					serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY, Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY),
-					loadNeo4jProperties());
-			
+            GraphDatabaseFactory factory = DatabaseMode.valueOf( serverConfig.getString( Configurator.DB_MODE_KEY,
+                    DatabaseMode.SINGLE.name() ).toUpperCase() );
+
+            this.graph = (AbstractGraphDatabase) factory.createDatabase(
+                    serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+                            Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ),
+                    loadNeo4jProperties() );
+
             log.info( "Successfully started database" );
-        } catch(Exception e)
+        }
+        catch ( Exception e )
         {
-            log.error( "Failed to start database.", e);
+            log.error( "Failed to start database.", e );
             throw e;
         }
-	}
-
+    }
 }

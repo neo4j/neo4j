@@ -41,6 +41,8 @@ import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class BackupTool
 {
@@ -118,8 +120,15 @@ public class BackupTool
         }
         if ( service != null )
         { // If in here, it means a module was loaded. Use it and substitute the
-          // passed URI
-            backupURI = service.resolve( backupURI, arguments );
+            // passed URI
+            backupURI = service.resolve( backupURI, arguments, new Logging()
+            {
+                @Override
+                public StringLogger getLogger( String name )
+                {
+                    return StringLogger.SYSTEM;
+                }
+            } );
         }
         doBackup( full, backupURI, to, verify, tuningConfiguration );
     }
@@ -128,7 +137,7 @@ public class BackupTool
     {
         boolean full = arguments.has( FULL );
         boolean incremental = arguments.has( INCREMENTAL );
-        if ( full&incremental || !(full|incremental) )
+        if ( full & incremental || !(full | incremental) )
         {
             throw new ToolFailureException( "Specify either " + dash( FULL ) + " or "
                             + dash( INCREMENTAL ) );
@@ -254,12 +263,12 @@ public class BackupTool
 
     private static void moveExistingDatabase( String to ) throws IOException
     {
-        File toDir = new File(to);
+        File toDir = new File( to );
         File backupDir = new File( toDir, "old-version" );
         if ( !backupDir.mkdir() )
         {
             throw new IOException( "Trouble making target backup directory "
-                                   + backupDir.getAbsolutePath() );
+                    + backupDir.getAbsolutePath() );
         }
         StoreFiles.move( toDir, backupDir );
         LogFiles.move( toDir, backupDir );
@@ -292,5 +301,4 @@ public class BackupTool
     {
         return "-" + name;
     }
-
 }

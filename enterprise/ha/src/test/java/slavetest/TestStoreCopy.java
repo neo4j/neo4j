@@ -20,43 +20,48 @@
 package slavetest;
 
 import java.io.File;
+import java.io.FileFilter;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 /**
  * Check sandboxed copy of stores. The before and after methods
  * as they are form a complete test, so a test method with an empty
  * body would still perform a valid test.
  */
+@Ignore
 public class TestStoreCopy
 {
-    private static LocalhostZooKeeperCluster zoo;
 
+    private static final FileFilter DISREGARD_ACTIVE_LOG_FILES = new FileFilter()
+    {
+        @Override
+        public boolean accept( File file )
+        {
+            // Skip log files and tx files from temporary database
+            return !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
+        }
+    };
+    
     private HighlyAvailableGraphDatabase master;
     private HighlyAvailableGraphDatabase slave;
     private File slaveDir;
     private File sandboxed;
     private long nodeId;
-
-    @BeforeClass
-    public static void startZoo() throws Exception
-    {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-    }
-
+    
     /**
      * Starts a master, creates a node and sets a property, starts the slave and
      * checks successful copy of the store.
@@ -68,15 +73,14 @@ public class TestStoreCopy
     {
         slaveDir = TargetDirectory.forTest( TestStoreCopy.class ).directory(
                 "slave-sandboxed", true );
-        sandboxed = new File( slaveDir, HighlyAvailableGraphDatabase.COPY_FROM_MASTER_TEMP );
+        sandboxed = new File( slaveDir, SlaveStoreWriter.COPY_FROM_MASTER_TEMP );
 
-        master = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestStoreCopy.class ).directory(
-                                    "master-sandboxed", true ).getAbsolutePath() ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "1" ).
-            setConfig( HaSettings.server, "localhost:6361" ).
-            newGraphDatabase();
+        master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestStoreCopy.class ).directory(
+                        "master-sandboxed", true ).getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "1" ).
+                setConfig( HaSettings.cluster_server, "localhost" ).
+                newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
         Node n = master.createNode();
@@ -87,10 +91,10 @@ public class TestStoreCopy
 
         startSlave();
 
-        Assert.assertEquals( 1,
-                master.getBroker().getMaster().other().getMachineId() );
-        Assert.assertEquals( 1,
-                slave.getBroker().getMaster().other().getMachineId() );
+        // Need to execute tx so we know the database has started
+        Transaction tx = slave.beginTx();
+        tx.success();
+        tx.finish();
 
         // Simple sanity check
         Assert.assertEquals( "bar",
@@ -99,19 +103,21 @@ public class TestStoreCopy
 
     private void startSlave()
     {
-        slave = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "2" ).
-            setConfig( HaSettings.server, "localhost:6362" ).
-            newGraphDatabase();
+        slave = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "2" ).
+                setConfig( HaSettings.ha_server, ":6362" ).
+                setConfig( HaSettings.cluster_server, ":5002" ).
+                setConfig( HaSettings.cluster_discovery_enabled, "false" ).
+                setConfig( HaSettings.initial_hosts, "localhost:5001" ).
+                newGraphDatabase();
     }
 
     /**
      * This is the sandboxed copy test, so we naturally want to always make sure
      * that the sandbox directory after every startup is there and holds only
      * messages.log
-     *
+     * <p/>
      * Also, shutdown the instances.
      *
      * @throws Exception
@@ -130,9 +136,9 @@ public class TestStoreCopy
          */
         Assert.assertTrue( sandboxed.exists() );
         Assert.assertTrue( sandboxed.isDirectory() );
-        Assert.assertEquals( 1, sandboxed.listFiles().length );
+        Assert.assertEquals( 1, sandboxed.listFiles( DISREGARD_ACTIVE_LOG_FILES ).length );
         Assert.assertEquals( StringLogger.DEFAULT_NAME,
-                sandboxed.listFiles()[0].getName() );
+                sandboxed.listFiles( DISREGARD_ACTIVE_LOG_FILES )[0].getName() );
     }
 
     /**
@@ -152,18 +158,31 @@ public class TestStoreCopy
         secondMasterTx.success();
         secondMasterTx.finish();
 
-        File sandboxed = new File( slaveDir, HighlyAvailableGraphDatabase.COPY_FROM_MASTER_TEMP );
+        File sandboxed = new File( slaveDir, SlaveStoreWriter.COPY_FROM_MASTER_TEMP );
         FileUtils.moveToDirectory( new File( slaveDir, "neostore" ), sandboxed,
                 false );
         FileUtils.moveToDirectory( new File( slaveDir,
                 "neostore.propertystore.db" ), sandboxed, false );
-        Assert.assertEquals( 3, sandboxed.listFiles().length );
+        Assert.assertEquals( "Found these files:" + filesAsString( sandboxed ), 3, sandboxed.listFiles( DISREGARD_ACTIVE_LOG_FILES ).length );
 
         startSlave();
+
+        // Need to execute tx so we know the database has started
+        Transaction tx = slave.beginTx();
+        tx.success();
+        tx.finish();
 
         Assert.assertEquals( "bar",
                 slave.getNodeById( nodeId ).getProperty( "foo" ) );
         Assert.assertEquals( "bar2",
                 slave.getNodeById( nodeId ).getProperty( "foo2" ) );
+    }
+
+    private String filesAsString( File directory )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( File file : directory.listFiles( DISREGARD_ACTIVE_LOG_FILES ) )
+            builder.append( "\n" ).append( file.isDirectory() ? "/" : "" ).append( file.getName() );
+        return builder.toString();
     }
 }

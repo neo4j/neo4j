@@ -46,7 +46,7 @@ public class ClientCrashingWriter implements MadeUpWriter
             {
                 int size = data.read( buffer );
                 if ( size == -1 ) break;
-                if ( (totalSize += size) >= crashAtSize ) client.shutdown();
+                if ( (totalSize += size) >= crashAtSize ) client.stop();
             }
             catch ( IOException e )
             {

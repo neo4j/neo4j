@@ -19,22 +19,20 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.ClusterMemberState;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
+@Ignore("There are no slave only instances yet")
 public class TestSlaveOnlyCluster
 {
-    private LocalhostZooKeeperCluster zoo;
     private HighlyAvailableGraphDatabase master;
     private final HighlyAvailableGraphDatabase[] slaves = new HighlyAvailableGraphDatabase[2];
     private final TargetDirectory dir = forTest( getClass() );
@@ -42,18 +40,9 @@ public class TestSlaveOnlyCluster
     @Before
     public void doBefore() throws Exception
     {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-        master = new HighlyAvailableGraphDatabase( dir.directory( "master", true ).getAbsolutePath(), stringMap(
-                HaSettings.server_id.name(), "0", HaSettings.server.name(), "localhost:" + 6666,
-                HaSettings.coordinators.name(), zoo.getConnectionString(), HaSettings.pull_interval.name(),
-                0 + "ms" ) );
-        for ( int i = 0; i < slaves.length; i++ )
-        {
-            slaves[i] = new HighlyAvailableGraphDatabase( dir.directory( "" + i+1, true ).getAbsolutePath(), stringMap(
-                    HaSettings.server_id.name(), "" + (i+1), HaSettings.server.name(), "localhost:" + ( 6667 + i ),
-                    HaSettings.coordinators.name(), zoo.getConnectionString(), HaSettings.pull_interval.name(),
-                    0 + "ms", HaSettings.slave_coordinator_update_mode.name(), HaSettings.SlaveUpdateModeSetting.none ) );
-        }
+        /*
+         * instantiate master and slaves
+         */
     }
 
     @After
@@ -61,7 +50,10 @@ public class TestSlaveOnlyCluster
     {
         for ( HighlyAvailableGraphDatabase db : slaves )
         {
-            if ( db != null ) db.shutdown();
+            if ( db != null )
+            {
+                db.shutdown();
+            }
         }
         master.shutdown();
     }
@@ -75,15 +67,21 @@ public class TestSlaveOnlyCluster
          */
         master.shutdown();
         Thread.sleep( 1000 ); // Make sure everything is shut down, including ZK threads
-        master = new HighlyAvailableGraphDatabase( dir.directory( "master", true ).getAbsolutePath(), stringMap(
-                HaSettings.server_id.name(), "0", HaSettings.server.name(), "localhost:" + 6666,
-                HaSettings.coordinators.name(), zoo.getConnectionString(), HaSettings.pull_interval.name(),
-                0 + "ms" ) );
-        while (!master.isMaster());
-        while (slaves[0].getBroker().getMaster().other().getMachineId() == -1);
-        assertEquals(0, slaves[0].getBroker().getMaster().other().getMachineId());
-        while (slaves[1].getBroker().getMaster().other().getMachineId() == -1);
-        assertEquals(0, slaves[1].getBroker().getMaster().other().getMachineId());
+        /*
+         * Instantiate master here
+         */
+        while ( !master.isMaster() )
+        {
+            ;
+        }
+        while ( !slaves[0].getInstanceState().equals( ClusterMemberState.SLAVE ) )
+        {
+            ;
+        }
+        while ( !slaves[1].getInstanceState().equals( ClusterMemberState.SLAVE ) )
+        {
+            ;
+        }
         // Execute a tx on one slave, make sure a master has been picked
         Transaction tx = slaves[0].beginTx();
         slaves[0].createNode();

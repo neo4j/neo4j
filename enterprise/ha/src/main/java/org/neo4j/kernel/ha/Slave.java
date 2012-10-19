@@ -24,6 +24,6 @@ import org.neo4j.com.Response;
 public interface Slave
 {
     Response<Void> pullUpdates( String resource, long upToAndIncludingTxId );
-    
+
     int getServerId();
 }

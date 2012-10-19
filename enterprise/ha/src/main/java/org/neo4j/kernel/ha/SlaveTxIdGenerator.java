@@ -19,137 +19,94 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.com.ServerUtil.onlyIncludeResource;
-
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class SlaveTxIdGenerator implements TxIdGenerator
 {
-    public static class SlaveTxIdGeneratorFactory implements TxIdGeneratorFactory
+    private final int serverId;
+    private final Master master;
+    private final int masterId;
+    private final RequestContextFactory requestContextFactory;
+    private final HaXaDataSourceManager xaDsm;
+
+    public SlaveTxIdGenerator( int serverId, Master master, int masterId, RequestContextFactory requestContextFactory, HaXaDataSourceManager xaDsm )
     {
-        private final Broker broker;
-        private final SlaveDatabaseOperations databaseOperations;
-
-        public SlaveTxIdGeneratorFactory( Broker broker, SlaveDatabaseOperations databaseOperations )
-        {
-            this.broker = broker;
-            this.databaseOperations = databaseOperations;
-        }
-
-        public TxIdGenerator create( TransactionManager txManager )
-        {
-            return new SlaveTxIdGenerator( broker, databaseOperations, txManager );
-        }
-    }
-
-    private final Broker broker;
-    private final SlaveDatabaseOperations databaseOperations;
-    private final TxManager txManager;
-
-    public SlaveTxIdGenerator( Broker broker, SlaveDatabaseOperations databaseOperations, TransactionManager txManager )
-    {
-        this.broker = broker;
-        this.databaseOperations = databaseOperations;
-        this.txManager = (TxManager) txManager;
-    }
-
-    public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
-    {
-        try
-        {
-            final int eventIdentifier = txManager.getEventIdentifier();
-            Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
-                    onlyIncludeResource( databaseOperations.getSlaveContext( eventIdentifier ), dataSource ),
-                    dataSource.getName(), new TxExtractor()
-                    {
-                        @Override
-                        public void extract( LogBuffer buffer )
-                        {
-                            try
-                            {
-                                dataSource.getPreparedTransaction( identifier, buffer );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-
-                        @Override
-                        public ReadableByteChannel extract()
-                        {
-                            try
-                            {
-                                return dataSource.getPreparedTransaction( identifier );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-                    });
-            return databaseOperations.receive( response );
-        } catch(ComException ex)
-        {
-            throw Exceptions.withCause( new XAException(XAException.XA_HEURCOM), ex );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
-        }
-    }
-
-    public int getCurrentMasterId()
-    {
-        return this.broker.getMaster().other().getMachineId();
+        this.serverId = serverId;
+        this.masterId = masterId;
+        this.requestContextFactory = requestContextFactory;
+        this.master = master;
+        this.xaDsm = xaDsm;
     }
 
     @Override
-    public int getMyId()
+    public long generate( XaDataSource dataSource, int identifier ) throws XAException
     {
-        return broker.getMyMachineId();
+        try
+        {
+            Response<Long> response = master.commitSingleResourceTransaction(
+                    requestContextFactory.newRequestContext( dataSource ), dataSource.getName(),
+                    myPreparedTransactionToCommit( dataSource, identifier ) );
+            xaDsm.applyTransactions( response );
+            return response.response().longValue();
+        }
+        catch ( ComException e )
+        {
+            throw Exceptions.withCause( new XAException( XAException.XA_HEURCOM ), e );
+        }
     }
 
     @Override
     public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId )
     {
-        // Tell the master to push this transaction
-        broker.getMaster().first().pushTransaction(
-                databaseOperations.getSlaveContext( identifier ), dataSource.getName(), txId ).close();
+        master.pushTransaction(
+                requestContextFactory.newRequestContext( identifier ), dataSource.getName(), txId ).close();
     }
 
     @Override
-    public void init() throws Throwable
+    public int getCurrentMasterId()
     {
+        return masterId;
     }
 
     @Override
-    public void start() throws Throwable
+    public int getMyId()
     {
+        return serverId;
     }
 
-    @Override
-    public void stop() throws Throwable
+    private TxExtractor myPreparedTransactionToCommit( final XaDataSource dataSource, final int identifier )
     {
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
+        return new TxExtractor()
+        {
+            @Override
+            public ReadableByteChannel extract()
+            {
+                throw new UnsupportedOperationException();
+            }
+            
+            @Override
+            public void extract( LogBuffer buffer )
+            {
+                try
+                {
+                    dataSource.getPreparedTransaction( identifier, buffer );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
     }
 }

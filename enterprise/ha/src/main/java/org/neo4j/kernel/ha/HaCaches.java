@@ -41,12 +41,12 @@ public class HaCaches implements Caches
     private Cache<NodeImpl> node;
     private Cache<RelationshipImpl> relationship;
     private final StringLogger logger;
-    
+
     public HaCaches( StringLogger logger )
     {
         this.logger = logger;
     }
-    
+
     @Override
 	public void configure( CacheProvider newType, Config config )
     {

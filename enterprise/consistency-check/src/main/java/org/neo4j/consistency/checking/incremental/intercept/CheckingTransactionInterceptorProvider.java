@@ -40,7 +40,7 @@ abstract class CheckingTransactionInterceptorProvider extends TransactionInterce
     abstract DiffCheck createChecker( String mode, StringLogger logger );
 
     @Override
-    public CheckingTransactionInterceptor create( XaDataSource ds, Object options,
+    public CheckingTransactionInterceptor create( XaDataSource ds, String options,
                                                   DependencyResolver dependencyResolver )
     {
         if ( !(ds instanceof NeoStoreXaDataSource) || !(options instanceof String) )
@@ -69,7 +69,7 @@ abstract class CheckingTransactionInterceptorProvider extends TransactionInterce
     }
 
     @Override
-    public CheckingTransactionInterceptor create( TransactionInterceptor next, XaDataSource ds, Object options,
+    public CheckingTransactionInterceptor create( TransactionInterceptor next, XaDataSource ds, String options,
                                                   DependencyResolver dependencyResolver )
     {
         CheckingTransactionInterceptor interceptor = create( ds, options, dependencyResolver );

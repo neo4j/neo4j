@@ -30,9 +30,9 @@ public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
 
-    public ToFileStoreWriter( String graphDbStoreDir )
+    public ToFileStoreWriter( File graphDbStoreDir )
     {
-        this.basePath = new File( graphDbStoreDir );
+        this.basePath = graphDbStoreDir;
     }
 
     public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,

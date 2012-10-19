@@ -22,7 +22,6 @@ package slavetest;
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.test.ha.StandaloneDatabase;
 
 public abstract class CommonJobs
 {
@@ -249,22 +247,6 @@ public abstract class CommonJobs
     public interface ShutdownDispatcher extends Remote
     {
         void doShutdown() throws RemoteException;
-    }
-
-    public static class ShutdownJvm extends UnicastRemoteObject implements ShutdownDispatcher
-    {
-        private final StandaloneDatabase jvm;
-
-        public ShutdownJvm( StandaloneDatabase jvm ) throws RemoteException
-        {
-            super();
-            this.jvm = jvm;
-        }
-
-        public void doShutdown()
-        {
-            this.jvm.shutdown();
-        }
     }
 
     public static class DeleteNodeJob implements Job<Boolean>

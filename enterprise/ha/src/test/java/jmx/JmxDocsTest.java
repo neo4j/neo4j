@@ -48,13 +48,12 @@ import javax.management.ObjectName;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.ha.CreateEmptyDb;
-import org.neo4j.ha.Neo4jHaCluster;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 public class JmxDocsTest
 {
@@ -63,7 +62,7 @@ public class JmxDocsTest
     private static final String ENDIF = "endif::nonhtmloutput[]\n";
     private static final String BEAN_NAME0 = "name0";
     private static final String BEAN_NAME = "name";
-    private static final List<String> QUERIES = Arrays.asList( new String[] { "org.neo4j:*" } );
+    private static final List<String> QUERIES = Arrays.asList( new String[]{"org.neo4j:*"} );
     private static final String JAVADOC_URL = "http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 13;
     private static final Set<String> EXCLUDES = new HashSet<String>()
@@ -81,24 +80,25 @@ public class JmxDocsTest
         }
     };
     private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocsTest.class );
-    private static LocalhostZooKeeperCluster zk;
-    private static HighlyAvailableGraphDatabase db;
+    private static GraphDatabaseService db;
 
     @BeforeClass
     public static void startDb() throws Exception
     {
-        zk = LocalhostZooKeeperCluster.singleton()
-                .clearDataAndVerifyConnection();
         File storeDir = dir.graphDbDir( /*clean=*/true );
         CreateEmptyDb.at( storeDir );
-        db = Neo4jHaCluster.single( zk, storeDir, /*HA port:*/3377, //
-                MapUtil.stringMap( "jmx.port", "9913" ) );
+        db = new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )
+                .setConfig( HaSettings.server_id, "1" ).setConfig( "jmx.port", "9913" ).newGraphDatabase();
     }
 
     @AfterClass
     public static void stopDb() throws Exception
     {
-        if ( db != null ) db.shutdown();
+        if ( db != null )
+        {
+            db.shutdown();
+        }
         db = null;
         dir.cleanup();
     }
@@ -110,9 +110,9 @@ public class JmxDocsTest
         StringBuilder altBeanList = new StringBuilder( 2048 );
         altBeanList.append( IFDEF_NONHTMLOUTPUT );
         beanList.append( "[[jmx-list]]\n" + ".MBeans exposed by Neo4j\n"
-                         + IFDEF_HTMLOUTPUT
-                         + "[options=\"header\", cols=\"m,\"]\n" + "|===\n"
-                         + "|Name|Description\n" );
+                + IFDEF_HTMLOUTPUT
+                + "[options=\"header\", cols=\"m,\"]\n" + "|===\n"
+                + "|Name|Description\n" );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         SortedMap<String, ObjectName> neo4jBeans = new TreeMap<String, ObjectName>(
@@ -150,9 +150,9 @@ public class JmxDocsTest
             if ( mBeans.size() != 1 )
             {
                 throw new IllegalStateException( "Unexpected size ["
-                                                 + mBeans.size()
-                                                 + "] of query result for ["
-                                                 + objectName + "]." );
+                        + mBeans.size()
+                        + "] of query result for ["
+                        + objectName + "]." );
             }
             ObjectInstance bean = mBeans.iterator()
                     .next();
@@ -207,7 +207,7 @@ public class JmxDocsTest
     }
 
     private void writeDetailsToFile( String id, ObjectName objectName,
-            ObjectInstance bean, MBeanInfo info, String description )
+                                     ObjectInstance bean, MBeanInfo info, String description )
             throws IOException
     {
         StringBuilder beanInfo = new StringBuilder( 2048 );
@@ -265,8 +265,8 @@ public class JmxDocsTest
     }
 
     private void writeAttributesTable( String description,
-            StringBuilder beanInfo, MBeanAttributeInfo[] attributes,
-            boolean nonHtml )
+                                       StringBuilder beanInfo, MBeanAttributeInfo[] attributes,
+                                       boolean nonHtml )
     {
         addNonHtmlCondition( beanInfo, nonHtml );
         beanInfo.append(
@@ -317,12 +317,12 @@ public class JmxDocsTest
     }
 
     private void writeOperationsTable( StringBuilder beanInfo,
-            MBeanOperationInfo[] operations, boolean nonHtml )
+                                       MBeanOperationInfo[] operations, boolean nonHtml )
     {
         addNonHtmlCondition( beanInfo, nonHtml );
         beanInfo.append( "[options=\"header\", cols=\"20m,40,20m,20m\"]\n"
-                         + "|===\n"
-                         + "|Name|Description|ReturnType|Signature\n" );
+                + "|===\n"
+                + "|Name|Description|ReturnType|Signature\n" );
         SortedSet<String> operationInfo = new TreeSet<String>(
                 String.CASE_INSENSITIVE_ORDER );
         for ( MBeanOperationInfo operInfo : operations )
@@ -346,7 +346,7 @@ public class JmxDocsTest
                 {
                     MBeanParameterInfo param = params[i];
                     operationRow.append( param.getType() );
-                    if ( i != ( params.length - 1 ) )
+                    if ( i != (params.length - 1) )
                     {
                         operationRow.append( ',' );
                     }
@@ -368,7 +368,7 @@ public class JmxDocsTest
     }
 
     private String getCompositeType( String type, Descriptor descriptor,
-            boolean nonHtml )
+                                     boolean nonHtml )
     {
         String newType = type;
         if ( "javax.management.openmbean.CompositeData[]".equals( type ) )
@@ -384,7 +384,8 @@ public class JmxDocsTest
                 }
                 else
                 {
-                    newType += " as http://docs.oracle.com/javase/6/docs/api/javax/management/openmbean/CompositeData.html[CompositeData][]";
+                    newType += " as http://docs.oracle.com/javase/6/docs/api/javax/management/openmbean/CompositeData" +
+                            ".html[CompositeData][]";
                 }
             }
         }
@@ -424,7 +425,7 @@ public class JmxDocsTest
             {
                 String typeInList = type.substring( 15, type.length() - 1 );
                 return "java.util.List<" + getLinkedType( typeInList, nonHtml )
-                       + ">";
+                        + ">";
             }
         }
         else if ( nonHtml )

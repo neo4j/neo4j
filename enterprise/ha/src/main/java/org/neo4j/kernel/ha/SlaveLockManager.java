@@ -19,210 +19,193 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.List;
+
 import javax.transaction.Transaction;
 
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.LockManagerImpl;
+import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.RagManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
-import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.info.LockInfo;
 
-public class SlaveLockManager extends LockManager
+public class SlaveLockManager implements LockManager
 {
-    private final Broker broker;
-    private final TxManager tm;
-    private final SlaveDatabaseOperations databaseOperations;
-    private final TxHook txHook;
+    private final RequestContextFactory requestContextFactory;
+    private final LockManagerImpl local;
+    private final Master master;
+    private final TransactionSupport transactionSupport;
+    private final HaXaDataSourceManager xaDsm;
 
-    public SlaveLockManager( RagManager ragManager, TxManager tm, TxHook txHook, Broker broker,
-            SlaveDatabaseOperations databaseOperations )
+    public SlaveLockManager( TransactionSupport transactionSupport,
+                             RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
+                             HaXaDataSourceManager xaDsm )
     {
-        super( ragManager );
-        this.tm = tm;
-        this.txHook = txHook;
-        this.broker = broker;
-        this.databaseOperations = databaseOperations;
-    }
-
-    private int getLocalTxId()
-    {
-        return tm.getEventIdentifier();
+        this.requestContextFactory = requestContextFactory;
+        this.transactionSupport = transactionSupport;
+        this.xaDsm = xaDsm;
+        this.local = new LockManagerImpl( ragManager );
+        this.master = master;
     }
 
     @Override
-    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
-            IllegalResourceException
+    public long getDetectedDeadlockCount()
     {
-        LockGrabber grabber = null;
-        if ( resource instanceof Node ) grabber = LockGrabber.NODE_READ;
-        else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_READ;
-        else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_READ;
-        else if ( resource instanceof IndexLock ) grabber = LockGrabber.INDEX_READ;
-
-        try
-        {
-            if ( grabber == null )
-            {
-                super.getReadLock( resource, tx );
-                return;
-            }
-
-            initializeTxIfFirst(tx);
-            LockResult result = null;
-            do
-            {
-                int eventIdentifier = getLocalTxId();
-                result = databaseOperations.receive( grabber.acquireLock( broker.getMaster().first(),
-                        databaseOperations.getSlaveContext( eventIdentifier ), resource ) );
-                switch ( result.getStatus() )
-                {
-                case OK_LOCKED:
-                    super.getReadLock( resource, tx );
-                    return;
-                case DEAD_LOCKED:
-                    throw new DeadlockDetectedException( result.getDeadlockMessage() );
-                }
-            }
-            while ( result.getStatus() == LockStatus.NOT_LOCKED );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
-        }
-    }
-
-    private void initializeTxIfFirst(Transaction tx)
-    {
-        // The main point of initializing transaction (for HA) is in TransactionImpl, so this is
-        // for that extra point where grabbing a lock
-        if ( !txHook.hasAnyLocks( tx ) ) txHook.initializeTransaction( tm.getEventIdentifier() );
+        return local.getDetectedDeadlockCount();
     }
 
     @Override
-    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException,
-            IllegalResourceException
+    public void getReadLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
     {
-        // Code copied from getReadLock. Fix!
-        LockGrabber grabber = null;
-        if ( resource instanceof Node ) grabber = LockGrabber.NODE_WRITE;
-        else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_WRITE;
-        else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_WRITE;
-        else if ( resource instanceof IndexLock ) grabber = LockGrabber.INDEX_WRITE;
-
-        try
+        if ( getReadLockOnMaster( resource ) )
         {
-            if ( grabber == null )
-            {
-                super.getWriteLock( resource, tx );
-                return;
-            }
-
-            initializeTxIfFirst(tx);
-            LockResult result = null;
-            do
-            {
-                int eventIdentifier = getLocalTxId();
-                result = databaseOperations.receive( grabber.acquireLock( broker.getMaster().first(),
-                        databaseOperations.getSlaveContext( eventIdentifier ), resource ) );
-                switch ( result.getStatus() )
-                {
-                case OK_LOCKED:
-                    super.getWriteLock( resource, tx );
-                    return;
-                case DEAD_LOCKED:
-                    throw new DeadlockDetectedException( result.getDeadlockMessage() );
-                }
-            }
-            while ( result.getStatus() == LockStatus.NOT_LOCKED );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
+            local.getReadLock( resource );
         }
     }
 
-    // Release lock is as usual, since when the master committs it will release
-    // the locks there and then when this slave committs it will release its
-    // locks as usual here.
-
-    private static enum LockGrabber
+    @Override
+    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
     {
-        NODE_READ
+        if ( getReadLockOnMaster( resource ) )
         {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireNodeReadLock( context, ((Node)resource).getId() );
-            }
-        },
-        NODE_WRITE
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireNodeWriteLock( context, ((Node)resource).getId() );
-            }
-        },
-        RELATIONSHIP_READ
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireRelationshipReadLock( context, ((Relationship)resource).getId() );
-            }
-        },
-        RELATIONSHIP_WRITE
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireRelationshipWriteLock( context, ((Relationship)resource).getId() );
-            }
-        },
-        GRAPH_READ
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireGraphReadLock( context );
-            }
-        },
-        GRAPH_WRITE
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                return master.acquireGraphWriteLock( context );
-            }
-        },
-        INDEX_WRITE
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                IndexLock lock = (IndexLock) resource;
-                return master.acquireIndexWriteLock( context, lock.getIndex(), lock.getKey() );
-            }
-        },
-        INDEX_READ
-        {
-            @Override
-            Response<LockResult> acquireLock( Master master, RequestContext context, Object resource )
-            {
-                IndexLock lock = (IndexLock) resource;
-                return master.acquireIndexReadLock( context, lock.getIndex(), lock.getKey() );
-            }
-        };
+            local.getReadLock( resource, tx );
+        }
+    }
 
-        abstract Response<LockResult> acquireLock( Master master, RequestContext context, Object resource );
+    private boolean getReadLockOnMaster( Object resource )
+    {
+        Response<LockResult> response = null;
+        if ( resource instanceof Node )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(), ((Node)resource).getId() );
+        }
+        else if ( resource instanceof Relationship )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+        }
+        else if ( resource instanceof GraphProperties )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireGraphReadLock( requestContextFactory.newRequestContext() );
+        }
+        else
+        {
+            return true;
+        }
+        return receiveLockResponse( response );
+    }
+
+    private boolean receiveLockResponse( Response<LockResult> response )
+    {
+        LockResult result = xaDsm.applyTransactions( response );
+        switch ( result.getStatus() )
+        {
+        case DEAD_LOCKED:
+            throw new DeadlockDetectedException( result.getDeadlockMessage() );
+        case NOT_LOCKED:
+            throw new UnsupportedOperationException();
+        case OK_LOCKED:
+            break;
+        default:
+            throw new UnsupportedOperationException( result.toString() );
+        }
+
+        return true;
+    }
+
+    @Override
+    public void getWriteLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
+    {
+        if ( getWriteLockOnMaster( resource ) )
+        {
+            local.getWriteLock( resource );
+        }
+    }
+
+    @Override
+    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
+    {
+        if ( getWriteLockOnMaster( resource ) )
+        {
+            local.getWriteLock( resource, tx );
+        }
+    }
+
+    private boolean getWriteLockOnMaster( Object resource )
+    {
+        Response<LockResult> response = null;
+        if ( resource instanceof Node )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireNodeWriteLock( requestContextFactory.newRequestContext(), ((Node)resource).getId() );
+        }
+        else if ( resource instanceof Relationship )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(), ((Relationship)resource).getId() );
+        }
+        else if ( resource instanceof GraphProperties )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            response = master.acquireGraphWriteLock( requestContextFactory.newRequestContext() );
+        }
+        else
+        {
+            return true;
+        }
+        
+        return receiveLockResponse( response );
+    }
+    
+    @Override
+    public void releaseReadLock( Object resource, Transaction tx ) throws LockNotFoundException,
+            IllegalResourceException
+    {
+        local.releaseReadLock( resource, tx );
+    }
+
+    @Override
+    public void releaseWriteLock( Object resource, Transaction tx ) throws LockNotFoundException,
+            IllegalResourceException
+    {
+        local.releaseWriteLock( resource, tx );
+    }
+
+    @Override
+    public void dumpLocksOnResource( Object resource )
+    {
+        local.dumpLocksOnResource( resource );
+    }
+
+    @Override
+    public List<LockInfo> getAllLocks()
+    {
+        return local.getAllLocks();
+    }
+
+    @Override
+    public List<LockInfo> getAwaitedLocks( long minWaitTime )
+    {
+        return local.getAwaitedLocks( minWaitTime );
+    }
+
+    @Override
+    public void dumpRagStack()
+    {
+        local.dumpRagStack();
+    }
+
+    @Override
+    public void dumpAllLocks()
+    {
+        local.dumpAllLocks();
     }
 }

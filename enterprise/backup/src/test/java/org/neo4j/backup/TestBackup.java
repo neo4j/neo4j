@@ -22,6 +22,7 @@ package org.neo4j.backup;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -41,9 +42,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
@@ -501,9 +502,9 @@ public class TestBackup
             new EmbeddedGraphDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
-        catch ( IllegalStateException ex )
+        catch ( RuntimeException ex )
         {
-            // expected
+            assertTrue( IllegalStateException.class.isAssignableFrom( ex.getCause().getCause().getCause().getClass() ) );
         }
         StartupChecker proc = new LockProcess().start( path );
         try
@@ -541,18 +542,24 @@ public class TestBackup
         @Override
         protected void startup( String path ) throws Throwable
         {
-            GraphDatabaseService db;
+            GraphDatabaseService db = null;
             try
             {
                 db = new EmbeddedGraphDatabase( path );
             }
-            catch ( IllegalStateException ex )
+            catch ( RuntimeException ex )
             {
-                state = ex;
-                return;
+                if ( IllegalStateException.class.isAssignableFrom( ex.getCause().getCause().getCause().getClass() ) )
+                {
+                    state = ex;
+                    return;
+                }
             }
             state = new Object();
-            db.shutdown();
+            if ( db != null )
+            {
+                db.shutdown();
+            }
         }
     }
 

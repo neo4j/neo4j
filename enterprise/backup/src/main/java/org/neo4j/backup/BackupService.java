@@ -91,18 +91,21 @@ class BackupService
         }
 
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, StringLogger.DEV_NULL, null );
+        client.start();
         long timestamp = System.currentTimeMillis();
         Map<String, Long> lastCommittedTxs = emptyMap();
         try
         {
             Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( targetDirectory ) ) );
+                    new ToFileStoreWriter( new File( targetDirectory ) ) ) );
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
                     VerificationLevel.NONE /* run full check instead */ );
             try
             {
                 // First, receive all txs pending
-                lastCommittedTxs = unpackResponse( response, targetDb, ServerUtil.txHandlerForFullCopy() );
+                lastCommittedTxs = unpackResponse( response,
+                        targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
+                        ServerUtil.txHandlerForFullCopy() );
                 // Then go over all datasources, try to extract the latest tx
                 Set<String> noTxPresent = new HashSet<String>();
                 for ( XaDataSource ds : targetDb.getXaDataSourceManager().getAllRegisteredDataSources() )
@@ -131,6 +134,7 @@ class BackupService
                      */
                     BackupClient recoveryClient = new BackupClient(
                             sourceHostNameOrIp, sourcePort, targetDb.getMessageLog(), targetDb.getStoreId() );
+                    recoveryClient.start();
                     Response<Void> recoveryResponse = null;
                     Map<String, Long> recoveryDiff = new HashMap<String, Long>();
                     for ( String ds : noTxPresent )
@@ -183,7 +187,14 @@ class BackupService
                     }
                     finally
                     {
-                        recoveryClient.shutdown();
+                        try
+                        {
+                            recoveryClient.stop();
+                        }
+                        catch ( Throwable throwable )
+                        {
+                            throw new RuntimeException( throwable );
+                        }
                         if ( recoveryResponse != null )
                         {
                             recoveryResponse.close();
@@ -215,7 +226,14 @@ class BackupService
         }
         finally
         {
-            client.shutdown();
+            try
+            {
+                client.stop();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
         }
         return new BackupOutcome( lastCommittedTxs );
     }
@@ -362,15 +380,25 @@ class BackupService
     {
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, targetDb.getMessageLog(),
                 targetDb.getStoreId() );
+        client.start();
         Map<String, Long> lastCommittedTxs;
         try
         {
-            lastCommittedTxs = unpackResponse( client.incrementalBackup( context ), targetDb, new ProgressTxHandler() );
+            lastCommittedTxs = unpackResponse( client.incrementalBackup( context ),
+                    targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
+                    new ProgressTxHandler() );
             trimLogicalLogCount( targetDb );
         }
         finally
         {
-            client.shutdown();
+            try
+            {
+                client.stop();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
         }
         return new BackupOutcome( lastCommittedTxs );
     }
@@ -417,12 +445,12 @@ class BackupService
         }
     }
 
-    private Map<String, Long> unpackResponse( Response<Void> response, GraphDatabaseAPI graphDb, TxHandler txHandler )
+    private Map<String, Long> unpackResponse( Response<Void> response, XaDataSourceManager xaDsm, TxHandler txHandler )
     {
         try
         {
-            ServerUtil.applyReceivedTransactions( response, graphDb, txHandler );
-            return extractLastCommittedTxs( graphDb );
+            ServerUtil.applyReceivedTransactions( response, xaDsm, txHandler );
+            return extractLastCommittedTxs( xaDsm );
         }
         catch ( IOException e )
         {
@@ -430,10 +458,10 @@ class BackupService
         }
     }
 
-    private Map<String, Long> extractLastCommittedTxs( GraphDatabaseAPI graphDb )
+    private Map<String, Long> extractLastCommittedTxs( XaDataSourceManager xaDsm )
     {
         TreeMap<String, Long> lastCommittedTxs = new TreeMap<String, Long>();
-        for ( XaDataSource ds : graphDb.getXaDataSourceManager().getAllRegisteredDataSources() )
+        for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
         {
             lastCommittedTxs.put( ds.getName(), ds.getLastCommittedTxId() );
         }

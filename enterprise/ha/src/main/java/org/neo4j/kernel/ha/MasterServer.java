@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,11 +43,10 @@ public class MasterServer extends Server<Master, Void>
 {
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
-    public MasterServer( Master requestTarget, final int port, StringLogger logger, int maxConcurrentTransactions,
-            int oldChannelThreshold, TxChecksumVerifier txVerifier, int chunkSize )
+    public MasterServer( Master requestTarget, StringLogger logger, Configuration config,
+                         TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, port, logger, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, maxConcurrentTransactions,
-                oldChannelThreshold, txVerifier, chunkSize );
+        super( requestTarget, config, logger, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier );
     }
 
     @Override
@@ -62,16 +62,9 @@ public class MasterServer extends Server<Master, Void>
     }
 
     @Override
-    public void shutdown()
-    {
-        getRequestTarget().shutdown();
-        super.shutdown();
-    }
-
-    @Override
     protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
     {
-        return !( failure instanceof UnableToResumeTransactionException );
+        return !(failure instanceof UnableToResumeTransactionException);
     }
 
     public Map<Integer, Collection<RequestContext>> getSlaveInformation()

@@ -121,7 +121,7 @@ public final class RequestContext
     @Override
     public String toString()
     {
-        return "SlaveContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
+        return "RequestContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
                + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
     }
 

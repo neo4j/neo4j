@@ -21,19 +21,14 @@ package org.neo4j.ha;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase.BranchedDataPolicy;
-import org.neo4j.kernel.ha.Broker;
-import org.neo4j.kernel.ha.ClusterClient;
-import org.neo4j.kernel.ha.FakeClusterClient;
-import org.neo4j.kernel.ha.FakeMasterBroker;
+import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -54,30 +49,16 @@ public class TestBranchedData
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
 
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dir.getAbsolutePath(), stringMap( HaSettings.server_id.name(), "1" ) )
-        {
-            @Override
-            protected Broker createBroker()
-            {
-                return new FakeMasterBroker( configuration );
-            }
-
-            @Override
-            protected ClusterClient createClusterClient()
-            {
-                return new FakeClusterClient( getBroker() );
-            }
-        };
-        db.shutdown();
-
+        new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
+                .setConfig( HaSettings.server_id, "1" ).newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
         {
             assertFalse( "directory branched-" + timestamp + " still exists.",
                     new File( dir, "branched-" + timestamp ).exists() );
             assertTrue( "directory " + timestamp + " is not there",
-                    BranchedDataPolicy.getBranchedDataDirectory( dir.getAbsolutePath(), timestamp ).exists() );
-
+                    BranchedDataPolicy.getBranchedDataDirectory( dir, timestamp ).exists() );
         }
     }
 
@@ -89,7 +70,9 @@ public class TestBranchedData
         for ( File file : dir.listFiles() )
         {
             if ( !file.equals( StringLogger.DEFAULT_NAME ) && !file.getName().startsWith( "branched-" ) )
+            {
                 assertTrue( FileUtils.renameFile( file, new File( branchDir, file.getName() ) ) );
+            }
         }
         return timestamp;
     }

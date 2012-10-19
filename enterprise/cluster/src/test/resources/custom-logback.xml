@@ -1,0 +1,52 @@
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<included>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="neo4j.diagnostics" level="warn">
+  </logger>
+
+  <logger name="neo4j.cluster" level="debug">
+  </logger>
+
+  <logger name="org.neo4j.cluster.NetworkMock" level="warn">
+  </logger>
+
+  <logger name="ha2.protocol.atomicbroadcast.AtomicBroadcastMap" level="warn">
+  </logger>
+
+  <logger name="org.neo4j.cluster.ha2.ha2.protocol" level="info" additive="true">
+  </logger>
+
+  <root level="debug">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+
+  <logger name="neo4j" level="debug">
+    <appender-ref ref="CONSOLE"/>
+  </logger>
+
+</included>

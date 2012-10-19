@@ -1,10 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>35</version>
-    <relativePath />
+    <relativePath/>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
@@ -15,7 +16,6 @@
   <properties>
     <short-name>com</short-name>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
@@ -29,17 +29,17 @@
       <name>GNU Affero General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
       <comments>The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
-third parties and that license is included below.
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+        third parties and that license is included below.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-LICENSE Version 3 and you may use the Software solely pursuant to the
-terms of the relevant Commercial Agreement.
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+        LICENSE Version 3 and you may use the Software solely pursuant to the
+        terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
@@ -84,12 +84,17 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.servicemix.bundles</groupId>
-      <artifactId>org.apache.servicemix.bundles.netty</artifactId>
-      <version>3.2.5.Final_1</version>
+      <groupId>io.netty</groupId>
+      <artifactId>netty</artifactId>
+      <version>3.5.7.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.7</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -98,7 +103,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

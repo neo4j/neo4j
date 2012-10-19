@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.subprocess.SubProcess;
 
@@ -37,8 +35,12 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         MadeUpCommunicationInterface implementation = new MadeUpServerImplementation(
                 new StoreId( data.creationTime, data.storeId, data.storeVersion ) );
-        server = new MadeUpServer( implementation, 8888, data.internalProtocolVersion,
-                data.applicationProtocolVersion, ALWAYS_MATCH, data.chunkSize );
+        MadeUpServer localServer = new MadeUpServer( implementation, 8888, data.internalProtocolVersion,
+                data.applicationProtocolVersion, TxChecksumVerifier.ALWAYS_MATCH, data.chunkSize );
+        localServer.init();
+        localServer.start();
+        // The field being non null is an indication of startup, so assign last
+        server = localServer;
     }
 
     @Override
@@ -67,7 +69,15 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         if ( server != null )
         {
-            server.shutdown();
+            try
+            {
+                server.stop();
+                server.shutdown();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
         }
         new Thread()
         {

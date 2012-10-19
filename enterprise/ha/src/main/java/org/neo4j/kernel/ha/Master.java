@@ -55,30 +55,29 @@ public interface Master
     Response<LockResult> acquireRelationshipReadLock( RequestContext context, long... relationships );
 
     Response<Long> commitSingleResourceTransaction( RequestContext context,
-            String resource, TxExtractor txGetter );
+                                                    String resource, TxExtractor txGetter );
 
     Response<Void> finishTransaction( RequestContext context, boolean success );
 
-    Response<Void> pullUpdates( RequestContext context );
-
     /**
      * Gets the master id for a given txId, also a checksum for that tx.
-     * @param txId the transaction id to get the data for.
+     *
+     * @param txId      the transaction id to get the data for.
      * @param myStoreId clients store id.
      * @return the master id for a given txId, also a checksum for that tx.
      */
-    Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
-
-    Response<Void> copyStore( RequestContext context, StoreWriter writer );
-
-    Response<Void> copyTransactions( RequestContext context, String dsName,
-            long startTxId, long endTxId );
-
-    void shutdown();
+    Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
 
     Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
 
     Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
-    
+
     Response<Void> pushTransaction( RequestContext context, String resourceName, long tx );
+
+    Response<Void> pullUpdates( RequestContext context );
+
+    Response<Void> copyStore( RequestContext context, StoreWriter writer );
+
+    Response<Void> copyTransactions( RequestContext context, String dsName,
+                                     long startTxId, long endTxId );
 }

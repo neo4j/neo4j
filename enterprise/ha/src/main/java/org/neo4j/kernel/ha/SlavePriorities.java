@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.reverseOrder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 /**
@@ -43,7 +42,7 @@ public abstract class SlavePriorities
     private SlavePriorities()
     {
     }
-    
+
     /**
      * @return {@link SlavePriority} which returns the slaves in the order that
      * they are given in the {@code slaves} array.
@@ -53,9 +52,9 @@ public abstract class SlavePriorities
         return new SlavePriority()
         {
             @Override
-            public Iterator<Slave> prioritize( Slave[] slaves )
+            public Iterable<Slave> prioritize( Iterable<Slave> slaves )
             {
-                return asList( slaves ).iterator();
+                return slaves;
             }
         };
     }
@@ -63,7 +62,7 @@ public abstract class SlavePriorities
     /**
      * @return {@link SlavePriority} which returns the slaves in a round robin
      * fashion, more precisely the start index in the array increments with
-     * each {@link SlavePriority#prioritize(Slave[]) prioritization}, ordered
+     * each {@link SlavePriority#prioritize(Iterable<Slave>) prioritization}, ordered
      * by server id in ascending.
      */
     public static SlavePriority roundRobin()
@@ -73,19 +72,26 @@ public abstract class SlavePriorities
             final AtomicInteger index = new AtomicInteger();
             
             @Override
-            public Iterator<Slave> prioritize( final Slave[] slaves )
+            public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
             {
                 final List<Slave> slaveList = sortSlaves( slaves, true );
-                return new PrefetchingIterator<Slave>()
+                return new Iterable<Slave>()
                 {
-                    private int start = index.getAndIncrement()%slaves.length;
-                    private int count;
-                    
                     @Override
-                    protected Slave fetchNextOrNull()
+                    public Iterator<Slave> iterator()
                     {
-                        int id = count++;
-                        return id <= slaves.length ? slaveList.get( (start+id)%slaves.length ) : null;
+                        return new PrefetchingIterator<Slave>()
+                        {
+                            private int start = index.getAndIncrement()%slaveList.size();
+                            private int count;
+
+                            @Override
+                            protected Slave fetchNextOrNull()
+                            {
+                                int id = count++;
+                                return id <= slaveList.size() ? slaveList.get( (start+id)%slaveList.size() ) : null;
+                            }
+                        };
                     }
                 };
             }
@@ -101,21 +107,20 @@ public abstract class SlavePriorities
         return new SlavePriority()
         {
             @Override
-            public Iterator<Slave> prioritize( final Slave[] slaves )
+            public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
             {
-                return sortSlaves( slaves, false ).iterator();
+                return sortSlaves( slaves, false );
             }
         };
     }
-    
-    private static List<Slave> sortSlaves( final Slave[] slaves, boolean asc )
+
+    private static List<Slave> sortSlaves( final Iterable<Slave> slaves, boolean asc )
     {
-        ArrayList<Slave> slaveList = new ArrayList<Slave>();
-        slaveList.addAll( Arrays.asList( slaves ) );
+        ArrayList<Slave> slaveList = Iterables.addAll( new ArrayList<Slave>(), slaves );
         Collections.sort( slaveList, asc ? SERVER_ID_COMPARATOR : REVERSE_SERVER_ID_COMPARATOR );
         return slaveList;
     }
-    
+
     private static final Comparator<Slave> SERVER_ID_COMPARATOR = new Comparator<Slave>()
     {
         public int compare( Slave first, Slave second )

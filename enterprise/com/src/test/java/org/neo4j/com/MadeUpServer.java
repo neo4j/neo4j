@@ -32,18 +32,47 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     private final byte internalProtocolVersion;
     public static final int FRAME_LENGTH = 1024*1024*1;
 
-    public MadeUpServer( MadeUpCommunicationInterface requestTarget, int port, byte internalProtocolVersion,
-            byte applicationProtocolVersion, TxChecksumVerifier txVerifier, int chunkSize )
+    public MadeUpServer( MadeUpCommunicationInterface requestTarget, final int port, byte internalProtocolVersion,
+                         byte applicationProtocolVersion, TxChecksumVerifier txVerifier, final int chunkSize )
     {
-        super( requestTarget, port, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion,
-                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                txVerifier, chunkSize );
+        super( requestTarget, new Server.Configuration()
+        {
+            @Override
+            public long getOldChannelThreshold()
+            {
+                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
+            }
+
+            @Override
+            public int getMaxConcurrentTransactions()
+            {
+                return DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
+            }
+
+            @Override
+            public int getPort()
+            {
+                return port;
+            }
+
+            @Override
+            public int getChunkSize()
+            {
+                return chunkSize;
+            }
+
+            @Override
+            public String getServerAddress()
+            {
+                return null;
+            }
+        }, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion, txVerifier );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
     @Override
     protected void responseWritten( RequestType<MadeUpCommunicationInterface> type, Channel channel,
-            RequestContext context )
+                                    RequestContext context )
     {
         responseWritten = true;
     }
@@ -88,19 +117,19 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master,
-                    RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 int value1 = input.readInt();
                 int value2 = input.readInt();
                 return master.multiply( value1, value2 );
             }
         }, Protocol.INTEGER_SERIALIZER ),
-        
+
         FETCH_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
         {
             @Override
             public Response<Void> call( MadeUpCommunicationInterface master,
-                    RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 int dataSize = input.readInt();
                 return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
@@ -132,20 +161,20 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                 }
             }
         }, Protocol.VOID_SERIALIZER ),
-        
+
         THROW_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
         {
             @Override
             public Response<Integer> call( MadeUpCommunicationInterface master,
-                    RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 return master.throwException( readString( input ) );
             }
         }, Protocol.VOID_SERIALIZER );
-        
+
         private final TargetCaller masterCaller;
         private final ObjectSerializer serializer;
-        
+
         MadeUpRequestType( TargetCaller masterCaller, ObjectSerializer serializer )
         {
             this.masterCaller = masterCaller;

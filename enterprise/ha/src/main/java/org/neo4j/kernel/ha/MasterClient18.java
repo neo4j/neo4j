@@ -24,12 +24,13 @@ import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.writeString;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
-import org.neo4j.com.ConnectionLostHandler;
+import org.neo4j.com.ComSettings;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
@@ -43,6 +44,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -61,19 +63,31 @@ public class MasterClient18 extends Client<Master> implements MasterClient
      * Version 4 since 2012-07-05 */
     public static final byte PROTOCOL_VERSION = 4;
 
-    private final int lockReadTimeout;
+    private final long lockReadTimeout;
+    private Config config;
 
-    public MasterClient18( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId, ConnectionLostHandler connectionLostHandler,
-            int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
+    public MasterClient18( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
+            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler, chunkSize );
+                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 
+    public MasterClient18( URI masterUri, StringLogger stringLogger, StoreId storeId, Config config )
+    {
+        this(masterUri.getHost(), masterUri.getPort(), stringLogger, storeId,
+                config.get( HaSettings.read_timeout ), config.isSet( HaSettings.lock_read_timeout ) ?
+                config.get( HaSettings.lock_read_timeout )
+                : config.get( HaSettings.read_timeout ),
+                config.get( HaSettings.max_concurrent_channels_per_slave ),
+                config.get( ComSettings.com_chunk_size ) );
+        this.config = config;
+    }
+
     @Override
-    protected int getReadTimeout( RequestType<Master> type, int readTimeout )
+    protected long getReadTimeout( RequestType<Master> type, long readTimeout )
     {
         HaRequestType18 specificType = (HaRequestType18) type;
         if ( specificType.isLock() )

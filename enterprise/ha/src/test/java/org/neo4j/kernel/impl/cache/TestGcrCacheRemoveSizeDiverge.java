@@ -33,9 +33,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.TestPropertyDataRace;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -58,8 +58,16 @@ public class TestGcrCacheRemoveSizeDiverge
     @BeforeClass
     public static void startDb()
     {
+        try
+        {
         graphdb = new EmbeddedGraphDatabase( forTest(
-                TestPropertyDataRace.class ).graphDbDir( true ).getAbsolutePath(), stringMap( "cache_type", GCResistantCacheProvider.NAME ) );
+                TestGcrCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath(),
+                stringMap( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME ) );
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace();
+        }
     }
 
     @AfterClass
@@ -135,14 +143,14 @@ public class TestGcrCacheRemoveSizeDiverge
          * =>  cache size should be 0, but the bug makes it less than zero. Over time the cache will
          *     diverge more and more from actual cache size.
          */
-        
+
         final Node node = createNodeWithSomeRelationships();
         graphdb.getNodeManager().clearCache();
         enableBreakpoints();
         graphdb.getNodeById( node.getId() );
         final Cache<?> nodeCache = graphdb.getNodeManager().caches().iterator().next();
         assertTrue( "We didn't get a hold of the right cache object", nodeCache.toString().toLowerCase().contains( "node" ) );
-        
+
         Thread t1 = new Thread( "T1: Relationship loader" )
         {
             @Override
@@ -153,7 +161,6 @@ public class TestGcrCacheRemoveSizeDiverge
             }
         };
         t1.start();
-        
         // TODO wait for latch instead, but it seems to be a different instance than the one we countDown.
 //        latch.await();
         Thread.sleep( 2000 );

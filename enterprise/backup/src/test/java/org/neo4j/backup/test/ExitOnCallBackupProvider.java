@@ -24,6 +24,7 @@ import java.net.URI;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A funny little extension used for testing. It exits the vm it runs on with an
@@ -40,7 +41,7 @@ public class ExitOnCallBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public URI resolve( URI from, Args args )
+    public URI resolve( URI from, Args args, Logging logging )
     {
         System.exit( from.getPort() );
         return null;

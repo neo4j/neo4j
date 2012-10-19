@@ -28,6 +28,8 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,20 +40,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Pair;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.neo4j.test.server.ha.ServerCluster;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 
 public class HaServerFunctionalTest
 {
-    private static final int[] ZOOKEEPER_PORTS = { 2181, 2182 };
     @SuppressWarnings( "unchecked" )
     private static final Pair<Integer/*ha port*/, Integer/*web port*/>[] SERVER_PORTS = new Pair[] {
             Pair.of( 6001, 7474 ), Pair.of( 6002, 7475 ) };
     private static final TargetDirectory dir = TargetDirectory.forTest( HaServerFunctionalTest.class );
-    private static LocalhostZooKeeperCluster zooKeeper;
     public @Rule
     TestName testName = new TestName()
     {
@@ -66,14 +62,11 @@ public class HaServerFunctionalTest
     public static void startZooKeeper()
     {
         if ( GraphDatabaseSetting.osIsWindows() ) return;
-        zooKeeper = new LocalhostZooKeeperCluster( dir, ZOOKEEPER_PORTS );
     }
 
     @AfterClass
     public static void stopZooKeeper() throws IOException
     {
-        if ( zooKeeper != null ) zooKeeper.shutdown();
-        zooKeeper = null;
         dir.cleanup();
     }
 
@@ -90,14 +83,14 @@ public class HaServerFunctionalTest
     public void canStartUpServerCluster() throws Exception
     {
         if ( GraphDatabaseSetting.osIsWindows() ) return;
-        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
     }
 
     @Test
     public void canWriteToOneServerInTheClusterAndReadFromAnother() throws Exception
     {
         if ( GraphDatabaseSetting.osIsWindows() ) return;
-        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
 
         put( property( node( base, 0 ), "message" ), "hello world" );
@@ -110,7 +103,7 @@ public class HaServerFunctionalTest
     public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer() throws Exception
     {
         if ( GraphDatabaseSetting.osIsWindows() ) return;
-        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
 
         put( property( node( base, 0 ), "message" ), "hello world" );

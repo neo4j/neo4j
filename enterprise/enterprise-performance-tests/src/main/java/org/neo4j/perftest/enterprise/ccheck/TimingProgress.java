@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.helpers.progress.Indicator;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 
 public class TimingProgress extends ProgressMonitorFactory
 {

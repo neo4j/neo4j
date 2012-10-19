@@ -21,42 +21,23 @@
 package org.neo4j.server.enterprise;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.JobScheduler;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 public class TestHaDatabaseWithRrd
 {
-    private LocalhostZooKeeperCluster zoo;
-    
-    @Before
-    public void doBefore() throws Exception
-    {
-        zoo = standardZoo( getClass() );
-    }
-
-    @After
-    public void doAfter() throws Exception
-    {
-        zoo.shutdown();
-    }
-    
     @Test
     @Ignore
     public void startHaGraphDatabaseWithRrd() throws Exception
     {
 //        String dir = TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath();
 //        Map<String, String> config = stringMap(
-//                HaSettings.server_id.name(), "1",
-//                HaSettings.coordinators.name(), zoo.getConnectionString() );
+//                HaSettings.server_id.name(), "1" );
 //        
 //        Configuration serverConfig = new MapConfiguration( stringMap(
 //                Configurator.RRDB_LOCATION_PROPERTY_KEY, new File( dir, "rrd" ).getAbsolutePath() ) );

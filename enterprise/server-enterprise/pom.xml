@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>35</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -29,12 +30,11 @@
     <testWithExternalServer>false</testWithExternalServer>
 
     <!-- For cucumber "feature" tests -->
-    <cukeArgs />
+    <cukeArgs/>
 
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
@@ -50,17 +50,17 @@
       <name>GNU Affero General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
       <comments>The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
-third parties and that license is included below.
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+        third parties and that license is included below.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-LICENSE Version 3 and you may use the Software solely pursuant to the
-terms of the relevant Commercial Agreement.
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+        LICENSE Version 3 and you may use the Software solely pursuant to the
+        terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
@@ -69,26 +69,26 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server-advanced</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
-      <version>1.9-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -96,7 +96,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <type>test-jar</type>
     </dependency>
 
@@ -144,11 +144,11 @@ terms of the relevant Commercial Agreement.
       <version>${webdriver.version}</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>1.6.1</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.6.1</version>
     </dependency>
 
     <dependency>
@@ -161,7 +161,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -428,12 +428,12 @@ terms of the relevant Commercial Agreement.
 
             <configuration>
               <target>
-                <property name="classpath" refid="maven.runtime.classpath" />
+                <property name="classpath" refid="maven.runtime.classpath"/>
                 <exec executable="java">
-                  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
-                  <arg line="-classpath" />
-                  <arg line="${basedir}/src/main/resources:${classpath}" />
-                  <arg line="${neo4j-server.mainClass}" />
+                  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties"/>
+                  <arg line="-classpath"/>
+                  <arg line="${basedir}/src/main/resources:${classpath}"/>
+                  <arg line="${neo4j-server.mainClass}"/>
                 </exec>
               </target>
             </configuration>
@@ -455,7 +455,7 @@ terms of the relevant Commercial Agreement.
             <version>1.0-SNAPSHOT</version>
             <executions>
               <execution>
-              	<id>build-webadmin</id>
+                <id>build-webadmin</id>
                 <goals>
                   <goal>compile-haml</goal>
                   <goal>compile-coffeescript</goal>
@@ -463,7 +463,7 @@ terms of the relevant Commercial Agreement.
                 </goals>
               </execution>
             </executions>
-            
+
             <configuration>
               <module>webadmin</module>
               <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
@@ -474,7 +474,7 @@ terms of the relevant Commercial Agreement.
           </plugin>
         </plugins>
       </build>
-   </profile>
+    </profile>
 
     <!-- Firefox is default implementation, set in properties at the top of this file. -->
     <profile>

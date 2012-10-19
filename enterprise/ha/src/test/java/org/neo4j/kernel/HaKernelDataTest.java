@@ -17,24 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
 import static org.junit.Assert.assertSame;
 
-import java.util.HashMap;
-
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.UnknownReevaluationCause;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
-@Ignore("We want to tie the thing owning the instanceId to the HA db, but the extensions need access to the " +
-                "internal db through the KernelData object while starting the internal db, " +
-                "making for an impossible circular reference")
 public class HaKernelDataTest
 {
     @Test
@@ -48,37 +43,17 @@ public class HaKernelDataTest
         assertSame( kernelData.graphDatabase(), haGraphDb );
     }
 
-    @Test
-    public void shouldNotInstantiateNewKernelDataOnInternalRestart() throws Exception
-    {
-        // given
-        HighlyAvailableGraphDatabase haGraphDb = ha.getResource();
-        KernelData kernelData = haGraphDb.getKernelData();
-
-        // when -- force internal restart
-        haGraphDb.internalShutdown( UnknownReevaluationCause.fromDescription( "Test" ), false );
-        haGraphDb.reevaluateMyself();
-
-        // then
-        assertSame( kernelData, haGraphDb.getKernelData() );
-    }
-
     @Rule
     public final ManagedResource<HighlyAvailableGraphDatabase> ha = new ManagedResource<HighlyAvailableGraphDatabase>()
     {
         @Override
         protected HighlyAvailableGraphDatabase createResource( TargetDirectory.TestDirectory dir ) throws Exception
         {
-            HashMap<String, String> config = new HashMap<String, String>();
-            config.put( HaSettings.server_id.name(), "1" );
-            config.put( HaSettings.coordinators.name(), zkConnection() );
-            return new HighlyAvailableGraphDatabase( dir.directory().getAbsolutePath(), config );
+            return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                    newHighlyAvailableDatabaseBuilder( dir.directory().getAbsolutePath() )
+                    .setConfig( HaSettings.server_id, "1" ).newGraphDatabase();
         }
 
-        private String zkConnection() throws Exception
-        {
-            return LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection().getConnectionString();
-        }
 
         @Override
         protected void disposeResource( HighlyAvailableGraphDatabase resource )

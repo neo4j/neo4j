@@ -28,20 +28,20 @@ import static org.neo4j.kernel.ha.SlavePriorities.roundRobin;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 import org.junit.Test;
+import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -51,20 +51,19 @@ import org.neo4j.test.TargetDirectory;
 
 public class TestMasterCommittingAtSlave
 {
-    FakeSlave[] slaves;
-    XaDataSource dataSource;
-    Broker broker;
-    FakeStringLogger log;
-    
+    private Iterable<Slave> slaves;
+    private XaDataSource dataSource;
+    private FakeStringLogger log;
+
     @Test
     public void commitSuccessfullyToTheFirstOne() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 3, 1, givenOrder() );
         generator.committed( dataSource, 0, 2, null );
-        assertCalls( slaves[0], 2 );
+        assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void commitACoupleOfTransactionsSuccessfully() throws Exception
     {
@@ -72,20 +71,21 @@ public class TestMasterCommittingAtSlave
         generator.committed( dataSource, 0, 2, null );
         generator.committed( dataSource, 0, 3, null );
         generator.committed( dataSource, 0, 4, null );
-        assertCalls( slaves[0], 2, 3, 4 );
+        assertCalls( (FakeSlave) slaves.iterator().next(), 2, 3, 4 );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 3, 1, givenOrder(), true );
         generator.committed( dataSource, 0, 2, null );
-        assertCalls( slaves[0] );
-        assertCalls( slaves[1], 2 );
+        Iterator<Slave> slaveIt = slaves.iterator();
+        assertCalls( (FakeSlave) slaveIt.next() );
+        assertCalls( (FakeSlave) slaveIt.next(), 2 );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void commitSuccessfullyAtThreeSlaves() throws Exception
     {
@@ -93,114 +93,137 @@ public class TestMasterCommittingAtSlave
         generator.committed( dataSource, 0, 2, null );
         generator.committed( dataSource, 0, 3, 1 );
         generator.committed( dataSource, 0, 4, 3 );
-        
-        assertCalls( slaves[0], 2, 3, 4 );
-        assertCalls( slaves[1], 2, 4 );
-        assertCalls( slaves[2], 2, 3 );
-        assertCalls( slaves[3] );
-        assertCalls( slaves[4] );
-        
+
+        Iterator<Slave> slaveIt = slaves.iterator();
+
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 4 );
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 3 );
+        assertCalls( (FakeSlave) slaveIt.next() );
+        assertCalls( (FakeSlave) slaveIt.next() );
+
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 5, 3, givenOrder(), false, true, true );
         generator.committed( dataSource, 0, 2, null );
-        assertCalls( slaves[0], 2 );
-        assertCalls( slaves[3], 2 );
-        assertCalls( slaves[4], 2 );
+        Iterator<Slave> slaveIt = slaves.iterator();
+        assertCalls( (FakeSlave) slaveIt.next(), 2 );
+        slaveIt.next();
+        slaveIt.next();
+        assertCalls( (FakeSlave) slaveIt.next(), 2 );
+        assertCalls( (FakeSlave) slaveIt.next(), 2 );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void roundRobinSingleSlave() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
+        {
             generator.committed( dataSource, 0, tx, null );
-        
-        assertCalls( slaves[0], 2, 5 );
-        assertCalls( slaves[1], 3, 6 );
-        assertCalls( slaves[2], 4 );
+        }
+        Iterator<Slave> slaveIt = slaves.iterator();
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 5 );
+        assertCalls( (FakeSlave) slaveIt.next(), 3, 6 );
+        assertCalls( (FakeSlave) slaveIt.next(), 4 );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void roundRobinSomeFailing() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
+        {
             generator.committed( dataSource, 0, tx, null );
-        
+        }
+
         /* SLAVE |    TX
-         *   0   | 2     5 6
-         * F 1   |
-         *   2   | 2 3 4   6
-         *   3   |   3 4 5
-         */
-        
-        assertCalls( slaves[0], 2, 5, 6 );
-        assertCalls( slaves[2], 2, 3, 4, 6 );
-        assertCalls( slaves[3], 3, 4, 5 );
+        *   0   | 2     5 6
+        * F 1   |
+        *   2   | 2 3 4   6
+        *   3   |   3 4 5
+        */
+        Iterator<Slave> slaveIt = slaves.iterator();
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 5, 6 );
+        slaveIt.next();
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4, 6 );
+        assertCalls( (FakeSlave) slaveIt.next(), 3, 4, 5 );
         assertNoFailureLogs();
     }
-    
+
     @Test
     public void notEnoughSlavesSuccessful() throws Exception
     {
         MasterTxIdGenerator generator = newGenerator( 3, 2, givenOrder(), true, true );
         generator.committed( dataSource, 0, 2, null );
-        assertCalls( slaves[2], 2 );
+        Iterator<Slave> slaveIt = slaves.iterator();
+        slaveIt.next();
+        slaveIt.next();
+        assertCalls( (FakeSlave) slaveIt.next(), 2 );
         assertFailureLogs();
     }
-    
+
     @Test
     public void testFixedPriorityStrategy()
     {
+        int[] serverIds = new int[]{55, 101, 66};
         SlavePriority fixed = SlavePriorities.fixed();
-        Slave[] slaves = new Slave[3];
-        slaves[0] = new FakeSlave( false, 55 );
-        slaves[1] = new FakeSlave( false, 101 );
-        slaves[2] = new FakeSlave( false, 66 );
-        Iterator<Slave> sortedSlaves = fixed.prioritize( slaves );
-        assertEquals( slaves[1], sortedSlaves.next() );
-        assertEquals( slaves[2], sortedSlaves.next() );
-        assertEquals( slaves[0], sortedSlaves.next() );
+        ArrayList<Slave> slaves = new ArrayList<Slave>( 3 );
+        slaves.add( new FakeSlave( false, serverIds[0] ) );
+        slaves.add( new FakeSlave( false, serverIds[1] ) );
+        slaves.add( new FakeSlave( false, serverIds[2] ) );
+        Iterator<Slave> sortedSlaves = fixed.prioritize( slaves ).iterator();
+        assertEquals( serverIds[1], sortedSlaves.next().getServerId() );
+        assertEquals( serverIds[2], sortedSlaves.next().getServerId() );
+        assertEquals( serverIds[0], sortedSlaves.next().getServerId() );
         assertTrue( !sortedSlaves.hasNext() );
     }
-    
+
     private void assertNoFailureLogs()
     {
         assertFalse( "Errors:" + log.errors.toString(), log.anyMessageLogged );
     }
-    
+
     private void assertFailureLogs()
     {
         assertTrue( log.anyMessageLogged );
     }
-    
+
     private void assertCalls( FakeSlave slave, long... txs )
     {
         for ( long tx : txs )
         {
             Long slaveTx = slave.popCalledTx();
             assertNotNull( slaveTx );
-            assertEquals( (Long)tx, slaveTx );
+            assertEquals( (Long) tx, slaveTx );
         }
         assertFalse( slave.moreTxs() );
     }
 
-    private MasterTxIdGenerator newGenerator( int slaveCount, int replication, SlavePriority priority,
-            boolean... failingSlaves ) throws Exception
+    private MasterTxIdGenerator newGenerator( int slaveCount, int replication, SlavePriority slavePriority,
+                                              boolean... failingSlaves ) throws Exception
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
         dataSource = new FakeDataSource();
-        
-        broker = new FakeBroker( slaves );
+
         log = new FakeStringLogger();
-        MasterTxIdGenerator result = new MasterTxIdGenerator( broker, replication, priority, log );
+        Config config = new Config( MapUtil.stringMap(
+                HaSettings.tx_push_factor.name(), "" + replication ) );
+        MasterTxIdGenerator result = new MasterTxIdGenerator( MasterTxIdGenerator.from( config, slavePriority ),
+                log, new Slaves()
+        {
+            @Override
+            public Iterable<Slave> getSlaves()
+            {
+                return slaves;
+            }
+        } );
         // Life
         try
         {
@@ -213,20 +236,22 @@ public class TestMasterCommittingAtSlave
         }
         return result;
     }
-    
-    private FakeSlave[] instantiateSlaves( int count, boolean[] failingSlaves )
+
+    private Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
     {
-        Collection<FakeSlave> slaves = new ArrayList<FakeSlave>();
+        List<Slave> slaves = new ArrayList<Slave>();
         for ( int i = 0; i < count; i++ )
+        {
             slaves.add( new FakeSlave( i < failingSlaves.length ? failingSlaves[i] : false, i ) );
-        return slaves.toArray( new FakeSlave[slaves.size()] );
+        }
+        return slaves;
     }
-    
+
     private static class FakeDataSource extends XaDataSource
     {
-        private static final byte[] BRANCH = new byte[] { 0, 1, 2 };
+        private static final byte[] BRANCH = new byte[]{0, 1, 2};
         private static final String NAME = "fake";
-        
+
         private final String dir;
 
         FakeDataSource()
@@ -234,7 +259,7 @@ public class TestMasterCommittingAtSlave
             super( BRANCH, NAME );
             this.dir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
         }
-        
+
         @Override
         public XaConnection getXaConnection()
         {
@@ -242,97 +267,61 @@ public class TestMasterCommittingAtSlave
         }
 
         @Override
-        public void close()
-        {
-        }
-        
-        @Override
         public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
             return LogExtractor.from( dir, startTxId );
         }
+
+        @Override
+        public void init() throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
     }
 
-    private static class FakeBroker extends AbstractBroker
-    {
-        private final Slave[] slaves;
-
-        FakeBroker( Slave[] slaves )
-        {
-            super( null );
-            this.slaves = slaves;
-        }
-        
-        @Override
-        public int getMyMachineId()
-        {
-            return 0;
-        }
-        
-        @Override
-        public Slave[] getSlaves()
-        {
-            return slaves;
-        }
-
-        @Override
-        public Pair<Master, Machine> getMaster()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Pair<Master, Machine> getMasterReally( boolean allowChange )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean iAmMaster()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object instantiateMasterServer( GraphDatabaseAPI graphDb )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object instantiateSlaveServer( GraphDatabaseAPI graphDb, SlaveDatabaseOperations ops )
-        {
-            throw new UnsupportedOperationException();
-        }
-    }
-    
     private static class FakeSlave implements Slave
     {
         private volatile Queue<Long> calledWithTxId = new LinkedList<Long>();
         private final boolean failing;
         private final int serverId;
-        
+
         FakeSlave( boolean failing, int serverId )
         {
             this.failing = failing;
             this.serverId = serverId;
         }
-        
+
         @Override
         public Response<Void> pullUpdates( String resource, long txId )
         {
             if ( failing )
-                throw new RuntimeException( "Told to fail" );
-            
+            {
+                throw new ComException( "Told to fail" );
+            }
+
             calledWithTxId.add( txId );
             return new Response<Void>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
         }
-        
+
         Long popCalledTx()
         {
             return calledWithTxId.poll();
         }
-        
+
         boolean moreTxs()
         {
             return !calledWithTxId.isEmpty();
@@ -343,19 +332,19 @@ public class TestMasterCommittingAtSlave
         {
             return serverId;
         }
-        
+
         @Override
         public String toString()
         {
             return "FakeSlave[" + serverId + "]";
         }
     }
-    
+
     private static class FakeStringLogger extends StringLogger
     {
         private volatile boolean anyMessageLogged;
         private StringBuilder errors = new StringBuilder();
-        
+
         @Override
         public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
         {
@@ -394,7 +383,7 @@ public class TestMasterCommittingAtSlave
         public void close()
         {
         }
-        
+
         @Override
         protected void logLine( String line )
         {

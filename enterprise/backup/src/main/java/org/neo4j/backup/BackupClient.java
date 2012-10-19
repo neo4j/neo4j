@@ -21,7 +21,6 @@ package org.neo4j.backup;
 
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
 import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
-import static org.neo4j.com.ConnectionLostHandler.NO_ACTION;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
@@ -42,7 +41,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     {
         super( hostNameOrIp, port, logger, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, NO_ACTION, FRAME_LENGTH );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH );
     }
 
     public Response<Void> fullBackup( StoreWriter storeWriter )

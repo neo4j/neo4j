@@ -75,8 +75,6 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
     {
         String backupDirectory = "target/var/backup-db";
         FileUtils.deleteRecursively( new File( backupDirectory ) );
-        stopSubprocesses();
-        startSubprocesses();
         OnlineBackup.from( "localhost" ).full( backupDirectory );
         for ( BreakPoint bp : breakpoints( 0 ) )
             bp.enable();
@@ -280,7 +278,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
                 protected void shutdown( GraphDatabaseService graphdb, boolean normal )
                 {
                     if ( normal ) super.shutdown( graphdb, normal );
-                };
+                }
             };
         }
         catch ( IOException e )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.io.IOException;
+
 import org.jboss.netty.channel.Channel;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
@@ -35,12 +37,42 @@ class BackupServer extends Server<TheBackupInterface, Object>
     private final BackupRequestType[] contexts = BackupRequestType.values();
     static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     static final int FRAME_LENGTH = Protocol.MEGA*4;
-    
-    public BackupServer( TheBackupInterface requestTarget, int port, StringLogger logger )
+
+    public BackupServer( TheBackupInterface requestTarget, final int port, StringLogger logger ) throws IOException
     {
-        super( requestTarget, port, logger, FRAME_LENGTH, PROTOCOL_VERSION,
-                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                TxChecksumVerifier.ALWAYS_MATCH, FRAME_LENGTH );
+        super( requestTarget, new Configuration()
+        {
+            @Override
+            public long getOldChannelThreshold()
+            {
+                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS*1000;
+            }
+
+            @Override
+            public int getMaxConcurrentTransactions()
+            {
+                return DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
+            }
+
+            @Override
+            public int getPort()
+            {
+                return port;
+            }
+
+            @Override
+            public int getChunkSize()
+            {
+                return FRAME_LENGTH;
+            }
+
+            @Override
+            public String getServerAddress()
+            {
+                return null;
+            }
+        }, logger, FRAME_LENGTH, PROTOCOL_VERSION,
+                TxChecksumVerifier.ALWAYS_MATCH );
     }
 
     @Override

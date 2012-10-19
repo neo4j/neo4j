@@ -25,107 +25,80 @@ import static org.neo4j.backup.BackupEmbeddedIT.BACKUP_PATH;
 import static org.neo4j.backup.BackupEmbeddedIT.PATH;
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.KernelExtension;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+import org.neo4j.test.ha.ClusterManager;
 
 public class BackupHaIT
 {
-    private LocalhostZooKeeperCluster zk;
-    private List<GraphDatabaseService> instances;
     private DbRepresentation representation;
-    
-    public void startCluster( String clusterName ) throws Exception
+    private ClusterManager clusterManager;
+
+    @Before
+    public void startCluster() throws Throwable
     {
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
 
-        zk = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-        instances = new ArrayList<GraphDatabaseService>();
-        for ( int i = 0; i < 3; i++ )
+        clusterManager = new ClusterManager( getClass().getResource( "/threeinstances.xml" ).toURI(),
+                new File( PATH ), MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
+                GraphDatabaseSetting.TRUE ) )
         {
-            String storeDir = new File( PATH, "" + i ).getAbsolutePath();
-            Map<String, String> config = stringMap(
-                HaSettings.server_id.name(), "" + i,
-                    HaSettings.server.name(), "localhost:" + (6666+i),
-                    HaSettings.coordinators.name(), zk.getConnectionString(),
-                    OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.TRUE,
-                    OnlineBackupSettings.online_backup_port.name(), ""+(4444+i) );
-            if ( clusterName != null )
-                config.put( HaSettings.cluster_name.name(), clusterName );
-            GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config,
-                    Service.load( IndexProvider.class ), Service.load( KernelExtension.class ), Service.load( CacheProvider.class ) );
-            instances.add( instance );
-        }
-        
-        // Really doesn't matter which instance
-        representation = createSomeData( instances.get( 1 ) );
-    }
-    
-    @After
-    public void after() throws Exception
-    {
-        if( instances != null ) 
-        {
-            for ( GraphDatabaseService instance : instances )
+            @Override
+            protected void config( GraphDatabaseBuilder builder, int serverCount )
             {
-                instance.shutdown();
+                builder.setConfig( OnlineBackupSettings.online_backup_port, (4444 + serverCount) + "" );
             }
-        }
+        };
+        clusterManager.start();
+
+        // Really doesn't matter which instance
+        representation = createSomeData( clusterManager.getMaster( "neo4j.ha" ) );
     }
-    
-    @Test
-    public void makeSureBackupCanBePerformedFromClusterWithDefaultName() throws Exception
+
+    @After
+    public void stopCluster() throws Throwable
     {
-        testBackupFromCluster( null, null );
+        clusterManager.stop();
     }
 
     @Test
-    public void makeSureBackupCanBePerformedFromClusterWithCustomName() throws Exception
+    public void makeSureBackupCanBePerformedFromClusterWithDefaultName() throws Throwable
     {
-        String clusterName = "local.jvm.cluster";
-        testBackupFromCluster( clusterName, clusterName );
+        testBackupFromCluster( null );
     }
-    
+
     @Test
-    public void makeSureBackupCannotBePerformedFromNonExistentCluster() throws Exception
+    public void makeSureBackupCanBePerformedFromWronglyNamedCluster() throws Throwable
     {
-        String clusterName = "local.jvm.cluster";
-        startCluster( clusterName );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( true, "ha://localhost:2181", BACKUP_PATH, null ) ) );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                backupArguments( true, "ha://localhost:5001", BACKUP_PATH, "non.existent" ) ) );
     }
-    
-    private void testBackupFromCluster( String clusterName, String askForCluster ) throws Exception
+
+    private void testBackupFromCluster( String askForCluster ) throws Throwable
     {
-        startCluster( clusterName );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( true, "ha://localhost:2181", BACKUP_PATH, clusterName ) ) );
+                backupArguments( true, "ha://127.0.0.1:5001", BACKUP_PATH, askForCluster ) ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
-        DbRepresentation newRepresentation = createSomeData( instances.get( 2 ) );
+        DbRepresentation newRepresentation = createSomeData( clusterManager.getAnySlave( askForCluster == null ?
+                "neo4j.ha" : askForCluster ) );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( false, "ha://localhost:2182", BACKUP_PATH, clusterName ) ) );
+                backupArguments( false, "ha://127.0.0.1:5002", BACKUP_PATH, askForCluster ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
-    
+
     private String[] backupArguments( boolean trueForFull, String from, String to, String clusterName )
     {
         List<String> args = new ArrayList<String>();

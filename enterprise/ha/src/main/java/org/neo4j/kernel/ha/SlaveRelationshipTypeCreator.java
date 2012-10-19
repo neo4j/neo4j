@@ -21,36 +21,35 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.com.Response;
+import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.Master;
+import org.neo4j.kernel.ha.RequestContextFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
 {
-    private final Broker broker;
-    private final SlaveDatabaseOperations databaseOperations;
+    private Master master;
+    private final RequestContextFactory requestContextFactory;
+    private final HaXaDataSourceManager xaDsm;
 
-    public SlaveRelationshipTypeCreator( Broker broker, SlaveDatabaseOperations databaseOperations )
+    public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory,
+                                         HaXaDataSourceManager xaDsm )
     {
-        this.broker = broker;
-        this.databaseOperations = databaseOperations;
+        this.master = master;
+        this.requestContextFactory = requestContextFactory;
+        this.xaDsm = xaDsm;
     }
 
+    @Override
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
-        try
-        {
-            int eventIdentifier = ((TxManager) txManager).getEventIdentifier();
-            return databaseOperations.receive( broker.getMaster().first().createRelationshipType(
-                    databaseOperations.getSlaveContext( eventIdentifier ), name ) );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
-        }
+        Response<Integer> response = master.createRelationshipType( requestContextFactory.newRequestContext(), name );
+        xaDsm.applyTransactions( response );
+        return response.response().intValue();
     }
 }

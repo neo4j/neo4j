@@ -24,18 +24,17 @@ import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -53,45 +52,40 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
  * datasources. Since lucene-index is applied first, the slave will observe the node missing from the index but
  * existing in the neostore. If this was an autoindex, it would appear that the node exists but is not indexed.
  */
-@ForeignBreakpoints( {
-        @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager", method="applyCommittedTransaction", on = BreakPoint.Event.ENTRY )} )
-@RunWith( SubProcessTestRunner.class )
+@ForeignBreakpoints({
+        @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager",
+                method = "applyCommittedTransaction", on = BreakPoint.Event.ENTRY)})
+@RunWith(SubProcessTestRunner.class)
 @Ignore
 public class TestPartialPullUpdates
 {
-    private static LocalhostZooKeeperCluster zoo;
     private HighlyAvailableGraphDatabase master;
     private HighlyAvailableGraphDatabase slave1;
-
-    @BeforeClass
-    public static void startZoo() throws Exception
-    {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-    }
 
     @Before
     public void setup() throws Exception
     {
-        master = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+        master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
-                        "master", true ).getAbsolutePath()  ).
-                setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
+                        "master", true ).getAbsolutePath() ).
                 setConfig( HaSettings.server_id, "1" ).
+                setConfig( HaSettings.cluster_server, "127.0.0.1:5001" ).
                 setConfig( HaSettings.tx_push_factor, "0" ).
                 newGraphDatabase();
         Transaction tx = master.beginTx();
         Node node = master.createNode();
         node.setProperty( "uuid", "123" );
-        master.index().forNodes( "auto" ).add(node, "uuid", "123" );
+        master.index().forNodes( "auto" ).add( node, "uuid", "123" );
         tx.success();
         tx.finish();
 
-        slave1 = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
+        slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
                         "slave1", true ).getAbsolutePath() ).
-                setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
                 setConfig( HaSettings.server_id, "2" ).
-                setConfig( HaSettings.server, "localhost:6362").
+                setConfig( HaSettings.cluster_server, "127.0.0.1:5002" ).
+                setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" ).
+                setConfig( HaSettings.ha_server, "localhost:6362" ).
                 setConfig( HaSettings.pull_interval, "0" ).
                 newGraphDatabase();
     }
@@ -104,7 +98,7 @@ public class TestPartialPullUpdates
     }
 
     @Test
-    @EnabledBreakpoints( {"applyCommittedTransaction"} )
+    @EnabledBreakpoints({"applyCommittedTransaction"})
     public void doTheDamnTest() throws Exception
     {
         // Ensure the slave has got the store - simple sanity check
@@ -119,18 +113,18 @@ public class TestPartialPullUpdates
         tx.finish();
 
         // Do the update pulling in a different thread so we can kill it.
-        Thread t = new Thread(new Runnable()
+        Thread t = new Thread( new Runnable()
         {
             public void run()
             {
-                slave1.pullUpdates();
+                slave1.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             }
-        });
+        } );
         t.start();
         t.join();
 
         // It should either be in both the graph and the index or in neither.
-        if (slave1.index().forNodes( "auto" ).get( "uuid","123" ).hasNext())
+        if ( slave1.index().forNodes( "auto" ).get( "uuid", "123" ).hasNext() )
         {
             System.out.println( "it was in the index" );
             assertEquals( "123", slave1.getNodeById( nodeId ).getProperty( "uuid" ) );
@@ -143,7 +137,7 @@ public class TestPartialPullUpdates
                 slave1.getNodeById( nodeId );
                 fail( "Node should not be there" );
             }
-            catch( NotFoundException e )
+            catch ( NotFoundException e )
             {
                 // good
             }
@@ -156,10 +150,10 @@ public class TestPartialPullUpdates
      * second. Since it is in a loop, we cannot build a stack that shows when to kill it. The counter solution is
      * relatively safe and very much simple.
      */
-    @BreakpointHandler( "applyCommittedTransaction" )
+    @BreakpointHandler("applyCommittedTransaction")
     public static void onApplyCommittedHandler( BreakPoint self, DebugInterface di )
     {
-        if (self.invocationCount() < 2)
+        if ( self.invocationCount() < 2 )
         {
             di.thread().resume();
         }

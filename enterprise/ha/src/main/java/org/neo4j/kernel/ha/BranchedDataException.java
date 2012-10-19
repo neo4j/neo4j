@@ -26,7 +26,7 @@ package org.neo4j.kernel.ha;
  * 
  * @author Mattias Persson
  */
-public class BranchedDataException extends IllegalStateException
+public class BranchedDataException extends StoreUnableToParticipateInClusterException
 {
     public BranchedDataException()
     {

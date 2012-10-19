@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
+import org.neo4j.kernel.ha.NeoStoreUtil;
 import org.neo4j.shell.ShellSettings;
 
 public class StartHaDb
@@ -37,16 +37,16 @@ public class StartHaDb
 
     static final String ME = "172.16.1.242:5559";
     static final int MY_MACHINE_ID = 2;
-        
-    static final String[] ZOO_KEEPER_SERVERS = new String[] {
-        "172.16.2.33:2181",
-        "172.16.1.242:2181",
-        "172.16.4.14:2181",
+
+    static final String[] ZOO_KEEPER_SERVERS = new String[]{
+            "172.16.2.33:2181",
+            "172.16.1.242:2181",
+            "172.16.4.14:2181",
     };
 
     public static void main( String[] args ) throws Exception
     {
-        NeoStoreUtil store = new NeoStoreUtil( PATH.getPath() );
+        NeoStoreUtil store = new NeoStoreUtil( PATH );
         System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         GraphDatabaseService db = startDb();
@@ -58,15 +58,14 @@ public class StartHaDb
 
     private static GraphDatabaseService startDb() throws IOException
     {
-        return new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
-            setConfig( HaSettings.server_id, ""+MY_MACHINE_ID ).
-            setConfig( HaSettings.coordinators, join( ZOO_KEEPER_SERVERS, "," ) ).
-            setConfig( HaSettings.server, ME ).
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
-            setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+        return new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
+                setConfig( HaSettings.server_id, "" + MY_MACHINE_ID ).
+                setConfig( HaSettings.ha_server, ME ).
+                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+                newGraphDatabase();
     }
-    
+
 //    private static void doStuff( GraphDatabaseService db ) throws IOException
 //    {
 //        RelationshipType refType = DynamicRelationshipType.withName( "MATTIAS_REF" );

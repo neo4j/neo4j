@@ -19,7 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.ConnectionLostHandler.NO_ACTION;
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.Protocol.writeString;
 import static org.neo4j.com.RequestContext.EMPTY;
@@ -45,7 +44,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         super( "localhost", port, StringLogger.DEV_NULL, storeIdToExpect, FRAME_LENGTH,
                 applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, NO_ACTION, chunkSize );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

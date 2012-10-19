@@ -27,7 +27,7 @@ import org.neo4j.com.Server;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.shell.ShellSettings;
 
@@ -35,7 +35,7 @@ public class ManualTest4
 {
     public static final File PATH = new File( "var/man/db4" );
     static final String ME = "127.0.0.1:5562";
-        
+
     public static void main( String[] args ) throws Exception
     {
         GraphDatabaseService db = startDb();
@@ -46,15 +46,14 @@ public class ManualTest4
 
     private static GraphDatabaseService startDb() throws IOException
     {
-        return new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
+        return new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
                 setConfig( HaSettings.server_id, "4" ).
-                setConfig( HaSettings.coordinators, "127.0.0.1:2181,127.0.0.1:2182" ).
-                setConfig( HaSettings.server, ME ).
+                setConfig( HaSettings.ha_server, ME ).
                 setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
                 setConfig( ShellSettings.remote_shell_port, "1340" ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
-                setConfig( OnlineBackupSettings.online_backup_port, ""+Server.DEFAULT_BACKUP_PORT+3 ).
+                setConfig( OnlineBackupSettings.online_backup_port, "" + Server.DEFAULT_BACKUP_PORT + 3 ).
                 newGraphDatabase();
     }
 }

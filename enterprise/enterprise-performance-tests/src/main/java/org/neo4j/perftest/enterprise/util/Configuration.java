@@ -19,13 +19,13 @@
  */
 package org.neo4j.perftest.enterprise.util;
 
-import static java.lang.reflect.Modifier.isStatic;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.lang.reflect.Modifier.isStatic;
 
 public abstract class Configuration
 {

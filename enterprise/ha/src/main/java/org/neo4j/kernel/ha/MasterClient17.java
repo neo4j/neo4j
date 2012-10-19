@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
-import org.neo4j.com.ConnectionLostHandler;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
@@ -62,17 +61,17 @@ public class MasterClient17 extends Client<Master> implements MasterClient
 
     private final int lockReadTimeout;
 
-    public MasterClient17( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId, ConnectionLostHandler connectionLostHandler,
+    public MasterClient17( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), connectionLostHandler, chunkSize );
+                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 
     @Override
-    protected int getReadTimeout( RequestType<Master> type, int readTimeout )
+    protected long getReadTimeout( RequestType<Master> type, long readTimeout )
     {
         return ( (HaRequestType17) type ).isLock() ? lockReadTimeout : readTimeout;
     }

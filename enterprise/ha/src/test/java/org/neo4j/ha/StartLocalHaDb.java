@@ -21,7 +21,8 @@ package org.neo4j.ha;
 
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
 
 @Ignore
 public class StartLocalHaDb
@@ -30,9 +31,10 @@ public class StartLocalHaDb
     {
         String path = args[0];
         String configFile = args[1];
-        final GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().
+        final GraphDatabaseService graphDb = new HighlyAvailableGraphDatabaseFactory().
             newHighlyAvailableDatabaseBuilder( path ).
-            loadPropertiesFromFile( configFile ).
+                setConfig(HaSettings.server_id, "1").
+                loadPropertiesFromFile( configFile ).
             newGraphDatabase();
         Runtime.getRuntime().addShutdownHook( new Thread()
         {

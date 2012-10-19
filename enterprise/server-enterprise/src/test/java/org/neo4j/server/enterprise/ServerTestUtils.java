@@ -29,23 +29,26 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.server.database.GraphDatabaseFactory;
 
 public class ServerTestUtils
 {
-    public static final GraphDatabaseFactory HA_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
-    {
-        @Override
-        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                Map<String, String> databaseProperties )
-        {
-            // Assume ZK cluster started outside
-            return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
-        }
-    };
-    
+//    public static final GraphDatabaseFactory HA_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
+//    {
+//        @Override
+//        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
+//                Map<String, String> databaseProperties )
+//        {
+//            GraphDatabaseBuilder builder = new EnterpriseGraphDatabaseFactory().
+//                    newHighlyAvailableDatabaseBuilder( databaseStoreDirectory );
+//            for (Map.Entry<String, String> config : databaseProperties.entrySet())
+//            {
+//                builder.setConfig( config.getKey(), config.getValue() );
+//
+//            }
+//            return (GraphDatabaseAPI) builder.newGraphDatabase();
+//        }
+//    };
+//
     public static File createTempDir() throws IOException
     {
         File d = File.createTempFile( "neo4j-test", "dir" );

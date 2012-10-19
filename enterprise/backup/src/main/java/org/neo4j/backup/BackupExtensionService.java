@@ -23,6 +23,7 @@ import java.net.URI;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * <p>
@@ -65,5 +66,5 @@ public abstract class BackupExtensionService extends Service
      * @return A URI where the scheme is the service's name and there exist host
      *         and port parts that point to a backup source.
      */
-    public abstract URI resolve( URI from, Args arguments );
+    public abstract URI resolve( URI from, Args arguments, Logging logging );
 }

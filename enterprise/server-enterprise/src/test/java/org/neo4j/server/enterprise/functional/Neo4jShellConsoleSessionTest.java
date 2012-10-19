@@ -19,17 +19,29 @@
  */
 package org.neo4j.server.enterprise.functional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.util.List;
+
+import javax.ws.rs.core.Response;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
@@ -43,24 +55,12 @@ import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.rest.ShellSession;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
-import javax.ws.rs.core.Response;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@Ignore( "Due to fix (62e73bfe8265971cebff166bb9ec8a6de3ab8f39) in community not working" )
+@Ignore("Due to fix (62e73bfe8265971cebff166bb9ec8a6de3ab8f39) in community not working")
 public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
 {
     private ConsoleService consoleService;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
-    private LocalhostZooKeeperCluster zoo;
     private Database master;
     private Database slave;
     private ShellSession session;
@@ -69,21 +69,20 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
     public void setUp() throws Exception
     {
         TargetDirectory dir = TargetDirectory.forTest( getClass() );
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-        master = new WrappingDatabase( (AbstractGraphDatabase) new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
-            .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
-            .setConfig( ShellSettings.remote_shell_port, "1337" )
-            .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
-            .setConfig( HaSettings.server_id, "1" )
-            .setConfig( HaSettings.server, "localhost:6361" )
-            .newGraphDatabase() );
+        master = new WrappingDatabase( (AbstractGraphDatabase) new HighlyAvailableGraphDatabaseFactory()
+                .newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
+                .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
+                .setConfig( ShellSettings.remote_shell_port, "1337" )
+                .setConfig( HaSettings.server_id, "1" )
+                .setConfig( HaSettings.ha_server, "localhost:6361" )
+                .newGraphDatabase() );
         createData( master.getGraph() );
-        slave = new WrappingDatabase( (AbstractGraphDatabase) new EnterpriseGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( dir.directory( "2", true ).getAbsolutePath() )
+        slave = new WrappingDatabase( (AbstractGraphDatabase) new HighlyAvailableGraphDatabaseFactory()
+                .newHighlyAvailableDatabaseBuilder( dir.directory( "2", true ).getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
                 .setConfig( ShellSettings.remote_shell_port, "1338" )
-                .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
                 .setConfig( HaSettings.server_id, "2" )
-                .setConfig( HaSettings.server, "localhost:6362" )
+                .setConfig( HaSettings.ha_server, "localhost:6362" )
                 .newGraphDatabase() );
         this.consoleService = new ConsoleService( this, slave, new OutputFormat( new JsonFormat(), uri, null ) );
         this.session = new ShellSession( slave.getGraph() );
@@ -125,19 +124,19 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
     @Test
     public void haMasterSwitchLeavesAWorkingShell() throws Exception
     {
-        assertTrue( ((HighlyAvailableGraphDatabase)master.getGraph()).isMaster() );
+        assertTrue( ((HighlyAvailableGraphDatabase) master.getGraph()).isMaster() );
         issueAndAssertResponse();
-        
+
         master.getGraph().shutdown();
         try
         {
-            ((HighlyAvailableGraphDatabase)slave.getGraph()).pullUpdates();
+            slave.getGraph().getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
         catch ( Exception e )
         {   // Kind of expected
         }
 
-        assertTrue( ((HighlyAvailableGraphDatabase)slave.getGraph()).isMaster() );
+        assertTrue( ((HighlyAvailableGraphDatabase) slave.getGraph()).isMaster() );
         issueAndAssertResponse();
     }
 
@@ -146,16 +145,16 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
         Response response = consoleService.exec( new JsonFormat(),
                 "{ \"command\" : \"ls\", \"engine\":\"shell\" }" );
         assertEquals( 200, response.getStatus() );
-        String result = decode( response ).get(0);
+        String result = decode( response ).get( 0 );
 
         assertThat( result, containsString( "Test" ) );
         assertThat( result, containsString( "me" ) );
         assertThat( result, containsString( "-[:TEST]->" ) );
     }
-    
+
     private List<String> decode( final Response response ) throws UnsupportedEncodingException, JsonParseException
     {
-        return (List<String>)JsonHelper.readJson(new String( (byte[]) response.getEntity(), "UTF-8" ));
+        return (List<String>) JsonHelper.readJson( new String( (byte[]) response.getEntity(), "UTF-8" ) );
     }
 
 

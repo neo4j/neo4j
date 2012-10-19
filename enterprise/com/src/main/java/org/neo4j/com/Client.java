@@ -48,9 +48,11 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -59,7 +61,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * 
  * @see Server
  */
-public abstract class Client<T> implements ChannelPipelineFactory
+public abstract class Client<T> extends LifecycleAdapter implements ChannelPipelineFactory
 {
     // Max number of concurrent channels that may exist. Needs to be high because we
     // don't want to run into that limit, it will make some #acquire calls block and
@@ -68,24 +70,26 @@ public abstract class Client<T> implements ChannelPipelineFactory
     public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
 
-    private final ClientBootstrap bootstrap;
+    private ClientBootstrap bootstrap;
     private final SocketAddress address;
     private final StringLogger msgLog;
-    private final ExecutorService executor;
-    private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
+    private ExecutorService executor;
+    private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final int frameLength;
-    private final int readTimeout;
+    private final long readTimeout;
+    private final int maxConcurrentChannels;
+    private final int maxUnusedPoolSize;
     private final byte applicationProtocolVersion;
     private final StoreId storeId;
-    private final ResourceReleaser resourcePoolReleaser;
+    private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
+
     private int chunkSize;
 
     public Client( String hostNameOrIp, int port, StringLogger logger,
             StoreId storeId, int frameLength,
-            byte applicationProtocolVersion, int readTimeout,
-            int maxConcurrentChannels, int maxUnusedPoolSize,
-            final ConnectionLostHandler connectionLostHandler, int chunkSize )
+            byte applicationProtocolVersion, long readTimeout,
+            int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
         
@@ -94,8 +98,21 @@ public abstract class Client<T> implements ChannelPipelineFactory
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
+        this.maxConcurrentChannels = maxConcurrentChannels;
+        this.maxUnusedPoolSize = maxUnusedPoolSize;
         this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
+        address = new InetSocketAddress( hostNameOrIp, port );
+        msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" +
+                port, true );
+    }
+
+    @Override
+    public void start()
+    {
+        executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
+        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
+        bootstrap.setPipelineFactory( this );
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentChannels, maxUnusedPoolSize )
         {
@@ -114,17 +131,9 @@ public abstract class Client<T> implements ChannelPipelineFactory
                     return channel;
                 }
 
-                String msg = "Client could not connect to " + address;
+                String msg = Client.this.getClass().getSimpleName()+" could not connect to " + address;
                 msgLog.logMessage( msg, true );
                 ComException exception = new ComException( msg );
-                try
-                {
-                    Thread.sleep( 1000 );
-                }
-                catch ( InterruptedException e )
-                {
-                    msgLog.logMessage( "Interrupted", e );
-                }
                 // connectionLostHandler.handle( exception );
                 throw exception;
             }
@@ -141,14 +150,12 @@ public abstract class Client<T> implements ChannelPipelineFactory
                     Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
             {
                 Channel channel = resource.first();
-                if ( channel.isConnected() ) channel.close();
+                if ( channel.isConnected() )
+                {
+                    channel.close();
+                }
             }
         };
-
-        address = new InetSocketAddress( hostNameOrIp, port );
-        executor = Executors.newCachedThreadPool();
-        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
-        bootstrap.setPipelineFactory( this );
         /*
          * This is here to couple the channel releasing to Response.close() itself and not
          * to TransactionStream.close() as it is implemented here. The reason is that a Response
@@ -163,7 +170,16 @@ public abstract class Client<T> implements ChannelPipelineFactory
                 channelPool.release();
             }
         };
-        msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" + port, true );
+    }
+
+
+    @Override
+    public void stop()
+    {
+        channelPool.close( true );
+        executor.shutdownNow();
+        mismatchingVersionHandlers.clear();
+        msgLog.logMessage( toString() + " shutdown", true );
     }
 
     /**
@@ -175,13 +191,14 @@ public abstract class Client<T> implements ChannelPipelineFactory
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
-            Serializer serializer, Deserializer<R> deserializer )
+                                           Serializer serializer, Deserializer<R> deserializer )
     {
         return sendRequest( type, context, serializer, deserializer, null );
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
-            Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
+                                           Serializer serializer, Deserializer<R> deserializer,
+                                           StoreId specificStoreId )
     {
         boolean success = true;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
@@ -199,10 +216,11 @@ public abstract class Client<T> implements ChannelPipelineFactory
             chunkingBuffer.done();
 
             // Read the response
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, getReadTimeout( type, readTimeout ),
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, getReadTimeout( type,
+                    readTimeout ),
                     getInternalProtocolVersion(), applicationProtocolVersion );
 
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
@@ -210,8 +228,14 @@ public abstract class Client<T> implements ChannelPipelineFactory
             if ( shouldCheckStoreId( type ) )
             {
                 // specificStoreId is there as a workaround for then the graphDb isn't initialized yet
-                if ( specificStoreId != null ) assertCorrectStoreId( storeId, specificStoreId );
-                else assertCorrectStoreId( storeId, this.storeId );
+                if ( specificStoreId != null )
+                {
+                    assertCorrectStoreId( storeId, specificStoreId );
+                }
+                else
+                {
+                    assertCorrectStoreId( storeId, this.storeId );
+                }
             }
             TransactionStream txStreams = readTransactionStreams(
                     dechunkingBuffer, channelPool );
@@ -248,7 +272,7 @@ public abstract class Client<T> implements ChannelPipelineFactory
         }
     }
 
-    protected int getReadTimeout( RequestType<T> type, int readTimeout )
+    protected long getReadTimeout( RequestType<T> type, long readTimeout )
     {
         return readTimeout;
     }
@@ -330,14 +354,6 @@ public abstract class Client<T> implements ChannelPipelineFactory
         return pipeline;
     }
 
-    public void shutdown()
-    {
-        channelPool.close( true );
-        executor.shutdownNow();
-        mismatchingVersionHandlers.clear();
-        msgLog.logMessage( toString() + " shutdown", true );
-    }
-
     @Override
     public String toString()
     {
@@ -362,7 +378,10 @@ public abstract class Client<T> implements ChannelPipelineFactory
             {
                 makeSureNextTransactionIsFullyFetched( buffer );
                 String datasource = datasources[buffer.readUnsignedByte()];
-                if ( datasource == null ) return null;
+                if ( datasource == null )
+                {
+                    return null;
+                }
                 long txId = buffer.readLong();
                 TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
                 return Triplet.of( datasource, txId, extractor );

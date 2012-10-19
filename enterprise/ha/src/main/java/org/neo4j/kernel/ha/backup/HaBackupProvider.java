@@ -22,19 +22,39 @@ package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.zookeeper.KeeperException;
 import org.neo4j.backup.BackupExtensionService;
-import org.neo4j.com.ComException;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.MultiPaxosServerFactory;
+import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
+import org.neo4j.cluster.statemachine.StateTransitionLogger;
+import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
+import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.zookeeper.Machine;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
+import org.neo4j.kernel.ha.cluster.ClusterEventListener;
+import org.neo4j.kernel.ha.cluster.ClusterEvents;
+import org.neo4j.kernel.ha.cluster.discovery.ClusterJoin;
+import org.neo4j.kernel.ha.cluster.paxos.PaxosClusterEvents;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
 
-@Service.Implementation( BackupExtensionService.class )
+@Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider extends BackupExtensionService
 {
     // The server address is <host>:<port>
@@ -46,39 +66,23 @@ public final class HaBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public URI resolve( URI address, Args args )
+    public URI resolve( URI address, Args args, Logging logging )
     {
         String master = null;
-        try
+        logging.getLogger( "ha.backup" ).logMessage( "Asking coordinator service at '" + address
+                + "' for master" );
+
+        String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
+        if ( clusterName == null )
         {
-            System.out.println( "Asking coordinator service at '" + address
-                                + "' for master" );
-            
-            // At first HaConfig.CONFIG_KEY_CLUSTER_NAME was used
-            String clusterName = args.get( HaSettings.cluster_name.name(), null );
-            // but then later on -cluster was also added because it looks much nicer.
-            if( clusterName == null )
-            {
-                clusterName = args.get( "cluster", ConfigurationDefaults.getDefault( HaSettings.cluster_name, HaSettings.class ));
-            }
-            master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
-                    2 ), clusterName ); // skip the "//" part
-            System.out.println( "Found master '" + master + "' in cluster" );
+            clusterName = args.get( ClusterSettings.cluster_name.name(),
+                    ConfigurationDefaults.getDefault( ClusterSettings.cluster_name, ClusterSettings.class ) );
         }
-        catch ( ComException e )
-        {
-            throw e;
-        }
-        catch ( RuntimeException e )
-        {
-            if ( e.getCause() instanceof KeeperException )
-            {
-                KeeperException zkException = (KeeperException) e.getCause();
-                System.out.println( "Couldn't connect to '" + address + "', "
-                                    + zkException.getMessage() );
-            }
-            throw e;
-        }
+
+        master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
+                2 ), clusterName, logging ); // skip the "//" part
+
+        logging.getLogger( "ha.backup" ).logMessage( "Found master '" + master + "' in cluster" );
         URI toReturn = null;
         try
         {
@@ -91,28 +95,132 @@ public final class HaBackupProvider extends BackupExtensionService
         return toReturn;
     }
 
-    private static String getMasterServerInCluster( String from, String clusterName )
+    private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
-        ZooKeeperClusterClient clusterClient = new ZooKeeperClusterClient(
-                from, clusterName );
-        Pair<String, Integer> masterServer = null;
+        LifeSupport life = new LifeSupport();
+        // Create config with cluster address:port and server_id=-1
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( HaSettings.server_id.name(), "-1" );
+        params.put( HaSettings.cluster_server.name(), from );
+        params.put( ClusterSettings.cluster_name.name(), clusterName );
+        params.put( HaSettings.initial_hosts.name(), from );
+        params.put( HaSettings.cluster_discovery_enabled.name(), "false" );
+        final Config config = new Config( params );
+
+        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
+                .timeout( HeartbeatMessage.sendHeartbeat, 10000 )
+                .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
+
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration(
+                config.get( ClusterSettings.cluster_name ) ), logging );
+
+        InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
+        ElectionCredentialsProvider electionCredentialsProvider = new BackupElectionCredentialsProvider();
+
+        NetworkInstance networkNodeTCP = new NetworkInstance( new NetworkInstance.Configuration()
+        {
+            @Override
+            public int[] getPorts()
+            {
+                // If not specified, use the default
+                return HaSettings.cluster_server.getPorts( MapUtil.stringMap( HaSettings
+                        .cluster_server.name(),
+                        ConfigurationDefaults.getDefault( HaSettings.cluster_server, HaSettings.class ) ) );
+            }
+
+            @Override
+            public String getAddress()
+            {
+                return HaSettings.cluster_server.getAddress( config.getParams() );
+            }
+        }, StringLogger.SYSTEM );
+
+
+        final ProtocolServer server = life.add( protocolServerFactory.newProtocolServer( timeoutStrategy,
+                networkNodeTCP, networkNodeTCP, acceptorInstanceStore, electionCredentialsProvider ) );
+
+
+        networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
+        {
+            @Override
+            public void listeningAt( URI me )
+            {
+                server.listeningAt( me );
+                server.addStateTransitionListener( new StateTransitionLogger( logging ) );
+            }
+
+            @Override
+            public void channelOpened( URI to )
+            {
+            }
+
+            @Override
+            public void channelClosed( URI to )
+            {
+            }
+        } );
+
+
+        life.add( networkNodeTCP );
+
+        life.add( new ClusterJoin( config, server, logging.getLogger( "ha.backup" ), new
+                ClusterListener.Adapter()
+                {
+                } ) );
+
+        ClusterEvents events = life.add( new PaxosClusterEvents( config, server, StringLogger.SYSTEM ) );
+
+        final Semaphore infoReceivedLatch = new Semaphore( 0 );
+        final ClusterInfoHolder addresses = new ClusterInfoHolder();
+        events.addClusterEventListener( new ClusterEventListener()
+        {
+            @Override
+            public void masterIsElected( URI masterUri )
+            {
+            }
+
+            @Override
+            public void memberIsAvailable( String role, URI masterClusterUri, Iterable<URI> masterURIs )
+            {
+                if ( ClusterConfiguration.COORDINATOR.equals( role ) )
+                {
+                    addresses.held = masterURIs;
+                    infoReceivedLatch.release();
+                }
+            }
+
+        } );
+
+        life.start();
+
         try
         {
-            clusterClient.waitForSyncConnected();
-            Machine master = clusterClient.getMaster();
-            masterServer = master.getServer();
-            if ( masterServer != null )
+            if ( !infoReceivedLatch.tryAcquire( 10, TimeUnit.SECONDS ) )
             {
-                int backupPort = clusterClient.getBackupPort( master.getMachineId() );
-                return String.format( ServerAddressFormat,
-                        masterServer.first(), backupPort );
+                throw new RuntimeException( "Could not find master in cluster " + clusterName + " at " + from + ", " +
+                        "operation timed out" );
             }
-            throw new ComException(
-                    "Master couldn't be found from cluster managed by " + from );
         }
-        finally
+        catch ( InterruptedException e )
         {
-            clusterClient.shutdown();
+            throw new RuntimeException( e );
         }
+        life.shutdown();
+        String backupAddress = null;
+
+        for ( URI uri : addresses.held )
+        {
+            if ( "backup".equals( uri.getScheme() ) )
+            {
+                backupAddress = uri.toString();
+                break;
+            }
+        }
+        return backupAddress;
+    }
+
+    private static final class ClusterInfoHolder
+    {
+        public Iterable<URI> held;
     }
 }

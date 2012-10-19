@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.shell;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
@@ -35,12 +34,7 @@ public class Pullupdates extends ReadOnlyGraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        if ( !(getServer().getDb() instanceof HighlyAvailableGraphDatabase ) )
-        {
-            throw new ShellException( "Your database isn't started in HA mode" );
-        }
-        
-        ((HighlyAvailableGraphDatabase) getServer().getDb()).pullUpdates();
+        //TODO get hold of pull updates thingy, call it
         return Continuation.INPUT_COMPLETE;
     }
 }

@@ -33,20 +33,19 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.cluster.ClusterMemberState;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.EnterpriseBootstrapper;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
-import org.neo4j.test.server.ha.ServerCluster.ServerManager;
 import org.neo4j.test.subprocess.SubProcess;
-
-import com.tinkerpop.gremlin.Tokens.T;
 
 public final class ServerCluster
 {
@@ -54,7 +53,7 @@ public final class ServerCluster
     private final Triplet<ServerManager, URI, File>[] servers;
 
     public ServerCluster( String testName, TargetDirectory targetDir,
-            LocalhostZooKeeperCluster keeperCluster, Pair<Integer, Integer>... ports )
+            Pair<Integer, Integer>... ports )
     {
         // @SuppressWarnings( { "unchecked", "hiding" } )
         // Pair<ServerManager, File>[] servers = new Pair[ports.length];
@@ -64,7 +63,7 @@ public final class ServerCluster
         {
             for ( int i = 0; i < ports.length; i++ )
             {
-                Pair<String, File> config = config( testName, targetDir, keeperCluster, i, ports[i] );
+                Pair<String, File> config = config( testName, targetDir, i, ports[i] );
                 servers[i] = awaitStartup( Pair.of( process.start( config.first() ), config.other() ) )[0];
             }
         }
@@ -173,7 +172,7 @@ public final class ServerCluster
 
     @SuppressWarnings( "unchecked" )
     private static Pair<String, File> config( String name, TargetDirectory targetDir,
-            LocalhostZooKeeperCluster keeperCluster, int id, Pair<Integer, Integer> ports )
+            int id, Pair<Integer, Integer> ports )
     {
         File serverDir = targetDir.directory( "server-" + ports.other(), true );
         File serverConfig = new File( serverDir, "server.cfg" );
@@ -189,10 +188,9 @@ public final class ServerCluster
 
         // Kernel (and HA) configuration
         config( dbConfig, //
-                Pair.of( HaSettings.cluster_name.name(), name ),//
-                Pair.of( HaSettings.server.name(), "localhost:" + ports.first() ),//
-                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ),//
-                Pair.of( HaSettings.coordinators.name(), keeperCluster.getConnectionString() ) );
+                Pair.of( ClusterSettings.cluster_name.name(), name ),//
+                Pair.of( ClusterSettings.ha_server.name(), "localhost:" + ports.first() ),//
+                Pair.of( ClusterSettings.server_id.name(), Integer.toString( id ) ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }
@@ -320,7 +318,7 @@ public final class ServerCluster
 
         private HighAvailability ha()
         {
-            return graphDb().getSingleManagementBean( HighAvailability.class );
+            return graphDb().getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( HighAvailability.class );
         }
 
         private GraphDatabaseAPI graphDb()
@@ -356,7 +354,7 @@ public final class ServerCluster
         @Override
         public boolean isMaster()
         {
-            return ha().isMaster();
+            return ClusterMemberState.MASTER.toString().equals( ha().getInstanceState() );
         }
 
         @Override

@@ -52,7 +52,6 @@ public class GCResistantCacheProvider extends CacheProvider
 
         private static final class GCRMemoryUsageSetting extends NumberOfBytesSetting implements org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue
         {
-
             public GCRMemoryUsageSetting(String name) {
                 super(name);
             }
@@ -63,7 +62,6 @@ public class GCResistantCacheProvider extends CacheProvider
                 long defaultMem = ( available / 4);
                 return ""+defaultMem;
             }
-
         }
     }
 

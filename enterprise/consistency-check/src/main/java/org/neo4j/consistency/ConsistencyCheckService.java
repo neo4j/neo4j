@@ -26,7 +26,6 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -45,10 +44,7 @@ public class ConsistencyCheckService
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ),
-                new DefaultFileSystemAbstraction(),
-                new DefaultLastCommittedTxIdSetter(),
-                logger,
+                        .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
                 new DefaultTxHook() );
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
         try

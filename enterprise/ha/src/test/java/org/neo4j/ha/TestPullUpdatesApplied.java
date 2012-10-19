@@ -20,7 +20,6 @@
 package org.neo4j.ha;
 
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 import java.io.File;
@@ -34,12 +33,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 /**
  * This test case ensures that updates in HA are first written out to the log
@@ -56,16 +55,16 @@ import org.neo4j.test.ha.LocalhostZooKeeperCluster;
  */
 public class TestPullUpdatesApplied
 {
-    private LocalhostZooKeeperCluster zoo;
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
 
     @Before
     public void doBefore() throws Exception
     {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
         for ( int i = 0; i < dbs.length; i++ )
+        {
             dbs[i] = newDb( i );
+        }
     }
 
     private HighlyAvailableGraphDatabase newDb( int i )
@@ -75,32 +74,42 @@ public class TestPullUpdatesApplied
 
     private HighlyAvailableGraphDatabase newDb( int i, boolean clear )
     {
-        return new HighlyAvailableGraphDatabase( dir.directory( "" + i, clear ).getAbsolutePath(), stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, "" + i, HaConfig.CONFIG_KEY_SERVER, "localhost:" + ( 6666 + i ),
-                HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString(), HaConfig.CONFIG_KEY_PULL_INTERVAL,
-                0 + "ms" ) );
+        return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( dir.directory( "" + i, clear ).getAbsolutePath() )
+                .setConfig( HaSettings.server_id, "" + i )
+                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
+                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
+                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( HaSettings.pull_interval, "0ms" )
+                .newGraphDatabase();
     }
 
     @After
     public void doAfter() throws Exception
     {
         for ( HighlyAvailableGraphDatabase db : dbs )
-            if ( db != null ) db.shutdown();
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
     }
 
     @Test
-    public void testUpdatesAreWritenToLogBeforeBeingAppliedToStore() throws Exception
+    public void testUpdatesAreWrittenToLogBeforeBeingAppliedToStore() throws Exception
     {
         int master = getCurrentMaster();
         addNode( master );
-        int toKill = ( master + 1 ) % dbs.length;
+        int toKill = (master + 1) % dbs.length;
         HighlyAvailableGraphDatabase dbToKill = dbs[toKill];
         dbToKill.shutdown();
+        Thread.sleep( 5000 );
+
         addNode( master ); // this will be pulled by tne next start up, applied
-                           // but not written to log.
+        // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
-        runInOtherJvmToGetExitCode( new String[] { targetDirectory.getAbsolutePath(), "" + toKill,
-                zoo.getConnectionString() } );
+        runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
@@ -110,10 +119,16 @@ public class TestPullUpdatesApplied
     public static void main( String[] args ) throws Exception
     {
         int i = Integer.parseInt( args[1] );
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( args[0], stringMap(
-                HaConfig.CONFIG_KEY_SERVER_ID, "" + i, HaConfig.CONFIG_KEY_SERVER, "localhost:" + ( 6666 + i ),
-                HaConfig.CONFIG_KEY_COORDINATORS, args[2], HaConfig.CONFIG_KEY_PULL_INTERVAL, 0 + "ms" ) );
-        db.pullUpdates(); // this is the bug trigger
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( args[0] )
+                .setConfig( HaSettings.server_id, "" + i )
+                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
+                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) + "" )
+                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( HaSettings.pull_interval, "0ms" )
+                .newGraphDatabase();
+        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        ; // this is the bug trigger
         // no shutdown, emulates a crash.
     }
 
@@ -133,7 +148,9 @@ public class TestPullUpdatesApplied
         Thread.sleep( 5000 );
         p.destroy();
         for ( Thread t : threads )
+        {
             t.join();
+        }
         return 0;
     }
 
@@ -171,16 +188,16 @@ public class TestPullUpdatesApplied
         return result;
     }
 
-    private int getCurrentMaster()
+    private int getCurrentMaster() throws Exception
     {
-        ZooKeeperClusterClient client = new ZooKeeperClusterClient( zoo.getConnectionString() );
-        try
+        for ( int i = 0; i < dbs.length; i++ )
         {
-            return client.getMaster().getMachineId();
+            HighlyAvailableGraphDatabase db = dbs[i];
+            if ( db.isMaster() )
+            {
+                return i;
+            }
         }
-        finally
-        {
-            client.shutdown();
-        }
+        return -1;
     }
 }

@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Iterator;
-
 public interface SlavePriority
 {
-    Iterator<Slave> prioritize( Slave[] slaves );
+    Iterable<Slave> prioritize( Iterable<Slave> slaves );
 }

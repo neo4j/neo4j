@@ -32,10 +32,5 @@ public class EnterpriseConfigurationMigrator extends GraphDatabaseConfigurationM
         		"ha.machine_id", 
         		"ha.server_id", 
         		"ha.machine_id has been replaced with ha.server_id"));
-        
-        add(propertyRenamed(
-        		"ha.zoo_keeper_servers", 
-        		"ha.coordinators", 
-        		"ha.zoo_keeper_servers has been replaced with ha.coordinators"));
     }
 }

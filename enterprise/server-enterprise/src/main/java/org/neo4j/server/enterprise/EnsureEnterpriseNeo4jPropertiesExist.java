@@ -27,27 +27,30 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
 
 public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesExist
 {
-    public EnsureEnterpriseNeo4jPropertiesExist(Configuration config) {
-		super(config);
-	}
+    public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
+    public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
+
+    public EnsureEnterpriseNeo4jPropertiesExist( Configuration config )
+    {
+        super( config );
+    }
 
     // TODO: This validation should be done by the settings classes in HA 
     // and by the enterprise server settings, once we have refactored them 
     // to use the new config scheme.
-	@Override
+    @Override
     protected boolean validateProperties( Properties configProperties )
     {
         String dbMode = configProperties.getProperty( Configurator.DB_MODE_KEY,
-        		EnterpriseDatabase.DatabaseMode.SINGLE.name() );
+                EnterpriseDatabase.DatabaseMode.SINGLE.name() );
         dbMode = dbMode.toUpperCase();
-        if( dbMode.equals( EnterpriseDatabase.DatabaseMode.SINGLE.name() ) )
+        if ( dbMode.equals( EnterpriseDatabase.DatabaseMode.SINGLE.name() ) )
         {
             return true;
         }
@@ -98,8 +101,8 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
                 try
                 {
                     machineId = getSinglePropertyFromCandidates( dbTuning, HaSettings.server_id.name(),
-                            HaConfig.CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
-                    if( Integer.parseInt( machineId ) < 0 )
+                            CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
+                    if ( Integer.parseInt( machineId ) < 0 )
                     {
                         throw new NumberFormatException();
                     }
@@ -115,51 +118,25 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
                     failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFilename );
                     return false;
                 }
-                
-                String[] zkServers = null;
-                try
-                {
-                    zkServers = getSinglePropertyFromCandidates( dbTuning, HaSettings.coordinators.name(),
-                            HaConfig.CONFIG_KEY_OLD_COORDINATORS, "" ).split( "," );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFilename );
-                    return false;
-                }
-                if ( zkServers.length <= 0 )
-                {
-                    failureMessage = String.format( "%s in %s needs to specify at least one server",
-                            HaSettings.server_id.name(), dbTuningFilename );
-                    return false;
-                }
-                for ( String zk : zkServers )
-                {
-                    if ( !zk.contains( ":" ) )
-                    {
-                        failureMessage = String.format( "Invalid server config \"%s\" for %s in %s", zk,
-                                                        HaSettings.server_id.name(), dbTuningFilename );
-                        return false;
-                    }
-                }
             }
         }
         return true;
     }
 
     private String getSinglePropertyFromCandidates( Properties dbTuning, String first,
-            String other, String defaultValue )
+                                                    String other, String defaultValue )
     {
         String firstValue = dbTuning.getProperty( first );
         String otherValue = dbTuning.getProperty( other );
-        if( firstValue == null && otherValue == null )
+        if ( firstValue == null && otherValue == null )
         {
             return defaultValue;
         }
         // Perhaps not a correct use of IllegalArgumentException
-        if( firstValue != null && otherValue != null )
+        if ( firstValue != null && otherValue != null )
         {
-            throw new IllegalArgumentException( "Multiple configuration values set for the same logical property [" + first + "," + other + "]" );
+            throw new IllegalArgumentException( "Multiple configuration values set for the same logical property [" +
+                    first + "," + other + "]" );
         }
         return firstValue != null ? firstValue : otherValue;
     }

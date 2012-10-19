@@ -19,22 +19,19 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -45,53 +42,44 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
-@ForeignBreakpoints( { @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.Client", method = "makeSureNextTransactionIsFullyFetched", on = Event.ENTRY ),
-        @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.com.DechunkingChannelBuffer", method = "readNextChunk", on = Event.EXIT ) } )
-@RunWith( SubProcessTestRunner.class )
-@Ignore( "This test depends on chuncked requests, otherwise it will hang. So either reduce the Protocol.DEFAULT_FRAME_LENGTH to 1024"
-         + "or create a huge difference in the stores between master and slave which will lead to a multichunk response." )
+@ForeignBreakpoints({@ForeignBreakpoints.BreakpointDef(type = "org.neo4j.com.Client",
+        method = "makeSureNextTransactionIsFullyFetched", on = Event.ENTRY),
+        @ForeignBreakpoints.BreakpointDef(type = "org.neo4j.com.DechunkingChannelBuffer", method = "readNextChunk",
+                on = Event.EXIT)})
+@RunWith(SubProcessTestRunner.class)
+@Ignore("This test depends on chuncked requests, otherwise it will hang. So either reduce the Protocol" +
+        ".DEFAULT_FRAME_LENGTH to 1024"
+        + "or create a huge difference in the stores between master and slave which will lead to a multichunk " +
+        "response.")
 public class TestClientThreadIsolation
 {
-    private static LocalhostZooKeeperCluster zoo;
-
-    @BeforeClass
-    public static void startZoo() throws Exception
-    {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-    }
-
     @Test
-    @EnabledBreakpoints( { "makeSureNextTransactionIsFullyFetched",
-            "readNextChunk", "waitTxCopyToStart", "finish" } )
+    @EnabledBreakpoints({"makeSureNextTransactionIsFullyFetched",
+            "readNextChunk", "waitTxCopyToStart", "finish"})
     public void testTransactionsPulled() throws Exception
     {
-        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder(TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                                    "master", true ).getAbsolutePath()  ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "1" ).
-            newGraphDatabase();
+        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
+                        "master", true ).getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "1" ).
+                newGraphDatabase();
 
-        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                                    "slave1", true ).getAbsolutePath() ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.server_id, "2" ).
-            setConfig( HaSettings.max_concurrent_channels_per_slave, "2" ).
-            newGraphDatabase();
+        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
+                        "slave1", true ).getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "2" ).
+                setConfig( HaSettings.max_concurrent_channels_per_slave, "2" )
+                .setConfig( HaSettings.ha_server, "127.0.0.1:8001" )
+                .setConfig( HaSettings.cluster_server, "127.0.0.1:5002" )
+                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
+                .newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
-            master.createNode().createRelationshipTo( master.createNode(),
-                    DynamicRelationshipType.withName( "master" ) ).setProperty(
+        master.createNode().createRelationshipTo( master.createNode(),
+                DynamicRelationshipType.withName( "master" ) ).setProperty(
                 "largeArray", new int[20000] );
         masterTx.success();
         masterTx.finish();
-
-        // Simple sanity check
-        assertEquals( 1,
-                master.getBroker().getMaster().other().getMachineId() );
-        assertEquals( 1,
-                slave1.getBroker().getMaster().other().getMachineId() );
 
         Thread thread1 = new Thread( new Runnable()
         {
@@ -163,7 +151,7 @@ public class TestClientThreadIsolation
 
         assertTrue(
                 master.getReferenceNode().getRelationships(
-                DynamicRelationshipType.withName( "test" ) ).iterator().hasNext() );
+                        DynamicRelationshipType.withName( "test" ) ).iterator().hasNext() );
     }
 
     private static DebuggedThread txCopyingThread;
@@ -174,26 +162,26 @@ public class TestClientThreadIsolation
      */
     private static CountDownLatch latch = new CountDownLatch( 1 );
 
-    @BreakpointTrigger( "waitTxCopyToStart" )
+    @BreakpointTrigger("waitTxCopyToStart")
     private void waitTxCopyToStart()
     {
         // wait for the first thread to grab the updates
     }
 
-    @BreakpointTrigger( "finish" )
+    @BreakpointTrigger("finish")
     private void finish()
     {
         // resume the suspended thread
     }
 
-    @BreakpointHandler( "waitTxCopyToStart" )
+    @BreakpointHandler("waitTxCopyToStart")
     public static void onWaitTxCopyToStart( BreakPoint self, DebugInterface di )
     {
         interferingThread = di.thread().suspend( null );
         latch.countDown();
     }
 
-    @BreakpointHandler( "finish" )
+    @BreakpointHandler("finish")
     public static void onFinish( BreakPoint self, DebugInterface di )
     {
         txCopyingThread.resume();
@@ -201,7 +189,7 @@ public class TestClientThreadIsolation
 
     @BreakpointHandler("makeSureNextTransactionIsFullyFetched")
     public static void onStartingStoreCopy( BreakPoint self, DebugInterface di,
-            @BreakpointHandler( "readNextChunk" ) BreakPoint onReadNextChunk )
+                                            @BreakpointHandler("readNextChunk") BreakPoint onReadNextChunk )
             throws Exception
     {
         // Wait for the other thread to recycle the channel
@@ -210,13 +198,13 @@ public class TestClientThreadIsolation
         self.disable();
     }
 
-    @BreakpointHandler( "readNextChunk" )
+    @BreakpointHandler("readNextChunk")
     public static void onReadNextChunk( BreakPoint self, DebugInterface di )
             throws Exception
     {
         // Check because the interfering thread will trigger this too
         if ( txCopyingThread != null
-             && di.thread().name().equals( txCopyingThread.name() ) )
+                && di.thread().name().equals( txCopyingThread.name() ) )
         {
             txCopyingThread.suspend( null );
             interferingThread.resume();

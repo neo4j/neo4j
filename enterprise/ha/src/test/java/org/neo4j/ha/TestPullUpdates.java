@@ -21,24 +21,27 @@ package org.neo4j.ha;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.test.TargetDirectory.forTest;
+
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.com.ComException;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EnterpriseGraphDatabaseFactory;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.ClusterEventListener;
+import org.neo4j.kernel.ha.cluster.ClusterEvents;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
+@Ignore
 public class TestPullUpdates
 {
-    private LocalhostZooKeeperCluster zoo;
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
     private static final int PULL_INTERVAL = 100;
@@ -46,28 +49,38 @@ public class TestPullUpdates
     @Before
     public void doBefore() throws Exception
     {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
         for ( int i = 0; i < dbs.length; i++ )
+        {
             dbs[i] = newDb( i );
+        }
     }
 
     private HighlyAvailableGraphDatabase newDb( int i )
     {
-        return (HighlyAvailableGraphDatabase) new EnterpriseGraphDatabaseFactory().
-            newHighlyAvailableDatabaseBuilder( dir.directory( "" + i, true ).getAbsolutePath() ).
-            setConfig( HaSettings.server_id, ""+i ).
-            setConfig( HaSettings.server, "localhost:" + (6666+i) ).
-            setConfig( HaSettings.coordinators, zoo.getConnectionString() ).
-            setConfig( HaSettings.pull_interval, PULL_INTERVAL+"ms" ).
-            newGraphDatabase();
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( dir.directory( "" + (i + 1), true ).getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "" + (i + 1) ).
+                setConfig( HaSettings.ha_server, "127.0.0.1:" + (6361 + i) ).
+                setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) ).
+                setConfig( HaSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" ).
+                setConfig( HaSettings.cluster_discovery_enabled, "false" ).
+                setConfig( HaSettings.pull_interval, PULL_INTERVAL + "ms" ).
+                newGraphDatabase();
+        Transaction tx = db.beginTx();
+        tx.finish();
+        return db;
     }
 
     @After
     public void doAfter() throws Exception
     {
         for ( HighlyAvailableGraphDatabase db : dbs )
+        {
             if ( db != null )
+            {
                 db.shutdown();
+            }
+        }
     }
 
     @Test
@@ -76,23 +89,43 @@ public class TestPullUpdates
         int master = getCurrentMaster();
         setProperty( master, 1 );
         awaitPropagation( 1 );
+        awaitNewMaster( (master + 1) % dbs.length );
         kill( master );
-        setProperty( awaitNewMaster( master ), 2 );
+        masterElectedLatch.await();
+        setProperty( getCurrentMaster(), 2 );
+        awaitNewMaster( (master + 1) % dbs.length );
         start( master );
+        masterElectedLatch.await();
         awaitPropagation( 2 );
     }
 
-    private int awaitNewMaster( int master ) throws Exception
+    private void awaitNewMaster( int master )
     {
-        int newMaster = getCurrentMaster();
-        while ( (newMaster = getCurrentMaster()) == master ) powerNap();
-        return newMaster;
+        masterElectedLatch = new CountDownLatch( 1 );
+        final ClusterEvents events = dbs[master].getDependencyResolver().resolveDependency( ClusterEvents.class );
+        events.addClusterEventListener(
+                new ClusterEventListener.Adapter()
+
+                {
+                    @Override
+                    public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
+                    {
+                        if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                        {
+                            masterElectedLatch.countDown();
+                            events.removeClusterEventListener( this );
+                        }
+                    }
+                } );
     }
 
     private void powerNap() throws InterruptedException
     {
         Thread.sleep( 50 );
     }
+
+    private CountDownLatch masterElectedLatch;
+
 
     private void start( int master )
     {
@@ -115,16 +148,21 @@ public class TestPullUpdates
             for ( HighlyAvailableGraphDatabase db : dbs )
             {
                 Object value = db.getReferenceNode().getProperty( "i", null );
-                if ( value == null || ((Integer)value).intValue() != i ) ok = false;
+                if ( value == null || ((Integer) value).intValue() != i )
+                {
+                    ok = false;
+                }
             }
-            if ( !ok ) powerNap();
+            if ( !ok )
+            {
+                powerNap();
+            }
         }
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
 
     private void setProperty( int dbId, int i ) throws Exception
     {
-        awaitHasMaster( dbId );
         HighlyAvailableGraphDatabase db = dbs[dbId];
         Transaction tx = db.beginTx();
         try
@@ -138,45 +176,16 @@ public class TestPullUpdates
         }
     }
 
-    private void awaitHasMaster( int dbId ) throws Exception
-    {
-        HighlyAvailableGraphDatabase db = dbs[dbId];
-        long endTime = currentTimeMillis() + 10000;
-        while ( currentTimeMillis() < endTime )
-        {
-            try
-            {
-                db.pullUpdates();
-                return;
-            }
-            catch ( ComException e )
-            {   // OK
-                powerNap();
-            }
-        }
-        fail( "Master didn't come up" );
-    }
-
     private int getCurrentMaster() throws Exception
     {
-        ZooKeeperClusterClient client = new ZooKeeperClusterClient( zoo.getConnectionString() );
-        try
+        for ( int i = 0; i < dbs.length; i++ )
         {
-            int dbId = client.getMaster().getMachineId();
-            awaitBecomeMaster( dbId );
-            return dbId;
+            HighlyAvailableGraphDatabase db = dbs[i];
+            if ( db != null && db.isMaster() )
+            {
+                return i;
+            }
         }
-        finally
-        {
-            client.shutdown();
-        }
-    }
-
-    private void awaitBecomeMaster( int dbId ) throws Exception
-    {
-        HighlyAvailableGraphDatabase db = dbs[dbId];
-        long endTime = currentTimeMillis() + 10000;
-        while ( !db.isMaster() && currentTimeMillis() < endTime ) powerNap();
-        assertTrue( db.isMaster() );
+        return -1;
     }
 }

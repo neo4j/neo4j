@@ -22,10 +22,10 @@ package org.neo4j.kernel.ha;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.com.ConnectionLostHandler;
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
@@ -34,9 +34,9 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     private boolean downgradeForbidden = false;
 
     @Override
-    public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
+    public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
     {
-        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, storeId );
+        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, storeId, life );
         result.addMismatchingVersionHandler( this );
         return result;
     }
@@ -158,10 +158,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
+        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return new MasterClient153( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            return life.add(  new MasterClient153( hostNameOrIp, port, stringLogger, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     };
 
@@ -174,10 +174,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
+        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return new MasterClient17( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            return life.add(  new MasterClient17( hostNameOrIp, port, stringLogger, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     };
 
@@ -190,10 +190,10 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId )
+        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return new MasterClient18( hostNameOrIp, port, stringLogger, storeId, ConnectionLostHandler.NO_ACTION,
-                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            return life.add( new MasterClient18( hostNameOrIp, port, stringLogger, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     }
 

@@ -30,12 +30,12 @@ import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
-import java.io.File;
-
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class TestCommunication
 {
@@ -43,34 +43,40 @@ public class TestCommunication
     private static final byte APPLICATION_PROTOCOL_VERSION = 0;
 
     private static final int PORT = 1234;
-    private static final String PATH = "target/tmp";
     private StoreId storeIdToUse;
+    private LifeSupport life = new LifeSupport();
     private Builder builder;
 
     @Before
     public void doBefore()
     {
         storeIdToUse = new StoreId();
-        new File( PATH ).mkdirs();
         builder = new Builder();
+    }
+
+    @After
+    public void shutdownLife()
+    {
+        life.shutdown();
     }
     
     @Test
-    public void clientGetResponseFromServerViaComLayer() throws Exception
+    public void clientGetResponseFromServerViaComLayer() throws Throwable
     {
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse );
         MadeUpServer server = builder.server( serverImplementation );
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         int value1 = 10;
         int value2 = 5;
         Response<Integer> response = client.multiply( 10, 5 );
         waitUntilResponseHasBeenWritten( server, 1000 );
-        assertEquals( (Integer) (value1*value2), response.response() );
+        assertEquals( (Integer) (value1 * value2), response.response() );
         assertTrue( serverImplementation.gotCalled() );
         assertTrue( server.responseHasBeenWritten() );
-        client.shutdown();
-        server.shutdown();
     }
 
     private void waitUntilResponseHasBeenWritten( MadeUpServer server, int maxTime ) throws Exception
@@ -83,10 +89,13 @@ public class TestCommunication
     }
 
     @Test
-    public void makeSureClientStoreIdsMustMatch() throws Exception
+    public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.storeId( new StoreId( 10, 10, versionStringToLong( ALL_STORES_VERSION ) ) ).client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -97,18 +106,16 @@ public class TestCommunication
         {
             // Good
         }
-        finally
-        {
-            client.shutdown();
-            server.shutdown();
-        }
     }
 
     @Test
-    public void makeSureServerStoreIdsMustMatch() throws Exception
+    public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.storeId( new StoreId( 10, 10, versionStringToLong( ALL_STORES_VERSION ) ) ).server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -119,27 +126,23 @@ public class TestCommunication
         {
             // Good
         }
-        finally
-        {
-            client.shutdown();
-            server.shutdown();
-        }
     }
 
     @Test
-    public void makeSureClientCanStreamBigData() throws Exception
+    public void makeSureClientCanStreamBigData() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
+
 
         client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH*3 );
-
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void clientThrowsServerSideErrorMidwayThroughStreaming() throws Exception
+    public void clientThrowsServerSideErrorMidwayThroughStreaming() throws Throwable
     {
         final String failureMessage = "Just failing";
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse )
@@ -154,6 +157,9 @@ public class TestCommunication
         };
         MadeUpServer server = builder.server( serverImplementation );
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -164,29 +170,31 @@ public class TestCommunication
         {
             assertEquals( failureMessage, e.getMessage() );
         }
-
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void communicateBetweenJvms() throws Exception
+    public void communicateBetweenJvms() throws Throwable
     {
         ServerInterface server = builder.serverInOtherJvm();
+        server.awaitStarted();
         MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        life.add( client );
+        life.start();
 
         assertEquals( (Integer)(9*5), client.multiply( 9, 5 ).response() );
         client.fetchDataStream( new ToAssertionWriter(), 1024*1024*3 );
 
-        client.shutdown();
         server.shutdown();
     }
 
     @Test
-    public void throwingServerSideExceptionBackToClient() throws Exception
+    public void throwingServerSideExceptionBackToClient() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         String exceptionMessage = "The message";
         try
@@ -198,16 +206,16 @@ public class TestCommunication
         {   // Good
             assertEquals( exceptionMessage, e.getMessage() );
         }
-
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatch() throws Exception
+    public void applicationProtocolVersionsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION+1) ).server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -215,16 +223,16 @@ public class TestCommunication
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
         catch ( IllegalProtocolVersionException e ) { /* Good */ }
-
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatchMultiJvm() throws Exception
+    public void applicationProtocolVersionsMustMatchMultiJvm() throws Throwable
     {
         ServerInterface server = builder.applicationProtocolVersion( (byte)(APPLICATION_PROTOCOL_VERSION+1) ).serverInOtherJvm();
+        server.awaitStarted();
         MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        life.add( client );
+        life.start();
 
         try
         {
@@ -233,15 +241,17 @@ public class TestCommunication
         }
         catch ( IllegalProtocolVersionException e ) { /* Good */ }
 
-        client.shutdown();
         server.shutdown();
     }
 
     @Test
-    public void internalProtocolVersionsMustMatch() throws Exception
+    public void internalProtocolVersionsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.internalProtocolVersion( (byte) 1 ).server();
         MadeUpClient client = builder.internalProtocolVersion( (byte) 2 ).client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -249,16 +259,16 @@ public class TestCommunication
             fail( "Shouldn't be able to communicate with different application protocol versions" );
         }
         catch ( IllegalProtocolVersionException e ) { /* Good */ }
-
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void internalProtocolVersionsMustMatchMultiJvm() throws Exception
+    public void internalProtocolVersionsMustMatchMultiJvm() throws Throwable
     {
         ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
+        server.awaitStarted();
         MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).internalProtocolVersion( (byte) 2 ).client();
+        life.add( client );
+        life.start();
 
         try
         {
@@ -267,16 +277,18 @@ public class TestCommunication
         }
         catch ( IllegalProtocolVersionException e ) { /* Good */ }
 
-        client.shutdown();
         server.shutdown();
     }
 
     @Test
     @Ignore("getting build back to green")
-    public void serverStopsStreamingToDeadClient() throws Exception
+    public void serverStopsStreamingToDeadClient() throws Throwable
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         int failAtSize = FRAME_LENGTH*2;
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
@@ -294,12 +306,10 @@ public class TestCommunication
         while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil ) yield();
         assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
         assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
-
-        server.shutdown();
     }
 
     @Test
-    public void serverContextVerificationCanThrowException() throws Exception
+    public void serverContextVerificationCanThrowException() throws Throwable
     {
         final String failureMessage = "I'm failing";
         TxChecksumVerifier failingVerifier = new TxChecksumVerifier()
@@ -312,6 +322,9 @@ public class TestCommunication
         };
         MadeUpServer server = builder.verifier( failingVerifier ).server();
         MadeUpClient client = builder.client();
+        life.add( server );
+        life.add( client );
+        life.start();
 
         try
         {
@@ -323,49 +336,49 @@ public class TestCommunication
             // TODO catch FailingException instead of Exception and make Server throw the proper
             // one instead of getting a "channel closed".
         }
-
-        server.shutdown();
     }
     
     @Test
-    public void clientCanReadChunkSizeBiggerThanItsOwn() throws Exception
+    public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 20000;
         int clientChunkSize = serverChunkSize/10;
         MadeUpServer server = builder.chunkSize( serverChunkSize ).server();
         MadeUpClient client = builder.chunkSize( clientChunkSize ).client();
-        
+
+        life.add( server );
+        life.add( client );
+        life.start();
+
         // Tell server to stream data occupying roughly two chunks. The chunks
         // from server are 10 times bigger than the clients chunk size.
         client.fetchDataStream( new ToAssertionWriter(), serverChunkSize*2 );
-        
-        client.shutdown();
-        server.shutdown();
     }
 
     @Test
-    public void serverCanReadChunkSizeBiggerThanItsOwn() throws Exception
+    public void serverCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 1000;
         int clientChunkSize = serverChunkSize*10;
         MadeUpServer server = builder.chunkSize( serverChunkSize ).server();
         MadeUpClient client = builder.chunkSize( clientChunkSize ).client();
-        
+
+        life.add( server );
+        life.add( client );
+        life.start();
+
         // Tell server to stream data occupying roughly two chunks. The chunks
         // from server are 10 times bigger than the clients chunk size.
         client.sendDataStream( new DataProducer( clientChunkSize*2 ) );
-        
-        client.shutdown();
-        server.shutdown();
     }
     
     @Test
-    public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Exception
+    public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
         Builder myBuilder = builder.chunkSize( MadeUpServer.FRAME_LENGTH+10 );
         try
         {
-            myBuilder.server();
+            myBuilder.server().start();
             fail( "Shouldn't be possible" );
         }
         catch ( IllegalArgumentException e )

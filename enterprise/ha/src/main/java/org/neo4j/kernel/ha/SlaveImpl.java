@@ -19,35 +19,37 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class SlaveImpl implements Slave
 {
-    private final GraphDatabaseAPI graphDb;
-    private final Broker broker;
-    private final SlaveDatabaseOperations dbOperations;
+    private final Master master;
+    private final RequestContextFactory requestContextFactory;
+    private final StoreId storeId;
+    private final HaXaDataSourceManager xaDsm;
 
-    public SlaveImpl( GraphDatabaseAPI graphDb, Broker broker, SlaveDatabaseOperations dbOperations )
+    public SlaveImpl( StoreId storeId, Master master, RequestContextFactory requestContextFactory,
+                      HaXaDataSourceManager xaDsm )
     {
-        this.graphDb = graphDb;
-        this.broker = broker;
-        this.dbOperations = dbOperations;
+        this.storeId = storeId;
+        this.master = master;
+        this.requestContextFactory = requestContextFactory;
+        this.xaDsm = xaDsm;
     }
 
     @Override
     public Response<Void> pullUpdates( String resource, long upToAndIncludingTxId )
     {
         // Pull updates from the master
-        dbOperations.receive( broker.getMaster().first().pullUpdates( dbOperations.getSlaveContext( 0 ) ) );
-        return ServerUtil.packResponseWithoutTransactionStream( graphDb, RequestContext.EMPTY, null );
+        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
+        return ServerUtil.packResponseWithoutTransactionStream( storeId, null );
     }
-    
+
     @Override
     public int getServerId()
     {
-        return broker.getMyMachineId();
+        return 0;
     }
 }

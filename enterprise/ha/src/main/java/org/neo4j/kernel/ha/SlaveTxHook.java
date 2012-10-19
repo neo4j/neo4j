@@ -21,53 +21,49 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.com.Response;
+import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.Master;
+import org.neo4j.kernel.ha.RequestContextFactory;
+import org.neo4j.kernel.ha.TxHookModeSwitcher;
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
 public class SlaveTxHook implements TxHook
 {
-    private final Broker broker;
-    private final SlaveDatabaseOperations databaseOperations;
-    private GraphDatabaseAPI spi;
+    private final Master master;
+    private final LockReleaser lockReleaser;
+    private final HaXaDataSourceManager xaDsm;
+    private final RequestContextFactory contextFactory;
 
-    public SlaveTxHook( Broker broker, SlaveDatabaseOperations databaseOperations, GraphDatabaseAPI spi )
+    public SlaveTxHook( Master master, LockReleaser lockReleaser, HaXaDataSourceManager xaDsm,
+                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory )
     {
-        this.broker = broker;
-        this.databaseOperations = databaseOperations;
-        this.spi = spi;
+        this.lockReleaser = lockReleaser;
+        this.master = master;
+        this.xaDsm = xaDsm;
+        this.contextFactory = contextFactory.get();
     }
 
     @Override
     public void initializeTransaction( int eventIdentifier )
     {
-        try
-        {
-            databaseOperations.receive( broker.getMaster().first().initializeTx( databaseOperations.getSlaveContext( eventIdentifier ) ) );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
-        }
+        Response<Void> response = master.initializeTx( contextFactory.newRequestContext( eventIdentifier ) );
+        xaDsm.applyTransactions( response );
     }
 
+    @Override
     public boolean hasAnyLocks( Transaction tx )
     {
-        return spi.getLockReleaser().hasLocks( tx );
+        return lockReleaser.hasLocks( tx );
     }
 
+    @Override
     public void finishTransaction( int eventIdentifier, boolean success )
     {
-        try
-        {
-            databaseOperations.receive( broker.getMaster().first().finishTransaction(
-                    databaseOperations.getSlaveContext( eventIdentifier ), success ) );
-        }
-        catch ( RuntimeException e )
-        {
-            databaseOperations.exceptionHappened( e );
-            throw e;
-        }
+        Response<Void> response = master.finishTransaction(
+                contextFactory.newRequestContext( eventIdentifier ), success );
+        xaDsm.applyTransactions( response );
     }
 
     @Override

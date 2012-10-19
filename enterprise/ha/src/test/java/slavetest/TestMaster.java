@@ -27,18 +27,11 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.FakeMasterBroker;
-import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.IdAllocation;
 import org.neo4j.kernel.ha.LockResult;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-/**
- * A {@link Master} which goes together with {@link FakeMasterBroker} / {@link FakeSlaveBroker}
- * and their rigid nature in that they cannot discover a new master themselves. Only used in
- * {@link SingleJvmTest} and friends.
- */
 @Ignore( "Not a test" )
 class TestMaster implements Master
 {
@@ -133,11 +126,6 @@ class TestMaster implements Master
     public Response<Void> copyStore( RequestContext context, StoreWriter writer )
     {
         return actual.copyStore( context, writer );
-    }
-
-    public void shutdown()
-    {
-        actual.shutdown();
     }
 
     public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index,

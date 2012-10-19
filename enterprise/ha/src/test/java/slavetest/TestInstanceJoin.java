@@ -20,18 +20,21 @@
 package slavetest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.com.ServerUtil.rotateLogs;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
-import java.io.File;
+import java.util.Map;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -39,92 +42,93 @@ import org.neo4j.test.ha.LocalhostZooKeeperCluster;
  */
 public class TestInstanceJoin
 {
-    private static LocalhostZooKeeperCluster zoo;
     private final TargetDirectory dir = forTest( getClass() );
 
-    @BeforeClass
-    public static void startZoo() throws Exception
-    {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
-    }
-
     @Test
-    public void testIt() throws Exception
+    public void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
     {
-        /*
-         * First create a cluster. Then have some txs on the master. Rotate to create history logs so we
-         * can delete them and make them inaccessible to the slave, making it like they are very old.
-         */
-        HighlyAvailableGraphDatabase master = start( dir.directory( "master", true ).getAbsolutePath(), 1,
-                zoo.getConnectionString() );
-        Transaction tx = master.beginTx();
-        master.getReferenceNode().setProperty( "foo", "bar" );
-        tx.success();
-        tx.finish();
+        String key = "foo";
+        String value = "bar";
 
-        master.shutdown(); // rotate FTW
+        HighlyAvailableGraphDatabase master = null;
+        HighlyAvailableGraphDatabase slave = null;
+        try
+        {
+            master = start( dir.directory( "master", true ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
+                    "1 files" ) );
+            createNode( master, "something", "unimportant" );
+            // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
+            slave = start( dir.directory( "slave", true ).getAbsolutePath(), 1 );
+            slave.shutdown();
 
-        /*
-         * This second transaction is so this instance will win in the upcoming election.
-         */
-        master = start( dir.directory( "master", false ).getAbsolutePath(), 1, zoo.getConnectionString() );
-        tx = master.beginTx();
-        master.createNode();
-        tx.success();
-        tx.finish();
+            long nodeId = createNode( master, key, value );
+            createNode( master, "something", "unimportant" );
+            // Rotating, moving the above transactions away so they are removed on shutdown.
+            rotateLogs( master );
 
-        master.shutdown();
+            /*
+             * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they
+             * are not removed from the cache until we run into the cache limit. This means that the information
+             * contained in the log can actually be available even if the log is removed. So, to trigger the case
+             * of the master information missing from the master we need to also flush the log entry cache - hence,
+             * restart.
+             */
+            master.shutdown();
+            master = start( dir.directory( "master", false ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
+                    "1 files" ) );
 
-        /*
-         * Delete the logical logs, thus faking old entries no longer present.
-         */
-        new File( dir.directory( "master", false ), "nioneo_logical.log.v0" ).delete();
-        new File( dir.directory( "master", false ), "nioneo_logical.log.v1" ).delete();
+            slave = start( dir.directory( "slave", false ).getAbsolutePath(), 1 );
+            slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
-        /*
-         * Slave starts, finds itself alone in a cluster with an existing store id. Uses that, becomes master
-         * for now.
-         */
-        HighlyAvailableGraphDatabase slave = start( dir.directory( "slave", true ).getAbsolutePath(), 2,
-                zoo.getConnectionString() );
+            assertEquals( "store contents differ", value, slave.getNodeById( nodeId ).getProperty( key ) );
+        }
+        finally
+        {
+            if ( slave != null )
+            {
+                slave.shutdown();
+            }
 
-        /*
-         * Do a tx so we have something to ask for.
-         */
-        tx = slave.beginTx();
-        slave.createNode();
-        tx.success();
-        tx.finish();
-
-        /*
-         * Why shutdown here since a master switch is enough? Well, i am glad you asked. If we
-         * just startup the master, indeed it will do a master switch and fail on ensureDataConsistency.
-         * BUT, this will happen after the test case is over, since it is asynchronous. So we would have
-         * to Thread.sleep() for around 5 seconds, which is ugly. Instead, we shutdown, allow the master
-         * to come up and then try to join, which is synchronous and will fail in the constructor, making
-         * the test failure clear and reproducible. Downside, it has an additional shutdown/startup cycle
-         * which takes some time.
-         */
-        slave.shutdown();
-
-        master = start( dir.directory( "master", false ).getAbsolutePath(), 1,
-                zoo.getConnectionString() );
-
-        /*
-         * The slave should successfully start up and get the proper store.
-         */
-        slave = start( dir.directory( "slave", false ).getAbsolutePath(), 2, zoo.getConnectionString() );
-
-        assertEquals( "store contents don't seem to be the same", "bar", slave.getReferenceNode().getProperty( "foo" ) );
-
-        slave.shutdown();
-        master.shutdown();
+            if ( master != null )
+            {
+                master.shutdown();
+            }
+        }
     }
 
-    private static HighlyAvailableGraphDatabase start( String storeDir, int i, String zkConnectString )
+    private long createNode( HighlyAvailableGraphDatabase db, String key, String value )
     {
-        return new HighlyAvailableGraphDatabase( storeDir, stringMap( HaConfig.CONFIG_KEY_SERVER_ID, "" + i,
-                HaConfig.CONFIG_KEY_SERVER, "localhost:" + ( 6666 + i ), HaConfig.CONFIG_KEY_COORDINATORS,
-                zkConnectString, HaConfig.CONFIG_KEY_PULL_INTERVAL, 0 + "ms" ) );
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        node.setProperty( key, value );
+        tx.success();
+        tx.finish();
+        return node.getId();
+    }
+
+    private static HighlyAvailableGraphDatabase start( String storeDir, int i )
+    {
+        return start( storeDir, i, stringMap() );
+    }
+
+    private static HighlyAvailableGraphDatabase start( String storeDir, int i, Map<String, String> additionalConfig )
+    {
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( storeDir )
+                .setConfig( HaSettings.server_id, i + "" )
+                .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )
+                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
+                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( HaSettings.pull_interval, "0ms" )
+                .setConfig( additionalConfig )
+                .newGraphDatabase();
+
+        awaitStart( db );
+        return db;
+    }
+
+    private static void awaitStart( HighlyAvailableGraphDatabase db )
+    {
+        db.beginTx().finish();
     }
 }

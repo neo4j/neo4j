@@ -4,82 +4,57 @@ Setup and configuration
 
 Neo4j HA can be set up to accommodate differing requirements for load, fault tolerance and available hardware.
 
-Within a cluster, Neo4j HA uses Apache ZooKeeper footnote:[http://hadoop.apache.org/zookeeper/] for master election and propagation of general cluster and machine status information.
-ZooKeeper can be seen as a distributed coordination service.
-Neo4j HA requires a coordinator service for initial master election, new master election (current master failing) and to publish general status information about the current Neo4j HA cluster (for example when a server joined or left the cluster).
-Read operations through the +GraphDatabaseService+ API will always work and even writes can survive coordinator failures if a master is present.
+Within a cluster, Neo4j HA uses its own Paxos implementation for all cluster membership related tasks, from instances joining/leaving a cluster to master election and availability information propagation.
+Read operations through the +GraphDatabaseService+ API will always work, whereas write operations requires an available master.
 
-ZooKeeper requires a majority of the ZooKeeper instances to be available to operate properly.
-This means that the number of ZooKeeper instances should always be an odd number since that will make best use of available hardware.
-
-To further clarify the fault tolerance characteristics of Neo4j HA here are a few example setups:
-
-== Small ==
-
-* 3 physical (or virtual) machines
-* 1 Coordinator running on each machine
-* 1 Neo4j HA instance running on each machine
-
-This setup is conservative in the use of hardware while being able to handle moderate read load.
-It can fully operate when at least 2 of the coordinator instances are running.
-Since the coordinator and Neo4j HA are running together on each machine this will in most scenarios mean that only one server is allowed to go down.
-
-== Medium ==
-
-* 5-7+ machines
-* Coordinator running on 3, 5 or 7 machines
-* Neo4j HA can run on 5+ machines
-
-This setup may mean that two different machine setups have to be managed (some machines run both coordinator and Neo4j HA).
-The fault tolerance will depend on how many machines there are that are running coordinators.
-With 3 coordinators the cluster can survive one coordinator going down, with 5 it can survive 2 and with 7 it can handle 3 coordinators failing.
-The number of Neo4j HA instances that can fail for normal operations is theoretically all but 1 (but for each required master election the coordinator must be available).
-
-== Large ==
-
-* 8+ total machines
-* 3+ Neo4j HA machines
-* 5+ Coordinators, on separate dedicated machines
-
-In this setup all coordinators are running on separate machines as a dedicated service.
-The dedicated coordinator cluster can handle half of the instances, minus 1, going down.
-The Neo4j HA cluster will be able to operate with at least a single live machine.
-Adding more Neo4j HA instances is very easy in this setup since the coordinator cluster is operating as a separate service.
+For reaching quorum among the members in the cluster the number of members should be odd.
 
 == Installation Notes ==
 
 For installation instructions of a High Availability cluster see <<ha-setup-tutorial>>.
 
-Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the +EmbeddedGraphDatabase+, it does have additional configuration parameters. 
+Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the +EmbeddedGraphDatabase+, it does have additional configuration parameters.
+Although there are many parameters, very few are mandatory. 
 
 .HighlyAvailableGraphDatabase configuration parameters
 [options="header", cols="<33m,<25,<25m,<20"]
 |========================================================================================
 | Parameter Name        | Description                                     | Example value  | Required?
-| ha.server_id          | integer >= 0 and has to be unique                              | 1              | yes
+| ha.server_id          | integer >= 0 and has to be unique in the cluster | 1 | yes
 | ha.server             | (auto-discovered) host & port to bind when acting as master | my-domain.com:6001 | no
-| ha.coordinators       | comma delimited coordinator connections   | localhost:2181,localhost:2182,localhost:2183 | yes
-| ha.cluster_name       | name of the cluster to participate in     | neo4j.ha        | no
-| ha.pull_interval      | interval for polling master from a slave, in seconds | 30 | no
-| ha.slave_coordinator_update_mode | creates a slave-only instance that will never become a master (sync,async,none) | none | no
+| ha.discovery.enabled  | whether or not to use the resource of ha.discovery.url to define the cluster | true | no
+| ha.discovery.url      | if ha.discovery.enabled is true, used to define the cluster | file://my.server:8080/my-cluster | no
+| ha.initial_hosts      | if ha.discovery.enabled is false, a comma-separated list of other members of the cluster to join. If no members are reachable a new cluster will be created. | my-server:5001 | no
+| ha.cluster_server     | (auto-discovered) host & port to bind the cluster management communication
+| ha.pull_interval      | interval for, as slave, pulling updates from the master. Default is to not pull updates regularly, only during write transactions | 30s or 1500ms | no
 | ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
 | ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
-| ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes  | 100 | no
+| ha.state_switch_timeout | how long max time to gracefully await a slave/master role switch | 20s | no
+| ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes | 100 | no
 | ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_last,keep_none,shutdown} | keep_none | no
 | ha.zk_session_timeout | how long (in milliseconds) before a non reachable instance has its session expired from the ZooKeeper cluster and its ephemeral nodes removed, probably leading to a master election | 5000 | no
-| ha.tx_push_factor     | amount of slaves a tx will be pushed to whenever the master commits a transaction   | 1 (default)    | no
-| ha.tx_push_strategy   | either "fixed" (default) or "round_robin", fixed will push to the slaves with highest server id | fixed          | no
+| ha.tx_push_factor     | amount of slaves the master will push each committed transaction to | 1 (default) | no
+| ha.tx_push_strategy   | the strategy for selecting which slaves to push committed transactions to. "fixed" (default) will push to slaves with descending server_id order; "round_robin" will have slaves take turn receiving the transactions | fixed | no
 |========================================================================================
 
 [NOTE]
 Note that the +org.neo4j.server.database.mode+ setting in the 'neo4j-server.properties' file has to be set to +HA+ to run Neo4j in High Availability mode.
 
-[CAUTION]
-Neo4j's HA setup depends on ZooKeeper a.k.a. Coordinator which makes certain assumptions about the state of the underlying operating system. In particular ZooKeeper expects 
-that the system time on each machine is set correctly, synchronized with respect to each other. If this is not true, then Neo4j HA will appear to misbehave, caused by seemingly random ZooKeeper hiccups.
+== Different methods for participating in a cluster ==
 
-[CAUTION]
-Neo4j uses the Coordinator cluster to store information representative of the deployment's state, including key fields of the database itself. Since that information is permanently stored in the cluster,
-you cannot reuse it for multiple deployments of different databases. In particular, removing the Neo4j servers, replacing the database and restarting them using the same coordinator instances will
-result in errors mentioning the existing HA deployment. To reset the Coordinator cluster to a clean state, you have to shutdown all instances, remove the +data/coordinator/version-2/*+ data files and
-restart the Coordinators.
+There are currently multiple ways of telling your database instance which cluster to create/join, different ways for different occasions.
+
+=== Knowing at least one other member ===
+
+A database instance can join a cluster by supplying +ha.initial_hosts+ a comma-separated list of URLs to at least one other cluster member of the cluster to join.
+It's called initial hosts since it's only for joining the cluster. After an instance joins it gets aware of all the members of the cluster.
+It will take turn contacting each one until it gets a response, where it will await a decision by the existing cluster members to have it join.
+If it cannot contact any of the members in the URL list it will create a new cluster with itself as master.
+This option requires +ha.discovery.enabled+ be set to +false+.
+
+=== Discovery ===
+
+A database instance can point to URL acting as a live list of members in a cluster, by setting +ha.discovery.url+ to a valid and accessible URL.
+If the resource pointed out by that URL exists it will take turn contacting each member in that list until it gets a response, where it will await a decision by the existing cluster members to have it join.
+If the resource pointed out by the discovery URL doesn't exist it will create it and with it a cluster with itself as master.
+This option requires +ha.discovery.enabled+ be set to +true+.

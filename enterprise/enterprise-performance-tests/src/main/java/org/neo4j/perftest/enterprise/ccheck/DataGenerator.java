@@ -20,7 +20,6 @@
 package org.neo4j.perftest.enterprise.ccheck;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting.parseNumberOfBytes;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 import static org.neo4j.perftest.enterprise.util.Predicate.integerRange;
@@ -348,9 +347,9 @@ public class DataGenerator
         System.out.format( "Number of records in %s: %d%n", name, store.getHighId() );
     }
 
-    private static Map<String, String> batchInserterConfig(Configuration configuration)
+    private static Map<String, String> batchInserterConfig( Configuration configuration )
     {
-        Long mappedMemory = parseNumberOfBytes( configuration.get( all_stores_total_mapped_memory_size ) );
+        Long mappedMemory = Long.parseLong( configuration.get( all_stores_total_mapped_memory_size ) );
 
         Map<String, String> config = new HashMap<String, String>();
         config.put( "use_memory_mapped_buffers", "true" );
