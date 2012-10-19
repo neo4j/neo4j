@@ -168,7 +168,7 @@ the relevant Commercial Agreement.
               <doctitle>${project.name} ${project.version} API</doctitle>
               <skip>${javadoc.skip}</skip>
               <windowtitle>${project.name} ${project.version} API</windowtitle>
-               <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+               <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index</excludePackageNames>
               <groups>
                 <group>
                   <title>Graph database</title>
@@ -248,7 +248,7 @@ the relevant Commercial Agreement.
           <header>${project.name}</header>
           <doctitle>${project.name} ${project.version} API</doctitle>
           <windowtitle>${project.name} ${project.version} API</windowtitle>
-           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
