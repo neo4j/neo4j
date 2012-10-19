@@ -189,6 +189,8 @@ public class TestIsolation
             }
         });
 
+        executor.shutdownNow();
+
         new DataChanger( database, count, done ).call();
     }
 
