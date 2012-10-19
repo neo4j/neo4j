@@ -42,9 +42,9 @@ case class PathExpression(pathPattern: Seq[Pattern])
     filter(isNamed).
     distinct
 
-  def apply(m: ExecutionContext): Any = {
+  def apply(ctx: ExecutionContext): Any = {
     // If any of the points we need is null, the whole expression will return null
-    val returnNull = interestingPoints.exists(key => m.get(key) match {
+    val returnNull = interestingPoints.exists(key => ctx.get(key) match {
       case None       => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
       case Some(null) => true
       case Some(x)    => false
@@ -54,7 +54,7 @@ case class PathExpression(pathPattern: Seq[Pattern])
     if (returnNull) {
       null
     } else {
-      getMatches(m)
+      getMatches(ctx)
     }
   }
 

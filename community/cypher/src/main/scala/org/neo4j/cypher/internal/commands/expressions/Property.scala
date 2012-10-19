@@ -27,7 +27,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Property(entity: String, property: String) extends Expression {
-  def apply(m: ExecutionContext): Any = m(entity).asInstanceOf[PropertyContainer] match {
+  def apply(ctx: ExecutionContext): Any = ctx(entity).asInstanceOf[PropertyContainer] match {
     case null              => null
     case propertyContainer => try {
       propertyContainer.getProperty(property)

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract class Predicate extends Expression {
-  def apply(m: ExecutionContext) = isMatch(m)
+  def apply(ctx: ExecutionContext) = isMatch(ctx)
   def ++(other: Predicate): Predicate = And(this, other)
   def isMatch(m: ExecutionContext): Boolean
 

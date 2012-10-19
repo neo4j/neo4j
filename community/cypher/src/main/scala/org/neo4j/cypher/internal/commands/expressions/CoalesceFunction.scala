@@ -24,7 +24,7 @@ import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class CoalesceFunction(expressions: Expression*) extends Expression {
-  def apply(m: ExecutionContext): Any = expressions.toStream.map(expression => expression(m)).find(value => value != null) match {
+  def apply(ctx: ExecutionContext): Any = expressions.toStream.map(expression => expression(ctx)).find(value => value != null) match {
     case None    => null
     case Some(x) => x
   }

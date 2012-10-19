@@ -28,7 +28,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract class AggregationExpression extends Expression {
-  def apply(m: ExecutionContext) = throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")
+  def apply(ctx: ExecutionContext) = throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")
 
   def createAggregationFunction: AggregationFunction
 }

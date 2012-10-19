@@ -56,7 +56,7 @@ with TypeSafe {
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(m: ExecutionContext) = m(key)
+  def apply(ctx: ExecutionContext) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
   def filter(f: (Expression) => Boolean) = if(f(this)) Seq(this) else Seq()
@@ -74,9 +74,9 @@ abstract class Arithmetics(left: Expression, right: Expression)
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
 
-  def apply(m: ExecutionContext) = {
-    val aVal = left(m)
-    val bVal = right(m)
+  def apply(ctx: ExecutionContext) = {
+    val aVal = left(ctx)
+    val bVal = right(ctx)
 
     (aVal, bVal) match {
       case (x: Number, y: Number) => calc(x, y)

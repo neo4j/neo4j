@@ -25,7 +25,7 @@ import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(m: ExecutionContext) = m.getParam(parameterName)
+  def apply(ctx: ExecutionContext) = ctx.getParam(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
 

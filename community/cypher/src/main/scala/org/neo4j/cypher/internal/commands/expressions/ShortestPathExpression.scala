@@ -34,11 +34,11 @@ import org.neo4j.cypher.internal.pipes.ExecutionContext
 case class ShortestPathExpression(ast: ShortestPath) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(ast)
 
-  def apply(m: ExecutionContext): Stream[Path] = {
-    if (anyStartpointsContainNull(m)) {
+  def apply(ctx: ExecutionContext): Stream[Path] = {
+    if (anyStartpointsContainNull(ctx)) {
       null
     } else {
-      getMatches(m)
+      getMatches(ctx)
     }
   }
 

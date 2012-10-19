@@ -24,7 +24,7 @@ import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Collection(expressions: Expression*) extends Expression {
-  def apply(m: ExecutionContext): Any = expressions.map(e => e(m))
+  def apply(ctx: ExecutionContext): Any = expressions.map(e => e(ctx))
 
   def rewrite(f: (Expression) => Expression): Expression = f(Collection(expressions.map(f): _*))
 

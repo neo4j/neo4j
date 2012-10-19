@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.pipes.ExecutionContext
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
   def compute(value: Any, m: ExecutionContext): Any
 
-  def apply(m: ExecutionContext): Any = argument(m) match {
+  def apply(ctx: ExecutionContext): Any = argument(ctx) match {
     case null => null
-    case x    => compute(x, m)
+    case x    => compute(x, ctx)
   }
 }

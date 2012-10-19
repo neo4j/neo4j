@@ -25,8 +25,8 @@ import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Nullable(expression: Expression) extends Expression {
-  def apply(m: ExecutionContext) = try {
-    expression.apply(m)
+  def apply(ctx: ExecutionContext) = try {
+    expression.apply(ctx)
   } catch {
     case x: EntityNotFoundException => null
   }

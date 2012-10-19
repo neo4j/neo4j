@@ -51,16 +51,16 @@ trait NumericHelper {
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: ExecutionContext): Any = Math.abs(asDouble(argument(m)))
+  def apply(ctx: ExecutionContext): Any = Math.abs(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
-  def apply(m: ExecutionContext): Any = {
-    val startVal = asInt(start(m))
-    val endVal = asInt(end(m))
-    val stepVal = asInt(step(m))
+  def apply(ctx: ExecutionContext): Any = {
+    val startVal = asInt(start(ctx))
+    val endVal = asInt(end(ctx))
+    val stepVal = asInt(step(ctx))
     new Range(startVal, endVal + 1, stepVal).toList
   }
 
@@ -89,19 +89,19 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: ExecutionContext): Any = Math.signum(asDouble(argument(m)))
+  def apply(ctx: ExecutionContext): Any = Math.signum(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
 }
 
 case class RoundFunction(expression: Expression) extends MathFunction(expression) {
-  def apply(m: ExecutionContext): Any = math.round(asDouble(expression(m)))
+  def apply(ctx: ExecutionContext): Any = math.round(asDouble(expression(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(m: ExecutionContext): Any = Math.sqrt(asDouble(argument(m)))
+  def apply(ctx: ExecutionContext): Any = Math.sqrt(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))
 }

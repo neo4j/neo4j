@@ -24,7 +24,7 @@ import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Literal(v: Any) extends Expression {
-  def apply(m: ExecutionContext): Any = v
+  def apply(ctx: ExecutionContext): Any = v
 
   def rewrite(f: (Expression) => Expression) = f(this)
 

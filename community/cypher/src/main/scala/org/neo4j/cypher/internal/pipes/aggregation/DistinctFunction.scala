@@ -26,17 +26,17 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
   val seen = scala.collection.mutable.Set[Any]()
   var seenNull = false
 
-  def apply(m: ExecutionContext) {
-    val data = value(m)
+  def apply(ctx: ExecutionContext) {
+    val data = value(ctx)
 
     if (data == null) {
       if (!seenNull) {
         seenNull = true
-        inner(m)
+        inner(ctx)
       }
     } else if (!seen.contains(data)) {
       seen += data
-      inner(m)
+      inner(ctx)
     }
   }
 
