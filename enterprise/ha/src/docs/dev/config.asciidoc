@@ -25,7 +25,7 @@ Although there are many parameters, most of them have defaults that should work 
 | ha.discovery.enabled  | whether or not to use the resource of ha.discovery.url to define the cluster | true | no
 | ha.discovery.url      | if ha.discovery.enabled is true, used to define the cluster | file://my.server:8080/my-cluster | no
 | ha.initial_hosts      | if ha.discovery.enabled is false, a comma-separated list of other members of the cluster to join. If no members are reachable a new cluster will be created. | my-server:5001 | no
-| ha.cluster_server     | (auto-discovered) host & port to bind the cluster management communication
+| ha.cluster_server     | (auto-discovered) host & port to bind the cluster management communication | |
 | ha.pull_interval      | interval for, as slave, pulling updates from the master. Default is to not pull updates regularly, only during write transactions | 30s or 1500ms | no
 | ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
 | ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
