@@ -130,11 +130,6 @@
     </dependency>
 
     <dependency>
-      <groupId>cuke4duke</groupId>
-      <artifactId>cuke4duke</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.picocontainer</groupId>
       <artifactId>picocontainer</artifactId>
     </dependency>
@@ -351,39 +346,6 @@
               </execution>
             </executions>
           </plugin>
-
-          <plugin>
-            <groupId>cuke4duke</groupId>
-            <artifactId>cuke4duke-maven-plugin</artifactId>
-            <configuration>
-              <jvmArgs>
-                <jvmArg>-Xmx384m</jvmArg>
-                <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
-                <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
-                <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
-              </jvmArgs>
-              <cucumberArgs>
-                <cucumberArg>--verbose</cucumberArg>
-                <cucumberArg>--strict</cucumberArg>
-                <cucumberArg>--color</cucumberArg>
-                <cucumberArg>--require</cucumberArg>
-                <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-              </cucumberArgs>
-              <gems>
-                <gem>install cuke4duke --version ${cuke4duke.version}</gem>
-              </gems>
-            </configuration>
-            <executions>
-              <execution>
-                <id>run-features</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>cucumber</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -506,10 +468,6 @@
       <releases>
         <enabled>false</enabled>
       </releases>
-    </repository>
-    <repository>
-      <id>cukes</id>
-      <url>http://cukes.info/maven</url>
     </repository>
   </repositories>
 
