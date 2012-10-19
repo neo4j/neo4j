@@ -29,9 +29,7 @@
       which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
-    <!-- For cucumber "feature" tests -->
-    <cukeArgs/>
-
+   
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
@@ -112,11 +110,6 @@
       <artifactId>jersey-client</artifactId>
       <version>1.3</version>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>cuke4duke</groupId>
-      <artifactId>cuke4duke</artifactId>
     </dependency>
 
     <dependency>
@@ -365,38 +358,6 @@
                     <source>src/functionaltest/java</source>
                   </sources>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>cuke4duke</groupId>
-            <artifactId>cuke4duke-maven-plugin</artifactId>
-            <configuration>
-              <jvmArgs>
-                <jvmArg>-Xmx384m</jvmArg>
-                <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
-                <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
-                <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
-              </jvmArgs>
-              <cucumberArgs>
-                <cucumberArg>--verbose</cucumberArg>
-                <cucumberArg>--strict</cucumberArg>
-                <cucumberArg>--color</cucumberArg>
-                <cucumberArg>--require</cucumberArg>
-                <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-              </cucumberArgs>
-              <gems>
-                <gem>install cuke4duke --version ${cuke4duke.version}</gem>
-              </gems>
-            </configuration>
-            <executions>
-              <execution>
-                <id>run-features</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>cucumber</goal>
-                </goals>
               </execution>
             </executions>
           </plugin>
