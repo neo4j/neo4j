@@ -83,14 +83,14 @@ class RelationshipProxy(extends(RelationshipProxy)):
 
 class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
-        v = self.get(key)
+        v = self.get_property(key)
         if v != None: 
             return v
         
         raise KeyError("No property with key #{key}.")
             
     def __setitem__(self, key, value):
-        self.set(key, value)
+        self.set_property(key, value)
             
     def __delitem__(self, key):
         try:
@@ -98,14 +98,15 @@ class PropertyContainer(extends(PropertyContainer)):
         except:
             rethrow_current_exception_as(KeyError)
             
-    def get(self, key, default=None):
+    def get_property(self, key, default=None):
         try:
             v = from_java(self.getProperty(key, None))
             return v if v != None else default
         except:
             rethrow_current_exception_as(Exception)
+    
             
-    def set(self, key, value):
+    def set_property(self, key, value):
         try:
             if value is None:
                 self.__delitem__(key)
@@ -113,6 +114,11 @@ class PropertyContainer(extends(PropertyContainer)):
                 self.setProperty(key, to_java(value))
         except:
             rethrow_current_exception_as(Exception)
+  
+  
+    # Backwards compat
+    get = get_property
+    set = set_property
   
     def items(self):
         for k in self.keys():

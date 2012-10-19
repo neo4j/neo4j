@@ -154,10 +154,10 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         
         
         # START SNIPPET: programaticGetProperties
-        numbers = node_or_rel.get('favourite_numbers')
+        numbers = node_or_rel.get_property('favourite_numbers')
         
         # With default value
-        value = node_or_rel.get('some_property', 'defaultvalue')
+        value = node_or_rel.get_property('some_property', 'defaultvalue')
         # END SNIPPET: programaticGetProperties
         
         self.assertEqual(value, 'defaultvalue')
@@ -205,10 +205,12 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             n['a_bool'] = True
             self.assertEqual(n['a_bool'], True) 
             self.assertEqual(type(n['a_bool']), bool)
+            self.assertEqual(type(n.get_property('a_bool')), bool)
 
             n['a_bool'] = False
             self.assertEqual(n['a_bool'], False) 
             self.assertEqual(type(n['a_bool']), bool)
+            self.assertEqual(type(n.get_property('a_bool')), bool)
 
             # Strings
             n['a_string'] = 'my fancy string I made'
@@ -224,6 +226,17 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             n['a_list'] = [1,2,3]
             self.assertEqual(n['a_list'], [1,2,3])
             self.assertEqual(type(n['a_list']), list)
+
+    def test_get_property_with_default(self):
+        with self.graphdb.transaction:
+            n = self.graphdb.node()
+
+            n['a_bool'] = True
+            self.assertEqual(n.get_property('a_bool'), True)
+            self.assertEqual(n.get_property('a_bool', False), True)
+            self.assertEqual(n.get_property('doesnt_exist'), None)
+            self.assertEqual(n.get_property('doesnt_exist', False), False)
+            
         
     def test_remove_properties(self):
         with self.graphdb.transaction:
