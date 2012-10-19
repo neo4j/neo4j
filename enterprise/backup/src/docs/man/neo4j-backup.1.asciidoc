@@ -10,7 +10,7 @@ neo4j-backup - Neo4j Backup Tool
 SYNOPSIS
 --------
 
-*neo4j-backup* {-full|-incremental} -from SourceURI -to Directory [-cluster ClusterName]
+*neo4j-backup* {-full|-incremental} -from SourceURI -to Directory
 
 [[neo4j-backup-manpage-description]]
 DESCRIPTION
@@ -46,16 +46,10 @@ Note that multiple hosts can be defined.
   \'single' or \'ha'. \'ha' is for instances in High Availability mode, \'single' is for standalone databases.
 
 *host*::
-  In single mode, the host of a source database; in ha mode, the host of a coordinator instance. Note that multiple hosts can be given when using High Availability mode.
+  In single mode, the host of a source database; in ha mode, the cluster address of a cluster member. Note that multiple hosts can be given when using High Availability mode.
 
 *port*::
-  In single mode, the port of a source database backup service; in ha mode, the port of a coordinator instance backup service. If not given, the default value `6362` will be used.
-
-CLUSTER NAME
-------------
-
-*-cluster*::
-  If you have specified a cluster name for your High Availability cluster, you need to specify it when doing backups. Add the config parameter: -cluster _my_custom_cluster_name_
+  In single mode, the port of a source database backup service; in ha mode, the port of a cluster instance. If not given, the default value `6362` will be used for single mode, `5001` for HA
 
 [[neo4j-backup-manpage-usage-important]]
 IMPORTANT
@@ -87,14 +81,10 @@ neo4j-backup -incremental -from single://freja -to /mnt/backup/neo4j-backup
 neo4j-backup -incremental -from single://freja:9999 -to /mnt/backup/neo4j-backup
 
 # Performing a full backup from HA cluster, specifying two possible coordinators
-./neo4j-backup -full -from ha://oden:2181,loke:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -full -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup from HA cluster, specifying only one coordinator
-./neo4j-backup -incremental -from ha://oden:2181 -to /mnt/backup/neo4j-backup
-
-# Performing an incremental backup from HA cluster with a specific name
-# (specified by neo4j configuration 'ha.cluster_name')
-./neo4j-backup -incremental -from ha://balder:2181 -to /mnt/backup/neo4j-backup -cluster my-cluster
+./neo4j-backup -incremental -from ha://oden:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[neo4j-backup-manpage-restore]]
