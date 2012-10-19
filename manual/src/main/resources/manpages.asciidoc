@@ -12,7 +12,5 @@ The Neo4j Unix manual pages are included on the following pages.
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j.1.xml"></xi:include> 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-shell.1.xml"></xi:include> 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-backup.1.xml"></xi:include> 
-<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-coordinator.1.xml"></xi:include> 
-<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-coordinator-shell.1.xml"></xi:include> 
 ++++++++++++++++++++++++++++++++++++++
 
