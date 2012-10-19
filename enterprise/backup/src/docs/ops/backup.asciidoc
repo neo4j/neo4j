@@ -67,22 +67,17 @@ OnlineBackup]
 [[backup-ha]]
 == High Availability ==
 
-To perform a backup on an HA cluster you specify one or more coordinators managing that cluster.
-
-NOTE: If you have specified a cluster name for your HA cluster, you need to specify
-      it when doing backups, so that the backup system knows which cluster to back up.
-      Add the config parameter: `-cluster my_custom_cluster_name`
+To perform a backup on an HA cluster you specify one or more members of the target HA cluster. Note that the addresses
+you must provide are the cluster server addresses and not the HA server addresses (the value of the `ha.cluster_server`
+setting in the configuration)
 
 [source,shell]
 ----
 # Performing a full backup from HA cluster, specifying two possible coordinators
-./neo4j-backup -full -from ha://192.168.1.15:2181,192.168.1.16:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -full -from ha://192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup from HA cluster, specifying only one coordinator
-./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup
-
-# Performing an incremental backup from HA cluster with a specific name (specified by neo4j configuration 'ha.cluster_name')
-./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup -cluster my-cluster
+./neo4j-backup -incremental -from ha://192.168.1.15:5001 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-restoring]]

@@ -43,6 +43,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
 
 // TODO This needs to be fixed
+@Ignore
 public class TestTxPushStrategyConfig
 {
     private GraphDatabaseAPI master;
