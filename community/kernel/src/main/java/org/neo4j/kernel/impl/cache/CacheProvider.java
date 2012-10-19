@@ -31,10 +31,10 @@ public abstract class CacheProvider extends Service implements HasSettings
 {
     protected static final String NODE_CACHE_NAME = "NodeCache";
     protected static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
-    
+
     private final String name;
     private final String description;
-    
+
     protected CacheProvider( String key, String description )
     {
         super( key );

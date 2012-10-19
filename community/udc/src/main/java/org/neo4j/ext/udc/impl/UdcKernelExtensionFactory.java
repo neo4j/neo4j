@@ -24,14 +24,14 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background
@@ -42,77 +42,61 @@ import org.neo4j.kernel.configuration.Config;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-@Service.Implementation( KernelExtension.class )
-public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
+@Service.Implementation(KernelExtensionFactory.class)
+public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelExtensionFactory.Dependencies>
 {
     static final String KEY = "kernel udc";
+
+    public interface Dependencies
+    {
+        Config getConfig();
+
+        XaDataSourceManager getXaDataSourceManager();
+
+        KernelData getKernelData();
+    }
 
     /**
      * No-arg constructor, sets the extension key to "kernel udc".
      */
-    public UdcExtensionImpl()
+    public UdcKernelExtensionFactory()
     {
         super( KEY );
     }
 
-    private Timer timer;
-
     @Override
     public Class getSettingsClass()
     {
-        return GraphDatabaseSettings.class;
+        return UdcSettings.class;
     }
 
     @Override
-    protected UdcTimerTask load( KernelData kernel )
+    public Lifecycle newKernelExtension( UdcKernelExtensionFactory.Dependencies dependencies ) throws Throwable
     {
-        if(timer != null) {
-            timer.cancel();
-        }
-
-        Config config = loadConfig(kernel);
-
-        if ( !config.get( UdcSettings.udc_enabled )) return null;
-
-        int firstDelay = config.get( UdcSettings.first_delay);
-        int interval = config.get( UdcSettings.interval );
-        String hostAddress = config.get( UdcSettings.udc_host );
-
-        UdcInformationCollector collector = new DefaultUdcInformationCollector(config, kernel);
-        UdcTimerTask task = new UdcTimerTask( hostAddress, collector);
-        
-        timer = new Timer( "Neo4j UDC Timer", /*isDaemon=*/true );
-        timer.scheduleAtFixedRate( task, firstDelay, interval );
-        
-        return task;
+        return new UdcKernelExtension( loadConfig( dependencies.getConfig() ), dependencies.getXaDataSourceManager(),
+                dependencies.getKernelData() );
     }
 
-    private Config loadConfig(KernelData kernel) {
+    private Config loadConfig( Config config )
+    {
         Properties udcProps = loadUdcProperties();
-        HashMap<String, String> config = new HashMap<String, String>(kernel.getConfig().getParams());
-        for (Map.Entry<Object, Object> entry : udcProps.entrySet()) {
-            config.put((String)entry.getKey(), (String) entry.getValue());
+        HashMap<String, String> configParams = new HashMap<String, String>( config.getParams() );
+        for ( Map.Entry<Object, Object> entry : udcProps.entrySet() )
+        {
+            configParams.put( (String) entry.getKey(), (String) entry.getValue() );
         }
-        return new Config( config );
-    }
-
-
-    @Override
-    protected void unload( UdcTimerTask task )
-    {
-        if(timer != null) {
-            timer.cancel();
-        }
+        return new Config( configParams );
     }
 
     private Properties loadUdcProperties()
     {
-        Properties sysProps = new Properties( );
+        Properties sysProps = new Properties();
         try
         {
             InputStream resource = getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" );
-            if (resource != null) {
-                sysProps.load(resource);
+            if ( resource != null )
+            {
+                sysProps.load( resource );
             }
         }
         catch ( Exception e )
@@ -122,5 +106,4 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         }
         return sysProps;
     }
-
 }

@@ -24,9 +24,8 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellClient;
@@ -35,7 +34,7 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.impl.ShellServerExtension;
+import org.neo4j.shell.impl.ShellServerKernelExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellSession implements ScriptSession
@@ -46,17 +45,18 @@ public class ShellSession implements ScriptSession
     private final CollectingOutput output;
 
     private static volatile ShellServer fallbackServer = null;
-    
+
     public ShellSession( GraphDatabaseAPI graph )
     {
-        ShellServerExtension shell = (ShellServerExtension) Service.load( KernelExtension.class, "shell" );
-        if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
         try
         {
-            ShellServer server = shell.getShellServer( graph.getKernelData() );
+            ShellServerKernelExtension extension = graph.getDependencyResolver().resolveDependency( KernelExtensions
+                    .class ).resolveDependency( ShellServerKernelExtension.class );
+
+            ShellServer server = extension.getServer();
             if ( server == null )
             {
-                server = getFallbackServer(graph);
+                server = getFallbackServer( graph );
             }
             output = new CollectingOutput();
             client = new SameJvmClient( new HashMap<String, Serializable>(), server, output );
@@ -70,7 +70,7 @@ public class ShellSession implements ScriptSession
 
     private ShellServer getFallbackServer( GraphDatabaseAPI graph )
     {
-        if(fallbackServer  == null)
+        if ( fallbackServer == null )
         {
             try
             {
@@ -80,7 +80,7 @@ public class ShellSession implements ScriptSession
             {
                 throw new RuntimeException( "Unable to start the fallback shellserver", e );
             }
-            
+
         }
         return fallbackServer;
     }
@@ -88,8 +88,14 @@ public class ShellSession implements ScriptSession
     @Override
     public Pair<String, String> evaluate( String script )
     {
-        if ( script.equals( "init()" ) ) return Pair.of( "", client.getPrompt() );
-        if ( script.equals( "exit" ) || script.equals( "quit" ) ) return Pair.of( "Sorry, can't do that.", client.getPrompt() );
+        if ( script.equals( "init()" ) )
+        {
+            return Pair.of( "", client.getPrompt() );
+        }
+        if ( script.equals( "exit" ) || script.equals( "quit" ) )
+        {
+            return Pair.of( "Sorry, can't do that.", client.getPrompt() );
+        }
         try
         {
             log.debug( script );
@@ -98,7 +104,7 @@ public class ShellSession implements ScriptSession
         }
         catch ( ShellException e )
         {
-            String message = ((AbstractClient)client).shouldPrintStackTraces() ?
+            String message = ((AbstractClient) client).shouldPrintStackTraces() ?
                     ShellException.stackTraceAsString( e ) : ShellException.getFirstMessage( e );
             return Pair.of( message, client.getPrompt() );
         }

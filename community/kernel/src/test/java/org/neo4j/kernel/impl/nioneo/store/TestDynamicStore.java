@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -45,8 +50,6 @@ import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 public class TestDynamicStore
 {
@@ -118,7 +121,8 @@ public class TestDynamicStore
 
     private void createEmptyStore( String fileName, int blockSize )
     {
-        new StoreFactory(config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM, null, StringLogger.SYSTEM, null ).createDynamicArrayStore(fileName, blockSize);
+        new StoreFactory(config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM,
+                StringLogger.SYSTEM, null ).createDynamicArrayStore(fileName, blockSize);
     }
 
     private DynamicArrayStore newStore()
@@ -166,9 +170,9 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config(new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
-                "store_dir", path()))  );
+                "store_dir", path() ) ) );
     }
 
     @Test
@@ -180,7 +184,7 @@ public class TestDynamicStore
             DynamicArrayStore store = newStore();
             long blockId = store.nextBlockId();
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
-                new byte[10] );
+                    new byte[10] );
             for ( DynamicRecord record : records )
             {
                 store.updateRecord( record );
@@ -226,7 +230,7 @@ public class TestDynamicStore
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
-                chars );
+                    chars );
             for ( DynamicRecord record : records )
             {
                 store.updateRecord( record );
@@ -247,7 +251,7 @@ public class TestDynamicStore
         createEmptyStore( dynamicStoreFile(), 30 );
         DynamicArrayStore store = newStore();
         ArrayList<Long> idsTaken = new ArrayList<Long>();
-        Map<Long,byte[]> byteData = new HashMap<Long,byte[]>();
+        Map<Long, byte[]> byteData = new HashMap<Long, byte[]>();
         float deleteIndex = 0.2f;
         float closeIndex = 0.1f;
         int currentCount = 0;
@@ -261,12 +265,12 @@ public class TestDynamicStore
                 if ( rIndex < deleteIndex && currentCount > 0 )
                 {
                     long blockId = idsTaken.remove(
-                        random.nextInt( currentCount ) );
+                            random.nextInt( currentCount ) );
                     store.getLightRecords( blockId );
                     byte[] bytes = (byte[]) PropertyStore.getArrayFor( blockId, store.getRecords( blockId ), store );
                     validateData( bytes, byteData.remove( blockId ) );
                     Collection<DynamicRecord> records = store
-                        .getLightRecords( blockId );
+                            .getLightRecords( blockId );
                     for ( DynamicRecord record : records )
                     {
                         record.setInUse( false );
@@ -280,7 +284,7 @@ public class TestDynamicStore
                     byte bytes[] = createRandomBytes( random );
                     long blockId = store.nextBlockId();
                     Collection<DynamicRecord> records = store.allocateRecords(
-                        blockId, (Object) bytes );
+                            blockId, (Object) bytes );
                     for ( DynamicRecord record : records )
                     {
                         assert !set.contains( record.getId() );

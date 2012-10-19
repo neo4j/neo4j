@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
-public class NoSuchLogVersionException extends IOException
+public class NoSuchLogVersionException extends MissingLogDataException
 {
     private long version;
 

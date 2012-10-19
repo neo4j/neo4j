@@ -26,7 +26,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
-import static org.neo4j.kernel.CommonFactories.defaultLastCommittedTxIdSetter;
 import static org.neo4j.kernel.CommonFactories.defaultTxHook;
 
 import java.io.File;
@@ -71,7 +70,7 @@ public class StoreMigratorTestIT
 
         String storeFileName = "target/outputDatabase/neostore";
         StoreFactory factory = new StoreFactory( config, defaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(), defaultLastCommittedTxIdSetter(), StringLogger.DEV_NULL, defaultTxHook() );
+                new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(), StringLogger.DEV_NULL, defaultTxHook() );
         NeoStore neoStore = factory.createNeoStore( storeFileName );
 
         ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();

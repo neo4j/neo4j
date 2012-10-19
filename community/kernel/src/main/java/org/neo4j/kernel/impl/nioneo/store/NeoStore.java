@@ -26,13 +26,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
@@ -61,6 +60,13 @@ public class NeoStore extends AbstractStore
 
     public static final String DEFAULT_NAME = "neostore";
 
+    public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
+    {
+        String store = config.get( Configuration.neo_store );
+        File neoStore = new File( store );
+        return fs.fileExists( neoStore.getAbsolutePath() );
+    }
+
     private NodeStore nodeStore;
     private PropertyStore propStore;
     private RelationshipStore relStore;
@@ -72,10 +78,8 @@ public class NeoStore extends AbstractStore
     private final int REL_GRAB_SIZE;
     private final String fileName;
     private final Config conf;
-    private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
 
     public NeoStore(String fileName, Config conf,
-                    LastCommittedTxIdSetter lastCommittedTxIdSetter,
                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                     FileSystemAbstraction fileSystemAbstraction,
                     StringLogger stringLogger, TxHook txHook,
@@ -85,7 +89,6 @@ public class NeoStore extends AbstractStore
                 fileSystemAbstraction, stringLogger);
         this.fileName = fileName;
         this.conf = conf;
-        this.lastCommittedTxIdSetter = lastCommittedTxIdSetter;
         this.relTypeStore = relTypeStore;
         this.propStore = propStore;
         this.relStore = relStore;
@@ -218,7 +221,6 @@ public class NeoStore extends AbstractStore
     @Override
     protected void closeStorage()
     {
-        if ( lastCommittedTxIdSetter != null ) lastCommittedTxIdSetter.close();
         if ( relTypeStore != null )
         {
             relTypeStore.close();
@@ -279,7 +281,7 @@ public class NeoStore extends AbstractStore
      * @param version the version to set.
      * @return the previous version before writing.
      */
-    public static long setVersion( String storeDir, long version )
+    public static long setVersion( File storeDir, long version )
     {
         RandomAccessFile file = null;
         try
@@ -420,22 +422,6 @@ public class NeoStore extends AbstractStore
                 txId + "] since the current one is[" + current + "]" );
         }
         setRecord( 3, txId );
-        // TODO Why check null here? because I have no time to fix the tests
-        // And the update to zookeeper or whatever should probably be moved from
-        // here and be async since if it fails tx will get exception in committing
-        // state and shutdown... that is wrong since the tx did not fail
-        // - zookeeper is only used for master election, tx state there is not critical
-        if ( isStarted && lastCommittedTxIdSetter != null && txId != lastCommittedTx )
-        {
-            try
-            {
-                lastCommittedTxIdSetter.setLastCommittedTxId(txId);
-            }
-            catch ( RuntimeException e )
-            {
-                logger.log( Level.WARNING, "Could not set last committed tx id", e );
-            }
-        }
         lastCommittedTx = txId;
     }
 

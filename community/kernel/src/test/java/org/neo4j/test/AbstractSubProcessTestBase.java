@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -26,6 +28,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
 import org.junit.After;
 import org.junit.Before;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,8 +40,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.neo4j.helpers.collection.MapUtil.*;
-
 public class AbstractSubProcessTestBase
 {
     private final TargetDirectory target;
@@ -49,7 +50,7 @@ public class AbstractSubProcessTestBase
         this( 1 );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     protected AbstractSubProcessTestBase( int instances )
     {
         this.instances = new Pair[instances];
@@ -65,7 +66,10 @@ public class AbstractSubProcessTestBase
     {
         for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.first().run( task );
+            if ( instance != null )
+            {
+                instance.first().run( task );
+            }
         }
     }
 
@@ -73,7 +77,10 @@ public class AbstractSubProcessTestBase
     {
         for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.first().restart();
+            if ( instance != null )
+            {
+                instance.first().restart();
+            }
         }
     }
 
@@ -101,7 +108,10 @@ public class AbstractSubProcessTestBase
         }
         for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.first().awaitStarted();
+            if ( instance != null )
+            {
+                instance.first().awaitStarted();
+            }
         }
     }
 
@@ -122,7 +132,7 @@ public class AbstractSubProcessTestBase
             }
         }
     }
-    
+
     protected void enableAllBreakPoints()
     {
         for ( Pair<Instance, BreakPoint[]> instance : instances )
@@ -152,7 +162,10 @@ public class AbstractSubProcessTestBase
             for ( int i = 0; i < instances.length; i++ )
             {
                 Pair<Instance, BreakPoint[]> instance = instances[i];
-                if ( instance != null ) SubProcess.stop( instance.first() );
+                if ( instance != null )
+                {
+                    SubProcess.stop( instance.first() );
+                }
                 instances[i] = null;
             }
         }
@@ -169,20 +182,20 @@ public class AbstractSubProcessTestBase
         // <T> T getMBean( Class<T> beanType );
     }
 
-    @SuppressWarnings( "serial" )
+    @SuppressWarnings("serial")
     public static class Bootstrapper implements Serializable
     {
         protected final String storeDir;
         private final Map<String, String> dbConfiguration;
 
         public Bootstrapper( AbstractSubProcessTestBase test, int instance )
-                                                                               throws IOException
+                throws IOException
         {
             this( test, instance, new HashMap<String, String>() );
         }
 
         public Bootstrapper( AbstractSubProcessTestBase test, int instance,
-                Map<String, String> dbConfiguration ) throws IOException
+                             Map<String, String> dbConfiguration ) throws IOException
         {
             this.dbConfiguration = addVitalConfig( dbConfiguration );
             this.storeDir = getStoreDir( test, instance ).getCanonicalPath();
@@ -191,12 +204,13 @@ public class AbstractSubProcessTestBase
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
             return stringMap( new HashMap<String, String>( dbConfiguration ),
-                              GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
+                    GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
         }
 
         protected GraphDatabaseService startup()
         {
-            return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( dbConfiguration ).newGraphDatabase();
+            return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( dbConfiguration )
+                    .newGraphDatabase();
         }
 
         protected void shutdown( GraphDatabaseService graphdb, boolean normal )
@@ -204,21 +218,21 @@ public class AbstractSubProcessTestBase
             graphdb.shutdown();
         }
     }
-    
+
     protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
             throws IOException
     {
         return getStoreDir( test, instance, true );
     }
-    
+
     protected static File getStoreDir( AbstractSubProcessTestBase test, int instance, boolean clean )
             throws IOException
     {
         return test.target.directory( "graphdb." + instance, clean );
     }
-    
+
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
-            Map<String, String> dbConfiguration )
+                                                         Map<String, String> dbConfiguration )
     {
         try
         {
@@ -229,11 +243,11 @@ public class AbstractSubProcessTestBase
             throw new RuntimeException( e );
         }
     }
-    
+
     public static class KillAwareBootstrapper extends Bootstrapper
     {
         public KillAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
-                Map<String, String> dbConfiguration ) throws IOException
+                                      Map<String, String> dbConfiguration ) throws IOException
         {
             super( test, instance, dbConfiguration );
         }
@@ -247,11 +261,14 @@ public class AbstractSubProcessTestBase
         @Override
         protected void shutdown( GraphDatabaseService graphdb, boolean normal )
         {
-            if ( normal ) super.shutdown( graphdb, normal );
+            if ( normal )
+            {
+                super.shutdown( graphdb, normal );
+            }
         }
     }
 
-    @SuppressWarnings( "serial" )
+    @SuppressWarnings("serial")
     private static class ThreadTask implements Task
     {
         private final Task task;
@@ -275,11 +292,12 @@ public class AbstractSubProcessTestBase
         }
     }
 
-    @SuppressWarnings( { "hiding", "serial" } )
+    @SuppressWarnings({"hiding", "serial"})
     private static class SubInstance extends SubProcess<Instance, Bootstrapper> implements Instance
     {
         private volatile GraphDatabaseAPI graphdb;
-        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseAPI> GRAPHDB = AtomicReferenceFieldUpdater
+        private static final AtomicReferenceFieldUpdater<SubInstance, GraphDatabaseAPI> GRAPHDB =
+                AtomicReferenceFieldUpdater
                 .newUpdater( SubInstance.class, GraphDatabaseAPI.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
         private volatile Throwable failure;
@@ -297,14 +315,17 @@ public class AbstractSubProcessTestBase
                 this.failure = failure;
             }
         }
-        
+
         @Override
         public void awaitStarted() throws InterruptedException
         {
             while ( graphdb == null )
             {
                 Throwable failure = this.failure;
-                if ( failure != null ) throw new StartupFailureException( failure );
+                if ( failure != null )
+                {
+                    throw new StartupFailureException( failure );
+                }
                 Thread.sleep( 1 );
             }
         }
@@ -334,27 +355,19 @@ public class AbstractSubProcessTestBase
         {
             GraphDatabaseService graphdb;
             Bootstrapper bootstrap = this.bootstrap;
-            while ( ( graphdb = GRAPHDB.getAndSet( this, null ) ) == null )
+            while ( (graphdb = GRAPHDB.getAndSet( this, null )) == null )
             {
-                if ( ( bootstrap = this.bootstrap ) == null )
+                if ( (bootstrap = this.bootstrap) == null )
+                {
                     throw new IllegalStateException( "instance has been shut down" );
+                }
             }
             graphdb.shutdown();
             this.graphdb = (GraphDatabaseAPI) bootstrap.startup();
         }
-
-        public <T> T getMBean( Class<T> beanType )
-        {
-            GraphDatabaseService graphdb;
-            while ( ( graphdb = this.graphdb ) == null )
-            {
-                if ( this.bootstrap == null ) throw new IllegalStateException( "instance has been shut down" );
-            }
-            return ((GraphDatabaseAPI)graphdb).getSingleManagementBean( beanType );
-        }
     }
 
-    @SuppressWarnings( "serial" )
+    @SuppressWarnings("serial")
     private static class StartupFailureException extends RuntimeException
     {
         StartupFailureException( Throwable failure )

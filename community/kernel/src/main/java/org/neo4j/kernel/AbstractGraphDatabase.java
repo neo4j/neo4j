@@ -25,18 +25,8 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService, Gra
 {
     /**
      * @deprecated This method is only for internal use.
-     * Version 1.9 of Neo4j will be the last version to contain this method.
+     *             Version 1.9 of Neo4j will be the last version to contain this method.
      */
     @Deprecated
     public abstract boolean transactionRunning();
-
-    /**
-     * Get a single management bean. Delegates to {@link #getSingleManagementBean(Class)}.
-     *
-     * @deprecated since Neo4j may now have multiple beans implementing the same bean interface, this method has been
-     *             deprecated in favor of {@link #getSingleManagementBean(Class)} and {@link #getManagementBeans(Class)}
-     *             . Version 1.5 of Neo4j will be the last version to contain this method.
-     */
-    @Deprecated
-    public abstract <T> T getManagementBean( Class<T> type );
 }

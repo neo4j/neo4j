@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.graphdb.DependencyResolver;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -33,28 +33,61 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class DummyIndexProvider extends IndexProvider implements IndexImplementation
+public class DummyIndexExtensionFactory extends
+        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexImplementation, Lifecycle
 {
     static final String IDENTIFIER = "test-dummy-neo-index";
     private InternalAbstractGraphDatabase db;
-    
-    public DummyIndexProvider()
+    private IndexProviders indexProviders;
+
+    public DummyIndexExtensionFactory()
     {
         super( IDENTIFIER );
     }
 
-    @Override
-    public IndexImplementation load( DependencyResolver dependencyResolver ) throws Exception
+    public interface Dependencies
     {
-        // This is just for testing (reusing provider/index impl).
-        db = dependencyResolver.resolveDependency( InternalAbstractGraphDatabase.class );
+        InternalAbstractGraphDatabase getDatabase();
+
+        IndexProviders getIndexProviders();
+    }
+
+    @Override
+    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    {
+        db = dependencies.getDatabase();
+        indexProviders = dependencies.getIndexProviders();
         return this;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        indexProviders.registerIndexProvider( IDENTIFIER, this );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        indexProviders.unregisterIndexProvider( IDENTIFIER );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
     }
 
     @Override
@@ -86,12 +119,12 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
     {
         return true;
     }
-    
+
     private abstract class DummyIndex<T extends PropertyContainer> implements Index<T>
     {
         private final String name;
         private final InternalAbstractGraphDatabase db;
-        
+
         public DummyIndex( String name, InternalAbstractGraphDatabase db )
         {
             this.name = name;
@@ -108,7 +141,9 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
         public IndexHits<T> get( String key, Object value )
         {
             if ( value.equals( "refnode" ) )
-                return new IteratorIndexHits<T>( Arrays.asList( (T)db.getReferenceNode() ) );
+            {
+                return new IteratorIndexHits<T>( Arrays.asList( (T) db.getReferenceNode() ) );
+            }
             return new IteratorIndexHits<T>( Collections.<T>emptyList() );
         }
 
@@ -172,7 +207,7 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
             throw new UnsupportedOperationException();
         }
     }
-    
+
     private class DummyNodeIndex extends DummyIndex<Node>
     {
         public DummyNodeIndex( String name, InternalAbstractGraphDatabase db )
@@ -186,7 +221,7 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
             return Node.class;
         }
     }
-    
+
     private class DummyRelationshipIndex extends DummyIndex<Relationship> implements RelationshipIndex
     {
         public DummyRelationshipIndex( String name, InternalAbstractGraphDatabase db )
@@ -202,26 +237,26 @@ public class DummyIndexProvider extends IndexProvider implements IndexImplementa
 
         @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
-                Node endNodeOrNull )
+                                            Node endNodeOrNull )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
-                Node startNodeOrNull, Node endNodeOrNull )
+                                              Node startNodeOrNull, Node endNodeOrNull )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
-                Node startNodeOrNull, Node endNodeOrNull )
+                                              Node startNodeOrNull, Node endNodeOrNull )
         {
             throw new UnsupportedOperationException();
         }
     }
-    
+
     private static class IteratorIndexHits<T> implements IndexHits<T>
     {
         private final List<T> list;

@@ -45,9 +45,10 @@ public class StoreUpgrader
     private IdGeneratorFactory idGeneratorFactory;
     private FileSystemAbstraction fileSystemAbstraction;
 
-    public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase,
-                          StoreMigrator storeMigrator, DatabaseFiles databaseFiles,
-                          IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction)
+    public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
+                          UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
+                          DatabaseFiles databaseFiles, IdGeneratorFactory idGeneratorFactory,
+                          FileSystemAbstraction fileSystemAbstraction)
     {
         this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -109,7 +110,8 @@ public class StoreUpgrader
 
         Config upgradeConfiguration = new Config( upgradeConfig );
         
-        NeoStore neoStore = new StoreFactory(upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystemAbstraction, null, StringLogger.DEV_NULL, null ).createNeoStore(upgradeFileName);
+        NeoStore neoStore = new StoreFactory( upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(),
+                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore(upgradeFileName);
         try
         {
             storeMigrator.migrate( new LegacyStore( storageFileName, StringLogger.DEV_NULL ), neoStore );

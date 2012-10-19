@@ -80,6 +80,32 @@ public class DefaultFileSystemAbstraction
     @Override
     public void copyFile( String from, String to ) throws IOException
     {
-        FileUtils.copyRecursively( new File( from ), new File( to ) );
+        File fromFile = new File( from );
+        File toFile = new File( to );
+        if ( fromFile.isDirectory() )
+        {
+            FileUtils.copyRecursively( fromFile, toFile );
+        }
+        else
+        {
+            FileUtils.copyFile( fromFile, toFile );
+        }
+    }
+
+    @Override
+    public void autoCreatePath( String store ) throws IOException
+    {
+        String fileSeparator = System.getProperty( "file.separator" );
+        int index = store.lastIndexOf( fileSeparator );
+        String dirs = store.substring( 0, index );
+        File directories = new File( dirs );
+        if ( !directories.exists() )
+        {
+            if ( !directories.mkdirs() )
+            {
+                throw new IOException( "Unable to create directory path["
+                        + dirs + "] for Neo4j store." );
+            }
+        }
     }
 }

@@ -108,6 +108,12 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
     public void init()
         throws Throwable
     {
+        synchronized ( providers )
+        {
+            @SuppressWarnings( "hiding" ) State state = this.state;
+            if ( !state.startup( this ) ) return;
+        }
+        dumpAll( DiagnosticsPhase.INITIALIZED);
     }
 
     public void start()
@@ -117,13 +123,20 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
             @SuppressWarnings( "hiding" ) State state = this.state;
             if ( !state.startup( this ) ) return;
         }
-        dumpAll( DiagnosticsPhase.STARTUP );
+        dumpAll( DiagnosticsPhase.STARTED);
     }
 
     @Override
     public void stop()
         throws Throwable
     {
+        synchronized ( providers )
+        {
+            @SuppressWarnings( "hiding" ) State state = this.state;
+            if ( !state.shutdown( this ) ) return;
+        }
+        dumpAll( DiagnosticsPhase.STOPPING );
+        providers.clear();
     }
 
     public void shutdown()
@@ -185,6 +198,14 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
         extract( identifier, logger );
     }
 
+    public void dumpAll( StringLogger log )
+    {
+        for ( DiagnosticsProvider provider : providers )
+        {
+            dump( provider, DiagnosticsPhase.EXPLICIT, log );
+        }
+    }
+
     public void extract( String identifier, StringLogger log )
     {
         for ( DiagnosticsProvider provider : providers )
@@ -242,7 +263,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
         @SuppressWarnings( "hiding" ) State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( 0, provider );
-        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTUP, provider );
+        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider );
     }
 
     public void appendProvider( DiagnosticsProvider provider )
@@ -250,7 +271,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, 
         @SuppressWarnings( "hiding" ) State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( provider );
-        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTUP, provider );
+        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider );
     }
 
     private void dump( DiagnosticsPhase phase, DiagnosticsProvider provider )

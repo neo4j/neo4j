@@ -24,13 +24,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.logging.Logger;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
@@ -58,21 +58,34 @@ public class StoreFactory
     private final IdGeneratorFactory idGeneratorFactory;
     private final WindowPoolFactory windowPoolFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
-    private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private final StringLogger stringLogger;
     private final TxHook txHook;
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                         FileSystemAbstraction fileSystemAbstraction, LastCommittedTxIdSetter lastCommittedTxIdSetter,
-                         StringLogger stringLogger, TxHook txHook )
+                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, TxHook txHook )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.windowPoolFactory = windowPoolFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.lastCommittedTxIdSetter = lastCommittedTxIdSetter;
         this.stringLogger = stringLogger;
         this.txHook = txHook;
+    }
+
+    public boolean ensureStoreExists() throws IOException
+    {
+        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+
+        String store = config.get( GraphDatabaseSettings.neo_store );
+        boolean created = false;
+        if ( !readOnly && !fileSystemAbstraction.fileExists( store ))
+        {
+            stringLogger.logMessage( "Creating new db @ " + store, true );
+            fileSystemAbstraction.autoCreatePath( store );
+            createNeoStore( store ).close();
+            created = true;
+        }
+        return created;
     }
 
     public NeoStore newNeoStore(String fileName)
@@ -90,9 +103,8 @@ public class StoreFactory
 
     NeoStore attemptNewNeoStore( String fileName )
     {
-        return new NeoStore( fileName, config,
-                lastCommittedTxIdSetter, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, txHook,
+        return new NeoStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, txHook,
                 newRelationshipTypeStore(fileName + ".relationshiptypestore.db"),
                 newPropertyStore(fileName + ".propertystore.db"),
                 newRelationshipStore(fileName + ".relationshipstore.db"),
@@ -341,11 +353,11 @@ public class StoreFactory
             throw new UnderlyingStorageException( "Unable to create store "
                     + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id" );
+        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id", 0 );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, fileName + ".id", 1, idType, 0, false);
+        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, fileName + ".id", 1, idType );
         idGenerator.nextId(); // reserv first for blockSize
-        idGenerator.close( false );
+        idGenerator.close();
     }
 
 
@@ -378,7 +390,7 @@ public class StoreFactory
             throw new UnderlyingStorageException( "Unable to create store "
                     + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id" );
+        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id", 0 );
     }
 
     public String buildTypeDescriptorAndVersion( String typeDescriptor )

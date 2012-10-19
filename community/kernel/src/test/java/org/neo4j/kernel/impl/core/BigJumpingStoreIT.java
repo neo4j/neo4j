@@ -44,12 +44,14 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 public class BigJumpingStoreIT
 {
@@ -57,24 +59,25 @@ public class BigJumpingStoreIT
     {
         protected TestDatabase( String storeDir, Map<String, String> params )
         {
-            super( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
-                    Service.load( CacheProvider.class ) );
+            super( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             run();
         }
-        
+
         @Override
         protected IdGeneratorFactory createIdGeneratorFactory()
         {
             return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
         }
-        
+
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
             return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
         }
     }
-    
+
     private static final int SIZE_PER_JUMP = 1000;
     private static final String PATH = "target/var/bigjump";
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
@@ -102,7 +105,10 @@ public class BigJumpingStoreIT
     @After
     public void doAfter()
     {
-        if ( db != null ) db.shutdown();
+        if ( db != null )
+        {
+            db.shutdown();
+        }
         db = null;
     }
 
@@ -112,9 +118,9 @@ public class BigJumpingStoreIT
         // Create stuff
         List<Node> nodes = new ArrayList<Node>();
         Transaction tx = db.beginTx();
-        int numberOfNodes = SIZE_PER_JUMP*3;
+        int numberOfNodes = SIZE_PER_JUMP * 3;
         String stringValue = "a longer string than short";
-        byte[] arrayValue = new byte[] { 3, 7 };
+        byte[] arrayValue = new byte[]{3, 7};
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             Node node = db.createNode();
@@ -124,11 +130,11 @@ public class BigJumpingStoreIT
             nodes.add( node );
         }
 
-        int numberOfRels = numberOfNodes-100;
+        int numberOfRels = numberOfNodes - 100;
         for ( int i = 0; i < numberOfRels; i++ )
         {
-            Node node1 = nodes.get( i/100 );
-            Node node2 = nodes.get( i+1 );
+            Node node1 = nodes.get( i / 100 );
+            Node node2 = nodes.get( i + 1 );
             node1.createRelationshipTo( node2, TYPE );
         }
 
@@ -158,24 +164,30 @@ public class BigJumpingStoreIT
             Node node = nodes.get( i );
             switch ( i % 6 )
             {
-            case 0: node.removeProperty( "number" ); break;
-            case 1: node.removeProperty( "string" ); break;
-            case 2: node.removeProperty( "array" ); break;
-            case 3:
-                node.removeProperty( "number" );
-                node.removeProperty( "string" );
-                node.removeProperty( "array" );
-                break;
-            case 4:
-                node.setProperty( "new", 34 );
-                break;
-            case 5:
-                Object oldValue = node.getProperty( "string", null );
-                if ( oldValue != null )
-                {
-                    node.setProperty( "string", "asjdkasdjkasjdkasjdkasdjkasdj" );
-                    node.setProperty( "string", stringValue );
-                }
+                case 0:
+                    node.removeProperty( "number" );
+                    break;
+                case 1:
+                    node.removeProperty( "string" );
+                    break;
+                case 2:
+                    node.removeProperty( "array" );
+                    break;
+                case 3:
+                    node.removeProperty( "number" );
+                    node.removeProperty( "string" );
+                    node.removeProperty( "array" );
+                    break;
+                case 4:
+                    node.setProperty( "new", 34 );
+                    break;
+                case 5:
+                    Object oldValue = node.getProperty( "string", null );
+                    if ( oldValue != null )
+                    {
+                        node.setProperty( "string", "asjdkasdjkasjdkasjdkasdjkasdj" );
+                        node.setProperty( "string", stringValue );
+                    }
             }
 
             if ( count( node.getRelationships() ) > 50 )
@@ -194,7 +206,7 @@ public class BigJumpingStoreIT
             }
             else if ( i % 20 == 0 )
             {
-                Node otherNode = nodes.get( nodes.size()-i-1 );
+                Node otherNode = nodes.get( nodes.size() - i - 1 );
                 Relationship rel = node.createRelationshipTo( otherNode, TYPE2 );
                 rel.setProperty( "other relprop", 1010 );
             }
@@ -211,13 +223,27 @@ public class BigJumpingStoreIT
                 node = db.getNodeById( node.getId() );
                 switch ( nodeCount % 6 )
                 {
-                case 0: assertProperties( map( "string", stringValue, "array", arrayValue ), node ); break;
-                case 1: assertProperties( map( "number", nodeCount, "array", arrayValue ), node ); break;
-                case 2: assertProperties( map( "number", nodeCount, "string", stringValue ), node ); break;
-                case 3: assertEquals( 0, count( node.getPropertyKeys() ) ); break;
-                case 4: assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue, "new", 34 ), node ); break;
-                case 5: assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue ), node ); break;
-                default:
+                    case 0:
+                        assertProperties( map( "string", stringValue, "array", arrayValue ), node );
+                        break;
+                    case 1:
+                        assertProperties( map( "number", nodeCount, "array", arrayValue ), node );
+                        break;
+                    case 2:
+                        assertProperties( map( "number", nodeCount, "string", stringValue ), node );
+                        break;
+                    case 3:
+                        assertEquals( 0, count( node.getPropertyKeys() ) );
+                        break;
+                    case 4:
+                        assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue,
+                                "new", 34 ), node );
+                        break;
+                    case 5:
+                        assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue ),
+                                node );
+                        break;
+                    default:
                 }
 
                 for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
@@ -242,7 +268,7 @@ public class BigJumpingStoreIT
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,
-            Object value )
+                                   Object value )
     {
         for ( Relationship rel : relationships )
         {

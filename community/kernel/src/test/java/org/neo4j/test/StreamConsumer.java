@@ -19,12 +19,12 @@
  */
 package org.neo4j.test;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 
 /**
@@ -35,16 +35,22 @@ import java.io.Writer;
 public class StreamConsumer implements Runnable
 {
 
-    private final Reader in;
+    private final BufferedReader in;
     private final Writer out;
 
-    private static final int BUFFER_SIZE = 32;
     private boolean quiet;
+    private String prefix;
 
     public StreamConsumer( InputStream in, OutputStream out, boolean quiet )
     {
+        this(in, out, quiet, "");
+    }
+
+    public StreamConsumer( InputStream in, OutputStream out, boolean quiet, String prefix )
+    {
         this.quiet = quiet;
-        this.in = new InputStreamReader( in );
+        this.prefix = prefix;
+        this.in = new BufferedReader(new InputStreamReader( in ));
         this.out = new OutputStreamWriter( out );
     }
 
@@ -53,14 +59,15 @@ public class StreamConsumer implements Runnable
     {
         try
         {
-            char[] cbuf = new char[BUFFER_SIZE];
-            int count;
-            while ( ( count = in.read( cbuf, 0, BUFFER_SIZE ) ) >= 0 )
+            String line;
+            while ( ( line = in.readLine()) != null)
             {
                 if (!quiet)
-                    out.write( cbuf, 0, count );
+                {
+                    out.write( prefix+line+"\n" );
+                    out.flush();
+                }
             }
-            out.flush();
         }
         catch ( IOException exc )
         {

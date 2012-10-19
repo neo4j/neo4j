@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.index.lucene.unsafe.batchinsert;
 
 import java.util.Map;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
+import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 
 /**
- * The {@link BatchInserter} version of the Lucene-based indexes. Indexes
- * created and populated using {@link BatchInserterIndex}s from this provider
+ * The {@link org.neo4j.unsafe.batchinsert.BatchInserter} version of the Lucene-based indexes. Indexes
+ * created and populated using {@link org.neo4j.unsafe.batchinsert.BatchInserterIndex}s from this provider
  * are compatible with the normal {@link Index}es.
  */
 public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvider
@@ -37,7 +40,7 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
     {
         provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
     }
-    
+
     @Override
     public BatchInserterIndex nodeIndex( String indexName, Map<String, String> config )
     {

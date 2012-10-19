@@ -17,23 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.apache.lucene.index;
 
-package org.neo4j.kernel;
+import java.io.File;
 
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 
-/**
-* Default implementation of LastCommittedTxIdSetter that does nothing
-*/
-public class DefaultLastCommittedTxIdSetter implements LastCommittedTxIdSetter
+public class RebuildCompoundFile
 {
-    public void setLastCommittedTxId( long txId )
+    public static void main( String[] args ) throws Exception
     {
-        // Do nothing
-    }
-
-    @Override
-    public void close()
-    {
+        String path = "/home/chris/index";
+        File baseDirectory = new File( path );
+        Directory directory = FSDirectory.open( baseDirectory );
+        CompoundFileWriter writer = new CompoundFileWriter( directory, "_drr.cfs" );
+        for ( String pathname : directory.listAll() )
+        {
+            if ( pathname.endsWith( "gen" ) || pathname.endsWith( "cfs" ) || pathname.endsWith( "12" ) )
+            {
+                continue;
+            }
+            writer.addFile( pathname );
+        }
+        writer.close();
     }
 }

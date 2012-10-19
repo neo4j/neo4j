@@ -20,17 +20,17 @@
 package org.neo4j.shell.impl;
 
 import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.kernel.KernelExtensionContractTest;
+import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestShellServerExtension extends
-        KernelExtensionContractTest<GraphDatabaseShellServer, ShellServerExtension>
+        KernelExtensionFactoryContractTest
 {
     public TestShellServerExtension()
     {
-        super( ShellServerExtension.KEY, ShellServerExtension.class );
+        super( ShellServerExtensionFactory.KEY, ShellServerExtensionFactory.class );
     }
 
     @Override
@@ -40,7 +40,7 @@ public class TestShellServerExtension extends
         if ( shouldLoad )
         {
             configuration.put( ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
-            configuration.put(  ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
+            configuration.put( ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
         }
         return configuration;
     }

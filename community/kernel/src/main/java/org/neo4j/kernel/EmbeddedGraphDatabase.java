@@ -21,17 +21,21 @@ package org.neo4j.kernel;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by invoking the
  * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes
  * a path to a directory where Neo4j will store its data files, as such:
- *
+ * <p/>
  * <pre>
  * <code>
  * GraphDatabaseService graphDb = new EmbeddedGraphDatabase( &quot;var/graphdb&quot; );
@@ -39,7 +43,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
  * graphDb.shutdown();
  * </code>
  * </pre>
- *
+ * <p/>
  * For more information, see {@link GraphDatabaseService}.
  */
 public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
@@ -58,24 +62,27 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters.
-     * <p>
+     * <p/>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
      *
      * @param storeDir the store directory for the db files
-     * @param params configuration parameters
+     * @param params   configuration parameters
      */
-    public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
+    public EmbeddedGraphDatabase( String storeDir, Map<String, String> params )
     {
-        this( storeDir, params, Service.load( IndexProvider.class ), Service.load( KernelExtension.class ),
-                Service.load( CacheProvider.class ) );
+        this( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+                KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
     }
-    
-    public EmbeddedGraphDatabase( String storeDir, Map<String,String> params, Iterable<IndexProvider> indexProviders,
-            Iterable<KernelExtension> kernelExtensions, Iterable<CacheProvider> cacheProviders )
+
+    public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
+                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                  Iterable<CacheProvider> cacheProviders,
+                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders );
-        
+        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+
         run();
     }
 }

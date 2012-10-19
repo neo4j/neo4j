@@ -359,8 +359,7 @@ public class UpgradeStoreIT
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
-        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType,
-                long highestIdInUse, boolean startup )
+        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false );
             generators.put( idType, generator );
@@ -372,9 +371,9 @@ public class UpgradeStoreIT
             return generators.get( idType );
         }
 
-        public void create( FileSystemAbstraction fs, String fileName )
+        public void create( FileSystemAbstraction fs, String fileName, long highId )
         {
-            IdGeneratorImpl.createGenerator( fs, fileName );
+            IdGeneratorImpl.createGenerator( fs, fileName, highId );
         }
     }
 }

@@ -35,7 +35,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGenerator, Lifecycle
 {
-    private NeoStoreXaDataSource xaDs = null;
+//    private NeoStoreXaDataSource xaDs = null;
     private String dataSourceName = null;
     private NeoStoreTransaction readOnlyResourceConnection;
     private XaDataSourceManager xaDataSourceManager;
@@ -53,18 +53,18 @@ public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGen
 
     public void start()
     {
-        xaDs = xaDataSourceManager.getNeoStoreDataSource();
-        if ( xaDs == null )
-        {
-            throw new IllegalStateException(
-                "Unable to get nioneodb datasource" );
-        }
-        readOnlyResourceConnection = new ReadTransaction( xaDs.getNeoStore() );
+//        xaDs = xaDataSourceManager.getNeoStoreDataSource();
+//        if ( xaDs == null )
+//        {
+//            throw new IllegalStateException(
+//                "Unable to get nioneodb datasource" );
+//        }
+//        readOnlyResourceConnection = new ReadTransaction( xaDs.getNeoStore() );
     }
 
     public void stop()
     {
-        if ( xaDs != null )
+        if (  xaDataSourceManager.getNeoStoreDataSource() != null )
         {
             // This close is owned by the XaDS xaDs.close();
         }
@@ -78,7 +78,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGen
 
     public NeoStoreTransaction createTransaction( XaConnection connection )
     {
-        if ( xaDs.isReadOnly() )
+        if (  xaDataSourceManager.getNeoStoreDataSource().isReadOnly() )
         {
             throw new ReadOnlyDbException();
         }
@@ -90,10 +90,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGen
         result.setXaConnection( connection );
         return result;
     }
-    
+
     public NeoStoreTransaction createReadOnlyResourceConnection()
     {
-        return readOnlyResourceConnection; 
+        return new ReadTransaction( xaDataSourceManager.getNeoStoreDataSource().getNeoStore() );
     }
 
     public String toString()
@@ -103,21 +103,22 @@ public class NioNeoDbPersistenceSource implements PersistenceSource, EntityIdGen
 
     public long nextId( Class<?> clazz )
     {
-        return xaDs.nextId( clazz );
+        return  xaDataSourceManager.getNeoStoreDataSource().nextId( clazz );
     }
 
     public long getHighestPossibleIdInUse( Class<?> clazz )
     {
-        return xaDs.getHighestPossibleIdInUse( clazz );
+        return  xaDataSourceManager.getNeoStoreDataSource().getHighestPossibleIdInUse( clazz );
     }
 
     public long getNumberOfIdsInUse( Class<?> clazz )
     {
-        return xaDs.getNumberOfIdsInUse( clazz );
+        return  xaDataSourceManager.getNeoStoreDataSource().getNumberOfIdsInUse( clazz );
     }
     
     public XaDataSource getXaDataSource()
     {
-        return xaDs;
+        return  xaDataSourceManager.getNeoStoreDataSource();
     }
+
 }

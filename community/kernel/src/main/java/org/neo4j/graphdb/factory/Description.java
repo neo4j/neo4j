@@ -30,7 +30,6 @@ import java.lang.annotation.Target;
  *
  * This is deprecated, it will be moved out of the public API in 1.11.
  */
-@Deprecated
 @Retention( RetentionPolicy.RUNTIME )
 @Target( {ElementType.TYPE, ElementType.FIELD} )
 public @interface Description

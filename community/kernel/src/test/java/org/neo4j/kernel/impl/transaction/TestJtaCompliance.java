@@ -717,10 +717,6 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
             this.xaResource = xaResource;
         }
 
-        public void close()
-        {
-        }
-
         public XaConnection getXaConnection()
         {
             return new DummyXaConnection( xaResource );
@@ -730,6 +726,22 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         public long getLastCommittedTxId()
         {
             return 0;
+        }
+
+        public void init()
+        {
+        }
+
+        public void start()
+        {
+        }
+
+        public void stop()
+        {
+        }
+
+        public void shutdown()
+        {
         }
     }
 

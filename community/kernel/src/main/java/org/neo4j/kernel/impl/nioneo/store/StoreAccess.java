@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
@@ -96,8 +95,7 @@ public class StoreAccess
             new StoreFactory( new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
                                               .apply( requiredParams( params, path ) ) ), new DefaultIdGeneratorFactory(),
 
-                    new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                    new DefaultLastCommittedTxIdSetter(), initLogger( path ),
+                    new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), initLogger( path ),
                               new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
         this.closeable = true;
     }

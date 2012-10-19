@@ -68,6 +68,7 @@ class TransactionImpl implements Transaction
 
     private final TxManager txManager;
     private final ForceMode forceMode;
+    private Thread owner;
 
     TransactionImpl( TxManager txManager, ForceMode forceMode )
     {
@@ -75,6 +76,7 @@ class TransactionImpl implements Transaction
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
+        owner = Thread.currentThread();
     }
 
     /**
@@ -96,7 +98,7 @@ class TransactionImpl implements Transaction
     public String toString()
     {
         StringBuffer txString = new StringBuffer( "Transaction(" +
-            eventIdentifier + ")[" + txManager.getTxStatusAsString( status ) +
+            eventIdentifier + ", owner:\"" + owner.getName() + "\")[" + txManager.getTxStatusAsString( status ) +
             ",Resources=" + resourceList.size() + "]" );
 //        Iterator<ResourceElement> itr = resourceList.iterator();
 //        while ( itr.hasNext() )
@@ -651,6 +653,7 @@ class TransactionImpl implements Transaction
             throw new IllegalStateException( "Transaction[" + this
                 + "] already active" );
         }
+        owner = Thread.currentThread();
         active = true;
     }
 

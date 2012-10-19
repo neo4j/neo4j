@@ -39,7 +39,9 @@ public class NamedThreadFactory implements ThreadFactory
 
     public Thread newThread( Runnable runnable )
     {
-        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + threadCounter.getAndIncrement() );
+        final int id = threadCounter.getAndIncrement();
+        Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id );
+
         result.setDaemon( false );
         result.setPriority( Thread.NORM_PRIORITY );
         return result;

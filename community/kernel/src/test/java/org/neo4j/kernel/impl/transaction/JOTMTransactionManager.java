@@ -46,31 +46,39 @@ import org.objectweb.jotm.TransactionResourceManager;
 public class JOTMTransactionManager extends AbstractTransactionManager
 {
 
-	public static class Provider extends TransactionManagerProvider
-	{
-		public Provider() {
-			super(NAME);
-		}
+    @Override
+    public int getEventIdentifier()
+    {
+        return 0;
+    }
 
-		@Override
-		public AbstractTransactionManager loadTransactionManager(
-				String txLogDir, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpe,
-				TxHook rollbackHook, StringLogger msgLog,
-				FileSystemAbstraction fileSystem) {
-			return new JOTMTransactionManager(xaDataSourceManager);
-		}
-	}
+    public static class Provider extends TransactionManagerProvider
+    {
+        public Provider()
+        {
+            super( NAME );
+        }
 
-	public static final String NAME = "JOTM";
-	
-	private final TransactionManager current;
+        @Override
+        public AbstractTransactionManager loadTransactionManager(
+                String txLogDir, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpe,
+                TxHook rollbackHook, StringLogger msgLog,
+                FileSystemAbstraction fileSystem )
+        {
+            return new JOTMTransactionManager( xaDataSourceManager );
+        }
+    }
+
+    public static final String NAME = "JOTM";
+
+    private final TransactionManager current;
     private final Jotm jotm;
     private final XaDataSourceManager xaDataSourceManager;
 
-    private JOTMTransactionManager(XaDataSourceManager xaDataSourceManager)
+    private JOTMTransactionManager( XaDataSourceManager xaDataSourceManager )
     {
-    	this.xaDataSourceManager = xaDataSourceManager;
-    	
+        this.xaDataSourceManager = xaDataSourceManager;
+
         Registry registry = null;
         try
         {
@@ -112,14 +120,103 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     @Override
     public void init()
     {
+    }
+
+    @Override
+    public void begin() throws NotSupportedException, SystemException
+    {
+        current.begin();
+    }
+
+    @Override
+    public void commit() throws RollbackException, HeuristicMixedException,
+            HeuristicRollbackException, SecurityException,
+            IllegalStateException, SystemException
+    {
+        current.commit();
+    }
+
+    @Override
+    public int getStatus() throws SystemException
+    {
+        return current.getStatus();
+    }
+
+    @Override
+    public Transaction getTransaction() throws SystemException
+    {
+        if ( current == null )
+        {
+            return null;
+        }
+        return current.getTransaction();
+    }
+
+    @Override
+    public void resume( Transaction arg0 ) throws InvalidTransactionException,
+            IllegalStateException, SystemException
+    {
+        current.resume( arg0 );
+    }
+
+    @Override
+    public void rollback() throws IllegalStateException, SecurityException,
+            SystemException
+    {
+        current.rollback();
+    }
+
+    @Override
+    public void setRollbackOnly() throws IllegalStateException, SystemException
+    {
+        current.setRollbackOnly();
+    }
+
+    @Override
+    public void setTransactionTimeout( int arg0 ) throws SystemException
+    {
+        current.setTransactionTimeout( arg0 );
+    }
+
+    @Override
+    public Transaction suspend() throws SystemException
+    {
+        return current.suspend();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+
+    }
+
+    /**
+     * Stops the JOTM instance.
+     */
+    @Override
+    public void stop()
+    {
+        jotm.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void doRecovery() throws Throwable
+    {
         TransactionResourceManager trm = new TransactionResourceManager()
         {
             @Override
-			public void returnXAResource( String rmName, XAResource rmXares )
+            public void returnXAResource( String rmName, XAResource rmXares )
             {
                 return;
             }
         };
+
         try
         {
             for ( XaDataSource xaDs : xaDataSourceManager.getAllRegisteredDataSources() )
@@ -135,86 +232,9 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         }
     }
 
-    @Override
-	public void begin() throws NotSupportedException, SystemException
+    public Jotm getJotmTxManager()
     {
-        current.begin();
+        return jotm;
     }
 
-    @Override
-	public void commit() throws RollbackException, HeuristicMixedException,
-            HeuristicRollbackException, SecurityException,
-            IllegalStateException, SystemException
-    {
-        current.commit();
-    }
-
-    @Override
-	public int getStatus() throws SystemException
-    {
-        return current.getStatus();
-    }
-
-    @Override
-	public Transaction getTransaction() throws SystemException
-    {
-        if ( current == null ) return null;
-        return current.getTransaction();
-    }
-
-    @Override
-	public void resume( Transaction arg0 ) throws InvalidTransactionException,
-            IllegalStateException, SystemException
-    {
-        current.resume( arg0 );
-    }
-
-    @Override
-	public void rollback() throws IllegalStateException, SecurityException,
-            SystemException
-    {
-        current.rollback();
-    }
-
-    @Override
-	public void setRollbackOnly() throws IllegalStateException, SystemException
-    {
-        current.setRollbackOnly();
-    }
-
-    @Override
-	public void setTransactionTimeout( int arg0 ) throws SystemException
-    {
-        current.setTransactionTimeout( arg0 );
-    }
-
-    @Override
-	public Transaction suspend() throws SystemException
-    {
-        return current.suspend();
-    }
-
-	@Override
-	public void start() throws Throwable {
-	    
-	}
-
-    /**
-     * Stops the JOTM instance.
-     */
-    @Override
-    public void stop()
-    {
-        jotm.stop();
-    }
-
-	@Override
-	public void shutdown() throws Throwable {
-	    
-	}
-	
-	public Jotm getJotmTxManager() {
-	    return jotm;
-	}
-	
 }

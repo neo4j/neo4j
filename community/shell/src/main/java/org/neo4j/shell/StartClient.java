@@ -37,7 +37,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
-import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
@@ -48,45 +47,45 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 public class StartClient
 {
     private AtomicBoolean hasBeenShutdown = new AtomicBoolean();
-    
+
     /**
      * The path to the local (this JVM) {@link GraphDatabaseService} to
      * start and connect to.
      */
     public static final String ARG_PATH = "path";
-    
+
     /**
      * Whether or not the shell client should be readonly.
      */
     public static final String ARG_READONLY = "readonly";
-    
+
     /**
      * The host (ip or name) to connect remotely to.
      */
     public static final String ARG_HOST = "host";
-    
+
     /**
      * The port to connect remotely on. A server must have been started
      * on that port.
      */
     public static final String ARG_PORT = "port";
-    
+
     /**
      * The RMI name to use.
      */
     public static final String ARG_NAME = "name";
-    
+
     /**
      * The PID (process ID) to connect to.
      */
     public static final String ARG_PID = "pid";
-    
+
     /**
      * Commands (a line can contain more than one command, with && in between)
      * to execute when the shell client has been connected.
      */
     public static final String ARG_COMMAND = "c";
-    
+
     /**
      * Configuration file to load and use if a local {@link GraphDatabaseService}
      * is started in this JVM.
@@ -99,26 +98,15 @@ public class StartClient
 
     /**
      * Starts a shell client. Remote or local depending on the arguments.
+     *
      * @param arguments the arguments from the command line. Can contain
-     * information about whether to start a local
-     * {@link GraphDatabaseShellServer} or connect to an already running
-     * {@link GraphDatabaseService}.
+     *                  information about whether to start a local
+     *                  {@link GraphDatabaseShellServer} or connect to an already running
+     *                  {@link GraphDatabaseService}.
      */
     public static void main( String[] arguments )
     {
         new StartClient().start( arguments );
-    }
-
-    /**
-     * Starts a shell client. Remote or local depending on the arguments.
-     * @param agentArgs the arguments from the command line. Can contain
-     * information about whether to start a local
-     * {@link GraphDatabaseShellServer} or connect to an already running
-     * {@link GraphDatabaseService}.
-     */
-    public static void agentmain( String agentArgs )
-    {
-        new ShellServerExtension().loadAgent( agentArgs );
     }
 
     private void start( String[] arguments )
@@ -136,14 +124,14 @@ public class StartClient
         String name = args.get( ARG_NAME, null );
         String pid = args.get( ARG_PID, null );
 
-        if ( ( path != null && ( port != null || name != null || host != null || pid != null ) )
-             || ( pid != null && host != null ) )
+        if ( (path != null && (port != null || name != null || host != null || pid != null))
+                || (pid != null && host != null) )
         {
             System.err.println( "You have supplied both " +
-                ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
-                "You should either supply only " + ARG_PATH +
-                " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
-                "remote shell client can be started" );
+                    ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
+                    "You should either supply only " + ARG_PATH +
+                    " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
+                    "remote shell client can be started" );
             return;
         }
         // Local
@@ -172,6 +160,7 @@ public class StartClient
     }
 
     private static final Method attachMethod, loadMethod;
+
     static
     {
         Method attach, load;
@@ -207,10 +196,10 @@ public class StartClient
         if ( dbPath == null )
         {
             System.err.println( "ERROR: To start a local Neo4j service and a " +
-                "shell client on top of that you need to supply a path to a " +
-                "Neo4j store or just a new path where a new store will " +
-                "be created if it doesn't exist. -" + ARG_PATH +
-                " /my/path/here" );
+                    "shell client on top of that you need to supply a path to a " +
+                    "Neo4j store or just a new path where a new store will " +
+                    "be created if it doesn't exist. -" + ARG_PATH +
+                    " /my/path/here" );
             return;
         }
 
@@ -227,7 +216,7 @@ public class StartClient
     }
 
     private void tryStartLocalServerAndClient( String dbPath,
-        boolean readOnly, Args args ) throws Exception
+                                               boolean readOnly, Args args ) throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly, configFile );
@@ -241,7 +230,9 @@ public class StartClient
         } );
 
         if ( !isCommandLine( args ) )
+        {
             System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
+        }
         ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ) );
         grabPromptOrJustExecuteCommand( client, args );
         shutdownIfNecessary( server );
@@ -286,9 +277,12 @@ public class StartClient
             String host = args.get( ARG_HOST, "localhost" );
             int port = args.getNumber( ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue();
             String name = args.get( ARG_NAME, AbstractServer.DEFAULT_NAME );
-            ShellClient client = ShellLobby.newClient( RmiLocation.location( host, port, name ), getSessionVariablesFromArgs( args ) );
+            ShellClient client = ShellLobby.newClient( RmiLocation.location( host, port, name ),
+                    getSessionVariablesFromArgs( args ) );
             if ( !isCommandLine( args ) )
+            {
                 System.out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
+            }
             grabPromptOrJustExecuteCommand( client, args );
         }
         catch ( Exception e )
@@ -321,7 +315,9 @@ public class StartClient
         String profile = args.get( "profile", null );
         Map<String, Serializable> session = new HashMap<String, Serializable>();
         if ( profile != null )
+        {
             applyProfileFile( new File( profile ), session );
+        }
 
         for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
         {
@@ -344,7 +340,7 @@ public class StartClient
             properties.load( new FileInputStream( file ) );
             for ( Object key : properties.keySet() )
             {
-                String stringKey = ( String ) key;
+                String stringKey = (String) key;
                 String value = properties.getProperty( stringKey );
                 session.put( stringKey, value );
             }
@@ -352,7 +348,7 @@ public class StartClient
         catch ( IOException e )
         {
             throw new IllegalArgumentException( "Couldn't find profile '" +
-                file.getAbsolutePath() + "'" );
+                    file.getAbsolutePath() + "'" );
         }
         finally
         {
@@ -383,7 +379,7 @@ public class StartClient
         printUsage();
         System.exit( 1 );
     }
-    
+
     private static int longestString( String... strings )
     {
         int length = 0;
@@ -404,24 +400,31 @@ public class StartClient
         int longestArgLength = longestString( ARG_COMMAND, ARG_CONFIG, ARG_HOST, ARG_NAME,
                 ARG_PATH, ARG_PID, ARG_PORT, ARG_READONLY );
         System.out.println(
-            padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)\n" +
-            padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " + AbstractServer.DEFAULT_PORT + ")\n" +
-            padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: " + AbstractServer.DEFAULT_NAME + ")\n" +
-            padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
-            padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the shell exits\n" +
-            padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode\n" +
-            padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can be started there\n" +
-            padArg( ARG_CONFIG, longestArgLength ) + "Points to a config file when starting a local server\n\n" +
-                
-            "Example arguments for remote:\n" +
-                "\t-" + ARG_PORT + " " + port + "\n" +
-                "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port + " -" + ARG_NAME + " " + name + "\n" +
-                "\t-" + ARG_HOST + " " + "localhost" + " -" + ARG_READONLY + "\n" +
-                "\t...or no arguments for default values\n" +
-            "Example arguments for local:\n" +
-                "\t-" + ARG_PATH + " /path/to/db" + "\n" +
-                "\t-" + ARG_PATH + " /path/to/db -" + ARG_CONFIG + " /path/to/neo4j.config" + "\n" +
-                "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY
+                padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)" +
+                        "\n" +
+                        padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " +
+                        AbstractServer.DEFAULT_PORT + ")\n" +
+                        padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: "
+                        + AbstractServer.DEFAULT_NAME + ")\n" +
+                        padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
+                        padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
+                        "shell exits\n" +
+                        padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode\n" +
+                        padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +
+                        "be started there\n" +
+                        padArg( ARG_CONFIG, longestArgLength ) + "Points to a config file when starting a local " +
+                        "server\n\n" +
+
+                        "Example arguments for remote:\n" +
+                        "\t-" + ARG_PORT + " " + port + "\n" +
+                        "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port + " -" + ARG_NAME + "" +
+                        " " + name + "\n" +
+                        "\t-" + ARG_HOST + " " + "localhost" + " -" + ARG_READONLY + "\n" +
+                        "\t...or no arguments for default values\n" +
+                        "Example arguments for local:\n" +
+                        "\t-" + ARG_PATH + " /path/to/db" + "\n" +
+                        "\t-" + ARG_PATH + " /path/to/db -" + ARG_CONFIG + " /path/to/neo4j.config" + "\n" +
+                        "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY
         );
     }
 

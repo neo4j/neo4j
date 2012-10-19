@@ -30,7 +30,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -41,12 +41,12 @@ public class ShellBootstrap implements Serializable
     private final String name;
     private final boolean read_only;
 
-    ShellBootstrap( KernelData kernel )
+    ShellBootstrap( Config config )
     {
-        this.enable = kernel.getConfig().get( ShellSettings.remote_shell_enabled );
-        this.port = kernel.getConfig().get( ShellSettings.remote_shell_port );
-        this.name = kernel.getConfig().get( ShellSettings.remote_shell_name );
-        this.read_only = kernel.getConfig().get( ShellSettings.remote_shell_read_only );
+        this.enable = config.get( ShellSettings.remote_shell_enabled );
+        this.port = config.get( ShellSettings.remote_shell_port );
+        this.name = config.get( ShellSettings.remote_shell_name );
+        this.read_only = config.get( ShellSettings.remote_shell_read_only );
     }
 
     public ShellBootstrap( int port, String name )
@@ -102,10 +102,13 @@ public class ShellBootstrap implements Serializable
         }
     }
 
-    @SuppressWarnings( "boxing" )
+    @SuppressWarnings("boxing")
     GraphDatabaseShellServer load( GraphDatabaseAPI graphDb ) throws RemoteException
     {
-        if ( !enable ) return null;
+        if ( !enable )
+        {
+            return null;
+        }
         return enable( new GraphDatabaseShellServer( graphDb, read_only ) );
     }
 

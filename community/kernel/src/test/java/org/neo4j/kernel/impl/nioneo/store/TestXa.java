@@ -44,15 +44,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -120,18 +122,20 @@ public class TestXa extends AbstractNeo4jTestCase
     public void setUpNeoStore() throws Exception
     {
         log = Logger
-            .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
-                + "nioneo_logical.log" );
+                .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
+                        + "nioneo_logical.log" );
         level = log.getLevel();
         log.setLevel( Level.OFF );
         log = Logger
-            .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
+                .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
         deleteFileOrDirectory( new File( path() ) );
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
+        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
+                Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
@@ -143,14 +147,14 @@ public class TestXa extends AbstractNeo4jTestCase
     @After
     public void tearDownNeoStore()
     {
-        ds.close();
+        ds.stop();
         log.setLevel( level );
         log = Logger
-            .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
-                + "nioneo_logical.log" );
+                .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
+                        + "nioneo_logical.log" );
         log.setLevel( level );
         log = Logger
-            .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
+                .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
         File file = new File( file( "neo" ) );
         if ( file.exists() )
@@ -299,7 +303,7 @@ public class TestXa extends AbstractNeo4jTestCase
     {
         char active = '1';
         FileChannel af = new RandomAccessFile( file( "nioneo_logical.log.active" ),
-            "r" ).getChannel();
+                "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         af.close();
@@ -307,7 +311,7 @@ public class TestXa extends AbstractNeo4jTestCase
         active = buffer.asCharBuffer().get();
         buffer.clear();
         FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." +
-            active ), "rw" ).getChannel();
+                active ), "rw" ).getChannel();
 //        System.out.println( fileChannel.size() );
         if ( fileChannel.size() > size )
         {
@@ -329,7 +333,7 @@ public class TestXa extends AbstractNeo4jTestCase
         char active = '1';
         File activeLog = new File( storeDir, "nioneo_logical.log.active" );
         FileChannel af = new RandomAccessFile( activeLog,
-            "r" ).getChannel();
+                "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
@@ -343,10 +347,10 @@ public class TestXa extends AbstractNeo4jTestCase
         active = buffer.asCharBuffer().get();
         buffer.clear();
         File currentLog = new File( storeDir, "nioneo_logical.log." +
-            active );
+                active );
         FileChannel source = new RandomAccessFile( currentLog, "r" ).getChannel();
         File currentLogBackup = new File( storeDir, "nioneo_logical.log.bak." +
-            active );
+                active );
         FileChannel dest = new RandomAccessFile( currentLogBackup, "rw" ).getChannel();
         int read = -1;
         do
@@ -365,7 +369,10 @@ public class TestXa extends AbstractNeo4jTestCase
     private PropertyIndex index( String key )
     {
         PropertyIndex result = propertyIndexes.get( key );
-        if ( result != null ) return result;
+        if ( result != null )
+        {
+            return result;
+        }
 
         int id = (int) ds.nextId( PropertyIndex.class );
         PropertyIndex index = new MyPropertyIndex( key, id );
@@ -389,7 +396,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1,
-            "relationshiptype1" );
+                "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
@@ -407,7 +414,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes.commit( xid, true );
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         ds = newNeoStore();
@@ -421,26 +428,46 @@ public class TestXa extends AbstractNeo4jTestCase
             IOException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(MapUtil.stringMap(
-            InternalAbstractGraphDatabase.Configuration.store_dir.name(), path(),
-            InternalAbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
-            InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( LOGICAL_LOG_DEFAULT_NAME ))));
+        final Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil
+                .stringMap(
+                        InternalAbstractGraphDatabase.Configuration.store_dir.name(), path(),
+                        InternalAbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
+                        InternalAbstractGraphDatabase.Configuration.logical_log.name(),
+                        file( LOGICAL_LOG_DEFAULT_NAME ) ) ) );
 
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.DEV_NULL, null );
+        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
+                fileSystem, StringLogger.DEV_NULL, null );
 
         PlaceboTm txManager = new PlaceboTm();
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
-        
+
         // Since these tests fiddle with copying logical logs and such themselves
         // make sure all history logs are removed before opening the store
         for ( File file : new File( path() ).listFiles() )
+        {
             if ( file.isFile() && file.getName().startsWith( LOGICAL_LOG_DEFAULT_NAME + ".v" ) )
+            {
                 file.delete();
-        
-        return new NeoStoreXaDataSource( config, sf, fileSystem, lockManager, lockReleaser, StringLogger.DEV_NULL,
-                new XaFactory(config, TxIdGenerator.DEFAULT, txManager,
-                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ),
-        Collections.<Pair<TransactionInterceptorProvider,Object>>emptyList(), null);
+            }
+        }
+
+        NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager, lockReleaser,
+                StringLogger.DEV_NULL,
+                new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
+                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ),
+                new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        new DependencyResolver()
+
+                        {
+                            @Override
+                            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+                            {
+                                return (T) config;
+                            }
+                        } ), null );
+        neoStoreXaDataSource.start();
+        return neoStoreXaDataSource;
     }
 
     @Test
@@ -457,20 +484,20 @@ public class TestXa extends AbstractNeo4jTestCase
                 node1, index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1,
-            "relationshiptype1" );
+                "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
                 rel1, index( "prop1" ), "string1" );
         xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
         xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
-            "string2" );
+                "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         ds = newNeoStore();
@@ -491,19 +518,19 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node1 );
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ),
-                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+                new long[]{1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} );
         PropertyData n1prop2 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1,
                 index( "prop2" ),
-                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+                new long[]{1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
 
@@ -521,14 +548,14 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeAddProperty(
                 node1,
                 index( "prop3" ),
-                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+                new long[]{1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         ds = newNeoStore();
@@ -548,22 +575,22 @@ public class TestXa extends AbstractNeo4jTestCase
         long node1 = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( node1 );
         xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop1" ),
-                new long[] { 1 << 63, 1, 1 } );
+                new long[]{1 << 63, 1, 1} );
         xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop2" ),
-                new long[] { 1 << 63, 1, 1 } );
+                new long[]{1 << 63, 1, 1} );
         PropertyData toRead = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop3" ),
-                new long[] { 1 << 63, 1, 1 } );
+                new long[]{1 << 63, 1, 1} );
         PropertyData toDelete = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop4" ),
-                new long[] { 1 << 63, 1, 1 } );
+                new long[]{1 << 63, 1, 1} );
         xaRes.end( xid, XAResource.TMSUCCESS );
         // xaRes.prepare( xid );
         xaRes.commit( xid, true );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
 
@@ -583,7 +610,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
 
@@ -602,7 +629,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
     }
@@ -620,14 +647,14 @@ public class TestXa extends AbstractNeo4jTestCase
         PropertyData toRead = xaCon.getWriteTransaction().nodeAddProperty(
                 node1,
                 index( "prop2" ),
-                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+                new long[]{1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
 
@@ -646,7 +673,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
 
@@ -658,9 +685,9 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.clearAllTransactions();
 
         assertTrue(
-                Arrays.equals( new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                (long[]) xaCon.getWriteTransaction().loadPropertyValue( toRead ) ) );
+                Arrays.equals( new long[]{1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                        (long[]) xaCon.getWriteTransaction().loadPropertyValue( toRead ) ) );
 
     }
 
@@ -678,18 +705,18 @@ public class TestXa extends AbstractNeo4jTestCase
                 node1, index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1,
-            "relationshiptype1" );
+                "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
                 rel1, index( "prop1" ), "string1" );
         xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
         xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
-            "string2" );
+                "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaCon.clearAllTransactions();
         copyLogicalLog( path() );
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         ds = newNeoStore();
@@ -711,7 +738,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.clearAllTransactions();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         truncateLogicalLog( 94 );
@@ -735,7 +762,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.clearAllTransactions();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         truncateLogicalLog( 94 );
@@ -756,13 +783,14 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( node2 );
-        /*PropertyData n1prop1 = */xaCon.getWriteTransaction().nodeAddProperty(
+        /*PropertyData n1prop1 = */
+        xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         truncateLogicalLog( 243 );
@@ -783,13 +811,14 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( node2 );
-        /*PropertyData n1prop1 = */xaCon.getWriteTransaction().nodeAddProperty(
+        /*PropertyData n1prop1 = */
+        xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         xaRes.commit( xid, false );
         copyLogicalLog( path() );
-        ds.close();
+        ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
         truncateLogicalLog( 264 );
@@ -836,7 +865,7 @@ public class TestXa extends AbstractNeo4jTestCase
         n1prop1 = xaCon.getWriteTransaction().nodeChangeProperty( node1,
                 n1prop1, "string2" );
         r1prop1 = xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
-            "string2" );
+                "string2" );
         xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
         xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
         xaCon.getWriteTransaction().relDelete( rel1 );
@@ -852,16 +881,16 @@ public class TestXa extends AbstractNeo4jTestCase
         assertTrue( logicalLogExists( currentVersion + 1 ) );
     }
 
-	private boolean logicalLogExists( long version ) throws IOException
-	{
-		ReadableByteChannel log = ds.getLogicalLog( version );
-		try
-		{
-			return log != null;
-		}
-		finally
-		{
-			log.close();
-		}
-	}
+    private boolean logicalLogExists( long version ) throws IOException
+    {
+        ReadableByteChannel log = ds.getLogicalLog( version );
+        try
+        {
+            return log != null;
+        }
+        finally
+        {
+            log.close();
+        }
+    }
 }

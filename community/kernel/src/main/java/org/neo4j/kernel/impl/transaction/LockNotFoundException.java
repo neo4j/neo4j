@@ -21,23 +21,13 @@ package org.neo4j.kernel.impl.transaction;
 
 public class LockNotFoundException extends LockException
 {
-    public LockNotFoundException()
-    {
-        super();
-    }
-
     public LockNotFoundException( String message )
     {
         super( message );
     }
 
-    public LockNotFoundException( String message, Throwable cause )
+    public LockNotFoundException( String s, Throwable throwable )
     {
-        super( message, cause );
-    }
-
-    public LockNotFoundException( Throwable cause )
-    {
-        super( cause );
+        super(s, throwable);
     }
 }

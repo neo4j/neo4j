@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -41,7 +42,7 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     {
         begin();
     }
-    
+
     /**
      * Prevents new transactions from being created by throwing exception in
      * beginTx and waits for all existing transactions to complete. When this method
@@ -50,13 +51,25 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
     {
     }
-    
+
+    public abstract void doRecovery() throws Throwable;
+
     /**
      * @return which {@link ForceMode} the transaction tied to the calling
-     * thread will have when committing. Default is {@link ForceMode#forced}
+     *         thread will have when committing. Default is {@link ForceMode#forced}
      */
     public ForceMode getForceMode()
     {
         return ForceMode.forced;
+    }
+
+    public abstract int getEventIdentifier();
+
+    /**
+     * @return the error that happened during recovery, if recovery has taken place, null otherwise.
+     */
+    public Throwable getRecoveryError()
+    {
+        return null;
     }
 }

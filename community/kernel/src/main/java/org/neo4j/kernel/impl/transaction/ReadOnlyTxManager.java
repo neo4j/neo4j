@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
@@ -30,6 +31,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
+
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
@@ -37,17 +39,17 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class ReadOnlyTxManager extends AbstractTransactionManager
-    implements Lifecycle
+        implements Lifecycle
 {
     private static Logger log = Logger.getLogger( ReadOnlyTxManager.class.getName() );
 
-    private ArrayMap<Thread,ReadOnlyTransactionImpl> txThreadMap;
+    private ArrayMap<Thread, ReadOnlyTransactionImpl> txThreadMap;
 
     private int eventIdentifierCounter = 0;
 
     private XaDataSourceManager xaDsManager = null;
 
-    public ReadOnlyTxManager(XaDataSourceManager xaDsManagerToUse)
+    public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse )
     {
         xaDsManager = xaDsManagerToUse;
     }
@@ -58,14 +60,14 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
     @Override
-    public void init( )
+    public void init()
     {
-        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( (byte)5, true, true );
+        txThreadMap = new ArrayMap<Thread, ReadOnlyTransactionImpl>( (byte) 5, true, true );
     }
 
     @Override
     public void start()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -76,7 +78,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -88,14 +90,14 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         if ( tx != null )
         {
             throw new NotSupportedException(
-                "Nested transactions not supported" );
+                    "Nested transactions not supported" );
         }
         tx = new ReadOnlyTransactionImpl( this );
         txThreadMap.put( thread, tx );
     }
 
     public void commit() throws RollbackException, HeuristicMixedException,
-        IllegalStateException
+            IllegalStateException
     {
         Thread thread = Thread.currentThread();
         ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
@@ -104,10 +106,10 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throw new IllegalStateException( "Not in transaction" );
         }
         if ( tx.getStatus() != Status.STATUS_ACTIVE
-            && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
+                && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
         {
             throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+                    + getTxStatusAsString( tx.getStatus() ) );
         }
         tx.doBeforeCompletion();
         if ( tx.getStatus() == Status.STATUS_ACTIVE )
@@ -121,7 +123,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         else
         {
             throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+                    + getTxStatusAsString( tx.getStatus() ) );
         }
     }
 
@@ -141,7 +143,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
     private void rollbackCommit( Thread thread, ReadOnlyTransactionImpl tx )
-        throws HeuristicMixedException, RollbackException
+            throws HeuristicMixedException, RollbackException
     {
         try
         {
@@ -150,19 +152,19 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         catch ( XAException e )
         {
             log.log( Level.SEVERE, "Unable to rollback marked transaction. "
-                + "Some resources may be commited others not. "
-                + "Neo4j kernel should be SHUTDOWN for "
-                                   + "resource maintance and transaction recovery ---->", e );
+                    + "Some resources may be commited others not. "
+                    + "Neo4j kernel should be SHUTDOWN for "
+                    + "resource maintance and transaction recovery ---->", e );
             throw Exceptions.withCause(
                     new HeuristicMixedException( "Unable to rollback " + " ---> error code for rollback: "
-                                                 + e.errorCode ), e );
+                            + e.errorCode ), e );
         }
 
         tx.doAfterCompletion();
         txThreadMap.remove( thread );
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
         throw new RollbackException(
-            "Failed to commit, transaction rolledback" );
+                "Failed to commit, transaction rolledback" );
     }
 
     public void rollback() throws IllegalStateException, SystemException
@@ -174,8 +176,8 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throw new IllegalStateException( "Not in transaction" );
         }
         if ( tx.getStatus() == Status.STATUS_ACTIVE ||
-            tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
-            tx.getStatus() == Status.STATUS_PREPARING )
+                tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
+                tx.getStatus() == Status.STATUS_PREPARING )
         {
             tx.doBeforeCompletion();
             try
@@ -185,11 +187,11 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             catch ( XAException e )
             {
                 log.log( Level.SEVERE, "Unable to rollback marked or active transaction. "
-                    + "Some resources may be commited others not. "
-                    + "Neo4j kernel should be SHUTDOWN for "
-                                       + "resource maintance and transaction recovery ---->", e );
+                        + "Some resources may be commited others not. "
+                        + "Neo4j kernel should be SHUTDOWN for "
+                        + "resource maintance and transaction recovery ---->", e );
                 throw Exceptions.withCause( new SystemException( "Unable to rollback "
-                                                                 + " ---> error code for rollback: " + e.errorCode ), e );
+                        + " ---> error code for rollback: " + e.errorCode ), e );
             }
             tx.doAfterCompletion();
             txThreadMap.remove( thread );
@@ -198,7 +200,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         else
         {
             throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+                    + getTxStatusAsString( tx.getStatus() ) );
         }
     }
 
@@ -326,5 +328,10 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             return tx.getEventIdentifier();
         }
         return -1;
+    }
+
+    @Override
+    public void doRecovery() throws Throwable
+    {
     }
 }

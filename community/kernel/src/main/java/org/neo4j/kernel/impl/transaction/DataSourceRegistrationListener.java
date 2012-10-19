@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ext.udc.impl;
+package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.KernelExtensionContractTest;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class TestUdcExtensionImpl extends KernelExtensionContractTest<UdcTimerTask, UdcExtensionImpl>
+public interface DataSourceRegistrationListener
 {
-    public TestUdcExtensionImpl()
-    {
-        super( UdcExtensionImpl.KEY, UdcExtensionImpl.class );
-    }
+    void registeredDataSource( XaDataSource ds );
+
+    void unregisteredDataSource( XaDataSource ds );
 }

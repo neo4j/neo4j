@@ -51,10 +51,10 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * <code>ServiceLoader</code> if available, but backports the functionality to
  * previous Java versions and adds some error handling to ignore misconfigured
  * service implementations.
- *
+ * <p/>
  * Additionally this class can be used as a base class for implementing services
  * that are differentiated by a String key. An example implementation might be:
- *
+ * <p/>
  * <pre>
  * <code>
  * public abstract class StringConverter extends org.neo4j.commons.Service
@@ -73,9 +73,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * }
  * </code>
  * </pre>
- *
+ * <p/>
  * With for example these implementations:
- *
+ * <p/>
  * <pre>
  * <code>
  * public final class UppercaseConverter extends StringConverter
@@ -112,9 +112,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * }
  * </code>
  * </pre>
- *
+ * <p/>
  * This would then be used as:
- *
+ * <p/>
  * <pre>
  * <code>
  * String atad = StringConverter.load( "reverse" ).convert( "data" );
@@ -128,7 +128,7 @@ public abstract class Service
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
-     *
+     * <p/>
      * The annotation in itself does not provide any functionality for adding
      * the implementation class to the services listings file. But it serves as
      * a handle for an Annotation Processing Tool to utilize for performing that
@@ -136,8 +136,8 @@ public abstract class Service
      *
      * @author Tobias Ivarsson
      */
-    @Target( ElementType.TYPE )
-    @Retention( RetentionPolicy.SOURCE )
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.SOURCE)
     public @interface Implementation
     {
         /**
@@ -160,9 +160,9 @@ public abstract class Service
          * Create a new instance of a service implementation identified with the
          * specified key(s).
          *
-         * @param key the main key for identifying this service implementation
+         * @param key     the main key for identifying this service implementation
          * @param altKeys alternative spellings of the identifier of this
-         *            service implementation
+         *                service implementation
          */
         protected CaseInsensitiveService( String key, String... altKeys )
         {
@@ -170,44 +170,60 @@ public abstract class Service
         }
 
         @Override
-        final boolean matches( String key )
+        final public boolean matches( String key )
         {
             for ( String id : keys )
             {
-                if ( id.equalsIgnoreCase( key ) ) return true;
+                if ( id.equalsIgnoreCase( key ) )
+                {
+                    return true;
+                }
             }
             return false;
         }
     }
+
     /**
      * Load all implementations of a Service.
      *
-     * @param <T> the type of the Service
+     * @param <T>  the type of the Service
      * @param type the type of the Service to load
      * @return all registered implementations of the Service
      */
     public static <T> Iterable<T> load( Class<T> type )
     {
         Iterable<T> loader;
-        if ( null != ( loader = java6Loader( type ) ) ) return loader;
-        if ( null != ( loader = sunJava5Loader( type ) ) ) return loader;
-        if ( null != ( loader = ourOwnLoader( type ) ) ) return loader;
+        if ( null != (loader = java6Loader( type )) )
+        {
+            return loader;
+        }
+        if ( null != (loader = sunJava5Loader( type )) )
+        {
+            return loader;
+        }
+        if ( null != (loader = ourOwnLoader( type )) )
+        {
+            return loader;
+        }
         return Collections.emptyList();
     }
 
     /**
      * Load the Service implementation with the specified key.
      *
-     * @param <T> the type of the Service
+     * @param <T>  the type of the Service
      * @param type the type of the Service to load
-     * @param key the key that identifies the desired implementation
+     * @param key  the key that identifies the desired implementation
      * @return the matching Service implementation
      */
     public static <T extends Service> T load( Class<T> type, String key )
     {
         for ( T impl : load( type ) )
         {
-            if ( impl.matches( key ) ) return impl;
+            if ( impl.matches( key ) )
+            {
+                return impl;
+            }
         }
         throw new NoSuchElementException( String.format(
                 "Could not find any implementation of %s with a key=\"%s\"",
@@ -220,9 +236,9 @@ public abstract class Service
      * Create a new instance of a service implementation identified with the
      * specified key(s).
      *
-     * @param key the main key for identifying this service implementation
+     * @param key     the main key for identifying this service implementation
      * @param altKeys alternative spellings of the identifier of this service
-     *            implementation
+     *                implementation
      */
     protected Service( String key, String... altKeys )
     {
@@ -243,9 +259,42 @@ public abstract class Service
         return getClass().getSuperclass().getName() + "" + keys;
     }
 
-    boolean matches( String key )
+    public boolean matches( String key )
     {
         return keys.contains( key );
+    }
+
+    public Iterable<String> getKeys()
+    {
+        return keys;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        Service service = (Service) o;
+
+        if ( !keys.equals( service.keys ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return keys.hashCode();
     }
 
     private static <T> Iterable<T> filterExceptions( final Iterable<T> iterable )
@@ -278,50 +327,57 @@ public abstract class Service
         };
     }
 
-	private static <T> Iterable<T> java6Loader( Class<T> type )
+    private static <T> Iterable<T> java6Loader( Class<T> type )
     {
-		try {
-			Class<?> serviceLoaderClass = Class
-					.forName("java.util.ServiceLoader");
-			Iterable<T> contextClassLoaderServices = (Iterable<T>) serviceLoaderClass
-					.getMethod("load", Class.class).invoke(null, type);
-			// Jboss 7 does not export content of META-INF/services to context
-			// class loader,
-			// so this call adds implementations defined in Neo4j libraries from
-			// the same module.
-			Iterable<T> currentClassLoaderServices = (Iterable<T>) serviceLoaderClass
-					.getMethod("load", Class.class, ClassLoader.class).invoke(
-							null, type, Service.class.getClassLoader());
-			// Combine services loaded by both context and module classloaders.
-			// Service instances compared by full class name ( we cannot use
-			// equals for instances or classes because they can came from
-			// different classloaders ).
-			HashMap<String, T> services = new HashMap<String, T>();
-			putAllInstancesToMap(currentClassLoaderServices, services);
-			// Services from context class loader have higher precedence
-			putAllInstancesToMap(contextClassLoaderServices, services);
-			return services.values();
-		} catch (Exception e) {
-			return null;
-		} catch (LinkageError e) {
-			return null;
-		}
+        try
+        {
+            Class<?> serviceLoaderClass = Class
+                    .forName( "java.util.ServiceLoader" );
+            Iterable<T> contextClassLoaderServices = (Iterable<T>) serviceLoaderClass
+                    .getMethod( "load", Class.class ).invoke( null, type );
+            // Jboss 7 does not export content of META-INF/services to context
+            // class loader,
+            // so this call adds implementations defined in Neo4j libraries from
+            // the same module.
+            Iterable<T> currentClassLoaderServices = (Iterable<T>) serviceLoaderClass
+                    .getMethod( "load", Class.class, ClassLoader.class ).invoke(
+                            null, type, Service.class.getClassLoader() );
+            // Combine services loaded by both context and module classloaders.
+            // Service instances compared by full class name ( we cannot use
+            // equals for instances or classes because they can came from
+            // different classloaders ).
+            HashMap<String, T> services = new HashMap<String, T>();
+            putAllInstancesToMap( currentClassLoaderServices, services );
+            // Services from context class loader have higher precedence
+            putAllInstancesToMap( contextClassLoaderServices, services );
+            return services.values();
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+        catch ( LinkageError e )
+        {
+            return null;
+        }
     }
 
-	/**
-	 * 
-	 * @param services
-	 * @param servicesMap
-	 */
-	private static <T> void putAllInstancesToMap(Iterable<T> services,
-			Map<String, T> servicesMap) {
-		for (T instance : filterExceptions(services)) {
-			if (null != instance) {
-				servicesMap.put(instance.getClass().getName(), instance);
-			}
-		}
-	}
-	
+    /**
+     * @param services
+     * @param servicesMap
+     */
+    private static <T> void putAllInstancesToMap( Iterable<T> services,
+                                                  Map<String, T> servicesMap )
+    {
+        for ( T instance : filterExceptions( services ) )
+        {
+            if ( null != instance )
+            {
+                servicesMap.put( instance.getClass().getName(), instance );
+            }
+        }
+    }
+
     private static <T> Iterable<T> sunJava5Loader( final Class<T> type )
     {
         final Method providers;
@@ -343,8 +399,8 @@ public abstract class Service
             {
                 try
                 {
-                    @SuppressWarnings( "unchecked" ) Iterator<T> result =
-                        (Iterator<T>) providers.invoke( null, type );
+                    @SuppressWarnings("unchecked") Iterator<T> result =
+                            (Iterator<T>) providers.invoke( null, type );
                     return result;
                 }
                 catch ( Exception e )
@@ -401,7 +457,7 @@ public abstract class Service
                         try
                         {
                             String line;
-                            while ( null != ( line = input.readLine() ) )
+                            while ( null != (line = input.readLine()) )
                             {
                                 try
                                 {

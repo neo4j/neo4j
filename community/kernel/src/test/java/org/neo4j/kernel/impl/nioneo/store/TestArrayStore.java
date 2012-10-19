@@ -38,7 +38,6 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -60,8 +59,7 @@ public class TestArrayStore
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory( config,
-                idGeneratorFactory, new DefaultWindowPoolFactory(), fs,
-                new DefaultLastCommittedTxIdSetter(), StringLogger.DEV_NULL, new DefaultTxHook() );
+                idGeneratorFactory, new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
         String fileName = new File( dir, "arraystore" ).getAbsolutePath();
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,

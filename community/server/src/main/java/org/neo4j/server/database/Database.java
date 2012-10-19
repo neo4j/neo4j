@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -56,18 +57,19 @@ public class Database implements Lifecycle
     private final StatisticCollector statisticCollector = new StatisticCollector();
 
     /**
-     * This constructor should not be used, 
+     * This constructor should not be used,
      * please use a subclass of this class instead.
      */
     @Deprecated
     public Database()
     {
-        
+
     }
-    
+
     /**
-     * This constructor should not be used, 
+     * This constructor should not be used,
      * please use {@link WrappingDatabase} instead.
+     *
      * @param db
      */
     @Deprecated
@@ -77,7 +79,7 @@ public class Database implements Lifecycle
     }
 
     /**
-     * This constructor should not be used, 
+     * This constructor should not be used,
      * please use {@link CommunityDatabase} instead.
      */
     @Deprecated
@@ -85,23 +87,25 @@ public class Database implements Lifecycle
     {
         this( (AbstractGraphDatabase) createDatabase( factory, databaseStoreDirectory, null ) );
         log.warn(
-                "No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [%s].",
+                "No database tuning properties set in the property file, using defaults. Please specify the " +
+                        "performance properties file with org.neo4j.server.db.tuning.properties in the server " +
+                        "properties file [%s].",
                 System.getProperty( "org.neo4j.server.properties" ) );
     }
 
     /**
-     * This constructor should not be used, 
+     * This constructor should not be used,
      * please use {@link CommunityDatabase} instead.
      */
     @Deprecated
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory,
-            Map<String, String> databaseTuningProperties )
+                     Map<String, String> databaseTuningProperties )
     {
         this( (AbstractGraphDatabase) createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
     private static GraphDatabaseAPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
-            Map<String, String> databaseProperties )
+                                                    Map<String, String> databaseProperties )
     {
         log.info( "Using database at " + databaseStoreDirectory );
 
@@ -112,7 +116,7 @@ public class Database implements Lifecycle
 
         putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
         putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        databaseProperties.put( GraphDatabaseSettings.udc_source.name(), "server" );
+        databaseProperties.put( UdcSettings.udc_source.name(), "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }
@@ -151,19 +155,21 @@ public class Database implements Lifecycle
         }
         return index;
     }
-    
+
     public IndexManager getIndexManager()
     {
         return graph.index();
     }
 
-	public GraphDatabaseAPI getGraph() {
-		return graph;
-	}
+    public GraphDatabaseAPI getGraph()
+    {
+        return graph;
+    }
 
     /**
      * This should be assigned to you via your constructor,
      * or via a DependencyResolver.
+     *
      * @return
      */
     @Deprecated
@@ -171,10 +177,11 @@ public class Database implements Lifecycle
     {
         return rrdDb;
     }
-    
+
     /**
      * This should be assigned to you via your constructor,
      * or via a DependencyResolver.
+     *
      * @return
      */
     @Deprecated
@@ -186,6 +193,7 @@ public class Database implements Lifecycle
     /**
      * This should be assigned to you via your constructor,
      * or via a DependencyResolver.
+     *
      * @return
      */
     @Deprecated
@@ -194,40 +202,43 @@ public class Database implements Lifecycle
         return statisticCollector;
     }
 
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
+    @Override
+    public void init() throws Throwable
+    {
 
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
+    }
 
     @Override
-	public void shutdown() throws Throwable
+    public void start() throws Throwable
     {
-        
+
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
     }
 
     /**
      * Will be removed in 1.10
      */
-	@Deprecated
+    @Deprecated
     public void startup()
     {
-        try {
-			start();
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
+        try
+        {
+            start();
+        }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

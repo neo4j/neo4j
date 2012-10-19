@@ -77,9 +77,9 @@ public class StoreUpgradeIntegrationTest
                     workingDirectory.getPath(), params );
             fail( "Should have been unable to start upgrade on old version" );
         }
-        catch ( IllegalStateException e )
+        catch ( RuntimeException e )
         {
-//            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getClass() ) );
+            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
         }
     }
 
@@ -105,9 +105,9 @@ public class StoreUpgradeIntegrationTest
                     workingDirectory.getPath(), params );
             fail( "Should have been unable to start upgrade on old version" );
         }
-        catch ( UnableToUpgradeException e )
+        catch ( RuntimeException e )
         {
-//            assertTrue( UnableToUpgradeException.class.isAssignableFrom( e.getCause().getClass() ) );
+            assertTrue( UnableToUpgradeException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
         }
     }
 }

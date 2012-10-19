@@ -31,8 +31,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.shell.impl.ShellBootstrap;
-import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -54,7 +52,7 @@ public class ShellTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
-    
+
     @Test
     public void testParserArguments() throws Exception
     {
@@ -73,10 +71,10 @@ public class ShellTest
     {
         int port = 8085;
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
-            setConfig( ShellSettings.remote_shell_port, ""+port ).
-            newGraphDatabase();
+                newImpermanentDatabaseBuilder().
+                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_port, "" + port ).
+                newGraphDatabase();
         ShellLobby.newClient( port );
         graphDb.shutdown();
     }
@@ -85,31 +83,11 @@ public class ShellTest
     public void testEnableServerOnDefaultPort() throws Exception
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+                setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
+                newGraphDatabase();
         try
         {
             ShellLobby.newClient();
-        }
-        finally
-        {
-            graphDb.shutdown();
-        }
-    }
-
-    @Test
-    public void canConnectAsAgent() throws Exception
-    {
-        int port = 1234;
-        String name = "test-shell";
-        GraphDatabaseService graphDb = new ImpermanentGraphDatabase();
-        try
-        {
-            new ShellServerExtension().loadAgent( new ShellBootstrap( port, name ).serialize() );
-
-            ShellClient client = ShellLobby.newClient( port, name );
-            client.evaluate( "" );
-            client.shutdown();
         }
         finally
         {
@@ -124,15 +102,17 @@ public class ShellTest
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
 
         Documenter doc = new Documenter( "sample session", server );
-        doc.add("pwd", "", "where are we?");
-        doc.add("set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"");
-        doc.add("start n=node(0) return n;", "Jon", "send a cypher query");
-        doc.add("mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type LIKES, create the end node with the node properties specified.");
-        doc.add("ls", "1", "where are we?");
-        doc.add("cd 1", "", "change to the newly created node");
-        doc.add("ls -avr", "LIKES", "list relationships, including relationshship id");
+        doc.add( "pwd", "", "where are we?" );
+        doc.add( "set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"" );
+        doc.add( "start n=node(0) return n;", "Jon", "send a cypher query" );
+        doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type " +
+                "LIKES, create the end node with the node properties specified." );
+        doc.add( "ls", "1", "where are we?" );
+        doc.add( "cd 1", "", "change to the newly created node" );
+        doc.add( "ls -avr", "LIKES", "list relationships, including relationshship id" );
 
-        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the end node" );
+        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the " +
+                "end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         doc.run();
@@ -143,7 +123,7 @@ public class ShellTest
         server.shutdown();
         db.shutdown();
     }
-    
+
     @Test
     public void testMatrix() throws Exception
     {
@@ -153,20 +133,20 @@ public class ShellTest
 
         Documenter doc = new Documenter( "a matrix example", server );
         doc.add( "mkrel -t ROOT -c -v", "created",
-        "create the Thomas Andersson node" );
-        doc.add("cd 1", "", "go to the new node");
-        doc.add("set name \"Thomas Andersson\"", "", "set the name property");
+                "create the Thomas Andersson node" );
+        doc.add( "cd 1", "", "go to the new node" );
+        doc.add( "set name \"Thomas Andersson\"", "", "set the name property" );
         doc.add( "mkrel -t KNOWS -cv", "", "create Thomas direct friends" );
-        doc.add("cd 2", "", "go to the new node");
-        doc.add("set name \"Trinity\"", "", "set the name property");
-        doc.add("cd ..", "", "go back in the history stack");
-        doc.add("mkrel -t KNOWS -cv", "", "create Thomas direct friends");
-        doc.add("cd 3", "", "go to the new node");
-        doc.add("set name \"Morpheus\"", "", "set the name property");
-        doc.add("mkrel -t KNOWS 2", "", "create relationship to Trinity");
+        doc.add( "cd 2", "", "go to the new node" );
+        doc.add( "set name \"Trinity\"", "", "set the name property" );
+        doc.add( "cd ..", "", "go back in the history stack" );
+        doc.add( "mkrel -t KNOWS -cv", "", "create Thomas direct friends" );
+        doc.add( "cd 3", "", "go to the new node" );
+        doc.add( "set name \"Morpheus\"", "", "set the name property" );
+        doc.add( "mkrel -t KNOWS 2", "", "create relationship to Trinity" );
 
-        doc.add("ls -rv", "", "list the relationships of node 3");
-        doc.add("cd -r 2", "", "change the current position to relationship #2");
+        doc.add( "ls -rv", "", "list the relationships of node 3" );
+        doc.add( "cd -r 2", "", "change the current position to relationship #2" );
 
         doc.add( "set -t int age 3", "", "set the age property on the relationship" );
         doc.add( "cd ..", "", "back to Morpheus" );
@@ -174,7 +154,7 @@ public class ShellTest
         doc.add( "set -t int age 90", "", "set the age property on the relationship" );
         doc.add( "cd start", "", "position to the start node of the current relationship" );
 
-        doc.add( "","","We're now standing on Morpheus node, so let's create the rest of the friends." );
+        doc.add( "", "", "We're now standing on Morpheus node, so let's create the rest of the friends." );
         doc.add( "mkrel -t KNOWS -c", "", "new node" );
         doc.add( "ls -r", "", "list relationships on the current node" );
         doc.add( "cd 4", "", "go to Cypher" );
@@ -190,7 +170,7 @@ public class ShellTest
         doc.add( "set name \"The Architect\"", "", "set the name" );
         doc.add( "cd", "", "go to the first node in the history stack" );
 
-        doc.add( "","","" );
+        doc.add( "", "", "" );
         doc.add( "start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name;",

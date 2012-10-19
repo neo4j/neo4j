@@ -19,31 +19,70 @@
  */
 package org.neo4j.kernel;
 
-public class DummyExtension extends KernelExtension<DummyExtension.State>
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleStatus;
+
+public class DummyExtension implements Lifecycle
 {
-    static final String EXTENSION_ID = "dummy";
+    LifecycleStatus status = LifecycleStatus.NONE;
+    private DummyExtensionFactory.Dependencies dependencies;
 
-    static class State
+    public DummyExtension( DummyExtensionFactory.Dependencies dependencies )
     {
-        volatile boolean unloaded = false;
-    }
-
-    volatile static State lastState;
-
-    public DummyExtension()
-    {
-        super( EXTENSION_ID );
+        this.dependencies = dependencies;
     }
 
     @Override
-    protected State load( KernelData kernel )
+    public void init() throws Throwable
     {
-        return lastState = new State();
+        if ( status != LifecycleStatus.NONE )
+        {
+            throw new IllegalStateException( "Wrong state:" + status );
+        }
+
+        status = LifecycleStatus.STOPPED;
     }
 
     @Override
-    protected void unload( State state )
+    public void start() throws Throwable
     {
-        state.unloaded = true;
+        if ( status != LifecycleStatus.STOPPED )
+        {
+            throw new IllegalStateException( "Wrong state:" + status );
+        }
+
+        status = LifecycleStatus.STARTED;
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        if ( status != LifecycleStatus.STARTED )
+        {
+            throw new IllegalStateException( "Wrong state:" + status );
+        }
+
+        status = LifecycleStatus.STOPPED;
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        if ( status != LifecycleStatus.STOPPED )
+        {
+            throw new IllegalStateException( "Wrong state:" + status );
+        }
+
+        status = LifecycleStatus.SHUTDOWN;
+    }
+
+    public LifecycleStatus getStatus()
+    {
+        return status;
+    }
+
+    public DummyExtensionFactory.Dependencies getDependencies()
+    {
+        return dependencies;
     }
 }

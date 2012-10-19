@@ -34,6 +34,7 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
 import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -96,7 +97,8 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
         {
             try
             {
-                kernel = graphDb.getSingleManagementBean( Kernel.class );
+                kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                        .getSingleManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {
@@ -114,7 +116,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
     {
         Kernel kernel = getKernel();
         boolean list = parser.options().containsKey( "l" ), get = parser.options().containsKey( "g" );
-        if ( ( list && get ) || ( !list && !get ) )
+        if ( (list && get) || (!list && !get) )
         {
             StringBuilder usage = new StringBuilder();
             getUsage( usage );
@@ -154,7 +156,10 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
                 if ( names.hasNext() )
                 {
                     mbean = names.next();
-                    if ( names.hasNext() ) mbean = null;
+                    if ( names.hasNext() )
+                    {
+                        mbean = null;
+                    }
                 }
                 else
                 {
@@ -209,8 +214,14 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
                 JSONArray array = new JSONArray();
                 for ( Object item : (Object[]) arrayValue )
                 {
-                    if ( item instanceof CompositeData ) array.put( compositeDataAsMap( (CompositeData)item ) );
-                    else array.put( item.toString() );
+                    if ( item instanceof CompositeData )
+                    {
+                        array.put( compositeDataAsMap( (CompositeData) item ) );
+                    }
+                    else
+                    {
+                        array.put( item.toString() );
+                    }
                 }
                 json.put( attribute.getName(), array );
             }
@@ -225,12 +236,14 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
         }
     }
 
-    private Map<?,?> compositeDataAsMap( CompositeData item )
+    private Map<?, ?> compositeDataAsMap( CompositeData item )
     {
         Map<String, Object> result = new HashMap<String, Object>();
         CompositeData compositeData = (CompositeData) item;
         for ( String key : compositeData.getCompositeType().keySet() )
+        {
             result.put( key, compositeData.get( key ) );
+        }
         return result;
     }
 
@@ -240,7 +253,7 @@ public class Dbinfo extends ReadOnlyGraphDatabaseApp
         for ( Object name : mbeans.queryNames( kernel.getMBeanQuery(), null ) )
         {
             result.append( "* " );
-            result.append( ( (ObjectName) name ).getKeyProperty( "name" ) );
+            result.append( ((ObjectName) name).getKeyProperty( "name" ) );
             result.append( "\n" );
         }
     }

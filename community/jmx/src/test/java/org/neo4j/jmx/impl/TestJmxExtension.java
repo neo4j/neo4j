@@ -19,12 +19,12 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.neo4j.kernel.KernelExtensionContractTest;
+import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 
-public class TestJmxExtension extends KernelExtensionContractTest<JmxExtension.JmxData, JmxExtension>
+public class TestJmxExtension extends KernelExtensionFactoryContractTest
 {
     public TestJmxExtension()
     {
-        super( JmxExtension.KEY, JmxExtension.class );
+        super( JmxExtensionFactory.KEY, JmxExtensionFactory.class );
     }
 }

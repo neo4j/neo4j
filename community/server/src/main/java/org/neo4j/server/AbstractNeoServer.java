@@ -141,19 +141,19 @@ public abstract class AbstractNeoServer implements NeoServer
 	        DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
 	
 	        StringLogger logger = diagnosticsManager.getTargetLog();
-	        logger.logMessage( "--- SERVER STARTUP START ---" );
+	        logger.logMessage( "--- SERVER STARTED START ---" );
 	
 	        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 	
 	        startModules( logger );
-	
+
 	        startWebServer( logger );
 	
-	        logger.logMessage( "--- SERVER STARTUP END ---", true );
-	        
-        	interruptStartupTimer.stopCountdown();
-	        
-		} catch(Throwable t)
+	        logger.logMessage( "--- SERVER STARTED END ---", true );
+
+            interruptStartupTimer.stopCountdown();
+
+        } catch(Throwable t)
 		{
             // Make sure this does not trigger interrupts outside of this method.
             interruptStartupTimer.stopCountdown();

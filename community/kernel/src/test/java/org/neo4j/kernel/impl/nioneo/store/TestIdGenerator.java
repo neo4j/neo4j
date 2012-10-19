@@ -98,7 +98,7 @@ public class TestIdGenerator
         try
         {
             IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
-            new IdGeneratorImpl( fs, idGeneratorFile(), 0, 100, false ).close( true );
+            new IdGeneratorImpl( fs, idGeneratorFile(), 0, 100, false ).close();
             fail( "Zero grab size should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -106,7 +106,7 @@ public class TestIdGenerator
         } // good
         try
         {
-            new IdGeneratorImpl( fs, "testIdGenerator.id", -1, 100, false ).close( true );
+            new IdGeneratorImpl( fs, "testIdGenerator.id", -1, 100, false ).close();
             fail( "Negative grab size should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -156,7 +156,7 @@ public class TestIdGenerator
 
     private void closeIdGenerator( IdGenerator idGenerator )
     {
-        idGenerator.close( true );
+        idGenerator.close();
     }
 
     @Test
@@ -680,13 +680,13 @@ public class TestIdGenerator
         long id = idGenerator.nextId();
         idGenerator.nextId();
         idGenerator.freeId( id );
-        idGenerator.close( true );
+        idGenerator.close();
         idGenerator.delete();
         assertFalse( new File( idGeneratorFile() ).exists() );
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
         idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false );
         assertEquals( id, idGenerator.nextId() );
-        idGenerator.close( true );
+        idGenerator.close();
     }
 
     @Test

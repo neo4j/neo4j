@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.*;
-import static org.neo4j.test.TargetDirectory.*;
 
 public class TestStandaloneLogExtractor
 {
@@ -53,7 +53,8 @@ public class TestStandaloneLogExtractor
 
         new ProcessStreamHandler( process, true ).waitForResult();
 
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
+                TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
         LogExtractor extractor = LogExtractor.from( sourceDir );
         long expectedTxId = 2;
@@ -62,7 +63,7 @@ public class TestStandaloneLogExtractor
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
             long txId = extractor.extractNext( buffer );
             assertEquals( expectedTxId++, txId );
-            
+
             /* first tx=2
              * 1 tx for relationship type + 1 for the first tx
              * 5 additional tx
@@ -74,7 +75,7 @@ public class TestStandaloneLogExtractor
         }
         DbRepresentation newRep = DbRepresentation.of( newDb );
         newDb.shutdown();
-        
+
         assertEquals( DbRepresentation.of( sourceDir ), newRep );
     }
 }

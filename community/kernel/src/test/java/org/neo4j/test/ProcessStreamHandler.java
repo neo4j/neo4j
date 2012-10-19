@@ -38,16 +38,21 @@ public class ProcessStreamHandler
      * Convenience constructor assuming the local output streams are
      * {@link System.out} and {@link System.err} for the process's OutputStream
      * and ErrorStream respectively.
-     * 
+     *
      * Set quiet to true if you just want to consume the output to avoid locking up the process.
      *
      * @param process The process whose output to consume.
      */
-    public ProcessStreamHandler( Process process, boolean quiet )
+    public ProcessStreamHandler( Process process, boolean quiet)
+    {
+        this(process, quiet, "");
+    }
+
+    public ProcessStreamHandler( Process process, boolean quiet, String prefix )
     {
         this.process = process;
-        out = new Thread( new StreamConsumer( process.getInputStream(), System.out, quiet ) );
-        err = new Thread( new StreamConsumer( process.getErrorStream(), System.err, quiet ) );
+        out = new Thread( new StreamConsumer( process.getInputStream(), System.out, quiet, prefix ) );
+        err = new Thread( new StreamConsumer( process.getErrorStream(), System.err, quiet, prefix ) );
     }
 
     /**
@@ -91,7 +96,7 @@ public class ProcessStreamHandler
 
         err.interrupt();
     }
-    
+
     public int waitForResult()
     {
         launch();

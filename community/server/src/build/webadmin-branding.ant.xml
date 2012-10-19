@@ -24,56 +24,57 @@
   <description>
   </description>
 
-  <property name="codename-properties-file" value="src/main/metadata/codenames.properties" />
+  <property name="codename-properties-file" value="src/main/metadata/codenames.properties"/>
 
-  <target name="determine_base_version" 
-          description="Determines the major and minor version (1.0,1.1 etc) from the current project version (which could be more complex, like 1.1.1, 1.0-SNAPSHOT and so on).">    
-    <!-- Select first match group from the regex -->    
+  <target name="determine_base_version"
+          description="Determines the major and minor version (1.0,1.1 etc) from the current project version (which could be more complex, like 1.1.1, 1.0-SNAPSHOT and so on).">
+    <!-- Select first match group from the regex -->
     <propertyregex property="base.version"
-               input="${project.version}"
-               regexp="(\d+\.\d+)([^\d].*)?"
-               select="\1" 
-               override="true"
-               global="true" />
+                   input="${project.version}"
+                   regexp="(\d+\.\d+)([^\d].*)?"
+                   select="\1"
+                   override="true"
+                   global="true"/>
     <echo>Determined base version: ${base.version}</echo>
   </target>
 
   <target name="define_codename" depends="determine_base_version">
-    <property 
-      file="${codename-properties-file}"
-      prefix="codename"/>
-    
-    <propertycopy 
-      name="neo4j.codename" 
-      from="codename.${base.version}"
-      silent="true" />
+    <property
+        file="${codename-properties-file}"
+        prefix="codename"/>
+
+    <propertycopy
+        name="neo4j.codename"
+        from="codename.1.8"
+        silent="true"/>
 
     <fail unless="neo4j.codename"
           message="No codename for version '${base.version}', please add a codename in ${codename-properties-file} for the build to continue."/>
 
     <echo>Determined codename: ${neo4j.codename}</echo>
-    
+
   </target>
 
   <target name="define_icon" depends="determine_base_version">
 
-    <property 
-      name="splash.icon"
-      value="img/icons/branding/${base.version}.png"/>
+    <property
+        name="splash.icon"
+        value="img/icons/branding/1.8.png"/>
 
 
-    <available file="src/main/resources/webadmin-html//${splash.icon}" property="iconFound" />
-    <fail unless="iconFound" message="There is no icon for the current version, expected to find an icon matching the project codename at 'src/main/resources/webadmin-html/${splash.icon}'" />
-    
+    <available file="src/main/resources/webadmin-html//${splash.icon}" property="iconFound"/>
+    <fail unless="iconFound"
+          message="There is no icon for the current version, expected to find an icon matching the project codename at 'src/main/resources/webadmin-html/${splash.icon}'"/>
+
   </target>
 
   <target name="brand_webadmin" depends="define_icon,define_codename"
-        description="Replaces a set of placeholders in webadmin with values for this specific version of Neo4j." >
+          description="Replaces a set of placeholders in webadmin with values for this specific version of Neo4j.">
 
     <replace dir="${project.build.outputDirectory}/webadmin-html/">
-      <replacefilter token="@@neo4j.codename@@" value="${neo4j.codename}" />
-      <replacefilter token="@@neo4j.version@@" value="${project.version}" />
-      <replacefilter token="@@splash.icon@@" value="${splash.icon}" />
+      <replacefilter token="@@neo4j.codename@@" value="${neo4j.codename}"/>
+      <replacefilter token="@@neo4j.version@@" value="${project.version}"/>
+      <replacefilter token="@@splash.icon@@" value="${splash.icon}"/>
     </replace>
   </target>
 

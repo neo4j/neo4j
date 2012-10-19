@@ -62,6 +62,7 @@ public class TxLog
     public static final byte TX_DONE = 4;
     private final FileSystemAbstraction fileSystem;
     private final StringLogger msgLog;
+    private int rotationCounter;
 
     /**
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
@@ -108,7 +109,7 @@ public class TxLog
     /**
      * Closes the file representing the transaction log.
      */
-    public void close() throws IOException
+    public synchronized void close() throws IOException
     {
         logBuffer.force();
         logBuffer.getFileChannel().close();
@@ -146,6 +147,7 @@ public class TxLog
     public synchronized void txStart( byte globalId[] ) throws IOException
     {
         assertNotNull( globalId, "global id" );
+
         logBuffer.put( TX_START ).put( (byte) globalId.length ).put( globalId );
         recordCount++;
     }
@@ -194,6 +196,7 @@ public class TxLog
         throws IOException
     {
         assertNotNull( globalId, "global id" );
+
         logBuffer.put( MARK_COMMIT ).put( (byte) globalId.length ).put( globalId );
         forceMode.force( logBuffer );
         recordCount++;
@@ -321,7 +324,7 @@ public class TxLog
      * (transactions that han't been completed yet) grouped after global by
      * transaction id.
      */
-    public synchronized Iterator<List<Record>> getDanglingRecords()
+    public synchronized Iterable<List<Record>> getDanglingRecords()
         throws IOException
     {
         FileChannel fileChannel = logBuffer.getFileChannel();
@@ -404,7 +407,7 @@ public class TxLog
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( !recordMap.containsKey( xid ) )
                 {
-                    throw new IOException( "Commiting xid[" + xid
+                    throw new IOException( "Committing xid[" + xid
                         + "] mark found but no record list found in map" );
                 }
                 List<Record> recordList = recordMap.get( xid );
@@ -428,7 +431,7 @@ public class TxLog
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( !recordMap.containsKey( xid ) )
                 {
-                    throw new IOException( "Commiting xid[" + xid
+                    throw new IOException( "Committing xid[" + xid
                         + "] mark found but no record list found in map" );
                 }
                 recordMap.remove( xid );
@@ -452,7 +455,7 @@ public class TxLog
                 buffer.flip();
             }
         }
-        return recordMap.values().iterator();
+        return recordMap.values();
     }
 
     /**
@@ -467,18 +470,30 @@ public class TxLog
     public synchronized void switchToLogFile( String newFile )
         throws IOException
     {
+        rotationCounter++;
         if ( newFile == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
         // copy all dangling records from current log to new log
         force();
-        Iterator<List<Record>> itr = getDanglingRecords();
+        Iterable<List<Record>> itr = getDanglingRecords();
         close();
-        List<Record> records = new ArrayList<Record>();
-        while ( itr.hasNext() )
+        if ( fileSystem.fileExists( name ) )
         {
-            records.addAll( itr.next() );
+            try
+            {
+                fileSystem.copyFile( name, name+"_"+rotationCounter );
+            }
+            catch (Throwable t)
+            {
+                t.printStackTrace();
+            }
+        }
+        List<Record> records = new ArrayList<Record>();
+        for ( List<Record> tx : itr )
+        {
+            records.addAll( tx );
         }
         Collections.sort( records, new Comparator<Record>()
         {

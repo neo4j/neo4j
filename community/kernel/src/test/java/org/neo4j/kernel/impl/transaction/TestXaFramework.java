@@ -38,10 +38,15 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -50,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -241,7 +247,21 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 map.put( "store_dir", path() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), null, null);
+                        new DummyTransactionFactory(), new TransactionInterceptorProviders(
+                        Iterables.<TransactionInterceptorProvider>empty(),
+                        new DependencyResolver()
+                        {
+                            @Override
+                            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+                            {
+                                return (T) new Config( MapUtil.stringMap(
+                                        GraphDatabaseSettings.intercept_committing_transactions.name(),
+                                        GraphDatabaseSetting.FALSE,
+                                        GraphDatabaseSettings.intercept_deserialized_transactions.name(),
+                                        GraphDatabaseSetting.FALSE
+                                        ));
+                            }
+                        }));
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
@@ -250,8 +270,17 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
 
+        public void init()
+        {
+        }
+
         @Override
-        public void close()
+        public void start()
+        {
+        }
+
+        @Override
+        public void stop()
         {
             xaContainer.close();
             // cleanup dummy resource log
@@ -268,6 +297,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 files[i].delete();
             }
         }
+
+        @Override
+        public void shutdown()
+        {
+        }
+
 
         @Override
         public XaConnection getXaConnection()
@@ -352,7 +387,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                config, UTF8.encode( "DDDDDD" ), "dummy_datasource", new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
+                config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
+                new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )),
+                        TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        fileSystem, StringLogger.DEV_NULL,
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try

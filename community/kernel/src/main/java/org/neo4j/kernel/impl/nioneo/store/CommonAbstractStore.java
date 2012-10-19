@@ -518,15 +518,15 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( String fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(),
-                figureOutHighestIdInUse(), firstTime );
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType()
+        );
     }
 
     protected abstract long figureOutHighestIdInUse();
 
     protected void createIdGenerator( String fileName )
     {
-        idGeneratorFactory.create( fileSystemAbstraction, fileName );
+        idGeneratorFactory.create( fileSystemAbstraction, fileName, 0 );
     }
 
     protected void openReadOnlyIdGenerator( int recordSize )
@@ -549,7 +549,7 @@ public abstract class CommonAbstractStore
     {
         if ( idGenerator != null )
         {
-            idGenerator.close( false );
+            idGenerator.close();
         }
     }
 
@@ -589,7 +589,7 @@ public abstract class CommonAbstractStore
         {
             recordSize = ((AbstractStore) this).getRecordSize();
         }
-        idGenerator.close( true );
+        idGenerator.close();
         boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS

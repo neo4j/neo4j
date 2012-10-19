@@ -20,11 +20,18 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.internal.matchers.StringContains.containsString;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -36,9 +43,6 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.junit.Assert.*;
-import static org.junit.internal.matchers.StringContains.*;
-
 public class StoreVersionTest
 {
     @Test
@@ -49,10 +53,12 @@ public class StoreVersionTest
         assertTrue( outputDir.mkdirs() );
         String storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME ).getPath();
 
-        Map<String,String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.SYSTEM, null );
+        StoreFactory sf = new StoreFactory( new Config(
+                new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.SYSTEM, null );
         NeoStore neoStore = sf.createNeoStore(storeFileName);
 
         CommonAbstractStore[] stores = {
@@ -83,13 +89,16 @@ public class StoreVersionTest
         FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class).apply( new HashMap<String,String>() ));
-        
+        Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( new
+                HashMap<String, String>() ) );
+
         try {
             new NodeStore( workingFile.getPath(), config, new DefaultIdGeneratorFactory(),
                     new DefaultWindowPoolFactory(), fileSystem, StringLogger.SYSTEM );
             fail( "Should have thrown exception" );
-        } catch ( NotCurrentStoreVersionException e ) {
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
             //expected
         }
     }
@@ -98,17 +107,19 @@ public class StoreVersionTest
     public void neoStoreHasCorrectStoreVersionField() throws IOException
     {
         File outputDir = new File( "target/var/"
-                                   + StoreVersionTest.class.getSimpleName()
-                                   + "test2" );
+                + StoreVersionTest.class.getSimpleName()
+                + "test2" );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
 
         String storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME ).getPath();
 
-        Map<String,String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<String, String>();
         config.put( "neo_store", storeFileName );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, StringLogger.SYSTEM, null );
+        StoreFactory sf = new StoreFactory( new Config(
+                new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( config )) ,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.SYSTEM, null );
         NeoStore neoStore = sf.createNeoStore(storeFileName);
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
@@ -120,8 +131,8 @@ public class StoreVersionTest
     @Test
     public void testProperEncodingDecodingOfVersionString()
     {
-        String[] toTest = new String[] { "123", "foo", "0.9.9", "v0.A.0",
-                "bar", "chris", "1234567" };
+        String[] toTest = new String[]{"123", "foo", "0.9.9", "v0.A.0",
+                "bar", "chris", "1234567"};
         for ( String string : toTest )
         {
             assertEquals(

@@ -22,47 +22,40 @@ package org.neo4j.jmx.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
+
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class KernelBean extends Neo4jMBean implements Kernel
 {
     private final long kernelStartTime;
-    private final long storeCreationDate;
-    private final long storeId;
-    private final long storeLogVersion;
-    private final boolean isReadOnly;
     private final String kernelVersion;
-    private final String storeDir;
     private final ObjectName query;
     private final String instanceId;
+
+    private final DataSourceInfo dataSourceInfo;
+    private boolean isReadOnly;
+    private long storeCreationDate = -1;
+    private long storeId = -1;
+    private String storeDir = null;
+    private long storeLogVersion;
 
     KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
-        NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
+        dataSourceInfo = new DataSourceInfo();
+        kernel.graphDatabase().getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                .addDataSourceRegistrationListener( dataSourceInfo );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );
-        storeCreationDate = datasource.getCreationTime();
-        storeLogVersion = datasource.getCurrentLogVersion();
-        isReadOnly = datasource.isReadOnly();
-        storeId = datasource.getRandomIdentifier();
-
-        @SuppressWarnings( "hiding" ) String storeDir;
-        try
-        {
-            storeDir = new File( datasource.getStoreDir() ).getCanonicalFile().getAbsolutePath();
-        }
-        catch ( IOException e )
-        {
-            storeDir = new File( datasource.getStoreDir() ).getAbsolutePath();
-        }
-        this.storeDir = storeDir;
 
         kernelStartTime = new Date().getTime();
     }
@@ -70,12 +63,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
     String getInstanceId()
     {
         return instanceId;
-    }
-
-    private NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
-    {
-        XaDataSourceManager mgr = kernel.graphDatabase().getXaDataSourceManager();
-        return mgr.getNeoStoreDataSource();
     }
 
     public ObjectName getMBeanQuery()
@@ -116,5 +103,44 @@ public class KernelBean extends Neo4jMBean implements Kernel
     public String getStoreDirectory()
     {
         return storeDir;
+    }
+
+    private class DataSourceInfo
+            implements DataSourceRegistrationListener
+    {
+        @Override
+        public void registeredDataSource( XaDataSource ds )
+        {
+            if ( ds instanceof NeoStoreXaDataSource )
+            {
+                NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) ds;
+                storeCreationDate = datasource.getCreationTime();
+                storeLogVersion = datasource.getCurrentLogVersion();
+                isReadOnly = datasource.isReadOnly();
+                storeId = datasource.getRandomIdentifier();
+
+                try
+                {
+                    storeDir = new File( datasource.getStoreDir() ).getCanonicalFile().getAbsolutePath();
+                }
+                catch ( IOException e )
+                {
+                    storeDir = new File( datasource.getStoreDir() ).getAbsolutePath();
+                }
+            }
+        }
+
+        @Override
+        public void unregisteredDataSource( XaDataSource ds )
+        {
+            if ( ds instanceof NeoStoreXaDataSource )
+            {
+                storeCreationDate = -1;
+                storeLogVersion = -1;
+                isReadOnly = false;
+                storeId = -1;
+                storeDir = null;
+            }
+        }
     }
 }

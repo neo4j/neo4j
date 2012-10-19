@@ -36,8 +36,8 @@ public class PlaceboTm extends AbstractTransactionManager
     }
 
     public void commit() throws RollbackException, HeuristicMixedException,
-        HeuristicRollbackException, SecurityException, IllegalStateException,
-        SystemException
+            HeuristicRollbackException, SecurityException, IllegalStateException,
+            SystemException
     {
         // TODO Auto-generated method stub
 
@@ -56,14 +56,14 @@ public class PlaceboTm extends AbstractTransactionManager
     }
 
     public void resume( Transaction arg0 ) throws InvalidTransactionException,
-        IllegalStateException, SystemException
+            IllegalStateException, SystemException
     {
         // TODO Auto-generated method stub
 
     }
 
     public void rollback() throws IllegalStateException, SecurityException,
-        SystemException
+            SystemException
     {
         // TODO Auto-generated method stub
 
@@ -91,12 +91,12 @@ public class PlaceboTm extends AbstractTransactionManager
     public void init()
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void start()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -104,12 +104,23 @@ public class PlaceboTm extends AbstractTransactionManager
     public void stop()
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
+    {
+    }
+
+    @Override
+    public int getEventIdentifier()
+    {
+        return 0;
+    }
+
+    @Override
+    public void doRecovery() throws Throwable
     {
     }
 }

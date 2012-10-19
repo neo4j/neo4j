@@ -26,6 +26,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.*;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Test LifeSupport lifecycle transitions
  */
@@ -270,6 +273,87 @@ public class LifeSupportTest
         assertEquals( LifecycleStatus.SHUTDOWN, instance3.getStatus());
     }
 
+    @Test
+    public void testAddInstanceWhenInitInitsInstance()
+            throws LifecycleException
+    {
+        LifeSupport support = new LifeSupport();
+
+        support.init();
+
+        LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
+
+        support.add( instance1 );
+
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus() );
+
+        assertEquals( LifecycleStatus.NONE, instance1.transitions.get( 0 ) );
+        assertEquals( 2, instance1.transitions.size() );
+    }
+
+    @Test
+    public void testAddInstanceWhenStartedStartsInstance()
+        throws LifecycleException
+    {
+        LifeSupport support = new LifeSupport();
+
+        support.init();
+        support.start();
+
+        LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
+
+        support.add( instance1 );
+
+        assertEquals( LifecycleStatus.STARTED, instance1.getStatus() );
+
+        assertEquals( LifecycleStatus.NONE, instance1.transitions.get( 0 ) );
+        assertEquals( LifecycleStatus.STOPPED, instance1.transitions.get( 1 ) );
+
+        assertEquals( 3, instance1.transitions.size() );
+    }
+
+    @Test
+    public void testAddInstanceWhenStoppedInitsInstance()
+            throws LifecycleException
+    {
+        LifeSupport support = new LifeSupport();
+
+        support.init();
+        support.start();
+        support.stop();
+
+        LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
+
+        support.add( instance1 );
+
+        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus() );
+
+        assertEquals( LifecycleStatus.NONE, instance1.transitions.get( 0 ) );
+        assertEquals( LifecycleStatus.STOPPED, instance1.transitions.get( 1 ) );
+
+        assertEquals( 2, instance1.transitions.size() );
+    }
+
+    @Test
+    public void testAddInstanceWhenShutdownDoesNotAffectInstance()
+            throws LifecycleException
+    {
+        LifeSupport support = new LifeSupport();
+
+        support.init();
+        support.start();
+        support.stop();
+        support.shutdown();
+
+        LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
+
+        support.add( instance1 );
+
+        assertEquals( LifecycleStatus.NONE, instance1.getStatus() );
+
+        assertEquals( 1, instance1.transitions.size() );
+    }
+
     public class LifecycleMock
         implements Lifecycle
     {
@@ -277,8 +361,8 @@ public class LifeSupportTest
         Throwable startThrowable;
         Throwable stopThrowable;
         Throwable shutdownThrowable;
-        
-        LifecycleStatus status = LifecycleStatus.NONE;
+
+        List<LifecycleStatus> transitions;
 
         public LifecycleMock( Throwable initThrowable,
                               Throwable startThrowable,
@@ -290,6 +374,9 @@ public class LifeSupportTest
             this.startThrowable = startThrowable;
             this.stopThrowable = stopThrowable;
             this.shutdownThrowable = shutdownThrowable;
+
+            transitions = new LinkedList<LifecycleStatus>();
+            transitions.add( LifecycleStatus.NONE );
         }
 
         @Override
@@ -299,7 +386,7 @@ public class LifeSupportTest
             if (initThrowable != null)
                 throw initThrowable;
 
-            status = LifecycleStatus.STOPPED;
+            transitions.add(LifecycleStatus.STOPPED);
         }
 
         @Override
@@ -309,14 +396,14 @@ public class LifeSupportTest
             if (startThrowable != null)
                 throw startThrowable;
 
-            status = LifecycleStatus.STARTED;
+            transitions.add(LifecycleStatus.STARTED);
         }
 
         @Override
         public void stop()
             throws Throwable
         {
-            status = LifecycleStatus.STOPPED;
+            transitions.add(LifecycleStatus.STOPPED);
 
             if (stopThrowable != null)
                 throw stopThrowable;
@@ -326,7 +413,7 @@ public class LifeSupportTest
         public void shutdown()
             throws Throwable
         {
-            status = LifecycleStatus.SHUTDOWN;
+            transitions.add(LifecycleStatus.SHUTDOWN);
 
             if (shutdownThrowable != null)
                 throw shutdownThrowable;
@@ -334,7 +421,7 @@ public class LifeSupportTest
 
         public LifecycleStatus getStatus()
         {
-            return status;
+            return transitions.get( transitions.size() - 1 );
         }
     }
 }

@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.batchinsert.BatchInserter;
  * Indexes created and populated using {@link BatchInserterIndex}s from this
  * provider are compatible with {@link Index}s from
  * {@link LuceneIndexImplementation}.
- * 
+ *
  * @deprecated This class has been replaced by
- *             {@link org.neo4j.unsafe.batchinsert.LuceneBatchInserterIndexProvider}
+ *             {@link org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider}
  *             as of Neo4j 1.7.
  */
 public class LuceneBatchInserterIndexProvider implements
@@ -43,7 +43,7 @@ public class LuceneBatchInserterIndexProvider implements
 
     /**
      * @deprecated This class has been replaced by
-     *             {@link org.neo4j.unsafe.batchinsert.LuceneBatchInserterIndexProvider}
+     *             {@link org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider}
      *             as of Neo4j 1.7.
      */
     public LuceneBatchInserterIndexProvider( final BatchInserter inserter )
@@ -52,13 +52,13 @@ public class LuceneBatchInserterIndexProvider implements
     }
 
     public BatchInserterIndex nodeIndex( String indexName,
-            Map<String, String> config )
+                                         Map<String, String> config )
     {
         return provider.nodeIndex( indexName, config );
     }
 
     public BatchInserterIndex relationshipIndex( String indexName,
-            Map<String, String> config )
+                                                 Map<String, String> config )
     {
         return provider.relationshipIndex( indexName, config );
     }

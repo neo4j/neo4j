@@ -30,7 +30,6 @@ import java.io.File;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
@@ -59,8 +58,8 @@ public class TestGrowingFileMemoryMapping
         ) ) );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                new DefaultLastCommittedTxIdSetter(), StringLogger.SYSTEM, new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM,
+                new DefaultTxHook() );
 
         String fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" ).getPath();
         storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(

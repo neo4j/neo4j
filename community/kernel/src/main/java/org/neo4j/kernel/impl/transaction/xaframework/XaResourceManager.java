@@ -699,7 +699,7 @@ public class XaResourceManager
                     {
                         throw new RecoveryVerificationException( recoveredTx.getIdentifier(), recoveredTx.getTxId() );
                     }
-                    
+
                     if ( !recoveredTx.isOnePhase() )
                     {
                         log.commitTwoPhase( recoveredTx.getIdentifier(), recoveredTx.getTxId(), ForceMode.forced );

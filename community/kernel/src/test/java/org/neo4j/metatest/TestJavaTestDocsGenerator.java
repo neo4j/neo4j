@@ -34,8 +34,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.test.*;
+import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestData;
 
 public class TestJavaTestDocsGenerator implements GraphHolder
 {

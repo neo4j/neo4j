@@ -29,24 +29,26 @@
   </appender>
 
   <if condition='property("remote_logging_enabled").contains("true")'>
-      <then>
-        <appender name="SOCKET" class="ch.qos.logback.classic.net.SocketAppender">
-            <remoteHost>${remote_logging_host}</remoteHost>
-            <port>${remote_logging_port}</port>
-            <reconnectionDelay>10000</reconnectionDelay>
-            <includeCallerData>true</includeCallerData>
-        </appender>
-        <logger name="neo4j">
-          <appender-ref ref="SOCKET" />
-        </logger>
-      </then>
+    <then>
+      <appender name="SOCKET" class="ch.qos.logback.classic.net.SocketAppender">
+        <remoteHost>${remote_logging_host}</remoteHost>
+        <port>${remote_logging_port}</port>
+        <reconnectionDelay>10000</reconnectionDelay>
+        <includeCallerData>true</includeCallerData>
+      </appender>
+      <logger name="neo4j">
+        <appender-ref ref="SOCKET"/>
+      </logger>
+    </then>
   </if>
 
   <logger name="neo4j.diagnostics" level="DEBUG">
   </logger>
 
   <logger name="neo4j" additivity="false">
-    <appender-ref ref="FILE" />
+    <appender-ref ref="FILE"/>
   </logger>
+
+  <include resource="custom-logback.xml"/>
 
 </configuration>

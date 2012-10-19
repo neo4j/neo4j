@@ -22,8 +22,8 @@ package org.neo4j.ext.udc.impl.osgi;
 import java.util.Dictionary;
 import java.util.Properties;
 
-import org.neo4j.ext.udc.impl.UdcExtensionImpl;
-import org.neo4j.kernel.KernelExtension;
+import org.neo4j.ext.udc.impl.UdcKernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -33,24 +33,26 @@ import org.osgi.framework.BundleContext;
  * for kernel extensions.
  */
 public final class OSGiActivator
-    implements BundleActivator {
+        implements BundleActivator
+{
 
     /**
      * Called whenever the OSGi framework starts our bundle
      */
-    public void start(BundleContext bc)
-        throws Exception {
-        // register the UdcExtenionImpl
+    public void start( BundleContext bc )
+            throws Exception
+    {
         Dictionary props = new Properties();
         // Register our example service implementation in the OSGi service registry
-        bc.registerService(KernelExtension.class.getName(), new UdcExtensionImpl(), props);
+        bc.registerService( KernelExtensionFactory.class.getName(), new UdcKernelExtensionFactory(), props );
     }
 
     /**
      * Called whenever the OSGi framework stops our bundle
      */
-    public void stop(BundleContext bc)
-        throws Exception {
+    public void stop( BundleContext bc )
+            throws Exception
+    {
         // no need to unregister our service - the OSGi framework handles it for us
     }
 

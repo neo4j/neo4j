@@ -95,7 +95,24 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     {
         FileUtils.copyRecursively( new File( from ), new File( to ) );
     }
-    
+
+    @Override
+    public void autoCreatePath( String store ) throws IOException
+    {
+        String fileSeparator = System.getProperty( "file.separator" );
+        int index = store.lastIndexOf( fileSeparator );
+        String dirs = store.substring( 0, index );
+        File directories = new File( dirs );
+        if ( !directories.exists() )
+        {
+            if ( !directories.mkdirs() )
+            {
+                throw new IOException( "Unable to create directory path["
+                        + dirs + "] for Neo4j store." );
+            }
+        }
+    }
+
     @Override
     public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
     {

@@ -231,13 +231,16 @@ public class LogExtractor
             }
             return -1;
         }
+        catch ( IOException e )
+        {
+            throw e;
+        }
         catch ( Exception e )
         {
             // Something is wrong with the cached tx start position for this (expected) tx,
             // remove it from cache so that next request will have to bypass the cache
             cache.clear();
-            if ( e instanceof IOException ) throw (IOException) e;
-            else throw Exceptions.launderedException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -343,9 +346,7 @@ public class LogExtractor
         }
         if ( version == -1 )
         {
-            throw new RuntimeException( "txId:" + txId + " not found in any logical log "
-                                        + "(starting at " + logLoader.getHighestLogVersion()
-                                        + " and searching backwards" );
+            throw new NoSuchTransactionException( txId, "started at " + logLoader.getHighestLogVersion() + " searching backwards" );
         }
         return new long[] { version, committedTx };
     }
@@ -397,10 +398,11 @@ public class LogExtractor
         {
             if ( futureQueue.containsKey( nextExpectedTxId ) )
             {
-                List<LogEntry> list = futureQueue.remove( nextExpectedTxId++ );
+                long txId = nextExpectedTxId++;
+                List<LogEntry> list = futureQueue.remove( txId );
                 lastStartEntry = (LogEntry.Start)list.get( 0 );
                 writeToBuffer( list, target );
-                return commitEntryOf( list );
+                return commitEntryOf( txId, list );
             }
 
             if ( entry instanceof LogEntry.Start )
@@ -460,13 +462,13 @@ public class LogExtractor
             return null;
         }
 
-        private LogEntry commitEntryOf( List<LogEntry> list )
+        private LogEntry commitEntryOf( long txId, List<LogEntry> list ) throws IOException
         {
             for ( LogEntry entry : list )
             {
                 if ( entry instanceof LogEntry.Commit ) return entry;
             }
-            throw new RuntimeException( "No commit entry in " + list );
+            throw new NoSuchTransactionException( txId, "No commit entry in " + list );
         }
 
         private void writeToBuffer( List<LogEntry> entries, LogBuffer target ) throws IOException

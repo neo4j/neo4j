@@ -72,7 +72,8 @@ public class StoreMigrationTool
 
         config = new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config );
 
-        NeoStore neoStore = new StoreFactory(new Config( config ), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, log, null ).createNeoStore(targetStoreFile.getPath());
+        NeoStore neoStore = new StoreFactory(new Config( config ), new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(), fileSystem, log, null ).createNeoStore(targetStoreFile.getPath());
 
         long startTime = System.currentTimeMillis();
 

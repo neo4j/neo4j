@@ -83,7 +83,6 @@ public class ConfigurationDefaults
 	public Map<String,String> apply(Map<String,String> config)
     {
         Map<String, String> configuration = new HashMap<String,String>(config);
-        
         // Go through all settings and apply defaults
         for( Class<?> settingsClass : settingsClasses )
         {
@@ -94,7 +93,8 @@ public class ConfigurationDefaults
                 if (setting instanceof GraphDatabaseSetting.DefaultValue)
                 {
                 	defaultValue = ((GraphDatabaseSetting.DefaultValue)setting).getDefaultValue();
-                } else
+                }
+                else
                 {
                 	defaultValue = getDefaultValue( field.first() );
                 }

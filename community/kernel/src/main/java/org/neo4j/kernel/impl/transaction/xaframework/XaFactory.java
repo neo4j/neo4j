@@ -20,12 +20,7 @@
 
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.util.List;
-
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -36,12 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 */
 public class XaFactory
 {
-    public static abstract class Configuration
-    {
-        public static final GraphDatabaseSetting.BooleanSetting intercept_deserialized_transactions = GraphDatabaseSettings.intercept_deserialized_transactions;
-    }
-    
-    private Config config;
+    private final Config config;
     private TxIdGenerator txIdGenerator;
     private AbstractTransactionManager txManager;
     private LogBufferFactory logBufferFactory;
@@ -65,7 +55,7 @@ public class XaFactory
     }
 
     public XaContainer newXaContainer(XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
-                                      List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver )
+                                      TransactionInterceptorProviders providers )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -78,10 +68,9 @@ public class XaFactory
         XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog );
 
         XaLogicalLog log;
-        if ( config.get( Configuration.intercept_deserialized_transactions )
-                && providers != null )
+        if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, dependencyResolver, logBufferFactory,
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
                     fileSystemAbstraction, stringLogger, pruneStrategy );
         }
         else

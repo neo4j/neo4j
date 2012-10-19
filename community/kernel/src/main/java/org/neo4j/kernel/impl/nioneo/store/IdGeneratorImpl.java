@@ -308,7 +308,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to close this id generator
      */
-    public synchronized void close( boolean shutdown )
+    public synchronized void close()
     {
         if ( highId.get() == -1 )
         {
@@ -406,6 +406,11 @@ public class IdGeneratorImpl implements IdGenerator
         return this.fileName;
     }
 
+    public static void createGenerator( FileSystemAbstraction fs, String fileName )
+    {
+        createGenerator( fs, fileName, 0 );
+    }
+
     /**
      * Creates a new id generator.
      *
@@ -414,7 +419,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to create the id generator
      */
-    public static void createGenerator( FileSystemAbstraction fs, String fileName )
+    public static void createGenerator( FileSystemAbstraction fs, String fileName, long highId )
     {
         // sanity checks
         if ( fs == null )
@@ -435,7 +440,7 @@ public class IdGeneratorImpl implements IdGenerator
             FileChannel channel = fs.create( fileName );
             // write the header
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-            buffer.put( CLEAN_GENERATOR ).putLong( 0 ).flip();
+            buffer.put( CLEAN_GENERATOR ).putLong( highId ).flip();
             channel.write( buffer );
             channel.force( false );
             channel.close();
@@ -589,7 +594,7 @@ public class IdGeneratorImpl implements IdGenerator
             System.out.print( " " + itr.next() );
         }
         System.out.println( "\nNext free id: " + highId );
-        close( true );
+        close();
     }
 
     public synchronized long getNumberOfIdsInUse()

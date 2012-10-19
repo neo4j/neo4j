@@ -40,7 +40,7 @@ public class LockingTransaction implements Serializable
     @Override
     public String toString()
     {
-        return "{" + transaction + ", readCount=" + readCount + ", writeCount=" + writeCount + "}";
+        return transaction+"{" +"readCount=" + readCount + ", writeCount=" + writeCount + "}";
     }
 
     public String getTransaction()

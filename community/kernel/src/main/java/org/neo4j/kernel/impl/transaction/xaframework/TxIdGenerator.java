@@ -21,9 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import javax.transaction.xa.XAException;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-public interface TxIdGenerator extends Lifecycle
+public interface TxIdGenerator
 {
     public static final TxIdGenerator DEFAULT = new TxIdGenerator()
     {
@@ -44,26 +42,6 @@ public interface TxIdGenerator extends Lifecycle
 
         @Override
         public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthor )
-        {
-        }
-
-        @Override
-        public void init() throws Throwable
-        {
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-        }
-
-        @Override
-        public void shutdown() throws Throwable
         {
         }
     };

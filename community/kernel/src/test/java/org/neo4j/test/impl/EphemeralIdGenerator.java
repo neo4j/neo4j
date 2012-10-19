@@ -38,7 +38,7 @@ public class EphemeralIdGenerator implements IdGenerator
         private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
+        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
@@ -50,7 +50,7 @@ public class EphemeralIdGenerator implements IdGenerator
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, String fileName )
+        public void create( FileSystemAbstraction fs, String fileName, long highId )
         {
         }
 
@@ -115,7 +115,7 @@ public class EphemeralIdGenerator implements IdGenerator
     }
 
     @Override
-    public void close( boolean shutdown )
+    public void close()
     {
     }
 

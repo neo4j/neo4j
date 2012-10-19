@@ -17,21 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphdb.index;
 
-
-public class OtherExtension extends KernelExtension<DummyExtension.State>
+/**
+ * Registry of currently active index implementations. Indexing extensions should register the implementation
+ * here on startup, and unregister it on stop.
+ */
+public interface IndexProviders
 {
-    static final String EXTENSION_ID = "other dummy";
+    void registerIndexProvider( String name, IndexImplementation indexImplementation );
 
-    public OtherExtension()
-    {
-        super( EXTENSION_ID );
-    }
-
-    @Override
-    protected DummyExtension.State load( KernelData kernel )
-    {
-        return new DummyExtension.State();
-    }
+    boolean unregisterIndexProvider( String name );
 }

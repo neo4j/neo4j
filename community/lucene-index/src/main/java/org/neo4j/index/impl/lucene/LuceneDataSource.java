@@ -61,6 +61,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -75,6 +76,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
@@ -82,6 +84,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -98,6 +101,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
  */
 public class LuceneDataSource extends LogBackedXaDataSource
 {
+    private final Config config;
+    private FileSystemAbstraction fileSystemAbstraction;
+
     public static abstract class Configuration
         extends LogBackedXaDataSource.Configuration
     {
@@ -151,21 +157,22 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
 
-    private final IndexClockCache indexSearchers;
-    private final XaContainer xaContainer;
-    private final String baseStorePath;
+    private IndexClockCache indexSearchers;
+    private XaContainer xaContainer;
+    private String baseStorePath;
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
-    final IndexProviderStore providerStore;
-    private final IndexTypeCache typeCache;
+    private final XaFactory xaFactory;
+    IndexProviderStore providerStore;
+    private IndexTypeCache typeCache;
     private boolean closed;
-    private final Cache caching;
+    private Cache caching;
     EntityType nodeEntityType;
     EntityType relationshipEntityType;
     final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
             new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
-    private final DirectoryGetter directoryGetter;
-    
+    private DirectoryGetter directoryGetter;
+
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
 
@@ -175,15 +182,29 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * @throws InstantiationException if the data source couldn't be
      * instantiated
      */
-    public LuceneDataSource( Config config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction, XaFactory xaFactory)
+    public LuceneDataSource( Config config,  IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
+                             XaFactory xaFactory)
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
+        this.config = config;
+        this.indexStore = indexStore;
+        this.xaFactory = xaFactory;
+        this.typeCache = new IndexTypeCache( indexStore );
+        this.fileSystemAbstraction = fileSystemAbstraction;
+    }
+
+    @Override
+    public void init()
+    {}
+
+    @Override
+    public void start()
+    {
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         String storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
-        this.indexStore = indexStore;
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.providerStore = newIndexStore( storeDir, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
@@ -223,8 +244,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         XaCommandFactory cf = new LuceneCommandFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
-        xaContainer = xaFactory.newXaContainer(this, this.baseStorePath + File.separator + "lucene.log", cf, tf, null, null );
-
+        DependencyResolver dummy = new DependencyResolver()
+        {
+            @Override
+            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+            {
+                return (T) LuceneDataSource.this.config;
+            }
+        };
+        xaContainer = xaFactory.newXaContainer(this, this.baseStorePath + File.separator + "lucene.log", cf, tf,
+                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ));
+        closed = false;
         if ( !isReadOnly )
         {
             try
@@ -276,7 +306,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             if ( !dir.mkdirs() )
             {
                 throw new RuntimeException( "Unable to create directory path["
-                    + dir.getAbsolutePath() + "] for Neo4j store." );
+                        + dir.getAbsolutePath() + "] for Neo4j store." );
             }
             created = true;
         }
@@ -290,10 +320,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public void close()
+    public void stop()
     {
         synchronized ( this )
         {
+            super.stop();
             if ( closed )
             {
                 return;
@@ -319,6 +350,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
         providerStore.close();
     }
+
+    @Override
+    public void shutdown()
+    {}
 
     public Index<Node> nodeIndex( String indexName, GraphDatabaseService graphDb, LuceneIndexImplementation luceneIndexImplementation )
     {

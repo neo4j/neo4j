@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -31,27 +30,25 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class InterceptingXaLogicalLog extends XaLogicalLog
 {
     private final XaDataSource ds;
-    private final List<Pair<TransactionInterceptorProvider, Object>> providers;
-    private final DependencyResolver dependencyResolver;
+    private final TransactionInterceptorProviders providers;
 
     public InterceptingXaLogicalLog( String fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
-            List<Pair<TransactionInterceptorProvider, Object>> providers, DependencyResolver dependencyResolver,
-            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger,
+            TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
+            FileSystemAbstraction fileSystem, StringLogger stringLogger,
             LogPruneStrategy pruneStrategy )
     {
         super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, stringLogger, pruneStrategy );
         this.providers = providers;
-        this.dependencyResolver = dependencyResolver;
         this.ds = xaRm.getDataSource();
     }
 
     @Override
-    protected LogDeserializer getLogDeserializer(
-            ReadableByteChannel byteChannel )
+    protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
     {
-        final TransactionInterceptor interceptor = TransactionInterceptorProvider.resolveChain( providers, ds, dependencyResolver );
-        
+        // This is created every time because transaction interceptors can be stateful
+        final TransactionInterceptor interceptor = providers.resolveChain( ds );
+
         LogDeserializer toReturn = new LogDeserializer( byteChannel )
         {
             @Override

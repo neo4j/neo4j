@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class ReadOnlyNodeManager extends NodeManager
@@ -41,11 +42,11 @@ public class ReadOnlyNodeManager extends NodeManager
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
+                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
     {
         super(config, graphDb, lockManager, lockReleaser, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
-                nodeCache, relCache );
+                nodeCache, relCache, xaDsm );
     }
 
     @Override

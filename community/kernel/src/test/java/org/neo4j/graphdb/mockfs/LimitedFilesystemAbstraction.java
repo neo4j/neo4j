@@ -88,6 +88,13 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
         inner.copyFile( from, to );
     }
 
+    @Override
+    public void autoCreatePath( String path ) throws IOException
+    {
+        ensureHasSpace();
+        inner.autoCreatePath( path );
+    }
+
     public void runOutOfDiskSpace()
     {
         outOfSpace = true;

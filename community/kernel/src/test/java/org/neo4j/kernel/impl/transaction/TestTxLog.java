@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+
 import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
 
 public class TestTxLog
 {
@@ -72,7 +73,7 @@ public class TestTxLog
         try
         {
             TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
-            assertTrue( !txLog.getDanglingRecords().hasNext() );
+            assertTrue( !txLog.getDanglingRecords().iterator().hasNext() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
             txLog.txStart( globalId );
@@ -136,12 +137,12 @@ public class TestTxLog
         }
     }
 
-    private List<?>[] getRecordLists( Iterator<List<Record>> danglingRecords )
+    private List<?>[] getRecordLists( Iterable<List<Record>> danglingRecords )
     {
         List<List<?>> list = new ArrayList<List<?>>();
-        while ( danglingRecords.hasNext() )
+        for ( List<Record> txs : danglingRecords )
         {
-            list.add( danglingRecords.next() );
+            list.add( txs );
         }
         return list.toArray( new List[list.size()] );
     }

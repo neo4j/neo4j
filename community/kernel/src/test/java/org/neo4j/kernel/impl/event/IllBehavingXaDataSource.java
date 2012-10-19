@@ -38,9 +38,24 @@ public class IllBehavingXaDataSource extends XaDataSource
     {
         super( branchId, name );
     }
-    
+
     @Override
-    public void close()
+    public void init()
+    {
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+    }
+
+    @Override
+    public void shutdown()
     {
     }
 

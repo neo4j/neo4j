@@ -19,12 +19,12 @@
 package org.neo4j.examples.osgi;
 
 import static org.ops4j.pax.exam.CoreOptions.cleanCaches;
-import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 import static org.ops4j.pax.exam.CoreOptions.frameworkStartLevel;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.provision;
 import static org.ops4j.pax.exam.CoreOptions.repository;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
 
@@ -114,7 +114,7 @@ public class OSGiIT
         ArrayList<Option> ops = new ArrayList<Option>();
         ops.addAll( Arrays.asList( instance.testOptions() ) );
         ops.addAll( Arrays.asList( instance.gogoShellOptions() ) );
-        ExamSystem system = PaxExamRuntime.createServerSystem( (Option[]) ops.toArray( new Option[] {} ) );
+        ExamSystem system = PaxExamRuntime.createServerSystem( (Option[]) ops.toArray( new Option[]{} ) );
         // create Container (you should have exactly one configured!) and start.
         TestContainer container = PaxExamRuntime.createContainer( system );
         container.start();

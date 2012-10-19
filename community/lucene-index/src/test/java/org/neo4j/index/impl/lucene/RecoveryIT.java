@@ -40,17 +40,17 @@ public class RecoveryIT
     {
         String path = "target/hcdb";
         FileUtils.deleteRecursively( new File( path ) );
-        Process process = Runtime.getRuntime().exec( new String[] {
+        Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-cp", System.getProperty( "java.class.path" ),
                 Inserter.class.getName(), path
         } );
-        
+
         // Let it run for a while and then kill it, and wait for it to die
         awaitFile( new File( path, "started" ) );
         Thread.sleep( 5000 );
         process.destroy();
         process.waitFor();
-        
+
         GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         assertTrue( db.index().existsForNodes( "myIndex" ) );
         Index<Node> index = db.index().forNodes( "myIndex" );
@@ -82,8 +82,12 @@ public class RecoveryIT
     {
         long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
         while ( !file.exists() && System.currentTimeMillis() < end )
+        {
             Thread.sleep( 100 );
+        }
         if ( !file.exists() )
+        {
             fail( "The inserter doesn't seem to have run properly" );
+        }
     }
 }

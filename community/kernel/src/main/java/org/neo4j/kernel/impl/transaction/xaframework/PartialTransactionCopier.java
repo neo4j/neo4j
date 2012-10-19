@@ -97,7 +97,9 @@ class PartialTransactionCopier
                     }
                 }
                 if ( startEntriesEncountered.containsKey( identifier ) )
+                {
                     LogIoUtils.writeLogEntry( entry, targetLog );
+                }
             }
         }
     }
@@ -110,7 +112,10 @@ class PartialTransactionCopier
         ByteBuffer localBuffer = newLogReaderBuffer();
         for ( LogEntry readEntry = null; (readEntry = LogIoUtils.readEntry( localBuffer, tempBuffer, commandFactory )) != null; )
         {
-            if ( readEntry instanceof LogEntry.Commit ) break;
+            if ( readEntry instanceof LogEntry.Commit )
+            {
+                break;
+            }
             LogIoUtils.writeLogEntry( readEntry, target );
         }
         return extractor.getLastStartEntry();

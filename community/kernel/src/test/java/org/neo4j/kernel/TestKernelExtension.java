@@ -19,26 +19,30 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 /**
- * Test the implementation of the {@link KernelExtension} framework. Treats the
+ * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the
  * framework as a black box and takes the perspective of the extension, making
  * sure that the framework fulfills its part of the contract. The parent class (
- * {@link KernelExtensionContractTest}) takes the opposite approach, it treats
+ * {@link KernelExtensionFactoryContractTest}) takes the opposite approach, it treats
  * the extension implementation as a black box to assert that it fulfills the
  * requirements stipulated by the framework.
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-public final class TestKernelExtension extends KernelExtensionContractTest<DummyExtension.State, DummyExtension>
+public final class TestKernelExtension extends KernelExtensionFactoryContractTest
 {
     public TestKernelExtension()
     {
-        super( DummyExtension.EXTENSION_ID, DummyExtension.class );
+        super( DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class );
     }
 
     /**
@@ -48,11 +52,16 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     @Test
     public void canDisableLoadingKernelExtensions() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
         try
         {
-            assertFalse( "Extensions were loaded despite configured not to",
-                    new DummyExtension().isLoaded( getExtensions( graphdb ) ) );
+            graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
+                    DummyExtension.class );
+            fail( "Extensions were loaded despite configured not to" );
+        }
+        catch ( IllegalArgumentException ex )
+        {
+            // Could not find extension: ok!
         }
         finally
         {
@@ -61,18 +70,16 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     }
 
     /**
-     * We know which instance we loaded, we are asserting that the framework
-     * will give us that same instance when we ask for the state.
+     * Check that lifecycle status of extension is STARTED
      */
     @Test
-    public void shouldRetrieveSameLoadedStateObjectWhenRequested() throws Exception
+    public void shouldBeStarted() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
-            DummyExtension.State state = new DummyExtension().getState( getExtensions( graphdb ) );
-            assertNotNull( state );
-            assertSame( DummyExtension.lastState, state );
+            assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
+                    KernelExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
         }
         finally
         {
@@ -80,17 +87,18 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
         }
     }
 
+    /**
+     * Check that dependencies can be accessed
+     */
     @Test
-    public void differentExtensionsCanHaveDifferentState() throws Exception
+    public void dependenciesCanBeRetrieved() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
-            KernelData kernel = getExtensions( graphdb );
-            DummyExtension.State state = new DummyExtension().getState( kernel ), other = new OtherExtension().getState( kernel );
-            assertNotNull( state );
-            assertNotNull( other );
-            assertNotSame( state, other );
+            assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
+                    graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
+                            DummyExtension.class ).getDependencies().getConfig() );
         }
         finally
         {
@@ -98,9 +106,16 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
         }
     }
 
-    @Override
-    protected boolean isUnloaded( DummyExtension.State state )
+    /**
+     * Check that lifecycle status of extension is SHUTDOWN
+     */
+    @Test
+    public void shouldBeShutdown() throws Exception
     {
-        return state.unloaded;
+        GraphDatabaseAPI graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        graphdb.shutdown();
+
+        assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( KernelExtensions
+                .class ).resolveDependency( DummyExtension.class ).getStatus() );
     }
 }

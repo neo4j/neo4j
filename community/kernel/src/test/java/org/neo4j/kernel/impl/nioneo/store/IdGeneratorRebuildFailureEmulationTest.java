@@ -20,9 +20,13 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,9 +42,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -55,14 +59,12 @@ import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.*;
-
-@RunWith( Suite.class )
-@SuiteClasses( { IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
-                 IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class } )
+@RunWith(Suite.class)
+@SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
+        IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class})
 public class IdGeneratorRebuildFailureEmulationTest
 {
-    @RunWith( JUnit4.class )
+    @RunWith(JUnit4.class)
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
@@ -73,9 +75,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    @RunWith( SubProcessTestRunner.class )
-    @ForeignBreakpoints( @ForeignBreakpoints.BreakpointDef(
-            type = "org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl", method = "setHighId" ) )
+    @RunWith(SubProcessTestRunner.class)
+    @ForeignBreakpoints(@ForeignBreakpoints.BreakpointDef(
+            type = "org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl", method = "setHighId"))
     public static final class FailureDuringRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
@@ -86,18 +88,19 @@ public class IdGeneratorRebuildFailureEmulationTest
             fail( "makeStoreOk should have thrown UnderlyingStorageException" );
         }
 
-        @BreakpointHandler( "performTest" )
-        public static void bootstrapTest( @BreakpointHandler( "setHighId" ) BreakPoint setHighId )
+        @BreakpointHandler("performTest")
+        public static void bootstrapTest( @BreakpointHandler("setHighId") BreakPoint setHighId )
         {
             setHighId.enable();
         }
 
-        @SuppressWarnings( "boxing" )
-        @BreakpointHandler( "setHighId" )
+        @SuppressWarnings("boxing")
+        @BreakpointHandler("setHighId")
         public static void on_setHighId( DebugInterface di, BreakPoint setHighId )
         {
             if ( setHighId.invocationCount() > 1
-                 || "org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore".equals( di.thread().getStackTrace()[2].getClassName() ) )
+                    || "org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore".equals( di.thread().getStackTrace()
+                    [2].getClassName() ) )
             {
                 setHighId.disable();
                 // emulate a failure in recovery by changing the id parameter to setHighId(id) to an invalid value,
@@ -110,7 +113,8 @@ public class IdGeneratorRebuildFailureEmulationTest
     @BreakpointTrigger
     private void performTest() throws Exception
     {
-        String file = prefix + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' );
+        String file = prefix + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
+                '_', '.' );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( file + ".id" );
         NeoStore neostore = null;
@@ -128,7 +132,10 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             // we want close to not misbehave
             // (and for example truncate the file based on the wrong highId)
-            if ( neostore != null ) neostore.close();
+            if ( neostore != null )
+            {
+                neostore.close();
+            }
         }
     }
 
@@ -151,7 +158,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
-        factory = new StoreFactory( new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, null, StringLogger.SYSTEM, null );
+        factory = new StoreFactory( new Config(
+                new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.SYSTEM, null );
     }
 
     @After
@@ -165,7 +174,10 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
         finally
         {
-            if ( fs != null ) fs.disposeAndAssertNoOpenFiles();
+            if ( fs != null )
+            {
+                fs.disposeAndAssertNoOpenFiles();
+            }
             fs = null;
         }
     }
@@ -214,9 +226,9 @@ public class IdGeneratorRebuildFailureEmulationTest
     {
         entity.setProperty( "short thing", "short" );
         entity.setProperty( "long thing",
-                            "this is quite a long string, don't you think, it sure is long enough at least" );
-        entity.setProperty( "string array", new String[] { "these are a few", "cool strings",
-                                                          "for your viewing pleasure" } );
+                "this is quite a long string, don't you think, it sure is long enough at least" );
+        entity.setProperty( "string array", new String[]{"these are a few", "cool strings",
+                "for your viewing pleasure"} );
         return entity;
     }
 
@@ -263,70 +275,70 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_nodestore_db() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_arrays() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index_keys() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_strings() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshipstore_db() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db() throws Exception
     {
         performTest();
     }
 
-    @EnabledBreakpoints( "performTest" )
+    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db_names() throws Exception
     {
@@ -336,6 +348,8 @@ public class IdGeneratorRebuildFailureEmulationTest
     private IdGeneratorRebuildFailureEmulationTest()
     {
         if ( IdGeneratorRebuildFailureEmulationTest.class == getClass() )
+        {
             throw new UnsupportedOperationException( "This class is effectively abstract" );
+        }
     }
 }

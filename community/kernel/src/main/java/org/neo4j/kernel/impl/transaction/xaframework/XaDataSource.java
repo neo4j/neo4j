@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
@@ -61,7 +62,7 @@ import org.neo4j.helpers.collection.ClosableIterable;
  * </CODE>
  * </pre>
  */
-public abstract class XaDataSource
+public abstract class XaDataSource implements Lifecycle
 {
     private byte[] branchId = null;
     private String name = null;
@@ -84,12 +85,6 @@ public abstract class XaDataSource
     public abstract XaConnection getXaConnection();
 
     /**
-     * Closes this data source. Calling <CODE>getXaConnection</CODE> after
-     * this method has been invoked is illegal.
-     */
-    public abstract void close();
-
-    /**
      * Returns any assigned or default branch id for this data source.
      *
      * @return the branch id
@@ -98,7 +93,6 @@ public abstract class XaDataSource
     {
         return this.branchId;
     }
-
 
     /**
      * Returns a timestamp when this data source was created. Note this is not
@@ -183,7 +177,6 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
-
 
     public long getLogicalLogLength( long version )
     {

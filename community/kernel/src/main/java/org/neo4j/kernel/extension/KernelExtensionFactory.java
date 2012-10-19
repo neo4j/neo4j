@@ -17,11 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
 
-public interface LastCommittedTxIdSetter
+package org.neo4j.kernel.extension;
+
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
 {
-    void setLastCommittedTxId( long txId );
-    
-    void close();
+    protected KernelExtensionFactory( String key )
+    {
+        super( key );
+    }
+
+    /**
+     * Return the class that contains GraphDatabaseSetting fields that define
+     * the properties needed by this extension.
+     *
+     * @return a class or null if no settings are needed
+     */
+    public Class getSettingsClass()
+    {
+        return null;
+    }
+
+    /**
+     * Create a new instance of this kernel extension.
+     *
+     * @param dependencies
+     * @return
+     */
+    public abstract Lifecycle newKernelExtension( DEPENDENCIES dependencies )
+            throws Throwable;
 }

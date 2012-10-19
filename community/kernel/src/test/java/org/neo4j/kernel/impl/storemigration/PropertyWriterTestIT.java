@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
-import static org.neo4j.kernel.CommonFactories.defaultLastCommittedTxIdSetter;
 import static org.neo4j.kernel.CommonFactories.defaultTxHook;
 
 import java.io.File;
@@ -57,18 +56,18 @@ public class PropertyWriterTestIT
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
         File fileName = new File( outputDir, "neostore" );
-        StoreFactory storeFactory = new StoreFactory( config, defaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(),
-
-                defaultLastCommittedTxIdSetter(), StringLogger.DEV_NULL, defaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory( config, defaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(), StringLogger.DEV_NULL, defaultTxHook() );
         neoStore = storeFactory.createNeoStore( fileName.getAbsolutePath() );
         return neoStore.getPropertyStore();
     }
 
     @After
-    public void close() {
+    public void close()
+    {
         neoStore.close();
     }
-    
+
     @Test
     public void shouldPackASeriesOfPropertiesIntoAPropertyRecord() throws IOException
     {
@@ -85,7 +84,8 @@ public class PropertyWriterTestIT
         assertEquals( 1, propertyStore.getHighId() );
         assertEquals( 0, propertyRecordId );
 
-        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
+        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( propertyStore.getRecord( propertyRecordId
+        ).getPropertyBlocks() );
         assertEquals( 0, propertyBlocks.get( 0 ).getKeyIndexId() );
         assertEquals( 1234, propertyBlocks.get( 0 ).getSingleValueInt() );
         assertEquals( 1, propertyBlocks.get( 1 ).getKeyIndexId() );
@@ -99,7 +99,7 @@ public class PropertyWriterTestIT
     {
         final int OneBlockPropertyBlockCount = 100;
         PropertyStore propertyStore = newPropertyStore();
-        
+
         assertEquals( 0, propertyStore.getHighId() );
 
         PropertyWriter propertyWriter = new PropertyWriter( propertyStore );
@@ -115,11 +115,12 @@ public class PropertyWriterTestIT
                 propertyStore.getHighId() );
         assertEquals( 0, propertyRecordId );
 
-        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( );
+        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>();
 
         PropertyRecord propertyRecord = propertyStore.getRecord( 0 );
         propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
-        while (propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue()) {
+        while ( propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
+        {
             long currentRecordId = propertyRecord.getId();
             propertyRecord = propertyStore.getRecord( propertyRecord.getNextProp() );
             assertEquals( currentRecordId, propertyRecord.getPrevProp() );

@@ -58,7 +58,7 @@ public class ReadOnlyIdGenerator implements IdGenerator
     }
 
     @Override
-    public void close( boolean shutdown )
+    public void close()
     {
     }
 

@@ -27,7 +27,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 public class UdcSettings
 {
-
     // This is a work around for GraphDatabaseSettings no longer containing type information.
     // We should introduce an internal list of settings with type information in the kernel,
     // then we would not have to duplicate settings here.

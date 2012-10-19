@@ -105,7 +105,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                     "same currently. Start side has " + start.uniquenessParameter + ", " +
                     "end side has " + end.uniquenessParameter );
         }
-        
+
         UniquenessFilter uniqueness = start.uniqueness.create( start.uniquenessParameter );
         if ( !(uniqueness instanceof BidirectionalUniquenessFilter) )
         {

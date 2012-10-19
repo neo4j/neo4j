@@ -29,7 +29,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 
 public class TestGraphDatabaseSetting
@@ -37,8 +39,9 @@ public class TestGraphDatabaseSetting
     @Test
     public void testStringSetting()
     {
-        GraphDatabaseSetting.StringSetting stringSetting = new GraphDatabaseSetting.StringSetting( "foo_bar", GraphDatabaseSetting.ANY, "Must be a valid foo bar" );
-        
+        GraphDatabaseSetting.StringSetting stringSetting = new GraphDatabaseSetting.StringSetting( "foo_bar",
+                GraphDatabaseSetting.ANY, "Must be a valid foo bar" );
+
         assertThat( stringSetting.name(), equalTo( "foo_bar" ) );
 
         stringSetting.validate( "test" );
@@ -48,7 +51,7 @@ public class TestGraphDatabaseSetting
             stringSetting.validate( null );
             fail( "null should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
         }
@@ -58,7 +61,7 @@ public class TestGraphDatabaseSetting
             stringSetting.validate( "" );
             fail( "empty string should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
         }
@@ -67,7 +70,8 @@ public class TestGraphDatabaseSetting
     @Test
     public void testIntegerSetting()
     {
-        GraphDatabaseSetting.IntegerSetting integerSetting = new GraphDatabaseSetting.IntegerSetting( "foo_bar", "Must be a valid integer", 3, 10 );
+        GraphDatabaseSetting.IntegerSetting integerSetting = new GraphDatabaseSetting.IntegerSetting( "foo_bar",
+                "Must be a valid integer", 3, 10 );
 
         assertThat( integerSetting.name(), equalTo( "foo_bar" ) );
 
@@ -82,18 +86,19 @@ public class TestGraphDatabaseSetting
             integerSetting.validate( "2" );
             fail( "too low number should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Invalid value '2' for config property 'foo_bar': Minimum allowed value is: 3" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value '2' for config property 'foo_bar': Minimum allowed " +
+                    "value is: 3" ) );
         }
-        
+
         try
         {
             integerSetting.validate( "11" );
             fail( "too high number should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
         }
@@ -102,7 +107,8 @@ public class TestGraphDatabaseSetting
     @Test
     public void testOptionsSetting()
     {
-        GraphDatabaseSetting.OptionsSetting optionsSetting = new GraphDatabaseSetting.OptionsSetting( "foo_bar", "option1", "option2", "option3" );
+        GraphDatabaseSetting.OptionsSetting optionsSetting = new GraphDatabaseSetting.OptionsSetting( "foo_bar",
+                "option1", "option2", "option3" );
 
         assertThat( optionsSetting.name(), equalTo( "foo_bar" ) );
 
@@ -115,105 +121,112 @@ public class TestGraphDatabaseSetting
             optionsSetting.validate( "option4" );
             fail( "invalid option should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Invalid value 'option4' for config property 'foo_bar': Invalid option. Valid options are:[option1, option2, option3]" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value 'option4' for config property 'foo_bar': Invalid " +
+                    "option. Valid options are:[option1, option2, option3]" ) );
         }
-        
+
     }
-    
+
     @Test
-    public void testFileSetting() 
+    public void testFileSetting()
     {
-        GraphDatabaseSetting.FileSetting fileSetting = new GraphDatabaseSetting.FileSetting("myfile");
+        GraphDatabaseSetting.FileSetting fileSetting = new GraphDatabaseSetting.FileSetting( "myfile" );
         assertThat( fileSetting.name(), equalTo( "myfile" ) );
-        
-        fileSetting.validate("/some/path");
-        
+
+        fileSetting.validate( "/some/path" );
+
         try
         {
             fileSetting.validate( null );
             fail( "null paths should not be allowed" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // Ok
-            assertThat( e.getMessage(), equalTo( "Invalid value [null] for config property 'myfile': Must be a valid file path." ) );
+            assertThat( e.getMessage(), equalTo( "Invalid value [null] for config property 'myfile': Must be a valid " +
+                    "file path." ) );
         }
     }
 
     @Test
     public void testRelativeFileSetting()
-        throws IOException
+            throws IOException
     {
-        GraphDatabaseSetting.DirectorySetting baseDir = new GraphDatabaseSetting.DirectorySetting("myDirectory");
-        GraphDatabaseSetting.FileSetting fileSetting = new GraphDatabaseSetting.FileSetting("myfile", baseDir, true, true);
-        
-        Config config = new Config(new HashMap<String,String>(){{put("myDirectory","/home/jake");}});
-        
+        GraphDatabaseSetting.DirectorySetting baseDir = new GraphDatabaseSetting.DirectorySetting( "myDirectory" );
+        GraphDatabaseSetting.FileSetting fileSetting = new GraphDatabaseSetting.FileSetting( "myfile", baseDir, true,
+                true );
+
+        Config config = new Config( new HashMap<String, String>()
+        {{
+                put( "myDirectory", "/home/jake" );
+            }} );
+
         // Relative paths
-        assertThat(fileSetting.valueOf("baa", config), equalTo(new File("/home/jake/baa").getCanonicalPath()));
-        
+        assertThat( fileSetting.valueOf( "baa", config ), equalTo( new File( "/home/jake/baa" ).getCanonicalPath() ) );
+
         // Absolute paths
-        if (GraphDatabaseSetting.osIsWindows())
+        if ( GraphDatabaseSetting.osIsWindows() )
         {
-            assertThat(fileSetting.valueOf("c:\\baa", config), equalTo(new File("c:\\baa").getCanonicalPath()));
+            assertThat( fileSetting.valueOf( "c:\\baa", config ), equalTo( new File( "c:\\baa" ).getCanonicalPath() ) );
         }
         else
         {
-            assertThat(fileSetting.valueOf("/baa", config), equalTo(new File("/baa").getAbsolutePath()));
+            assertThat( fileSetting.valueOf( "/baa", config ), equalTo( new File( "/baa" ).getAbsolutePath() ) );
 
             // Path with incorrect directory separator
-            assertThat(fileSetting.valueOf("\\baa\\boo", config), equalTo(new File("/baa/boo").getCanonicalPath()));
+            assertThat( fileSetting.valueOf( "\\baa\\boo", config ), equalTo( new File( "/baa/boo" ).getCanonicalPath
+                    () ) );
         }
 
     }
 
     @Test
-    public void testURISetting() 
+    public void testURISetting()
     {
-        GraphDatabaseSetting.URISetting setting = new GraphDatabaseSetting.URISetting("myfile", true);
-        
-        Config config = mock(Config.class);
-        
-        assertThat(setting.valueOf("/baa/boo", config).toString(), equalTo("/baa/boo"));
-        
+        GraphDatabaseSetting.URISetting setting = new GraphDatabaseSetting.URISetting( "myfile", true );
+
+        Config config = mock( Config.class );
+
+        assertThat( setting.valueOf( "/baa/boo", config ).toString(), equalTo( "/baa/boo" ) );
+
         // Strip trailing slash
-        assertThat(setting.valueOf("/baa/", config).toString(), equalTo("/baa"));
-        
+        assertThat( setting.valueOf( "/baa/", config ).toString(), equalTo( "/baa" ) );
+
     }
 
     @Test
-    public void testNumberOfBytesSetting() 
+    public void testNumberOfBytesSetting()
     {
-        GraphDatabaseSetting.NumberOfBytesSetting setting = new GraphDatabaseSetting.NumberOfBytesSetting("mysize");
-        
-        Config config = mock(Config.class);
-        
-        assertValidationPasses(setting, "1");
-        assertValidationPasses(setting, "23");
-        assertValidationPasses(setting, "12G");
-        assertValidationPasses(setting, "12 g");
-        assertValidationPasses(setting, "12 G");
-        
-        assertValidationFails(setting, null);
-        assertValidationFails(setting, "");
-        assertValidationFails(setting, "asd");
-        
-        assertThat(setting.valueOf("12", config), equalTo(12l));
-        assertThat(setting.valueOf("12k", config), equalTo(12l * 1024));
-        assertThat(setting.valueOf("12m", config), equalTo(12l * 1024 * 1024));
-        assertThat(setting.valueOf("12g", config), equalTo(12l * 1024 * 1024 * 1024));
-        assertThat(setting.valueOf("12 g", config), equalTo(12l * 1024 * 1024 * 1024));
-        
+        GraphDatabaseSetting.NumberOfBytesSetting setting = new GraphDatabaseSetting.NumberOfBytesSetting( "mysize" );
+
+        Config config = mock( Config.class );
+
+        assertValidationPasses( setting, "1" );
+        assertValidationPasses( setting, "23" );
+        assertValidationPasses( setting, "12G" );
+        assertValidationPasses( setting, "12 g" );
+        assertValidationPasses( setting, "12 G" );
+
+        assertValidationFails( setting, null );
+        assertValidationFails( setting, "" );
+        assertValidationFails( setting, "asd" );
+
+        assertThat( setting.valueOf( "12", config ), equalTo( 12l ) );
+        assertThat( setting.valueOf( "12k", config ), equalTo( 12l * 1024 ) );
+        assertThat( setting.valueOf( "12m", config ), equalTo( 12l * 1024 * 1024 ) );
+        assertThat( setting.valueOf( "12g", config ), equalTo( 12l * 1024 * 1024 * 1024 ) );
+        assertThat( setting.valueOf( "12 g", config ), equalTo( 12l * 1024 * 1024 * 1024 ) );
+
     }
-    
+
     @Test
     public void testIntegerNumberOfBytesSetting() throws Exception
     {
         Config config = mock( Config.class );
-        
+
         GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting withoutMin =
                 new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "mysize" );
         assertValidationPasses( withoutMin, "1" );
@@ -236,19 +249,46 @@ public class TestGraphDatabaseSetting
         assertThat( withMin.valueOf( "2 g", config ), equalTo( 2 * 1024 * 1024 * 1024 ) );
     }
 
-	private void assertValidationPasses(GraphDatabaseSetting<?> setting,
-			String value) 
-	{
-		setting.validate(value);
-	}
+    @Test
+    public void testHostnamePortSetting()
+    {
+        GraphDatabaseSetting.HostnamePortSetting setting = new GraphDatabaseSetting.HostnamePortSetting( "myfile" );
 
-	private void assertValidationFails(GraphDatabaseSetting<?> setting,
-			String value) {
-		try {
-			setting.validate(value);
-			fail("Expected validation of value " + (value == null?"[null]":"'"+value+"'") + " to fail.");
-		} catch(IllegalArgumentException e){
-			// Ok
-		}
-	}
+        assertValidationPasses( setting, "192.168.0.1" );
+        assertValidationPasses( setting, "192.168.0.1:5000" );
+        assertValidationPasses( setting, "192.168.0.1:5000-5005" );
+        assertValidationPasses( setting, ":5000" );
+        assertValidationPasses( setting, ":5000-5005" );
+
+        assertValidationFails( setting, "hostname:xyz" );
+
+        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), "192.168.0.1" ) ),
+                equalTo( "192.168.0.1" ) );
+        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), "192.168.0.1:5000" ) ),
+                equalTo( "192.168.0.1" ) );
+        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), ":5000" ) ), CoreMatchers.nullValue() );
+        assertThat( setting.getPort( MapUtil.stringMap( setting.name(), ":5000" ) ), equalTo( 5000 ) );
+        assertThat( setting.getPorts( MapUtil.stringMap( setting.name(), ":5000-5005" ) ), equalTo( new int[]{5000,
+                5005} ) );
+    }
+
+    private void assertValidationPasses( GraphDatabaseSetting<?> setting,
+                                         String value )
+    {
+        setting.validate( value );
+    }
+
+    private void assertValidationFails( GraphDatabaseSetting<?> setting,
+                                        String value )
+    {
+        try
+        {
+            setting.validate( value );
+            fail( "Expected validation of value " + (value == null ? "[null]" : "'" + value + "'") + " to fail." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Ok
+        }
+    }
 }

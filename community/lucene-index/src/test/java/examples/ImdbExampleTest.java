@@ -57,6 +57,7 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.impl.lucene.LuceneIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.kernel.impl.cache.WeakCacheProvider;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
@@ -65,7 +66,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
-import org.neo4j.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class ImdbExampleTest
@@ -76,7 +76,8 @@ public class ImdbExampleTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings
+                .cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -107,7 +108,7 @@ public class ImdbExampleTest
             Node theMatrixReloaded = graphDb.createNode();
             theMatrixReloaded.setProperty( "title", "The Matrix Reloaded" );
             theMatrixReloaded.setProperty( "year", 2003 );
-            movies.add( theMatrixReloaded, "title", theMatrixReloaded.getProperty( "title" )  );
+            movies.add( theMatrixReloaded, "title", theMatrixReloaded.getProperty( "title" ) );
             movies.add( theMatrixReloaded, "year", 2003 );
             Node malena = graphDb.createNode();
             malena.setProperty( "title", "Malèna" );
@@ -186,7 +187,8 @@ public class ImdbExampleTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() );
+        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest(
+                getClass() ).directory( "delete", true ).getAbsolutePath() );
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -310,7 +312,7 @@ public class ImdbExampleTest
         assertEquals( "Monica Bellucci", actor.getProperty( "name" ) );
         assertEquals( "The Matrix Reloaded", movie.getProperty( "title" ) );
 
-        @SuppressWarnings( "serial" ) List<String> expectedActors = new ArrayList<String>()
+        @SuppressWarnings("serial") List<String> expectedActors = new ArrayList<String>()
         {
             {
                 add( "Keanu Reeves" );
@@ -340,14 +342,14 @@ public class ImdbExampleTest
         Index<Node> actors = index.forNodes( "actors" );
         Index<Node> movies = index.forNodes( "movies" );
         Set<String> found = new HashSet<String>();
-        @SuppressWarnings( "serial" ) Set<String> expectedActors = new HashSet<String>()
+        @SuppressWarnings("serial") Set<String> expectedActors = new HashSet<String>()
         {
             {
                 add( "Monica Bellucci" );
                 add( "Keanu Reeves" );
             }
         };
-        @SuppressWarnings( "serial" ) Set<String> expectedMovies = new HashSet<String>()
+        @SuppressWarnings("serial") Set<String> expectedMovies = new HashSet<String>()
         {
             {
                 add( "The Matrix" );
@@ -388,7 +390,7 @@ public class ImdbExampleTest
         {
             System.out.println( movie.getProperty( "title" ) + " " + hits.currentScore() );
             // END SNIPPET: queryWithScore
-            assertTrue( ( (String) movie.getProperty( "title" ) ).startsWith( "The" ) );
+            assertTrue( ((String) movie.getProperty( "title" )).startsWith( "The" ) );
             // START SNIPPET: queryWithScore
         }
         // END SNIPPET: queryWithScore
@@ -426,7 +428,7 @@ public class ImdbExampleTest
         {
             System.out.println( movie.getProperty( "title" ) );
             // END SNIPPET: wildcardTermQuery
-            assertTrue( ( (String) movie.getProperty( "title" ) ).startsWith( "The Matrix" ) );
+            assertTrue( ((String) movie.getProperty( "title" )).startsWith( "The Matrix" ) );
             // START SNIPPET: wildcardTermQuery
         }
         // END SNIPPET: wildcardTermQuery
@@ -435,7 +437,7 @@ public class ImdbExampleTest
         // START SNIPPET: numericRange
         movies.add( theMatrix, "year-numeric", new ValueContext( 1999 ).indexNumeric() );
         movies.add( theMatrixReloaded, "year-numeric", new ValueContext( 2003 ).indexNumeric() );
-        movies.add( malena, "year-numeric",  new ValueContext( 2000 ).indexNumeric() );
+        movies.add( malena, "year-numeric", new ValueContext( 2000 ).indexNumeric() );
 
         int from = 1997;
         int to = 1999;
@@ -446,10 +448,10 @@ public class ImdbExampleTest
         // START SNIPPET: sortedNumericRange
         hits = movies.query(
                 QueryContext.numericRange( "year-numeric", from, null )
-                  .sortNumeric( "year-numeric", false ) );
+                        .sortNumeric( "year-numeric", false ) );
         // END SNIPPET: sortedNumericRange
         List<String> sortedMovies = new ArrayList<String>();
-        @SuppressWarnings( "serial" ) List<String> expectedSortedMovies = new ArrayList<String>()
+        @SuppressWarnings("serial") List<String> expectedSortedMovies = new ArrayList<String>()
         {
             {
                 add( "The Matrix" );
@@ -462,12 +464,12 @@ public class ImdbExampleTest
             sortedMovies.add( (String) hit.getProperty( "title" ) );
         }
         assertEquals( expectedSortedMovies, sortedMovies );
-        
+
         // START SNIPPET: exclusiveRange
         movies.add( theMatrix, "score", new ValueContext( 8.7 ).indexNumeric() );
         movies.add( theMatrixReloaded, "score", new ValueContext( 7.1 ).indexNumeric() );
         movies.add( malena, "score", new ValueContext( 7.4 ).indexNumeric() );
-        
+
         // include 8.0, exclude 9.0
         hits = movies.query( QueryContext.numericRange( "score", 8.0, 9.0, true, false ) );
         // END SNIPPET: exclusiveRange
@@ -476,7 +478,7 @@ public class ImdbExampleTest
         {
             found.add( (String) hit.getProperty( "title" ) );
         }
-        assertEquals( expectedMovies, found );        
+        assertEquals( expectedMovies, found );
 
         // START SNIPPET: compoundQueries
         hits = movies.query( "title:*Matrix* AND year:1999" );
@@ -593,7 +595,7 @@ public class ImdbExampleTest
     {
         // START SNIPPET: cache
         Index<Node> index = graphDb.index().forNodes( "actors" );
-        ( (LuceneIndex<Node>) index ).setCacheCapacity( "name", 300000 );
+        ((LuceneIndex<Node>) index).setCacheCapacity( "name", 300000 );
         // END SNIPPET: cache
     }
 
@@ -604,19 +606,19 @@ public class ImdbExampleTest
                 "target/neo4jdb-batchinsert" ) );
         // START SNIPPET: batchInsert
         BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
-        BatchInserterIndexProvider indexProvider = 
+        BatchInserterIndexProvider indexProvider =
                 new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex actors = 
+        BatchInserterIndex actors =
                 indexProvider.nodeIndex( "actors", MapUtil.stringMap( "type", "exact" ) );
         actors.setCacheCapacity( "name", 100000 );
 
         Map<String, Object> properties = MapUtil.map( "name", "Keanu Reeves" );
         long node = inserter.createNode( properties );
         actors.add( node, properties );
-        
+
         //make the changes visible for reading, use this sparsely, requires IO!
         actors.flush();
-        
+
         // Make sure to shut down the index provider as well
         indexProvider.shutdown();
         inserter.shutdown();

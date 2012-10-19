@@ -36,8 +36,10 @@ import javax.management.openmbean.CompositeDataSupport;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.jmx.JmxUtils;
 import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.CommunityNeoServer;
@@ -62,7 +64,11 @@ public class WebAdminModuleTest
         Kernel mockKernel = mock( Kernel.class );
         ObjectName mockObjectName = mock( ObjectName.class );
         when( mockKernel.getMBeanQuery() ).thenReturn( mockObjectName );
-        when( graph.getManagementBeans( Kernel.class ) ).thenReturn( Collections.singleton( mockKernel ) );
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        JmxKernelExtension extension = mock( JmxKernelExtension.class );
+        when( graph.getDependencyResolver() ).thenReturn( resolver );
+        when( resolver.resolveDependency( JmxKernelExtension.class ) ).thenReturn( extension );
+        when( extension.getManagementBeans( Kernel.class ) ).thenReturn( Collections.singleton( mockKernel ) );
 
         when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
@@ -73,12 +79,13 @@ public class WebAdminModuleTest
 
         MBeanServer mbeanServer = mock( MBeanServer.class );
         when( mbeanServer.getAttribute( any( ObjectName.class ), eq( "HeapMemoryUsage" ) ) ).thenReturn( result );
-        // when(mbeanServer.getAttribute(any(ObjectName.class), eq("Collector"))).thenReturn( new StatisticCollector() );
+        // when(mbeanServer.getAttribute(any(ObjectName.class), eq("Collector"))).thenReturn( new StatisticCollector
+        // () );
 
         setStaticFinalField( JmxUtils.class.getDeclaredField( "mbeanServer" ), mbeanServer );
 
-        WebAdminModule module = new WebAdminModule(webServer, neoServer.getConfiguration(), db);
-        module.start(StringLogger.DEV_NULL);
+        WebAdminModule module = new WebAdminModule( webServer, neoServer.getConfiguration(), db );
+        module.start( StringLogger.DEV_NULL );
 
         verify( db ).setRrdDb( any( RrdDb.class ) );
     }

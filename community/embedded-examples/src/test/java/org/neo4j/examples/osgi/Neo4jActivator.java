@@ -20,6 +20,7 @@ package org.neo4j.examples.osgi;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -28,9 +29,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.index.lucene.LuceneIndexProvider;
-import org.neo4j.kernel.ListIndexIterable;
+import org.neo4j.index.lucene.LuceneKernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.osgi.framework.BundleActivator;
@@ -51,27 +51,25 @@ public class Neo4jActivator implements BundleActivator
         //the cache providers
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
         cacheList.add( new SoftCacheProvider() );
-        
-        //the index providers
-        IndexProvider lucene = new LuceneIndexProvider();
-        ArrayList<IndexProvider> provs = new ArrayList<IndexProvider>();
-        provs.add( lucene );
-        ListIndexIterable providers = new ListIndexIterable();
-        providers.setIndexProviders( provs );
-        
+
+        //the kernel extensions
+        LuceneKernelExtensionFactory lucene = new LuceneKernelExtensionFactory();
+        List<KernelExtensionFactory<?>> extensions = new ArrayList<KernelExtensionFactory<?>>();
+        extensions.add( lucene );
+
         //the database setup
         GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
-        gdbf.setIndexProviders( providers );
+        gdbf.setKernelExtensions( extensions );
         gdbf.setCacheProviders( cacheList );
         db = gdbf.newEmbeddedDatabase( "target/db" );
-        
+
         //the OSGi registration
         serviceRegistration = context.registerService(
-                GraphDatabaseService.class.getName(), db, new Hashtable<String,String>() );
+                GraphDatabaseService.class.getName(), db, new Hashtable<String, String>() );
         System.out.println( "registered " + serviceRegistration.getReference() );
         indexServiceRegistration = context.registerService(
                 Index.class.getName(), db.index().forNodes( "nodes" ),
-                new Hashtable<String,String>() );
+                new Hashtable<String, String>() );
         Transaction tx = db.beginTx();
         try
         {

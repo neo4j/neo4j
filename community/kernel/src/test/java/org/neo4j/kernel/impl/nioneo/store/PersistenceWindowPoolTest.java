@@ -62,7 +62,7 @@ public class PersistenceWindowPoolTest
         // then
         assertNotSame( initialWindow, window );
     }
-    
+
     @Test
     public void handOverDirtyPersistenceRowToReaderShouldWriteWhenClosing() throws Exception
     {

@@ -21,12 +21,10 @@ package org.neo4j.kernel.info;
 
 import java.beans.ConstructorProperties;
 
-import org.neo4j.helpers.Format;
-
 public final class WaitingThread extends LockingTransaction
 {
     public static WaitingThread create( String transaction, int readCount, int writeCount, Thread thread,
-            long waitingSince, boolean isWriteLock )
+                                        long waitingSince, boolean isWriteLock )
     {
         return new WaitingThread( transaction, readCount, writeCount, thread.getId(), thread.getName(), waitingSince,
                 isWriteLock );
@@ -38,10 +36,10 @@ public final class WaitingThread extends LockingTransaction
     private final String threadName;
     private final long waitingSince;
 
-    @ConstructorProperties( { "transaction", "readCount", "writeCount", "threadId", "threadName", "waitingSince",
-            "waitingOnWriteLock" } )
+    @ConstructorProperties({"transaction", "readCount", "writeCount", "threadId", "threadName", "waitingSince",
+            "waitingOnWriteLock"})
     public WaitingThread( String transaction, int readCount, int writeCount, long threadId, String threadName,
-            long waitingSince, boolean writeLock )
+                          long waitingSince, boolean writeLock )
     {
         super( transaction, readCount, writeCount );
         this.threadId = threadId;
@@ -53,8 +51,13 @@ public final class WaitingThread extends LockingTransaction
     @Override
     public String toString()
     {
-        return "[\"" + threadName + "\" (id=" + threadId + ") " + super.toString() + " waiting for "
-               + ( writeLock ? "write" : "read" ) + " lock since " + Format.date( waitingSince ) + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append( "\"" ).append( getThreadName() ).append( "\" " ).append( " (" ).append( getTransaction() ).
+                append( ") " ).append( "[tid=" ).append( getThreadId() ).append( "(" ).append(
+                getReadCount() ).append( "r," ).append( getWriteCount() ).append( "w )," ).append(
+                isWaitingOnWriteLock() ? "Write" : "Read" ).append( "Lock]" );
+
+        return builder.toString();
     }
 
     public boolean isWaitingOnReadLock()

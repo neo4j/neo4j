@@ -20,8 +20,9 @@
 
 package org.neo4j.kernel;
 
-import java.util.Collection;
 import javax.transaction.TransactionManager;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -38,12 +39,15 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
  * This API can be used to get access to services.
- *
- * TODO: The methods exposing internal services directly should go away. It indicates lack of abstractions somewhere. DO NOT ADD MORE USAGE OF THESE!
+ * <p/>
+ * TODO: The methods exposing internal services directly should go away. It indicates lack of abstractions somewhere.
+ * DO NOT ADD MORE USAGE OF THESE!
  */
 public interface GraphDatabaseAPI
-    extends GraphDatabaseService
+        extends GraphDatabaseService
 {
+    DependencyResolver getDependencyResolver();
+
     @Deprecated
     NodeManager getNodeManager();
 
@@ -61,7 +65,7 @@ public interface GraphDatabaseAPI
 
     @Deprecated
     DiagnosticsManager getDiagnosticsManager();
-    
+
     @Deprecated
     StringLogger getMessageLog();
 
@@ -70,7 +74,7 @@ public interface GraphDatabaseAPI
 
     @Deprecated
     IdGeneratorFactory getIdGeneratorFactory();
-    
+
     @Deprecated
     TxIdGenerator getTxIdGenerator();
 
@@ -81,23 +85,17 @@ public interface GraphDatabaseAPI
     KernelData getKernelData();
 
     @Deprecated
-    <T> T getSingleManagementBean( Class<T> type );
-
-    @Deprecated
     TransactionBuilder tx();
-    
+
     @Deprecated
     PersistenceSource getPersistenceSource();
 
-    @Deprecated
-    <T> Collection<T> getManagementBeans( Class<T> type );
-    
     @Deprecated
     KernelPanicEventGenerator getKernelPanicGenerator();
 
     @Deprecated
     Guard getGuard();
-    
+
     @Deprecated
     StoreId getStoreId();
 }

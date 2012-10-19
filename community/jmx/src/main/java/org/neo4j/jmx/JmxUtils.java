@@ -19,7 +19,10 @@
  */
 package org.neo4j.jmx;
 
+import static java.lang.String.format;
+
 import java.lang.management.ManagementFactory;
+
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -27,48 +30,72 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
-import static java.lang.String.*;
-
-public class JmxUtils {
+public class JmxUtils
+{
 
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    public static ObjectName getObjectName(GraphDatabaseAPI database, String name) {
-        ObjectName neoQuery = database.getSingleManagementBean(Kernel.class).getMBeanQuery();
-        String instance = neoQuery.getKeyProperty("instance");
+    public static ObjectName getObjectName( GraphDatabaseAPI database, String name )
+    {
+        ObjectName neoQuery = database.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                .getSingleManagementBean( Kernel.class ).getMBeanQuery();
+        String instance = neoQuery.getKeyProperty( "instance" );
         String domain = neoQuery.getDomain();
-        try {
-            return new ObjectName(format("%s:instance=%s,name=%s", domain, instance, name));
-        } catch (MalformedObjectNameException e) {
-            throw new RuntimeException(e);
+        try
+        {
+            return new ObjectName( format( "%s:instance=%s,name=%s", domain, instance, name ) );
+        }
+        catch ( MalformedObjectNameException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public static <T> T getAttribute(ObjectName objectName, String attribute) {
-        try {
-            return (T) mbeanServer.getAttribute(objectName, attribute);
-        } catch (MBeanException e) {
-            throw new RuntimeException(e);
-        } catch (AttributeNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InstanceNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (ReflectionException e) {
-            throw new RuntimeException(e);
+    public static <T> T getAttribute( ObjectName objectName, String attribute )
+    {
+        try
+        {
+            return (T) mbeanServer.getAttribute( objectName, attribute );
+        }
+        catch ( MBeanException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( AttributeNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( InstanceNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( ReflectionException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public static <T> T invoke(ObjectName objectName, String attribute, Object[] params, String[] signatur) {
-        try {
-            return (T) mbeanServer.invoke(objectName, attribute, params, signatur);
-        } catch (MBeanException e) {
-            throw new RuntimeException(e);
-        } catch (InstanceNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (ReflectionException e) {
-            throw new RuntimeException(e);
+    public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signatur )
+    {
+        try
+        {
+            return (T) mbeanServer.invoke( objectName, attribute, params, signatur );
+        }
+        catch ( MBeanException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( InstanceNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( ReflectionException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 }

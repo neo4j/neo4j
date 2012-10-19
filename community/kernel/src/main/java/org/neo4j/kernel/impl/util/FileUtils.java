@@ -278,17 +278,32 @@ public class FileUtils
     {
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
-        FileInputStream input = new FileInputStream( srcFile );
-        FileOutputStream output = new FileOutputStream( dstFile );
-        int bufferSize = 1024;
-        byte[] buffer = new byte[bufferSize];
-        int bytesRead;
-        while ( (bytesRead = input.read( buffer )) != -1 )
+        FileInputStream input = null;
+        FileOutputStream output = null;
+        try
         {
-            output.write( buffer, 0, bytesRead );
+            input = new FileInputStream( srcFile );
+            output = new FileOutputStream( dstFile );
+            int bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+            while ( (bytesRead = input.read( buffer )) != -1 )
+            {
+                output.write( buffer, 0, bytesRead );
+            }
         }
-        input.close();
-        output.close();
+        catch ( IOException e )
+        {
+            // Because the message from this cause may not mention which file it's about
+            throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
+        }
+        finally
+        {
+            if ( input != null )
+                input.close();
+            if ( output != null )
+                output.close();
+        }
     }
 
     public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException

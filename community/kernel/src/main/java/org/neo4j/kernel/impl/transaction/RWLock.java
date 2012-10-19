@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.Set;
 
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -491,14 +492,15 @@ class RWLock
 
     synchronized LockInfo info()
     {
-        Map<TxLockElement, LockingTransaction> transactions = new HashMap<TxLockElement, LockingTransaction>();
+        Set<LockingTransaction> lockingTxs = new HashSet<LockingTransaction>();
+        Set<WaitingThread> waitingTxs = new HashSet<WaitingThread>();
         for ( TxLockElement tle : txLockElementMap.values() )
         {
-            transactions.put( tle, new LockingTransaction( tle.tx.toString(), tle.readCount, tle.writeCount ) );
+            lockingTxs.add( new LockingTransaction( tle.tx.toString(), tle.readCount, tle.writeCount ) );
         }
         for ( WaitElement thread : waitingThreadList )
         {
-            transactions.put( thread.element, WaitingThread.create( thread.element.tx.toString(),
+            waitingTxs.add( WaitingThread.create( thread.element.tx.toString(),
                     thread.element.readCount, thread.element.writeCount, thread.waitingThread, thread.since,
                     thread.lockType == LockType.WRITE ) );
         }
@@ -519,7 +521,7 @@ class RWLock
             type = ResourceType.OTHER;
             id = resource.toString();
         }
-        return new LockInfo( type, id, readCount, writeCount, transactions.values() );
+        return new LockInfo( type, id, readCount, writeCount, new ArrayList<LockingTransaction>( lockingTxs ), new ArrayList<WaitingThread>( waitingTxs ) );
     }
 
     synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo> visitor, long waitStart )

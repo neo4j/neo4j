@@ -37,6 +37,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
@@ -48,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-class IndexManagerImpl implements IndexManager
+class IndexManagerImpl implements IndexManager, IndexProviders
 {
     private final IndexStore indexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
@@ -60,8 +61,9 @@ class IndexManagerImpl implements IndexManager
     private AbstractTransactionManager txManager;
     private GraphDatabaseAPI graphDatabaseAPI;
 
-    IndexManagerImpl( Config config,IndexStore indexStore,
-                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager, GraphDatabaseAPI graphDatabaseAPI
+    IndexManagerImpl( Config config, IndexStore indexStore,
+                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager,
+                      GraphDatabaseAPI graphDatabaseAPI
     )
     {
         this.graphDatabaseAPI = graphDatabaseAPI;
@@ -91,13 +93,22 @@ class IndexManagerImpl implements IndexManager
         }
     }
 
-    void addProvider( String name, IndexImplementation provider )
+    @Override
+    public void registerIndexProvider( String name, IndexImplementation provider )
     {
         this.indexProviders.put( name, provider );
     }
 
-    private Pair<Map<String, String>, Boolean/*true=needs to be set*/> findIndexConfig( Class<? extends PropertyContainer> cls,
-            String indexName, Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
+    @Override
+    public boolean unregisterIndexProvider( String name )
+    {
+        return this.indexProviders.remove( name ) != null;
+    }
+
+    private Pair<Map<String, String>, Boolean/*true=needs to be set*/> findIndexConfig( Class<? extends
+            PropertyContainer> cls,
+                                                                                        String indexName, Map<String,
+            String> suppliedConfig, Map<?, ?> dbConfig )
     {
         // Check stored config (has this index been created previously?)
         Map<String, String> storedConfig = indexStore.get( cls, indexName );
@@ -149,7 +160,7 @@ class IndexManagerImpl implements IndexManager
     }
 
     private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
-            Map<String, String> storedConfig, Map<String, String> suppliedConfig )
+                                      Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )
         {
@@ -193,7 +204,7 @@ class IndexManagerImpl implements IndexManager
     }
 
     private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
-            String indexName, Map<String, String> suppliedConfig )
+                                                        String indexName, Map<String, String> suppliedConfig )
     {
         Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
                 indexName, suppliedConfig, config.getParams() );
@@ -209,7 +220,7 @@ class IndexManagerImpl implements IndexManager
                             existing, result.first() );
                     return result.first();
                 }
-                
+
                 // We were the first one here, let's create this config
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 try
@@ -217,12 +228,12 @@ class IndexManagerImpl implements IndexManager
                     executorService.submit( new IndexCreatorJob( cls, indexName, result.first() ) ).get();
                     indexStore.set( cls, indexName, result.first() );
                 }
-                catch (ExecutionException ex)
+                catch ( ExecutionException ex )
                 {
                     throw new TransactionFailureException( "Index creation failed for " + indexName +
                             ", " + result.first(), ex.getCause() );
                 }
-                catch (InterruptedException ex)
+                catch ( InterruptedException ex )
                 {
                     Thread.interrupted();
                 }
@@ -242,7 +253,7 @@ class IndexManagerImpl implements IndexManager
         private final Class<? extends PropertyContainer> cls;
 
         IndexCreatorJob( Class<? extends PropertyContainer> cls, String indexName,
-                Map<String, String> config )
+                         Map<String, String> config )
         {
             this.cls = cls;
             this.indexName = indexName;
@@ -251,17 +262,17 @@ class IndexManagerImpl implements IndexManager
 
         @Override
         public Object call()
-            throws Exception
+                throws Exception
         {
             String provider = config.get( PROVIDER );
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
-            XaDataSource dataSource = xaDataSourceManager.getXaDataSource(dataSourceName);
+            XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
             Transaction tx = graphDatabaseAPI.tx().begin();
             try
             {
                 javax.transaction.Transaction javaxTx = txManager.getTransaction();
-                connection.enlistResource(javaxTx);
+                connection.enlistResource( javaxTx );
                 connection.createIndex( cls, indexName, config );
                 tx.success();
             }
@@ -284,11 +295,11 @@ class IndexManagerImpl implements IndexManager
     }
 
     public Index<Node> forNodes( String indexName,
-            Map<String, String> customConfiguration )
+                                 Map<String, String> customConfiguration )
     {
         Index<Node> toReturn = getOrCreateNodeIndex( indexName,
                 customConfiguration );
-        if (NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals(indexName))
+        if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
         {
             toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
         }
@@ -305,7 +316,7 @@ class IndexManagerImpl implements IndexManager
     }
 
     RelationshipIndex getOrCreateRelationshipIndex( String indexName,
-            Map<String, String> customConfiguration )
+                                                    Map<String, String> customConfiguration )
     {
         Map<String, String> config = getOrCreateIndexConfig(
                 Relationship.class, indexName, customConfiguration );
@@ -329,7 +340,7 @@ class IndexManagerImpl implements IndexManager
     }
 
     public RelationshipIndex forRelationships( String indexName,
-            Map<String, String> customConfiguration )
+                                               Map<String, String> customConfiguration )
     {
         RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
                 customConfiguration );
@@ -392,12 +403,12 @@ class IndexManagerImpl implements IndexManager
     }
 
     // TODO These setters/getters stick. Why are these indexers exposed!?
-    public void setNodeAutoIndexer(NodeAutoIndexerImpl nodeAutoIndexer)
+    public void setNodeAutoIndexer( NodeAutoIndexerImpl nodeAutoIndexer )
     {
         this.nodeAutoIndexer = nodeAutoIndexer;
     }
 
-    public void setRelAutoIndexer(RelationshipAutoIndexerImpl relAutoIndexer)
+    public void setRelAutoIndexer( RelationshipAutoIndexerImpl relAutoIndexer )
     {
         this.relAutoIndexer = relAutoIndexer;
     }

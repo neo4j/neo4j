@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.util.List;
-
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 
 /**
@@ -63,7 +60,7 @@ public abstract class TransactionInterceptorProvider extends Service
      *         options say so.
      */
     public abstract TransactionInterceptor create( XaDataSource ds,
-            Object options, DependencyResolver dependencyResolver );
+            String options, DependencyResolver dependencyResolver );
 
     /**
      * Creates a TransactionInterceptor with the given datasource and options
@@ -79,43 +76,5 @@ public abstract class TransactionInterceptorProvider extends Service
      *         options say so.
      */
     public abstract TransactionInterceptor create( TransactionInterceptor next,
-            XaDataSource ds, Object options, DependencyResolver dependencyResolver );
-
-    /**
-     * A utility method that given some TransactionInterceptorProviders and
-     * their configuration objects returns a fully resolved chain of
-     * TransactionInterceptors - the return object is the first interceptor
-     * in the chain.
-     *
-     * @param providers A list of {@link Pair} of
-     *            TransactionInterceptorProviders with
-     *            the detected config objects
-     * @param ds The datasource to instantiate the TransactionInterceptors with
-     * @return The fist interceptor in the chain, possibly null
-     */
-    public static TransactionInterceptor resolveChain(
-            List<Pair<TransactionInterceptorProvider, Object>> providers,
-            XaDataSource ds, DependencyResolver dependencyResolver )
-    {
-        TransactionInterceptor first = null;
-        for ( Pair<TransactionInterceptorProvider, Object> providerAndConfig : providers )
-        {
-            TransactionInterceptorProvider provider = providerAndConfig.first();
-            Object config = providerAndConfig.other();
-            if ( first == null )
-            {
-                first = provider.create( ds, config, dependencyResolver );
-            }
-            else
-            {
-                TransactionInterceptor temp = provider.create( first, ds,
-                        config, dependencyResolver );
-                if ( temp != null )
-                {
-                    first = temp;
-                }
-            }
-        }
-        return first;
-    }
+            XaDataSource ds, String options, DependencyResolver dependencyResolver );
 }

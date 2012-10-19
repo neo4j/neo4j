@@ -39,6 +39,9 @@ public interface FileSystemAbstraction
     boolean renameFile( String from, String to ) throws IOException;
 
     void copyFile( String from, String to ) throws IOException;
+
+    // TODO change the name to something more descriptive
+    void autoCreatePath( String path ) throws IOException;
     
 //    String[] listFiles( String directory );
 }

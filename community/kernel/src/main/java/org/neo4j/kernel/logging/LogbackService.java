@@ -20,10 +20,11 @@
 
 package org.neo4j.kernel.logging;
 
+import java.io.File;
+
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import java.io.File;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -33,91 +34,100 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * Logging service that uses Logback as backend.
  */
 public class LogbackService
-    extends LifecycleAdapter
-    implements Logging
+        extends LifecycleAdapter
+        implements Logging
 {
     private Config config;
-    private LoggerContext loggerContext;
+    private final LoggerContext loggerContext;
 
     private LifeSupport loggingLife = new LifeSupport();
     protected RestartOnChange restartOnChange;
 
-    public LogbackService( Config config )
+    public LogbackService( Config config, LoggerContext loggerContext )
     {
         this.config = config;
+        this.loggerContext = loggerContext;
     }
 
     @Override
     public void init()
-        throws Throwable
+            throws Throwable
     {
         final String storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
 
-        File file = new File( storeDir ).getAbsoluteFile();
-        if (!file.exists())
-            file.mkdirs();
-
-        loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
-
-        // Neo4j specific log config
-        loggingLife.add( new LifecycleAdapter()
+        if ( storeDir != null )
         {
-            @Override
-            public void start()
-                throws Throwable
+            File file = new File( storeDir ).getAbsoluteFile();
+            if ( !file.exists() )
             {
-                JoranConfigurator configurator = new JoranConfigurator();
-                configurator.setContext( loggerContext );
-                loggerContext.putProperty( "neo_store", storeDir );
-                loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings.remote_logging_enabled ).toString() );
-                loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings.remote_logging_host ) );
-                loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings.remote_logging_port ).toString() );
-                try
-                {
-                    configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );
-                }
-                catch( JoranException e )
-                {
-                    throw new IllegalStateException("Failed to configure logging", e );
-                }
+                file.mkdirs();
             }
 
-            @Override
-            public void stop()
-                throws Throwable
+            // Neo4j specific log config
+            loggingLife.add( new LifecycleAdapter()
             {
-                loggerContext.getLogger( Loggers.NEO4J ).detachAndStopAllAppenders();
-            }
-        });
-        loggingLife.start();
+                @Override
+                public void start()
+                        throws Throwable
+                {
+                    JoranConfigurator configurator = new JoranConfigurator();
+                    configurator.setContext( loggerContext );
+                    loggerContext.putProperty( "neo_store", storeDir );
+                    loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
+                            .remote_logging_enabled ).toString() );
+                    loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings
+                            .remote_logging_host ) );
+                    loggerContext.putProperty( "remote_logging_port", config.get( GraphDatabaseSettings
+                            .remote_logging_port ).toString() );
+                    try
 
-        restartOnChange = new RestartOnChange( "remote_logging_", loggingLife );
-        config.addConfigurationChangeListener( restartOnChange );
+                    {
+                        configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );
+                    }
+                    catch ( JoranException e )
+                    {
+                        throw new IllegalStateException( "Failed to configure logging", e );
+                    }
+                }
+
+                @Override
+                public void stop()
+                        throws Throwable
+                {
+                    loggerContext.getLogger( Loggers.NEO4J ).detachAndStopAllAppenders();
+                }
+            } );
+            loggingLife.start();
+
+            restartOnChange = new RestartOnChange( "remote_logging_", loggingLife );
+            config.addConfigurationChangeListener( restartOnChange );
+        }
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
         loggingLife.shutdown();
-        config.removeConfigurationChangeListener( restartOnChange );
+        if ( restartOnChange != null )
+        {
+            config.removeConfigurationChangeListener( restartOnChange );
+        }
     }
 
     @Override
     public StringLogger getLogger( String name )
     {
-        return new Slf4jStringLogger( LoggerFactory.getLogger( name ));
+        return new Slf4jStringLogger( loggerContext.getLogger( name ) );
     }
 
     public static class Slf4jStringLogger
-        extends StringLogger
+            extends StringLogger
     {
         Logger logger;
 
@@ -149,16 +159,74 @@ public class LogbackService
         @Override
         public void logMessage( String msg, boolean flush )
         {
-            if (logger.isDebugEnabled())
+            if ( logger.isDebugEnabled() )
+            {
                 logger.debug( msg );
+            }
             else
+            {
                 logger.info( msg );
+            }
         }
 
         @Override
         public void logMessage( String msg, Throwable cause, boolean flush )
         {
             logger.error( msg, cause );
+        }
+
+        @Override
+        public void debug( String msg )
+        {
+            logger.debug( msg );
+        }
+
+        @Override
+        public void debug( String msg, Throwable cause )
+        {
+            logger.debug( msg, cause );
+        }
+
+        @Override
+        public boolean isDebugEnabled()
+        {
+            return logger.isDebugEnabled();
+        }
+
+        @Override
+        public void info( String msg )
+        {
+            logger.info( msg );
+        }
+
+        @Override
+        public void info( String msg, Throwable cause )
+        {
+            logger.info( msg, cause );
+        }
+
+        @Override
+        public void warn( String msg )
+        {
+            logger.warn( msg );
+        }
+
+        @Override
+        public void warn( String msg, Throwable throwable )
+        {
+            logger.warn( msg, throwable );
+        }
+
+        @Override
+        public void error( String msg )
+        {
+            logger.error( msg );
+        }
+
+        @Override
+        public void error( String msg, Throwable throwable )
+        {
+            logger.error( msg, throwable );
         }
 
         @Override

@@ -1,2 +1,0 @@
-Export-Package: org.neo4j.graphdb.index,!${bundle.namespace}.impl.*,${bundle.namespace}.*;version="${project.version}",org.apache.lucene
-Private-Package: ${bundle.namespace}.*

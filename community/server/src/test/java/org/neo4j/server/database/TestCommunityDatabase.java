@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
@@ -100,7 +101,7 @@ public class TestCommunityDatabase
         assertThat( appender.toString(), containsString( "Successfully stopped database" ) );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() throws Throwable
     {
         deletionFailureOk = true;
@@ -109,7 +110,16 @@ public class TestCommunityDatabase
         Configuration conf = new MapConfiguration(new HashMap<String,String>());
         conf.addProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath());
         CommunityDatabase db = new CommunityDatabase( conf );
-        db.start();
+
+        try
+        {
+            db.start();
+        }
+        catch ( RuntimeException e )
+        {
+            // Wrapped in a lifecycle exception, needs to be dug out
+            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
+        }
     }
 
     @Test

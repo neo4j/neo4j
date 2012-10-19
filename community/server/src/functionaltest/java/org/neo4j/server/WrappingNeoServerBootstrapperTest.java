@@ -34,8 +34,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.jmx.Primitives;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -168,7 +169,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
                 myDb );
         srv.start();
 
-        long originalNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
+        long originalNodeNumber = myDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
 
         FunctionalTestHelper helper = new FunctionalTestHelper( srv.getServer() );
         JaxRsResponse response = new RestRequest().get( helper.dataUri() );
@@ -178,7 +179,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         response = new RestRequest().post( helper.dataUri() + "node", nodeData );
         assertEquals( 201, response.getStatus() );
 
-        long newNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
+        long newNodeNumber = myDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
 
         assertEquals( originalNodeNumber + 1, newNodeNumber );
 
