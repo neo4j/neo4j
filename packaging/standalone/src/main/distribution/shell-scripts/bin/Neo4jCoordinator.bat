@@ -17,11 +17,4 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set serviceName="Neo4jCoordinator"
-set serviceDisplayName="Neo4j-HA-Coordinator"
-set serviceStartType=auto
-set configFile="conf\coord-wrapper.conf"
-set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
-set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
-
-call "%~dp0\base.bat" %1 %2 %3 %4 %5
+echo "The Coordinator functionality and corresponding scripts are no longer required for Neo4j HA operations since version 1.9"

@@ -7,19 +7,21 @@ graph database on the Java Virtual Machine.
 
 Included in this release of Neo4j are:
 
-   neo4j-kernel          the Neo4j graph database engine
-   neo4j-lucene-index    index implementation based on Lucene
-   neo4j-shell           command shell for browsing and manipulating the graph
-   neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
-   neo4j-graph-matching  graph matching, matches and returns sub graphs
-   neo4j-jmx             exposing information about Neo4j through JMX/management beans
-   neo4j-udc             usage data collector
-   neo4j-cypher          the Cypher pattern query language
-   neo4j-server          Neo4j as a server with a RESTful API
-   neo4j-management      more advanced JMX/management beans
-   neo4j-com             framework for communication between database servers
-   neo4j-backup          backup tool for backing up a running Neo4j database
-   neo4j-ha              adds High Availability to Neo4j
+   neo4j-kernel              the Neo4j graph database engine
+   neo4j-lucene-index        index implementation based on Lucene
+   neo4j-shell               command shell for browsing and manipulating the graph
+   neo4j-graph-algo          graph algorithms (such as shortest path algorithm)
+   neo4j-graph-matching      graph matching, matches and returns sub graphs
+   neo4j-jmx                 exposing information about Neo4j through JMX/management beans
+   neo4j-udc                 usage data collector
+   neo4j-cypher              the Cypher pattern query language
+   neo4j-server              Neo4j as a server with a RESTful API
+   neo4j-management          more advanced JMX/management beans
+   neo4j-com                 framework for communication between database servers
+   neo4j-cluster             framework for setting up and operating distributed state machines
+   neo4j-consistency-check   utilities for checking the consistency of a Neo4j database store files
+   neo4j-backup              backup tool for backing up a running Neo4j database
+   neo4j-ha                  adds High Availability to Neo4j
 
 The `lib` directory contains the binary jar files for all components as well as 
 required third-party libraries. 

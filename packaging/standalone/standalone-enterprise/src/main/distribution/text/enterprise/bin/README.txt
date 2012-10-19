@@ -12,7 +12,5 @@ References
 
 * Neo4j Server Usage: ../doc/neo4j.txt
 * Neo4j Shell Usage: ../doc/neo4j-shell.txt
-* Neo4j Coordinator Usage ../doc/neo4j-coordinator.txt
-* Neo4j Coordinator Shell Usage ../doc/neo4j-coordinator-shell.txt
 * Neo4j Backup Usage: see the manual, included in ../doc/manual
 

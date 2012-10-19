@@ -216,7 +216,6 @@ its license review and certification process.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Log4j
-  Apache ServiceMix :: Bundles :: netty
   Apache ServiceMix Bundles: jline-0.9.94
   Commons BeanUtils
   Commons BeanUtils Core
@@ -242,7 +241,7 @@ Apache Software License, Version 2.0
   RRD4J
   Servlet Specification API
   StAX API
-  zookeeper
+  The Netty Project
 ------------------------------------------------------------------------------
 
                                  Apache License
