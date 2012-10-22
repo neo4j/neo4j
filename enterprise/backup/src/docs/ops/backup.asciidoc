@@ -67,9 +67,9 @@ OnlineBackup]
 [[backup-ha]]
 == High Availability ==
 
-To perform a backup on an HA cluster you specify one or more members of the target HA cluster. Note that the addresses
-you must provide are the cluster server addresses and not the HA server addresses (the value of the `ha.cluster_server`
-setting in the configuration)
+To perform a backup on an HA cluster you specify one or more members of the target HA cluster.
+Note that the addresses you must provide are the cluster server addresses and not the HA server addresses.
+That is, use the value of the +ha.cluster_server+ setting in the configuration.
 
 [source,shell]
 ----
@@ -83,5 +83,7 @@ setting in the configuration)
 [[backup-restoring]]
 == Restoring Your Data ==
 
-The Neo4j backups are fully functional databases. To use a backup, all you need to do replace your database folder with the backup.
+The Neo4j backups are fully functional databases.
+To use a backup, all you need to do replace your database folder with the backup.
+Just make sure the database isn't running while replacing the folder.
 
