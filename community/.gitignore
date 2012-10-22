@@ -30,3 +30,5 @@ artifacts
 chromedriver.log
 webdriver-binaries
 *.egg-info
+*.egg
+work-tools/sauron/build/
