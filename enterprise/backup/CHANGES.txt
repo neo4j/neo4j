@@ -1,5 +1,5 @@
-1.9.M01
--------
+1.9.M01 (2012-10-23)
+--------------------
 o Consistency check extracted into its own module (consistency-check).
 o BackupTool extended to accept tuning parameters for consistency check.
 

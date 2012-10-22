@@ -1,5 +1,5 @@
-1.9.M01
--------
+1.9.M01 (2012-10-23)
+--------------------
 o Massive changes to stop using ZooKeeper as a coordination service and instead move to a custom Paxos implementation.
  + Removed all ZooKeeper related functionality
  + Added support classes for event processing from the cluster component
