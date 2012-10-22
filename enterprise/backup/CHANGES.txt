@@ -1,3 +1,8 @@
+1.9.M01
+-------
+o Consistency check extracted into its own module (consistency-check).
+o BackupTool extended to accept tuning parameters for consistency check.
+
 1.7 (2012-04-18)
 ----------------
 o Improvements to shell script messages and documentation

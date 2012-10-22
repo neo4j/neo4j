@@ -1,0 +1,7 @@
+1.9.M01
+-------
+o Initial release (extracted from backup module).
+o Added new consistency check implementation with better performance thanks to
+  better usage of mapped memory.
+o Consistency check can now accept tuning parameters to make best use of available resources.
+o New WindowPool implementation for exclusive use underneath the consistency check.
