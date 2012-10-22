@@ -1,6 +1,10 @@
-1.9
----
+1.9.M01 (2012-10-23)
+--------------------
+o XaDatasources now implement lifecycle and their registration with XaDatasourceManager triggers TxManager recovery
+  on startup
 o Neo4j logical log now handles running out of disk space at a critical point gracefully.
+o Kernel extensions are now factories that create instances which participate in the database's lifecycle
+o Fixes a race condition around relationship chain loading from multiple threads on the same node
 
 1.8.RC1 (2012-09-05)
 --------------------
