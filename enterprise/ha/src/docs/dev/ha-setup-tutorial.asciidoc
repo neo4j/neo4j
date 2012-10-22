@@ -253,7 +253,7 @@ ha.server_id = 1
 #ip and port for this instance to bind to
 ha.server = localhost:6361
 
-#connection information to the coordinator cluster client ports
+#addresses and ports other cluster members use, to try and join the cluster through them
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 
 remote_shell_enabled = true
@@ -284,9 +284,9 @@ Starting another instance would require a second configuration and another path 
 ha.server_id = 2
 
 #ip and port for this instance to bind to
-ha.server = localhost:6362
+ha.server = localhost:6362§
 
-#connection information to the coordinator cluster client ports
+#addresses and ports other cluster members use, to try and join the cluster through them
 ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
 
 remote_shell_enabled = true

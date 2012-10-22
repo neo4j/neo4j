@@ -24,7 +24,7 @@ The database to be backed up is specified using a URI with syntax
 
 Running mode must be defined and is either _single_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
 points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
-are useful for passing multiple coordinator instances.
+are useful for passing multiple cluster members.
 
 [IMPORTANT]
 Backups can only be performed on databases which have the configuration parameter `online_backup_enabled=true` set.
@@ -73,10 +73,10 @@ setting in the configuration)
 
 [source,shell]
 ----
-# Performing a full backup from HA cluster, specifying two possible coordinators
+# Performing a full backup from HA cluster, specifying two possible cluster members
 ./neo4j-backup -full -from ha://192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup from HA cluster, specifying only one coordinator
+# Performing an incremental backup from HA cluster, specifying only one cluster member
 ./neo4j-backup -incremental -from ha://192.168.1.15:5001 -to /mnt/backup/neo4j-backup
 ----
 

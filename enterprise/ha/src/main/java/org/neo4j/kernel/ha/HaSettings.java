@@ -124,24 +124,6 @@ public class HaSettings
         }
     }
 
-    public static final class SlaveUpdateModeSetting
-            extends GraphDatabaseSetting.OptionsSetting
-    {
-        @Description("Update mode 'sync'")
-        public static final String sync = "sync";
-
-        @Description("Update mode 'async'")
-        public static final String async = "async";
-
-        @Description("Update mode 'none'")
-        public static final String none = "none";
-
-        public SlaveUpdateModeSetting()
-        {
-            super( "ha.slave_coordinator_update_mode", sync, async, none );
-        }
-    }
-
     public static final class BranchedDataPolicySetting
             extends GraphDatabaseSetting.EnumerableSetting<BranchedDataPolicy>
     {

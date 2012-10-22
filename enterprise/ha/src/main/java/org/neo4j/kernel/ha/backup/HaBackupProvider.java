@@ -69,7 +69,7 @@ public final class HaBackupProvider extends BackupExtensionService
     public URI resolve( URI address, Args args, Logging logging )
     {
         String master = null;
-        logging.getLogger( "ha.backup" ).logMessage( "Asking coordinator service at '" + address
+        logging.getLogger( "ha.backup" ).logMessage( "Asking cluster member at '" + address
                 + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );

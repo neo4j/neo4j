@@ -80,10 +80,10 @@ neo4j-backup -incremental -from single://freja -to /mnt/backup/neo4j-backup
 # Performing an incremental backup where the service is registered on a custom port
 neo4j-backup -incremental -from single://freja:9999 -to /mnt/backup/neo4j-backup
 
-# Performing a full backup from HA cluster, specifying two possible coordinators
+# Performing a full backup from HA cluster, specifying two cluster members
 ./neo4j-backup -full -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup from HA cluster, specifying only one coordinator
+# Performing an incremental backup from HA cluster, specifying only one cluster member
 ./neo4j-backup -incremental -from ha://oden:5002 -to /mnt/backup/neo4j-backup
 ----
 
