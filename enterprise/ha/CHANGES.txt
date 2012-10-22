@@ -1,3 +1,13 @@
+1.9.M01
+-------
+o Massive changes to stop using ZooKeeper as a coordination service and instead move to a custom Paxos implementation.
+ + Removed all ZooKeeper related functionality
+ + Added support classes for event processing from the cluster component
+ + All kernel parts with master/slave implementations are instantiated and managed separately and their switching
+   happens based on cluster events
+ + HA management beans expose the new information properly
+ + Updates to documentation
+
 1.8.M07 (2012-08-08)
 --------------------
 o Fixed bug where transactions committed through slaves in a mixed version cluster would fail
