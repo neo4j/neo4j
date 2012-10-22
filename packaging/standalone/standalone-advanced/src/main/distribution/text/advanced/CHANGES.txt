@@ -1,5 +1,33 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.9.M01 (2012-10-23)
+--------------------
+Management:
+o High Availability beans now expose information relevant to the new way clusters work
+
+Kernel:
+o XaDatasources now implement lifecycle and their registration with XaDatasourceManager triggers TxManager recovery
+  on startup
+o Neo4j logical log now handles running out of disk space at a critical point gracefully.
+o Kernel extensions are now factories that create instances which participate in the database's lifecycle
+o Fixes a race condition around relationship chain loading from multiple threads on the same node
+
+Cypher:
+o Refactored the type system from the bottom up
+o Predicates can now be returned and used to set properties
+o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if
+  they are re-used without the properties
+o Added the traversal matcher, which uses the new traversal framework abilities to do
+  pattern matching. It should provide for nice performance benefits for a lot of queries.
+o Fixed #866: Changed the LRU cache to make it safe to use concurrently, and made the parser single threaded
+o Added the reduce() functionality
+o Made addition automatically convert numbers to strings when adding the two together
+o Added the string functions: str(), replace(), substring(), left(), right(), ltrim(), rtrim(), trim(), lower(), upper()
+o Added the possibility to use ORDER BY, SKIP and LIMIT together with WITH
+o Fixes #904: CREATE UNIQUE doesn't work with parameter maps
+o Fixes #908: Parameters do not survive WITH if it has aggregation
+o SET can now be used to set properties on nodes and relationships from maps or other graph elements
+
 1.8.RC1 (2012-09-05)
 --------------------
 Kernel:

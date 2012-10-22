@@ -1,5 +1,58 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.9.M01 (2012-10-23)
+--------------------
+Introduces consistency check and cluster components.
+
+HA:
+o Massive changes to stop using ZooKeeper as a coordination service and instead move to a custom Paxos implementation.
+ + Removed all ZooKeeper related functionality
+ + Added support classes for event processing from the cluster component
+ + All kernel parts with master/slave implementations are instantiated and managed separately and their switching
+   happens based on cluster events
+ + HA management beans expose the new information properly
+ + Updates to documentation
+
+Backup:
+o Consistency check extracted into its own module (consistency-check).
+o BackupTool extended to accept tuning parameters for consistency check.
+
+Consistency check:
+o Initial release (extracted from backup module).
+o Added new consistency check implementation with better performance thanks to
+  better usage of mapped memory.
+o Consistency check can now accept tuning parameters to make best use of available resources.
+o New WindowPool implementation for exclusive use underneath the consistency check.
+
+Cluster:
+o Initial release
+
+Kernel:
+o XaDatasources now implement lifecycle and their registration with XaDatasourceManager triggers TxManager recovery
+  on startup
+o Neo4j logical log now handles running out of disk space at a critical point gracefully.
+o Kernel extensions are now factories that create instances which participate in the database's lifecycle
+o Fixes a race condition around relationship chain loading from multiple threads on the same node
+
+Cypher:
+o Refactored the type system from the bottom up
+o Predicates can now be returned and used to set properties
+o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if
+  they are re-used without the properties
+o Added the traversal matcher, which uses the new traversal framework abilities to do
+  pattern matching. It should provide for nice performance benefits for a lot of queries.
+o Fixed #866: Changed the LRU cache to make it safe to use concurrently, and made the parser single threaded
+o Added the reduce() functionality
+o Made addition automatically convert numbers to strings when adding the two together
+o Added the string functions: str(), replace(), substring(), left(), right(), ltrim(), rtrim(), trim(), lower(), upper()
+o Added the possibility to use ORDER BY, SKIP and LIMIT together with WITH
+o Fixes #904: CREATE UNIQUE doesn't work with parameter maps
+o Fixes #908: Parameters do not survive WITH if it has aggregation
+o SET can now be used to set properties on nodes and relationships from maps or other graph elements
+
+Management:
+o High Availability beans now expose information relevant to the new way clusters work
+
 1.8.RC1 (2012-09-05)
 --------------------
 HA:
