@@ -196,8 +196,10 @@ The Batch Inserter is optimized for non-transactional bulk import of large amoun
 In Neo4j, data size is mainly limited by the address space of the primary keys for Nodes, Relationships, Properties and RelationshipTypes.
 Currently, the address space is as follows:
 
-* 2ˆ35 (~ 34 billion) nodes 
-* 2ˆ35 (~ 34 billion) relationships 
-* 2ˆ36 (~ 68 billion) properties 
-* 2ˆ15 (~ 32 000) relationship types 
+|=========
+| nodes | 2^35^ (&#8764; 34 billion) 
+| relationships | 2^35^ (&#8764; 34 billion) 
+| properties | 2^36^ to 2^38^ depending on property types (maximum &#8764; 274 billion, always at least &#8764; 68 billion)
+| relationship types | 2^15^ (&#8764; 32 000)
+|=========
 
