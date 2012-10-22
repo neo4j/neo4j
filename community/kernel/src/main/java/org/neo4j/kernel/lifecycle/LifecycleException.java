@@ -27,12 +27,44 @@ package org.neo4j.kernel.lifecycle;
 public class LifecycleException
     extends RuntimeException
 {
-    LifecycleStatus from;
-    LifecycleStatus to;
-    
+    private final LifecycleStatus from;
+    private final LifecycleStatus to;
+
+    private static final String humanReadableMessage( Object instance, LifecycleStatus from, LifecycleStatus to )
+    {
+        switch(to)
+        {
+            case STOPPED:
+                if(from == LifecycleStatus.NONE)
+                {
+                    return String.format( "Component '%s' failed to initialize. Please see attached cause exception" +
+                            ".", instance.toString() );
+                }
+                if(from == LifecycleStatus.STARTED)
+                {
+                    return String.format( "Component '%s' failed to stop. Please see attached cause exception.",
+                            instance.toString()  );
+                }
+                break;
+            case STARTED:
+                if(from == LifecycleStatus.STOPPED)
+                {
+                    return String.format( "Component '%s' was successfully initialized, but failed to start. Please " +
+                            "see attached cause exception.", instance.toString() );
+                }
+                break;
+            case SHUTDOWN:
+                return String.format( "Component '%s' failed to shut down. Please " +
+                        "see attached cause exception.", instance.toString() );
+        }
+
+        return String.format( "Failed to transition component '%s' from %s to %s. Please see attached cause exception",
+                instance.toString(), from.name(), to.name() );
+    }
+
     public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
     {
-        super("Failed to transition "+instance.toString()+" from "+from.name()+" to "+to.name(), cause);
+        super( humanReadableMessage( instance, from, to ), cause);
         this.from = from;
         this.to = to;
     }

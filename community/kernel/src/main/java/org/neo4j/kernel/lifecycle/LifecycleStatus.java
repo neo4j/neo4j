@@ -25,5 +25,12 @@ package org.neo4j.kernel.lifecycle;
 */
 public enum LifecycleStatus
 {
-    NONE,INITIALIZING,STARTING,STARTED,STOPPING,STOPPED,SHUTTING_DOWN,SHUTDOWN
+    NONE,
+    INITIALIZING,
+    STARTING,
+    STARTED,
+    STOPPING,
+    STOPPED,
+    SHUTTING_DOWN,
+    SHUTDOWN;
 }
