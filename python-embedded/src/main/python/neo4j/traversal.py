@@ -21,7 +21,7 @@ from _backend import extends, implements, rel_type, TraverserImpl,\
                      Evaluation, Evaluator, Uniqueness,\
                      TraversalBranchImpl, BidirectionalTraversalBranchPath,\
                      ExtendedPath, SingleNodePath, FinalTraversalBranch,\
-                     AsOneStartBranch, StartNodeTraversalBranch
+                     AsOneStartBranch, StartNodeTraversalBranch, WrappedPath
         
 from util import PythonicIterator
         
@@ -46,11 +46,14 @@ class DynamicEvaluator(implements(Evaluator)):
 #
 
 # This is a messy hack, but will only have to be here until
-# 1.9, when the traversal support in python is dropped.
+# 1.9, when the traversal support in python is dropped. After that,
+# though, the WrappedPath class still needs something like this for
+# cypher support.
 
 for PathClass in [TraversalBranchImpl,BidirectionalTraversalBranchPath,\
                   ExtendedPath,SingleNodePath,FinalTraversalBranch,\
-                  AsOneStartBranch,StartNodeTraversalBranch]:
+                  AsOneStartBranch,StartNodeTraversalBranch,\
+                  WrappedPath]:
 
     class IrrelevantClassName(extends(PathClass)):
 
@@ -64,10 +67,32 @@ for PathClass in [TraversalBranchImpl,BidirectionalTraversalBranchPath,\
         def last_relationship(self): return self.lastRelationship()
         
         @property
-        def nodes(self): return self._super__nodes()
+        def nodes(self): 
+            it = self._super__nodes().iterator()
+            while it.hasNext():
+                yield it.next()
         
         @property
-        def relationships(self): return self._super__relationships()
+        def relationships(self):
+            it = self._super__relationships().iterator()
+            while it.hasNext():
+                yield it.next()
+        
+        def __str__(self):
+            out = []
+            current = self.start
+            for rel in self.relationships:
+                out.append( '({0})'.format(current.id) )
+                if rel.start == current:
+                    out.append('-[{0},{1}]->'.format(rel.type, rel.id))
+                else:
+                    out.append('<-[{0},{1}]-'.format(rel.type, rel.id))
+                current = rel.other_node(current)
+            
+            # Print last node
+            out.append( '({0})'.format(current.id) )
+            
+            return ''.join(out)
         
         def __repr__(self): return self.toString()
         
@@ -78,7 +103,10 @@ for PathClass in [TraversalBranchImpl,BidirectionalTraversalBranchPath,\
             while it.hasNext():
                 yield it.next() 
 
+# namespace cleanup
 del IrrelevantClassName
+# /namespace cleanup
+
       
 class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
     

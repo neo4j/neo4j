@@ -21,11 +21,11 @@ package org.neo4j.cypher.pycompat;
 
 import java.util.Iterator;
 
-public class WrappedIterator implements Iterator<Object>
+public class WrappedIterator<T> implements Iterator<T>
 {
-    private Iterator<Object> inner;
+    private Iterator<T> inner;
 
-    public WrappedIterator( Iterator<Object> inner )
+    public WrappedIterator( Iterator<T> inner )
     {
         this.inner = inner;
     }
@@ -37,9 +37,9 @@ public class WrappedIterator implements Iterator<Object>
     }
 
     @Override
-    public Object next()
+    public T next()
     {
-        return ScalaToPythonWrapper.wrap( inner.next() );
+        return (T) ScalaToPythonWrapper.wrap( inner.next() );
     }
 
     @Override

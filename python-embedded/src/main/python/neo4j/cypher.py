@@ -52,6 +52,12 @@ class ExecutionResult(object):
             
     def __iter__(self):
         return PythonicIterator(self._inner.iterator())
+        
+    def __str__(self):
+        return self._inner.toString()
+        
+    def __len__(self):
+        return self._inner.length()
             
     def keys(self):
         return from_java(self._inner.columns())
@@ -59,3 +65,5 @@ class ExecutionResult(object):
     @property
     def single(self):
         return self.__iter__().single
+        
+        

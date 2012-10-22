@@ -157,7 +157,7 @@ class GraphDatabase(GraphDatabase):
         
     def prepare_query(self, query):
         ''' This is deprecated, Cypher internally caches query plans now,
-        use queries with parameters to take full advantage of thisself.
+        use queries with parameters to take full advantage of this.
         '''
         return self._cypher_engine.prepare(query)
         

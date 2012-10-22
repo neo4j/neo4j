@@ -19,6 +19,7 @@
 from _backend import *
 
 from util import rethrow_current_exception_as, PythonicIterator
+from json import dumps
 
 #
 # Pythonification of the core API
@@ -70,6 +71,9 @@ class NodeProxy(extends(NodeProxy)):
         
     # Backwards compat
     rels = relationships
+    
+    def __str__(self):
+        return 'Node[{0}]'.format(self.id)
 
 
 class RelationshipProxy(extends(RelationshipProxy)):
@@ -79,7 +83,12 @@ class RelationshipProxy(extends(RelationshipProxy)):
     
     @property
     def end(self):   return self.getEndNode()
-
+    
+    def other_node(self, node):
+        return self.end if self.start.id == node.id else self.start
+        
+    def __str__(self):
+        return 'Relationship[{0},{1}]'.format(self.id, self.type)
 
 class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
@@ -105,7 +114,6 @@ class PropertyContainer(extends(PropertyContainer)):
         except:
             rethrow_current_exception_as(Exception)
     
-            
     def set_property(self, key, value):
         try:
             if value is None:
@@ -134,7 +142,16 @@ class PropertyContainer(extends(PropertyContainer)):
             
     def has_key(self, key):
         return self.hasProperty(key)
-            
+        
+    def to_dict(self):
+        out = {}
+        for k,v in self.items():
+            out[k] = v
+        return out
+        
+    def __repr__(self):
+        return ''.join([self.__str__(), dumps(self.to_dict())])
+    
 
 class Transaction(extends(Transaction)):
     def __enter__(self):

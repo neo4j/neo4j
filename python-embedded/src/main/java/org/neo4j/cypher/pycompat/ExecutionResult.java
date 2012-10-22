@@ -51,7 +51,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
      */
     public Iterator<Object> columnAs( String n )
     {
-        return new PythonColumnIterator(inner.javaColumnAs( n ));
+        return new WrappedIterator<Object>(inner.javaColumnAs( n ));
     }
 
     /**
@@ -67,7 +67,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     @Override
     public Iterator<Map<String, Object>> iterator()
     {
-        return new PythonRowIterator(inner.javaIterator());
+        return new WrappedIterator<Map<String, Object>>(inner.javaIterator());
     }
 
     @Override
@@ -79,6 +79,11 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     public void toString( PrintWriter writer )
     {
         inner.dumpToString( writer );
+    }
+
+    public int length()
+    {
+        return inner.length();
     }
 
 }

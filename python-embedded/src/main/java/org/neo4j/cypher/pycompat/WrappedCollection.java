@@ -20,14 +20,14 @@
 package org.neo4j.cypher.pycompat;
 
 import java.util.Collection;
-import java.util.Iterator;
 
-public class WrappedCollection implements Collection<Object>
+public class WrappedCollection<T> extends WrappedIterable<T> implements Collection<T>
 {
-    private Collection<Object> inner;
+    private final Collection<T> inner;
 
-    public WrappedCollection( Collection<Object> inner )
+    public WrappedCollection( Collection<T> inner )
     {
+        super(inner);
         this.inner = inner;
     }
 
@@ -50,12 +50,6 @@ public class WrappedCollection implements Collection<Object>
     }
 
     @Override
-    public Iterator<Object> iterator()
-    {
-        return new WrappedIterator(inner.iterator());
-    }
-
-    @Override
     public Object[] toArray()
     {
         return inner.toArray();
@@ -68,7 +62,7 @@ public class WrappedCollection implements Collection<Object>
     }
 
     @Override
-    public boolean add( Object o )
+    public boolean add( T o )
     {
         return inner.add( o );
     }
@@ -86,7 +80,7 @@ public class WrappedCollection implements Collection<Object>
     }
 
     @Override
-    public boolean addAll( Collection<? extends Object> objects )
+    public boolean addAll( Collection<? extends T> objects )
     {
         return inner.addAll( objects );
     }

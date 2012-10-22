@@ -58,7 +58,6 @@ class PythonicIterator(object):
             pass
         return item
     single = property(single)
-    
    
     def __len__(self):
        count = 0

@@ -20,33 +20,20 @@
 package org.neo4j.cypher.pycompat;
 
 import java.util.Iterator;
-import java.util.Map;
 
-public class PythonRowIterator implements Iterator<Map<String, Object>>
+public class WrappedIterable<T> implements Iterable<T>
 {
-    private Iterator<Map<String, Object>> inner;
 
-    public PythonRowIterator( Iterator<Map<String, Object>> inner )
+    private final Iterable<T> inner;
+
+    public WrappedIterable( Iterable<T> inner )
     {
         this.inner = inner;
     }
 
     @Override
-    public boolean hasNext()
+    public Iterator<T> iterator()
     {
-        return inner.hasNext();
-    }
-
-    @Override
-    public Map<String, Object> next()
-    {
-        Map<String, Object> n = inner.next();
-        return ScalaToPythonWrapper.wrapMap( n );
-    }
-
-    @Override
-    public void remove()
-    {
-        inner.remove();
+        return new WrappedIterator<T>(inner.iterator());
     }
 }
