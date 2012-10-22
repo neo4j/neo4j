@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha.shell;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
@@ -34,7 +36,14 @@ public class Pullupdates extends ReadOnlyGraphDatabaseApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        //TODO get hold of pull updates thingy, call it
+        try
+        {
+            ((GraphDatabaseAPI)getServer().getDb()).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new ShellException( "Couldn't pull updates. Not a highly available database?" );
+        }
         return Continuation.INPUT_COMPLETE;
     }
 }
