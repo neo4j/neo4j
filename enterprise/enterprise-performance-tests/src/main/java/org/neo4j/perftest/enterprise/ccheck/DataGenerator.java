@@ -349,7 +349,8 @@ public class DataGenerator
 
     private static Map<String, String> batchInserterConfig( Configuration configuration )
     {
-        Long mappedMemory = Long.parseLong( configuration.get( all_stores_total_mapped_memory_size ) );
+        Long mappedMemory = GraphDatabaseSettings.all_stores_total_mapped_memory_size
+                .valueOf( configuration.get( all_stores_total_mapped_memory_size ), null );
 
         Map<String, String> config = new HashMap<String, String>();
         config.put( "use_memory_mapped_buffers", "true" );
