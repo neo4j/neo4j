@@ -21,121 +21,53 @@ package slavetest;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.NeoStoreUtil;
 import org.neo4j.shell.ShellSettings;
+import org.neo4j.test.TargetDirectory;
 
 public class StartHaDb
 {
-    public static final File PATH = new File( "var/hadb" );
-
-    static final String ME = "172.16.1.242:5559";
-    static final int MY_MACHINE_ID = 2;
-
-    static final String[] ZOO_KEEPER_SERVERS = new String[]{
-            "172.16.2.33:2181",
-            "172.16.1.242:2181",
-            "172.16.4.14:2181",
-    };
+    public static final File BASE_PATH = TargetDirectory.forTest( StartHaDb.class ).directory( "dbs", false );
 
     public static void main( String[] args ) throws Exception
     {
-        NeoStoreUtil store = new NeoStoreUtil( PATH );
-        System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
-                " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
-        GraphDatabaseService db = startDb();
+        GraphDatabaseService db = startDb( new Args( args ) );
         System.out.println( "Waiting for ENTER (for clean shutdown)" );
         System.in.read();
         db.shutdown();
-//        doStuff( db );
     }
 
-    private static GraphDatabaseService startDb() throws IOException
+    private static GraphDatabaseService startDb( Args args ) throws IOException
     {
-        return new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( PATH.getPath() ).
-                setConfig( HaSettings.server_id, "" + MY_MACHINE_ID ).
-                setConfig( HaSettings.ha_server, ME ).
+        if ( !args.has( "id" ) )
+        {
+            System.out.println( "Supply 'id=<serverId>'" );
+            System.exit( 1 );
+        }
+        
+        int serverId = args.getNumber( "id", null ).intValue();
+        return new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( new File( BASE_PATH, "" + serverId ).getAbsolutePath() ).
+                setConfig( HaSettings.server_id, "" + serverId ).
+                setConfig( HaSettings.ha_server, "127.0.0.1:" + (6001+serverId) ).
+                setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001+serverId) ).
+                setConfig( HaSettings.initial_hosts, multiply( "127.0.0.1", 5001, 3 ) ).
                 setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
-                setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
+                setConfig( ShellSettings.remote_shell_port, "" + (1337 + serverId) ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
                 newGraphDatabase();
     }
 
-//    private static void doStuff( GraphDatabaseService db ) throws IOException
-//    {
-//        RelationshipType refType = DynamicRelationshipType.withName( "MATTIAS_REF" );
-//        RelationshipType type = DynamicRelationshipType.withName( "JOHAN_IS_NOOB" );
-//        long time = System.currentTimeMillis();
-//        int txCount = 0;
-//        while ( System.currentTimeMillis() - time < 60000 )
-//        {
-//            Transaction tx = db.beginTx();
-//            boolean restarted = false;
-//            try
-//            {
-//                Node refNode = db.getReferenceNode();
-//                refNode.setProperty( "name", "MP" + System.currentTimeMillis() );
-//                Node myRefNode = db.createNode();
-//                refNode.createRelationshipTo( myRefNode, refType );
-//                for ( int i = 0; i < 20; i++ )
-//                {
-//                    Node node = db.createNode();
-//                    Relationship rel = myRefNode.createRelationshipTo( node, type );
-//                    rel.setProperty( "something", i );
-//                }
-//                tx.success();
-//
-//                if ( Math.random() < 0.33 )
-//                {
-//                    db.shutdown();
-//                    db = startDb();
-//                    restarted = true;
-//                }
-//            }
-//            finally
-//            {
-//                if ( !restarted )
-//                {
-//                    tx.finish();
-//                }
-//            }
-//            verifyDb( db );
-//
-//            if ( ++txCount % 100 == 0 ) System.out.println( txCount );
-//        }
-//        System.out.println( "done " + txCount );
-//    }
-//
-//    private static void verifyDb( GraphDatabaseService db )
-//    {
-//        for ( Node node : db.getAllNodes() )
-//        {
-//            for ( String key : node.getPropertyKeys() )
-//            {
-//                node.getProperty( key );
-//            }
-//            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-//            {
-//                for ( String key : rel.getPropertyKeys() )
-//                {
-//                    rel.getProperty( key );
-//                }
-//            }
-//        }
-//    }
-
-    public static String join( String[] strings, String delimiter )
+    private static String multiply( String ip, int port, int times )
     {
-        StringBuilder builder = new StringBuilder();
-        for ( String string : strings )
-        {
-            builder.append( (builder.length() > 0 ? delimiter : "") + string );
-        }
-        return builder.toString();
+        StringBuilder result = new StringBuilder();
+        for ( int i = 0; i < times; i++ )
+            result.append( i > 0 ? "," : "" ).append( ip + ":" + (port+i) );
+        return result.toString();
     }
 }
