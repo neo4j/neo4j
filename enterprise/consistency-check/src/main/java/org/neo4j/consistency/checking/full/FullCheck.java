@@ -94,31 +94,35 @@ public class FullCheck
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
                 decorator, logger, totalMappedMemory, store, recordAccess, summary );
 
-        tasks.add( new StoreProcessorTask<NodeRecord>( store.getNodeStore(), progress,
-                                                       processorFactory.createAll( PROPERTIES,
-                                                                                   RELATIONSHIPS ) ) );
-        tasks.add( new StoreProcessorTask<RelationshipRecord>( store.getRelationshipStore(), progress,
-                                                               processorFactory.createAll( NODES,
-                                                                                           PROPERTIES,
-                                                                                           RELATIONSHIPS ) ) );
-        tasks.add( new StoreProcessorTask<PropertyRecord>( store.getPropertyStore(), progress,
-                                                           processorFactory.createAll( PROPERTIES,
-                                                                                       STRINGS,
-                                                                                       ARRAYS ) ) );
+        tasks.add( new StoreProcessorTask<NodeRecord>(
+                store.getNodeStore(), progress, order,
+                processEverything, processorFactory.createAll( PROPERTIES, RELATIONSHIPS ) ) );
+        tasks.add( new StoreProcessorTask<RelationshipRecord>(
+                store.getRelationshipStore(), progress, order,
+                processEverything, processorFactory.createAll( NODES, PROPERTIES, RELATIONSHIPS ) ) );
+        tasks.add( new StoreProcessorTask<PropertyRecord>(
+                store.getPropertyStore(), progress, order,
+                processEverything, processorFactory.createAll( PROPERTIES, STRINGS, ARRAYS ) ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getStringStore(), progress, order,
+                processEverything, processorFactory.createAll( STRINGS ) ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getArrayStore(), progress, order,
+                processEverything, processorFactory.createAll( ARRAYS ) ) );
+        tasks.add( new StoreProcessorTask<RelationshipTypeRecord>(
+                store.getRelationshipTypeStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<PropertyIndexRecord>(
+                store.getPropertyIndexStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getTypeNameStore(), progress, order,
+                processEverything, processEverything ) );
+        tasks.add( new StoreProcessorTask<DynamicRecord>(
+                store.getPropertyKeyStore(), progress, order,
+                processEverything, processEverything ) );
 
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getStringStore(), progress,
-                                                          processorFactory.createAll( STRINGS ) ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getArrayStore(), progress,
-                                                          processorFactory.createAll( ARRAYS ) ) );
-
-        tasks.add( new StoreProcessorTask<RelationshipTypeRecord>( store.getRelationshipTypeStore(), progress,
-                                                                   processEverything ) );
-        tasks.add( new StoreProcessorTask<PropertyIndexRecord>( store.getPropertyIndexStore(), progress,
-                                                                processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getTypeNameStore(), progress, processEverything ) );
-        tasks.add( new StoreProcessorTask<DynamicRecord>( store.getPropertyKeyStore(), progress, processEverything ) );
-
-        order.execute( processEverything, tasks, progress.build() );
+        order.execute( tasks, progress.build() );
     }
 
     static DiffRecordAccess recordAccess( StoreAccess store )

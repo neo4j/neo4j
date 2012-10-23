@@ -25,20 +25,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.progress.Completion;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
 public enum TaskExecutionOrder
 {
     MULTI_THREADED
     {
         @Override
-        void execute( RecordStore.Processor processor, List<StoreProcessorTask> tasks, Completion completion )
+        void execute( List<StoreProcessorTask> tasks, Completion completion )
                 throws ConsistencyCheckIncompleteException
         {
             ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
             for ( StoreProcessorTask task : tasks )
             {
-                executor.submit( new StoreProcessorTask.TaskRunner( processor, task ) );
+                executor.submit( task );
             }
 
             try
@@ -47,7 +46,7 @@ public enum TaskExecutionOrder
             }
             catch ( Exception e )
             {
-                processor.stopScanning();
+                tasks.get( 0 ).stopScanning();
                 throw new ConsistencyCheckIncompleteException( e );
             }
             finally
@@ -67,14 +66,14 @@ public enum TaskExecutionOrder
     SINGLE_THREADED
     {
         @Override
-        void execute( RecordStore.Processor processor, List<StoreProcessorTask> tasks, Completion completion )
+        void execute( List<StoreProcessorTask> tasks, Completion completion )
                 throws ConsistencyCheckIncompleteException
         {
             try
             {
                 for ( StoreProcessorTask task : tasks )
                 {
-                    task.singlePass( processor );
+                    task.run();
                 }
             }
             catch ( Exception e )
@@ -86,14 +85,14 @@ public enum TaskExecutionOrder
     MULTI_PASS
     {
         @Override
-        void execute( RecordStore.Processor processor, List<StoreProcessorTask> tasks, Completion completion )
+        void execute( List<StoreProcessorTask> tasks, Completion completion )
                 throws ConsistencyCheckIncompleteException
         {
             try
             {
                 for ( StoreProcessorTask task : tasks )
                 {
-                    task.multiPass();
+                    task.run();
                 }
             }
             catch ( Exception e )
@@ -103,6 +102,6 @@ public enum TaskExecutionOrder
         }
     };
 
-    abstract void execute( RecordStore.Processor processor, List<StoreProcessorTask> tasks, Completion completion )
+    abstract void execute( List<StoreProcessorTask> tasks, Completion completion )
             throws ConsistencyCheckIncompleteException;
 }

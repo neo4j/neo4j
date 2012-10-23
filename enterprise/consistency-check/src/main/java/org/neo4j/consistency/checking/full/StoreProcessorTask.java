@@ -24,58 +24,57 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 
-class StoreProcessorTask<R extends AbstractBaseRecord>
+class StoreProcessorTask<R extends AbstractBaseRecord> implements Runnable
 {
     private final RecordStore<R> store;
     private final StoreProcessor[] processors;
-    private final ProgressListener progressListener;
+    private final ProgressListener[] progressListeners;
 
     StoreProcessorTask( RecordStore<R> store, ProgressMonitorFactory.MultiPartBuilder builder,
-                        StoreProcessor... processors )
+                        TaskExecutionOrder order, StoreProcessor singlePassProcessor,
+                        StoreProcessor... multiPassProcessors )
     {
         this.store = store;
-        this.processors = processors;
-        String name = store.getStorageFileName();
-        this.progressListener = builder
-                .progressForPart( name.substring( name.lastIndexOf( '/' ) + 1 ), store.getHighId() );
-    }
+        String storeFileName = store.getStorageFileName().substring(
+                store.getStorageFileName().lastIndexOf( '/' ) + 1 );
 
-    public void multiPass()
-    {
-        for ( StoreProcessor processor : processors )
+        if ( order == TaskExecutionOrder.MULTI_PASS )
         {
-            singlePass( processor );
+            this.processors = multiPassProcessors;
+            this.progressListeners = new ProgressListener[multiPassProcessors.length];
+            for ( int i = 0; i < multiPassProcessors.length; i++ )
+            {
+                progressListeners[i] = builder.progressForPart( storeFileName + "_pass_" + i, store.getHighId() );
+            }
+        }
+        else
+        {
+            this.processors = new StoreProcessor[]{singlePassProcessor};
+            this.progressListeners = new ProgressListener[]{
+                    builder.progressForPart( storeFileName, store.getHighId() )};
         }
     }
 
     @SuppressWarnings("unchecked")
-    public void singlePass( RecordStore.Processor processor )
+    @Override
+    public void run()
     {
-        try
+        for ( int i = 0; i < processors.length; i++ )
         {
-            processor.applyFiltered( store, progressListener );
-        }
-        catch ( Throwable e )
-        {
-            progressListener.failed( e );
+            try
+            {
+                processors[i].applyFiltered( store, progressListeners[i] );
+            }
+            catch ( Throwable e )
+            {
+                progressListeners[i].failed( e );
+            }
         }
     }
 
-    static class TaskRunner implements Runnable
+    public void stopScanning()
     {
-        private final RecordStore.Processor processor;
-        private final StoreProcessorTask task;
-
-        public TaskRunner( RecordStore.Processor processor, StoreProcessorTask task )
-        {
-            this.processor = processor;
-            this.task = task;
-        }
-
-        @Override
-        public void run()
-        {
-            task.singlePass( processor );
-        }
+        processors[0].stopScanning();
     }
+
 }
