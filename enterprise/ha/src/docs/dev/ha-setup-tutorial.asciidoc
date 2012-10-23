@@ -100,7 +100,7 @@ To avoid port clashes when starting the servers, adjust the ports for the REST e
 Database instances #1
 
 [source,properties]
----
+----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
 ...
@@ -118,7 +118,7 @@ org.neo4j.server.database.mode=HA
 Database instances #2
 
 [source,properties]
----
+----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476
 ...
