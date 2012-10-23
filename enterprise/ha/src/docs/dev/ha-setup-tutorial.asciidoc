@@ -136,7 +136,7 @@ org.neo4j.server.database.mode=HA
 Database instances #3
 
 [source,properties]
----
+----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7478
 ...
