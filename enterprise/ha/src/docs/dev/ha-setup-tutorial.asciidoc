@@ -23,58 +23,83 @@ Download and unpack three installations of Neo4j Enterprise
 
 == Start the Neo4j Servers in HA mode ==
 
-In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances.
+In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations.
 Neo4j HA uses two ports, one for transmitting data and one for cluster coordination.
 The cluster coordination port is by default set to a range, and Neo4j will try to bind in this range on startup, so there is no need to specify port number for that.
 The config files should include the following:
 
+[TIP]
+The amount of necessary configuration increases for a cluster where many instances lives on the same physical machine, due to port clashes. 
+This will be reduced further as HA develops.
+
+Database instances #1
+
 [source,properties]
 ----
-#$NEO4J_HOME1/conf/neo4j.properties
-#unique server id for this graph database
-#can not be negative id and must be unique
+# Unique server id for this graph database
+# can not be negative id and must be unique
 ha.server_id = 1
 
-#ip and port for this instance to bind to
-ha.server = localhost:6361
+# IP and port for this instance to bind to for communicating data with the
+# other neo4j instances in the cluster.
+ha.server = 127.0.0.1:6361
+online_backup_port = 6362
 
-#list of instances in this cluster
-ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
+# IP and port for this instance to bind to for communicating cluster information
+# with the other neo4j instances in the cluster.
+ha.cluster_server = 127.0.0.1:5001
+
+# List of other known instances in this cluster
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
+
+Database instances #2
 
 [source,properties]
 ----
-#$NEO4J_HOME2/conf/neo4j.properties
-#unique server id for this graph database
-#can not be negative id and must be unique
+# Unique server id for this graph database
+# can not be negative id and must be unique
 ha.server_id = 2
 
-#ip and port for this instance to bind to
-ha.server = localhost:6362
+# IP and port for this instance to bind to for communicating data with the
+# other neo4j instances in the cluster.
+ha.server = 127.0.0.1:6363
+online_backup_port = 6364
 
-#list of instances in this cluster
-ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
+# IP and port for this instance to bind to for communicating cluster information
+# with the other neo4j instances in the cluster.
+ha.cluster_server = 127.0.0.1:5002
+
+# List of other known instances in this cluster
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
+
+Database instances #3
 
 [source,properties]
 ----
-#$NEO4J_HOME3/conf/neo4j.properties
-#unique server id for this graph database
-#can not be negative id and must be unique
+# Unique server id for this graph database
+# can not be negative id and must be unique
 ha.server_id = 3
 
-#ip and port for this instance to bind to
-ha.server = localhost:6363
+# IP and port for this instance to bind to for communicating data with the
+# other neo4j instances in the cluster.
+ha.server = 127.0.0.1:6365
+online_backup_port = 6366
 
-#list of instances in this cluster
-ha.initial_hosts = localhost:5001,localhost:5002,localhost:5003
+# IP and port for this instance to bind to for communicating cluster information
+# with the other neo4j instances in the cluster.
+ha.cluster_server = 127.0.0.1:5003
+
+# List of other known instances in this cluster
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
 
-To avoid port clashes when starting the servers, adjust the ports for the REST endpoints in all instances under 'conf/neo4j-server.properties' and enable HA mode:
+To avoid port clashes when starting the servers, adjust the ports for the REST end points in all instances under 'conf/neo4j-server.properties' and enable HA mode:
+
+Database instances #1
 
 [source,properties]
-----
-#$NEO4J_HOME1/conf/neo4j-server.properties
 ...
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
@@ -90,15 +115,15 @@ org.neo4j.server.webserver.https.port=7473
 org.neo4j.server.database.mode=HA
 ----
 
+Database instances #2
+
 [source,properties]
-----
-#$NEO4J_HOME2/conf/neo4j-server.properties
 ...
 # http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7475
+org.neo4j.server.webserver.port=7476
 ...
 # https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7472
+org.neo4j.server.webserver.https.port=7475
 ...
 # Allowed values:
 # HA - High Availability
@@ -108,15 +133,15 @@ org.neo4j.server.webserver.https.port=7472
 org.neo4j.server.database.mode=HA
 ----
 
+Database instances #3
+
 [source,properties]
-----
-#$NEO4J_HOME3/conf/neo4j-server.properties
 ...
 # http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7476
+org.neo4j.server.webserver.port=7478
 ...
 # https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7471
+org.neo4j.server.webserver.https.port=7477
 ...
 # Allowed values:
 # HA - High Availability
