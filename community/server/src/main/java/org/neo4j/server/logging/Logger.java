@@ -54,9 +54,12 @@ public class Logger
     {
 
         final String logMessage = String.format( message, parameters );
-        if ( logger != null && logger.isLoggable( level ) )
+        if ( logger != null )
         {
-            logger.log( level, logMessage );
+            if ( logger.isLoggable( level ) )
+            {
+                logger.log( level, logMessage );
+            }
         }
         else
         {
