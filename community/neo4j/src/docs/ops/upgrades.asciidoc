@@ -47,7 +47,7 @@ To perform a special upgrade (for significant changes to the database store):
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
 
-[[deployment-upgrading-one-eight]]
+[[deployment-upgrading-one-nine]]
 == Upgrade 1.8 -> 1.9.M01 ==
 
 There are no store format changes between these versions so upgrading standalone instances simply consists of starting the database with the newer version.
