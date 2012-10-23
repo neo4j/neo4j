@@ -50,13 +50,11 @@ public class TxManagerCheckKernelEventHandler implements KernelEventHandler
             {
                 synchronized ( dataSourceManager )
                 {
-                    new Exception( "handling panic" ).printStackTrace();
                     txManager.stop();
                     dataSourceManager.stop();
                     dataSourceManager.start();
                     txManager.start();
                     txManager.doRecovery();
-                    new Exception( "handled panic" ).printStackTrace();
 
                 }
             }
