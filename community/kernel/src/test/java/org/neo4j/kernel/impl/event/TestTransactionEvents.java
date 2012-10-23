@@ -588,4 +588,37 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             getGraphDb().unregisterTransactionEventHandler( handler );
         }
     }
+    
+    @Test
+    public void modifiedPropertyCanByFurtherModifiedInBeforeCommit() throws Exception
+    {
+        // Given
+        // -- create node and set property on it in one transaction
+        final String key = "key";
+        final Object value1 = "the old value";
+        final Object value2 = "the new value";
+        final Node node = getGraphDb().createNode();
+        node.setProperty( key, "initial value" );
+        commit();
+        // -- register a tx handler which will override a property
+        getGraphDb().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        {
+            @Override
+            public Void beforeCommit( TransactionData data ) throws Exception
+            {
+                Node modifiedNode = data.assignedNodeProperties().iterator().next().entity();
+                assertEquals( node, modifiedNode );
+                modifiedNode.setProperty( key, value2 );
+                return null;
+            }
+        } );
+        
+        // When
+        newTransaction();
+        node.setProperty( key, value1 );
+        commit();
+        
+        // Then
+        assertEquals( value2, node.getProperty( key ) );
+    } 
 }

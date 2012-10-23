@@ -106,4 +106,29 @@ public interface TransactionEventHandler<T>
      */
     // TODO: should this method take a parameter describing WHY the tx failed?
     void afterRollback( TransactionData data, T state );
+    
+    /**
+     * Adapter for a {@link TransactionEventHandler}
+     *
+     * @param <T> the type of object communicated from a successful
+     * {@link #beforeCommit(TransactionData)} to {@link #afterCommit(TransactionData, Object)}.
+     */
+    public class Adapter<T> implements TransactionEventHandler<T>
+    {
+        @Override
+        public T beforeCommit( TransactionData data ) throws Exception
+        {
+            return null;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, T state )
+        {
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, T state )
+        {
+        }
+    }
 }
