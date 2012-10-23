@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -68,8 +67,6 @@ public class ClusterHeartbeatTest
                 leave( 200, 3 ) );
     }
 
-
-    @Ignore
     @Test
     public void threeNodesJoinAndThenCoordinatorDies()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException

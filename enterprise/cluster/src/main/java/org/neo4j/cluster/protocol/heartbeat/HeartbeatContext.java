@@ -191,7 +191,7 @@ public class HeartbeatContext
     {
         List<URI> suspicions = getSuspicionsOf( node );
 
-        return suspicions.size() > (clusterContext.getConfiguration().getMembers().size() - failed.size() - 1) / 2;
+        return suspicions.size() > (clusterContext.getConfiguration().getMembers().size() - failed.size()) / 2;
     }
 
     public List<URI> getSuspicionsOf( URI uri )
