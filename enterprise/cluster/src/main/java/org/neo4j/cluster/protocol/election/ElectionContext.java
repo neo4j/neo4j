@@ -218,7 +218,7 @@ public class ElectionContext
             @Override
             public boolean satisfiedBy( String role )
             {
-                return clusterContext.getConfiguration().getElected( role ) != null;
+                return clusterContext.getConfiguration().getElected( role ) == null;
             }
         }, map( new Function<ElectionRole, String>() // Convert ElectionRole to String
         {

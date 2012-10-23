@@ -108,7 +108,8 @@ public enum ElectionState
                                 else
                                 // Start election process for all roles that are currently unassigned
                                 {
-                                    for ( String role : context.getRolesRequiringElection() )
+                                    Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
+                                    for ( String role : rolesRequiringElection )
                                     {
                                         if ( !context.isElectionProcessInProgress( role ) )
                                         {
