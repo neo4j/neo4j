@@ -100,7 +100,7 @@ To avoid port clashes when starting the servers, adjust the ports for the REST e
 Database instances #1
 
 [source,properties]
-...
+---
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
 ...
@@ -118,7 +118,7 @@ org.neo4j.server.database.mode=HA
 Database instances #2
 
 [source,properties]
-...
+---
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476
 ...
@@ -136,7 +136,7 @@ org.neo4j.server.database.mode=HA
 Database instances #3
 
 [source,properties]
-...
+---
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7478
 ...
@@ -156,9 +156,10 @@ To avoid JMX port clashes adjust the assigned ports for all instances in 'conf/n
 The paths to the 'jmx.password' and 'jmx.access' files also needs to be set.
 Note that the 'jmx.password' file needs the correct permissions set, see the configuration file for further information.
 
+Database instance #1
+
 [source,properties]
 ----
-#$NEO4J_HOME1/conf/neo4j-wrapper.conf
 ...
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
 wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
@@ -166,9 +167,10 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
+Database instance #2
+
 [source,properties]
 ----
-#$NEO4J_HOME2/conf/neo4j-wrapper.conf
 ...
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
 wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
@@ -176,9 +178,10 @@ wrapper.java.additional.6=-Dcom.sun.management.jmxremote.access.file=conf/jmx.ac
 ...
 ----
 
+Database instance #3
+
 [source,properties]
 ----
-#$NEO4J_HOME3/conf/neo4j-server.properties
 ...
 wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3639
 wrapper.java.additional.5=-Dcom.sun.management.jmxremote.password.file=conf/jmx.password
