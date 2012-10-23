@@ -11,8 +11,8 @@ The upgrade process is a one way step; databases cannot be downgraded.
 For most upgrades, only small changes are required to the database store, and these changes proceed
 automatically when you start up the database using the newer version of Neo4j.
 
-However, some upgrades require more significant changes to the database store. In these cases, Neo4j will refuse
-to start without explicit configuration to allow the upgrade.
+However, some upgrades require more significant changes to the database store.
+In these cases, Neo4j will refuse to start without explicit configuration to allow the upgrade.
 
 The table below lists recent Neo4j versions, and the type of upgrade required.
 
@@ -26,6 +26,7 @@ From Version,To Version,Upgrade Type
 1.5,1.6,Explicit
 1.6,1.7,Automatic
 1.7,1.8,Automatic
+1.8,1.9.M01,Automatic
 |====
 
 == Automatic Upgrade ==
@@ -45,6 +46,13 @@ To perform a special upgrade (for significant changes to the database store):
 . start the database
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
+
+[[deployment-upgrading-one-eight]]
+== Upgrade 1.8 -> 1.9.M01 ==
+
+There are no store format changes between these versions so upgrading standalone instances simply consists of starting the database with the newer version.
+
+In the case of High Availability (HA) installations, the "rolling upgrade" feature is not supported yet by the 1.9 series milestone releases.
 
 [[deployment-upgrading-one-eight]]
 == Upgrade 1.7 -> 1.8 ==
