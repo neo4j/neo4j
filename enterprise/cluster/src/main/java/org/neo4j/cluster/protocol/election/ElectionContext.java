@@ -75,6 +75,19 @@ public class ElectionContext
         return roles;
     }
 
+    /*
+     * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
+     * message for a node, since it is the way to ensure that election will happen for each role that node had
+     */
+    public void nodeFailed( URI node )
+    {
+        Iterable<String> rolesToDemote = getRoles( node );
+        for (String role : rolesToDemote)
+        {
+            clusterContext.getConfiguration().getRoles().remove( role );
+        }
+    }
+
     public Iterable<String> getRoles( URI server )
     {
         return clusterContext.getConfiguration().getRolesOf( server );

@@ -125,7 +125,6 @@ public enum HeartbeatState
                         case timed_out:
                         {
                             URI server = message.getPayload();
-
                             // Check if this node is no longer a part of the cluster
                             if ( context.getClusterContext().getConfiguration().getMembers().contains( server ) )
                             {
@@ -188,7 +187,6 @@ public enum HeartbeatState
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
                             URI from = new URI( message.getHeader( Message.FROM ) );
-
                             context.suspicions( from, suspicions.getSuspicions() );
 
                             break;

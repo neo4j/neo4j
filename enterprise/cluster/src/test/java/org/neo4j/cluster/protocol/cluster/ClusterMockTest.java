@@ -21,11 +21,14 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -533,6 +536,36 @@ public class ClusterMockTest
                 actions.poll().run();
             }
         }
+
+        public ClusterTestScriptDSL getRoles( int time, final Map<String, URI> roles )
+        {
+            return addAction( new ClusterAction()
+            {
+                @Override
+                public void run()
+                {
+                    ClusterMockTest.this.getRoles( roles );
+                }
+            }, 0 );
+        }
+
+        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, URI> comparedTo )
+        {
+            return addAction( new ClusterAction()
+            {
+                @Override
+                public void run()
+                {
+                    HashMap<String, URI> roles = new HashMap<String, URI>();
+                    ClusterMockTest.this.getRoles( roles );
+                    URI oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
+                    URI newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
+                    assertNotNull( "Should have had a coordinator before bringing it down", oldCoordinator );
+                    assertNotNull( "Should have a new coordinator after the previous failed", newCoordinator );
+                    assertTrue( "Should have elected a new coordinator", !oldCoordinator.equals( newCoordinator ) );
+                }
+            }, 0 );
+        }
     }
 
     public class ClusterTestScriptRandom
@@ -627,6 +660,29 @@ public class ClusterMockTest
                     logger.getLogger().info( "Leave cluster:" + cluster.toString() );
                 }
             }
+        }
+    }
+
+    private void getRoles( Map<String, URI> roles )
+    {
+        List<TestProtocolServer> protocolServers = network.getServers();
+        for ( int j = 0; j < protocolServers.size(); j++ )
+        {
+            ConnectedStateMachines connectedStateMachines = protocolServers.get( j )
+                    .getServer()
+                    .getConnectedStateMachines();
+            
+            State<?, ?> clusterState = connectedStateMachines.getStateMachine( ClusterMessage.class ).getState();
+            if ( !clusterState.equals( ClusterState.entered ) )
+            {
+                logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
+                continue;
+            }
+            
+            ClusterContext context = (ClusterContext) connectedStateMachines.getStateMachine( ClusterMessage.class )
+                    .getContext();
+            ClusterConfiguration clusterConfiguration = context.getConfiguration();
+            roles.putAll( clusterConfiguration.getRoles() );
         }
     }
 }

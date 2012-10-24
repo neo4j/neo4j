@@ -75,7 +75,8 @@ public enum ElectionState
                         case demote:
                         {
                             URI demoteNode = message.getPayload();
-
+                            // TODO  Could perhaps be done better?
+                            context.nodeFailed( demoteNode );
                             if ( context.getClusterContext().isInCluster() )
                             {
                                 int remainingDelays;

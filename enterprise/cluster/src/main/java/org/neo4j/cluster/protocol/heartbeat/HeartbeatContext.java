@@ -71,7 +71,7 @@ public class HeartbeatContext
 
         if ( !isFailed( node ) && failed.remove( node ) )
         {
-            Listeners.notifyListeners( listeners, executor, new Listeners.Notification<HeartbeatListener>()
+            Listeners.notifyListeners( listeners, new Listeners.Notification<HeartbeatListener>()
             {
                 @Override
                 public void notify( HeartbeatListener listener )

@@ -20,7 +20,10 @@
 
 package org.neo4j.cluster.protocol.cluster;
 
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -87,6 +90,27 @@ public class ClusterHeartbeatTest
                 up( 0, 2 ).
                 message( 800, "*** All nodes leave" ).
                 verifyConfigurations( 0 ).
+                leave( 0, 1 ).
+                leave( 300, 2 ).
+                leave( 300, 3 ) );
+    }
+    
+    @Test
+    public void threeNodesJoinAndThenCoordinatorDiesForReal()
+            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+    {
+        final Map<String, URI> roles = new HashMap<String, URI>();
+        
+        testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
+                rounds( 1000 ).
+                join( 100, 1 ).
+                join( 100, 2 ).
+                join( 100, 3 ).
+                message( 100, "*** All nodes up and ok" ).
+                getRoles( 0, roles ).
+                down( 500, 1 ).
+                message( 1000, "*** Should have seen failure by now" ).
+                verifyCoordinatorRoleSwitched( roles ).
                 leave( 0, 1 ).
                 leave( 300, 2 ).
                 leave( 300, 3 ) );
