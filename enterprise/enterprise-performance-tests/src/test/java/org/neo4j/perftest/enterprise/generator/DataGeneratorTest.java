@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.perftest.enterprise.ccheck;
+package org.neo4j.perftest.enterprise.generator;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyLong;
@@ -46,12 +46,12 @@ public class DataGeneratorTest
         // given
         Configuration.Builder config = Configuration.builder();
         config.setValue( DataGenerator.node_count, 5 );
-        config.setValue( DataGenerator.relationships, asList( new DataGenerator.RelationshipSpec( "FOO", 1 ),
-                                                              new DataGenerator.RelationshipSpec( "BAR", 2 ) ) );
+        config.setValue( DataGenerator.relationships, asList( new RelationshipSpec( "FOO", 1 ),
+                                                              new RelationshipSpec( "BAR", 2 ) ) );
         config.setValue( DataGenerator.node_properties,
-                asList( new DataGenerator.PropertySpec( DataGenerator.PropertyGenerator.STRING, 2 ) ) );
+                asList( new PropertySpec( PropertyGenerator.STRING, 2 ) ) );
         config.setValue( DataGenerator.relationship_properties,
-                asList( new DataGenerator.PropertySpec( DataGenerator.PropertyGenerator.STRING, 1 ) ) );
+                asList( new PropertySpec( PropertyGenerator.STRING, 1 ) ) );
 
         DataGenerator generator = new DataGenerator( config.build() );
 
