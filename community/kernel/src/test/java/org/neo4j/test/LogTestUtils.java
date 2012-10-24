@@ -63,42 +63,35 @@ public class LogTestUtils
 
         void done( File file );
     }
+    
+    public static abstract class LogHookAdapter<RECORD> implements LogHook<RECORD>
+    {
+        @Override
+        public void file( File file )
+        {
+        }
 
-    public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS = new LogHook<Pair<Byte,List<byte[]>>>()
+        @Override
+        public void done( File file )
+        {
+        }
+    }
+
+    public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
         {
             return item.first().byteValue() != TxLog.TX_DONE;
         }
-
-        @Override
-        public void file( File file )
-        {
-        }
-
-        @Override
-        public void done( File file )
-        {
-        }
     };
     
-    public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHook<Pair<Byte,List<byte[]>>>()
+    public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
         {
             return true;
-        }
-
-        @Override
-        public void file( File file )
-        {
-        }
-
-        @Override
-        public void done( File file )
-        {
         }
     };
     
