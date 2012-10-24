@@ -2243,4 +2243,17 @@ RETURN x0.name?
     assert(result.toList === List(Map("coll" -> List(refNode))))
   }
 
+  @Test
+  def head_on_empty_coll_should_return_null() {
+    val result = parseAndExecute("START n=node(0) RETURN head([])")
+
+    assert(result.toList === List(Map("head([])" -> null)))
+  }
+
+  @Test
+  def tail_on_empty_coll_should_return_empty_coll() {
+    val result = parseAndExecute("START n=node(0) RETURN tail([])")
+
+    assert(result.toList === List(Map("tail([])" -> List())))
+  }
 }

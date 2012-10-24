@@ -23,7 +23,13 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext) = makeTraversable(value).tail
+  def compute(value: Any, m: ExecutionContext) = {
+    val coll = makeTraversable(value)
+    if (coll.size == 0) 
+      Seq()
+    else 
+      coll.tail
+  }
 
   def rewrite(f: (Expression) => Expression) = f(TailFunction(collection.rewrite(f)))
 
