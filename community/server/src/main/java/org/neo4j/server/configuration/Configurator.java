@@ -76,7 +76,10 @@ public interface Configurator
     }};
 
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
-    
+
+    String SCRIPT_SANDBOXING_ENABLED_KEY = "org.neo4j.server.script.sandboxing.enabled";
+    Boolean DEFAULT_SCRIPT_SANDBOXING_ENABLED = true;
+
     String WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY = "org.neo4j.server.webserver.https.enabled";
     Boolean DEFAULT_WEBSERVER_HTTPS_ENABLED = false;
     

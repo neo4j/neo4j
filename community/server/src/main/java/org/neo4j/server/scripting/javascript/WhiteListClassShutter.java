@@ -17,29 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.server.scripting.javascript;
 
-import javax.ws.rs.ext.Provider;
+import java.util.Set;
 
-import org.neo4j.server.database.InjectableProvider;
+import org.mozilla.javascript.ClassShutter;
 
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
+public class WhiteListClassShutter implements ClassShutter
 {
-    private final LeaseManager leaseManager;
 
-    public LeaseManagerProvider(LeaseManager leaseManager)
+    private Set<String> whiteList;
+
+    public WhiteListClassShutter(Set<String> whiteList)
     {
-        super( LeaseManager.class );
-        this.leaseManager = leaseManager;
+        this.whiteList = whiteList;
     }
 
     @Override
-    public LeaseManager getValue( HttpContext arg0 )
+    public boolean visibleToScripts( String className )
     {
-
-        return leaseManager;
+        return whiteList.contains( className );
     }
 }

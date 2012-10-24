@@ -21,40 +21,39 @@ package org.neo4j.server.rest.domain;
 
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import javax.script.Compilable;
-import javax.script.CompiledScript;
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleScriptContext;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.server.scripting.ScriptExecutor;
+import org.neo4j.server.scripting.ScriptExecutorFactoryRepository;
+import org.neo4j.server.scripting.javascript.JavascriptExecutor;
 
 /**
-<<<<<<< HEAD
  * This factory can instantiate or get {@link Evaluator}s from a description.
  * Either it returns built-in evaluators, or instantiates wrappers around
  * user-supplied scripts, f.ex. javascript.
-=======
- * This factory can instantiate or get {@link PruneEvaluator}s and
- * {@link ReturnFilter}s from a description. Either it returns built-in
- * evaluators, or instantiates wrappers around user-supplied scripts, f.ex.
- * javascript.
->>>>>>> master
  */
-abstract class EvaluatorFactory
+public class EvaluatorFactory
 {
     private static final String BUILTIN = "builtin";
     private static final String KEY_LANGUAGE = "language";
     private static final String KEY_BODY = "body";
     private static final String KEY_NAME = "name";
 
-    public static Evaluator pruneEvaluator( Map<String, Object> description )
+    private final ScriptExecutorFactoryRepository factoryRepo;
+
+    public EvaluatorFactory( boolean enableSandboxing )
+    {
+        Map<String,ScriptExecutor.Factory> languages = new HashMap<String, ScriptExecutor.Factory>();
+        languages.put( "javascript", new JavascriptExecutor.Factory( enableSandboxing ) );
+
+        factoryRepo = new ScriptExecutorFactoryRepository( languages );
+    }
+
+    public Evaluator pruneEvaluator( Map<String, Object> description )
     {
         if ( refersToBuiltInEvaluator( description ) )
         {
@@ -62,11 +61,11 @@ abstract class EvaluatorFactory
         }
         else
         {
-            return new ScriptedPruneEvaluator( scriptEngine( description ), (String) description.get( KEY_BODY ) );
+            return new ScriptedPruneEvaluator( getOrCreateExecutorFor(description) );
         }
     }
 
-    public static Evaluator returnFilter( Map<String, Object> description )
+    public Evaluator returnFilter( Map<String, Object> description )
     {
         if ( refersToBuiltInEvaluator( description ) )
         {
@@ -74,8 +73,16 @@ abstract class EvaluatorFactory
         }
         else
         {
-            return new ScriptedReturnEvaluator( scriptEngine( description ), (String) description.get( KEY_BODY ) );
+            return new ScriptedReturnEvaluator( getOrCreateExecutorFor(description) );
         }
+    }
+
+    private ScriptExecutor getOrCreateExecutorFor( Map<String, Object> description )
+    {
+        String language = (String) description.get( KEY_LANGUAGE );
+        String body = (String) description.get( KEY_BODY );
+
+        return factoryRepo.getFactory(language).createExecutorForScript( body );
     }
 
     private static boolean refersToBuiltInEvaluator( Map<String, Object> description )
@@ -116,147 +123,56 @@ abstract class EvaluatorFactory
         }
     }
 
-    private static ScriptEngine scriptEngine( Map<String, Object> description )
-    {
-        String language = (String) description.get( KEY_LANGUAGE );
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName( language );
-        if ( engine == null )
-        {
-            throw new EvaluationException( "Unknown script language '" + language + "'" );
-        }
-        return engine;
-    }
-
-    /**
-     * An abstract for {@link ScriptEngine} and {@link CompiledScript}. They
-     * have no common interface... other than this one.
-     */
-    private static abstract class ScriptExecutor
-    {
-        abstract Object eval( Path position );
-    }
-
-    private static class EvalScriptExecutor extends ScriptExecutor
-    {
-        private final ScriptEngine script;
-        private final String body;
-
-        EvalScriptExecutor( ScriptEngine script, String body )
-        {
-            this.script = script;
-            this.body = body;
-        }
-
-        @Override
-        Object eval( Path position )
-        {
-            try
-            {
-                this.script.getContext()
-                        .setAttribute( "position", position, ScriptContext.ENGINE_SCOPE );
-                return this.script.eval( body );
-            }
-            catch ( ScriptException e )
-            {
-                throw new EvaluationException( e );
-            }
-        }
-    }
-
-    private static class CompiledScriptExecutor extends ScriptExecutor
-    {
-        private final CompiledScript script;
-        private final ScriptContext context;
-
-        CompiledScriptExecutor( CompiledScript script, ScriptContext context )
-        {
-            this.script = script;
-            this.context = context;
-        }
-
-        @Override
-        Object eval( Path position )
-        {
-            try
-            {
-                this.context.setAttribute( "position", position, ScriptContext.ENGINE_SCOPE );
-                return this.script.eval( this.context );
-            }
-            catch ( ScriptException e )
-            {
-                throw new EvaluationException( e );
-            }
-        }
-    }
-
     private static abstract class ScriptedEvaluator
     {
-        private final ScriptEngine engine;
-        private final String body;
-        private ScriptExecutor executor;
+        private final ScriptExecutor executor;
+        private final Map<String, Object> scriptContext = new HashMap<String, Object>(1);
 
-        ScriptedEvaluator( ScriptEngine engine, String body )
+        ScriptedEvaluator( ScriptExecutor executor )
         {
-            this.engine = engine;
-            this.body = body;
+            this.executor = executor;
         }
 
-        protected ScriptExecutor executor( Path position )
+        protected boolean evalPosition(Path path)
         {
-            // We'll have to decide between evaluated script or compiled script
-            // the first time we execute it, else the compiled script can't be
-            // compiled (since position must be a valid object).
-            if ( this.executor == null )
+            scriptContext.put( "position", path );
+
+            Object out = executor.execute( scriptContext );
+
+            if(out instanceof Boolean)
             {
-                try
-                {
-                    ScriptContext context = new SimpleScriptContext();
-                    context.setAttribute( "position", position, ScriptContext.ENGINE_SCOPE );
-                    this.engine.setContext( context );
-                    if ( this.engine instanceof Compilable )
-                    {
-                        this.executor = new CompiledScriptExecutor( ( (Compilable) engine ).compile( body ), context );
-                    }
-                    else
-                    {
-                        this.executor = new EvalScriptExecutor( engine, body );
-                    }
-                    return executor;
-                }
-                catch ( ScriptException e )
-                {
-                    throw new EvaluationException( e );
-                }
+                return (Boolean)out;
             }
-            return this.executor;
+
+            throw new EvaluationException("Provided script did not return a boolean value.");
         }
     }
 
     private static class ScriptedPruneEvaluator extends ScriptedEvaluator implements Evaluator
     {
-        ScriptedPruneEvaluator( ScriptEngine engine, String body )
+        ScriptedPruneEvaluator( ScriptExecutor executor )
         {
-            super( engine, body );
+            super( executor );
         }
         
         @Override
         public Evaluation evaluate( Path path )
         {
-            return Evaluation.ofContinues( !(Boolean)executor( path ).eval( path ) );
+            return Evaluation.ofContinues( !evalPosition( path ) );
         }
     }
 
     private static class ScriptedReturnEvaluator extends ScriptedEvaluator implements Evaluator
     {
-        ScriptedReturnEvaluator( ScriptEngine engine, String body )
+        ScriptedReturnEvaluator( ScriptExecutor executor )
         {
-            super( engine, body );
+            super( executor );
         }
 
         @Override
         public Evaluation evaluate( Path path )
         {
-            return Evaluation.ofIncludes( (Boolean) this.executor( path ).eval( path ) );
+            return Evaluation.ofIncludes( evalPosition( path ) );
         }
     }
 }

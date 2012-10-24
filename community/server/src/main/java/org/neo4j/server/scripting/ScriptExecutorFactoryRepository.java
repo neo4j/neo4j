@@ -17,29 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.server.scripting;
 
-import javax.ws.rs.ext.Provider;
+import java.util.Collections;
+import java.util.Map;
 
-import org.neo4j.server.database.InjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
+/*
+* After naming this class, I now wish to be entitled "Sir Jacob, Senior Enterprise J2EE Architect Person".
+*/
+public class ScriptExecutorFactoryRepository
 {
-    private final LeaseManager leaseManager;
 
-    public LeaseManagerProvider(LeaseManager leaseManager)
+    private final Map<String, ScriptExecutor.Factory> languages;
+
+    public ScriptExecutorFactoryRepository( Map<String, ScriptExecutor.Factory> languages )
     {
-        super( LeaseManager.class );
-        this.leaseManager = leaseManager;
+        this.languages = Collections.unmodifiableMap( languages );
     }
 
-    @Override
-    public LeaseManager getValue( HttpContext arg0 )
+    public ScriptExecutor.Factory getFactory( String language )
     {
-
-        return leaseManager;
+        if(languages.containsKey( language ))
+        {
+            return languages.get( language );
+        } else
+        {
+            throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
+        }
     }
 }

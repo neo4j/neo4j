@@ -17,29 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.server.scripting;
 
-import javax.ws.rs.ext.Provider;
+import java.util.Map;
 
-import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.rest.domain.EvaluationException;
 
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
+public class GroovyScriptExecutor implements ScriptExecutor
 {
-    private final LeaseManager leaseManager;
-
-    public LeaseManagerProvider(LeaseManager leaseManager)
-    {
-        super( LeaseManager.class );
-        this.leaseManager = leaseManager;
-    }
-
     @Override
-    public LeaseManager getValue( HttpContext arg0 )
+    public Object execute( Map<String, Object> variables ) throws EvaluationException
     {
-
-        return leaseManager;
+        return null;
     }
 }

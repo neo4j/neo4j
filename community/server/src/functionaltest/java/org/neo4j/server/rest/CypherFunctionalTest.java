@@ -105,7 +105,9 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
         String response = cypherRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        Map<String, Object> output = JsonHelper.jsonToMap( response );
+        assertTrue( output.containsKey( "message" ) );
+        assertTrue( output.containsKey( "stacktrace" ) );
     }
 
 
@@ -178,8 +180,9 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
 
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertTrue( response.contains( "message" ) );
+        Map<String, Object> output = JsonHelper.jsonToMap( response );
+        assertTrue( output.containsKey( "message" ) );
+        assertTrue( output.containsKey( "stacktrace" ) );
     }
     
     /**

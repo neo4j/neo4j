@@ -21,11 +21,8 @@ package org.neo4j.server.rest.web;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +37,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -66,7 +64,8 @@ public class RestfulGraphDatabasePagedTraversalTest
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
+        service = new RestfulGraphDatabase( uriInfo(), new JsonFormat(), output,
+                new DatabaseActions(database, leaseManager, ForceMode.forced, true) );
     }
 
     @After

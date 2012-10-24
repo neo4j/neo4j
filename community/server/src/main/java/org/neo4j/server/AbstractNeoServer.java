@@ -19,14 +19,28 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.kernel.logging.Loggers.CYPHER;
+
+import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.*;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.CypherExecutorProvider;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.database.GraphDatabaseServiceProvider;
+import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -35,10 +49,12 @@ import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.plugins.TypedInjectable;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
-import org.neo4j.server.rest.paging.LeaseManagerProvider;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
+import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
@@ -48,14 +64,6 @@ import org.neo4j.server.web.InjectableWrapper;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
-
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static org.neo4j.kernel.logging.Loggers.CYPHER;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -72,6 +80,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
+    private DatabaseActions databaseActions;
 
     private DependencyResolver dependencyResolver = new DependencyResolver()
     {
@@ -107,8 +116,17 @@ public abstract class AbstractNeoServer implements NeoServer
     protected abstract Database createDatabase();
     
     protected abstract WebServer createWebServer();
-    
-    
+
+    protected DatabaseActions createDatabaseActions()
+    {
+        return new DatabaseActions(database,
+                new LeaseManager(new RealClock()),
+                ForceMode.forced,
+                configurator.configuration().getBoolean(
+                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+    }
+
     @Override
 	public void init() 
     {
@@ -140,6 +158,8 @@ public abstract class AbstractNeoServer implements NeoServer
         	interruptStartupTimer.startCountdown();
 
             database.start();
+
+            databaseActions = createDatabaseActions();
 
             cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CYPHER ) );
 
@@ -519,8 +539,8 @@ public abstract class AbstractNeoServer implements NeoServer
 
         Database database = getDatabase();
 
-        singletons.add( new LeaseManagerProvider() );
         singletons.add( new DatabaseProvider( database ) );
+        singletons.add( new DatabaseActions.Provider( databaseActions ) );
         singletons.add( new GraphDatabaseServiceProvider( database ) );
         singletons.add( new NeoServerProvider( this ) );
         singletons.add( new ConfigurationProvider( getConfiguration() ) );

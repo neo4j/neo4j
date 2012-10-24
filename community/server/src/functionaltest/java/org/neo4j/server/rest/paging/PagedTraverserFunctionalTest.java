@@ -49,6 +49,7 @@ import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -65,6 +66,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    private static FakeClock clock;
 
     @Before
     public void setUp()
@@ -74,9 +76,11 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
+        clock = new FakeClock();
         server = ServerBuilder.server()
-        .withFakeClock()
+        .withClock( clock )
         .build();
+
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
@@ -184,7 +188,6 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
         JaxRsResponse postResponse = createPagedTraverser();
         assertEquals(201, postResponse.getStatus());
 
-        FakeClock clock = (FakeClock) LeaseManagerProvider.getClock();
         final int TEN_MINUTES = 10;
         clock.forwardMinutes(TEN_MINUTES);
 
@@ -232,7 +235,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
         URI traverserLocation = createPagedTraverserWithTimeoutInMinutes( 10 ).getLocation();
 
-        ( (FakeClock) LeaseManagerProvider.getClock() ).forwardMinutes( 11 );
+        clock.forwardMinutes( 11 );
 
         JaxRsResponse response = new RestRequest(traverserLocation).get();
         assertEquals( 404, response.getStatus() );
@@ -280,6 +283,24 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
                 + String.valueOf( negativePageSize ) ,
                 traverserDescription() );
+
+        assertEquals( 400, response.getStatus() );
+    }
+
+
+    @Test
+    public void shouldRespondWith400OnScriptErrors()
+    {
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+
+        JaxRsResponse response = RestRequest.req().post(
+                functionalTestHelper.nodeUri( 0 ) + "/paged/traverse/node?pageSize=50",
+                "{"
+                + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.getClass().getClassLoader();\"},"
+                + "\"order\":\"depth_first\","
+                + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
+                + "}");
 
         assertEquals( 400, response.getStatus() );
     }
