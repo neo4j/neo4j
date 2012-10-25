@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>1.9.M01</version>
+  <version>1.9-SNAPSHOT</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -21,7 +21,7 @@
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
-    <neo4j.version>1.9.M01</neo4j.version>
+    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>

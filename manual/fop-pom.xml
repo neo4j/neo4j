@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual-fop</artifactId>
-  <version>1.9.M01</version>
+  <version>1.9-SNAPSHOT</version>
   <name>Neo4j - Reference Manual- FOP build</name>
   <description>Neo4j Reference Manual - FOP build.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
