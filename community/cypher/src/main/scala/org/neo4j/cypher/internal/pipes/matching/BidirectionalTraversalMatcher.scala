@@ -42,7 +42,7 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
   val initialEndStep = new InitialStateFactory[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(reversedSteps)
   }
-  val baseTraversal: TraversalDescription = Traversal.traversal(Uniqueness.NODE_PATH)
+  val baseTraversal: TraversalDescription = Traversal.traversal(Uniqueness.RELATIONSHIP_PATH)
   val collisionDetector = new StepCollisionDetector
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path] = {
@@ -92,11 +92,11 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
         case (Some(x), None) =>
           val result = startPath.length() == 0
-          (result, result)
+          (result, true)
 
         case (None, Some(x)) =>
           val result = endPath.length() == 0
-          (result, result)
+          (result, true)
 
         case _ => throw new ThisShouldNotHappenError("Andres", "Unexpected traversal state encountered")
       }
