@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +31,13 @@ import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 @Ignore
 public class TestHardKillIT
@@ -50,19 +54,23 @@ public class TestHardKillIT
         {
             proc = run( "1" );
             Thread.sleep( 12000 );
-            HighlyAvailableGraphDatabase slave1 = startDb( 2 );
-            HighlyAvailableGraphDatabase slave2 = startDb( 3 );
+            HighlyAvailableGraphDatabase dbWithId2 = startDb( 2 );
+            HighlyAvailableGraphDatabase dbWithId3 = startDb( 3 );
 
-            assertTrue( !slave1.isMaster() );
-            assertTrue( !slave2.isMaster() );
+            assertTrue( !dbWithId2.isMaster() );
+            assertTrue( !dbWithId3.isMaster() );
 
             proc.destroy();
             proc = null;
 
             Thread.sleep( 60000 );
 
-            assertTrue( slave1.isMaster() );
-            assertTrue( !slave2.isMaster() );
+            assertTrue( dbWithId2.isMaster() );
+            assertTrue( !dbWithId3.isMaster() );
+            
+            HighlyAvailableGraphDatabase oldMaster = startDb( 1 );
+            long oldMasterNode = createNamedNode( oldMaster, "Old master" );
+            assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
         }
         finally
         {
@@ -70,6 +78,32 @@ public class TestHardKillIT
             {
                 proc.destroy();
             }
+        }
+    }
+
+    private long getNamedNode( HighlyAvailableGraphDatabase db, String name )
+    {
+        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            if ( name.equals( node.getProperty( "name", null ) ) )
+                return node.getId();
+        fail( "Couldn't find named node '" + name + "' at " + db );
+        // The lone above will prevent this return from happening
+        return -1;
+    }
+
+    private long createNamedNode( HighlyAvailableGraphDatabase db, String name )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", name );
+            tx.success();
+            return node.getId();
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 
