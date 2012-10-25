@@ -75,14 +75,19 @@ public class ConsistencyCheckTool
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
 
+        StringLogger logger = StringLogger.SYSTEM;
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), StringLogger.SYSTEM );
+                    ProgressMonitorFactory.textual( System.err ), logger );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
             throw new ToolFailureException( "Check aborted due to exception", e );
+        }
+        finally
+        {
+            logger.flush();
         }
     }
 

@@ -92,6 +92,6 @@ public class MessageConsistencyLogger implements ConsistencyLogger
                 log.append( ' ' ).append( arg );
             }
         }
-        logger.logMessage( log.toString() );
+        logger.logMessage( log.toString(), true );
     }
 }

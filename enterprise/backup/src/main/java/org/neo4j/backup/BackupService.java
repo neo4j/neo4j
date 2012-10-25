@@ -210,17 +210,22 @@ class BackupService
             bumpLogFile( targetDirectory, timestamp );
             if ( checkConsistency )
             {
+                StringLogger logger = StringLogger.SYSTEM;
                 try
                 {
                     new ConsistencyCheckService().runFullConsistencyCheck(
                             targetDirectory,
                             tuningConfiguration,
                             ProgressMonitorFactory.textual( System.err ),
-                            StringLogger.SYSTEM );
+                            logger );
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {
                     e.printStackTrace( System.err );
+                }
+                finally
+                {
+                    logger.flush();
                 }
             }
         }
