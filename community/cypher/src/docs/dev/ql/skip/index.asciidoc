@@ -6,7 +6,8 @@ Skip
 By using +SKIP+, the result set will get trimmed from the top.
 Please note that no guarantees are made on the order of the result unless the query specifies the +ORDER BY+ clause.
 
-include::cypher-skip-graph.asciidoc[]
+.Graph
+include::includes/cypher-skip-graph.asciidoc[]
 
 include::skip-first-three.asciidoc[]
 

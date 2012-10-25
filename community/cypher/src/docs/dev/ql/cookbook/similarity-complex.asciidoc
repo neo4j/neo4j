@@ -5,5 +5,6 @@
 
 include::calculate-similarities-by-complex-calculations.asciidoc[]
 
-include::cypher-complexsimilarity-graph.asciidoc[]
+.Graph
+include::includes/cypher-complexsimilarity-graph.asciidoc[]
 

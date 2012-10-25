@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-boostingrecommendationresults-graph.asciidoc[]
+.Graph
+include::includes/cypher-boostingrecommendationresults-graph.asciidoc[]
 
 include::boosting-with-properties-on-relationships.asciidoc[]
 

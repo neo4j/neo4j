@@ -5,5 +5,6 @@
 
 include::find-activity-streams-in-a-network-without-scaling-penalty.asciidoc[]
 
-include::cypher-graphity-graph.asciidoc[]
+.Graph
+include::includes/cypher-graphity-graph.asciidoc[]
 

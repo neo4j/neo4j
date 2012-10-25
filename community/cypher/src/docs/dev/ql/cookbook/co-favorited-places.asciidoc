@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-cofavoritedplaces-graph.asciidoc[]
+.Graph
+include::includes/cypher-cofavoritedplaces-graph.asciidoc[]
 
 include::co-favorited-places----users-who-like-x-also-like-y.asciidoc[]
 

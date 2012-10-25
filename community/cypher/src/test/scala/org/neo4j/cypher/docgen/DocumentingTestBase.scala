@@ -44,43 +44,39 @@ trait DocumentationHelper {
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
   def simpleName: String = this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase
-
-  def createWriter(title: String, folder: String): (File, PrintWriter) = {
+  
+  def createDir(folder: String): File = {
     val dir = new File(path + nicefy(folder))
     if (!dir.exists()) {
       dir.mkdirs()
     }
+    dir
+  }
 
-    val writer = new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
-    (dir, writer)
+  def createWriter(title: String, dir: File): PrintWriter = {
+    return new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
   }
 
   val path: String = "target/docs/dev/ql/"
 
-  val graphvizFileName = "cypher-" + simpleName + "-graph.asciidoc"
+  val graphvizFileName = "cypher-" + simpleName + "-graph"
 
-  def dumpGraphViz(dir: File, graphVizOptions:String) {
-    val graphViz = new PrintWriter(new File(dir, graphvizFileName), "UTF-8")
-    val foo = emitGraphviz(graphvizFileName, graphVizOptions)
-    graphViz.write(foo)
-    graphViz.flush()
-    graphViz.close()
+  def dumpGraphViz(dir: File, graphVizOptions:String) : String = {
+    return emitGraphviz(dir, graphvizFileName, graphVizOptions)
   }
 
-  private def emitGraphviz(fileName:String, graphVizOptions:String): String = {
-
+  private def emitGraphviz(dir:File, testid:String, graphVizOptions:String): String = {
     val out = new ByteArrayOutputStream()
     val writer = new GraphvizWriter(getGraphvizStyle)
     writer.emit(out, Walker.fullGraph(db))
 
-    return """
-.Graph
-["dot", "%s.svg", "neoviz", "%s"]
+    val graphOutput = """["dot", "%s.svg", "neoviz", "%s"]
 ----
 %s
 ----
 
-""".format(fileName, graphVizOptions, out)
+""".format(testid, graphVizOptions, out)
+    return ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, graphvizFileName, graphOutput)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
@@ -93,10 +89,9 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     val result: ExecutionResult = r._1
     var query: String = r._2
 
-    val (dir: File, writer: PrintWriter) = createWriter(title, section)
+    val writer: PrintWriter = createWriter(title, dir)
     dumpToFile(dir, writer, title, query, returns, text, result)
-
-    dumpGraphViz(dir, graphvizOptions)
+    dumpGraphViz(dir, graphvizOptions.trim)
   }
 
   var db: GraphDatabaseService = null
@@ -112,6 +107,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   val noTitle: Boolean = false;
 
   def section: String
+  val dir = createDir(section)
 
   def graphDescription: List[String]
 
@@ -212,7 +208,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
     if (generateConsole) {
       output.clear
-      output.append(".Try this query live\n")
+      writer.println(".Try this query live")
       output.append("[console]\n")
       output.append("----\n")
       output.append(if (generateInitialGraphForConsole) new GeoffService(db).toGeoff else "start n=node(*) match n-[r?]->() delete n, r;")

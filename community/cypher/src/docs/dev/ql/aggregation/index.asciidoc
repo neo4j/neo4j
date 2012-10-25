@@ -7,7 +7,8 @@ include::introduction.asciidoc[]
 
 The following examples are assuming the example graph structure below.
 
-include::cypher-aggregation-graph.asciidoc[]
+.Graph
+include::includes/cypher-aggregation-graph.asciidoc[]
 
 == COUNT ==
 +COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms -- `COUNT(*)`

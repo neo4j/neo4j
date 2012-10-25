@@ -7,7 +7,8 @@ He also can have different roles in different groups apart from the membership.
 The association of a User, a Group and a Role can be referred to as a _HyperEdge_.
 However, it can be easily modeled in a property graph as a node that captures this n-ary relationship, as depicted below in the +U1G2R1+ node.
 
-include::cypher-hyperedge-graph.asciidoc[]
+.Graph
+include::includes/cypher-hyperedge-graph.asciidoc[]
 
 :leveloffset: 2
 

@@ -51,7 +51,8 @@ class PathTreeTest extends DocumentingTestBase {
 +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values can
 be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
 
-include::path-tree-layout-full-range.asciidoc[]
+.Graph
+include::includes/path-tree-layout-full-range.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
@@ -75,7 +76,8 @@ include::path-tree-layout-full-range.asciidoc[]
       text = """Here, only the events indexed under one leaf (2010-12-31) are returned.
 The query only needs one path segment +rootPath+  (color +Green+) through the index.
 
-include::path-tree-layout-zero-range.asciidoc[]
+.Graph
+include::includes/path-tree-layout-zero-range.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
@@ -97,7 +99,8 @@ include::path-tree-layout-zero-range.asciidoc[]
 making the introduction of and common path segment +commonPath+ (color +Black+) necessary, before spanning up +startPath+ (color +Greenyellow+) and 
 +endPath+ (color +Darkgreen+) . After that, +valuePath+ (color +Blue+) connects the leafs and the indexed values are returned off +values+ (color +Red+)  path.
 
-include::path-tree-layout-shared-root-path.asciidoc[]
+.Graph
+include::includes/path-tree-layout-shared-root-path.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +

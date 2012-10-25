@@ -5,7 +5,8 @@ Where
 If you need filtering apart from the pattern of the data that you are looking
 for, you can add clauses in the `WHERE` part of the query.
 
-include::cypher-where-graph.asciidoc[]
+.Graph
+include::includes/cypher-where-graph.asciidoc[]
 
 include::boolean-operations.asciidoc[]
 

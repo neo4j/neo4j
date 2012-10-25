@@ -7,24 +7,28 @@ This section is showing how to create some of the http://en.wikipedia.org/wiki/G
 
 include::star-graph.asciidoc[]
 
-include::cypher-prettygraphsstar-graph.asciidoc[]
+.Graph
+include::includes/cypher-prettygraphsstar-graph.asciidoc[]
 
 :leveloffset: 2
 
 include::wheel-graph.asciidoc[]
 
-include::cypher-prettygraphswheel-graph.asciidoc[]
+.Graph
+include::includes/cypher-prettygraphswheel-graph.asciidoc[]
 
 :leveloffset: 2
 
 include::complete-graph.asciidoc[]
 
-include::cypher-prettygraphscompletegraph-graph.asciidoc[]
+.Graph
+include::includes/cypher-prettygraphscompletegraph-graph.asciidoc[]
 
 :leveloffset: 2
 
 include::friendship-graph.asciidoc[]
 
-include::cypher-prettygraphsfriendshipgraph-graph.asciidoc[]
+.Graph
+include::includes/cypher-prettygraphsfriendshipgraph-graph.asciidoc[]
 
 

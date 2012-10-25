@@ -5,7 +5,8 @@ Most functions in Cypher will return +null+ if the input parameter is +null+.
 
 Here is a list of the functions in Cypher, seperated into three different sections: Predicates, Scalar functions and Aggregated functions
 
-include::cypher-functions-graph.asciidoc[]
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
 
 :leveloffset: 2
 

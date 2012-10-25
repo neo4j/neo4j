@@ -5,7 +5,8 @@ Order by
 To sort the output, use the +ORDER BY+ clause. Note that you can not sort on nodes or relationships,
 just on properties on these.
 
-include::cypher-orderby-graph.asciidoc[]
+.Graph
+include::includes/cypher-orderby-graph.asciidoc[]
 
 include::order-nodes-by-property.asciidoc[]
 

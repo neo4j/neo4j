@@ -45,13 +45,14 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
   var generateConsole: Boolean = true
+  var dir: File = null
 
   def title: String
   def section: String
   def assert(name: String, result: ExecutionResult)
   def graphDescription: List[String]
   def indexProps: List[String] = List()
-
+  
   def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
     val result = engine.execute(replaceNodeIds(queryText))
     result.toList //Let's materialize the result
@@ -97,6 +98,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
     val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
     val consoleText = if (!consoleAsciidoc.isEmpty)
+        ".Try this query live\n" + 
         AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-console", consoleAsciidoc)
       else ""
     val queryOutput = runQuery(emptyGraph, query, possibleAssertion)
@@ -144,8 +146,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   private def consoleSnippet(query: String, empty: Boolean): String = {
     if (generateConsole) {
       val create = if (!empty) new GeoffService(db).toGeoff.trim else "start n=node(*) match n-[r?]->() delete n, r;"
-      """.Try this query live
-[console]
+      """[console]
 ----
 %s
 
@@ -161,7 +162,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def produceDocumentation() {
     val db = init()
     try {
-      val (dir: File, writer: PrintWriter) = createWriter(title, section)
+      val writer: PrintWriter = createWriter(title, dir)
 
       val queryText = includeQueries(text, dir)
 
@@ -176,17 +177,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   val assertiongRegEx = "assertion=([^\\s]*)".r
 
   private def includeGraphviz(startText: String, dir: File):String = {
-    val graphVizLine = "include::" + graphvizFileName + "[]"
-
     val regex = "###graph-image(.*?)###".r
     regex.findFirstMatchIn(startText) match {
       case None => startText
       case Some(options) =>
         val optionString = options.group(1)
-        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", graphVizLine)
-        if (txt != startText) {
-          dumpGraphViz(dir, optionString.trim)
-        }
+        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", 
+            dumpGraphViz(dir, optionString.trim))
         txt
     }
   }
@@ -215,6 +212,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
   private def init() = {
+    dir = createDir(section)
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)

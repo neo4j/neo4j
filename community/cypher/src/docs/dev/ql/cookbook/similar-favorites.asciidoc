@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-peoplesimilarityfavorites-graph.asciidoc[]
+.Graph
+include::includes/cypher-peoplesimilarityfavorites-graph.asciidoc[]
 
 include::find-people-based-on-similar-favorites.asciidoc[]
 

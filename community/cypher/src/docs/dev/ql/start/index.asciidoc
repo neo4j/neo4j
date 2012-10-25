@@ -8,7 +8,8 @@ You can either introduce starting points by id, or by
 index lookups. Note that trying to use an index that doesn't exist will throw
 an exception.
 
-include::cypher-start-graph.asciidoc[]
+.Graph
+include::includes/cypher-start-graph.asciidoc[]
 
 include::node-by-id.asciidoc[]
 

@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-clusteringcoefficient-graph.asciidoc[]
+.Graph
+include::includes/cypher-clusteringcoefficient-graph.asciidoc[]
 
 include::calculating-the-clustering-coefficient-of-a-friend-network.asciidoc[]
 

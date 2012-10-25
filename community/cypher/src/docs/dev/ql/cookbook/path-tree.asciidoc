@@ -16,7 +16,8 @@ The graph below depicts a structure with 3 Events being attached to an index str
 
 :leveloffset: 2
 
-include::path-tree-layout.asciidoc[]
+.Graph
+include::includes/path-tree-layout.asciidoc[]
 
 include::return-zero-range.asciidoc[]
 

@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-multirelationalsocialnetwork-graph.asciidoc[]
+.Graph
+include::includes/cypher-multirelationalsocialnetwork-graph.asciidoc[]
 
 include::who-follows-or-loves-me-back.asciidoc[]
 

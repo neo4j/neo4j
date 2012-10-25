@@ -10,7 +10,8 @@ Read <<introduction-pattern>> for an introduction.
 
 The following graph is used for the examples below:
 
-include::cypher-match-graph.asciidoc[]
+.Graph
+include::includes/cypher-match-graph.asciidoc[]
 
 include::related-nodes.asciidoc[]
 

@@ -3,7 +3,8 @@
 
 :leveloffset: 2
 
-include::cypher-mutualfriendsandgroups-graph.asciidoc[]
+.Graph
+include::includes/cypher-mutualfriendsandgroups-graph.asciidoc[]
 
 include::find-mutual-friends-and-groups.asciidoc[]
 
