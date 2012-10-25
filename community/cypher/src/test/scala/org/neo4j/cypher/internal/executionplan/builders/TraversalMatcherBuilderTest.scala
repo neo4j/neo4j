@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.pipes.ParameterPipe
 import org.neo4j.cypher.internal.parser.v1_9.CypherParserImpl
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
-  var builder:TraversalMatcherBuilder = null
+  var builder: TraversalMatcherBuilder = null
 
   @Before def init() {
     builder = new TraversalMatcherBuilder(graph)
@@ -44,38 +44,31 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
     assertFalse("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
   }
 
-//  @Test def should_not_accept_queries_with_single_start_point() {
-//    val q = query("START me=node:node_auto_index(name = 'Jane') " +
-//      "MATCH me-[:jane_knows]->friend-[:has]->status " +
-//      "RETURN me")
-//
-//    assertFalse("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe, q)))
-//  }
-
-  @Test def should_not_crash() {
+  @Test def should_accept_variable_length_paths() {
     val q = query("START me=node:node_auto_index(name = 'Jane') " +
-      "MATCH me-[:jane_knows*]->friend-[:has]->status " +
-      "RETURN me")
+                  "MATCH me-[:jane_knows*]->friend-[:has]->status " +
+                  "RETURN me")
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertTrue("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
   }
 
   @Test def should_not_accept_queries_with_varlength_paths() {
     val q = query("START me=node:node_auto_index(name = 'Tarzan'), you=node:node_auto_index(name = 'Jane') " +
-      "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
-      "RETURN me")
+                  "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
+                  "RETURN me")
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
   }
 
   @Test def should_handle_loops() {
     val q = query("START me=node:node_auto_index(name = 'Tarzan'), you=node:node_auto_index(name = 'Jane') " +
-      "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
-      "RETURN me")
+                  "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
+                  "RETURN me")
 
     assertTrue("This query should be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
   }
 
   val parser = new CypherParserImpl
-  private def query(text:String):PartiallySolvedQuery=PartiallySolvedQuery(parser.parse(text))
+
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text))
 }

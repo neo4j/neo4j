@@ -26,12 +26,12 @@ import java.lang.{Iterable => JIterable}
 import collection.JavaConverters._
 import org.neo4j.kernel.{StandardBranchCollisionDetector, Uniqueness, Traversal}
 import org.neo4j.kernel.impl.traversal.BranchCollisionPolicy
-import collection.Map
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 
 class BidirectionalTraversalMatcher(steps: ExpanderStep,
-                                    start: (ExecutionContext) => Iterable[Node],
-                                    end: (ExecutionContext) => Iterable[Node]) extends TraversalMatcher  {
+                                    start: ExecutionContext => Iterable[Node],
+                                    end: ExecutionContext => Iterable[Node]) extends TraversalMatcher {
 
   lazy val reversedSteps = steps.reverse()
 
@@ -48,11 +48,27 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path] = {
     val s = start(context).toList
     val e = end(context).toList
-    val startDepth = atLeastOne(steps.size / 2)
-    val endDepth = atLeastOne(steps.size - startDepth)
+
+    def produceTraversalDescriptions() = {
+      val startWithoutCutoff = baseTraversal.expand(new TraversalPathExpander(context), initialStartStep)
+      val endWithoutCutOff = baseTraversal.expand(new TraversalPathExpander(context), initialEndStep)
+
+      steps.size match {
+        case None       => (startWithoutCutoff, endWithoutCutOff)
+        case Some(size) => {
+          val startDepth = atLeastOne(size / 2)
+          val endDepth = atLeastOne(size - startDepth)
+          (startWithoutCutoff.evaluator(Evaluators.toDepth(startDepth)),
+            endWithoutCutOff.evaluator(Evaluators.toDepth(endDepth)))
+        }
+      }
+    }
+
+    val (startDescription, endDescription) = produceTraversalDescriptions()
+
     val result: JIterable[Path] = Traversal.bidirectionalTraversal()
-      .startSide(baseTraversal.expand(new TraversalPathExpander(context), initialStartStep).evaluator(Evaluators.toDepth(startDepth)))
-      .endSide(baseTraversal.expand(new TraversalPathExpander(context), initialEndStep).evaluator(Evaluators.toDepth(endDepth)))
+      .startSide(startDescription)
+      .endSide(endDescription)
       .collisionPolicy(collisionDetector)
       .traverse(s.asJava, e.asJava)
 
@@ -62,27 +78,38 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
   def atLeastOne(i: Int): Int = if (i < 1) 1 else i
 
+
   class StepCollisionDetector extends StandardBranchCollisionDetector(null) with BranchCollisionPolicy {
     override def includePath(path: Path, startPath: TraversalBranch, endPath: TraversalBranch): Boolean = {
       val s = startPath.state().asInstanceOf[Option[ExpanderStep]]
       val e = endPath.state().asInstanceOf[Option[ExpanderStep]]
 
-      val result = (s, e) match {
-        case (Some(startStep), Some(endStep)) => endStep.id == startStep.id + 1
-        case (Some(x), None)                  => startPath.length() == 0
-        case (None, Some(x))                  => endPath.length() == 0
-        case _                                => false
+      val (include, prune) = (s, e) match {
+        case (Some(startStep), Some(endStep)) =>
+          val foundEnd = endStep.id + 1 == startStep.id
+          val includeButDoNotPrune = endStep.id == startStep.id && endStep.shouldInclude() || startStep.shouldInclude()
+          (foundEnd || includeButDoNotPrune, foundEnd)
+
+        case (Some(x), None) =>
+          val result = startPath.length() == 0
+          (result, result)
+
+        case (None, Some(x)) =>
+          val result = endPath.length() == 0
+          (result, result)
+
+        case _ => throw new ThisShouldNotHappenError("Andres", "Unexpected traversal state encountered")
       }
 
-      //TODO: Make sure this is what we want to do, and create a test that nails it down.
-      if (result) {
+      if (prune) {
         startPath.prune()
         endPath.prune()
       }
 
-      result
+      include
     }
 
     def create(evaluator: Evaluator) = new StepCollisionDetector
   }
+
 }

@@ -19,27 +19,40 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.graphdb.{Relationship, Path, PathExpander}
-import org.neo4j.graphdb.traversal.BranchState
-import java.lang.{Iterable => JIterable}
-import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 
-class TraversalPathExpander(params: ExecutionContext) extends PathExpander[Option[ExpanderStep]] {
-  def expand(path: Path, state: BranchState[Option[ExpanderStep]]): JIterable[Relationship] = {
+final case class EndPoint(name: String) extends Trail {
+  def end = name
 
-    val result: Iterable[Relationship] = state.getState match {
-      case None => Seq()
+  def pathDescription = Seq(name)
 
-      case Some(step) =>
-        val node = path.endNode()
-        val (rels, next)  = step.expand(node, params)
-        state.setState(next)
-        rels
+  def start = name
+
+  def size = 0
+
+  def toSteps(id: Int) = None
+
+  protected[matching] def decompose(p: Seq[PropertyContainer], r: Map[String, Any]) =
+    if (p.size == 1) {
+      Seq((Seq.empty, r ++ Map(name -> p.head)))
+    } else {
+      Seq()
     }
 
-    result.asJava
-  }
+  def symbols(table: SymbolTable): SymbolTable = table.add(name, NodeType())
 
-  def reverse(): PathExpander[Option[ExpanderStep]] = this
+  def contains(target: String): Boolean = target == name
+
+  def predicates = Seq.empty
+
+  def patterns = Seq.empty
+
+  override def toString = "(" + name + ")"
+
+  def nodeNames = Seq(name)
+
+  def add(f: (String) => Trail) = f(name)
+
+  def filter(f: (Trail) => Boolean):Iterable[Trail] = Some(this).filter(f)
 }

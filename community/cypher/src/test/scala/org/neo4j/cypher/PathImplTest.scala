@@ -68,17 +68,7 @@ class PathImplTest extends Spec {
       Seq(rel1)
     )
 
-    badPaths.foreach(testPath)
-  }
-
-  def testPath(p: Seq[PropertyContainer]) {
-    try {
-      new PathImpl(p:_*)
-      fail(p + " didn't produce the expected AssertionError!")
-    } catch {
-      case x: AssertionError => {} // This is good!
-      case _ => fail(p + " didn't produce the expected AssertionError!")
-    }
+    badPaths.foreach(p => intercept[IllegalArgumentException](new PathImpl(p:_*)))
   }
 
   class FakeRel(start: Node, end: Node, typ: RelationshipType) extends Relationship {

@@ -130,7 +130,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     else
       executeQuery(query)
 
-    possibleAssertion.foreach(assert(_, result))
+    possibleAssertion.foreach(name => {
+      try {
+        assert(name, result)
+      } catch {
+        case e:Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
+      }
+    })
 
     result.dumpToString()
   }

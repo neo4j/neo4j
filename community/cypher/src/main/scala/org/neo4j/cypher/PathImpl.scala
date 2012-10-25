@@ -30,11 +30,11 @@ case class PathImpl(pathEntities: PropertyContainer*)
   with Traversable[PropertyContainer]
   with CypherArray {
 
-  assert(isProperPath)
+  require(isProperPath, "Tried to construct a path that is not built like a path")
 
   def isProperPath: Boolean = {
     var x = true
-    val (nodes, rels) = pathEntities.partition(e => {
+    val (nodes, rels) = pathEntities.toList.partition(e => {
       x = !x
       !x
     })

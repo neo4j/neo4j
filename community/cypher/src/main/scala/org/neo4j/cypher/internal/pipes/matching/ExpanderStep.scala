@@ -20,25 +20,38 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Node, Relationship, Direction, RelationshipType}
-import collection.mutable
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{True, Predicate}
-import collection.Map
+import collection.mutable
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
-case class ExpanderStep(id: Int,
-                        typ: Seq[RelationshipType],
-                        direction: Direction,
-                        next: Option[ExpanderStep],
-                        relPredicate: Predicate,
-                        nodePredicate: Predicate) {
+
+trait ExpanderStep {
+  def next: Option[ExpanderStep]
+  def typ: Seq[RelationshipType]
+  def direction: Direction
+  def id: Int
+  def relPredicate: Predicate
+  def nodePredicate: Predicate
+  def createCopy(next:Option[ExpanderStep], direction:Direction, nodePredicate:Predicate):ExpanderStep
+  def size:Option[Int]
+  def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep])
+  def shouldInclude():Boolean
+
+  /*
+  The way we reverse the steps is by first creating a Seq out of the steps. In this Seq, the first element points to
+  Some(second), the second to Some(third), und so weiter, until the last element points to None.
+
+  By doing a fold left and creating copies along the way, we reverse the directions - we push in None as what the first
+  element will end up pointing to, and pass the steps to the next step. The result is that the first element points to
+  None, the second to Some(first), und so weiter, until we pop out the last step as our reversed expander
+   */
   def reverse(): ExpanderStep = {
-    val allSteps = getAllStepsAsSeq()
+    val allSteps = this.asSeq()
 
     val reversed = allSteps.foldLeft[Option[ExpanderStep]]((None)) {
       case (last, step) =>
         val p = step.next.map(_.nodePredicate).getOrElse(True())
-        Some(step.copy(next = last, direction = step.direction.reverse(), nodePredicate = p))
+        Some(step.createCopy(next = last, direction = step.direction.reverse(), nodePredicate = p))
     }
 
     assert(reversed.nonEmpty, "The reverse of an expander should never be empty")
@@ -46,17 +59,7 @@ case class ExpanderStep(id: Int,
     reversed.get
   }
 
-  def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, parameters)
-    relPredicate.isMatch(m) && nodePredicate.isMatch(m)
-  }
-
-  def expand(node: Node, parameters: ExecutionContext): Iterable[Relationship] = typ match {
-    case Seq() => node.getRelationships(direction).asScala.filter(r => filter(r, r.getOtherNode(node), parameters))
-    case x     => node.getRelationships(direction, x: _*).asScala.filter(r => filter(r, r.getOtherNode(node), parameters))
-  }
-
-  private def getAllStepsAsSeq(): Seq[ExpanderStep] = {
+  private def asSeq(): Seq[ExpanderStep] = {
     var allSteps = mutable.Seq[ExpanderStep]()
     var current: Option[ExpanderStep] = Some(this)
 
@@ -68,49 +71,8 @@ case class ExpanderStep(id: Int,
 
     allSteps.toSeq
   }
-
-  private def shape = "(%s)%s-%s-%s".format(id, left, relInfo, right)
-
-  private def left =
-    if (direction == Direction.OUTGOING)
-      ""
-    else
-      "<"
-
-  private def right =
-    if (direction == Direction.INCOMING)
-      ""
-    else
-      ">"
-
-  private def relInfo = typ.toList match {
-    case List() => ""
-    case _      => "[:%s {%s,%s}]".format(typ.map(_.name()).mkString("|"), relPredicate, nodePredicate)
-  }
-
-  override def toString = next match {
-    case None    => "%s()".format(shape)
-    case Some(x) => shape + x.toString
-  }
-
-  override def equals(p1: Any) = p1 match {
-    case null                => false
-    case other: ExpanderStep =>
-      val a = id == other.id
-      val b = direction == other.direction
-      val c = next == other.next
-      val d = typ.map(_.name()) == other.typ.map(_.name())
-      val e = relPredicate == other.relPredicate
-      val f = nodePredicate == other.nodePredicate
-      a && b && c && d && e && f
-    case _                   => false
-  }
-
-  def size: Int = next match {
-    case Some(s) => 1 + s.size
-    case None    => 1
-  }
 }
+
 
 class MiniMap(r: Relationship, n: Node, parameters: ExecutionContext)
   extends ExecutionContext(params = parameters.params) {

@@ -140,6 +140,8 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
+    val s = plan.pipe.symbols
+
     val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder -> _)).toList.
       sortBy {
       case (builder, _) => builder.priority
