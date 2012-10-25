@@ -19,23 +19,39 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.graphdb.{Node, Relationship, Direction, RelationshipType}
+import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands.{True, Predicate}
 import collection.mutable
 import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.pipes.matching.MiniMap
+import scala.Some
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 
 trait ExpanderStep {
   def next: Option[ExpanderStep]
+
   def typ: Seq[RelationshipType]
+
   def direction: Direction
+
   def id: Int
+
   def relPredicate: Predicate
+
   def nodePredicate: Predicate
-  def createCopy(next:Option[ExpanderStep], direction:Direction, nodePredicate:Predicate):ExpanderStep
-  def size:Option[Int]
+
+  def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep
+
+  def size: Option[Int]
+
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep])
-  def shouldInclude():Boolean
+
+  def shouldInclude(): Boolean
 
   /*
   The way we reverse the steps is by first creating a Seq out of the steps. In this Seq, the first element points to
@@ -73,16 +89,73 @@ trait ExpanderStep {
   }
 }
 
+abstract class MiniMapProperty(originalName: String, prop: String) extends Expression {
+  protected def calculateType(symbols: SymbolTable) = fail()
 
-class MiniMap(r: Relationship, n: Node, parameters: ExecutionContext)
+  def filter(f: (Expression) => Boolean) = fail()
+
+  def rewrite(f: (Expression) => Expression) = fail()
+
+  def symbolTableDependencies = fail()
+
+  def apply(ctx: ExecutionContext) = {
+    ctx match {
+      case m: MiniMap => {
+        val pc = extract(m)
+        try {
+          pc.getProperty(prop)
+        } catch {
+          case x: NotFoundException =>
+            throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the identifier: %s".format(prop, pc, originalName), x)
+        }
+      }
+      case _          => fail()
+    }
+  }
+
+
+  protected def fail() = throw new ThisShouldNotHappenError("Andres", "This predicate should never be used outside of the traversal matcher")
+
+  protected def extract(m: MiniMap): PropertyContainer
+}
+
+abstract class MiniMapIdentifier(originalName:String) extends Expression {
+  protected def calculateType(symbols: SymbolTable) = fail()
+
+  def filter(f: (Expression) => Boolean) = fail()
+
+  def rewrite(f: (Expression) => Expression) = fail()
+
+  def symbolTableDependencies = fail()
+
+  def apply(ctx: ExecutionContext) = ctx match {
+    case m: MiniMap => extract(m)
+    case _          => fail()
+  }
+
+  protected def extract(m: MiniMap): PropertyContainer
+
+  def fail() = throw new ThisShouldNotHappenError("Andres", "This predicate should never be used outside of the traversal matcher")
+}
+
+case class MiniMapRelProperty(originalName: String, prop: String) extends MiniMapProperty(originalName, prop) {
+  protected def extract(m: MiniMap) = m.relationship
+}
+
+case class MiniMapNodeProperty(originalName: String, prop: String) extends MiniMapProperty(originalName, prop) {
+  protected def extract(m: MiniMap) = m.node
+}
+
+case class NodeIdentifier(name:String) extends MiniMapIdentifier(name) {
+  protected def extract(m: MiniMap) = m.node
+}
+
+case class RelationshipIdentifier(name:String) extends MiniMapIdentifier(name) {
+  protected def extract(m: MiniMap) = m.relationship
+}
+
+case class MiniMap(relationship: Relationship, node: Node, parameters: ExecutionContext)
   extends ExecutionContext(params = parameters.params) {
-  override def get(key: String): Option[Any] =
-    if (key == "r")
-      Some(r)
-    else if (key == "n")
-      Some(n)
-    else
-      parameters.get(key)
 
   override def iterator = throw new RuntimeException
 

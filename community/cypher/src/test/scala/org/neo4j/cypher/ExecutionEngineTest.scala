@@ -2256,4 +2256,18 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("tail([])" -> List())))
   }
+
+  @Test
+  def nodes_named_r_should_not_pose_a_problem() {
+    val a = createNode()
+    val r = createNode("foo"->"bar")
+    val b = createNode()
+
+    relate(a,r)
+    relate(r,b)
+
+    val result = parseAndExecute("START a=node(1) MATCH a-->r-->b WHERE r.foo = 'bar' RETURN b")
+
+    assert(result.toList === List(Map("b" -> b)))
+  }
 }

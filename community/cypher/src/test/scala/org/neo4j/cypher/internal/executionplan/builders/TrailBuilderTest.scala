@@ -97,8 +97,8 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
     val r2Pred = Equals(Property("pr2", "prop"), Literal("FOO"))
     val predicates = Seq(r1Pred, r2Pred)
 
-    val rewrittenR1 = Equals(Property("r", "prop"), Literal(42))
-    val rewrittenR2 = Equals(Property("r", "prop"), Literal("FOO"))
+    val rewrittenR1 = Equals(MiniMapRelProperty("pr1", "prop"), Literal(42))
+    val rewrittenR2 = Equals(MiniMapRelProperty("pr2", "prop"), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", relPred = Some(rewrittenR2), nodePred = None, pattern = BtoC)
@@ -116,11 +116,11 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
     val nodePred = Equals(Property("b", "prop"), Literal(42))
     val predicates = Seq(nodePred)
 
-    val rewrittenPredicate = Equals(Property("n", "prop"), Literal(42))
+    val rewrittenPredicate = Equals(MiniMapNodeProperty("b", "prop"), Literal(42))
 
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", None, Some(rewrittenPredicate), BtoC)
-    val first = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", None, None, BtoC)
+    val first = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, Some(rewrittenPredicate), AtoB)
     val expectedTrail = Some(LongestTrail("a", Some("c"), first))
 
     val foundTrail = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, BtoB2), Seq("a", "c"), predicates)
