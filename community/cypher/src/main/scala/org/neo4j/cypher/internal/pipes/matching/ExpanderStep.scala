@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.commands.{True, Predicate}
+import org.neo4j.cypher.internal.commands.Predicate
 import collection.mutable
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.matching.MiniMap
-import scala.Some
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.helpers.ThisShouldNotHappenError

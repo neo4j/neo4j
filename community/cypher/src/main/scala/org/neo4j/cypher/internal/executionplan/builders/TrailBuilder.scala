@@ -21,13 +21,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.{VarLengthRelatedTo, RelatedTo, Pattern, Predicate}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Property}
+import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.pipes.matching._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import annotation.tailrec
 import org.neo4j.cypher.internal.pipes.matching.VariableLengthStepTrail
-import scala.Some
-import org.neo4j.cypher.internal.executionplan.builders.LongestTrail
 import org.neo4j.cypher.internal.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.expressions.Property
