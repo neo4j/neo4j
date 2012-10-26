@@ -38,11 +38,11 @@ object QueryStatistics {
   def empty = new QueryStatistics(0,0,0,0,0)
 }
 
-case class QueryStatistics(nodesCreated: Long,
-                           relationshipsCreated: Long,
-                           propertiesSet: Long,
-                           deletedNodes: Long,
-                           deletedRelationships: Long) {
+case class QueryStatistics(nodesCreated: Int,
+                           relationshipsCreated: Int,
+                           propertiesSet: Int,
+                           deletedNodes: Int,
+                           deletedRelationships: Int) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||

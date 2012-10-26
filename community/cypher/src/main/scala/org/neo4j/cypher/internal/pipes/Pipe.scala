@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import collection.{mutable, Iterator}
+import collection.Iterator
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import collection.mutable.{Queue, Map => MutableMap}
@@ -29,6 +29,7 @@ import scala.collection.JavaConverters._
 import java.util.HashMap
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.ParameterNotFoundException
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -61,7 +62,7 @@ object MutableMaps {
 
   def create(input: (String, Any)*) = {
     val m: HashMap[String, Any] = new java.util.HashMap[String, Any]()
-    input.foreach{
+    input.foreach {
       case (k, v) => m.put(k, v)
     }
     m.asScala
@@ -88,25 +89,27 @@ class QueryState(val db: GraphDatabaseService,
 }
 
 class Counter {
-  private var counter = 0L
+  private val counter: AtomicInteger = new AtomicInteger()
 
-  def count = counter
+  def count: Int = counter.get()
 
   def increase() {
-    counter += 1
+    counter.incrementAndGet()
   }
 }
 
 object ExecutionContext {
   def empty = new ExecutionContext()
-  def from(x:(String,Any)*)=new ExecutionContext().newWith(x)
+
+  def from(x: (String, Any)*) = new ExecutionContext().newWith(x)
 }
 
 case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty,
-                            params: Map[String,Any] = Map.empty)
+                            params: Map[String, Any] = Map.empty)
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
+
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
@@ -116,7 +119,9 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
 
   def ++(other: ExecutionContext): ExecutionContext = copy(m = m ++ other.m)
 
-  override def foreach[U](f: ((String, Any)) => U) { m.foreach(f) }
+  override def foreach[U](f: ((String, Any)) => U) {
+    m.foreach(f)
+  }
 
   def +=(kv: (String, Any)) = {
     m += kv
@@ -128,25 +133,25 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
     this
   }
 
-  def newWith(newEntries : Seq[(String,Any)]) = {
+  def newWith(newEntries: Seq[(String, Any)]) = {
     copy(m = (MutableMaps.create(this.m) ++= newEntries))
   }
 
-  def newWith(newEntries : scala.collection.Map[String,Any]) = {
+  def newWith(newEntries: scala.collection.Map[String, Any]) = {
     copy(m = (MutableMaps.create(this.m) ++= newEntries))
   }
 
-  def newFrom(newEntries : Seq[(String,Any)]) = {
-    copy(m = MutableMaps.create(newEntries:_*))
+  def newFrom(newEntries: Seq[(String, Any)]) = {
+    copy(m = MutableMaps.create(newEntries: _*))
   }
 
-  def newFrom(newEntries : scala.collection.Map[String,Any]) = {
+  def newFrom(newEntries: scala.collection.Map[String, Any]) = {
     copy(m = MutableMaps.create(newEntries))
   }
 
-  def newWith(newEntry : (String,Any)) = {
+  def newWith(newEntry: (String, Any)) = {
     copy(m = (MutableMaps.create(this.m) += newEntry))
   }
 
-  override def clone:ExecutionContext=newFrom(m)
+  override def clone: ExecutionContext = newFrom(m)
 }

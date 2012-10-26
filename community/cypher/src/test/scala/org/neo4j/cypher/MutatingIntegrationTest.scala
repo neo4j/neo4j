@@ -510,11 +510,11 @@ return distinct center""")
 }
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,
-                  nodesCreated: Long = 0,
-                  relationshipsCreated: Long = 0,
-                  propertiesSet: Long = 0,
-                  deletedNodes: Long = 0,
-                  deletedRelationships: Long = 0) {
+                  nodesCreated: Int = 0,
+                  relationshipsCreated: Int = 0,
+                  propertiesSet: Int = 0,
+                  deletedNodes: Int = 0,
+                  deletedRelationships: Int = 0) {
     assert(result.queryStatistics() === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes, deletedRelationships)
     )
   }
