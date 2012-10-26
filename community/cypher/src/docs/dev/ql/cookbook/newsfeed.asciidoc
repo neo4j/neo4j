@@ -1,0 +1,12 @@
+[[cypher-cookbook-newsfeed]]
+== Implementing newsfeeds in a graph ==
+
+:leveloffset: 2
+
+include::includes/cypher-newsfeed-graph.asciidoc[]
+
+include::retrieve-the-ordered-timeline-of-status-updates-of-all-my-friends.asciidoc[]
+
+include::insert-a-new-status-update-for-a-user.asciidoc[]
+
+include::includes/cypher-insertstatusupdate-graph.asciidoc[]

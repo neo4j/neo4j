@@ -33,6 +33,10 @@ include::multirelational-social-network.asciidoc[]
 
 :leveloffset: 1
 
+include::newsfeed.asciidoc[]
+
+:leveloffset: 1
+
 include::boosting-recommendations.asciidoc[]
 
 :leveloffset: 1
