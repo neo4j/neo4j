@@ -170,13 +170,19 @@ trait Expressions extends Base {
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
       | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
-      | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
+      | hasProperty
       | parens(predicate)
       | sequencePredicate
       | hasRelationshipTo
       | hasRelationship
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
     )
+
+  def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
+    case x =>
+      val prop = x.asInstanceOf[Property]
+      Has(Identifier(prop.entity), prop.property)
+  }
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 

@@ -2270,4 +2270,18 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("b" -> b)))
   }
+
+  @Test
+  def can_rewrite_has_property() {
+    val a = createNode()
+    val r = createNode("foo"->"bar")
+    val b = createNode()
+
+    relate(a,r)
+    relate(r,b)
+
+    val result = parseAndExecute("START a=node(1) MATCH a-->r-->b WHERE has(r.foo) RETURN b")
+
+    assert(result.toList === List(Map("b" -> b)))
+  }
 }
