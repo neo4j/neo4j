@@ -208,27 +208,30 @@ case class True() extends Predicate {
   def symbolTableDependencies = Set()
 }
 
-case class Has(property: Property) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = property match {
-    case Property(identifier, propertyName) => {
-      val propContainer = m(identifier).asInstanceOf[PropertyContainer]
-      propContainer != null && propContainer.hasProperty(propertyName)
+case class Has(element: Expression, propertyName: String) extends Predicate {
+  def isMatch(m: ExecutionContext): Boolean = {
+    element(m) match {
+      case pc: PropertyContainer => pc.hasProperty(propertyName)
+      case null                  => false
+      case _                     => throw new CypherTypeException("Expected " + element + " to be a property container.")
     }
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString(): String = "hasProp(" + property + ")"
+
+  override def toString(): String = "hasProp(" + propertyName + ")"
+
   def containsIsNull = false
-  def rewrite(f: (Expression) => Expression) = property.rewrite(f) match {
-    case prop:Property => Has(prop)
-    case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong rewriting a Has(Property)")
-  }
-  def filter(f: (Expression) => Boolean) = property.filter(f)
+
+  def rewrite(f: (Expression) => Expression) = Has(element.rewrite(f), propertyName)
+
+  def filter(f: (Expression) => Boolean) = element.filter(f)
+
   def assertInnerTypes(symbols: SymbolTable) {
-    property.assertTypes(symbols)
+    element.evaluateType(MapType(), symbols)
   }
 
-  def symbolTableDependencies = property.symbolTableDependencies
+  def symbolTableDependencies = element.symbolTableDependencies
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
