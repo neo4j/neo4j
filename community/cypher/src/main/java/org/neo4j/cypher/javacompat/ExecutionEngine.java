@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import java.util.Map;
-
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.util.Map;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a {@link Query}, use this class.
@@ -38,7 +41,17 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database )
     {
-        inner = new org.neo4j.cypher.ExecutionEngine( database );
+        this( database, DEV_NULL );
+    }
+
+    /**
+     * Creates an execution engine around the give graph database
+     * @param database The database to wrap
+     * @param logger A logger for cypher-statements
+     */
+    public ExecutionEngine( GraphDatabaseService database, StringLogger logger )
+    {
+        inner = new org.neo4j.cypher.ExecutionEngine( database, logger );
     }
 
     /**

@@ -19,24 +19,14 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.CypherExecutorProvider;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.GraphDatabaseServiceProvider;
-import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.database.*;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -58,6 +48,14 @@ import org.neo4j.server.web.InjectableWrapper;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+
+import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static org.neo4j.kernel.logging.Loggers.CYPHER;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -89,6 +87,11 @@ public abstract class AbstractNeoServer implements NeoServer
             } else if(type.equals( InterruptThreadTimer.class ))
             {
                 return (T) interruptStartupTimer;
+            } else if(type.equals( Logging.class ))
+            {
+                // TODO logging should be owned by server, waiting for logging refactoring
+                DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
+                return (T) kernelDependencyResolver.resolveDependency( Logging.class );
             }
             else
             {
@@ -111,13 +114,17 @@ public abstract class AbstractNeoServer implements NeoServer
     {
     	this.preflight = createPreflightTasks();
         this.database = createDatabase();
-        this.cypherExecutor = new CypherExecutor( database );
         this.webServer = createWebServer();
 
         for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
         }
+    }
+
+    protected Logging getLogging()
+    {
+        return dependencyResolver.resolveDependency( Logging.class );
     }
 
 	@Override
@@ -131,10 +138,12 @@ public abstract class AbstractNeoServer implements NeoServer
 	        runPreflightTasks();
 
         	interruptStartupTimer.startCountdown();
-	        
-	        configureWebServer();
-	
-	        database.start();
+
+            database.start();
+
+            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CYPHER ) );
+
+            configureWebServer();
 
             cypherExecutor.start();
 

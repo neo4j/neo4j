@@ -19,21 +19,19 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
+
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
 
 @Path( "/cypher" )
 public class CypherService {
@@ -44,7 +42,6 @@ public class CypherService {
     private CypherExecutor cypherExecutor;
     private OutputFormat output;
     private InputFormat input;
-    private static volatile GraphDatabaseAPI usedGraphDb;
 
     public CypherService(@Context CypherExecutor cypherExecutor, @Context InputFormat input, @Context OutputFormat output) {
         this.cypherExecutor = cypherExecutor;

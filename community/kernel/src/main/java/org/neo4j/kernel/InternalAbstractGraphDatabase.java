@@ -113,7 +113,8 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.slf4j.impl.StaticLoggerBinder;
+
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -731,16 +732,17 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createStringLogger()
     {
+        Logging logging;
         try
         {
             getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            return life.add( new LogbackService( config, (LoggerContext) StaticLoggerBinder.getSingleton()
-                    .getLoggerFactory() ) );
+            logging = new LogbackService( config, (LoggerContext) getSingleton().getLoggerFactory() );
         }
         catch ( ClassNotFoundException e )
         {
-            return life.add( new ClassicLoggingService( config ) );
+            logging = new ClassicLoggingService( config );
         }
+        return life.add( logging );
     }
 
     protected void createNeoDataSource()

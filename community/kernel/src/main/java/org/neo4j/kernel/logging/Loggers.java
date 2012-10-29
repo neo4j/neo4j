@@ -35,4 +35,5 @@ public interface Loggers
     public static final String EXTENSION = "neo4j.extension";
     public static final String INDEX = "neo4j.index";
     public static final String CLUSTER = "neo4j.cluster";
+    public static final String CYPHER = "neo4j.cypher";
 }

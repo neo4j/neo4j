@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.logging;
 
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.util.StringLogger;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Buffers all messages sent to it, and is able to 
@@ -127,13 +127,14 @@ public class BufferingLogger extends StringLogger {
     
     public String toString() 
     {
-        PrintWriter sb = new PrintWriter(new StringWriter());
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter sb = new PrintWriter(stringWriter);
         for(LogMessage message : buffer) 
         {
             sb.println(message.message);
-            message.throwable.printStackTrace(sb);
+            if (message.throwable != null) message.throwable.printStackTrace(sb);
         }
-        return sb.toString();
+        return stringWriter.toString();
     }
 
 }
