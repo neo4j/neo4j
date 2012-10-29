@@ -28,8 +28,10 @@ import java.util.{Map => JavaMap}
 import scala.deprecated
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.impl.util.StringLogger
 
-class ExecutionEngine(graph: GraphDatabaseService) {
+class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
@@ -52,7 +54,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = prepare(query).execute(params)
+  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
+    logger.info(query)
+    prepare(query).execute(params)
+  }
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)

@@ -39,20 +39,19 @@
 package org.neo4j.server.webadmin.console;
 
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.logging.Logger;
 
 public class CypherSession implements ScriptSession
 {
-    private final ExecutionEngine engine;
+    private final CypherExecutor cypherExecutor;
     private static Logger log = Logger.getLogger( CypherSession.class );
 
-    public CypherSession( GraphDatabaseService graph )
+    public CypherSession( CypherExecutor cypherExecutor )
     {
-        engine = new ExecutionEngine( graph );
+        this.cypherExecutor = cypherExecutor;
     }
 
     @Override
@@ -63,10 +62,10 @@ public class CypherSession implements ScriptSession
             return Pair.of( "", null );
         }
 
-        String resultString = null;
+        String resultString;
         try
         {
-            ExecutionResult result = engine.execute( script );
+            ExecutionResult result = cypherExecutor.getExecutionEngine().execute( script );
             resultString = result.toString();
         }
         catch ( SyntaxException error )
@@ -76,8 +75,7 @@ public class CypherSession implements ScriptSession
         catch ( Exception exception )
         {
             log.error( exception );
-            resultString = "Error: " + exception.getClass()
-                    .getSimpleName() + " - " + exception.getMessage();
+            resultString = "Error: " + exception.getClass().getSimpleName() + " - " + exception.getMessage();
         }
         return Pair.of( resultString, null );
     }
