@@ -25,15 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 
 /**
  * TODO
@@ -45,8 +46,7 @@ public class TestPaxosClusterEvents
 
     List<HighlyAvailableGraphDatabase> databases = new ArrayList<HighlyAvailableGraphDatabase>();
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public TargetDirectory dir = TargetDirectory.forTest( getClass() );
 
     @Before
     public void setup()
@@ -54,7 +54,7 @@ public class TestPaxosClusterEvents
     {
         HighlyAvailableGraphDatabase initialDatabase =
                 (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( folder.newFolder().getAbsolutePath() )
+                        newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
                         .setConfig( HaSettings.cluster_server, "127.0.0.1:5001" )
                         .setConfig( HaSettings.server_id, "1" )
                         .setConfig( HaSettings.ha_server, "localhost:6361" )
@@ -63,9 +63,10 @@ public class TestPaxosClusterEvents
 
         for ( int i = 0; i < 2; i++ )
         {
+            int serverId = i+2;
             HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( folder.newFolder().getAbsolutePath() )
-                    .setConfig( HaSettings.server_id, (2 + i) + "" )
+                    newHighlyAvailableDatabaseBuilder( dir.directory( "" + serverId, true ).getAbsolutePath() )
+                    .setConfig( HaSettings.server_id, serverId + "" )
                     .setConfig( HaSettings.ha_server, ":" + (6362 + i) )
                     .setConfig( HaSettings.cluster_server, "localhost:" + (5002 + i) )
                     .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )

@@ -23,7 +23,7 @@ package org.neo4j.cluster.protocol.election;
 /**
  * Implementations of this provide the credential for the local node to be used in elections.
  */
-public interface ElectionCredentialsProvider<T extends ElectionCredentials>
+public interface ElectionCredentialsProvider
 {
-    T getCredentials(String role);
+    ElectionCredentials getCredentials(String role);
 }

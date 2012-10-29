@@ -25,7 +25,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 /**
  * Election credentials for backup, ensuring that it is never elected as master.
  */
-public class BackupElectionCredentialsProvider implements ElectionCredentialsProvider<DefaultElectionCredentials>
+public class BackupElectionCredentialsProvider implements ElectionCredentialsProvider
 {
     @Override
     public DefaultElectionCredentials getCredentials( String role )

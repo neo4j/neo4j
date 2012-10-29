@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.kernel.ha.cluster.ClusterEventListener;
 import org.neo4j.kernel.ha.cluster.ClusterEvents;
@@ -39,10 +39,10 @@ public class ClusterDatabaseInfoProvider
     private long lastCommittedTxId;
     private long lastUpdateTime;
 
-    public ClusterDatabaseInfoProvider( ClusterEvents events, ProtocolServer server )
+    public ClusterDatabaseInfoProvider( ClusterEvents events, ClusterClient clusterClient )
     {
         events.addClusterEventListener( new ClusterDatabaseInfoProviderListener() );
-        server.addBindingListener( new BindingListener()
+        clusterClient.addBindingListener( new BindingListener()
         {
             @Override
             public void listeningAt( URI me )

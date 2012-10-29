@@ -26,12 +26,10 @@ import java.net.URISyntaxException;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ProtocolServer;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
-import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.helpers.Listeners;
@@ -50,19 +48,51 @@ public class PaxosClusterEvents
         extends AbstractClusterEvents
         implements Lifecycle
 {
-    private URI serverClusterId;
-    private Config config;
-    private StringLogger logger;
-    private AtomicBroadcast broadcast;
-    protected AtomicBroadcastSerializer serializer;
-    protected final ProtocolServer server;
+    public interface Configuration
+    {
+        String getHaServer();
 
-    public PaxosClusterEvents( Config config, ProtocolServer server, StringLogger logger )
+        int getServerId();
+
+        int getBackupPort();
+    }
+    
+    public static Configuration adapt( final Config config )
+    {
+        return new Configuration()
+        {
+            @Override
+            public int getServerId()
+            {
+                return config.get( HaSettings.server_id );
+            }
+            
+            @Override
+            public String getHaServer()
+            {
+                return config.get( HaSettings.ha_server );
+            }
+            
+            @Override
+            public int getBackupPort()
+            {
+                return config.get( OnlineBackupSettings.online_backup_port );
+            }
+        };
+    }
+    
+    private URI serverClusterId;
+    private Configuration config;
+    private StringLogger logger;
+    protected AtomicBroadcastSerializer serializer;
+    private final ClusterClient cluster;
+
+    public PaxosClusterEvents( Configuration config, ClusterClient cluster, StringLogger logger )
     {
         this.config = config;
-        this.server = server;
+        this.cluster = cluster;
         this.logger = logger;
-        this.server.addBindingListener( new BindingListener()
+        this.cluster.addBindingListener( new BindingListener()
         {
             @Override
             public void listeningAt( URI me )
@@ -73,15 +103,10 @@ public class PaxosClusterEvents
         } );
     }
 
-    protected Cluster cluster;
-
     @Override
     public void init()
             throws Throwable
     {
-        cluster = server.newClient( Cluster.class );
-        broadcast = server.newClient( AtomicBroadcast.class );
-
         serializer = new AtomicBroadcastSerializer();
 
         cluster.addClusterListener( new ClusterListener.Adapter()
@@ -98,7 +123,7 @@ public class PaxosClusterEvents
                     // Reannounce that I am master, for the purpose of the new member to see this
                     try
                     {
-                        broadcast.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
+                        cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
                     }
                     catch ( IOException e )
                     {
@@ -122,7 +147,7 @@ public class PaxosClusterEvents
                     // and then broadcast it again??
                     if ( electedMember.equals( serverClusterId ) )
                     {
-                        broadcast.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
+                        cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
                     }
                 }
                 catch ( IOException e )
@@ -132,7 +157,7 @@ public class PaxosClusterEvents
             }
         } );
 
-        broadcast.addAtomicBroadcastListener( new AtomicBroadcastListener()
+        cluster.addAtomicBroadcastListener( new AtomicBroadcastListener()
         {
             @Override
             public void receive( Payload payload )
@@ -200,7 +225,7 @@ public class PaxosClusterEvents
             Payload payload = serializer.broadcast( new MemberIsAvailable( role, serverClusterId, Iterables.iterable(
                     getHaUri( serverClusterId ), getBackupUri( serverClusterId ) ) ) );
             serializer.receive( payload );
-            broadcast.broadcast( payload );
+            cluster.broadcast( payload );
         }
         catch ( Throwable e )
         {
@@ -212,14 +237,11 @@ public class PaxosClusterEvents
     {
         try
         {
-            String host = HaSettings.ha_server.getAddress( config.getParams() );
-            if ( host == null )
-            {
-                host = clusterUri.getHost();
-            }
-
-            return new URI( "ha", null, host, HaSettings.ha_server.getPort( config.getParams() ), null,
-                    "serverId=" + config.get( HaSettings.server_id ), null );
+            // TODO if we don't want this fallback on cluster address, then add this
+            // logic to the (default) Configuration implementation?
+            String host = getConfiguredHaAddress( clusterUri );
+            return new URI( "ha", null, host, portOf( config.getHaServer() ), null,
+                    "serverId=" + config.getServerId(), null );
         }
         catch ( URISyntaxException e )
         {
@@ -227,18 +249,30 @@ public class PaxosClusterEvents
         }
     }
 
+    private String getConfiguredHaAddress( URI clusterUri )
+    {
+        String host = addressOf( config.getHaServer() );
+        return host != null ? host : clusterUri.getHost();
+    }
+
+    private int portOf( String addressWithOrWithoutPort )
+    {
+        String[] parts = addressWithOrWithoutPort.split( ":" );
+        return parts.length < 2 ? -1 : Integer.parseInt( parts[1] );
+    }
+
+    private String addressOf( String addressWithOrWithoutPort )
+    {
+        String[] parts = addressWithOrWithoutPort.split( ":" );
+        return parts[0].length() > 0 ? parts[0] : null;
+    }
 
     private URI getBackupUri( URI clusterUri )
     {
         try
         {
-            String host = HaSettings.ha_server.getAddress( config.getParams() );
-            if ( host == null )
-            {
-                host = clusterUri.getHost();
-            }
-            return new URI( "backup", null, host, OnlineBackupSettings.online_backup_port.getPort( config.getParams() ),
-                    null, null, null );
+            String host = getConfiguredHaAddress( clusterUri );
+            return new URI( "backup", null, host, config.getBackupPort(), null, null, null );
         }
         catch ( URISyntaxException e )
         {

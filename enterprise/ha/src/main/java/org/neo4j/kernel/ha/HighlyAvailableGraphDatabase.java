@@ -22,33 +22,16 @@ package org.neo4j.kernel.ha;
 
 import java.io.File;
 import java.lang.reflect.Proxy;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.MultiPaxosServerFactory;
-import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
-import org.neo4j.cluster.protocol.election.ElectionMessage;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
-import org.neo4j.cluster.statemachine.StateTransitionLogger;
-import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
-import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.com.ComSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HighlyAvailableKernelData;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -62,7 +45,6 @@ import org.neo4j.kernel.ha.cluster.ClusterMemberListener;
 import org.neo4j.kernel.ha.cluster.ClusterMemberModeSwitcher;
 import org.neo4j.kernel.ha.cluster.ClusterMemberState;
 import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
-import org.neo4j.kernel.ha.cluster.discovery.ClusterJoin;
 import org.neo4j.kernel.ha.cluster.paxos.PaxosClusterEvents;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
@@ -74,12 +56,13 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
+
+import ch.qos.logback.classic.LoggerContext;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -87,23 +70,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private ClusterSlaves slaves;
     private DelegateInvocationHandler delegateInvocationHandler;
     private LoggerContext loggerContext;
-
     private DefaultTransactionSupport transactionSupport;
-
     private Master master;
-    private ProtocolServer server;
     private ClusterEvents clusterEvents;
     private InstanceAccessGuard accessGuard;
     private ClusterMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
-    private NetworkInstance networkNodeTCP;
-    private ClusterMemberContext serverContext;
+    private ClusterMemberContext memberContext;
+    private ClusterClient clusterClient;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
-                                         List<IndexProvider> indexProviders, List<KernelExtensionFactory<?>>
-            kernelExtensions,
-                                         List<CacheProvider> cacheProviders, List<TransactionInterceptorProvider>
-            txInterceptorProviders )
+            List<IndexProvider> indexProviders, List<KernelExtensionFactory<?>> kernelExtensions,
+            List<CacheProvider> cacheProviders, List<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, withDefaults( params ), indexProviders, kernelExtensions, cacheProviders,
                 txInterceptorProviders );
@@ -129,16 +107,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         // Add this just before cluster join to ensure that it is up and running as late as possible
         // and is shut down as early as possible
-        life.add( networkNodeTCP );
-
-        // Join and leave cluster
-        life.add( new ClusterJoin( config, server, logging.getLogger( Loggers.CLUSTER ),
-                slaves.getClusterListener() ) );
-
+        life.add( clusterClient );
+        
         life.add( new StartupWaiter() );
 
-        diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
-                server.getConnectedStateMachines() ) );
+        diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
     }
 
     private static Map<String, String> withDefaults( Map<String, String> params )
@@ -193,134 +166,26 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected TxHook createTxHook()
     {
-        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
-                .timeout( HeartbeatMessage.sendHeartbeat, 10000 )
-                .timeout( AtomicBroadcastMessage.broadcastTimeout, 3000 )
-                .timeout( ElectionMessage.demote, 5000 )
-                .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
-
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration(
-                config.get( ClusterSettings.cluster_name ) ), logging );
-
-        InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
         DefaultElectionCredentialsProvider electionCredentialsProvider = new DefaultElectionCredentialsProvider(
                 config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
+        // Add if to lifecycle later, as late as possible really
+        clusterClient = new ClusterClient( ClusterClient.adapt( config, electionCredentialsProvider ), logging );
 
-        networkNodeTCP = new NetworkInstance( new NetworkInstance.Configuration()
-        {
-            @Override
-            public int[] getPorts()
-            {
-                int[] port = HaSettings.cluster_server.getPorts( config.getParams() );
-                if ( port != null )
-                {
-                    return port;
-                }
+        clusterEvents = life.add( new PaxosClusterEvents( PaxosClusterEvents.adapt( config ), clusterClient,
+                logging.getLogger( Loggers.CLUSTER ) ) );
 
-                // If not specified, use the default
-                return HaSettings.cluster_server.getPorts( MapUtil.stringMap( HaSettings.cluster_server.name(),
-                        ConfigurationDefaults.getDefault( HaSettings.cluster_server, HaSettings.class ) ) );
-            }
+        memberContext = new ClusterMemberContext( clusterClient );
 
-            @Override
-            public String getAddress()
-            {
-                return HaSettings.cluster_server.getAddress( config.getParams() );
-            }
-        }, logging.getLogger( Loggers.CLUSTER ) );
+        life.add( memberContext );
 
-        server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
-                acceptorInstanceStore, electionCredentialsProvider );
-
-        networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                server.listeningAt( me );
-                server.addStateTransitionListener( new StateTransitionLogger( logging ) );
-            }
-
-            @Override
-            public void channelOpened( URI to )
-            {
-            }
-
-            @Override
-            public void channelClosed( URI to )
-            {
-            }
-        } );
-
-        // Timeout timer - triggers every 10 ms
-        life.add( new Lifecycle()
-        {
-            private ScheduledExecutorService scheduler;
-
-            @Override
-            public void init()
-                    throws Throwable
-            {
-                server.getTimeouts().tick( System.currentTimeMillis() );
-            }
-
-            @Override
-            public void start()
-                    throws Throwable
-            {
-                scheduler = Executors.newSingleThreadScheduledExecutor( new DaemonThreadFactory( "timeout" ) );
-
-                scheduler.scheduleWithFixedDelay( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        long now = System.currentTimeMillis();
-
-                        server.getTimeouts().tick( now );
-                    }
-                }, 0, 10, TimeUnit.MILLISECONDS );
-            }
-
-            @Override
-            public void stop()
-                    throws Throwable
-            {
-                scheduler.shutdownNow();
-            }
-
-            @Override
-            public void shutdown()
-                    throws Throwable
-            {
-            }
-        } );
-
-        // Add URI to Logback context
-        server.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                loggerContext.putProperty( "host", me.getHost() + ":" + me.getPort() );
-            }
-        } );
-
-        clusterEvents = life.add( new PaxosClusterEvents( config, server, logging.getLogger( Loggers.CLUSTER ) ) );
-
-        serverContext = new ClusterMemberContext( server );
-
-        life.add( serverContext );
-
-        memberStateMachine = new ClusterMemberStateMachine( serverContext, accessGuard, clusterEvents,
+        memberStateMachine = new ClusterMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( Loggers.CLUSTER ) );
         life.add( new ClusterMemberModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
                 config, logging.getLogger( Loggers.CLUSTER ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
-        TxHook txHook =
-                (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
-                        txHookDelegate );
+        TxHook txHook = (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
+                txHookDelegate );
         new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
                 master, new TxHookModeSwitcher.RequestContextFactoryResolver()
         {
@@ -396,7 +261,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected KernelData createKernelData()
     {
         return new HighlyAvailableKernelData( this, new ClusterMemberInfoProvider( clusterEvents ),
-                new ClusterDatabaseInfoProvider( clusterEvents, server ) );
+                new ClusterDatabaseInfoProvider( clusterEvents, clusterClient ) );
     }
 
     @Override

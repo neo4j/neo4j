@@ -28,27 +28,17 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.BackupExtensionService;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.MultiPaxosServerFactory;
-import org.neo4j.cluster.ProtocolServer;
-import org.neo4j.cluster.com.NetworkInstance;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
-import org.neo4j.cluster.statemachine.StateTransitionLogger;
-import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
-import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ClusterEventListener;
 import org.neo4j.kernel.ha.cluster.ClusterEvents;
-import org.neo4j.kernel.ha.cluster.discovery.ClusterJoin;
 import org.neo4j.kernel.ha.cluster.paxos.PaxosClusterEvents;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -57,9 +47,6 @@ import org.neo4j.kernel.logging.Logging;
 @Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider extends BackupExtensionService
 {
-    // The server address is <host>:<port>
-    private static final String ServerAddressFormat = "ha://%s:%d";
-
     public HaBackupProvider()
     {
         super( "ha" );
@@ -98,80 +85,18 @@ public final class HaBackupProvider extends BackupExtensionService
     private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
-        // Create config with cluster address:port and server_id=-1
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new ConfigurationDefaults( ClusterSettings.class, OnlineBackupSettings.class ).apply( new HashMap<String, String>() );
         params.put( HaSettings.server_id.name(), "-1" );
-        params.put( HaSettings.cluster_server.name(), from );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( HaSettings.initial_hosts.name(), from );
         params.put( HaSettings.cluster_discovery_enabled.name(), "false" );
         final Config config = new Config( params );
-
-        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
-                .timeout( HeartbeatMessage.sendHeartbeat, 10000 )
-                .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
-
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration(
-                config.get( ClusterSettings.cluster_name ) ), logging );
-
-        InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
-        ElectionCredentialsProvider electionCredentialsProvider = new BackupElectionCredentialsProvider();
-
-        NetworkInstance networkNodeTCP = new NetworkInstance( new NetworkInstance.Configuration()
-        {
-            @Override
-            public int[] getPorts()
-            {
-                // If not specified, use the default
-                return HaSettings.cluster_server.getPorts( MapUtil.stringMap( HaSettings
-                        .cluster_server.name(),
-                        ConfigurationDefaults.getDefault( HaSettings.cluster_server, HaSettings.class ) ) );
-            }
-
-            @Override
-            public String getAddress()
-            {
-                return HaSettings.cluster_server.getAddress( config.getParams() );
-            }
-        }, StringLogger.SYSTEM );
-
-
-        final ProtocolServer server = life.add( protocolServerFactory.newProtocolServer( timeoutStrategy,
-                networkNodeTCP, networkNodeTCP, acceptorInstanceStore, electionCredentialsProvider ) );
-
-
-        networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                server.listeningAt( me );
-                server.addStateTransitionListener( new StateTransitionLogger( logging ) );
-            }
-
-            @Override
-            public void channelOpened( URI to )
-            {
-            }
-
-            @Override
-            public void channelClosed( URI to )
-            {
-            }
-        } );
-
-
-        life.add( networkNodeTCP );
-
-        life.add( new ClusterJoin( config, server, logging.getLogger( "ha.backup" ), new
-                ClusterListener.Adapter()
-                {
-                } ) );
-
-        ClusterEvents events = life.add( new PaxosClusterEvents( config, server, StringLogger.SYSTEM ) );
-
+        
+        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config, new BackupElectionCredentialsProvider() ), logging ) );
+        ClusterEvents events = life.add( new PaxosClusterEvents( PaxosClusterEvents.adapt( config ), clusterClient, StringLogger.SYSTEM ) );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final ClusterInfoHolder addresses = new ClusterInfoHolder();
+        
         events.addClusterEventListener( new ClusterEventListener()
         {
             @Override
@@ -205,9 +130,12 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             throw new RuntimeException( e );
         }
-        life.shutdown();
+        finally
+        {
+            life.shutdown();
+        }
+        
         String backupAddress = null;
-
         for ( URI uri : addresses.held )
         {
             if ( "backup".equals( uri.getScheme() ) )

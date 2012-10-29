@@ -20,11 +20,7 @@
 
 package org.neo4j.kernel.ha;
 
-import java.util.Map;
-
-import org.neo4j.cluster.ConnectedStateMachines;
-import org.neo4j.cluster.statemachine.StateMachine;
-import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -36,14 +32,14 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 public class HighAvailabilityDiagnostics
         implements DiagnosticsProvider
 {
-    private ClusterMemberStateMachine memberStateMachine;
-    private ConnectedStateMachines stateMachines;
+    private final ClusterMemberStateMachine memberStateMachine;
+    private final ClusterClient clusterClient;
 
     public HighAvailabilityDiagnostics( ClusterMemberStateMachine memberStateMachine,
-                                        ConnectedStateMachines stateMachines )
+                                        ClusterClient clusterClient )
     {
         this.memberStateMachine = memberStateMachine;
-        this.stateMachines = stateMachines;
+        this.clusterClient = clusterClient;
     }
 
     @Override
@@ -65,21 +61,8 @@ public class HighAvailabilityDiagnostics
         builder.append( "High Availability diagnostics\n" ).
                 append( "Member state:" ).append( memberStateMachine.getCurrentState().name() ).append( "\n" ).
                 append( "State machines:\n" );
-
-        for ( StateMachine stateMachine : stateMachines.getStateMachines() )
-        {
-            builder.append( "   " ).append( stateMachine.getMessageType().getSimpleName() ).append( ":" ).append(
-                    stateMachine.getState().toString() ).append( "\n" );
-        }
-
-        builder.append( "Current timeouts:\n" );
-        for ( Map.Entry<Object, Timeouts.Timeout> objectTimeoutEntry : stateMachines.getTimeouts().getTimeouts()
-                .entrySet() )
-        {
-            builder.append( objectTimeoutEntry.getKey().toString() ).append( ":" ).append( objectTimeoutEntry
-                    .getValue().getTimeoutMessage().toString() );
-        }
-
+        
+        clusterClient.dumpDiagnostics( builder );
         log.logMessage( builder.toString() );
     }
 }

@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.ha.cluster.discovery;
+package org.neo4j.cluster.client;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,15 +40,14 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -60,10 +59,20 @@ import org.xml.sax.SAXException;
 public class ClusterJoin
         extends LifecycleAdapter
 {
-    private Config config;
+    public interface Configuration
+    {
+        boolean isDiscoveryEnabled();
+        
+        String[] getInitialHosts();
+        
+        String getDiscoveryUrl();
+        
+        String getClusterName();
+    }
+    
+    private Configuration config;
     private ProtocolServer protocolServer;
     private StringLogger logger;
-    private ClusterListener clusterListener;
     private URI clustersUri;
     private Clusters clusters;
     private Cluster cluster;
@@ -71,20 +80,17 @@ public class ClusterJoin
     private DocumentBuilder builder;
     private Transformer transformer;
 
-    public ClusterJoin( Config config, ProtocolServer protocolServer, StringLogger logger,
-                        ClusterListener clusterListener )
+    public ClusterJoin( Configuration config, ProtocolServer protocolServer, Logging logger )
     {
         this.config = config;
         this.protocolServer = protocolServer;
-        this.logger = logger;
-        this.clusterListener = clusterListener;
+        this.logger = logger.getLogger( Loggers.CLUSTER );
     }
 
     @Override
     public void init() throws Throwable
     {
         cluster = protocolServer.newClient( Cluster.class );
-        cluster.addClusterListener( clusterListener );
         builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         transformer = TransformerFactory.newInstance().newTransformer();
     }
@@ -95,7 +101,7 @@ public class ClusterJoin
         acquireServerId();
 
         // Now that we have our own id, do cluster join
-        if ( config.get( HaSettings.cluster_discovery_enabled ) )
+        if ( config.isDiscoveryEnabled() )
         {
             clusterDiscovery();
         }
@@ -173,7 +179,7 @@ public class ClusterJoin
         // Now try to join or create cluster
         if ( clusters != null )
         {
-            Clusters.Cluster clusterConfig = clusters.getCluster( config.get( ClusterSettings.cluster_name ) );
+            Clusters.Cluster clusterConfig = clusters.getCluster( config.getClusterName() );
             if ( clusterConfig != null )
             {
                 for ( Clusters.Member member : clusterConfig.getMembers() )
@@ -212,7 +218,7 @@ public class ClusterJoin
             // Could not find cluster or not join nodes in cluster - create it!
             if ( clusterConfig == null )
             {
-                clusterConfig = new Clusters.Cluster( config.get( ClusterSettings.cluster_name ) );
+                clusterConfig = new Clusters.Cluster( config.getClusterName() );
                 clusters.getClusters().add( clusterConfig );
             }
 
@@ -236,9 +242,9 @@ public class ClusterJoin
 
     private void determineUri() throws URISyntaxException
     {
-        if ( config.isSet( HaSettings.cluster_discovery_url ) )
+        String clusterUrlString = config.getDiscoveryUrl();
+        if ( clusterUrlString != null )
         {
-            String clusterUrlString = config.get( HaSettings.cluster_discovery_url );
             if ( clusterUrlString.startsWith( "/" ) )
             {
                 clustersUri = Thread.currentThread().getContextClassLoader().getResource( clusterUrlString ).toURI();
@@ -274,11 +280,11 @@ public class ClusterJoin
 
     private void updateMyInfo() throws TransformerException, IOException, SAXException
     {
-        Clusters.Cluster cluster = clusters.getCluster( config.get( ClusterSettings.cluster_name ) );
+        Clusters.Cluster cluster = clusters.getCluster( config.getClusterName() );
 
         if ( cluster == null )
         {
-            clusters.getClusters().add( cluster = new Clusters.Cluster( config.get( ClusterSettings.cluster_name ) ) );
+            clusters.getClusters().add( cluster = new Clusters.Cluster( config.getClusterName() ) );
         }
 
         if ( cluster.contains( serverId ) )
@@ -317,18 +323,18 @@ public class ClusterJoin
 
     private void clusterByConfig()
     {
-        String hosts = config.get( HaSettings.initial_hosts );
+        String[] hosts = config.getInitialHosts();
 
-        if ( hosts.equals( "" ) )
+        if ( hosts.length == 0 )
         {
-            logger.logMessage( "Creating cluster " + config.get( ClusterSettings.cluster_name ) );
-            cluster.create( config.get( ClusterSettings.cluster_name ) );
+            logger.logMessage( "Creating cluster " + config.getClusterName() );
+            cluster.create( config.getClusterName() );
         }
         else
         {
             try
             {
-                for ( String host : hosts.split( "," ) )
+                for ( String host : hosts )
                 {
                     if ( serverId.toString().endsWith( host ) )
                     {
@@ -353,7 +359,7 @@ public class ClusterJoin
                 }
 
                 // Failed to join cluster, create new one
-                cluster.create( config.get( ClusterSettings.cluster_name ) );
+                cluster.create( config.getClusterName() );
             }
             catch ( URISyntaxException e )
             {

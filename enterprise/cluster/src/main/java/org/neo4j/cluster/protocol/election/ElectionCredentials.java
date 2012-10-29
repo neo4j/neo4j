@@ -19,6 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-public interface ElectionCredentials<T extends ElectionCredentials> extends Comparable<T>
+public interface ElectionCredentials extends Comparable
 {
 }

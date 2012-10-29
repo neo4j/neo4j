@@ -31,13 +31,13 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.client.Clusters;
+import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.discovery.Clusters;
-import org.neo4j.kernel.ha.cluster.discovery.ClustersXMLSerializer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.slf4j.Logger;

@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.ha.cluster.discovery;
+package org.neo4j.cluster.client;
 
 import java.net.URI;
 import java.util.ArrayList;

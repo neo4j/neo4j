@@ -29,7 +29,7 @@ import org.neo4j.cluster.BindingListener;
  * for elections. Natural comparison of the URI string is used.
  */
 public class ServerIdElectionCredentialsProvider
-        implements ElectionCredentialsProvider<ServerIdElectionCredentials>, BindingListener
+        implements ElectionCredentialsProvider, BindingListener
 {
     URI me;
 
@@ -40,7 +40,7 @@ public class ServerIdElectionCredentialsProvider
     }
 
     @Override
-    public ServerIdElectionCredentials getCredentials( String role )
+    public ElectionCredentials getCredentials( String role )
     {
         return new ServerIdElectionCredentials( me );
     }

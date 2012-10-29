@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public final class DefaultElectionCredentials implements ElectionCredentials<DefaultElectionCredentials>, Externalizable
+public final class DefaultElectionCredentials implements ElectionCredentials, Externalizable
 {
     private int serverId;
     private long latestTxId;
@@ -40,16 +40,17 @@ public final class DefaultElectionCredentials implements ElectionCredentials<Def
     }
 
     @Override
-    public int compareTo( DefaultElectionCredentials o )
+    public int compareTo( Object o )
     {
-        if ( this.latestTxId == o.latestTxId )
+        DefaultElectionCredentials other = (DefaultElectionCredentials) o;
+        if ( this.latestTxId == other.latestTxId )
         {
             // Smaller id means higher priority
-            return - (this.serverId < o.serverId ? -1 : ( this.serverId == o.serverId ? 0 : 1));
+            return - (this.serverId < other.serverId ? -1 : ( this.serverId == other.serverId ? 0 : 1));
         }
         else
         {
-            return this.latestTxId < o.latestTxId ? -1 : ( this.latestTxId == o.latestTxId ? 0 : 1);
+            return this.latestTxId < other.latestTxId ? -1 : ( this.latestTxId == other.latestTxId ? 0 : 1);
         }
     }
 

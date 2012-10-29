@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.core.LastTxIdGetter;
  * ElectionCredentialsProvider that provides the server URI and latest tx id as credentials for elections
  */
 public class DefaultElectionCredentialsProvider
-    implements ElectionCredentialsProvider<DefaultElectionCredentials>
+    implements ElectionCredentialsProvider
 {
     private final int serverId;
     private final LastTxIdGetter lastTxIdGetter;

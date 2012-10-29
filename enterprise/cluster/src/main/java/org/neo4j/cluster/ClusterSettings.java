@@ -20,6 +20,7 @@
 package org.neo4j.cluster;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.HostnamePortSetting;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
@@ -58,4 +59,10 @@ public class ClusterSettings
 
     @Default(TRUE)
     public static final BooleanSetting allow_init_cluster = new BooleanSetting( "ha.allow_init_cluster" );
+    
+    @Default(FALSE)
+    public static final BooleanSetting cluster_discovery_enabled = new BooleanSetting( "ha.discovery.enabled" );
+
+    public static final StringSetting cluster_discovery_url = new StringSetting( "ha.discovery.url", ANY,
+            "Must be a valid URL" );
 }

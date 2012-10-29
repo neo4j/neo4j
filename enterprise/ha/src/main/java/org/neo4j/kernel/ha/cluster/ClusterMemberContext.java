@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.client.ClusterClient;
 
 /**
  * Context used by the {@link ClusterMemberStateMachine}. Keeps track of what elections and previously
@@ -34,9 +34,9 @@ public class ClusterMemberContext
     private URI availableHaMasterId;
     private URI myId;
 
-    public ClusterMemberContext( ProtocolServer server )
+    public ClusterMemberContext( ClusterClient clusterClient )
     {
-        server.addBindingListener( new BindingListener()
+        clusterClient.addBindingListener( new BindingListener()
         {
             @Override
             public void listeningAt( URI me )
