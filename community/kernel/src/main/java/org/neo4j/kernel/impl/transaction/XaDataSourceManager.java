@@ -294,9 +294,9 @@ public class XaDataSourceManager
     /**
      * Recover all datasources
      *
-     * @param danglingRecordList
+     * @param knownDanglingRecordList
      */
-    public void recover( Iterator<List<TxLog.Record>> danglingRecordList )
+    public void recover( Iterator<List<TxLog.Record>> knownDanglingRecordList )
     {
         // contains NonCompletedTransaction that needs to be committed
         List<NonCompletedTransaction> commitList =
@@ -309,7 +309,7 @@ public class XaDataSourceManager
         final Map<Resource, XaDataSource> resourceMap =
                 new HashMap<Resource, XaDataSource>();
         buildRecoveryInfo( commitList, rollbackList, resourceMap,
-                danglingRecordList );
+                knownDanglingRecordList );
         // invoke recover on all xa resources found
         final List<Xid> recoveredXidsList = new LinkedList<Xid>();
 

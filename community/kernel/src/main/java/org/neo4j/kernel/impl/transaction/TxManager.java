@@ -826,22 +826,19 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             {
                 txThreadMap = new ConcurrentHashMap<Thread, TransactionImpl>();
                 // Do recovery on start - all Resources should be registered by now
-                Iterable<List<TxLog.Record>> danglingRecordList = txLog.getDanglingRecords();
-                boolean danglingRecordFound = danglingRecordList.iterator().hasNext();
+                Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
 
-                if ( danglingRecordFound )
-                {
-                    log.info( "Unresolved transactions found, " +
-                            "recovery started ... " + txLogDir );
+                log.info( "Unresolved transactions found, " +
+                        "recovery started ... " + txLogDir );
 
-                    log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+                log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
 
-                    // Recover DataSources
-                    xaDataSourceManager.recover( danglingRecordList.iterator() );
+                // Recover DataSources
+                xaDataSourceManager.recover( knownDanglingRecordList.iterator() );
 
-                    log.logMessage( "Recovery completed, all transactions have been " +
-                            "resolved to a consistent state." );
-                }
+                log.logMessage( "Recovery completed, all transactions have been " +
+                        "resolved to a consistent state." );
+                
                 getTxLog().truncate();
                 recovered = true;
                 tmOk = true;
