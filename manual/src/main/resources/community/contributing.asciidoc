@@ -29,6 +29,10 @@ include::docs.asciidoc[]
 
 :leveloffset: 2
 
+include::translating.asciidoc[]
+
+:leveloffset: 2
+
 include::contributing-code.asciidoc[]
 
 :leveloffset: 2
