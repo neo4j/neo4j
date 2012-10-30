@@ -38,7 +38,7 @@
   <logger name="org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap" level="debug">
   </logger>
 
-  <logger name="org.neo4j.cluster.protocol" level="debug" additive="true">
+  <logger name="org.neo4j.cluster.protocol" level="info" additive="true">
   </logger>
 
   <root level="debug">
