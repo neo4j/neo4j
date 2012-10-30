@@ -25,9 +25,10 @@ import internal.LRUCache
 import scala.collection.JavaConverters._
 import java.lang.Error
 import java.util.{Map => JavaMap}
-import scala.deprecated
+import scala.{Int, deprecated}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
@@ -38,9 +39,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   private def createCorrectParser() = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
     val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
-    database.getConfig.getParams.asScala.get("cypher_parser_version") match {
-      case None => new CypherParser()
-      case Some(v) => new CypherParser(v)
+    database.getConfig.get(GraphDatabaseSettings.cypher_parser_version) match {
+      case v:String => new CypherParser(v)
+      case _ => new CypherParser()
     }
   }
   else {
@@ -61,6 +62,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   def prepare(query: String): ExecutionPlan =
     executionPlanCache.getOrElseUpdate(query, new ExecutionPlanImpl(parser.parse(query), graph))
 
+  def isPrepared(query : String) : Boolean =
+    executionPlanCache.containsKey(query)
+
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
@@ -80,7 +84,16 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
   }
 
-  private val cacheSize: Int = 100
-  private val executionPlanCache = new LRUCache[String, ExecutionPlan](cacheSize) {}
+  private val executionPlanCache = new LRUCache[String, ExecutionPlan]( getQueryCacheSize() ) {}
+
+  private def getQueryCacheSize() : Int = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
+    val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
+    database.getConfig.get(GraphDatabaseSettings.query_cache_size) match {
+      case v:java.lang.Integer => v
+      case _ => 100
+    }
+  } else {
+    100
+  }
 }
 
