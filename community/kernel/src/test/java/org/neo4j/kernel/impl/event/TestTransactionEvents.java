@@ -601,7 +601,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         node.setProperty( key, "initial value" );
         commit();
         // -- register a tx handler which will override a property
-        getGraphDb().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
         {
             @Override
             public Void beforeCommit( TransactionData data ) throws Exception
@@ -611,7 +611,8 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
                 modifiedNode.setProperty( key, value2 );
                 return null;
             }
-        } );
+        };
+        getGraphDb().registerTransactionEventHandler( handler );
         
         // When
         newTransaction();
@@ -620,5 +621,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         
         // Then
         assertEquals( value2, node.getProperty( key ) );
+        getGraphDb().unregisterTransactionEventHandler( handler );
     } 
 }
