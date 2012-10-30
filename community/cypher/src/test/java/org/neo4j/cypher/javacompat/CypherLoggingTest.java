@@ -32,6 +32,7 @@ public class CypherLoggingTest {
 
     private ExecutionEngine engine;
     private BufferingLogger logger = new BufferingLogger();
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
     @Test
     public void logging() throws Exception {
@@ -39,8 +40,8 @@ public class CypherLoggingTest {
         engine.execute("START n=node(*) RETURN n");
 
         assertEquals(
-                "START n=node(0) CREATE (foo {test:'me'}) RETURN n\n" +
-                        "START n=node(*) RETURN n\n",
+                "START n=node(0) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
+                        "START n=node(*) RETURN n" + LINE_SEPARATOR,
                 logger.toString());
 
     }
