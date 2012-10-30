@@ -29,23 +29,23 @@
   <logger name="neo4j.diagnostics" level="warn">
   </logger>
 
-  <logger name="neo4j.cluster" level="debug">
+  <logger name="neo4j.cluster" level="info">
   </logger>
 
-  <logger name="org.neo4j.cluster.NetworkMock" level="warn">
+  <logger name="org.neo4j.cluster.NetworkMock" level="info">
   </logger>
 
-  <logger name="ha2.protocol.atomicbroadcast.AtomicBroadcastMap" level="warn">
+  <logger name="org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap" level="debug">
   </logger>
 
-  <logger name="org.neo4j.cluster.ha2.ha2.protocol" level="info" additive="true">
+  <logger name="org.neo4j.cluster.protocol" level="info" additive="true">
   </logger>
 
   <root level="debug">
     <appender-ref ref="CONSOLE"/>
   </root>
 
-  <logger name="neo4j" level="debug">
+  <logger name="neo4j" level="debug" additive="true">
     <appender-ref ref="CONSOLE"/>
   </logger>
 

@@ -44,6 +44,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
@@ -61,7 +62,12 @@ public class MultiPaxosNetworkTest
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
         final LifeSupport life = new LifeSupport();
-        LogbackService logging = new LogbackService( null, new LoggerContext() );
+        Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap
+                ( GraphDatabaseSettings.store_dir.name(), "test" ) ) );
+
+        LoggerContext loggerContext = new LoggerContext();
+        loggerContext.putProperty( "host", "none" );
+        LogbackService logging = life.add( new LogbackService( config, loggerContext ) );
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                 new MultiPaxosServerFactory(
                         new ClusterConfiguration( "default",

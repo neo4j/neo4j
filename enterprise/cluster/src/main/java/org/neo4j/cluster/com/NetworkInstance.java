@@ -66,7 +66,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and sending
+ * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
+ * sending
  * outgoing messages
  */
 public class NetworkInstance
@@ -109,7 +110,7 @@ public class NetworkInstance
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkInstance(Configuration config, StringLogger logger)
+    public NetworkInstance( Configuration config, StringLogger logger )
     {
         this.config = config;
         this.msgLog = logger;
@@ -126,13 +127,13 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        executor = Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster messenger" ) );
+        executor = Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster messenger" ) );
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster worker" ) ) );
+                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster worker" ) ) );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
@@ -144,7 +145,7 @@ public class NetworkInstance
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster client worker" ) ) ) );
+                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster client worker" ) ) ) );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         // Try all ports in the given range
