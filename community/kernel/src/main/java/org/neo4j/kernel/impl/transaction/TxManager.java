@@ -827,9 +827,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 txThreadMap = new ConcurrentHashMap<Thread, TransactionImpl>();
                 // Do recovery on start - all Resources should be registered by now
                 Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
-
-                log.info( "Unresolved transactions found, " +
-                        "recovery started ... " + txLogDir );
+                if ( knownDanglingRecordList.iterator().hasNext() )
+                    log.info( "Unresolved transactions found, " +
+                            "recovery started ... " + txLogDir );
 
                 log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
 
