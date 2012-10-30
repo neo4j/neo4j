@@ -1,0 +1,15 @@
+{
+  "timestamp" : 1348657856244,
+  "results" : [ {
+    "caseName" : "CineastsQueriesBenchmark",
+    "metrics" : [ {
+      "name" : "Average for: Single path with many start points",
+      "value" : 20.22,
+      "unit" : {
+        "key" : "ms"
+      }
+    } ]
+  } ],
+  "testedVersion" : "1.9-SNAPSHOT",
+  "buildUrl" : "${build-url}"
+}

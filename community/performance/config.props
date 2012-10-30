@@ -1,0 +1,5 @@
+neostore.nodestore.db.mapped_memory=12M
+neostore.relationshipstore.db.mapped_memory=56M
+neostore.propertystore.db.mapped_memory=46M
+neostore.propertystore.db.strings.mapped_memory=39M
+neostore.propertystore.db.arrays.mapped_memory=45M
