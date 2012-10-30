@@ -48,8 +48,6 @@ class DocumentationData
                 .isEmpty()
              && MediaType.APPLICATION_JSON_TYPE.equals( payloadType ) )
         {
-            System.out.println( "prettifying: " );
-            System.out.println( this.payload );
             return JSONPrettifier.parse( this.payload );
         }
         else

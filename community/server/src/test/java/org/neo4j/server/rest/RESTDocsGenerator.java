@@ -527,6 +527,11 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                             .append( "+\n" );
                 }
             }
+            String prettifiedPayload = data.getPayload();
+            if ( prettifiedPayload != null )
+            {
+                writeEntity( sb, prettifiedPayload );
+            }
             fw.append( AsciiDocGenerator.dumpToSeparateFile( dir, name
                                                                   + ".request",
                     sb.toString() ) );
