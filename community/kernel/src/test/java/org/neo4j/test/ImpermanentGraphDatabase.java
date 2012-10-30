@@ -22,9 +22,9 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -40,11 +40,11 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.logging.ClassicLoggingService;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.impl.EphemeralIdGenerator;
+import org.neo4j.test.impl.FileChannelLoggingService;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
@@ -52,24 +52,11 @@ import org.neo4j.tooling.GlobalGraphOperations;
  */
 public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 {
-    private static final File PATH = new File( "target/test-data/impermanent-db" );
-    private static final AtomicInteger ID = new AtomicInteger();
-
-    static
-    {
-        try
-        {
-            FileUtils.deleteRecursively( PATH );
-        }
-        catch ( IOException e )
-        {
-            throw new Error( "Couldn't clear directory", e );
-        }
-    }
+    private static final String PATH = "test-data/impermanent-db";
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), withoutMemmap( params ) );
+        super( PATH, withoutMemmap( params ) );
     }
 
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
@@ -77,7 +64,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( path(), withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( PATH, withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
     }
 
@@ -114,54 +101,20 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected Logging createStringLogger()
     {
-        ClassicLoggingService logging = new ClassicLoggingService( config );
-        life.add( logging );
-        return logging;
-    }
-
-    private static String path()
-    {
-        File path = null;
-        do
-        {
-            path = new File( PATH, String.valueOf( ID.get() ) );
-            if ( path.exists() )
-            {
-                ID.incrementAndGet();
-            }
-        }
-        while ( path.exists() );
-        return path.getAbsolutePath();
-    }
-
-    private static void clearDirectory( File path )
-    {
         try
         {
-            FileUtils.deleteRecursively( path );
+            String storeDir = config.get( Configuration.store_dir );
+            String logFile = new File(storeDir, StringLogger.DEFAULT_NAME).getAbsolutePath();
+            FileChannel fc = fileSystem.open( logFile, "rw" );
+            FileChannelLoggingService logging = new FileChannelLoggingService( fc );
+            life.add( logging );
+            return logging;
         }
         catch ( IOException e )
         {
-            if ( GraphDatabaseSetting.osIsWindows() )
-            {
-                System.err.println( "Couldn't clear directory, and that's ok because this is Windows. Next " +
-                        ImpermanentGraphDatabase.class.getSimpleName() + " will get a new directory" );
-                e.printStackTrace();
-                ID.incrementAndGet();
-            }
-            else
-            {
-                throw new RuntimeException( "Couldn't not clear directory" );
-            }
+            // really shouldn't happen: in-memory file system
+            throw new RuntimeException( "couldn't create log file in EphemeralFileSystemAbstraction", e );
         }
-    }
-
-    @Override
-    public void shutdown()
-    {
-        super.shutdown();
-
-        clearDirectory( new File( getStoreDir() ) );
     }
 
     public void cleanContent( boolean retainReferenceNode )
