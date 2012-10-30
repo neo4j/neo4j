@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.util.FileUtils;
  */
 // Deprecated because we want to make this internal. Users should use Setting<T> instead.
 @Deprecated
-public abstract class GraphDatabaseSetting<T> implements Setting
+public abstract class GraphDatabaseSetting<T> implements Setting<T>
 {
     public static final String TRUE = "true";
     public static final String FALSE = "false";

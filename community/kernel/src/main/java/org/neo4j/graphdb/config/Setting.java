@@ -23,7 +23,7 @@ package org.neo4j.graphdb.config;
  * This interface is available only for use, not for implementing. Implementing this interface is not expected, and
  * backwards compatibility is not guaranteed for implementors.
  */
-public interface Setting
+public interface Setting<T>
 {
     public String name();
 

@@ -24,6 +24,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
@@ -99,9 +100,16 @@ public abstract class GraphDatabaseSettings
     @Default(FALSE)
     public static final BooleanSetting intercept_deserialized_transactions = new BooleanSetting( "intercept_deserialized_transactions" );
 
-    // Cypher version
+    // Cypher settings
+    // TODO: These should live with cypher
     @Description( "Enable this to specify a parser other than the default one." )
     public static final OptionsSetting cypher_parser_version = new CypherParserSetting();
+
+    @Description( "Used to set the number of Cypher query execution plans that are cached." )
+    @Default( "100" )
+    public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( "query_cache_size",
+            "Query cache size must be at least 0.", 0, Integer.MAX_VALUE  );
+
 
     // Store files
 
