@@ -137,7 +137,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         assertTrue( result.contains( snippet2 ) );
     }
 
-    static String readFileAsString( File file )
+    public static String readFileAsString( File file )
             throws java.io.IOException
     {
         byte[] buffer = new byte[(int) file.length()];

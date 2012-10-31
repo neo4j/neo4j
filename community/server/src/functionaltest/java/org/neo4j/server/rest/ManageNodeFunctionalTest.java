@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,6 +39,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.metatest.TestJavaTestDocsGenerator;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -65,7 +67,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
 
 
     @Test
-    public void create_Node() throws Exception
+    public void create_node() throws Exception
     {
         JaxRsResponse response = gen.get()
                 .expectedStatus( 201 )
@@ -78,7 +80,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void create_Node_with_properties() throws Exception
+    public void create_node_with_properties() throws Exception
     {
         JaxRsResponse response = gen.get()
                 .payload( "{\"foo\" : \"bar\"}" )
@@ -90,10 +92,44 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.getLocation()
                 .toString()
                 .matches( NODE_URI_PATTERN ) );
+        checkGeneratedFiles();
     }
     
+    private void checkGeneratedFiles()
+    {
+        String requestDocs, responseDocs, graphDocs;
+        try
+        {
+            requestDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
+                    "target/docs/dev/rest-api/includes/create-node-with-properties.request.asciidoc" ) );
+            responseDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
+                    "target/docs/dev/rest-api/includes/create-node-with-properties.response.asciidoc" ) );
+            graphDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
+                    "target/docs/dev/rest-api/includes/create-node-with-properties.graph.asciidoc" ) );
+        }
+        catch ( IOException ioe )
+        {
+            throw new RuntimeException(
+                    "Error reading generated documentation file: ", ioe );
+        }
+        for ( String s : new String[] { "POST", "Accept", "application/json",
+                "Content-Type", "{", "foo", "bar", "}" } )
+        {
+            assertThat( requestDocs, containsString( s ) );
+        }
+        for ( String s : new String[] { "201", "Created", "Content-Length",
+                "Content-Type", "Location", "{", "foo", "bar", "}" } )
+        {
+            assertThat( responseDocs, containsString( s ) );
+        }
+        for ( String s : new String[] { "foo", "bar" } )
+        {
+            assertThat( graphDocs, containsString( s ) );
+        }
+    }
+
     @Test
-    public void create_Node_with_array_properties() throws Exception
+    public void create_node_with_array_properties() throws Exception
     {
         String response = gen.get()
                 .payload( "{\"foo\" : [1,2,3]}" )
