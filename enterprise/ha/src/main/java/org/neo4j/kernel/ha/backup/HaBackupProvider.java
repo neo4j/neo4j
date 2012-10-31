@@ -37,9 +37,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.cluster.ClusterEventListener;
-import org.neo4j.kernel.ha.cluster.ClusterEvents;
-import org.neo4j.kernel.ha.cluster.paxos.PaxosClusterEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -93,11 +93,11 @@ public final class HaBackupProvider extends BackupExtensionService
         final Config config = new Config( params );
         
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config, new BackupElectionCredentialsProvider() ), logging ) );
-        ClusterEvents events = life.add( new PaxosClusterEvents( PaxosClusterEvents.adapt( config ), clusterClient, StringLogger.SYSTEM ) );
+        HighAvailabilityEvents events = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ), clusterClient, StringLogger.SYSTEM ) );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final ClusterInfoHolder addresses = new ClusterInfoHolder();
         
-        events.addClusterEventListener( new ClusterEventListener()
+        events.addClusterEventListener( new HighAvailabilityListener()
         {
             @Override
             public void masterIsElected( URI masterUri )

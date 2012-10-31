@@ -25,7 +25,7 @@ import java.net.URI;
  * This represents the different states that a cluster member
  * can have internally.
  */
-public enum ClusterMemberState
+public enum HighAvailabilityMemberState
 {
     /**
      * This state is the initial state, and is also the state used when leaving the cluster.
@@ -35,7 +35,7 @@ public enum ClusterMemberState
     PENDING
             {
                 @Override
-                public ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterURI.equals( context.getMyId() ) )
@@ -46,7 +46,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterURI, URI
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI, URI
                         masterHaURI )
                 {
 //                    assert context.getAvailableMaster() == null;
@@ -58,7 +58,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -68,7 +68,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public boolean isAccessAllowed( ClusterMemberContext context )
+                public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return false;
                 }
@@ -81,7 +81,7 @@ public enum ClusterMemberState
     TO_SLAVE
             {
                 @Override
-                public ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
                 {
                     if ( masterURI.equals( context.getElectedMasterId() ) )
                     {
@@ -97,7 +97,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterURI,
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
                                                              URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
@@ -116,7 +116,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -126,7 +126,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public boolean isAccessAllowed( ClusterMemberContext context )
+                public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return false;
                 }
@@ -138,7 +138,7 @@ public enum ClusterMemberState
     TO_MASTER
             {
                 @Override
-                public ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterURI.equals( context.getMyId() ) )
@@ -149,7 +149,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterURI,
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
                                                              URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
@@ -160,7 +160,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -170,7 +170,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public boolean isAccessAllowed( ClusterMemberContext context )
+                public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return false;
                 }
@@ -182,7 +182,7 @@ public enum ClusterMemberState
     MASTER
             {
                 @Override
-                public ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -194,7 +194,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterURI,
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
                                                              URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
@@ -206,7 +206,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -216,7 +216,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public boolean isAccessAllowed( ClusterMemberContext context )
+                public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return true;
                 }
@@ -228,7 +228,7 @@ public enum ClusterMemberState
     SLAVE
             {
                 @Override
-                public ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -245,7 +245,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterURI,
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
                                                              URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
@@ -261,7 +261,7 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -271,18 +271,18 @@ public enum ClusterMemberState
                 }
 
                 @Override
-                public boolean isAccessAllowed( ClusterMemberContext context )
+                public boolean isAccessAllowed( HighAvailabilityMemberContext context )
                 {
                     return true;
                 }
             };
 
-    public abstract ClusterMemberState masterIsElected( ClusterMemberContext context, URI masterUri );
+    public abstract HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterUri );
 
-    public abstract ClusterMemberState masterIsAvailable( ClusterMemberContext context, URI masterClusterUri,
+    public abstract HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterClusterUri,
                                                           URI masterHaURI );
 
-    public abstract ClusterMemberState slaveIsAvailable( ClusterMemberContext context, URI slaveUri );
+    public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri );
 
-    public abstract boolean isAccessAllowed( ClusterMemberContext context );
+    public abstract boolean isAccessAllowed( HighAvailabilityMemberContext context );
 }

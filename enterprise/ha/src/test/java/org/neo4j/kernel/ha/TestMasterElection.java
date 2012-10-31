@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.cluster.ClusterEventListener;
-import org.neo4j.kernel.ha.cluster.ClusterEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,9 +66,9 @@ public class TestMasterElection
     private void awaitNewMaster( HighlyAvailableGraphDatabase db )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final ClusterEvents events = db.getDependencyResolver().resolveDependency( ClusterEvents.class );
+        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
         events.addClusterEventListener(
-                new ClusterEventListener.Adapter()
+                new HighAvailabilityListener.Adapter()
 
                 {
                     @Override

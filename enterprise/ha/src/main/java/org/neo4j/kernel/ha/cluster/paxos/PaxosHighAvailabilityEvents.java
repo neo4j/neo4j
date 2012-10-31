@@ -36,17 +36,15 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.cluster.AbstractClusterEvents;
-import org.neo4j.kernel.ha.cluster.ClusterEventListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * Paxos based implementation of {@link org.neo4j.kernel.ha.cluster.ClusterEvents}
+ * Paxos based implementation of {@link org.neo4j.kernel.ha.cluster.HighAvailabilityEvents}
  */
-public class PaxosClusterEvents
-        extends AbstractClusterEvents
-        implements Lifecycle
+public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Lifecycle
 {
     public interface Configuration
     {
@@ -86,8 +84,9 @@ public class PaxosClusterEvents
     private StringLogger logger;
     protected AtomicBroadcastSerializer serializer;
     private final ClusterClient cluster;
+    protected Iterable<HighAvailabilityListener> listeners = Listeners.newListeners();
 
-    public PaxosClusterEvents( Configuration config, ClusterClient cluster, StringLogger logger )
+    public PaxosHighAvailabilityEvents( Configuration config, ClusterClient cluster, StringLogger logger )
     {
         this.config = config;
         this.cluster = cluster;
@@ -98,9 +97,21 @@ public class PaxosClusterEvents
             public void listeningAt( URI me )
             {
                 serverClusterId = me;
-                PaxosClusterEvents.this.logger.logMessage( "Listening at:" + me );
+                PaxosHighAvailabilityEvents.this.logger.logMessage( "Listening at:" + me );
             }
         } );
+    }
+    
+    @Override
+    public void addClusterEventListener( HighAvailabilityListener listener )
+    {
+        listeners = Listeners.addListener( listener, listeners );
+    }
+
+    @Override
+    public void removeClusterEventListener( HighAvailabilityListener listener )
+    {
+        listeners = Listeners.removeListener( listener, listeners );
     }
 
     @Override
@@ -111,7 +122,7 @@ public class PaxosClusterEvents
 
         cluster.addClusterListener( new ClusterListener.Adapter()
         {
-            ClusterConfiguration clusterConfiguration;
+            private volatile ClusterConfiguration clusterConfiguration;
 
             @Override
             public void joinedCluster( URI member )
@@ -167,10 +178,10 @@ public class PaxosClusterEvents
                     final Object value = serializer.receive( payload );
                     if ( value instanceof MasterIsElected )
                     {
-                        Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterEventListener>()
+                        Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                         {
                             @Override
-                            public void notify( ClusterEventListener listener )
+                            public void notify( HighAvailabilityListener listener )
                             {
                                 listener.masterIsElected( ((MasterIsElected) value).getMasterUri() );
                             }
@@ -178,10 +189,10 @@ public class PaxosClusterEvents
                     }
                     else if ( value instanceof MemberIsAvailable )
                     {
-                        Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterEventListener>()
+                        Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                         {
                             @Override
-                            public void notify( ClusterEventListener listener )
+                            public void notify( HighAvailabilityListener listener )
                             {
                                 MemberIsAvailable memberIsAvailable = (MemberIsAvailable) value;
                                 listener.memberIsAvailable( memberIsAvailable.getRole(),

@@ -40,10 +40,11 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 // TODO This needs to be fixed
-@Ignore
+//@Ignore
 public class TestTxPushStrategyConfig
 {
     private GraphDatabaseAPI master;
@@ -100,15 +101,17 @@ public class TestTxPushStrategyConfig
         awaitSlaveList( master, slaveCount( this.slaves.size() ) );
     }
 
-    Process addRemoteSlave() throws Exception
+    Process addRemoteSlave( int basePort ) throws Exception
     {
         int i = slaves.size()+1;
-        return StartInstanceInAnotherJvm.start( dir.directory( "" + (1 + i), true ).getAbsolutePath(), MapUtil.stringMap(
+        Process process = StartInstanceInAnotherJvm.start( dir.directory( "" + (1 + i), true ).getAbsolutePath(), MapUtil.stringMap(
                 HaSettings.server_id.name(), "" + (i + 1),
                 HaSettings.ha_server.name(), ":" + (6361 + i),
                 HaSettings.cluster_discovery_enabled.name(), "false",
-                HaSettings.cluster_server.name(), "localhost:" + (5001 + i),
-                HaSettings.initial_hosts.name(), "localhost:5001" ) );
+                HaSettings.cluster_server.name(), "localhost:" + (basePort + i),
+                HaSettings.initial_hosts.name(), "localhost:" + basePort ) );
+        new ProcessStreamHandler( process, false, "[REMOTE SLAVE]" ).launch();
+        return process;
     }
 
     private void awaitSlaveList( GraphDatabaseAPI db, Predicate<Slaves> predicate )
@@ -260,7 +263,7 @@ public class TestTxPushStrategyConfig
     {
         startMaster( 1, "fixed", 5050 );
         addSlaves( 1, 5050 );
-        Process remoteSlave = addRemoteSlave();
+        Process remoteSlave = addRemoteSlave( 5050 );
         awaitSlaveList( master, slaveCount( 2 ) );
 
         remoteSlave.destroy();

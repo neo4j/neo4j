@@ -37,7 +37,7 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
     private final DelegateInvocationHandler<T> delegate;
     private LifeSupport life;
 
-    protected AbstractModeSwitcher( ClusterMemberStateMachine stateMachine, DelegateInvocationHandler<T> delegate )
+    protected AbstractModeSwitcher( HighAvailabilityMemberStateMachine stateMachine, DelegateInvocationHandler<T> delegate )
     {
         this.delegate = delegate;
         this.life = new LifeSupport();
@@ -72,34 +72,34 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
 
     protected abstract T getMasterImpl();
 
-    private class DelegateStateSwitcher implements ClusterMemberListener
+    private class DelegateStateSwitcher implements HighAvailabilityMemberListener
     {
         private T current = null;
 
         @Override
-        public void masterIsElected( ClusterMemberChangeEvent event )
+        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
             stateChanged( event );
         }
 
         @Override
-        public void masterIsAvailable( ClusterMemberChangeEvent event )
+        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
             stateChanged( event );
         }
 
         @Override
-        public void slaveIsAvailable( ClusterMemberChangeEvent event )
+        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
         }
 
         @Override
-        public void instanceStops( ClusterMemberChangeEvent event )
+        public void instanceStops( HighAvailabilityMemberChangeEvent event )
         {
             stateChanged( event );
         }
 
-        private void stateChanged( ClusterMemberChangeEvent event )
+        private void stateChanged( HighAvailabilityMemberChangeEvent event )
         {
             if ( event.getNewState() == event.getOldState() )
             {

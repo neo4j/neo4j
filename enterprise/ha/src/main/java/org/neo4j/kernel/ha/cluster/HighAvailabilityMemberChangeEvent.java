@@ -25,14 +25,14 @@ import java.net.URI;
  * This event represents a change in the cluster members internal state. The possible states
  * are enumerated in ClusterMemberState.
  */
-public class ClusterMemberChangeEvent
+public class HighAvailabilityMemberChangeEvent
 {
-    private final ClusterMemberState oldState;
-    private final ClusterMemberState newState;
+    private final HighAvailabilityMemberState oldState;
+    private final HighAvailabilityMemberState newState;
     private final URI serverClusterUri;
     private final URI serverHaUri;
 
-    public ClusterMemberChangeEvent( ClusterMemberState oldState, ClusterMemberState newState,
+    public HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState oldState, HighAvailabilityMemberState newState,
                                      URI serverClusterUri, URI serverHaUri )
     {
         this.oldState = oldState;
@@ -41,12 +41,12 @@ public class ClusterMemberChangeEvent
         this.serverHaUri = serverHaUri;
     }
 
-    public ClusterMemberState getOldState()
+    public HighAvailabilityMemberState getOldState()
     {
         return oldState;
     }
 
-    public ClusterMemberState getNewState()
+    public HighAvailabilityMemberState getNewState()
     {
         return newState;
     }

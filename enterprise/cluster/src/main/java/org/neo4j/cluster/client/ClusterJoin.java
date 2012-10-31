@@ -22,9 +22,11 @@ package org.neo4j.cluster.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -341,6 +343,7 @@ public class ClusterJoin
                         continue; // Don't try to join myself
                     }
 
+                    host = resolvePortOnlyHost( host );
                     logger.info( "Attempting to join " + host );
                     Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + host ) );
                     try
@@ -366,6 +369,20 @@ public class ClusterJoin
                 // This
                 e.printStackTrace();
             }
+        }
+    }
+
+    private String resolvePortOnlyHost( String host )
+    {
+        try
+        {
+            if ( host.startsWith( ":" ) ) // TODO better condition here
+                return InetAddress.getLocalHost().getHostAddress() + host;
+            return host;
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 }

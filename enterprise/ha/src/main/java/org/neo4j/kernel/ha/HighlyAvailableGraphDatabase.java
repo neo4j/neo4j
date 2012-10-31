@@ -38,14 +38,14 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.ha.cluster.ClusterEvents;
-import org.neo4j.kernel.ha.cluster.ClusterMemberChangeEvent;
-import org.neo4j.kernel.ha.cluster.ClusterMemberContext;
-import org.neo4j.kernel.ha.cluster.ClusterMemberListener;
-import org.neo4j.kernel.ha.cluster.ClusterMemberModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
-import org.neo4j.kernel.ha.cluster.paxos.PaxosClusterEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
@@ -67,16 +67,16 @@ import ch.qos.logback.classic.LoggerContext;
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private RequestContextFactory requestContextFactory;
-    private ClusterSlaves slaves;
+    private HighAvailabilityMembers slaves;
     private DelegateInvocationHandler delegateInvocationHandler;
     private LoggerContext loggerContext;
     private DefaultTransactionSupport transactionSupport;
     private Master master;
-    private ClusterEvents clusterEvents;
+    private HighAvailabilityEvents clusterEvents;
     private InstanceAccessGuard accessGuard;
-    private ClusterMemberStateMachine memberStateMachine;
+    private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
-    private ClusterMemberContext memberContext;
+    private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
@@ -171,16 +171,16 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Add if to lifecycle later, as late as possible really
         clusterClient = new ClusterClient( ClusterClient.adapt( config, electionCredentialsProvider ), logging );
 
-        clusterEvents = life.add( new PaxosClusterEvents( PaxosClusterEvents.adapt( config ), clusterClient,
+        clusterEvents = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ), clusterClient,
                 logging.getLogger( Loggers.CLUSTER ) ) );
 
-        memberContext = new ClusterMemberContext( clusterClient );
+        memberContext = new HighAvailabilityMemberContext( clusterClient );
 
         life.add( memberContext );
 
-        memberStateMachine = new ClusterMemberStateMachine( memberContext, accessGuard, clusterEvents,
+        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( Loggers.CLUSTER ) );
-        life.add( new ClusterMemberModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
+        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
                 config, logging.getLogger( Loggers.CLUSTER ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
@@ -205,7 +205,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         TxIdGenerator txIdGenerator =
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
-        slaves = life.add( new ClusterSlaves( memberStateMachine, msgLog, config, xaDataSourceManager ) );
+        slaves = life.add( new HighAvailabilityMembers( clusterClient, memberStateMachine, msgLog, config, xaDataSourceManager ) );
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
         return txIdGenerator;
@@ -260,42 +260,42 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
-        return new HighlyAvailableKernelData( this, new ClusterMemberInfoProvider( clusterEvents ),
-                new ClusterDatabaseInfoProvider( clusterEvents, clusterClient ) );
+        return new HighlyAvailableKernelData( this, this.slaves,
+                new ClusterDatabaseInfoProvider( clusterClient, slaves ) );
     }
 
     @Override
     protected void registerRecovery()
     {
-        memberStateMachine.addClusterMemberListener( new ClusterMemberListener()
+        memberStateMachine.addClusterMemberListener( new HighAvailabilityMemberListener()
         {
             @Override
-            public void masterIsElected( ClusterMemberChangeEvent event )
+            public void masterIsElected( HighAvailabilityMemberChangeEvent event )
             {
             }
 
             @Override
-            public void masterIsAvailable( ClusterMemberChangeEvent event )
+            public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
-                if ( event.getOldState().equals( ClusterMemberState.TO_MASTER ) && event.getNewState().equals(
-                        ClusterMemberState.MASTER ) )
+                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) && event.getNewState().equals(
+                        HighAvailabilityMemberState.MASTER ) )
                 {
                     doRecovery();
                 }
             }
 
             @Override
-            public void slaveIsAvailable( ClusterMemberChangeEvent event )
+            public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
-                if ( event.getOldState().equals( ClusterMemberState.TO_SLAVE ) && event.getNewState().equals(
-                        ClusterMemberState.SLAVE ) )
+                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) && event.getNewState().equals(
+                        HighAvailabilityMemberState.SLAVE ) )
                 {
                     doRecovery();
                 }
             }
 
             @Override
-            public void instanceStops( ClusterMemberChangeEvent event )
+            public void instanceStops( HighAvailabilityMemberChangeEvent event )
             {
             }
 
@@ -350,7 +350,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     public boolean isMaster()
     {
-        return memberStateMachine.getCurrentState() == ClusterMemberState.MASTER;
+        return memberStateMachine.getCurrentState() == HighAvailabilityMemberState.MASTER;
     }
 
     @Override
@@ -368,7 +368,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 catch ( IllegalArgumentException e )
                 {
-                    if ( ClusterEvents.class.isAssignableFrom( type ) )
+                    if ( HighAvailabilityEvents.class.isAssignableFrom( type ) )
                     {
                         result = (T) clusterEvents;
                     }
@@ -379,6 +379,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     else if ( Slaves.class.isAssignableFrom( type ) )
                     {
                         result = (T) slaves;
+                    }
+                    else if ( ClusterClient.class.isAssignableFrom( type ) )
+                    {
+                        result = (T) clusterClient;
                     }
                     else
                     {

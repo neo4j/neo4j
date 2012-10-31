@@ -22,11 +22,11 @@ package org.neo4j.kernel.ha.cluster;
 import java.net.URI;
 
 /**
- * The ClusterEventListeners are listening for events from elections and transitions.
+ * A HighAvailabilityListener is listening for events from elections and availability state.
  * <p/>
  * These are invoked by translating atomic broadcast messages to methods on this interface.
  */
-public interface ClusterEventListener
+public interface HighAvailabilityListener
 {
     /**
      * Called when new master has been elected. The new master may not be available a.t.m.
@@ -48,7 +48,7 @@ public interface ClusterEventListener
     void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris );
 
     public abstract class Adapter
-            implements ClusterEventListener
+            implements HighAvailabilityListener
     {
         @Override
         public void masterIsElected( URI masterUri )

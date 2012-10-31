@@ -25,16 +25,16 @@ import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
 
 /**
- * Context used by the {@link ClusterMemberStateMachine}. Keeps track of what elections and previously
+ * Context used by the {@link HighAvailabilityMemberStateMachine}. Keeps track of what elections and previously
  * available master this cluster member has seen.
  */
-public class ClusterMemberContext
+public class HighAvailabilityMemberContext
 {
     private URI electedMasterId;
     private URI availableHaMasterId;
     private URI myId;
 
-    public ClusterMemberContext( ClusterClient clusterClient )
+    public HighAvailabilityMemberContext( ClusterClient clusterClient )
     {
         clusterClient.addBindingListener( new BindingListener()
         {

@@ -31,7 +31,7 @@ package org.neo4j.kernel.ha.cluster;
  * |
  * (listener 3)
  */
-public interface ClusterEvents
+public interface HighAvailabilityEvents
 {
     /**
      * When a member has finished a transition to a particular role, i.e. master or slave,
@@ -41,7 +41,7 @@ public interface ClusterEvents
      */
     void memberIsAvailable( String role );
 
-    void addClusterEventListener( ClusterEventListener listener );
+    void addClusterEventListener( HighAvailabilityListener listener );
 
-    void removeClusterEventListener( ClusterEventListener listener );
+    void removeClusterEventListener( HighAvailabilityListener listener );
 }

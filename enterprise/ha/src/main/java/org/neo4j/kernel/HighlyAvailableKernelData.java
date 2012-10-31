@@ -20,24 +20,24 @@
 package org.neo4j.kernel;
 
 import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
-import org.neo4j.kernel.ha.ClusterMemberInfoProvider;
+import org.neo4j.kernel.ha.HighAvailabilityMembers;
+import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.management.ClusterDatabaseInfo;
-import org.neo4j.management.ClusterMemberInfo;
 
 public class HighlyAvailableKernelData extends KernelData
 {
     private final HighlyAvailableGraphDatabase db;
-    private final ClusterMemberInfoProvider clusterMemberInfoProvider;
+    private final HighAvailabilityMembers memberInfo;
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
-    public HighlyAvailableKernelData( HighlyAvailableGraphDatabase db, ClusterMemberInfoProvider clusterMemberInfo,
-                               ClusterDatabaseInfoProvider memberInfo )
+    public HighlyAvailableKernelData( HighlyAvailableGraphDatabase db, HighAvailabilityMembers memberInfo,
+            ClusterDatabaseInfoProvider databaseInfo )
     {
         super( db.getConfig() );
         this.db = db;
-        this.clusterMemberInfoProvider = clusterMemberInfo;
-        this.memberInfoProvider = memberInfo;
+        this.memberInfo = memberInfo;
+        this.memberInfoProvider = databaseInfo;
     }
 
     @Override
@@ -52,9 +52,9 @@ public class HighlyAvailableKernelData extends KernelData
         return db;
     }
 
-    public ClusterMemberInfo[] getClusterInfo()
+    public MemberInfo[] getClusterInfo()
     {
-        return clusterMemberInfoProvider.getClusterInfo();
+        return memberInfo.getMembers();
     }
 
     public ClusterDatabaseInfo getMemberInfo()

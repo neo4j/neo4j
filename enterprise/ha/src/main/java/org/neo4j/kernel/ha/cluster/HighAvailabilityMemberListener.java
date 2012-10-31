@@ -22,13 +22,36 @@ package org.neo4j.kernel.ha.cluster;
 /**
  * These callback methods correspond to the cluster
  */
-public interface ClusterMemberListener
+public interface HighAvailabilityMemberListener
 {
-    void masterIsElected( ClusterMemberChangeEvent event );
+    void masterIsElected( HighAvailabilityMemberChangeEvent event );
 
-    void masterIsAvailable( ClusterMemberChangeEvent event );
+    void masterIsAvailable( HighAvailabilityMemberChangeEvent event );
 
-    void slaveIsAvailable( ClusterMemberChangeEvent event );
+    void slaveIsAvailable( HighAvailabilityMemberChangeEvent event );
 
-    void instanceStops( ClusterMemberChangeEvent event );
+    void instanceStops( HighAvailabilityMemberChangeEvent event );
+    
+    public static class Adapter implements HighAvailabilityMemberListener
+    {
+        @Override
+        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
+        {
+        }
+
+        @Override
+        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
+        {
+        }
+
+        @Override
+        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
+        {
+        }
+
+        @Override
+        public void instanceStops( HighAvailabilityMemberChangeEvent event )
+        {
+        }
+    }
 }

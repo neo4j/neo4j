@@ -58,11 +58,11 @@ import org.neo4j.kernel.logging.Logging;
 
 public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBroadcast, Heartbeat
 {
-    private LifeSupport life = new LifeSupport();
-    private Cluster cluster;
-    private AtomicBroadcast broadcast;
-    private Heartbeat heartbeat;
-    private ProtocolServer server;
+    private final LifeSupport life = new LifeSupport();
+    private final Cluster cluster;
+    private final AtomicBroadcast broadcast;
+    private final Heartbeat heartbeat;
+    private final ProtocolServer server;
 
     public interface Configuration
     {
@@ -365,5 +365,10 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
             appendTo.append( objectTimeoutEntry.getKey().toString() ).append( ":" )
                     .append( objectTimeoutEntry.getValue().getTimeoutMessage().toString() );
         }
+    }
+    
+    public URI getServerUri()
+    {
+        return server.getServerId();
     }
 }

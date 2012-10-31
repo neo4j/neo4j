@@ -33,8 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.ClusterEventListener;
-import org.neo4j.kernel.ha.cluster.ClusterEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -122,9 +122,9 @@ public class TestPullUpdates
     private void awaitNewMaster( int master )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final ClusterEvents events = dbs[master].getDependencyResolver().resolveDependency( ClusterEvents.class );
+        final HighAvailabilityEvents events = dbs[master].getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
         events.addClusterEventListener(
-                new ClusterEventListener.Adapter()
+                new HighAvailabilityListener.Adapter()
 
                 {
                     @Override

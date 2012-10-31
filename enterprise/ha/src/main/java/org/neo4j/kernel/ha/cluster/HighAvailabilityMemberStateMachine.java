@@ -35,36 +35,36 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class ClusterMemberStateMachine extends LifecycleAdapter
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
 {
-    private final ClusterMemberContext context;
+    private final HighAvailabilityMemberContext context;
     private final InstanceAccessGuard accessGuard;
-    private final ClusterEvents clusterEvents;
+    private final HighAvailabilityEvents events;
     private StringLogger logger;
-    private Iterable<ClusterMemberListener> clusterMemberListeners = Listeners.newListeners();
-    private ClusterMemberState state;
+    private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
+    private HighAvailabilityMemberState state;
 
-    public ClusterMemberStateMachine( ClusterMemberContext context, InstanceAccessGuard accessGuard,
-                                      ClusterEvents clusterEvents, StringLogger logger )
+    public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context, InstanceAccessGuard accessGuard,
+                                      HighAvailabilityEvents events, StringLogger logger )
     {
         this.context = context;
         this.accessGuard = accessGuard;
-        this.clusterEvents = clusterEvents;
+        this.events = events;
         this.logger = logger;
-        clusterEvents.addClusterEventListener( new StateMachineClusterEventListener() );
-        state = ClusterMemberState.PENDING;
+        events.addClusterEventListener( new StateMachineClusterEventListener() );
+        state = HighAvailabilityMemberState.PENDING;
     }
 
     @Override
     public void stop() throws Throwable
     {
-        ClusterMemberState oldState = state;
-        state = ClusterMemberState.PENDING;
-        final ClusterMemberChangeEvent event = new ClusterMemberChangeEvent( oldState, state, null, null );
-        Listeners.notifyListeners( clusterMemberListeners, new Listeners.Notification<ClusterMemberListener>()
+        HighAvailabilityMemberState oldState = state;
+        state = HighAvailabilityMemberState.PENDING;
+        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, null, null );
+        Listeners.notifyListeners( memberListeners, new Listeners.Notification<HighAvailabilityMemberListener>()
         {
             @Override
-            public void notify( ClusterMemberListener listener )
+            public void notify( HighAvailabilityMemberListener listener )
             {
                 listener.instanceStops( event );
             }
@@ -73,29 +73,29 @@ public class ClusterMemberStateMachine extends LifecycleAdapter
         accessGuard.setState( state );
     }
 
-    public void addClusterMemberListener( ClusterMemberListener toAdd )
+    public void addClusterMemberListener( HighAvailabilityMemberListener toAdd )
     {
-        clusterMemberListeners = Listeners.addListener( toAdd, clusterMemberListeners );
+        memberListeners = Listeners.addListener( toAdd, memberListeners );
     }
 
-    public ClusterMemberState getCurrentState()
+    public HighAvailabilityMemberState getCurrentState()
     {
         return state;
     }
 
-    private class StateMachineClusterEventListener implements ClusterEventListener
+    private class StateMachineClusterEventListener implements HighAvailabilityListener
     {
         @Override
         public void masterIsElected( URI masterUri )
         {
             try
             {
-                ClusterMemberState oldState = state;
+                HighAvailabilityMemberState oldState = state;
                 URI previousElected = context.getElectedMasterId();
                 String msg = "";
-                if ( oldState.equals( ClusterMemberState.MASTER ) && masterUri.equals( context.getMyId() ) )
+                if ( oldState.equals( HighAvailabilityMemberState.MASTER ) && masterUri.equals( context.getMyId() ) )
                 {
-                    clusterEvents.memberIsAvailable( ClusterConfiguration.COORDINATOR );
+                    events.memberIsAvailable( ClusterConfiguration.COORDINATOR );
                     msg = "(Sent masterIsAvailable) ";
                 }
                 else //if ( !masterUri.equals( context.getMyId() ) )
@@ -103,13 +103,13 @@ public class ClusterMemberStateMachine extends LifecycleAdapter
                     state = state.masterIsElected( context, masterUri );
 
                     context.setElectedMasterId( masterUri );
-                    final ClusterMemberChangeEvent event = new ClusterMemberChangeEvent( oldState, state, masterUri,
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, masterUri,
                             null );
-                    Listeners.notifyListeners( clusterMemberListeners,
-                            new Listeners.Notification<ClusterMemberListener>()
+                    Listeners.notifyListeners( memberListeners,
+                            new Listeners.Notification<HighAvailabilityMemberListener>()
                             {
                                 @Override
-                                public void notify( ClusterMemberListener listener )
+                                public void notify( HighAvailabilityMemberListener listener )
                                 {
                                     listener.masterIsElected( event );
                                 }
@@ -136,19 +136,19 @@ public class ClusterMemberStateMachine extends LifecycleAdapter
                     URI masterHaUri = ServerUtil.getUriForScheme( "ha", instanceUris );
                     if ( !masterHaUri.equals( context.getAvailableHaMaster() ) )
                     {
-                        ClusterMemberState oldState = state;
+                        HighAvailabilityMemberState oldState = state;
                         context.setAvailableHaMasterId( masterHaUri );
                         state = state.masterIsAvailable( context, instanceClusterUri, masterHaUri );
                         logger.debug( "Got masterIsAvailable(" + instanceClusterUri + ", moved to " + state + " from " +
                                 oldState );
-                        final ClusterMemberChangeEvent event = new ClusterMemberChangeEvent( oldState, state,
+                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state,
                                 instanceClusterUri,
                                 masterHaUri );
-                        Listeners.notifyListeners( clusterMemberListeners,
-                                new Listeners.Notification<ClusterMemberListener>()
+                        Listeners.notifyListeners( memberListeners,
+                                new Listeners.Notification<HighAvailabilityMemberListener>()
                                 {
                                     @Override
-                                    public void notify( ClusterMemberListener listener )
+                                    public void notify( HighAvailabilityMemberListener listener )
                                     {
                                         listener.masterIsAvailable( event );
                                     }
@@ -159,18 +159,18 @@ public class ClusterMemberStateMachine extends LifecycleAdapter
                 else if ( role.equals( ClusterConfiguration.SLAVE ) )
                 {
                     URI slaveHaUri = ServerUtil.getUriForScheme( "ha", instanceUris );
-                    ClusterMemberState oldState = state;
+                    HighAvailabilityMemberState oldState = state;
                     state = state.slaveIsAvailable( context, instanceClusterUri );
                     logger.debug( "Got slaveIsAvailable(" + instanceClusterUri + "), " +
                             "moved to " + state + " from " + oldState );
-                    final ClusterMemberChangeEvent event = new ClusterMemberChangeEvent( oldState, state,
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state,
                             instanceClusterUri,
                             slaveHaUri );
-                    Listeners.notifyListeners( clusterMemberListeners,
-                            new Listeners.Notification<ClusterMemberListener>()
+                    Listeners.notifyListeners( memberListeners,
+                            new Listeners.Notification<HighAvailabilityMemberListener>()
                             {
                                 @Override
-                                public void notify( ClusterMemberListener listener )
+                                public void notify( HighAvailabilityMemberListener listener )
                                 {
                                     listener.slaveIsAvailable( event );
                                 }

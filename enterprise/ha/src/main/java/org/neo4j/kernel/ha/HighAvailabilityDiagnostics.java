@@ -21,7 +21,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -32,10 +32,10 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 public class HighAvailabilityDiagnostics
         implements DiagnosticsProvider
 {
-    private final ClusterMemberStateMachine memberStateMachine;
+    private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final ClusterClient clusterClient;
 
-    public HighAvailabilityDiagnostics( ClusterMemberStateMachine memberStateMachine,
+    public HighAvailabilityDiagnostics( HighAvailabilityMemberStateMachine memberStateMachine,
                                         ClusterClient clusterClient )
     {
         this.memberStateMachine = memberStateMachine;

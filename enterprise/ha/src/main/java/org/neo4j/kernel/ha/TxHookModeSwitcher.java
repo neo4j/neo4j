@@ -23,7 +23,7 @@ import java.net.URI;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
@@ -33,7 +33,7 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<TxHook>
     private final RequestContextFactoryResolver requestContextFactory;
     private DependencyResolver resolver;
 
-    public TxHookModeSwitcher( ClusterMemberStateMachine stateMachine,
+    public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                DelegateInvocationHandler<TxHook> delegate, Master master,
                                RequestContextFactoryResolver requestContextFactory, DependencyResolver resolver )
     {

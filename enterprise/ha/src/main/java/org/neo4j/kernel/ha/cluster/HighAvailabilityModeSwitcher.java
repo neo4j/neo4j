@@ -78,10 +78,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
- * ClusterMemberChangeEvents. When finished it will invoke {@link ClusterEvents#memberIsAvailable(String)} to announce
+ * ClusterMemberChangeEvents. When finished it will invoke {@link HighAvailabilityEvents#memberIsAvailable(String)} to announce
  * to the cluster it's new status.
  */
-public class ClusterMemberModeSwitcher implements ClusterMemberListener, Lifecycle
+public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
     public static int getServerId( URI serverId )
     {
@@ -98,7 +98,7 @@ public class ClusterMemberModeSwitcher implements ClusterMemberListener, Lifecyc
 
     private URI availableMasterId;
     private final DelegateInvocationHandler delegateHandler;
-    private final ClusterEvents clusterEvents;
+    private final HighAvailabilityEvents clusterEvents;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
     private LifeSupport life;
@@ -107,8 +107,8 @@ public class ClusterMemberModeSwitcher implements ClusterMemberListener, Lifecyc
     private Future<?> toMasterTask;
     private Future<?> toSlaveTask;
 
-    public ClusterMemberModeSwitcher( DelegateInvocationHandler delegateHandler, ClusterEvents clusterEvents,
-                                      ClusterMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
+    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler, HighAvailabilityEvents clusterEvents,
+                                      HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                       Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
@@ -147,30 +147,30 @@ public class ClusterMemberModeSwitcher implements ClusterMemberListener, Lifecyc
     }
 
     @Override
-    public void masterIsElected( ClusterMemberChangeEvent event )
+    public void masterIsElected( HighAvailabilityMemberChangeEvent event )
     {
         stateChanged( event );
     }
 
     @Override
-    public void masterIsAvailable( ClusterMemberChangeEvent event )
+    public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
     {
         stateChanged( event );
     }
 
     @Override
-    public void slaveIsAvailable( ClusterMemberChangeEvent event )
+    public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
     {
         // ignored, we don't do any mode switching in slave available events
     }
 
     @Override
-    public void instanceStops( ClusterMemberChangeEvent event )
+    public void instanceStops( HighAvailabilityMemberChangeEvent event )
     {
         stateChanged( event );
     }
 
-    private void stateChanged( ClusterMemberChangeEvent event )
+    private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )

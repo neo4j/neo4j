@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
@@ -38,7 +38,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     private final RequestContextFactory requestContextFactory;
     private TransactionSupport transactionSupport;
 
-    public LockManagerModeSwitcher( ClusterMemberStateMachine stateMachine,
+    public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
                                     AbstractTransactionManager txManager,
                                     TxHook txHook, HaXaDataSourceManager xaDsm, Master master,

@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
@@ -83,33 +84,49 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
-        public String getServerId()
+        @Override
+        public String getInstanceId()
         {
             return kernelData.getMemberInfo().getInstanceId();
         }
 
+        @Override
         public ClusterMemberInfo[] getInstancesInCluster()
         {
-            return kernelData.getClusterInfo();
+            try
+            {
+                MemberInfo[] members = kernelData.getClusterInfo();
+                ClusterMemberInfo[] result = new ClusterMemberInfo[members.length];
+                for ( int i = 0; i < result.length; i++ )
+                    result[i] = clusterMemberInfo( members[i] );
+                return result;
+            }
+            catch ( Throwable e )
+            {
+                e.printStackTrace();
+                throw Exceptions.launderedException( e );
+            }
         }
 
-        public String getInstanceState()
+        @Override
+        public String getRole()
         {
-            return kernelData.getMemberInfo().getStatus();
+            return kernelData.getMemberInfo().getHaRole();
         }
-
-        public ClusterMemberInfo[] getConnectedSlaves()
+        
+        @Override
+        public boolean isAvailable()
         {
-
-            List<ClusterMemberInfo> result = new ArrayList<ClusterMemberInfo>();
-            return result.toArray( new ClusterMemberInfo[result.size()] );
+            return kernelData.getMemberInfo().isAvailable();
         }
 
+        @Override
         public String getLastUpdateTime()
         {
             return Format.date( kernelData.getMemberInfo().getLastUpdateTime() );
         }
 
+        @Override
         public String update()
         {
             long time = System.currentTimeMillis();
@@ -124,6 +141,20 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             time = System.currentTimeMillis() - time;
             return "Update completed in " + time + "ms";
         }
+    }
 
+    private static String[] urisAsStrings( URI[] uris )
+    {
+        String[] strings = new String[uris.length];
+        for ( int i = 0; i < strings.length; i++ )
+            strings[i] = uris[i].toString();
+        return strings;
+    }
+
+    public static ClusterMemberInfo clusterMemberInfo( MemberInfo member )
+    {
+        return new ClusterMemberInfo( "" + member.getServerId(),
+                member.isAvailable(), member.getHaRole(), member.getClusterRoles(),
+                HighAvailabilityBean.urisAsStrings( member.getUris() ) );
     }
 }

@@ -27,7 +27,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.test.TargetDirectory;
 
 @Ignore("There are no slave only instances yet")
@@ -74,11 +74,11 @@ public class TestSlaveOnlyCluster
         {
             ;
         }
-        while ( !slaves[0].getInstanceState().equals( ClusterMemberState.SLAVE ) )
+        while ( !slaves[0].getInstanceState().equals( HighAvailabilityMemberState.SLAVE ) )
         {
             ;
         }
-        while ( !slaves[1].getInstanceState().equals( ClusterMemberState.SLAVE ) )
+        while ( !slaves[1].getInstanceState().equals( HighAvailabilityMemberState.SLAVE ) )
         {
             ;
         }

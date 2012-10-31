@@ -55,8 +55,7 @@ public class StartHaDb
         return new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( new File( BASE_PATH, "" + serverId ).getAbsolutePath() ).
                 setConfig( HaSettings.server_id, "" + serverId ).
                 setConfig( HaSettings.ha_server, "127.0.0.1:" + (6001+serverId) ).
-                setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001+serverId) ).
-                setConfig( HaSettings.initial_hosts, multiply( "127.0.0.1", 5001, 3 ) ).
+                setConfig( HaSettings.initial_hosts, ":5001,:5002:5003" ).
                 setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
                 setConfig( ShellSettings.remote_shell_port, "" + (1337 + serverId) ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).

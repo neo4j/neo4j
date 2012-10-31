@@ -27,10 +27,10 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.cluster.ClusterMemberChangeEvent;
-import org.neo4j.kernel.ha.cluster.ClusterMemberListener;
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -42,7 +42,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
     private final Master master;
 
-    public HaIdGeneratorFactory( Master master, ClusterMemberStateMachine stateHandler )
+    public HaIdGeneratorFactory( Master master, HighAvailabilityMemberStateMachine stateHandler )
     {
         this.master = master;
         stateHandler.addClusterMemberListener( new HaIdGeneratorFactoryClusterMemberListener() );
@@ -69,10 +69,10 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         return generators.get( idType );
     }
 
-    private class HaIdGeneratorFactoryClusterMemberListener implements ClusterMemberListener
+    private class HaIdGeneratorFactoryClusterMemberListener implements HighAvailabilityMemberListener
     {
         @Override
-        public void masterIsElected( ClusterMemberChangeEvent event )
+        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
             if ( event.getNewState() == event.getOldState() )
             {
@@ -85,7 +85,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void masterIsAvailable( ClusterMemberChangeEvent event )
+        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
             if ( event.getNewState() == event.getOldState() )
             {
@@ -98,7 +98,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void slaveIsAvailable( ClusterMemberChangeEvent event )
+        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
             if ( event.getNewState() == event.getOldState() )
             {
@@ -111,7 +111,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void instanceStops( ClusterMemberChangeEvent event )
+        public void instanceStops( HighAvailabilityMemberChangeEvent event )
         {
             if ( event.getNewState() == event.getOldState() )
             {
@@ -161,17 +161,17 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
          * not only on the member state we are moving to but also the previous state of the IdGenerator - if it
           * was a slave or a master IdGenerator. For that reason, it is implemented completely separately.
          */
-        public void stateChanged( ClusterMemberChangeEvent event )
+        public void stateChanged( HighAvailabilityMemberChangeEvent event )
         {
             // Assume blockade is up and no active threads are running here
 
-            if ( event.getNewState() == ClusterMemberState.PENDING
-                    || event.getNewState() == ClusterMemberState.MASTER )
+            if ( event.getNewState() == HighAvailabilityMemberState.PENDING
+                    || event.getNewState() == HighAvailabilityMemberState.MASTER )
             {
                 return;
             }
             long highId = delegate.getHighId();
-            if ( event.getNewState() == ClusterMemberState.TO_MASTER )
+            if ( event.getNewState() == HighAvailabilityMemberState.TO_MASTER )
             {
                 if ( state == IdGeneratorState.SLAVE )
                 {
@@ -185,8 +185,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 // Otherwise we're master or TBD (initial state) which is the same
                 state = IdGeneratorState.MASTER;
             }
-            else if ( event.getNewState() == ClusterMemberState.TO_SLAVE
-                    || event.getNewState() == ClusterMemberState.SLAVE )
+            else if ( event.getNewState() == HighAvailabilityMemberState.TO_SLAVE
+                    || event.getNewState() == HighAvailabilityMemberState.SLAVE )
             {
 
                 if ( state == IdGeneratorState.SLAVE )

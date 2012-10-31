@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ClusterMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 
@@ -32,7 +32,7 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<Re
     private final Master master;
     private final RequestContextFactory requestContextFactory;
 
-    public RelationshipTypeCreatorModeSwitcher( ClusterMemberStateMachine stateMachine,
+    public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                                 DelegateInvocationHandler<RelationshipTypeCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
                                                 Master master, RequestContextFactory requestContextFactory

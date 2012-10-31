@@ -23,63 +23,39 @@ import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.kernel.ha.cluster.ClusterEventListener;
-import org.neo4j.kernel.ha.cluster.ClusterEvents;
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
+import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
 import org.neo4j.management.ClusterDatabaseInfo;
+import org.neo4j.management.ClusterMemberInfo;
 
 public class ClusterDatabaseInfoProvider
 {
     private URI me;
-    private String id;
-    private String status;
-    private String[] roles;
-    private String[] uris;
-    private long lastCommittedTxId;
-    private long lastUpdateTime;
+    private final HighAvailabilityMembers members;
 
-    public ClusterDatabaseInfoProvider( ClusterEvents events, ClusterClient clusterClient )
+    public ClusterDatabaseInfoProvider( ClusterClient clusterClient, HighAvailabilityMembers members )
     {
-        events.addClusterEventListener( new ClusterDatabaseInfoProviderListener() );
+        this.members = members;
         clusterClient.addBindingListener( new BindingListener()
         {
             @Override
-            public void listeningAt( URI me )
+            public void listeningAt( URI uri )
             {
-                ClusterDatabaseInfoProvider.this.me = me;
+                me = uri;
             }
         } );
     }
 
     public ClusterDatabaseInfo getInfo()
     {
-        return new ClusterDatabaseInfo( id, status, roles, uris, lastCommittedTxId, lastUpdateTime );
-    }
-
-    private class ClusterDatabaseInfoProviderListener implements ClusterEventListener
-    {
-        @Override
-        public void masterIsElected( URI masterUri )
-        {
-        }
-
-        @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
-        {
-            if ( me.equals( instanceClusterUri ) )
+        for ( MemberInfo member : members.getMembers() )
+            if ( member.getClusterUri().equals( me ) )
             {
-                if ( ClusterConfiguration.COORDINATOR.equals( role ) )
-                {
-                    status = ClusterMemberState.MASTER.name();
-                    roles = new String[] { ClusterMemberState.MASTER.name() };
-                }
-                if ( ClusterConfiguration.SLAVE.equals( role ) )
-                {
-                    status = ClusterMemberState.SLAVE.name();
-                    roles = new String[] { ClusterMemberState.SLAVE.name() };
-                }
+                ClusterMemberInfo info = HighAvailabilityBean.clusterMemberInfo( member );
+                return new ClusterDatabaseInfo( info.getInstanceId(), info.isAvailable(),
+                        info.getHaRole(), info.getClusterRoles(), info.getUris(), 0, 0 );
             }
-        }
+        
+        // TODO return something instead of throwing exception, right?
+        throw new IllegalStateException( "Couldn't find any information about myself, can't be right" );
     }
 }

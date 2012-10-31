@@ -23,7 +23,7 @@ package org.neo4j.kernel.ha;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 
 /**
  * The instance guard is what ensures that the database will only take calls when it is in an ok state. It changes
@@ -75,7 +75,7 @@ public class InstanceAccessGuard
         latch = null;
     }
 
-    public void setState( ClusterMemberState state )
+    public void setState( HighAvailabilityMemberState state )
     {
         if ( state.isAccessAllowed( null ) )
         {
