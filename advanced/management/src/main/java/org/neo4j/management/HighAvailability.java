@@ -29,10 +29,13 @@ public interface HighAvailability
     final String NAME = "High Availability";
 
     @Description( "The identifier used to identify this server in the HA cluster" )
-    String getServerId();
+    String getInstanceId();
 
-    @Description( "What state this instance is currently at" )
-    String getInstanceState();
+    @Description( "Whether this instance is available or not" )
+    boolean isAvailable();
+    
+    @Description( "The role this instance has in the cluster" )
+    String getRole();
 
     @Description( "The time when the data on this instance was last updated from the master" )
     String getLastUpdateTime();

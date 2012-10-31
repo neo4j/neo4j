@@ -37,16 +37,18 @@ public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
     private final String instanceId;
-    private final String status;
-    private final String[] roles;
+    private final boolean available;
+    private final String haRole;
+    private final String[] clusterRoles;
     private final String[] uris;
 
-    @ConstructorProperties( { "instanceId", "status", "roles", "uris" } )
-    public ClusterMemberInfo( String instanceId, String status, String[] roles, String[] uris )
+    @ConstructorProperties( { "instanceId", "available", "haRole", "clusterRoles", "uris" } )
+    public ClusterMemberInfo( String instanceId, boolean available, String haRole, String[] clusterRoles, String[] uris )
     {
         this.instanceId = instanceId;
-        this.status = status;
-        this.roles = roles;
+        this.available = available;
+        this.haRole = haRole;
+        this.clusterRoles = clusterRoles;
         this.uris = uris;
     }
 
@@ -55,14 +57,19 @@ public class ClusterMemberInfo implements Serializable
         return instanceId;
     }
 
-    public String getStatus()
+    public boolean isAvailable()
     {
-        return status;
+        return available;
+    }
+    
+    public String getHaRole()
+    {
+        return haRole;
     }
 
-    public String[] getRoles()
+    public String[] getClusterRoles()
     {
-        return roles;
+        return clusterRoles;
     }
 
     public String[] getUris()
@@ -74,8 +81,8 @@ public class ClusterMemberInfo implements Serializable
     @SuppressWarnings( "boxing" )
     public String toString()
     {
-        return String.format( "Neo4jHaInstance[id=%s,status=%s,roles=%s,URI List=%s]",
-                instanceId, status, Arrays.toString( roles ), Arrays.toString( uris ) );
+        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,clusterRoles=%s,URI List=%s]",
+                instanceId, available, haRole, Arrays.toString( clusterRoles ), Arrays.toString( uris ) );
     }
 
     public Pair<Neo4jManager, HighAvailability> connect()
