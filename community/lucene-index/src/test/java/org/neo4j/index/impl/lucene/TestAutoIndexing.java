@@ -34,6 +34,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.*;
 
@@ -65,7 +66,8 @@ public class TestAutoIndexing
     @Before
     public void startDb()
     {
-        graphDb = new ImpermanentGraphDatabase( getConfig() );
+        graphDb = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().
+                newImpermanentDatabaseBuilder().setConfig( getConfig() ).newGraphDatabase();
     }
 
     @After
