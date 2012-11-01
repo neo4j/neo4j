@@ -60,12 +60,14 @@ import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -317,7 +319,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     DependencyResolver resolver = graphDb.getDependencyResolver();
                     HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
                             HaXaDataSourceManager.class );
-                    TxManager txManager = resolver.resolveDependency( TxManager.class );
                     synchronized ( xaDataSourceManager )
                     {
 
@@ -326,16 +327,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         LifeSupport life = new LifeSupport();
                         try
                         {
-//                            stopOtherDataSources();
-
-                            // Stop lucene because it is loaded as a kernel extension so it is already running
-                            xaDataSourceManager.stop();
-                            txManager.stop();
                             // Remove the current store - neostore file is missing, nothing we can really do
-                            BranchedDataPolicy.keep_none.handle(
-                                    new File( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
-                            FileUtils.deleteRecursively( new File(
-                                    config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), "index" ) );
+                            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none, true );
                             MasterClient18 copyMaster =
                                     new MasterClient18( masterUri, graphDb.getMessageLog(), null, config );
 
@@ -346,9 +339,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             msgLog.logMessage( "Copying store from master" );
                             new SlaveStoreWriter( config ).copyStore( copyMaster );
 
-//                            startOtherDataSources();
-                            xaDataSourceManager.start();
-                            txManager.start();
+                            startServicesAgain();
                             msgLog.logMessage( "Finished copying store from master" );
                         }
                         catch ( Throwable e )
@@ -401,13 +392,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         {
                             // Unregistering from a running DSManager stops the datasource
                             xaDataSourceManager.unregisterDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-
-//                            stopOtherDataSources();
-                            xaDataSourceManager.stop();
-                            txManager.stop();
-                            config.get( HaSettings.branched_data_policy ).handle( new File( config.get(
-                                    InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
-//                            startOtherDataSource(); ?
+                            stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ), false );
                         }
                         catch ( IOException e )
                         {
@@ -505,6 +490,26 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 catch ( Throwable t )
                 {
                     msgLog.logMessage( "Unable to switch to slave", t );
+                }
+            }
+
+            private void startServicesAgain() throws Throwable
+            {
+                graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).start();
+                graphDb.getDependencyResolver().resolveDependency( TxManager.class ).start();
+                graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
+            }
+
+            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes ) throws Throwable
+            {
+                graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
+                graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
+                graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
+                branchPolicy.handle( new File( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
+                if ( deleteIndexes )
+                {
+                    FileUtils.deleteRecursively( new File(
+                            config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), "index" ) );
                 }
             }
 
