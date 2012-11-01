@@ -68,7 +68,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             @Override
             public String getHaServer()
             {
-                return config.get( HaSettings.ha_server );
+                return HaSettings.ha_server.getAddressAndPortWithLocalhostDefault( config.getParams() );
             }
             
             @Override
@@ -250,20 +250,14 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
         {
             // TODO if we don't want this fallback on cluster address, then add this
             // logic to the (default) Configuration implementation?
-            String host = getConfiguredHaAddress( clusterUri );
-            return new URI( "ha", null, host, portOf( config.getHaServer() ), null,
+            String host = config.getHaServer();
+            return new URI( "ha", null, addressOf( host ), portOf( host ), null,
                     "serverId=" + config.getServerId(), null );
         }
         catch ( URISyntaxException e )
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private String getConfiguredHaAddress( URI clusterUri )
-    {
-        String host = addressOf( config.getHaServer() );
-        return host != null ? host : clusterUri.getHost();
     }
 
     private int portOf( String addressWithOrWithoutPort )
@@ -282,8 +276,8 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     {
         try
         {
-            String host = getConfiguredHaAddress( clusterUri );
-            return new URI( "backup", null, host, config.getBackupPort(), null, null, null );
+            String host = config.getHaServer();
+            return new URI( "backup", null, addressOf( host ), config.getBackupPort(), null, null, null );
         }
         catch ( URISyntaxException e )
         {

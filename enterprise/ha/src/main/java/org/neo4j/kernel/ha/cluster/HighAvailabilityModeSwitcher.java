@@ -250,7 +250,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         @Override
                         public String getServerAddress()
                         {
-                            return HaSettings.ha_server.getAddress( config.getParams() );
+                            return HaSettings.ha_server.getAddressWithLocalhostDefault( config.getParams() );
                         }
                     };
                     MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig,
@@ -474,7 +474,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             @Override
                             public String getServerAddress()
                             {
-                                return HaSettings.ha_server.getAddress( config.getParams() );
+                                return HaSettings.ha_server.getAddressWithLocalhostDefault( config.getParams() );
                             }
                         };
                         SlaveServer server = new SlaveServer( slaveImpl, serverConfig, msgLog );
