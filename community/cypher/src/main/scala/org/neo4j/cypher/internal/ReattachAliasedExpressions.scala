@@ -31,7 +31,7 @@ object ReattachAliasedExpressions {
   def apply(q: Query): Query = {
     val newSort = q.sort.map(rewrite(q.returns.returnItems))
 
-    q.copy(sort = newSort)
+    q.copy(sort = newSort, tail = q.tail.map(apply))
   }
 
   private def rewrite(returnItems: Seq[ReturnColumn])(in: SortItem): SortItem = {
