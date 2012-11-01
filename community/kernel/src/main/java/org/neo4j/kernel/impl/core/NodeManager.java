@@ -49,7 +49,11 @@ import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
@@ -98,6 +102,8 @@ public class NodeManager
     private final ReentrantLock loadLocks[] =
             new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
+
+    private NodeManagerDatasourceListener dataSourceListener;
 
     public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
                         LockReleaser lockReleaser, TransactionManager transactionManager,
@@ -149,13 +155,16 @@ public class NodeManager
     @Override
     public void start()
     {
-        xaDsm.addDataSourceRegistrationListener( new NodeManagerDatasourceListener() );
+        xaDsm.addDataSourceRegistrationListener( (dataSourceListener = new NodeManagerDatasourceListener()) );
     }
 
     @Override
     public void stop()
     {
+        xaDsm.removeDataSourceRegistrationListener( dataSourceListener );
         clearCache();
+        relTypeHolder.stop();
+        propertyIndexManager.stop();
     }
 
     @Override

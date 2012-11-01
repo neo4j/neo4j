@@ -37,10 +37,10 @@ import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class PropertyIndexManager
-    implements Lifecycle
+    extends LifecycleAdapter
 {
     private Map<String, List<PropertyIndex>> indexMap = new CopyOnWriteHashMap<String, List<PropertyIndex>>();
     private Map<Integer, PropertyIndex> idToIndexMap = new CopyOnWriteHashMap<Integer, PropertyIndex>();
@@ -62,26 +62,11 @@ public class PropertyIndexManager
     }
 
     @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
     public void stop()
     {
         indexMap = new ConcurrentHashMap<String, List<PropertyIndex>>();
         idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
         txCommitHooks.clear();
-    }
-
-    @Override
-    public void shutdown()
-    {
     }
 
     public Iterable<PropertyIndex> index( String key )

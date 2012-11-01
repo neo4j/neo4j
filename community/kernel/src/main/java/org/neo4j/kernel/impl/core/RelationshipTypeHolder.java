@@ -30,8 +30,9 @@ import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class RelationshipTypeHolder
+public class RelationshipTypeHolder extends LifecycleAdapter
 {
     private Map<String,Integer> relTypes = new CopyOnWriteHashMap<String, Integer>();
     private Map<Integer, RelationshipTypeImpl> relTranslation = new CopyOnWriteHashMap<Integer, RelationshipTypeImpl>();
@@ -186,5 +187,12 @@ public class RelationshipTypeHolder
             relTypeList.add( new RelationshipTypeImpl( name ) );
         }
         return relTypeList;
+    }
+    
+    @Override
+    public void stop()
+    {
+        relTypes.clear();
+        relTranslation.clear();
     }
 }
