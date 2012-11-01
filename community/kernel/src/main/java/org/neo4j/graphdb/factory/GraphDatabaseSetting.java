@@ -22,8 +22,10 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -499,6 +501,30 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
 
         public String getAddress( Map<String, String> config )
         {
+            return getAddress( config, null );
+        }
+        
+        public String getAddressWithLocalhostDefault( Map<String, String> config )
+        {
+            try
+            {
+                return getAddress( config, InetAddress.getLocalHost().getHostAddress() );
+            }
+            catch ( UnknownHostException e )
+            {
+                throw new RuntimeException( "Unable to get localhost address", e );
+            }
+        }
+        
+        public String getAddressAndPortWithLocalhostDefault( Map<String, String> config )
+        {
+            String address = getAddressWithLocalhostDefault( config );
+            int port = getPort( config );
+            return port > 0 ? address + ":" + port : address;
+        }
+        
+        public String getAddress( Map<String, String> config, String defaultValue )
+        {
             String value = config.get( name() );
             String[] parts = value.split( ":" );
             if ( parts[0].length() > 0 )
@@ -507,7 +533,12 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
             }
             else
             {
-                return null;
+                if ( defaultValue != null && defaultValue.contains( ":" ) )
+                {
+                    throw new IllegalArgumentException( "Default address '" + defaultValue +
+                            "' most likely contains a port, it shouldn't" ); 
+                }
+                return defaultValue;
             }
         }
 

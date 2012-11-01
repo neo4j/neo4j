@@ -24,14 +24,16 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 
 public class TestGraphDatabaseSetting
@@ -250,7 +252,7 @@ public class TestGraphDatabaseSetting
     }
 
     @Test
-    public void testHostnamePortSetting()
+    public void testHostnamePortSetting() throws UnknownHostException
     {
         GraphDatabaseSetting.HostnamePortSetting setting = new GraphDatabaseSetting.HostnamePortSetting( "myfile" );
 
@@ -262,14 +264,25 @@ public class TestGraphDatabaseSetting
 
         assertValidationFails( setting, "hostname:xyz" );
 
-        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), "192.168.0.1" ) ),
+        assertThat( setting.getAddress( stringMap( setting.name(), "192.168.0.1" ) ),
                 equalTo( "192.168.0.1" ) );
-        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), "192.168.0.1:5000" ) ),
+        assertThat( setting.getAddress( stringMap( setting.name(), "192.168.0.1:5000" ) ),
                 equalTo( "192.168.0.1" ) );
-        assertThat( setting.getAddress( MapUtil.stringMap( setting.name(), ":5000" ) ), CoreMatchers.nullValue() );
-        assertThat( setting.getPort( MapUtil.stringMap( setting.name(), ":5000" ) ), equalTo( 5000 ) );
-        assertThat( setting.getPorts( MapUtil.stringMap( setting.name(), ":5000-5005" ) ), equalTo( new int[]{5000,
+        assertThat( setting.getAddress( stringMap( setting.name(), ":5000" ) ), CoreMatchers.nullValue() );
+        assertThat( setting.getPort( stringMap( setting.name(), ":5000" ) ), equalTo( 5000 ) );
+        assertThat( setting.getPorts( stringMap( setting.name(), ":5000-5005" ) ), equalTo( new int[]{5000,
                 5005} ) );
+        assertThat( setting.getAddress( stringMap( setting.name(), ":5000" ), "1.2.3.4" ), equalTo( "1.2.3.4" ) );
+        assertThat( setting.getAddressWithLocalhostDefault( stringMap( setting.name(), ":5000" ) ), equalTo( InetAddress.getLocalHost().getHostAddress() ) );
+        assertThat( setting.getAddressAndPortWithLocalhostDefault( stringMap( setting.name(), ":5000" ) ), equalTo( InetAddress.getLocalHost().getHostAddress() + ":5000" ) );
+        try
+        {
+            setting.getAddress( stringMap( setting.name(), ":5000" ), "1.2.3.4:1234" );
+            fail( "Default value shouldn't be able to contain port" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // Good
+        }
     }
 
     private void assertValidationPasses( GraphDatabaseSetting<?> setting,
