@@ -23,14 +23,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -87,7 +81,8 @@ public class RestfulGraphDatabaseTest
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
+        service = new RestfulGraphDatabase( uriInfo(), new JsonFormat(), output,
+                new DatabaseActions(database, leaseManager, ForceMode.forced, true) );
     }
 
     @Before

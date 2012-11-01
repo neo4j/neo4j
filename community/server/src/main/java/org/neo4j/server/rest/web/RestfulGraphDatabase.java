@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.server.rest.web;
- 
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -43,11 +43,10 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
@@ -140,13 +139,13 @@ public class RestfulGraphDatabase
     	CreateOrFail
     }
     
-    public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output, @Context LeaseManager leaseManager )
+    public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context InputFormat input,
+            @Context OutputFormat output, @Context DatabaseActions actions )
     {
         this.uriInfo = uriInfo;
         this.input = input;
         this.output = output;
-        this.actions = new DatabaseActions( database, leaseManager, ForceMode.forced );
+        this.actions = actions;
     }
 
     private static Response nothing()
@@ -1263,6 +1262,10 @@ public class RestfulGraphDatabase
         {
             return output.ok( actions.traverse( startNode, input.readMap( body ), returnType ) );
         }
+        catch ( EvaluationException e)
+        {
+            return output.badRequest( e );
+        }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -1304,6 +1307,10 @@ public class RestfulGraphDatabase
                     .entity( output.format( result ) )
                     .build();
         }
+        catch ( EvaluationException e)
+        {
+            return output.badRequest( e );
+        }
         catch ( NotFoundException e )
         {
             return output.notFound(e);
@@ -1333,6 +1340,10 @@ public class RestfulGraphDatabase
             return Response.created( uri.normalize() )
                     .entity( responseBody )
                     .build();
+        }
+        catch ( EvaluationException e)
+        {
+            return output.badRequest( e );
         }
         catch ( BadInputException e )
         {

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
@@ -99,17 +101,45 @@ public class DatabaseActions
     private final LeaseManager leases;
     private final ForceMode defaultForceMode;
 
-    public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode )
+    private final TraversalDescriptionBuilder traversalDescriptionBuilder;
+    private final boolean enableScriptSandboxing;
+
+    public static class Provider extends InjectableProvider<DatabaseActions>
+    {
+        private final DatabaseActions database;
+
+        public Provider( DatabaseActions database )
+        {
+            super(DatabaseActions.class);
+            this.database = database;
+        }
+
+        @Override
+        public DatabaseActions getValue( HttpContext c )
+        {
+            return database;
+        }
+    }
+
+    public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode,
+                            boolean enableScriptSandboxing )
     {
         this.leases = leaseManager;
         this.defaultForceMode = defaultForceMode;
         this.database = database;
         this.graphDb = database.getGraph();
+        this.enableScriptSandboxing = enableScriptSandboxing;
+        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder(enableScriptSandboxing);
+    }
+
+    public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode )
+    {
+        this(database, leaseManager, defaultForceMode, true);
     }
 
     public DatabaseActions forceMode( ForceMode forceMode )
     {
-        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( database, leases, forceMode );
+        return forceMode == defaultForceMode || forceMode == null ? this : new DatabaseActions( database, leases, forceMode, enableScriptSandboxing );
     }
 
     private Node node( long id ) throws NodeNotFoundException
@@ -1247,7 +1277,7 @@ public class DatabaseActions
     {
         Node node = graphDb.getNodeById( startNode );
 
-        TraversalDescription traversalDescription = TraversalDescriptionBuilder.from( description );
+        TraversalDescription traversalDescription = traversalDescriptionBuilder.from( description );
         final Iterable<Path> paths = traversalDescription.traverse(node);
         return toListPathRepresentation(paths, returnType);
     }
@@ -1297,7 +1327,7 @@ public class DatabaseActions
     {
         Node node = graphDb.getNodeById( nodeId );
 
-        TraversalDescription traversalDescription = TraversalDescriptionBuilder.from( description );
+        TraversalDescription traversalDescription = traversalDescriptionBuilder.from( description );
 
         PagedTraverser traverser = new PagedTraverser(
                 traversalDescription.traverse( node ), pageSize );

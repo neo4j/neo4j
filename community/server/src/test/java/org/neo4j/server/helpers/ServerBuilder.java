@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
@@ -49,7 +50,9 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.FakeClock;
-import org.neo4j.server.rest.paging.LeaseManagerProvider;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.RealClock;
+import org.neo4j.server.rest.web.DatabaseActions;
 
 public class ServerBuilder
 {
@@ -103,11 +106,6 @@ public class ServerBuilder
             };
         }
 
-        if ( clock != null )
-        {
-            LeaseManagerProvider.setClock( clock );
-        }
-
         return new CommunityNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
 	    {
         	@Override
@@ -122,6 +120,20 @@ public class ServerBuilder
     					new EphemeralDatabase(configurator.configuration());
         		
         	}
+
+            @Override
+            protected DatabaseActions createDatabaseActions()
+            {
+                Clock clockToUse = (clock != null) ? clock : new RealClock();
+
+                return new DatabaseActions(
+                        database,
+                        new LeaseManager(clockToUse),
+                        ForceMode.forced,
+                        configurator.configuration().getBoolean(
+                                Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+            }
 	    };
     }
 
@@ -133,6 +145,12 @@ public class ServerBuilder
         createTuningFile( temporaryConfigFile );
 
         return temporaryConfigFile;
+    }
+
+    public ServerBuilder withClock( Clock clock )
+    {
+        this.clock = clock;
+        return this;
     }
 
     private void createPropertiesFile( File temporaryConfigFile )

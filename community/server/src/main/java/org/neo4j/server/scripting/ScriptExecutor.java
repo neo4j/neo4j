@@ -17,29 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.server.scripting;
 
-import javax.ws.rs.ext.Provider;
+import java.util.Map;
 
-import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.rest.domain.EvaluationException;
 
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
+/**
+ * Common abstraction for compiled and runtime-evaluated scripts.
+ * This represents a single threaded, stateful, script session.
+ */
+public interface ScriptExecutor
 {
-    private final LeaseManager leaseManager;
 
-    public LeaseManagerProvider(LeaseManager leaseManager)
+    public interface Factory
     {
-        super( LeaseManager.class );
-        this.leaseManager = leaseManager;
+        public ScriptExecutor createExecutorForScript( String script ) throws EvaluationException;
     }
 
-    @Override
-    public LeaseManager getValue( HttpContext arg0 )
-    {
+    /**
+     * Execute the contained script.
+     * @return
+     * @param variables Is variables that should be available to the script.
+     */
+    public Object execute( Map<String, Object> variables ) throws EvaluationException;
 
-        return leaseManager;
-    }
 }

@@ -17,29 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.paging;
+package org.neo4j.server.scripting.javascript;
 
-import javax.ws.rs.ext.Provider;
+import org.junit.Test;
 
-import org.neo4j.server.database.InjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class LeaseManagerProvider extends InjectableProvider<LeaseManager>
+public class TestGlobalJavascriptInitializer
 {
-    private final LeaseManager leaseManager;
 
-    public LeaseManagerProvider(LeaseManager leaseManager)
+    @Test(expected = RuntimeException.class )
+    public void shouldNotAllowChangingMode() throws Exception
     {
-        super( LeaseManager.class );
-        this.leaseManager = leaseManager;
+        // Given
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+
+        // When
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
     }
 
-    @Override
-    public LeaseManager getValue( HttpContext arg0 )
+    @Test
+    public void initializingTheSameModeTwiceIsFine() throws Exception
     {
+        // Given
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
-        return leaseManager;
+        // When
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+
+        // Then
+        // no exception should have been thrown.
     }
+
 }

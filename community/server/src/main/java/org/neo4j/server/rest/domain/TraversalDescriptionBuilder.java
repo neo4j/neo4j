@@ -34,13 +34,17 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 
-/*
- * Maybe refactor to have a constructor with default stuff and make
- * methods non-static
- */
 public class TraversalDescriptionBuilder
 {
-    public static TraversalDescription from( Map<String, Object> description )
+
+    private final EvaluatorFactory evaluatorFactory;
+
+    public TraversalDescriptionBuilder(boolean enableSandboxing)
+    {
+        evaluatorFactory = new EvaluatorFactory( enableSandboxing );
+    }
+
+    public TraversalDescription from( Map<String, Object> description )
     {
         try
         {
@@ -62,13 +66,13 @@ public class TraversalDescriptionBuilder
     }
 
     @SuppressWarnings( "unchecked" )
-    private static TraversalDescription describeReturnFilter( TraversalDescription result,
+    private TraversalDescription describeReturnFilter( TraversalDescription result,
             Map<String, Object> description )
     {
         Object returnDescription = description.get( "return_filter" );
         if ( returnDescription != null )
         {
-            Evaluator filter = EvaluatorFactory.returnFilter( (Map) returnDescription );
+            Evaluator filter = evaluatorFactory.returnFilter( (Map) returnDescription );
             // Filter is null when "all" is used, no filter then
             if ( filter != null )
             {
@@ -84,13 +88,13 @@ public class TraversalDescriptionBuilder
     }
 
     @SuppressWarnings( "unchecked" )
-    private static TraversalDescription describePruneEvaluator( TraversalDescription result,
+    private TraversalDescription describePruneEvaluator( TraversalDescription result,
             Map<String, Object> description )
     {
         Object pruneDescription = description.get( "prune_evaluator" );
         if ( pruneDescription != null )
         {
-            Evaluator pruner = EvaluatorFactory.pruneEvaluator( (Map) pruneDescription );
+            Evaluator pruner = evaluatorFactory.pruneEvaluator( (Map) pruneDescription );
             if ( pruner != null )
             {
                 result = result.evaluator( pruner );
@@ -107,7 +111,7 @@ public class TraversalDescriptionBuilder
     }
 
     @SuppressWarnings( "unchecked" )
-    private static TraversalDescription describeRelationships( TraversalDescription result,
+    private TraversalDescription describeRelationships( TraversalDescription result,
             Map<String, Object> description )
     {
         Object relationshipsDescription = description.get( "relationships" );
@@ -139,7 +143,7 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    private static TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )
+    private TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )
     {
         Object uniquenessDescription = description.get( "uniqueness" );
         if ( uniquenessDescription != null )
@@ -163,7 +167,7 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    private static TraversalDescription describeOrder( TraversalDescription result, Map<String, Object> description )
+    private TraversalDescription describeOrder( TraversalDescription result, Map<String, Object> description )
     {
         String orderDescription = (String) description.get( "order" );
         if ( orderDescription != null )
@@ -183,7 +187,7 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    private static <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass, boolean fuzzyMatch )
+    private <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass, boolean fuzzyMatch )
     {
         if ( name == null )
         {
@@ -213,7 +217,7 @@ public class TraversalDescriptionBuilder
         throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
 
-    private static String enumifyName( String name )
+    private String enumifyName( String name )
     {
         return name.replaceAll( " ", "_" )
                 .toUpperCase();

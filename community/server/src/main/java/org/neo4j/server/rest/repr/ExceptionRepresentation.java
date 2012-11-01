@@ -52,5 +52,11 @@ public class ExceptionRepresentation extends MappingRepresentation
             }
             serializer.putList( "stacktrace", ListRepresentation.string( lines ) );
         }
+
+        Throwable cause = exception.getCause();
+        if(cause != null)
+        {
+            serializer.putMapping( "cause", new ExceptionRepresentation( cause ) );
+        }
     }
 }

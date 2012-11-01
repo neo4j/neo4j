@@ -21,8 +21,7 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.ServerBuilder.server;
 
 import java.io.IOException;
@@ -34,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class ServerConfigTest extends ExclusiveServerTestBase
@@ -55,11 +55,11 @@ public class ServerConfigTest extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        assertEquals(NON_DEFAULT_PORT, server.getWebServerPort());
+        assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
 
         JaxRsResponse response = new RestRequest(server.baseUri()).get();
 
-        assertThat(response.getStatus(), is(200));
+        assertThat( response.getStatus(), is( 200 ) );
         response.close();
     }
 
@@ -85,13 +85,14 @@ public class ServerConfigTest extends ExclusiveServerTestBase
     @Test
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
-        server = server().withProperty( Configurator.WADL_ENABLED, "true").build();
+        server = server().withProperty( Configurator.WADL_ENABLED, "true" ).build();
         server.start();
         JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
 
         assertEquals(200, response.getStatus());
         assertEquals("application/vnd.sun.wadl+xml", response.getHeaders().get("Content-Type").iterator().next());
-        assertThat(response.getEntity(String.class), containsString("<application xmlns=\"http://wadl.dev.java.net/2009/02\">"));
+        assertThat( response.getEntity( String.class ), containsString( "<application xmlns=\"http://wadl.dev.java" +
+                ".net/2009/02\">" ) );
     }
 
     @Test
@@ -112,5 +113,58 @@ public class ServerConfigTest extends ExclusiveServerTestBase
         JaxRsResponse response = new RestRequest().get("http://localhost:7474/application.wadl", MediaType.WILDCARD_TYPE);
 
         assertEquals(404, response.getStatus());
+    }
+
+    @Test
+    public void shouldHaveSandboxingEnabledByDefault() throws Exception
+    {
+        // Given
+        server = server().build();
+        server.start();
+
+        // When
+        JaxRsResponse response = new RestRequest().post( "http://localhost:7474/db/data/node/0/traverse/node", "{\n" +
+                "  \"order\" : \"breadth_first\",\n" +
+                "  \"return_filter\" : {\n" +
+                "    \"body\" : \"position.getClass().getClassLoader()\",\n" +
+                "    \"language\" : \"javascript\"\n" +
+                "  },\n" +
+                "  \"prune_evaluator\" : {\n" +
+                "    \"body\" : \"position.getClass().getClassLoader()\",\n" +
+                "    \"language\" : \"javascript\"\n" +
+                "  },\n" +
+                "  \"uniqueness\" : \"node_global\",\n" +
+                "  \"relationships\" : [ {\n" +
+                "    \"direction\" : \"all\",\n" +
+                "    \"type\" : \"knows\"\n" +
+                "  }, {\n" +
+                "    \"direction\" : \"all\",\n" +
+                "    \"type\" : \"loves\"\n" +
+                "  } ],\n" +
+                "  \"max_depth\" : 3\n" +
+                "}", MediaType.APPLICATION_JSON_TYPE );
+
+        // Then
+        assertEquals(400, response.getStatus());
+    }
+
+    /*
+     * We can't actually test that disabling sandboxing works, because of the set-once global nature of Rhino
+     * security. Instead, we test here that changing it triggers the expected exception, letting us know that
+     * the code that *would* have set it to disabled realizes it has already been set to sandboxed.
+     *
+     * This at least lets us know that the configuration attribute gets picked up and used.
+     */
+    @Test(expected = RuntimeException.class)
+    public void shouldBeAbleToDisableSandboxing() throws Exception
+    {
+        // NOTE: This has to be initialized to sandboxed, because it can only be initialized once per JVM session,
+        // and all other tests depend on it being sandboxed.
+        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+
+        server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false").build();
+
+        // When
+        server.start();
     }
 }

@@ -240,6 +240,12 @@
             <version>2.0.7</version>
         </dependency>
 
+        <dependency>
+          <groupId>org.mozilla</groupId>
+          <artifactId>rhino</artifactId>
+          <version>1.7R4</version>
+        </dependency>
+
         <!-- File uploads -->
         <dependency>
             <groupId>com.sun.jersey.contribs</groupId>
