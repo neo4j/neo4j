@@ -124,7 +124,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                                    WHERE has(invoice.amount) and invoice.amount >= {min_sum}
                                    RETURN invoice''',
                                    customer_id = customer.id, min_sum = min_sum)['invoice']
-            # END SNIPPET: invoiceapp-domainlogic-get-by-traversal
+            # END SNIPPET: invoiceapp-domainlogic-get-by-cypher
             
             # START SNIPPET: invoiceapp-create-and-search
             for name in ['Acme Inc.', 'Example Ltd.']:
@@ -144,7 +144,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                 invoice = relationship.start
             # END SNIPPET: invoiceapp-create-and-search
             
-            self.assertEqual(len(large_invoices), 7)
+            self.assertEqual(len(list(large_invoices)), 7)
             db.shutdown()
         finally:
            if os.path.exists(folder_to_put_db_in):

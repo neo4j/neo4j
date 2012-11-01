@@ -58,12 +58,15 @@ class PythonicIterator(object):
             pass
         return item
     single = property(single)
-   
+ 
+class CountablePythonicIterator(PythonicIterator):
+  
     def __len__(self):
        count = 0
        for it in self:
            count += 1
        return count
+    
         
 def rethrow_current_exception_as(ErrorClass):
     # Because exceptions that come out of

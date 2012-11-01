@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A special execution engine for JPype, hiding scala
@@ -39,7 +40,7 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database )
     {
-        inner = new org.neo4j.cypher.ExecutionEngine( database );
+        inner = new org.neo4j.cypher.ExecutionEngine( database, StringLogger.DEV_NULL );
     }
 
     /**

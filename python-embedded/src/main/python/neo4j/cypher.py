@@ -56,14 +56,14 @@ class ExecutionResult(object):
     def __str__(self):
         return self._inner.toString()
         
-    def __len__(self):
-        return self._inner.length()
-            
     def keys(self):
         return from_java(self._inner.columns())
         
     @property
     def single(self):
         return self.__iter__().single
+
+
+
         
         

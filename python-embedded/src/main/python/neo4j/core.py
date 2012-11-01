@@ -18,7 +18,7 @@
 
 from _backend import *
 
-from util import rethrow_current_exception_as, PythonicIterator
+from util import rethrow_current_exception_as, PythonicIterator, CountablePythonicIterator
 from json import dumps
 
 #
@@ -165,7 +165,6 @@ class Transaction(extends(Transaction)):
         finally:
             self.finish()
             
-            
 class NodeRelationships(object):
     ''' Handles relationships of some
     given type on a single node.
@@ -189,7 +188,7 @@ class NodeRelationships(object):
                 it = self.__node.getRelationships(self.__type, direction).iterator()
             else:
                 it = self.__node.getRelationships(direction).iterator()
-            return PythonicIterator(it)
+            return CountablePythonicIterator(it)
         return relationships
         
     __iter__ = relationships(Direction.ANY)
@@ -202,7 +201,7 @@ class NodeRelationships(object):
         return self.__iter__().single
         
     def __len__(self):
-        return len(self.__iter__())
+        return self.__iter__().__len__()
         
     def create(self, t, *nodes, **properties):
         if not nodes: raise TypeError("No target node specified")
