@@ -85,16 +85,15 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         
         self.assertEquals(0, node.id)
 
-    def test_resultset_length(self):
+    def test_resultset_to_list(self):
         db = self.graphdb
 
         result = db.query("START n=node({id}) RETURN n",id=0)
 
-        #length = len(result)
         rows  = list(result)
 
-        #self.assertEquals(1, length)
         self.assertEquals(1, len(rows))
+        self.assertEquals(0, rows[0]['n'].id)
         
     def test_prepared_queries(self):
         db = self.graphdb
