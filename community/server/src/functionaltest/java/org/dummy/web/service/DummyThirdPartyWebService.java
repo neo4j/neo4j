@@ -19,25 +19,18 @@
  */
 package org.dummy.web.service;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import org.mortbay.util.ajax.JSON;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Path( "/" )
 public class DummyThirdPartyWebService
@@ -101,10 +94,10 @@ public class DummyThirdPartyWebService
     @POST
     @Path( "json-parse" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response readJson( String json ) throws IOException
+    public Response readJson( String json )
     {
-        JsonNode jsonObject = new ObjectMapper().readTree( json );
-        return Response.ok().entity( jsonObject.get("text").getValueAsText() ).build();
+        Map jsonObject = (Map) JSON.parse(json);
+        return Response.ok().entity( jsonObject.get("text") ).build();
     }
 
     @POST

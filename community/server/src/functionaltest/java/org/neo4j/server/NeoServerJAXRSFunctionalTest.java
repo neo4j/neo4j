@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import java.net.URI;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
@@ -28,14 +26,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.helpers.Transactor;
-import org.neo4j.server.helpers.UnitOfWork;
+import org.neo4j.server.helpers.*;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
@@ -108,7 +104,7 @@ public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
         assertEquals( "{\"out\":\"abc2\"}", response.replaceAll(" ", ""));
 
     }
-
+    
     private int createSimpleDatabase( final GraphDatabaseAPI graph )
     {
         final int numberOfNodes = 10;
