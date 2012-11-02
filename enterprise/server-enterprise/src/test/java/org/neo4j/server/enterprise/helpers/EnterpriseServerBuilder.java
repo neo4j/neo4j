@@ -24,6 +24,8 @@ import static org.neo4j.server.ServerTestUtils.createTempDir;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
@@ -32,7 +34,10 @@ import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.rest.paging.LeaseManagerProvider;
+import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.RealClock;
+import org.neo4j.server.rest.web.DatabaseActions;
 
 public class EnterpriseServerBuilder extends ServerBuilder {
 
@@ -50,11 +55,6 @@ public class EnterpriseServerBuilder extends ServerBuilder {
         }
         File configFile = createPropertiesFiles();
 
-        if ( clock != null )
-        {
-            LeaseManagerProvider.setClock( clock );
-        }
-
         return new EnterpriseNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
 	    {
         	@Override
@@ -69,6 +69,19 @@ public class EnterpriseServerBuilder extends ServerBuilder {
     					new EphemeralDatabase(configurator.configuration());
         		
         	}
+
+            @Override
+            protected DatabaseActions createDatabaseActions()
+            {
+                Clock clockToUse = (clock != null) ? clock : new RealClock();
+
+                return new DatabaseActions( database,
+                        new LeaseManager(clock),
+                        ForceMode.forced,
+                        configurator.configuration().getBoolean(
+                                Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ));
+            }
 	    };
     }
 	
