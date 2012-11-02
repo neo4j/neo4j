@@ -19,27 +19,29 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpSession;
-
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.CypherSession;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
+import javax.servlet.http.HttpSession;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {
     private HttpSession httpSession;
+    private final CypherExecutor cypherExecutor;
     private Map<String, ConsoleEngineCreator> engineCreators = new HashMap<String, ConsoleEngineCreator>();
 
-    public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines )
+    public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor )
     {
         this.httpSession = httpSession;
-        
+        this.cypherExecutor = cypherExecutor;
+
         enableEngines(supportedEngines);
     }
 
@@ -66,7 +68,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         Object session = httpSession.getAttribute( key );
         if ( session == null )
         {
-            session = creator.newSession( database );
+            session = creator.newSession( database, cypherExecutor );
             httpSession.setAttribute( key, session );
         }
         return (ScriptSession) session;
@@ -77,7 +79,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         GREMLIN
         {
             @Override
-            ScriptSession newSession( Database database )
+            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
             {
                 return new GremlinSession( database );
             }
@@ -85,21 +87,21 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         CYPHER
         {
             @Override
-            ScriptSession newSession( Database database )
+            ScriptSession newSession( Database database , CypherExecutor cypherExecutor)
             {
-                return new CypherSession( database.getGraph() );
+                return new CypherSession( cypherExecutor );
             }
         },
         SHELL
         {
             @Override
-            ScriptSession newSession( Database database )
+            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
             {
                 return new ShellSession( database.getGraph() );
             }
         };
         
-        abstract ScriptSession newSession( Database database );
+        abstract ScriptSession newSession( Database database, CypherExecutor cypherExecutor );
     }
 
 

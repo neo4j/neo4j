@@ -38,7 +38,14 @@ public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final StringLogger SYSTEM =
-        new ActualStringLogger( new PrintWriter( System.out ) );
+            new ActualStringLogger( new PrintWriter( System.out ) )
+            {
+                @Override
+                public void close()
+                {
+                    // don't close System.out
+                }
+            };
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
 
@@ -68,6 +75,12 @@ public abstract class StringLogger
     {
         return new ActualStringLogger( new File( storeDir, DEFAULT_NAME ).getAbsolutePath(),
                 rotationThreshold );
+    }
+
+    public static StringLogger wrap( Writer writer )
+    {
+        return new ActualStringLogger(
+                writer instanceof PrintWriter ? (PrintWriter) writer : new PrintWriter( writer ) );
     }
 
     public static StringLogger wrap( final StringBuffer target )
@@ -147,6 +160,51 @@ public abstract class StringLogger
     public void logMessage( String msg, Throwable cause )
     {
         logMessage( msg, cause, false );
+    }
+
+    public void debug( String msg )
+    {
+        // Ignore
+    }
+
+    public void debug( String msg, Throwable cause )
+    {
+        // Ignore
+    }
+
+    public boolean isDebugEnabled()
+    {
+        return false;
+    }
+
+    public void info( String msg )
+    {
+        logMessage( msg );
+    }
+
+    public void info( String msg, Throwable cause )
+    {
+        logMessage( msg, cause );
+    }
+
+    public void warn( String msg )
+    {
+        logMessage( msg );
+    }
+
+    public void warn( String msg, Throwable throwable )
+    {
+        logMessage( msg, throwable );
+    }
+
+    public void error( String msg )
+    {
+        logMessage( msg );
+    }
+
+    public void error( String msg, Throwable throwable )
+    {
+        logMessage( msg, throwable );
     }
 
     public void logLongMessage( String msg, Visitor<LineLogger> source )

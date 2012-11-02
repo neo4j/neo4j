@@ -39,22 +39,29 @@
 
 package org.neo4j.server.webadmin.console;
 
-import static org.hamcrest.text.StringContains.containsString;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.text.StringContains.containsString;
+import static org.junit.Assert.assertThat;
 
 public class CypherSessionTest
 {
     @Test
-    public void shouldReturnASingleNode() throws Exception
+    public void shouldReturnASingleNode() throws Throwable
     {
         ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        Database database = new WrappingDatabase( graphdb );
+        CypherExecutor executor = new CypherExecutor( database, StringLogger.DEV_NULL );
+        executor.start();
         try
         {
-            CypherSession session = new CypherSession( graphdb );
+            CypherSession session = new CypherSession( executor );
             Pair<String, String> result = session.evaluate( "start a=node(0) return a" );
             assertThat( result.first(), containsString( "Node[0]" ) );
         }

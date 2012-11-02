@@ -32,12 +32,10 @@ public class ClassicLoggingService
     extends LifecycleAdapter
     implements Logging
 {
-    private Config config;
     protected StringLogger stringLogger;
 
     public ClassicLoggingService(Config config)
     {
-        this.config = config;
         stringLogger = StringLogger.logger( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 

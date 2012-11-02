@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static java.util.Arrays.asList;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.helpers.Pair;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.logging.Logger;
+import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -32,21 +35,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.Pair;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.RepresentationType;
-import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
+import static java.util.Arrays.asList;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES;
+import static org.neo4j.server.configuration.Configurator.MANAGEMENT_CONSOLE_ENGINES;
 
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
@@ -61,9 +56,11 @@ public class ConsoleService implements AdvertisableService
     private final OutputFormat output;
 
     @SuppressWarnings("unchecked")
-    public ConsoleService( @Context Configuration config, @Context Database database, @Context HttpServletRequest req, @Context OutputFormat output )
+    public ConsoleService( @Context Configuration config, @Context Database database, @Context HttpServletRequest req,
+                           @Context OutputFormat output, @Context CypherExecutor cypherExecutor )
     {
-        this( new SessionFactoryImpl( req.getSession( true ), config.getList(Configurator.MANAGEMENT_CONSOLE_ENGINES, Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES) ), database, output );
+        this( new SessionFactoryImpl(req.getSession(true ), config.getList(MANAGEMENT_CONSOLE_ENGINES, DEFAULT_MANAGEMENT_CONSOLE_ENGINES), cypherExecutor),
+                database, output  );
     }
 
     public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, OutputFormat output )
