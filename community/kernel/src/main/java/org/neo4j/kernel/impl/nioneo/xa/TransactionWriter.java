@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
+
 import java.io.IOException;
 
 import javax.transaction.xa.Xid;
@@ -35,8 +37,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-
-import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
 
 /**
  * This class lives here instead of somewhere else in order to be able to access the {@link Command} implementations.
@@ -102,7 +102,7 @@ public class TransactionWriter
     public void relationshipType( int id, String label, int... dynamicIds ) throws IOException
     {
         write( new Command.RelationshipTypeCommand( null,
-                                                    withName( new RelationshipTypeRecord( id ), dynamicIds, label ) ) );
+                withName( new RelationshipTypeRecord( id ), dynamicIds, label ) ) );
     }
 
     public void update( NeoStoreRecord record ) throws IOException
@@ -166,19 +166,34 @@ public class TransactionWriter
 
     // Internals
 
-    private void add( NodeRecord node ) throws IOException
+    public void add( NodeRecord node ) throws IOException
     {
         write( new Command.NodeCommand( null, node ) );
     }
 
-    private void add( RelationshipRecord relationship ) throws IOException
+    public void add( RelationshipRecord relationship ) throws IOException
     {
         write( new Command.RelationshipCommand( null, relationship ) );
     }
 
-    private void add( PropertyRecord property ) throws IOException
+    public void add( PropertyRecord property ) throws IOException
     {
         write( new Command.PropertyCommand( null, property ) );
+    }
+
+    public void add( RelationshipTypeRecord record ) throws IOException
+    {
+        write( new Command.RelationshipTypeCommand( null, record ) );
+    }
+
+    public void add( PropertyIndexRecord record ) throws IOException
+    {
+        write( new Command.PropertyIndexCommand( null, record ) );
+    }
+
+    public void add( NeoStoreRecord record ) throws IOException
+    {
+        write( new Command.NeoStoreCommand( null, record ) );
     }
 
     private void write( Command command ) throws IOException
