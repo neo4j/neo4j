@@ -32,21 +32,24 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
     val q = newPlan.query
     val sortItems = q.sort.map(_.token)
     val slice = q.slice.get.token
-    val limit = slice match {
-      case Slice(Some(skip), Some(l)) => Add(skip, l)
-      case Slice(None, Some(l))       => l
+
+    /*
+    First, we calculate how much we must store. If the query has a SKIP, we need to keep SKIP + LIMIT number of rows,
+    around, and since we do not take on the SKIP part, we need to set a new slice that contains the SKIP
+
+    If no SKIP exists, it's simple - we mark the slice as solved, and use the LIMIT expression as is.
+     */
+    val (limitExpression, newSlice) = slice match {
+      case Slice(Some(skip), Some(l)) => (Add(skip, l), Some(Unsolved(Slice(Some(skip), None))))
+      case Slice(None, Some(l))       => (l, Some(Solved(slice)))
+      case _                          => throw new ThisShouldNotHappenError("Andres", "This builder should not be called for this query")
     }
 
-    val resultPipe = new TopPipe(newPlan.pipe, sortItems.toList, limit)
+    val resultPipe = new TopPipe(newPlan.pipe, sortItems.toList, limitExpression)
 
     val solvedSort = q.sort.map(_.solve)
-    val solvedSlice = slice match {
-      case Slice(Some(x), _) => Some(Unsolved(Slice(Some(x), None)))
-      case Slice(None, _)    => None
-      case _                 => throw new ThisShouldNotHappenError("Andres", "This builder should not be called for this query")
-    }
 
-    val resultQ = q.copy(sort = solvedSort, slice = solvedSlice)
+    val resultQ = q.copy(sort = solvedSort, slice = newSlice)
 
     plan.copy(pipe = resultPipe, query = resultQ)
   }

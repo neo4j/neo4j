@@ -88,7 +88,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
   @Test def execution_of_query_is_lazy() {
     //Given:
-    val limiter = new Limiter(3)
+    val limiter = new Limiter(2)
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val engine = new ExecutionEngine(graph)
@@ -106,7 +106,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:
-    val limiter = new Limiter(3)
+    val limiter = new Limiter(2)
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
