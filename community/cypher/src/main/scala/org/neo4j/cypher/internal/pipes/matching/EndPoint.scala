@@ -35,9 +35,9 @@ final case class EndPoint(name: String) extends Trail {
 
   protected[matching] def decompose(p: Seq[PropertyContainer], r: Map[String, Any]) =
     if (p.size == 1) {
-      Seq((Seq.empty, r ++ Map(name -> p.head)))
+      Iterator((Seq.empty, r ++ Map(name -> p.head)))
     } else {
-      Seq()
+      Iterator()
     }
 
   def symbols(table: SymbolTable): SymbolTable = table.add(name, NodeType())

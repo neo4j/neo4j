@@ -3,6 +3,7 @@
 o The traversal pattern matcher now supports variable length relationship patterns
 o Fixes #946 - HAS(...) fails with ThisShouldNotHappenException for some patterns
 o Made Cypher better at keeping a numeric type. Adding two integers now returns an integer, and not a double.
+o Major refactoring to make certain Cypher is more lazy
 
 1.9.M01 (2012-10-23)
 --------------------

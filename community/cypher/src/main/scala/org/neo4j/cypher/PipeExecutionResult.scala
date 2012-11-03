@@ -27,23 +27,21 @@ import java.io.{StringWriter, PrintWriter}
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
 
-class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List[String])
+class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String])
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
   with StringHelper {
 
-  lazy val immutableResult = r.map(m => m.toMap)
-
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
 
-  def columnAs[T](column: String): Iterator[T] = {
-    this.map(m => {
+  def columnAs[T](column: String): Iterator[T] = map {
+    case m => {
       val item: Any = m.getOrElse(column, throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
       item.asInstanceOf[T]
-    }).toIterator
+    }
   }
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
@@ -69,9 +67,9 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List
     columnSizes.toMap
   }
 
-  protected def createTimedResults = {
+  protected def createTimedResults: (List[Map[String, Any]], String) = {
     val start = System.currentTimeMillis()
-    val eagerResult = immutableResult.toList
+    val eagerResult = result.toList
     val ms = System.currentTimeMillis() - start
 
     (eagerResult, ms.toString)
@@ -137,12 +135,10 @@ class PipeExecutionResult(r: => Traversable[Map[String, Any]], val columns: List
     }).mkString("| ", " | ", " |")
   }
 
-  lazy val iterator = immutableResult.toIterator
+  def hasNext: Boolean = result.hasNext
 
-  def hasNext: Boolean = iterator.hasNext
+  def next(): ImmutableMap[String, Any] = result.next().toMap
 
-  def next(): ImmutableMap[String, Any] = iterator.next()
-
-  lazy val queryStatistics = QueryStatistics.empty
+  def queryStatistics = QueryStatistics.empty
 }
 

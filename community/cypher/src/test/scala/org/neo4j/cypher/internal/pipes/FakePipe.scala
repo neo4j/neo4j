@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import collection.Map
 
-class FakePipe(data: Seq[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
-//  val symbols: SymbolTable = new SymbolTable(identifiers.map {
-//    case (name, typ) => Identifier(name, typ)
-//  }: _*)
+class FakePipe(data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
+
+  def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
+
   val symbols: SymbolTable = new SymbolTable(identifiers.toMap)
 
-  def createResults(state: QueryState): Traversable[ExecutionContext] = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
+  def createResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
   def executionPlan(): String = "FAKE"
 }

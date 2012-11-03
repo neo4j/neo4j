@@ -19,19 +19,18 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import static org.junit.Assert.assertTrue;
 
 public class JavaQueryTest
 {
     @Test
     public void test()
     {
-        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries",
-                "dev/java" );
+        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries", "dev/java" );
 
         JavaQuery jq = new JavaQuery();
         jq.run();
@@ -44,13 +43,9 @@ public class JavaQueryTest
         assertTrue( jq.nodeResult.contains( "Node[" ) );
         assertTrue( jq.nodeResult.contains( "reference" ) );
 
-        gen.saveToFile( "result",
-                AsciidocHelper.createOutputSnippet( jq.resultString ) );
-        gen.saveToFile( "columns",
-                AsciidocHelper.createOutputSnippet( jq.columnsString ) );
-        gen.saveToFile( "node",
-                AsciidocHelper.createOutputSnippet( jq.nodeResult ) );
-        gen.saveToFile( "rows",
-                AsciidocHelper.createOutputSnippet( jq.rows ) );
+        gen.saveToFile( "result", AsciidocHelper.createOutputSnippet( jq.resultString ) );
+        gen.saveToFile( "columns", AsciidocHelper.createOutputSnippet( jq.columnsString ) );
+        gen.saveToFile( "node", AsciidocHelper.createOutputSnippet( jq.nodeResult ) );
+        gen.saveToFile( "rows", AsciidocHelper.createOutputSnippet( jq.rows ) );
     }
 }

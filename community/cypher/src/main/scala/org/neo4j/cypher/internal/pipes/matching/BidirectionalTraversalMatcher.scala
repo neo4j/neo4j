@@ -45,7 +45,7 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
   val baseTraversal: TraversalDescription = Traversal.traversal(Uniqueness.RELATIONSHIP_PATH)
   val collisionDetector = new StepCollisionDetector
 
-  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path] = {
+  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
     val s = start(context).toList
     val e = end(context).toList
 
@@ -66,11 +66,11 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
     val (startDescription, endDescription) = produceTraversalDescriptions()
 
-    val result: JIterable[Path] = Traversal.bidirectionalTraversal()
+    val result = Traversal.bidirectionalTraversal()
       .startSide(startDescription)
       .endSide(endDescription)
       .collisionPolicy(collisionDetector)
-      .traverse(s.asJava, e.asJava)
+      .traverse(s.asJava, e.asJava).iterator()
 
     result.asScala
   }

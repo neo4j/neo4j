@@ -25,12 +25,13 @@ class EmptyResultPipe(source: Pipe)
   extends PipeWithSource(source) {
 
   def createResults(state: QueryState) = {
-    source.createResults(state)
+    val iter = source.createResults(state)
+    while(iter.hasNext) {
+      iter.next()
+    }
 
-    Seq()
+    Iterator()
   }
-
-//  def symbols = new SymbolTable()
 
   override def executionPlan(): String = source.executionPlan() + "\nEmptyResult()"
 

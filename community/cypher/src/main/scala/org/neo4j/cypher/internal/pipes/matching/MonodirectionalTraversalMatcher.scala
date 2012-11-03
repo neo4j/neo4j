@@ -38,11 +38,10 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionCont
     expand(new TraversalPathExpander(params), initialStartStep)
 
 
-  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path] = {
+  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
     val arr = start(context).toArray
 
-    val traverse = baseTraversal(context).traverse(arr: _*).asScala.toList
-    traverse
+    baseTraversal(context).traverse(arr: _*).iterator().asScala
   }
 
 

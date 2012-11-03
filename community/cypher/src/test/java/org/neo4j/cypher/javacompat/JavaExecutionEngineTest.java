@@ -19,26 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.junit.matchers.JUnitMatchers.hasItem;
-import static org.junit.matchers.JUnitMatchers.hasItems;
-import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +28,20 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.hasItem;
+import static org.junit.matchers.JUnitMatchers.hasItems;
+import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class JavaExecutionEngineTest
 {
@@ -104,7 +98,6 @@ public class JavaExecutionEngineTest
         assertThat( result.columns(), hasItem( "n" ) );
         Iterator<Node> n_column = result.columnAs( "n" );
         assertThat( asIterable( n_column ), hasItem( db.getNodeById( 0 ) ) );
-        assertThat( result.toString(), containsString( "Node[0]" ) );
 // END SNIPPET: JavaQuery
     }
 

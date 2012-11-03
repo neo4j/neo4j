@@ -44,7 +44,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     new SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
 
-  def createResults(state: QueryState): Traversable[ExecutionContext] = {
+  def createResults(state: QueryState) = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
@@ -62,13 +62,13 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       ctx.newFrom(newMap)
     }
 
-    def createEmptyResult(params:Map[String,Any]): Traversable[ExecutionContext] = {
+    def createEmptyResult(params:Map[String,Any]): Iterator[ExecutionContext] = {
       val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
 
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
-      Traversable(ExecutionContext(newMap, params = params))
+      Iterator(ExecutionContext(newMap, params = params))
     }
 
 
@@ -79,15 +79,13 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       functions.foreach(func => func(ctx))
     })
 
-    val a = if (result.isEmpty && keyNames.isEmpty) {
+    if (result.isEmpty && keyNames.isEmpty) {
       createEmptyResult(state.params)
     } else {
       result.map {
         case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx)
-      }
+      }.toIterator
     }
-
-    a
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + oldKeyExpressions.mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"

@@ -515,7 +515,8 @@ trait StatisticsChecker extends Assertions {
                   propertiesSet: Int = 0,
                   deletedNodes: Int = 0,
                   deletedRelationships: Int = 0) {
-    assert(result.queryStatistics() === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes, deletedRelationships)
+    val statistics = result.queryStatistics()
+    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes, deletedRelationships)
     )
   }
 }

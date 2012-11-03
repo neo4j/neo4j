@@ -34,7 +34,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val kernPath = Seq(nodeA, rel, nodeB)
     val path = SingleStepTrail(EndPoint("b"), Direction.OUTGOING, "link", Seq("LINK_T"), "a", None, None, null)
 
-    val resultMap = path.decompose(kernPath)
+    val resultMap = path.decompose(kernPath).toList
     assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "link" -> rel)))
   }
 
@@ -53,7 +53,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val bToA = SingleStepTrail(aPoint, Direction.OUTGOING, "link2", Seq("LINK_T"), "b", None, None, null)
     val cToB = SingleStepTrail(bToA, Direction.OUTGOING, "link1", Seq("LINK_T"), "a", None, None, null)
 
-    val resultMap = cToB.decompose(kernPath)
+    val resultMap = cToB.decompose(kernPath).toList
 
     assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "c" -> nodeC, "link1" -> rel1, "link2" -> rel2)))
   }
@@ -72,7 +72,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //When
-    val resultMap = path.decompose(kernPath)
+    val resultMap = path.decompose(kernPath).toList
 
     //Then
     assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*))))
@@ -92,7 +92,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
       VariableLengthStepTrail(EndPoint("b"), Direction.OUTGOING, Seq("A"), 1, Some(2), "p", Some("r"), "a", null)
 
     //When
-    val resultMap = path.decompose(kernPath)
+    val resultMap = path.decompose(kernPath).toList
 
     //Then
     assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "p" -> PathImpl(kernPath:_*), "r"->Seq(rel0))))
@@ -117,7 +117,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val firstStep = SingleStepTrail(lastStep, Direction.OUTGOING, "r1", Seq("B"), "x", None, None, null)
 
     //When
-    val resultMap = firstStep.decompose(kernPath)
+    val resultMap = firstStep.decompose(kernPath).toList
 
     //Then
     assert(resultMap === List(Map("x" -> node0, "a" -> node1, "b" -> node2, "r1" -> rel1, "p" -> expectedPath)))
@@ -141,7 +141,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //When
-    val resultMap = path.decompose(kernPath)
+    val resultMap = path.decompose(kernPath).toList
 
     //Then
     assert(resultMap === List(Map("x" -> node2, "a" -> node0, "b" -> node1, "r1" -> rel1, "p" -> expectedPath)))
@@ -165,7 +165,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val path = VariableLengthStepTrail(bound, Direction.OUTGOING, Seq("A"), 1, Some(2), "p", None, "a", null)
 
     //When
-    val resultMap = path.decompose(input)
+    val resultMap = path.decompose(input).toList
 
     //Then
     assert(resultMap === List(Map("a" -> node0, "b" -> node2, "p" -> PathImpl(expectedPath:_*))))
@@ -188,7 +188,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val path = VariableLengthStepTrail(single, Direction.OUTGOING, Seq("A"), 0, Some(1), "p", None, "a", null)
 
     //When
-    val resultMap = path.decompose(input)
+    val resultMap = path.decompose(input).toList
 
     //Then
     assert(resultMap === List(Map("a" -> node0, "b" -> node0, "c" -> node1, "p" -> expectedPath, "r" -> rel0)))
@@ -217,7 +217,7 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     val second = VariableLengthStepTrail(first, Direction.OUTGOING, Seq("A"), 0, None, "p1", None, "a", null)
 
     //When
-    val resultMap = second.decompose(input)
+    val resultMap = second.decompose(input).toList
 
     //Then
     assert(resultMap === List(

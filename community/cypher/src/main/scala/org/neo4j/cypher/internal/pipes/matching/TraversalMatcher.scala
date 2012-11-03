@@ -23,5 +23,5 @@ import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
 import org.neo4j.graphdb.Path
 
 trait TraversalMatcher {
-  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterable[Path]
+  def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path]
 }

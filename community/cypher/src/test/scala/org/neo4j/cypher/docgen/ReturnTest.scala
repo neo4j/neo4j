@@ -104,7 +104,6 @@ like this:""",
       queryText = """start a=node(%A%) return a.age > 30, "I'm a literal", length(a-->())""",
       returns = "Returns a predicate, a literal and function call with a pattern expression parameter.",
       assertions = (p) => {
-        println(p.dumpToString())
         val row: Map[String, Any] = p.toList.head
 
         assertEquals("I'm a literal", row("\"I'm a literal\""))

@@ -35,7 +35,9 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     }
   }
 
-  def createResults(state:QueryState) = source.createResults(state).toList.sortWith((a, b) => compareBy(a, b, sortDescription))
+  def createResults(state:QueryState) =
+    source.createResults(state).toList.
+    sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false

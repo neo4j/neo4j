@@ -47,9 +47,9 @@ final case class SingleStepTrail(next: Trail,
 
   def size = next.size + 1
 
-  protected[matching] def decompose(p: Seq[PropertyContainer], m: Map[String, Any]): Traversable[(Seq[PropertyContainer], Map[String, Any])] =
+  protected[matching] def decompose(p: Seq[PropertyContainer], m: Map[String, Any]): Iterator[(Seq[PropertyContainer], Map[String, Any])] =
     if (p.size < 2) {
-      Seq()
+      Iterator()
     } else {
       val r = p.tail.head
       val n = p.head

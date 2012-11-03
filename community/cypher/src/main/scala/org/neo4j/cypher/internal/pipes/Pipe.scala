@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * the execute the query.
  */
 trait Pipe {
-  def createResults(state: QueryState): Traversable[ExecutionContext]
+  def createResults(state: QueryState): Iterator[ExecutionContext]
 
   def symbols: SymbolTable
 
@@ -46,7 +46,7 @@ trait Pipe {
 }
 
 class NullPipe extends Pipe {
-  def createResults(state: QueryState) = Seq(ExecutionContext.empty)
+  def createResults(state: QueryState) = Seq(ExecutionContext.empty).toIterator
 
   def symbols: SymbolTable = new SymbolTable()
 

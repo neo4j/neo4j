@@ -34,11 +34,11 @@ class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSour
     }
     try {
       try {
-        val result = source.createResults(state).toList
+        val result = source.createResults(state).toList.iterator
         tx.success()
         result
       } catch {
-        case e => {
+        case e: Throwable => {
           tx.failure()
           throw e
         }

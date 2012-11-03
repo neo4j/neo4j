@@ -93,7 +93,7 @@ final case class VariableLengthStepTrail(next: Trail,
       validRelationship = checkPath(curr)
     }
 
-    result
+    result.toIterator
   }
 
   def pathDescription = next.pathDescription ++ Seq(path, end) ++ relIterator

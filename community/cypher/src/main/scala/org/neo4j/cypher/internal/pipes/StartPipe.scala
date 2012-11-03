@@ -30,14 +30,13 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
   val symbols = inner.symbols.add(name, identifierType)
 
-  def createResults(state: QueryState): Traversable[ExecutionContext] = {
-    val map = inner.createResults(state).flatMap(ctx => {
+  def createResults(state: QueryState) = {
+    inner.createResults(state).flatMap(ctx => {
       val source: Iterable[T] = createSource(ctx)
       source.map(x => {
         ctx.newWith(name -> x)
       })
     })
-    map
   }
 
   def visibleName: String

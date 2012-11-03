@@ -1831,12 +1831,6 @@ RETURN x0.name?
     assert(resultWithLimit.toList === resultWithoutLimit.toList)
   }
 
-  @Test def should_be_able_to_figure_out_that_aggregations_in_order_by() {
-    val q = "start user=node({0}) return user, avg(user.age) order by avg(user.age) desc, count(*) desc"
-
-    parseAndExecute(q)
-  }
-
   @Test def return_all_identifiers() {
     val a = createNode()
     val b = createNode()

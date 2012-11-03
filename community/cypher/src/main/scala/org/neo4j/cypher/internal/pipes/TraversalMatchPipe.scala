@@ -21,27 +21,14 @@ package org.neo4j.cypher.internal.pipes
 
 import matching.{Trail, TraversalMatcher}
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import collection.JavaConverters._
 import org.neo4j.graphdb.Path
+import collection.JavaConverters._
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
+
   def createResults(state: QueryState) = {
-    val input = source.createResults(state)
-
-    input.flatMap {
-      context =>
-        // Find the matching paths
-        val paths: Iterable[Path] = matcher.findMatchingPaths(state, context).toList
-
-
-        //Expand paths to execution contexts
-        paths.flatMap {
-          path =>
-            val seq = path.iterator().asScala.toSeq
-            val maps = trail.decompose(seq)
-            maps.map(context.newWith)
-        }
-    }
+    val sourceResults = source.createResults(state)
+    new MatchProducer(sourceResults, state)
   }
 
   def symbols = trail.symbols(source.symbols)
@@ -49,4 +36,66 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
   def executionPlan() = "TraversalMatcher()"
 
   def assertTypes(symbols: SymbolTable) {}
+
+  class MatchProducer(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
+    var pathBuffer: Iterator[Path] = Iterator()
+    var mapBuffer: Iterator[Map[String, Any]] = Iterator()
+    var currentContext: ExecutionContext = null
+
+    var current: Option[ExecutionContext] = null
+
+    def hasNext = current match {
+      case null => spoolToNext(); current.nonEmpty
+      case _    => current.nonEmpty
+    }
+
+    def next(): ExecutionContext = current match {
+      case null =>
+        spoolToNext()
+        next()
+
+      case None =>
+        throw new NoSuchElementException("next on empty iterator")
+
+      case Some(result) =>
+        spoolToNext()
+        result
+    }
+
+    private def spoolToNext() {
+      def getNextFromMapBuffer =
+        Some(currentContext.newWith(mapBuffer.next()))
+
+      def getNextFromPathBuffer = {
+        val p: Path = pathBuffer.next()
+        val seq = p.iterator().asScala.toSeq
+        trail.decompose(seq).toIterator
+      }
+
+      def getNextFromInput = {
+        currentContext = input.next()
+        matcher.findMatchingPaths(state, currentContext)
+      }
+
+      if (mapBuffer.hasNext) {
+        current = getNextFromMapBuffer
+      } else
+        if (pathBuffer.hasNext) {
+          mapBuffer = getNextFromPathBuffer
+          spoolToNext()
+        } else
+          if (input.hasNext) {
+            pathBuffer = getNextFromInput
+            spoolToNext()
+          } else {
+            current = None
+          }
+    }
+
+    override def toString() = current match {
+      case null => "uninitialized iterator"
+      case _    => super.toString()
+    }
+  }
+
 }

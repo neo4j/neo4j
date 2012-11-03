@@ -23,25 +23,26 @@ import internal.pipes.QueryState
 import org.neo4j.graphdb.GraphDatabaseService
 import collection.Map
 
-class EagerPipeExecutionResult(r: => Traversable[Map[String, Any]],
+class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService)
-  extends PipeExecutionResult(r, columns) {
+  extends PipeExecutionResult(result, columns) {
 
-  override lazy val queryStatistics = QueryStatistics(
-    nodesCreated = state.createdNodes.count,
-    relationshipsCreated = state.createdRelationships.count,
-    propertiesSet = state.propertySet.count,
-    deletedNodes = state.deletedNodes.count,
-    deletedRelationships = state.deletedRelationships.count)
+  val (eagerResult,timeTaken) = super.createTimedResults
+  lazy val inner = eagerResult.iterator
 
-  override val createTimedResults = {
-    val start = System.currentTimeMillis()
-    val eagerResult = immutableResult.toList
+  override def next() = inner.next().toMap
+  override def hasNext = inner.hasNext
 
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
+  override def queryStatistics = {
+    QueryStatistics(
+      nodesCreated = state.createdNodes.count,
+      relationshipsCreated = state.createdRelationships.count,
+      propertiesSet = state.propertySet.count,
+      deletedNodes = state.deletedNodes.count,
+      deletedRelationships = state.deletedRelationships.count)
   }
+
+  override def createTimedResults = (eagerResult,timeTaken)
 }

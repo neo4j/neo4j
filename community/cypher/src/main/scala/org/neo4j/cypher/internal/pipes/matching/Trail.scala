@@ -34,9 +34,9 @@ abstract class Trail {
 
   def toSteps(id: Int): Option[ExpanderStep]
 
-  def decompose(p: Seq[PropertyContainer]): Traversable[Map[String, Any]] = decompose(p, Map.empty).map(_._2)
+  def decompose(p: Seq[PropertyContainer]): Iterator[Map[String, Any]] = decompose(p, Map.empty).map(_._2)
 
-  protected[matching] def decompose(p: Seq[PropertyContainer], r: Map[String, Any]): Traversable[(Seq[PropertyContainer], Map[String, Any])]
+  protected[matching] def decompose(p: Seq[PropertyContainer], r: Map[String, Any]): Iterator[(Seq[PropertyContainer], Map[String, Any])]
 
   def symbols(table: SymbolTable): SymbolTable
 
