@@ -71,7 +71,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
   @Test def should_not_accept_if_not_sliced() {
     val q = PartiallySolvedQuery().copy(
       extracted = true,
-      slice = Seq(Unsolved(Slice(Some(Literal(19)), None))),
+      slice = Some(Unsolved(Slice(Some(Literal(19)), None))),
       returns = Seq(Unsolved(ReturnItem(Literal("foo"), "foo")))
     )
 

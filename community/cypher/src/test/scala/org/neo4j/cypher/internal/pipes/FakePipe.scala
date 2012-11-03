@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import collection.Map
 
-class FakePipe(data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
+class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
 
   def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
 

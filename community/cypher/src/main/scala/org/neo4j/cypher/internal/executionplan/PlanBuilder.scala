@@ -45,6 +45,7 @@ object PlanBuilder extends Enumeration {
   val RelationshipById = -1
   val IndexQuery = 0
   val Extraction = 0
+  val TopX = -1
   val Slice = 0
   val ColumnFilter = 0
   val GlobalStart = 1

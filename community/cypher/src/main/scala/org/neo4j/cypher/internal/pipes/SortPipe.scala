@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.Comparer
 import collection.mutable.Map
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with Comparer {
+class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with ExecutionContextComparer {
   def symbols = source.symbols
 
   def assertTypes(symbols: SymbolTable) {
@@ -39,6 +39,11 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     source.createResults(state).toList.
     sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
+}
+
+trait ExecutionContextComparer extends Comparer {
   def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false
     case head :: tail => {
@@ -53,5 +58,4 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     }
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
 }

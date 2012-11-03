@@ -181,7 +181,8 @@ The Neo4j Team""")
     new CreateNodesAndRelationshipsBuilder(graph),
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
-    new TraversalMatcherBuilder(graph)
+    new TraversalMatcherBuilder(graph),
+    new TopPipeBuilder
   )
 
   override def toString = executionPlanText

@@ -32,7 +32,7 @@ class SliceBuilderTest extends BuilderTest {
 
   @Test def should_accept_if_all_work_is_done_and_sorting_not_yet() {
     val q = PartiallySolvedQuery().copy(
-      slice = Seq(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
+      slice = Some(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
       extracted = true
     )
 
@@ -47,7 +47,7 @@ class SliceBuilderTest extends BuilderTest {
 
   @Test def should_not_accept_if_not_yet_sorted() {
     val q = PartiallySolvedQuery().copy(
-      slice = Seq(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
+      slice = Some(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
       extracted = true,
       sort = Seq(Unsolved(SortItem(Literal(1), true)))
     )
