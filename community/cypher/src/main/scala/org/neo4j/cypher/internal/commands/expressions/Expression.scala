@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher._
+import internal.helpers.TypeSafeMathSupport
 import internal.pipes.ExecutionContext
 import internal.symbols._
 import collection.Map
@@ -69,7 +70,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression)
-  extends Expression {
+  extends Expression with TypeSafeMathSupport {
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
@@ -84,7 +85,7 @@ abstract class Arithmetics(left: Expression, right: Expression)
     }
   }
 
-  def calc(a: Number, b: Number): Number
+  def calc(a: Number, b: Number): Any
 
   def filter(f: (Expression) => Boolean) = if(f(this))
     Seq(this) ++ left.filter(f) ++ right.filter(f)

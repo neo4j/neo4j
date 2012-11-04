@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction
-  with Plus
+  with TypeSafeMathSupport
   with NumericExpressionOnly {
 
   def name = "AVG"

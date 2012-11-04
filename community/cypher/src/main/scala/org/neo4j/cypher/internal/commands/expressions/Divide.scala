@@ -24,7 +24,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def verb = "divide"
 
-  def calc(a: Number, b: Number) = a.doubleValue() / b.doubleValue()
+  def calc(a: Number, b: Number) = divide(a, b)
 
   def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 
