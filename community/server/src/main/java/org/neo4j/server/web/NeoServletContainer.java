@@ -27,6 +27,7 @@ import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.AbstractInjectableProvider;
+import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.plugins.Injectable;
@@ -63,6 +64,7 @@ public class NeoServletContainer extends ServletContainer
         Set<Object> singletons = rc.getSingletons();
         singletons.add( new LeaseManagerProvider() );
         singletons.add( new DatabaseProvider( server.getDatabase() ) );
+        singletons.add( new CypherExecutorProvider( server.getCypherExecutor() ) );
         singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().getGraph() ) );
         singletons.add( new NeoServerProvider( server ) );
         singletons.add( new ConfigurationProvider( server.getConfiguration() ) );

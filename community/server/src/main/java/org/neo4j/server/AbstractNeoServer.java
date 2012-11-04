@@ -26,9 +26,13 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
@@ -44,6 +48,8 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
+
+import static org.neo4j.kernel.logging.Loggers.CYPHER;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -61,7 +67,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
 
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
-    
+    private CypherExecutor cypherExecutor;
 
     protected abstract StartupHealthCheck createHealthCheck();
 
@@ -89,6 +95,23 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
+    protected Logging getLogging()
+    {
+        GraphDatabaseAPI graph = database.getGraph();
+        if (graph instanceof InternalAbstractGraphDatabase)
+        {
+            InternalAbstractGraphDatabase internalAbstractGraphDatabase = (InternalAbstractGraphDatabase) graph;
+            return internalAbstractGraphDatabase.getLogging();
+        }
+        return new Logging()
+        {
+            @Override public StringLogger getLogger(String name)
+            {
+                return StringLogger.DEV_NULL;
+            }
+        };
+    }
+
 	@Override
     public void start()
     {
@@ -98,10 +121,14 @@ public abstract class AbstractNeoServer implements NeoServer
 	        // container
 	        startupHealthCheck();
 	
-	        configureWebServer();
-	
 	        database.start();
 	        
+            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CYPHER ) );
+
+            configureWebServer();
+
+            cypherExecutor.start();
+
 	        DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
 	
 	        StringLogger logger = diagnosticsManager.getTargetLog();
@@ -393,6 +420,12 @@ public abstract class AbstractNeoServer implements NeoServer
     public Database getDatabase()
     {
         return database;
+    }
+
+    @Override
+    public CypherExecutor getCypherExecutor()
+    {
+        return cypherExecutor;
     }
 
     @Override

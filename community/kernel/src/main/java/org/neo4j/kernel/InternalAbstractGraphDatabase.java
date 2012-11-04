@@ -1024,6 +1024,11 @@ public abstract class InternalAbstractGraphDatabase
     {
         return kernelPanicEventGenerator;
     }
+
+    public Logging getLogging()
+    {
+        return logging;
+    }
     
 	private List<Class<?>> getSettingsClasses() {
 

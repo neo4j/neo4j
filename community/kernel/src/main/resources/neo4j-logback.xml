@@ -49,4 +49,8 @@
     <appender-ref ref="FILE" />
   </logger>
 
+  <logger name="neo4j.cypher" additivity="false"/>
+
+  <include resource="custom-logback.xml"/>
+
 </configuration>

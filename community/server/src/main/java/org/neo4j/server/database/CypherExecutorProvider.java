@@ -17,39 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.database;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
+import com.sun.jersey.api.core.HttpContext;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+import javax.ws.rs.ext.Provider;
 
-public interface NeoServer
+@Provider
+public class CypherExecutorProvider extends AbstractInjectableProvider< CypherExecutor >
 {
-	void init();
-	
-    void start();
+    public CypherExecutor cypherExecutor;
 
-    void stop();
+    public CypherExecutorProvider( CypherExecutor cypherExecutor )
+    {
+        super( CypherExecutor.class );
+        this.cypherExecutor = cypherExecutor;
+    }
 
-    Configuration getConfiguration();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    CypherExecutor getCypherExecutor();
-
-    @Deprecated
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
-
-    URI baseUri();
+    @Override
+    public CypherExecutor getValue( HttpContext httpContext )
+    {
+        return cypherExecutor;
+    }
 }
