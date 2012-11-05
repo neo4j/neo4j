@@ -393,13 +393,13 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         @Override
         public void failed( URI server )
         {
-            members.get().get( server ).available = true;
+            members.get().get( server ).available = false;
         }
 
         @Override
         public void alive( URI server )
         {
-            members.get().get( server ).available = false;
+            members.get().get( server ).available = true;
         }
     }
 

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -33,106 +33,124 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
 
-public class TestHaBean
+public class HaBeanIT
 {
-    private static final TargetDirectory dir = TargetDirectory.forTest( TestHaBean.class );
-    private static HighlyAvailableGraphDatabase database;
-    private static HighlyAvailableGraphDatabase secondDatabase;
+    private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
+    private static final Db db1 = new Db( 1 ), db2 = new Db( 2 ), db3 = new Db( 3 );
+    
+    private static class Db
+    {
+        private final int id;
+        private final String storeDir;
+        private HighlyAvailableGraphDatabase db;
+        
+        Db( int id )
+        {
+            this.id = id;
+            storeDir = dir.directory( "" + id, true ).getAbsolutePath();
+        }
+        
+        public Neo4jManager beans()
+        {
+            return new Neo4jManager( db.getDependencyResolver().resolveDependency( JmxKernelExtension
+                    .class ).getSingleManagementBean( Kernel.class ) );
+        }
+        
+        public HighAvailability ha()
+        {
+            return beans().getHighAvailabilityBean();
+        }
+        
+        public void start()
+        {
+            if ( db != null )
+                return;
+            
+            db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( storeDir )
+                .setConfig( HaSettings.server_id, "" + id )
+                .setConfig( "jmx.port", "" + (9912 + id) )
+                .setConfig( HaSettings.ha_server, ":" + (1136 + id) )
+                .setConfig( HaSettings.initial_hosts, ":5001" )
+                .newGraphDatabase();
+        }
+        
+        public void fail() throws Exception
+        {
+            ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
+            LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField( "life" ) ).get( clusterClient );
+            clusterClientLife.remove( instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() ) );
+            shutdown();
+        }
+        
+        public void repair() throws Exception
+        {
+            start();
+        }
+        
+        public void shutdown()
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+                db = null;
+            }
+        }
+    }
 
     @BeforeClass
     public static void startDb() throws Exception
     {
-        File storeDir = dir.directory( "1", /*clean=*/true );
-        database = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )
-                .setConfig( HaSettings.server_id, "1" )
-                .setConfig( "jmx.port", "9913" )
-                .setConfig( HaSettings.ha_server, ":1137" )
-                .newGraphDatabase();
-        database.beginTx().finish();
+        db1.start();
     }
 
-    private void startSecondDatabase()
-    {
-        if ( secondDatabase != null )
-            return;
-        
-        File storeDir = dir.directory( "2", /*clean=*/true );
-        secondDatabase = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )
-                .setConfig( HaSettings.server_id, "2" )
-                .setConfig( "jmx.port", "9914" )
-                .setConfig( HaSettings.ha_server, ":1138" )
-                .setConfig( HaSettings.initial_hosts, ":5001" )
-                .newGraphDatabase();
-        secondDatabase.beginTx().finish();
-    }
-    
     @AfterClass
     public static void stopDb() throws Exception
     {
-        if ( database != null )
-        {
-            database.shutdown();
-        }
-        database = null;
-        stopSecondDb();
+        db1.shutdown();
+        db2.shutdown();
+        db3.shutdown();
         dir.cleanup();
     }
     
-    private static void stopSecondDb() throws Exception
+    private static <T> T instance( Class<T> classToFind, Iterable<?> from )
     {
-        if ( secondDatabase != null )
-        {
-            secondDatabase.shutdown();
-            secondDatabase = null;
-        }
+        for ( Object item : from )
+            if ( classToFind.isAssignableFrom( item.getClass() ) )
+                return (T) item;
+        fail( "Couldn't find the network instance to fail. Internal field, so fragile sensitive to changes though" );
+        return null; // it will never get here.
     }
-    
-//    private static void failSecondDb() throws Exception
-//    {
-//        ClusterClient clusterClient = secondDatabase.getDependencyResolver().resolveDependency( ClusterClient.class );
-//        LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField( "life" ) ).get( clusterClient );
-//        clusterClientLife.remove( instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() ) );
-//    }
-//
-//    private static <T> T instance( Class<T> classToFind, Iterable<?> from )
-//    {
-//        for ( Object item : from )
-//            if ( classToFind.isAssignableFrom( item.getClass() ) )
-//                return (T) item;
-//        fail( "Couldn't find the network instance to fail. Internal field, so fragile sensitive to changes though" );
-//        return null; // it will never get here.
-//    }
-//
-//    private static Field accessible( Field field )
-//    {
-//        field.setAccessible( true );
-//        return field;
-//    }
+
+    private static Field accessible( Field field )
+    {
+        field.setAccessible( true );
+        return field;
+    }
 
     @Test
     public void canGetHaBean() throws Exception
     {
-        Neo4jManager neo4j = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-        HighAvailability ha = neo4j.getHighAvailabilityBean();
-        assertNotNull( "could not get ha bean", ha );
-        assertMasterInformation( ha );
+        assertNotNull( "could not get ha bean", db1.ha() );
+        assertMasterInformation( db1.ha() );
     }
 
     private void assertMasterInformation( HighAvailability ha )
@@ -148,9 +166,7 @@ public class TestHaBean
     @Test
     public void canGetBranchedStoreBean() throws Exception
     {
-        Neo4jManager neo4j = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-        BranchedStore bs = neo4j.getBranchedStoreBean();
+        BranchedStore bs = db1.beans().getBranchedStoreBean();
         assertNotNull( "could not get ha bean", bs );
         assertEquals( "no branched stores for new db", 0,
                 bs.getBranchedStores().length );
@@ -160,9 +176,7 @@ public class TestHaBean
     @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
     public void canGetInstanceConnectionInformation() throws Exception
     {
-        Neo4jManager neo4j = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-        ClusterMemberInfo[] clusterMembers = neo4j.getHighAvailabilityBean().getInstancesInCluster();
+        ClusterMemberInfo[] clusterMembers = db1.ha().getInstancesInCluster();
         assertNotNull( clusterMembers );
         assertEquals( 1, clusterMembers.length );
         ClusterMemberInfo clusterMember = clusterMembers[0];
@@ -177,18 +191,15 @@ public class TestHaBean
     @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
     public void canConnectToInstance() throws Exception
     {
-        Neo4jManager neo4j = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-        HighAvailability ha = neo4j.getHighAvailabilityBean();
-        ClusterMemberInfo[] clusterMembers = ha.getInstancesInCluster();
+        ClusterMemberInfo[] clusterMembers = db1.ha().getInstancesInCluster();
         assertNotNull( clusterMembers );
         assertEquals( 1, clusterMembers.length );
         ClusterMemberInfo clusterMember = clusterMembers[0];
         assertNotNull( clusterMember );
         Pair<Neo4jManager, HighAvailability> proc = clusterMember.connect();
         assertNotNull( "could not connect", proc );
-        neo4j = proc.first();
-        ha = proc.other();
+        Neo4jManager neo4j = proc.first();
+        HighAvailability ha = proc.other();
         assertNotNull( neo4j );
         assertNotNull( ha );
 
@@ -202,14 +213,10 @@ public class TestHaBean
     @Test
     public void joinedInstanceShowsUpAsSlave() throws Exception
     {
-        startSecondDatabase();
-        HighAvailability ha = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) ).getHighAvailabilityBean();
-        ClusterMemberInfo[] instancesInCluster = ha.getInstancesInCluster();
+        db2.start();
+        ClusterMemberInfo[] instancesInCluster = db1.ha().getInstancesInCluster();
         assertEquals( 2, instancesInCluster.length );
-        HighAvailability secondHa = new Neo4jManager( secondDatabase.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) ).getHighAvailabilityBean();
-        ClusterMemberInfo[] secondInstancesInCluster = secondHa.getInstancesInCluster();
+        ClusterMemberInfo[] secondInstancesInCluster = db2.ha().getInstancesInCluster();
         assertEquals( 2, secondInstancesInCluster.length );
         
         assertMasterAndSlaveInformation( instancesInCluster );
@@ -221,44 +228,34 @@ public class TestHaBean
     {
         // Start the second db and make sure it's visible in the member list.
         // Then shut it down to see if it disappears from the member list again.
-        startSecondDatabase();
-        HighAvailability secondHa = new Neo4jManager( secondDatabase.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) ).getHighAvailabilityBean();
-        assertEquals( 2, secondHa.getInstancesInCluster().length );
-        stopSecondDb();
+        db2.start();
+        assertEquals( 2, db2.ha().getInstancesInCluster().length );
+        db2.shutdown();
         
-        Neo4jManager neo4j = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) );
-        HighAvailability ha = neo4j.getHighAvailabilityBean();
-        assertEquals( 1, ha.getInstancesInCluster().length );
-        assertMasterInformation( ha );
+        assertEquals( 1, db1.ha().getInstancesInCluster().length );
+        assertMasterInformation( db1.ha() );
     }
     
-    @Ignore
     @Test
     public void failedMemberIsStillInMemberListAlthoughUnavailable() throws Exception
     {
-        startSecondDatabase();
-        HighAvailability secondHa = new Neo4jManager( secondDatabase.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) ).getHighAvailabilityBean();
-        assertEquals( 2, secondHa.getInstancesInCluster().length );
-        // failSecondDb();
+        db2.start();
+        db3.start();
+        assertEquals( 3, db2.ha().getInstancesInCluster().length );
         
-        HighAvailability ha = new Neo4jManager( database.getDependencyResolver().resolveDependency( JmxKernelExtension
-                .class ).getSingleManagementBean( Kernel.class ) ).getHighAvailabilityBean();
-        long end = System.currentTimeMillis() + SECONDS.toMillis( 300 );
-        boolean available = false;
-        while ( System.currentTimeMillis() < end )
-        {
-            available = member( ha.getInstancesInCluster(), 5002 ).isAvailable();
-            if ( !available )
-                break;
-            Thread.sleep( 500 );
-        }
-        if ( available )
-            fail( "Failed instance didn't show up as such in JMX" );
+        // Fail the instance
+        db2.fail();
+        await( db1.ha(), dbAvailability( false ) );
+        await( db3.ha(), dbAvailability( false ) );
+        
+        // Repair the failure and come back
+        db2.repair();
+        await( db1.ha(), dbAvailability( true ) );
+        await( db3.ha(), dbAvailability( true ) );
+        await( db2.ha(), dbAvailability( true ) );
+        db3.shutdown();
     }
-
+    
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 5001 );
@@ -292,5 +289,31 @@ public class TestHaBean
                 return member;
         fail( "Couldn't find cluster member with cluster URI port " + clusterPort + " among " + Arrays.toString( members ) );
         return null; // it will never get here.
+    }
+
+    private void await( HighAvailability ha, Predicate<ClusterMemberInfo> predicate ) throws InterruptedException
+    {
+        long end = System.currentTimeMillis() + SECONDS.toMillis( 300 );
+        boolean conditionMet = false;
+        while ( System.currentTimeMillis() < end )
+        {
+            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 5002 ) ); 
+            if ( conditionMet )
+                return;
+            Thread.sleep( 500 );
+        }
+        fail( "Failed instance didn't show up as such in JMX" );
+    }
+
+    private Predicate<ClusterMemberInfo> dbAvailability( final boolean available )
+    {
+        return new Predicate<ClusterMemberInfo>()
+        {
+            @Override
+            public boolean accept( ClusterMemberInfo item )
+            {
+                return item.isAvailable() == available;
+            }
+        };
     }
 }
