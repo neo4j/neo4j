@@ -106,6 +106,9 @@ GNU General Public License, version 2
   jquery.putCursorAtEnd.js
   jquery.sortable.js
 
+GNU General Public License, version 2 or later
+  Mozilla Rhino
+
 GNU General Public License, version 2 with the Classpath Exception
   jersey-core
   jersey-multipart
@@ -136,6 +139,9 @@ MIT License
   Pure Feature Detection Library (has.js)
   SLF4J API Module
   Underscore.js
+
+Mozilla Public License, Version 1.1
+  Mozilla Rhino
 
 Public Domain - JSON2
   JSON2
@@ -184,6 +190,10 @@ Logback Core Module
 MIME streaming extension
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
+
+Mozilla Rhino
+  GNU General Public License, version 2 or later
+  Mozilla Public License, Version 1.1
 
 Pure Feature Detection Library (has.js)
   Academic Free License version 3.0
