@@ -29,20 +29,20 @@ import org.reflections.Reflections;
 /**
  * Used to find benchmark cases to run.
  */
-public class BenchmarkCaseLoader
+public class BenchmarkLoader
 {
 
-    public Collection<BenchmarkCase> loadBenchmarksIn( String rootPackageName )
+    public Collection<Benchmark> loadBenchmarksIn( String rootPackageName )
     {
         Reflections reflections = new Reflections(rootPackageName);
 
-        Set<Class<? extends BenchmarkCase>> caseClasses =
-                reflections.getSubTypesOf(BenchmarkCase.class);
+        Set<Class<? extends Benchmark>> caseClasses =
+                reflections.getSubTypesOf(Benchmark.class);
 
         // Instantiate cases
-        Collection<BenchmarkCase> cases = new ArrayList<BenchmarkCase>();
+        Collection<Benchmark> cases = new ArrayList<Benchmark>();
 
-        for ( Class<? extends BenchmarkCase> caseClass : caseClasses )
+        for ( Class<? extends Benchmark> caseClass : caseClasses )
         {
             try
             {

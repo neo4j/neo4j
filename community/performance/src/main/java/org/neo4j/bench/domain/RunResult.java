@@ -26,7 +26,7 @@ import java.util.List;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
- * Result of a full run of one or more {@link org.neo4j.bench.cases.BenchmarkCase}es.
+ * Result of a full run of one or more {@link org.neo4j.bench.cases.Benchmark}es.
  */
 public class RunResult
 {

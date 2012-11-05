@@ -26,7 +26,7 @@ import org.neo4j.bench.domain.CaseResult;
  *
  * This provides default implementations for all but the #run method.
  */
-public abstract class BenchmarkAdapter implements BenchmarkCase
+public abstract class BenchmarkAdapter implements Benchmark
 {
     @Override
     public void setUp()

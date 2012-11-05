@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bench;
+package org.neo4j.bench.cases;
 
-import org.neo4j.bench.cases.SimpleBenchmark;
+import org.neo4j.bench.domain.CaseResult;
 
-/**
- * This is just to show how you would add a main method to run your benchmark stand-alone.
- */
-public class ExampleBenchmarkWithMainMethod extends SimpleBenchmark
+public interface Benchmark
 {
 
-    @Override
-    public long runOperations()
-    {
-        return 1000;
-    }
+    public void setUp();
+    public void tearDown();
 
-    public static void main(String ... args)
-    {
-        BenchmarkRunner.runAndDumpReport( new ExampleBenchmarkWithMainMethod() );
-    }
+    public CaseResult run();
+
 }

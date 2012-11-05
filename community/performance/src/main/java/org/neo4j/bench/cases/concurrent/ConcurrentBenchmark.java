@@ -43,12 +43,12 @@ import org.neo4j.bench.domain.CaseResult;
  * Each worker is expected to time it's own operations and return a set of metrics, those metrics are then combined into
  * totals.
  */
-public abstract class ConcurrentBenchmarkCase extends BenchmarkAdapter
+public abstract class ConcurrentBenchmark extends BenchmarkAdapter
 {
     private final int numberOfWorkers;
     private WorkerContext workerContext;
 
-    public ConcurrentBenchmarkCase( int numberOfWorkers )
+    public ConcurrentBenchmark( int numberOfWorkers )
     {
         this.numberOfWorkers = numberOfWorkers;
     }

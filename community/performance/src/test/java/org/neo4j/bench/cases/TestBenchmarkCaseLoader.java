@@ -42,10 +42,10 @@ public class TestBenchmarkCaseLoader
     public void shouldFindBenchCasesInPackage() throws Exception
     {
         // Given
-        BenchmarkCaseLoader loader = new BenchmarkCaseLoader();
+        BenchmarkLoader loader = new BenchmarkLoader();
 
         // When
-        Collection<BenchmarkCase> cases = loader.loadBenchmarksIn( getClass().getPackage().getName() );
+        Collection<Benchmark> cases = loader.loadBenchmarksIn( getClass().getPackage().getName() );
 
         // Then
         assertThat( cases.size(), is( 1 ));

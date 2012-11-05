@@ -34,7 +34,7 @@ public class TestSimpleBenchmark
     public void shouldReportRuntime() throws Exception
     {
         // Given
-        BenchmarkCase bench = new SimpleBenchmark()
+        Benchmark bench = new SimpleBenchmark()
         {
             @Override
             public long runOperations()

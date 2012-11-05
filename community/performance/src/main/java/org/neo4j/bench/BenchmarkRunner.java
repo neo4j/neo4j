@@ -21,15 +21,15 @@ package org.neo4j.bench;
 
 import java.util.Date;
 
-import org.neo4j.bench.cases.BenchmarkCase;
-import org.neo4j.bench.cases.BenchmarkCaseLoader;
+import org.neo4j.bench.cases.Benchmark;
+import org.neo4j.bench.cases.BenchmarkLoader;
 import org.neo4j.bench.domain.CaseResult;
 import org.neo4j.bench.domain.RunResult;
 
 public class BenchmarkRunner
 {
 
-    private final BenchmarkCaseLoader caseLoader;
+    private final BenchmarkLoader caseLoader;
     private final String testedVersion;
     private final String buildURL;
 
@@ -37,7 +37,7 @@ public class BenchmarkRunner
      * Convienience method for running a single benchmark.
      * @param benchmark
      */
-    public static void runAndDumpReport(BenchmarkCase benchmark)
+    public static void runAndDumpReport(Benchmark benchmark)
     {
         CaseResult result = new BenchmarkRunner().runCase( benchmark );
         System.out.println(result.createReport( "" ));
@@ -52,10 +52,10 @@ public class BenchmarkRunner
     {
         this.testedVersion = testedVersion;
         this.buildURL = buildURL;
-        caseLoader = new BenchmarkCaseLoader();
+        caseLoader = new BenchmarkLoader();
     }
 
-    public CaseResult runCase(BenchmarkCase benchmark)
+    public CaseResult runCase(Benchmark benchmark)
     {
         benchmark.setUp();
         try
@@ -69,7 +69,7 @@ public class BenchmarkRunner
     public RunResult runAllInPackage(String rootPackage)
     {
         RunResult result = new RunResult( testedVersion, new Date( ), buildURL );
-        for ( BenchmarkCase benchmarkCase : caseLoader.loadBenchmarksIn( rootPackage ) )
+        for ( Benchmark benchmarkCase : caseLoader.loadBenchmarksIn( rootPackage ) )
         {
             result.addResult( runCase( benchmarkCase ) );
         }

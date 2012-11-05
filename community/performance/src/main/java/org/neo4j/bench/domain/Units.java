@@ -26,36 +26,38 @@ public final class Units
     /**
      * An operation of any kind.
      */
-    public static Unit OPERATION = new Unit( "Operation" );
+    public static final Unit OPERATION = new Unit( "Operation" );
 
     /**
      * Average operation, to be used to denote "average ops per second"
      */
-    public static Unit AVERAGE_OPERATION = new Unit( "Avg. operation" );
+    public static final Unit AVERAGE_OPERATION = new Unit( "Avg. operation" );
 
     // Neo concepts
 
     /**
      * A basic write transaction that uses the core API basic functions.
      */
-    public static Unit CORE_API_WRITE_TRANSACTION = new Unit( "Core API write tx" );
+    public static final Unit CORE_API_WRITE_TRANSACTION = new Unit( "Core API write tx" );
 
     /**
      * This represents a non-transactional read operation
      * using the core API and indexes.
      */
-    public static Unit CORE_API_READ = new Unit( "Core API read" );
+    public static final Unit CORE_API_READ = new Unit( "Core API read" );
 
     // Time units
 
-    public static Unit SECOND      = new Unit("s");
-    public static Unit MILLISECOND = new Unit("ms");
-    public static Unit MICROSECOND = new Unit("µs");
-    public static Unit NANOSECOND  = new Unit("ns");
+    public static final Unit SECOND      = new Unit("s");
+    public static final Unit MILLISECOND = new Unit("ms");
+    public static final Unit MICROSECOND = new Unit("µs");
+    public static final Unit NANOSECOND  = new Unit("ns");
 
     // Other
 
-    public static Unit UNKNOWN = new Unit( "unknown" );
+    public static final Unit UNKNOWN = new Unit( "unknown" );
+    public static final Unit BYTE = new Unit( "b" );
+    public static final Unit OBJECT = new Unit( "object" );
 
     private Units(){};
 }

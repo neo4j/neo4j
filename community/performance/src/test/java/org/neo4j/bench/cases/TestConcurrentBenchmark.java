@@ -27,7 +27,7 @@ import static org.neo4j.bench.domain.Units.SECOND;
 
 import org.junit.Test;
 import org.neo4j.bench.cases.concurrent.BenchWorker;
-import org.neo4j.bench.cases.concurrent.ConcurrentBenchmarkCase;
+import org.neo4j.bench.cases.concurrent.ConcurrentBenchmark;
 import org.neo4j.bench.cases.concurrent.WorkerContext;
 import org.neo4j.bench.cases.concurrent.WorkerMetric;
 import org.neo4j.bench.domain.CaseResult;
@@ -39,7 +39,7 @@ public class TestConcurrentBenchmark
     public void shouldAggregateResultsCorrectly() throws Exception
     {
         // Given
-        BenchmarkCase bench = new ConcurrentBenchmarkCase(8)
+        Benchmark bench = new ConcurrentBenchmark(8)
         {
             @Override
             public BenchWorker createWorker()
