@@ -35,7 +35,7 @@ class AvgFunction(val value: Expression)
 
   def result =
     if (count > 0)
-      divide(sofar, count)
+      divide(sofar, count.toDouble)
     else
       null
 
