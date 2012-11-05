@@ -33,6 +33,10 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Loggers;
 
 @Service.Implementation( App.class )
 public class Start extends ReadOnlyGraphDatabaseApp
@@ -61,7 +65,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             String queryWithoutSemicolon = query.substring(0, query.lastIndexOf(";"));
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
+            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(),getCypherLogger() );
             try
             {
                 ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
@@ -77,6 +81,17 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             return Continuation.INPUT_INCOMPLETE;
         }
+    }
+
+    private StringLogger getCypherLogger()
+    {
+        GraphDatabaseAPI graph = getServer().getDb();
+        if (graph instanceof InternalAbstractGraphDatabase)
+        {
+            InternalAbstractGraphDatabase internalAbstractGraphDatabase = (InternalAbstractGraphDatabase) graph;
+            return internalAbstractGraphDatabase.getLogging().getLogger( Loggers.CYPHER );
+        }
+        return StringLogger.DEV_NULL;
     }
 
     private Map<String, Object> getParameters( Session session ) throws ShellException
