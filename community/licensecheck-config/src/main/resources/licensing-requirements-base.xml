@@ -42,7 +42,7 @@
     <artifact id="org.scala-lang:scala-library:">
       <license>BSD - Scala License</license>
     </artifact>
-    <artifact id="org.mozilla:rhino:jar:">
+    <artifact id="org.mozilla:rhino:jar:1.7R3">
       <license>GNU General Public License, version 2 or later</license>
       <license>Mozilla Public License, Version 1.1</license>
     </artifact>
