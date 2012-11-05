@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
-import collection.Map
-import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.helpers.{TypeSafeMathSupport, IsCollection}
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
-case class Add(a: Expression, b: Expression) extends Expression {
+case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
   def apply(ctx: ExecutionContext) = {
     val aVal = a(ctx)
     val bVal = b(ctx)
@@ -33,7 +32,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
     (aVal, bVal) match {
       case (null, _)                          => null
       case (_, null)                          => null
-      case (x: Number, y: Number)             => x.doubleValue() + y.doubleValue()
+      case (x: Number, y: Number)             => plus(x,y)
       case (x: String, y: String)             => x + y
       case (IsCollection(x), IsCollection(y)) => x ++ y
       case (IsCollection(x), y)               => x ++ Seq(y)
