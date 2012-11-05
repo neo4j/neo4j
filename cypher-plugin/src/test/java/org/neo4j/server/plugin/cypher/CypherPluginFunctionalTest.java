@@ -29,7 +29,6 @@ import java.io.UnsupportedEncodingException;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -82,7 +81,10 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
         String response = doRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 4, JsonHelper.jsonToMap( response )
+                .size() );
+        assertThat( response, containsString( "BadInputException" ) );
+        assertThat( response, containsString( "NotFoundException" ) );
     }
 
 
@@ -135,9 +137,10 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 4, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
+        assertTrue( response.contains( "BadInputException" ) );
+        assertTrue( response.contains( "SyntaxException" ) );
     }
 
     /**
@@ -146,7 +149,6 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
      */
     @Test
     @Documented
-    @Ignore
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {
         data.get();
@@ -154,9 +156,10 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        System.out.println( response );
+        assertEquals( 4, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
+        assertTrue( response.contains( "Unknown identifier" ) );
     }
     
     @Override
