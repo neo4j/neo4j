@@ -1,3 +1,7 @@
+1.9-SNAPSHOT
+------------
+o Traversal Javascript is now security sandboxed. It is possible to turn the sandbox off for the next two releases, for backwards compatibility.
+
 1.8.RC1 (2012-09-05)
 --------------------
 o Upgraded Jackson JAXRS to version 1.9.7 
