@@ -31,4 +31,17 @@ public interface HeartbeatListener
     void failed(URI server);
 
     void alive(URI server);
+    
+    public static class Adapter implements HeartbeatListener
+    {
+        @Override
+        public void failed( URI server )
+        {
+        }
+
+        @Override
+        public void alive( URI server )
+        {
+        }
+    }
 }

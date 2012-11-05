@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -28,21 +29,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.cluster.paxos.MemberIsAvailable;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-@Ignore
-public class TestHardKillIT
+public class HardKillIT
 {
-    private static final File path = TargetDirectory.forTest( TestHardKillIT.class ).graphDbDir( true );
+    private static final File path = TargetDirectory.forTest( HardKillIT.class ).graphDbDir( true );
 
     private ProcessStreamHandler processHandler;
 
@@ -60,10 +66,29 @@ public class TestHardKillIT
             assertTrue( !dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
 
+            final CountDownLatch newMasterAvailableLatch = new CountDownLatch( 1 );
+            dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener( new AtomicBroadcastListener()
+            {
+                @Override
+                public void receive( Payload value )
+                {
+                    try
+                    {
+                        Object event = new AtomicBroadcastSerializer().receive( value );
+                        if ( event instanceof MemberIsAvailable )
+                            if ( ClusterConfiguration.COORDINATOR.equals( ((MemberIsAvailable) event).getRole() ) )
+                                newMasterAvailableLatch.countDown();
+                    }
+                    catch ( Exception e )
+                    {
+                        fail( e.toString() );
+                    }
+                }
+            } );
             proc.destroy();
             proc = null;
 
-            Thread.sleep( 60000 );
+            newMasterAvailableLatch.await( 60, SECONDS );
 
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
@@ -109,8 +134,8 @@ public class TestHardKillIT
 
     private Process run( String machineId ) throws IOException
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp", System.getProperty( "java" +
-                ".class.path" ), TestHardKillIT.class.getName() ) );
+        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp",
+                System.getProperty( "java.class.path" ), HardKillIT.class.getName() ) );
         allArgs.add( machineId );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));

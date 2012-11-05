@@ -32,6 +32,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
@@ -85,6 +86,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     protected AtomicBroadcastSerializer serializer;
     private final ClusterClient cluster;
     protected Iterable<HighAvailabilityListener> listeners = Listeners.newListeners();
+    private volatile ClusterConfiguration clusterConfiguration;
 
     public PaxosHighAvailabilityEvents( Configuration config, ClusterClient cluster, StringLogger logger )
     {
@@ -122,31 +124,16 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
 
         cluster.addClusterListener( new ClusterListener.Adapter()
         {
-            private volatile ClusterConfiguration clusterConfiguration;
-
             @Override
             public void joinedCluster( URI member )
             {
-                final URI coordinator = clusterConfiguration.getElected( ClusterConfiguration.COORDINATOR );
-
-                if ( coordinator.equals( serverClusterId ) )
-                {
-                    // Reannounce that I am master, for the purpose of the new member to see this
-                    try
-                    {
-                        cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        e.printStackTrace();
-                    }
-                }
+                broadcastOurself();
             }
 
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                this.clusterConfiguration = clusterConfiguration;
+                PaxosHighAvailabilityEvents.this.clusterConfiguration = clusterConfiguration;
             }
 
             @Override
@@ -165,6 +152,15 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                 {
                     e.printStackTrace();
                 }
+            }
+        } );
+        
+        cluster.addHeartbeatListener( new HeartbeatListener.Adapter()
+        {
+            @Override
+            public void alive( URI server )
+            {
+                broadcastOurself();
             }
         } );
 
@@ -208,6 +204,27 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                 }
             }
         } );
+    }
+    
+    private void broadcastOurself()
+    {
+        // Reannounce that I am master, for the purpose of the new member to see this
+        try
+        {
+            final URI coordinator = clusterConfiguration.getElected( ClusterConfiguration.COORDINATOR );
+            if ( coordinator.equals( serverClusterId ) )
+            {
+                cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
+            }
+            else
+            {
+                memberIsAvailable( ClusterConfiguration.SLAVE );
+            }
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override

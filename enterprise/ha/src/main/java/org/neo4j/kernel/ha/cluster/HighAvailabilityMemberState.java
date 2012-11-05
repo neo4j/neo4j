@@ -263,10 +263,6 @@ public enum HighAvailabilityMemberState
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
                 {
-                    if ( slaveUri.equals( context.getMyId() ) )
-                    {
-                        throw new RuntimeException( "cannot transition from slave to slave" );
-                    }
                     return this;
                 }
 
