@@ -20,6 +20,11 @@
 
 package org.neo4j.test;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -31,8 +36,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -54,9 +57,14 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 {
     private static final String PATH = "test-data/impermanent-db";
 
+    public ImpermanentGraphDatabase()
+    {
+        this( new HashMap<String, String>() );
+    }
+
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( PATH, withoutMemmap( params ) );
+        super( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
@@ -64,7 +72,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( PATH, withoutMemmap( params ), indexProviders, kernelExtensions, cacheProviders,
+        super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
     }
 
@@ -80,16 +88,15 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return new EphemeralIdGenerator.Factory();
     }
 
-    private static Map<String, String> withoutMemmap( Map<String, String> params )
-    {   // Because EphemeralFileChannel doesn't support memorymapping
-        Map<String, String> result = new HashMap<String, String>( params );
-        result.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
-        return result;
-    }
-
-    public ImpermanentGraphDatabase()
+    private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
-        this( new HashMap<String, String>() );
+        // Because EphemeralFileChannel doesn't support memorymapping
+        Map<String, String> result = new HashMap<String, String>( params );
+        result.put( use_memory_mapped_buffers.name(), FALSE );
+
+        // To signal to index provides that we should be in-memory
+        result.put( ephemeral.name(), TRUE );
+        return result;
     }
 
     @Override

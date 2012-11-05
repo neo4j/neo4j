@@ -42,7 +42,6 @@ public class TestGraphDatabaseFactory
         {
             public GraphDatabaseService newDatabase(Map<String, String> config)
             {
-                config.put( "ephemeral", "true" );
                 return new ImpermanentGraphDatabase(config, indexProviders, kernelExtensions, cacheProviders,
                         txInterceptorProviders);
             }
