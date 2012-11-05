@@ -70,5 +70,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Chris Leishman |https://github.com/chrisleishman[chrisleishman] 
 |Brian Levine |https://github.com/blevine[blevine]
 |Ben Day |https://github.com/benday280412[benday280412]
+|Davide Savazzi |https://github.com/svzdvd[svzdvd]
 |=======
 
