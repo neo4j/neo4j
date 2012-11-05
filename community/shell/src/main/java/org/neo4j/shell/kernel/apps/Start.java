@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -33,6 +34,9 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.logging.Logging;
 
 @Service.Implementation( App.class )
 public class Start extends ReadOnlyGraphDatabaseApp
@@ -61,7 +65,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             String queryWithoutSemicolon = query.substring(0, query.lastIndexOf(";"));
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
+            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(),getCypherLogger() );
             try
             {
                 ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
@@ -77,6 +81,13 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             return Continuation.INPUT_INCOMPLETE;
         }
+    }
+
+    private StringLogger getCypherLogger()
+    {
+        DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
+        Logging logging = dependencyResolver.resolveDependency( Logging.class );
+        return logging.getLogger( Loggers.CYPHER );
     }
 
     private Map<String, Object> getParameters( Session session ) throws ShellException
