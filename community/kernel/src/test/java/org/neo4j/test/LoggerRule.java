@@ -40,7 +40,7 @@ public class LoggerRule
             throws Throwable
     {
         logger = LoggerFactory.getLogger( "test" );
-        logger.info( "Begin test:"+testName );
+        logger.debug( "Begin test:" + testName );
         super.before();
     }
 
@@ -48,7 +48,7 @@ public class LoggerRule
     protected void after()
     {
         super.after();
-        logger.info( "Finished test:" + testName );
+        logger.debug( "Finished test:" + testName );
     }
 
     @Override
