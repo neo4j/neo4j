@@ -37,6 +37,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TargetDirectory;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -51,7 +52,8 @@ public class RrdFactoryTest
     public void setUp() throws IOException
     {
         config = new MapConfiguration( new HashMap<String, String>() );
-        db = new WrappingDatabase( new ImpermanentGraphDatabase() );
+        db = new WrappingDatabase( new ImpermanentGraphDatabase(
+                TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath()) );
     }
 
     @After
@@ -107,7 +109,6 @@ public class RrdFactoryTest
                     public boolean accept( File file, String s )
                     {
                         return s.startsWith( "rrd-invalid" );
-
                     }
                 } ).length, is( 1 ) );
 

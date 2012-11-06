@@ -62,6 +62,20 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         this( new HashMap<String, String>() );
     }
 
+    /*
+     * TODO this shouldn't be here. It so happens however that some tests may use the database
+     * directory as the path to store stuff and in this case we need to define the path explicitly,
+     * otherwise we end up writing outside the workspace and hence leave stuff behind.
+     * The other option is to explicitly remove all files present on startup. Either way,
+     * the fact that this discussion takes place is indication that things are inconsistent,
+     * since an ImpermanentGraphDatabase should not have any mention of a store directory in
+     * any case.
+     */
+    public ImpermanentGraphDatabase( String storeDir )
+    {
+        super( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+    }
+
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
         super( PATH, withForcedInMemoryConfiguration( params ) );
