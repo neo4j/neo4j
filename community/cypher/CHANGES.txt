@@ -5,6 +5,7 @@ o Fixes #946 - HAS(...) fails with ThisShouldNotHappenException for some pattern
 o Made Cypher better at keeping a numeric type. Adding two integers now returns an integer, and not a double.
 o Major refactoring to make certain Cypher is more lazy
 o When asking for the top x rows by some value, Cypher will now only keep a list the size of x
+o Fix so identifiers created inside a foreach can be used by other statements in the foreach
 
 1.9.M01 (2012-10-23)
 --------------------

@@ -2278,4 +2278,11 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("b" -> b)))
   }
+
+  @Test
+  def can_use_identifiers_created_inside_the_foreach() {
+    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create a= { name: 'foo'}  set a.id = x)")
+
+    assert(result.toList === List())
+  }
 }
