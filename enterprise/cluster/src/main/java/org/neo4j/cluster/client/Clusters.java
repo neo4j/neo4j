@@ -20,7 +20,9 @@
 
 package org.neo4j.cluster.client;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -178,6 +180,23 @@ public class Clusters
     public static class Member
     {
         private String host;
+        
+        public Member( int port )
+        {
+            this( localhost() + ":" + port );
+        }
+
+        private static String localhost()
+        {
+            try
+            {
+                return InetAddress.getLocalHost().getHostAddress();
+            }
+            catch ( UnknownHostException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
 
         public Member( String host )
         {

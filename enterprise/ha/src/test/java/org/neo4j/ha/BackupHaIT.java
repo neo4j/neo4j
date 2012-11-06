@@ -25,6 +25,7 @@ import static org.neo4j.backup.BackupEmbeddedIT.BACKUP_PATH;
 import static org.neo4j.backup.BackupEmbeddedIT.PATH;
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,11 +41,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 public class BackupHaIT
 {
     private DbRepresentation representation;
     private ClusterManager clusterManager;
+    private ManagedCluster cluster;
 
     @Before
     public void startCluster() throws Throwable
@@ -52,20 +55,21 @@ public class BackupHaIT
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
 
-        clusterManager = new ClusterManager( getClass().getResource( "/threeinstances.xml" ).toURI(),
+        clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 new File( PATH ), MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
                 GraphDatabaseSetting.TRUE ) )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, int serverCount )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
             {
-                builder.setConfig( OnlineBackupSettings.online_backup_port, (4444 + serverCount) + "" );
+                builder.setConfig( OnlineBackupSettings.online_backup_port, (4444 + serverId) + "" );
             }
         };
         clusterManager.start();
+        cluster = clusterManager.getDefaultCluster();
 
         // Really doesn't matter which instance
-        representation = createSomeData( clusterManager.getMaster( "neo4j.ha" ) );
+        representation = createSomeData( cluster.getMaster() );
     }
 
     @After
@@ -92,8 +96,8 @@ public class BackupHaIT
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
                 backupArguments( true, "ha://127.0.0.1:5001", BACKUP_PATH, askForCluster ) ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
-        DbRepresentation newRepresentation = createSomeData( clusterManager.getAnySlave( askForCluster == null ?
-                "neo4j.ha" : askForCluster ) );
+        ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
+        DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
                 backupArguments( false, "ha://127.0.0.1:5002", BACKUP_PATH, askForCluster ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );

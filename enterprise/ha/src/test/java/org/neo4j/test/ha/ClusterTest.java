@@ -20,6 +20,8 @@
 
 package org.neo4j.test.ha;
 
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -39,11 +41,11 @@ public class ClusterTest
     @Test
     public void testCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( getClass().getResource( "/threeinstances.xml" ).toURI(),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 folder.getRoot(), MapUtil.stringMap() );
         clusterManager.start();
-
-        GraphDatabaseService master = clusterManager.getMaster( "neo4j.ha" );
+        
+        GraphDatabaseService master = clusterManager.getDefaultCluster().getMaster();
         logging.getLogger().info( "CREATE NODE" );
         Transaction tx = master.beginTx();
         master.createNode();
@@ -57,12 +59,12 @@ public class ClusterTest
     @Test
     public void given4instanceclusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( getClass().getResource( "/fourinstances.xml" ).toURI(),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
                 folder.getRoot(), MapUtil.stringMap() );
         clusterManager.start();
 
         logging.getLogger().info( "STOPPING MASTER" );
-        clusterManager.getMaster( "neo4j.ha" ).stop();
+        clusterManager.getDefaultCluster().getMaster().stop();
         logging.getLogger().info( "STOPPED MASTER" );
 
         Thread.sleep( 60000 );
