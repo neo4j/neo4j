@@ -33,6 +33,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.cluster.timeout.Timeouts;
 
 /**
  * State Machine for implementation of Atomic Broadcast client interface
@@ -135,13 +136,15 @@ public enum AtomicBroadcastState
                             if ( coordinator != null )
                             {
                                 outgoing.process( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
-                                context.getClusterContext().timeouts.setTimeout( "broadcast-" + message.getHeader(
-                                        Message.CONVERSATION_ID ), timeout( AtomicBroadcastMessage.broadcastTimeout,
-                                        message, message.getPayload() ) );
+                                Timeouts timeouts = context.getClusterContext().timeouts;
+                                timeouts.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
+                                        timeout( AtomicBroadcastMessage.broadcastTimeout, message,
+                                                message.getPayload() ) );
                             }
                             else
                             {
-                                outgoing.process( internal( ProposerMessage.propose, message.getPayload() ) );
+                                outgoing.process( message.copyHeadersTo( internal( ProposerMessage.propose,
+                                        message.getPayload() ), Message.CONVERSATION_ID ) );
                             }
                             break;
                         }
@@ -187,7 +190,8 @@ public enum AtomicBroadcastState
                 }
             };
 
-    private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message, MessageProcessor outgoing )
+    private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message,
+                                         MessageProcessor outgoing )
     {
         switch ( message.getMessageType() )
         {

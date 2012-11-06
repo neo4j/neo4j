@@ -20,8 +20,10 @@
 
 package org.neo4j.cluster.statemachine;
 
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.FROM;
 
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -40,18 +42,31 @@ public class StateTransitionLogger
 
     public void stateTransition( StateTransition transition )
     {
-        StringLogger logger = logging.getLogger( transition.getOldState().getClass().getName() );
+        StringLogger logger = logging.getLogger( transition.getOldState().getClass() );
 
         if ( logger.isDebugEnabled() )
         {
+            if ( transition.getOldState() == HeartbeatState.heartbeat )
+            {
+                return;
+            }
+
             // The bulk of the message
-            StringBuilder line = new StringBuilder( transition.getOldState().getClass().getSuperclass().getSimpleName() +
+            StringBuilder line = new StringBuilder( transition.getOldState().getClass().getSuperclass().getSimpleName
+                    () +
                     ": " + transition );
-            
+
             // Who was this message from?
             if ( transition.getMessage().hasHeader( FROM ) )
+            {
                 line.append( " from:" + transition.getMessage().getHeader( FROM ) );
-            
+            }
+
+            if ( transition.getMessage().hasHeader( CONVERSATION_ID ) )
+            {
+                line.append( " conversation-id:" + transition.getMessage().getHeader( CONVERSATION_ID ) );
+            }
+
             // Log it
             logger.debug( line.toString() );
         }

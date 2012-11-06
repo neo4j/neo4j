@@ -37,8 +37,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -56,7 +56,8 @@ public final class HaBackupProvider extends BackupExtensionService
     public URI resolve( URI address, Args args, Logging logging )
     {
         String master = null;
-        logging.getLogger( "ha.backup" ).logMessage( "Asking cluster member at '" + address
+        StringLogger logger = logging.getLogger( HaBackupProvider.class );
+        logger.logMessage( "Asking cluster member at '" + address
                 + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
@@ -69,7 +70,7 @@ public final class HaBackupProvider extends BackupExtensionService
         master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
                 2 ), clusterName, logging ); // skip the "//" part
 
-        logging.getLogger( "ha.backup" ).logMessage( "Found master '" + master + "' in cluster" );
+        logger.logMessage( "Found master '" + master + "' in cluster" );
         URI toReturn = null;
         try
         {
@@ -85,18 +86,21 @@ public final class HaBackupProvider extends BackupExtensionService
     private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
-        Map<String, String> params = new ConfigurationDefaults( ClusterSettings.class, OnlineBackupSettings.class ).apply( new HashMap<String, String>() );
+        Map<String, String> params = new ConfigurationDefaults( ClusterSettings.class,
+                OnlineBackupSettings.class ).apply( new HashMap<String, String>() );
         params.put( HaSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( HaSettings.initial_hosts.name(), from );
         params.put( HaSettings.cluster_discovery_enabled.name(), "false" );
         final Config config = new Config( params );
-        
-        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config, new BackupElectionCredentialsProvider() ), logging ) );
-        HighAvailabilityEvents events = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ), clusterClient, StringLogger.SYSTEM ) );
+
+        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config,
+                new BackupElectionCredentialsProvider() ), logging ) );
+        HighAvailabilityEvents events = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt(
+                config ), clusterClient, StringLogger.SYSTEM ) );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final ClusterInfoHolder addresses = new ClusterInfoHolder();
-        
+
         events.addClusterEventListener( new HighAvailabilityListener()
         {
             @Override
@@ -134,7 +138,7 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             life.shutdown();
         }
-        
+
         String backupAddress = null;
         for ( URI uri : addresses.held )
         {

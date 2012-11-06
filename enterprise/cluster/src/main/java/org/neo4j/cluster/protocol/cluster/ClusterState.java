@@ -71,7 +71,7 @@ public enum ClusterState
                         case create:
                         {
                             String name = message.getPayload();
-                            context.getLogger().info( "Creating cluster: " + name );
+                            context.getLogger( ClusterState.class ).info( "Creating cluster: " + name );
                             context.created( name );
                             return entered;
                         }
@@ -103,12 +103,13 @@ public enum ClusterState
 
                             ClusterMessage.ConfigurationResponseState state = message.getPayload();
 
-                            context.getLogger().info( "Joining cluster "+state.getClusterName() );
-                            if (!context.getConfiguration().getName().equals( state.getClusterName() ))
+                            context.getLogger( ClusterState.class ).info( "Joining cluster " + state.getClusterName() );
+                            if ( !context.getConfiguration().getName().equals( state.getClusterName() ) )
                             {
-                                context.getLogger().warn( "Joined cluster name is different than the one configured." +
+                                context.getLogger( ClusterState.class ).warn( "Joined cluster name is different than " +
+                                        "the one configured." +
                                         "Expected " + context.getConfiguration().getName() + ", got "
-                                        + state.getClusterName() + ".");
+                                        + state.getClusterName() + "." );
                             }
 
                             List<URI> memberList = new ArrayList<URI>( state.getMembers() );
@@ -117,12 +118,13 @@ public enum ClusterState
                                 context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
                                         ().getId() );
                                 context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
-                                context.proposerContext.lastInstanceId = state.getLatestReceivedInstanceId().getId()
+                                context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
                                         + 1;
 
                                 context.acquiredConfiguration( memberList, state.getRoles() );
 
-                                context.getLogger().info( String.format( "%s joining:%s, last delivered:%d",
+                                context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
+                                        "last delivered:%d",
                                         context.me.toString(), context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
 
@@ -142,7 +144,8 @@ public enum ClusterState
                                             Message.FROM ) ), newState ) );
                                 }
 
-                                context.getLogger().info( "Setup join timeout for " + message.getHeader( Message
+                                context.getLogger( ClusterState.class ).info( "Setup join timeout for " + message
+                                        .getHeader( Message
                                         .CONVERSATION_ID ) );
                                 context.timeouts.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
                                         new URI( message.getHeader( Message.FROM ) ) ) );
@@ -155,7 +158,7 @@ public enum ClusterState
                                 context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
                                         ().getId() );
                                 context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
-                                context.proposerContext.lastInstanceId = state.getLatestReceivedInstanceId().getId()
+                                context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
                                         + 1;
 
                                 context.acquiredConfiguration( memberList, state.getRoles() );
@@ -225,7 +228,8 @@ public enum ClusterState
 
                         case joiningTimeout:
                         {
-                            context.getLogger().info( "Join timeout for " + message.getHeader( Message
+                            context.getLogger( ClusterState.class ).info( "Join timeout for " + message.getHeader(
+                                    Message
                                     .CONVERSATION_ID ) );
 
                             // The member I got the configuration from, put it last on the list
@@ -295,7 +299,7 @@ public enum ClusterState
                             List<URI> nodeList = new ArrayList<URI>( context.getConfiguration().getMembers() );
                             if ( nodeList.size() == 1 )
                             {
-                                context.getLogger().info( "Shutting down cluster: " + context
+                                context.getLogger( ClusterState.class ).info( "Shutting down cluster: " + context
                                         .getConfiguration().getName() );
                                 context.left();
 
@@ -304,7 +308,7 @@ public enum ClusterState
                             }
                             else
                             {
-                                context.getLogger().info( "Leaving:" + nodeList );
+                                context.getLogger( ClusterState.class ).info( "Leaving:" + nodeList );
 
                                 ClusterMessage.ConfigurationChangeState newState = new ClusterMessage
                                         .ConfigurationChangeState();
@@ -354,7 +358,8 @@ public enum ClusterState
 
                         case leaveTimedout:
                         {
-                            context.getLogger().warn( "Failed to leave. Cluster may consider this instance still a " +
+                            context.getLogger( ClusterState.class ).warn( "Failed to leave. Cluster may consider this" +
+                                    " instance still a " +
                                     "member" );
                             context.left();
                             return start;

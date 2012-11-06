@@ -48,7 +48,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -64,14 +63,14 @@ public class ClusterJoin
     public interface Configuration
     {
         boolean isDiscoveryEnabled();
-        
+
         String[] getInitialHosts();
-        
+
         String getDiscoveryUrl();
-        
+
         String getClusterName();
     }
-    
+
     private Configuration config;
     private ProtocolServer protocolServer;
     private StringLogger logger;
@@ -86,7 +85,7 @@ public class ClusterJoin
     {
         this.config = config;
         this.protocolServer = protocolServer;
-        this.logger = logger.getLogger( Loggers.CLUSTER );
+        this.logger = logger.getLogger( getClass() );
     }
 
     @Override
@@ -377,7 +376,9 @@ public class ClusterJoin
         try
         {
             if ( host.startsWith( ":" ) ) // TODO better condition here
+            {
                 return InetAddress.getLocalHost().getHostAddress() + host;
+            }
             return host;
         }
         catch ( UnknownHostException e )

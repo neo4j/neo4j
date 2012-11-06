@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -60,6 +61,8 @@ public class ConnectedStateMachines
 
     private final List<MessageProcessor> outgoingProcessors = new ArrayList<MessageProcessor>();
     private final OutgoingMessageProcessor outgoing;
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
 
     public ConnectedStateMachines( MessageSource source,
                                    final MessageProcessor sender,
@@ -108,71 +111,80 @@ public class ConnectedStateMachines
     @Override
     public synchronized void process( Message<? extends MessageType> message )
     {
-        // Lock timeouts while we are processing the message
-        synchronized ( timeouts )
+        lock.writeLock().lock();
+
+        try
         {
-            StateMachine stateMachine = stateMachines.get( message.getMessageType().getClass() );
-            if ( stateMachine == null )
+            // Lock timeouts while we are processing the message
+            synchronized ( timeouts )
             {
-                return; // No StateMachine registered for this MessageType type - Ignore this
-            }
-
-            stateMachine.handle( message, outgoing );
-
-            // Process and send messages
-            // Allow state machines to send messages to each other as well in this loop
-            Message<? extends MessageType> outgoingMessage;
-            try
-            {
-                while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
+                StateMachine stateMachine = stateMachines.get( message.getMessageType().getClass() );
+                if ( stateMachine == null )
                 {
-                    message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
+                    return; // No StateMachine registered for this MessageType type - Ignore this
+                }
 
-                    for ( MessageProcessor outgoingProcessor : outgoingProcessors )
-                    {
-                        try
-                        {
-                            outgoingProcessor.process( outgoingMessage );
-                        }
-                        catch ( Throwable e )
-                        {
-                            logger.warn( "Outgoing message processor threw exception", e );
-                        }
-                    }
+                stateMachine.handle( message, outgoing );
 
-                    if ( outgoingMessage.hasHeader( Message.TO ) )
+                // Process and send messages
+                // Allow state machines to send messages to each other as well in this loop
+                Message<? extends MessageType> outgoingMessage;
+                try
+                {
+                    while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
                     {
-                        try
+                        message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
+
+                        for ( MessageProcessor outgoingProcessor : outgoingProcessors )
                         {
-                            sender.process( outgoingMessage );
+                            try
+                            {
+                                outgoingProcessor.process( outgoingMessage );
+                            }
+                            catch ( Throwable e )
+                            {
+                                logger.warn( "Outgoing message processor threw exception", e );
+                            }
                         }
-                        catch ( Throwable e )
+
+                        if ( outgoingMessage.hasHeader( Message.TO ) )
                         {
-                            logger.warn( "Message sending threw exception", e );
+                            try
+                            {
+                                sender.process( outgoingMessage );
+                            }
+                            catch ( Throwable e )
+                            {
+                                logger.warn( "Message sending threw exception", e );
+                            }
                         }
-                    }
-                    else
-                    {
-                        // Deliver internally if possible
-                        StateMachine internalStatemachine = stateMachines.get( outgoingMessage.getMessageType()
-                                .getClass() );
-                        //                if (internalStatemachine != null && stateMachine != internalStatemachine )
-                        if ( internalStatemachine != null )
+                        else
                         {
-                            internalStatemachine.handle( (Message) outgoingMessage, outgoing );
+                            // Deliver internally if possible
+                            StateMachine internalStatemachine = stateMachines.get( outgoingMessage.getMessageType()
+                                    .getClass() );
+                            //                if (internalStatemachine != null && stateMachine != internalStatemachine )
+                            if ( internalStatemachine != null )
+                            {
+                                internalStatemachine.handle( (Message) outgoingMessage, outgoing );
+                            }
                         }
                     }
                 }
+                catch ( Exception e )
+                {
+                    logger.warn( "Error processing message " + message, e );
+                }
             }
-            catch ( Exception e )
-            {
-                logger.warn( "Error processing message " + message, e );
-            }
-        }
 
-        // Before returning, process delayed executions so that they are done before returning
-        // This will effectively trigger all notifications created by contexts
-        executor.drain();
+            // Before returning, process delayed executions so that they are done before returning
+            // This will effectively trigger all notifications created by contexts
+            executor.drain();
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
     }
 
     public void addStateTransitionListener( StateTransitionListener stateTransitionListener )

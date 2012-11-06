@@ -92,7 +92,8 @@ public enum ElectionState
                                             .indexOf( context.getClusterContext().getMe() );
                                     if ( remainingDelays > 0 )
                                     {
-                                        context.getClusterContext().getLogger().debug( "Delay demotion of " + demoteNode
+                                        context.getClusterContext().getLogger( ElectionState.class ).debug( "Delay " +
+                                                "demotion of " + demoteNode
                                                 .toString() + " " + remainingDelays + " times" );
                                     }
                                 }
@@ -114,7 +115,8 @@ public enum ElectionState
                                     {
                                         if ( !context.isElectionProcessInProgress( role ) )
                                         {
-                                            context.getClusterContext().getLogger().debug( "Starting election process" +
+                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                                    "Starting election process" +
                                                     " for role " + role );
 
                                             int voterCount = 0;
@@ -139,7 +141,8 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            context.getClusterContext().getLogger().debug( "Election already in " +
+                                            context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                                    "Election already in " +
                                                     "progress for role " + role );
                                         }
                                     }
@@ -150,7 +153,7 @@ public enum ElectionState
 
                         case promote:
                         {
-                            Object[] args = message.getPayload();
+                            Object[] args = message.<Object[]>getPayload();
                             URI promoteNode = (URI) args[0];
                             String role = (String) args[1];
 
@@ -201,7 +204,8 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    context.getClusterContext().getLogger().debug( "Elected " + winner + " as " +
+                                    context.getClusterContext().getLogger( ElectionState.class ).debug( "Elected " +
+                                            winner + " as " +
                                             data.getRole() );
 
                                     // Broadcast this
@@ -213,7 +217,8 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    context.getClusterContext().getLogger().warn( "Election could not " +
+                                    context.getClusterContext().getLogger( ElectionState.class ).warn( "Election " +
+                                            "could not " +
                                             "pick a " +
                                             "winner" );
                                 }
@@ -226,7 +231,7 @@ public enum ElectionState
                         case electionTimeout:
                         {
                             // Something was lost
-                            context.getClusterContext().getLogger().warn( "Election timed out" );
+                            context.getClusterContext().getLogger( ElectionState.class ).warn( "Election timed out" );
                             context.cancelElection( (String) message.getPayload() );
                             break;
                         }

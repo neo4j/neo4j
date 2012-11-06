@@ -46,10 +46,12 @@ public class PaxosInstance
     List<URI> acceptors;
     List<ProposerMessage.PromiseState> promises = new ArrayList<ProposerMessage.PromiseState>();
     List<ProposerMessage.AcceptedState> accepts = new ArrayList<ProposerMessage.AcceptedState>();
+    List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<ProposerMessage.RejectAcceptState>();
     Object value_1;
     long phase1Ballot = 0;
     Object value_2;
     boolean clientValue = false;
+    String conversationIdHeader;
 
     public PaxosInstance( PaxosInstanceStore store, InstanceId instanceId )
     {
@@ -86,6 +88,11 @@ public class PaxosInstance
         }
     }
 
+    public boolean isPromised( int minimumQuorumSize )
+    {
+        return promises.size() == minimumQuorumSize;
+    }
+
     public void ready( Object value, boolean clientValue )
     {
         state = State.p1_ready;
@@ -99,17 +106,6 @@ public class PaxosInstance
     public void pending()
     {
         state = State.p2_pending;
-    }
-
-    public void acceptRejected()
-    {
-        state = State.empty;
-        promises.clear();
-        acceptors = null;
-        phase1Ballot = 0;
-        value_1 = null;
-        value_2 = null;
-        clientValue = false;
     }
 
     public void phase2Timeout( long ballot )
@@ -126,12 +122,27 @@ public class PaxosInstance
         accepts.add( acceptedState );
     }
 
-    public void closed( Object value )
+    public void rejected( ProposerMessage.RejectAcceptState rejectAcceptState )
+    {
+        rejectedAccepts.add( rejectAcceptState );
+    }
+
+    public boolean isAccepted( int minimumQuorumSize )
+    {
+        // If we have received enough responses to meet quorum and a majority
+        // are accepts, then the instance is considered accepted
+        return accepts.size() + rejectedAccepts.size() == minimumQuorumSize &&
+                accepts.size() > rejectedAccepts.size();
+    }
+
+    public void closed( Object value, String conversationIdHeader )
     {
         value_2 = value;
         state = State.closed;
         accepts.clear();
+        rejectedAccepts.clear();
         acceptors = null;
+        this.conversationIdHeader = conversationIdHeader;
     }
 
     public void delivered()

@@ -26,55 +26,61 @@ import java.util.Map;
 
 /**
  * Message for state machines which can be sent out to instances in the cluster as well.
- *
+ * <p/>
  * These are typically produced and consumed by a {@link org.neo4j.cluster.statemachine.StateMachine}.
  */
 public class Message<MESSAGETYPE extends MessageType>
-    implements Serializable
+        implements Serializable
 {
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast(MESSAGETYPE messageType)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast( MESSAGETYPE messageType )
     {
-        return broadcast(messageType, null);
+        return broadcast( messageType, null );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast(MESSAGETYPE messageType, Object payload)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> broadcast( MESSAGETYPE messageType,
+                                                                                    Object payload )
     {
-        return new Message<MESSAGETYPE>(messageType, payload).setHeader( TO, BROADCAST );
+        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, BROADCAST );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to(MESSAGETYPE messageType, Object to)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, Object to )
     {
         return to( messageType, to, null );
     }
-    
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to(MESSAGETYPE messageType, Object to, Object payload)
+
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, Object to,
+                                                                             Object payload )
     {
-        return new Message<MESSAGETYPE>(messageType, payload).setHeader( TO, to.toString() );
-    }
-    
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> respond(MESSAGETYPE messageType, Message<?> message, Object payload)
-    {
-        return new Message<MESSAGETYPE>(messageType, payload).setHeader( TO, message.getHeader( Message.FROM ));
+        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, to.toString() );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal(MESSAGETYPE message)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> respond( MESSAGETYPE messageType,
+                                                                                  Message<?> message, Object payload )
+    {
+        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) );
+    }
+
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message )
     {
         return internal( message, null );
     }
-    
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal(MESSAGETYPE message, Object payload)
+
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message, Object payload )
     {
         return new Message<MESSAGETYPE>( message, payload );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout(MESSAGETYPE message, Message<?> causedBy)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout( MESSAGETYPE message,
+                                                                                  Message<?> causedBy )
     {
         return timeout( message, causedBy, null );
     }
 
-    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout(MESSAGETYPE message, Message<?> causedBy, Object payload)
+    public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout( MESSAGETYPE message,
+                                                                                  Message<?> causedBy, Object payload )
     {
-        return causedBy.copyHeadersTo( new Message<MESSAGETYPE>( message, payload ), Message.CONVERSATION_ID, Message.CREATED_BY);
+        return causedBy.copyHeadersTo( new Message<MESSAGETYPE>( message, payload ), Message.CONVERSATION_ID,
+                Message.CREATED_BY );
     }
 
 
@@ -83,12 +89,12 @@ public class Message<MESSAGETYPE extends MessageType>
     public static final String CREATED_BY = "created-by";
     public static final String FROM = "from";
     public static final String TO = "to";
-    
+
     public static final String BROADCAST = "*";
 
     final private MESSAGETYPE messageType;
     final private Object payload;
-    final private Map<String,String> headers = new HashMap<String, String>(  );
+    final private Map<String, String> headers = new HashMap<String, String>();
 
     protected Message( MESSAGETYPE messageType, Object payload )
     {
@@ -105,54 +111,66 @@ public class Message<MESSAGETYPE extends MessageType>
     {
         return (T) payload;
     }
-    
-    public Message<MESSAGETYPE> setHeader(String name, String value)
+
+    public Message<MESSAGETYPE> setHeader( String name, String value )
     {
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( String.format( "Header %s may not be set to null", name ) );
+        }
+
         headers.put( name, value );
         return this;
     }
-    
-    public boolean hasHeader(String name)
+
+    public boolean hasHeader( String name )
     {
         return headers.containsKey( name );
     }
-    
+
     public boolean isInternal()
     {
         return !headers.containsKey( Message.TO );
     }
-    
+
     public boolean isBroadcast()
     {
         return !isInternal() && getHeader( Message.TO ).equals( BROADCAST );
     }
-    
-    public String getHeader(String name)
-        throws IllegalArgumentException
+
+    public String getHeader( String name )
+            throws IllegalArgumentException
     {
         String value = headers.get( name );
-        if (value == null)
+        if ( value == null )
         {
-            throw new IllegalArgumentException( "No such header:"+name );
+            throw new IllegalArgumentException( "No such header:" + name );
         }
         return value;
     }
 
-    public <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> copyHeadersTo( Message<MESSAGETYPE> message, String... names )
+    public <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> copyHeadersTo( Message<MESSAGETYPE> message,
+                                                                                 String... names )
     {
-        if (names.length == 0)
+        if ( names.length == 0 )
         {
-            for( Map.Entry<String, String> header : headers.entrySet() )
+            for ( Map.Entry<String, String> header : headers.entrySet() )
             {
-                message.setHeader( header.getKey(), header.getValue() );
+                if ( !message.hasHeader( header.getKey() ) )
+                {
+                    message.setHeader( header.getKey(), header.getValue() );
+                }
             }
-        } else
+        }
+        else
         {
-            for( String name : names )
+            for ( String name : names )
             {
                 String value = headers.get( name );
-                if (value != null)
+                if ( value != null && !message.hasHeader( name ) )
+                {
                     message.setHeader( name, value );
+                }
             }
         }
         return message;
@@ -161,6 +179,6 @@ public class Message<MESSAGETYPE extends MessageType>
     @Override
     public String toString()
     {
-        return messageType.name()+headers+(payload != null && payload instanceof String ? ": "+payload : "");
+        return messageType.name() + headers + (payload != null && payload instanceof String ? ": " + payload : "");
     }
 }

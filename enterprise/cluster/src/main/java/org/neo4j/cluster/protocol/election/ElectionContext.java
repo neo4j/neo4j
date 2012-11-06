@@ -82,7 +82,7 @@ public class ElectionContext
     public void nodeFailed( URI node )
     {
         Iterable<String> rolesToDemote = getRoles( node );
-        for (String role : rolesToDemote)
+        for ( String role : rolesToDemote )
         {
             clusterContext.getConfiguration().getRoles().remove( role );
         }
@@ -146,8 +146,6 @@ public class ElectionContext
             @Override
             public URI pickWinner( List<Vote> voteList )
             {
-                System.out.println( "Potential winners:" + voteList );
-                System.out.println( "Trying to promote:" + promoteNode );
 
                 // Sort based on credentials
                 // The most suited candidate should come out on top

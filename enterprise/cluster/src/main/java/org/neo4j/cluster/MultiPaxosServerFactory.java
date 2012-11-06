@@ -68,7 +68,6 @@ import org.neo4j.cluster.timeout.LatencyCalculator;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -131,8 +130,8 @@ public class MultiPaxosServerFactory
         connectedStateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
                 SnapshotState.start ) );
 
-        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging.getLogger( Loggers.CLUSTER
-        ) );
+        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging.getLogger( ProtocolServer
+                .class ) );
 
         StateMachine cluster = new StateMachine( clusterContext, ClusterMessage.class, ClusterState.start );
 

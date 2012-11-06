@@ -124,7 +124,7 @@ public class BackupTool
             backupURI = service.resolve( backupURI, arguments, new Logging()
             {
                 @Override
-                public StringLogger getLogger( String name )
+                public StringLogger getLogger( Class loggingClass )
                 {
                     return StringLogger.SYSTEM;
                 }
@@ -140,7 +140,7 @@ public class BackupTool
         if ( full & incremental || !(full | incremental) )
         {
             throw new ToolFailureException( "Specify either " + dash( FULL ) + " or "
-                            + dash( INCREMENTAL ) );
+                    + dash( INCREMENTAL ) );
         }
 
         if ( arguments.get( FROM, null ) == null )
@@ -155,7 +155,7 @@ public class BackupTool
         if ( arguments.get( TO, null ) == null )
         {
             throw new ToolFailureException( "Specify target location with " + dash( TO )
-                            + " <target-directory>" );
+                    + " <target-directory>" );
         }
     }
 
@@ -196,13 +196,15 @@ public class BackupTool
         systemOut.println( "Done" );
     }
 
-    private void doBackupFull( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
+    private void doBackupFull( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws
+            ToolFailureException
 
     {
         systemOut.println( "Performing full backup from '" + from + "'" );
         try
         {
-            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency, tuningConfiguration );
+            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency,
+                    tuningConfiguration );
         }
         catch ( ComException e )
         {
@@ -217,7 +219,7 @@ public class BackupTool
         boolean failedBecauseOfStoreVersionMismatch = false;
         try
         {
-            backupService.doIncrementalBackup( from.getHost(), extractPort( from ),  to, verify );
+            backupService.doIncrementalBackup( from.getHost(), extractPort( from ), to, verify );
         }
         catch ( TransactionFailureException e )
         {
@@ -227,7 +229,8 @@ public class BackupTool
             }
             else
             {
-                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'.", e);
+                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'" +
+                        ".", e );
             }
         }
         catch ( ComException e )
@@ -285,7 +288,7 @@ public class BackupTool
         {
             super( message, cause );
         }
-        
+
         void haltJVM()
         {
             System.out.println( getMessage() );

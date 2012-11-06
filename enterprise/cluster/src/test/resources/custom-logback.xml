@@ -26,26 +26,22 @@
     </encoder>
   </appender>
 
-  <logger name="neo4j.diagnostics" level="warn">
-  </logger>
+  <!--
+    Debug Paxos state machines
+    <logger name="org.neo4j.cluster.protocol.atomicbroadcast.multipaxos" level="debug">
+    </logger>
 
-  <logger name="neo4j.cluster" level="info">
-  </logger>
+    Debug network messages sent
+    <logger name="org.neo4j.cluster.com" level="debug">
+    </logger>
+  -->
 
-  <logger name="org.neo4j.cluster.NetworkMock" level="info">
-  </logger>
 
-  <logger name="org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster.protocol" level="info" additive="true">
-  </logger>
-
-  <root level="debug">
+  <root level="info">
     <appender-ref ref="CONSOLE"/>
   </root>
 
-  <logger name="neo4j" level="debug" additive="true">
+  <logger name="org.neo4j" additive="true">
     <appender-ref ref="CONSOLE"/>
   </logger>
 

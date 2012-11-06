@@ -29,7 +29,7 @@ import java.io.ObjectOutput;
  * AtomicBroadcast payload. Wraps a byte buffer and its length.
  */
 public class Payload
-    implements Externalizable
+        implements Externalizable
 {
     private byte[] buf;
     private int len;
@@ -59,27 +59,18 @@ public class Payload
 
     @Override
     public void writeExternal( ObjectOutput out )
-        throws IOException
+            throws IOException
     {
         out.write( len );
         out.write( buf, 0, len );
-//        System.out.println( "Wrote payload" );
     }
 
     @Override
     public void readExternal( ObjectInput in )
-        throws IOException, ClassNotFoundException
+            throws IOException, ClassNotFoundException
     {
-        try
-        {
-            len = in.read(  );
-            buf = new byte[len];
-            in.read(buf, 0, len);
-        }
-        catch( Throwable e )
-        {
-            e.printStackTrace();
-        }
-//        System.out.println( "Read payload" );
+        len = in.read();
+        buf = new byte[len];
+        in.read( buf, 0, len );
     }
 }

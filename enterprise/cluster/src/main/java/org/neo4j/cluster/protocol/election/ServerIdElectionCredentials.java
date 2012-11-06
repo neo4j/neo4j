@@ -19,9 +19,10 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import java.io.Serializable;
 import java.net.URI;
 
-public class ServerIdElectionCredentials implements ElectionCredentials
+public class ServerIdElectionCredentials implements ElectionCredentials, Serializable
 {
     private final URI credentials;
 
@@ -34,6 +35,6 @@ public class ServerIdElectionCredentials implements ElectionCredentials
     public int compareTo( Object o )
     {
         // Alphabetically lower URI means higher prio
-        return - credentials.toString().compareTo( ((ServerIdElectionCredentials)o).credentials.toString() );
+        return -credentials.toString().compareTo( ((ServerIdElectionCredentials) o).credentials.toString() );
     }
 }

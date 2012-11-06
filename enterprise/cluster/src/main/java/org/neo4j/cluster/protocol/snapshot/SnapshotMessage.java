@@ -28,22 +28,21 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import org.neo4j.cluster.com.message.MessageType;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO
  */
 public enum SnapshotMessage
-    implements MessageType
+        implements MessageType
 {
-    join,leave,
+    join, leave,
     setSnapshotProvider,
     refreshSnapshot,
     sendSnapshot, snapshot;
 
     // TODO This needs to be replaced with something that can handle bigger snapshots
     public static class SnapshotState
-        implements Serializable
+            implements Serializable
     {
         private long lastDeliveredInstanceId = -1;
         transient SnapshotProvider provider;
@@ -61,8 +60,8 @@ public enum SnapshotMessage
             return lastDeliveredInstanceId;
         }
 
-        public void setState(SnapshotProvider provider)
-            throws IOException
+        public void setState( SnapshotProvider provider )
+                throws IOException
         {
             ByteArrayInputStream bin = new ByteArrayInputStream( buf );
             ObjectInputStream oin = new ObjectInputStream( bin );
@@ -70,7 +69,7 @@ public enum SnapshotMessage
             {
                 provider.setState( oin );
             }
-            catch( Throwable e )
+            catch ( Throwable e )
             {
                 e.printStackTrace();
             }
@@ -81,29 +80,20 @@ public enum SnapshotMessage
         }
 
         private void writeObject( java.io.ObjectOutputStream out )
-            throws IOException
+                throws IOException
         {
             out.defaultWriteObject();
-            ByteArrayOutputStream bout = new ByteArrayOutputStream(  );
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
             ObjectOutputStream oout = new ObjectOutputStream( bout );
             provider.getState( oout );
             oout.close();
             byte[] buf = bout.toByteArray();
             out.writeInt( buf.length );
             out.write( buf );
-
-            try
-            {
-                LoggerFactory.getLogger(getClass()).debug( new ObjectInputStream(new ByteArrayInputStream( buf )).readObject().toString() );
-            }
-            catch( ClassNotFoundException e )
-            {
-                e.printStackTrace();
-            }
         }
 
         private void readObject( java.io.ObjectInputStream in )
-            throws IOException, ClassNotFoundException
+                throws IOException, ClassNotFoundException
         {
             in.defaultReadObject();
             buf = new byte[in.readInt()];

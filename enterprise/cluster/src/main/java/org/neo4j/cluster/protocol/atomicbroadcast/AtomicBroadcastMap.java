@@ -32,15 +32,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
-import org.slf4j.LoggerFactory;
 
 /**
  * Map that is synced through an Atomic Broadcast protocol
  */
-public class AtomicBroadcastMap<K,V>
-    implements Map<K,V>
+public class AtomicBroadcastMap<K, V>
+        implements Map<K, V>
 {
-    private Map<K,V> map = new ConcurrentHashMap<K, V>(  );
+    private Map<K, V> map = new ConcurrentHashMap<K, V>();
     private AtomicBroadcast atomicBroadcast;
     private volatile MapCommand lastCommand;
     protected final AtomicBroadcastListener atomicBroadcastListener;
@@ -52,17 +51,16 @@ public class AtomicBroadcastMap<K,V>
         {
             @Override
             public void getState( ObjectOutputStream output )
-                throws IOException
+                    throws IOException
             {
-                output.writeObject( new HashMap( map) );
+                output.writeObject( new HashMap( map ) );
             }
 
             @Override
             public void setState( ObjectInputStream input )
-                throws IOException, ClassNotFoundException
+                    throws IOException, ClassNotFoundException
             {
-                map = new ConcurrentHashMap((Map<K, V>) input.readObject());
-                LoggerFactory.getLogger( getClass() ).info( "Updated snapshot state:" + map );
+                map = new ConcurrentHashMap( (Map<K, V>) input.readObject() );
             }
         } );
 
@@ -74,25 +72,25 @@ public class AtomicBroadcastMap<K,V>
             {
                 try
                 {
-                    MapCommand command = (MapCommand) serializer.receive( value);
+                    MapCommand command = (MapCommand) serializer.receive( value );
                     command.execute( map );
 
 //                LoggerFactory.getLogger( getClass() ).info(  "Map:"+map );
 
-                    synchronized( AtomicBroadcastMap.this )
+                    synchronized ( AtomicBroadcastMap.this )
                     {
-                        if (command.equals( lastCommand ))
+                        if ( command.equals( lastCommand ) )
                         {
                             lastCommand = null;
                             AtomicBroadcastMap.this.notifyAll();
                         }
                     }
                 }
-                catch( IOException e )
+                catch ( IOException e )
                 {
                     e.printStackTrace();
                 }
-                catch( ClassNotFoundException e )
+                catch ( ClassNotFoundException e )
                 {
                     e.printStackTrace();
                 }
@@ -132,7 +130,6 @@ public class AtomicBroadcastMap<K,V>
     @Override
     public V get( Object key )
     {
-        LoggerFactory.getLogger(getClass()).info( "GET "+(lastCommand != null ? lastCommand.toString () : ""));
         checkUpToDate();
         return map.get( key );
     }
@@ -142,11 +139,10 @@ public class AtomicBroadcastMap<K,V>
     {
         try
         {
-            atomicBroadcast.broadcast( serializer.broadcast(lastCommand = new Put( key, value ) ));
-            LoggerFactory.getLogger(getClass()).info("PUT "+lastCommand);
+            atomicBroadcast.broadcast( serializer.broadcast( lastCommand = new Put( key, value ) ) );
             return map.get( key );
         }
-        catch( IOException e )
+        catch ( IOException e )
         {
             throw new IllegalStateException( e );
         }
@@ -157,10 +153,10 @@ public class AtomicBroadcastMap<K,V>
     {
         try
         {
-            atomicBroadcast.broadcast( serializer.broadcast(lastCommand = new Remove( key ) ));
+            atomicBroadcast.broadcast( serializer.broadcast( lastCommand = new Remove( key ) ) );
             return map.get( key );
         }
-        catch( IOException e )
+        catch ( IOException e )
         {
             throw new IllegalStateException( e );
         }
@@ -171,9 +167,9 @@ public class AtomicBroadcastMap<K,V>
     {
         try
         {
-            atomicBroadcast.broadcast( serializer.broadcast(lastCommand = new PutAll( m ) ));
+            atomicBroadcast.broadcast( serializer.broadcast( lastCommand = new PutAll( m ) ) );
         }
-        catch( IOException e )
+        catch ( IOException e )
         {
             throw new IllegalStateException( e );
         }
@@ -184,9 +180,9 @@ public class AtomicBroadcastMap<K,V>
     {
         try
         {
-            atomicBroadcast.broadcast( serializer.broadcast( lastCommand = new Clear() ));
+            atomicBroadcast.broadcast( serializer.broadcast( lastCommand = new Clear() ) );
         }
-        catch( IOException e )
+        catch ( IOException e )
         {
             throw new IllegalStateException( e );
         }
@@ -207,7 +203,7 @@ public class AtomicBroadcastMap<K,V>
     }
 
     @Override
-    public Set<Entry<K,V>> entrySet()
+    public Set<Entry<K, V>> entrySet()
     {
         checkUpToDate();
         return map.entrySet();
@@ -221,14 +217,13 @@ public class AtomicBroadcastMap<K,V>
 
     private synchronized void checkUpToDate()
     {
-        while (lastCommand != null)
+        while ( lastCommand != null )
         {
-            LoggerFactory.getLogger(getClass()).info("Wait for command:"+lastCommand);
             try
             {
-                this.wait(5000);
+                this.wait( 5000 );
             }
-            catch( InterruptedException e )
+            catch ( InterruptedException e )
             {
                 e.printStackTrace();
             }
@@ -237,11 +232,11 @@ public class AtomicBroadcastMap<K,V>
 
     public interface MapCommand
     {
-        void execute(Map map);
+        void execute( Map map );
     }
 
     public static class Put
-        implements Serializable, MapCommand
+            implements Serializable, MapCommand
     {
         Object key;
         Object value;
@@ -261,22 +256,22 @@ public class AtomicBroadcastMap<K,V>
         @Override
         public boolean equals( Object o )
         {
-            if( this == o )
+            if ( this == o )
             {
                 return true;
             }
-            if( o == null || getClass() != o.getClass() )
+            if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
 
             Put put = (Put) o;
 
-            if( !key.equals( put.key ) )
+            if ( !key.equals( put.key ) )
             {
                 return false;
             }
-            if( !value.equals( put.value ) )
+            if ( !value.equals( put.value ) )
             {
                 return false;
             }
@@ -295,12 +290,12 @@ public class AtomicBroadcastMap<K,V>
         @Override
         public String toString()
         {
-            return "Put: "+key+"="+value;
+            return "Put: " + key + "=" + value;
         }
     }
 
     public static class Remove
-        implements Serializable, MapCommand
+            implements Serializable, MapCommand
     {
         Object key;
 
@@ -318,18 +313,18 @@ public class AtomicBroadcastMap<K,V>
         @Override
         public boolean equals( Object o )
         {
-            if( this == o )
+            if ( this == o )
             {
                 return true;
             }
-            if( o == null || getClass() != o.getClass() )
+            if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
 
             Remove remove = (Remove) o;
 
-            if( !key.equals( remove.key ) )
+            if ( !key.equals( remove.key ) )
             {
                 return false;
             }
@@ -345,7 +340,7 @@ public class AtomicBroadcastMap<K,V>
     }
 
     public static class Clear
-        implements Serializable, MapCommand
+            implements Serializable, MapCommand
     {
         @Override
         public void execute( Map map )
@@ -356,11 +351,11 @@ public class AtomicBroadcastMap<K,V>
         @Override
         public boolean equals( Object o )
         {
-            if( this == o )
+            if ( this == o )
             {
                 return true;
             }
-            if( o == null || getClass() != o.getClass() )
+            if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
@@ -370,7 +365,7 @@ public class AtomicBroadcastMap<K,V>
     }
 
     public static class PutAll
-        implements Serializable, MapCommand
+            implements Serializable, MapCommand
     {
         Map map;
 
@@ -388,18 +383,18 @@ public class AtomicBroadcastMap<K,V>
         @Override
         public boolean equals( Object o )
         {
-            if( this == o )
+            if ( this == o )
             {
                 return true;
             }
-            if( o == null || getClass() != o.getClass() )
+            if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
 
             PutAll putAll = (PutAll) o;
 
-            if( !map.equals( putAll.map ) )
+            if ( !map.equals( putAll.map ) )
             {
                 return false;
             }

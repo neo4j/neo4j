@@ -127,7 +127,7 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        executor = Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster messenger" ) );
+        executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster messenger" ) );
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
@@ -144,7 +144,7 @@ public class NetworkInstance
 
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster client boss" ) ),
+                Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
                 Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster client worker" ) ) ) );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
@@ -452,6 +452,7 @@ public class NetworkInstance
         {
             final Message message = (Message) event.getMessage();
 //            msgLog.logMessage("Received:" + message, true);
+//            receive( message );
             executor.submit( new Runnable()
             {
                 @Override
@@ -460,6 +461,7 @@ public class NetworkInstance
                     receive( message );
                 }
             } );
+
         }
 
         @Override

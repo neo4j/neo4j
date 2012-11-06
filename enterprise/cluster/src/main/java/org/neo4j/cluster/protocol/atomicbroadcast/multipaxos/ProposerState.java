@@ -136,6 +136,9 @@ public enum ProposerState
                             {
                                 if ( instance.ballot > 10000 )
                                 {
+                                    context.clusterContext.getLogger( ProposerState.class ).warn( "Propose failed due" +
+                                            " to phase 1 timeout" );
+
                                     // Fail this propose
                                     outgoing.process( Message.internal( AtomicBroadcastMessage.failed,
                                             context.proposerContext.bookedInstances.get( instance.id ) ) );
@@ -172,8 +175,7 @@ public enum ProposerState
                             {
                                 instance.promise( promiseState );
 
-                                if ( instance.promises.size() == context.getMinimumQuorumSize( instance.getAcceptors
-                                        () ) )
+                                if ( instance.isPromised( context.getMinimumQuorumSize( instance.getAcceptors() ) ) )
                                 {
                                     context.timeouts.cancelTimeout( instance.id );
 
@@ -231,34 +233,44 @@ public enum ProposerState
                                                         instance.value_2 ) ), InstanceId.INSTANCE ) );
                                     }
 
-                                    context.timeouts.setTimeout( instance.id, message.copyHeadersTo( Message.timeout(
-                                            ProposerMessage
-                                                    .phase2Timeout, message ), InstanceId.INSTANCE ) );
+                                    context.timeouts.setTimeout( instance.id,
+                                            message.copyHeadersTo( Message.timeout( ProposerMessage.phase2Timeout,
+                                                    message ), InstanceId.INSTANCE ) );
                                 }
+                                else
+                                {
+                                }
+                            }
+                            else
+                            {
                             }
                             break;
                         }
 
                         case rejectAccept:
                         {
-                            // This instance id has been used by another proposer - try next
-                            ProposerMessage.RejectAcceptState state = message.getPayload();
                             InstanceId instanceId = new InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( instanceId );
-                            context.timeouts.cancelTimeout( instanceId );
-
-                            context.clusterContext.getLogger().debug( "Accept rejected:" + instance.state );
 
                             if ( instance.isState( PaxosInstance.State.p2_pending ) )
                             {
-                                if ( instance.clientValue )
+                                ProposerMessage.RejectAcceptState state = message.getPayload();
+                                instance.rejected( state );
+
+                                if ( !instance.isAccepted( context.getMinimumQuorumSize( instance.getAcceptors() ) ) )
                                 {
-                                    propose( context, message, outgoing, instance.value_2, instance.getAcceptors() );
+                                    context.timeouts.cancelTimeout( instanceId );
+
+                                    context.clusterContext.getLogger( ProposerState.class ).warn( "Accept rejected:" +
+                                            instance.state );
+
+                                    if ( instance.clientValue )
+                                    {
+                                        propose( context, message, outgoing, instance.value_2,
+                                                instance.getAcceptors() );
+                                    }
                                 }
-
-                                instance.acceptRejected();
                             }
-
                             break;
                         }
 
@@ -280,20 +292,19 @@ public enum ProposerState
                                 }
 
                                 context.timeouts.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage
-                                                .phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
 
                         case accepted:
                         {
-                            ProposerMessage.AcceptedState acceptedState = message.getPayload();
                             PaxosInstance instance = context.getPaxosInstances().getPaxosInstance( new InstanceId(
                                     message ) );
 
                             if ( instance.isState( PaxosInstance.State.p2_pending ) )
                             {
+                                ProposerMessage.AcceptedState acceptedState = message.getPayload();
                                 instance.accepted( acceptedState );
 
                                 // Value has been accepted! Now distribute to all learners
@@ -347,10 +358,14 @@ public enum ProposerState
                                             .bookedInstances.size() < MAX_CONCURRENT_INSTANCES )
                                     {
                                         Object value = context.proposerContext.pendingValues.remove();
-                                        context.clusterContext.getLogger().debug( "Restarting " + value + " booked:"
+                                        context.clusterContext.getLogger( ProposerState.class ).debug( "Restarting "
+                                                + value + " booked:"
                                                 + context.proposerContext.bookedInstances.size() );
                                         outgoing.process( Message.internal( ProposerMessage.propose, value ) );
                                     }
+                                }
+                                else
+                                {
                                 }
                             }
                             break;

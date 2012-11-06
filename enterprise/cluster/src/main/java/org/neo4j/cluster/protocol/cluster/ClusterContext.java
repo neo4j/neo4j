@@ -31,7 +31,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -210,9 +209,9 @@ public class ClusterContext
         return !configuration.getMembers().isEmpty();
     }
 
-    public StringLogger getLogger()
+    public StringLogger getLogger( Class loggingClass )
     {
-        return logging.getLogger( Loggers.CLUSTER );
+        return logging.getLogger( loggingClass );
     }
 
     @Override

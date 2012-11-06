@@ -68,7 +68,7 @@ public class NetworkMock
         this.strategy = strategy;
         this.timeoutStrategy = timeoutStrategy;
         this.logging = new LogbackService( null, (LoggerContext) LoggerFactory.getILoggerFactory() );
-        logger = logging.getLogger( NetworkMock.class.getName() );
+        logger = logging.getLogger( NetworkMock.class );
     }
 
     public TestProtocolServer addServer( URI serverId )

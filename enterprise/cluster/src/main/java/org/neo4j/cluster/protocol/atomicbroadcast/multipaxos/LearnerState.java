@@ -80,7 +80,7 @@ public enum LearnerState
 
                             context.learnerContext.learnedInstanceId( instanceId.getId() );
 
-                            instance.closed( learnState.getValue() );
+                            instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
 
                             // If this is the next instance to be learned, then do so and check if we have anything
                             // pending to be learnt
@@ -97,8 +97,11 @@ public enum LearnerState
                                 {
                                     instance.delivered();
                                     context.learnerContext.setLastDeliveredInstanceId( checkInstanceId );
-                                    outgoing.process( Message.internal( AtomicBroadcastMessage.broadcastResponse,
-                                            instance.value_2 ) );
+                                    Message<AtomicBroadcastMessage> learnMessage = Message.internal(
+                                            AtomicBroadcastMessage.broadcastResponse, instance.value_2 )
+                                            .setHeader( InstanceId.INSTANCE, instance.id.toString() )
+                                            .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader );
+                                    outgoing.process( learnMessage );
 
                                     checkInstanceId++;
                                 }
@@ -113,13 +116,19 @@ public enum LearnerState
                                 else
                                 {
                                     // Found hole - we're waiting for this to be filled, i.e. timeout already set
-                                    context.clusterContext.getLogger().debug( "*** HOLE! WAITING FOR " +
-                                            instanceId );
+                                    context.clusterContext.getLogger( LearnerState.class ).debug( "*** HOLE! WAITING " +
+                                            "FOR " + (context.learnerContext.getLastDeliveredInstanceId() + 1) );
                                 }
                             }
                             else
                             {
-                                outgoing.process( Message.internal( LearnerMessage.learnTimedout ) );
+                                // Found hole - we're waiting for this to be filled, i.e. timeout already set
+                                context.clusterContext.getLogger( LearnerState.class ).debug( "*** GOT " + instanceId
+                                        + ", WAITING FOR " + (context.learnerContext.getLastDeliveredInstanceId() +
+                                        1) );
+
+                                context.timeouts.setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout,
+                                        message ) );
                             }
                             break;
                         }
@@ -175,7 +184,8 @@ public enum LearnerState
                             }
                             else
                             {
-                                context.clusterContext.getLogger().debug( "Did not have learned value for" +
+                                context.clusterContext.getLogger( LearnerState.class ).debug( "Did not have learned " +
+                                        "value for" +
                                         " " +
                                         "instance " + instanceId );
                                 outgoing.process( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
@@ -198,6 +208,7 @@ public enum LearnerState
                                 int nextPotentialLearnerIndex = (nodes.indexOf( learnDeniedNode ) + 1) % nodes.size();
                                 URI learnerNode = context.clusterContext.getConfiguration().getMembers().get(
                                         nextPotentialLearnerIndex );
+
                                 outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
                                         learnerNode,
                                         new LearnerMessage.LearnRequestState() ), InstanceId.INSTANCE ) );
@@ -212,7 +223,7 @@ public enum LearnerState
 
                             if ( context.learnerContext.getLastKnownLearnedInstanceInCluster() < catchUpTo )
                             {
-                                context.proposerContext.lastInstanceId = catchUpTo + 1;
+                                context.proposerContext.nextInstanceId = catchUpTo + 1;
 
                                 // Try to get up to date
                                 for ( long instanceId = context.learnerContext.getLastLearnedInstanceId() + 1;

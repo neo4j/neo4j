@@ -23,7 +23,6 @@ package org.neo4j.backup;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
 public class OnlineBackupKernelExtension implements Lifecycle
@@ -54,7 +53,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 server = new BackupServer( backup,
                         config.get( OnlineBackupSettings.online_backup_port ),
                         graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ).getLogger(
-                                Loggers.EXTENSION ) );
+                                OnlineBackupKernelExtension.class ) );
                 server.init();
                 server.start();
             }

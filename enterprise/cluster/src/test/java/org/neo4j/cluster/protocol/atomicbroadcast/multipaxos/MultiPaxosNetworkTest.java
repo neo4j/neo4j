@@ -26,6 +26,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -41,16 +42,18 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
+import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO
@@ -65,9 +68,16 @@ public class MultiPaxosNetworkTest
         Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap
                 ( GraphDatabaseSettings.store_dir.name(), "test" ) ) );
 
-        LoggerContext loggerContext = new LoggerContext();
+        final LoggerContext loggerContext = new LoggerContext();
         loggerContext.putProperty( "host", "none" );
         LogbackService logging = life.add( new LogbackService( config, loggerContext ) );
+
+        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 10000 ) )
+                .timeout( AtomicBroadcastMessage.broadcastTimeout, 30000 )
+                .timeout( ClusterMessage.configurationTimeout, 3000 )
+                .timeout( HeartbeatMessage.sendHeartbeat, 10000 )
+                .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
+
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                 new MultiPaxosServerFactory(
                         new ClusterConfiguration( "default",
@@ -75,7 +85,7 @@ public class MultiPaxosNetworkTest
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
                         logging ),
-                new FixedTimeoutStrategy( 5000 ), logging );
+                timeoutStrategy, logging );
 
         ServerIdElectionCredentialsProvider serverIdElectionCredentialsProvider = new
                 ServerIdElectionCredentialsProvider();
@@ -84,11 +94,13 @@ public class MultiPaxosNetworkTest
                 ":5001" ) ) ),
                 new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
         server1.addBindingListener( serverIdElectionCredentialsProvider );
+
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         final ProtocolServer server2 = serverFactory.newNetworkedServer( new Config( new ConfigurationDefaults(
                 NetworkInstance.Configuration.class ).apply( MapUtil.stringMap( ClusterSettings.cluster_server
                 .name(), ":5002" ) ) ), new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
         server2.addBindingListener( serverIdElectionCredentialsProvider );
+
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         final ProtocolServer server3 = serverFactory.newNetworkedServer( new Config( new ConfigurationDefaults(
                 NetworkInstance.Configuration.class ).apply( MapUtil.stringMap( ClusterSettings.cluster_server
@@ -113,6 +125,15 @@ public class MultiPaxosNetworkTest
             }
         } );
 
+        server3.addBindingListener( new BindingListener()
+        {
+            @Override
+            public void listeningAt( URI me )
+            {
+                server3.newClient( Cluster.class ).join( server1.getServerId() );
+            }
+        } );
+
         AtomicBroadcast atomicBroadcast1 = server1.newClient( AtomicBroadcast.class );
         AtomicBroadcast atomicBroadcast2 = server2.newClient( AtomicBroadcast.class );
         AtomicBroadcast atomicBroadcast3 = server3.newClient( AtomicBroadcast.class );
@@ -127,14 +148,21 @@ public class MultiPaxosNetworkTest
         final AtomicBroadcastMap<String, String> map3 = new AtomicBroadcastMap<String, String>( atomicBroadcast3,
                 snapshot3 );
 
-        final Semaphore semaphore = new Semaphore( 0 );
+        final Semaphore semaphore = new Semaphore( -2 );
 
+        final Logger logger = loggerContext.getLogger( getClass() );
         server1.newClient( Cluster.class ).addClusterListener( new ClusterListener.Adapter()
         {
             @Override
+            public void enteredCluster( ClusterConfiguration clusterConfiguration )
+            {
+                semaphore.release();
+            }
+
+            @Override
             public void joinedCluster( URI member )
             {
-                LoggerFactory.getLogger( getClass() ).info( "1 sees join by " + member );
+                logger.info( "1 sees join by " + member );
             }
         } );
 
@@ -149,7 +177,22 @@ public class MultiPaxosNetworkTest
             @Override
             public void joinedCluster( URI member )
             {
-                LoggerFactory.getLogger( getClass() ).info( "2 sees join by " + member );
+                logger.info( "2 sees join by " + member );
+            }
+        } );
+
+        server3.newClient( Cluster.class ).addClusterListener( new ClusterListener.Adapter()
+        {
+            @Override
+            public void enteredCluster( ClusterConfiguration clusterConfiguration )
+            {
+                semaphore.release();
+            }
+
+            @Override
+            public void joinedCluster( URI member )
+            {
+                logger.info( "3 sees join by " + member );
             }
         } );
 
@@ -157,18 +200,18 @@ public class MultiPaxosNetworkTest
 
         semaphore.acquire();
 
-        LoggerFactory.getLogger( getClass() ).info( "Joined cluster - set data" );
+        logger.info( "Joined cluster - set data" );
 
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < 10000; i++ )
         {
             map.put( "foo" + i, "bar" + i );
         }
 
-        LoggerFactory.getLogger( getClass() ).info( "Set all values" );
+        logger.info( "Set all values" );
 
         String value = map.get( "foo1" );
 
-
+/*
         LoggerFactory.getLogger( getClass() ).info( "3 joins 1" );
         server3.newClient( Cluster.class ).addClusterListener( new ClusterListener.Adapter()
         {
@@ -176,23 +219,24 @@ public class MultiPaxosNetworkTest
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
                 LoggerFactory.getLogger( getClass() ).info( "3 entered cluster of:" + clusterConfiguration.getMembers
-                        () );
+                () );
                 semaphore.release();
             }
         } );
         server3.newClient( Cluster.class ).join( server1.getServerId() );
         semaphore.acquire();
+*/
 
-        LoggerFactory.getLogger( getClass() ).info( "Read value1" );
+        logger.info( "Read value1" );
         Assert.assertThat( value, CoreMatchers.equalTo( "bar1" ) );
 
         map2.put( "foo2", "666" );
 
-        LoggerFactory.getLogger( getClass() ).info( "Read value2:" + map2.get( "foo1" ) );
-        LoggerFactory.getLogger( getClass() ).info( "Read value3:" + map2.get( "foo2" ) );
+        logger.info( "Read value2:" + map2.get( "foo1" ) );
+        logger.info( "Read value3:" + map2.get( "foo2" ) );
 
-        LoggerFactory.getLogger( getClass() ).info( "Read value4:" + map3.get( "foo1" ) );
-        LoggerFactory.getLogger( getClass() ).info( "Read value5:" + map3.get( "foo99" ) );
+        logger.info( "Read value4:" + map3.get( "foo1" ) );
+        logger.info( "Read value5:" + map3.get( "foo99" ) );
         Assert.assertThat( map3.get( "foo1" ), CoreMatchers.equalTo( "bar1" ) );
         Assert.assertThat( map3.get( "foo99" ), CoreMatchers.equalTo( "bar99" ) );
 

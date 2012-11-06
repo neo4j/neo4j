@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
@@ -32,8 +33,9 @@ public class HighAvailabilityMemberChangeEvent
     private final URI serverClusterUri;
     private final URI serverHaUri;
 
-    public HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState oldState, HighAvailabilityMemberState newState,
-                                     URI serverClusterUri, URI serverHaUri )
+    public HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState oldState,
+                                              HighAvailabilityMemberState newState,
+                                              URI serverClusterUri, URI serverHaUri )
     {
         this.oldState = oldState;
         this.newState = newState;

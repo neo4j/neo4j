@@ -36,7 +36,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -83,7 +82,7 @@ public class NetworkedServerFactory
             {
                 return ClusterSettings.cluster_server.getAddress( config.getParams() );
             }
-        }, logging.getLogger( Loggers.CLUSTER ) );
+        }, logging.getLogger( NetworkInstance.class ) );
 
         final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer( timeoutStrategy, node, node,
                 acceptorInstanceStore, electionCredentialsProvider );

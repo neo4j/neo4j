@@ -37,7 +37,7 @@ public class StateMachineConversations
 
     public synchronized String getNextConversationId()
     {
-        return serverId + "/" + nextConversationId++;
+        return serverId + "/" + (nextConversationId++) + "#";
     }
 
     @Override

@@ -34,23 +34,23 @@ public class ProposerContext
     Deque<Object> pendingValues = new LinkedList<Object>();
     Map<InstanceId, Object> bookedInstances = new HashMap<InstanceId, Object>();
 
-    public long lastInstanceId = 0;
+    public long nextInstanceId = 0;
 
     public InstanceId newInstanceId( long lastLearnedInstanceId )
     {
         // Never propose something lower than last received instance id
-        if ( lastLearnedInstanceId >= lastInstanceId )
+        if ( lastLearnedInstanceId >= nextInstanceId )
         {
-            lastInstanceId = lastLearnedInstanceId + 1;
+            nextInstanceId = lastLearnedInstanceId + 1;
         }
 
-        return new InstanceId( lastInstanceId++ );
+        return new InstanceId( nextInstanceId++ );
     }
 
     public void leave()
     {
         pendingValues.clear();
         bookedInstances.clear();
-        lastInstanceId = 0;
+        nextInstanceId = 0;
     }
 }

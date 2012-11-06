@@ -54,7 +54,7 @@ public class AcceptorContext
 
     public StringLogger getLogger( Class clazz )
     {
-        return logging.getLogger( clazz.getName() );
+        return logging.getLogger( clazz );
     }
 
     public void leave()

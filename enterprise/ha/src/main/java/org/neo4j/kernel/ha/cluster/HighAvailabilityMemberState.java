@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
@@ -35,7 +36,8 @@ public enum HighAvailabilityMemberState
     PENDING
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                                                                    URI masterURI )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterURI.equals( context.getMyId() ) )
@@ -46,7 +48,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI, URI
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                                                                      URI masterURI, URI
                         masterHaURI )
                 {
 //                    assert context.getAvailableMaster() == null;
@@ -58,7 +61,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                                                                     URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -81,7 +85,8 @@ public enum HighAvailabilityMemberState
     TO_SLAVE
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                                                                    URI masterURI )
                 {
                     if ( masterURI.equals( context.getElectedMasterId() ) )
                     {
@@ -97,8 +102,9 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
-                                                             URI masterHaURI )
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                                                                      URI masterURI,
+                                                                      URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -116,7 +122,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                                                                     URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -138,7 +145,8 @@ public enum HighAvailabilityMemberState
     TO_MASTER
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                                                                    URI masterURI )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterURI.equals( context.getMyId() ) )
@@ -149,8 +157,9 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
-                                                             URI masterHaURI )
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                                                                      URI masterURI,
+                                                                      URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -160,7 +169,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                                                                     URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -182,7 +192,8 @@ public enum HighAvailabilityMemberState
     MASTER
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                                                                    URI masterURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -194,8 +205,9 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
-                                                             URI masterHaURI )
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                                                                      URI masterURI,
+                                                                      URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -206,7 +218,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                                                                     URI slaveUri )
                 {
                     if ( slaveUri.equals( context.getMyId() ) )
                     {
@@ -228,7 +241,8 @@ public enum HighAvailabilityMemberState
     SLAVE
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterURI )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                                                                    URI masterURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -245,8 +259,9 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterURI,
-                                                             URI masterHaURI )
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                                                                      URI masterURI,
+                                                                      URI masterHaURI )
                 {
                     if ( masterURI.equals( context.getMyId() ) )
                     {
@@ -276,7 +291,7 @@ public enum HighAvailabilityMemberState
     public abstract HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, URI masterUri );
 
     public abstract HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, URI masterClusterUri,
-                                                          URI masterHaURI );
+                                                                   URI masterHaURI );
 
     public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, URI slaveUri );
 
