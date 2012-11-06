@@ -113,7 +113,7 @@ public class NetworkMock
 
     private void debug( String participant, String string )
     {
-        logger.info( "=== " + participant + " " + string );
+        logger.debug( "=== " + participant + " " + string );
     }
 
     public void removeServer( String serverId )
@@ -171,12 +171,12 @@ public class NetworkMock
                         long delay = strategy.messageDelay( message, testServer.getKey() );
                         if ( delay == NetworkLatencyStrategy.LOST )
                         {
-                            logger.info( "Broadcasted message to " + testServer.getKey() + " was lost" );
+                            logger.debug( "Broadcasted message to " + testServer.getKey() + " was lost" );
 
                         }
                         else
                         {
-                            logger.info( "Broadcast to " + testServer.getKey() + ": " + message );
+                            logger.debug( "Broadcast to " + testServer.getKey() + ": " + message );
                             messageDeliveries.add( new MessageDelivery( now + delay, message, testServer.getValue() ) );
                         }
                     }
@@ -187,7 +187,7 @@ public class NetworkMock
                 long delay = 0;
                 if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
                 {
-                    logger.info( "Sending message to itself; zero latency" );
+                    logger.debug( "Sending message to itself; zero latency" );
                 }
                 else
                 {
@@ -196,12 +196,12 @@ public class NetworkMock
 
                 if ( delay == NetworkLatencyStrategy.LOST )
                 {
-                    logger.info( "Send message to " + to + " was lost" );
+                    logger.debug( "Send message to " + to + " was lost" );
                 }
                 else
                 {
                     TestProtocolServer server = participants.get( to );
-                    logger.info( "Send to " + to + ": " + message );
+                    logger.debug( "Send to " + to + ": " + message );
                     messageDeliveries.add( new MessageDelivery( now + delay, message, server ) );
                 }
             }

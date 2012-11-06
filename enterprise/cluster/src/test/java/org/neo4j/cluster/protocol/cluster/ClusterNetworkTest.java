@@ -191,7 +191,7 @@ public class ClusterNetworkTest
             public void run()
             {
                 long now = System.currentTimeMillis() - start;
-                logger.getLogger().info( "Round " + i + ", time:" + now );
+                logger.getLogger().debug( "Round " + i + ", time:" + now );
 
                 script.tick( now );
 
@@ -205,12 +205,12 @@ public class ClusterNetworkTest
         // Let messages settle
         Thread.currentThread().sleep( 3000 );
 
-        logger.getLogger().info( "All nodes leave" );
+        logger.getLogger().debug( "All nodes leave" );
 
         // All leave
         for ( Cluster cluster : new ArrayList<Cluster>( in ) )
         {
-            logger.getLogger().info( "Leaving:" + cluster );
+            logger.getLogger().debug( "Leaving:" + cluster );
             cluster.leave();
             Thread.currentThread().sleep( 100 );
         }
@@ -230,7 +230,7 @@ public class ClusterNetworkTest
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                logger.getLogger().info( uri + " entered cluster:" + clusterConfiguration.getMembers() );
+                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMembers() );
                 config.set( new ClusterConfiguration( clusterConfiguration ) );
                 in.add( cluster );
             }
@@ -238,14 +238,14 @@ public class ClusterNetworkTest
             @Override
             public void joinedCluster( URI member )
             {
-                logger.getLogger().info( uri + " sees a join:" + member.toString() );
+                logger.getLogger().debug( uri + " sees a join:" + member.toString() );
                 config.get().joined( member );
             }
 
             @Override
             public void leftCluster( URI member )
             {
-                logger.getLogger().info( uri + " sees a leave:" + member.toString() );
+                logger.getLogger().debug( uri + " sees a leave:" + member.toString() );
                 config.get().left( member );
             }
 
@@ -259,7 +259,7 @@ public class ClusterNetworkTest
             @Override
             public void elected( String role, URI electedMember )
             {
-                logger.getLogger().info( uri + " sees an election:" + electedMember + " as " + role );
+                logger.getLogger().debug( uri + " sees an election:" + electedMember + " as " + role );
             }
         } );
         return config;
@@ -318,7 +318,7 @@ public class ClusterNetworkTest
                         if ( cluster.equals( joinCluster ) )
                         {
                             out.remove( cluster );
-                            logger.getLogger().info( "Join:" + cluster.toString() );
+                            logger.getLogger().debug( "Join:" + cluster.toString() );
                             if ( in.isEmpty() )
                             {
                                 cluster.create( "default" );
@@ -359,7 +359,7 @@ public class ClusterNetworkTest
                         {
                             in.remove( cluster );
                             cluster.leave();
-                            logger.getLogger().info( "Leave:" + cluster.toString() );
+                            logger.getLogger().debug( "Leave:" + cluster.toString() );
                             break;
                         }
                     }
@@ -374,7 +374,7 @@ public class ClusterNetworkTest
         @Override
         public void tick( long time )
         {
-//            logger.getLogger().info( actions.size()+" actions remaining" );
+//            logger.getLogger().debug( actions.size()+" actions remaining" );
             while ( !actions.isEmpty() && actions.peek().time <= time )
             {
                 actions.poll().run();
@@ -403,7 +403,7 @@ public class ClusterNetworkTest
         {
             if ( time == 0 )
             {
-                logger.getLogger().info( "Random seed:" + seed );
+                logger.getLogger().debug( "Random seed:" + seed );
             }
 
             if ( random.nextDouble() >= 0.9 )
@@ -428,7 +428,7 @@ public class ClusterNetworkTest
                             e.printStackTrace();
                         }
                     }
-                    logger.getLogger().info( "Enter cluster:" + cluster.toString() );
+                    logger.getLogger().debug( "Enter cluster:" + cluster.toString() );
 
                 }
                 else if ( !in.isEmpty() )
@@ -436,7 +436,7 @@ public class ClusterNetworkTest
                     int idx = random.nextInt( in.size() );
                     Cluster cluster = in.remove( idx );
                     cluster.leave();
-                    logger.getLogger().info( "Leave cluster:" + cluster.toString() );
+                    logger.getLogger().debug( "Leave cluster:" + cluster.toString() );
                 }
             }
         }
