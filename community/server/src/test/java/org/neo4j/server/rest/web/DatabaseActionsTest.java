@@ -31,6 +31,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +63,7 @@ import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 public class DatabaseActionsTest
@@ -261,6 +263,20 @@ public class DatabaseActionsTest
         Object value = "bar";
         actions.setNodeProperty( nodeId, key, value );
         assertEquals( Collections.singletonMap( key, value ), graphdbHelper.getNodeProperties( nodeId ) );
+    }
+
+    @Test
+    public void settingAnEmptyArrayShouldWorkIfOriginalEntityHasAnEmptyArrayAsWell() throws Exception
+    {
+        // Given
+        long nodeId = createNode( map( "emptyArray", new int[]{} ) );
+
+        // When
+        actions.setNodeProperty( nodeId, "emptyArray", new ArrayList<Object>() );
+
+        // Then
+        Representation val = actions.getNodeProperty( nodeId, "emptyArray" );
+        System.out.println(val);
     }
 
     @Test

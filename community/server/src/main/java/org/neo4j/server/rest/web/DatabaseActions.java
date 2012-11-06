@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -64,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
@@ -103,6 +102,7 @@ public class DatabaseActions
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final boolean enableScriptSandboxing;
+    private final PropertySettingStrategy propertySetter;
 
     public static class Provider extends InjectableProvider<DatabaseActions>
     {
@@ -130,6 +130,7 @@ public class DatabaseActions
         this.graphDb = database.getGraph();
         this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder(enableScriptSandboxing);
+        this.propertySetter = new PropertySettingStrategy(graphDb);
     }
 
     public DatabaseActions( Database database, LeaseManager leaseManager, ForceMode defaultForceMode )
@@ -168,53 +169,6 @@ public class DatabaseActions
         }
     }
 
-    private <T extends PropertyContainer> T set( T entity,
-            Map<String, Object> properties ) throws PropertyValueException
-    {
-        if ( properties != null )
-        {
-            for ( Map.Entry<String, Object> property : properties.entrySet() )
-            {
-                try
-                {
-                    entity.setProperty( property.getKey(),
-                            property( property.getValue() ) );
-                }
-                catch ( IllegalArgumentException ex )
-                {
-                    throw new PropertyValueException( property.getKey(),
-                            property.getValue() );
-                }
-            }
-        }
-        return entity;
-    }
-
-    private Object property( Object value )
-    {
-        if ( value instanceof Collection<?> )
-        {
-            Collection<?> collection = (Collection<?>) value;
-            Object[] array = null;
-            Iterator<?> objects = collection.iterator();
-            for ( int i = 0; objects.hasNext(); i++ )
-            {
-                Object object = objects.next();
-                if ( array == null )
-                {
-                    array = (Object[]) Array.newInstance( object.getClass(),
-                            collection.size() );
-                }
-                array[i] = object;
-            }
-            return array;
-        }
-        else
-        {
-            return value;
-        }
-    }
-
     private <T extends PropertyContainer> T clear( T entity )
     {
         for ( String key : entity.getPropertyKeys() )
@@ -240,8 +194,9 @@ public class DatabaseActions
         Transaction tx = beginTx();
         try
         {
-            result = new NodeRepresentation( set( graphDb.createNode(),
-                    properties ) );
+            Node node = graphDb.createNode();
+            propertySetter.setProperties( node, properties );
+            result = new NodeRepresentation( node );
             tx.success();
         }
         finally
@@ -319,21 +274,7 @@ public class DatabaseActions
             throws PropertyValueException, NodeNotFoundException
     {
         Node node = node( nodeId );
-        value = property( value );
-        Transaction tx = beginTx();
-        try
-        {
-            node.setProperty( key, value );
-            tx.success();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new PropertyValueException( key, value );
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setProperty( node, key, value );
     }
 
     public void removeNodeProperty( long nodeId, String key )
@@ -369,7 +310,8 @@ public class DatabaseActions
         Transaction tx = beginTx();
         try
         {
-            set( clear( node ), properties );
+            clear( node );
+            propertySetter.setProperties( node, properties );
             tx.success();
         }
         finally
@@ -614,10 +556,12 @@ public class DatabaseActions
         Transaction tx = beginTx();
         try
         {
-            result = new RelationshipRepresentation( set(
-                    start.createRelationshipTo( end,
-                            DynamicRelationshipType.withName( type ) ),
-                    properties ) );
+            Relationship rel = start.createRelationshipTo( end,
+                    DynamicRelationshipType.withName( type ));
+
+            propertySetter.setProperties( rel, properties );
+
+            result = new RelationshipRepresentation( rel );
             tx.success();
         }
         finally
@@ -704,7 +648,9 @@ public class DatabaseActions
         Transaction tx = beginTx();
         try
         {
-            set( clear( relationship ), properties );
+            clear( relationship );
+            propertySetter.setProperties( relationship, properties );
+
             tx.success();
         }
         finally
@@ -718,21 +664,7 @@ public class DatabaseActions
             RelationshipNotFoundException
     {
         Relationship relationship = relationship( relationshipId );
-        value = property( value );
-        Transaction tx = beginTx();
-        try
-        {
-            relationship.setProperty( key, value );
-            tx.success();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new PropertyValueException( key, value );
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setProperty( relationship, key, value );
     }
 
     public void removeAllRelationshipProperties( long relationshipId )
