@@ -20,7 +20,7 @@
   </scm>
 
   <properties>
-    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <neo4j.version>${project.version}</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
