@@ -28,17 +28,16 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Loggers;
-import org.neo4j.kernel.logging.Logging;
 
-@Service.Implementation( App.class )
+@Service.Implementation(App.class)
 public class Start extends ReadOnlyGraphDatabaseApp
 {
     public Start()
@@ -57,15 +56,15 @@ public class Start extends ReadOnlyGraphDatabaseApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException, RemoteException
+            throws ShellException, RemoteException
     {
         String query = parser.getLine();
 
-        if ( isComplete(query) )
+        if ( isComplete( query ) )
         {
-            String queryWithoutSemicolon = query.substring(0, query.lastIndexOf(";"));
+            String queryWithoutSemicolon = query.substring( 0, query.lastIndexOf( ";" ) );
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(),getCypherLogger() );
+            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
             try
             {
                 ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
@@ -87,7 +86,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
     {
         DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
         Logging logging = dependencyResolver.resolveDependency( Logging.class );
-        return logging.getLogger( Loggers.CYPHER );
+        return logging.getLogger( ExecutionEngine.class );
     }
 
     private Map<String, Object> getParameters( Session session ) throws ShellException
@@ -96,7 +95,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
         try
         {
             NodeOrRelationship self = getCurrent( session );
-            params.put( "self", self.isNode() ? self.asNode() :self.asRelationship() );
+            params.put( "self", self.isNode() ? self.asNode() : self.asRelationship() );
         }
         catch ( ShellException e )
         { // OK, current didn't exist
@@ -104,8 +103,8 @@ public class Start extends ReadOnlyGraphDatabaseApp
         return params;
     }
 
-    private boolean isComplete(String query)
+    private boolean isComplete( String query )
     {
-        return query.trim().endsWith(";");
+        return query.trim().endsWith( ";" );
     }
 }

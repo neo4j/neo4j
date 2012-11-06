@@ -27,7 +27,7 @@ import java.io.File;
 import org.junit.Test;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Loggers;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.TargetDirectory;
 
@@ -110,12 +110,13 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
-        public StringLogger getLogger( String name )
+        public StringLogger getLogger( Class loggingClass )
         {
-            if ( name.equals( Loggers.DIAGNOSTICS ) )
+            if ( loggingClass.equals( DiagnosticsManager.class ) )
             {
                 return this;
-            } else
+            }
+            else
             {
                 return StringLogger.DEV_NULL;
             }

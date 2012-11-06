@@ -29,31 +29,31 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * Implements the old-style logging with just one logger regardless of name.
  */
 public class ClassicLoggingService
-    extends LifecycleAdapter
-    implements Logging
+        extends LifecycleAdapter
+        implements Logging
 {
     protected StringLogger stringLogger;
 
-    public ClassicLoggingService(Config config)
+    public ClassicLoggingService( Config config )
     {
         stringLogger = StringLogger.logger( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
     @Override
     public void init()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
         stringLogger.close();
     }
 
     @Override
-    public StringLogger getLogger( String name )
+    public StringLogger getLogger( Class loggingClass )
     {
         return stringLogger;
     }

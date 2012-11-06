@@ -23,11 +23,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class DevNullLoggingService
-    extends LifecycleAdapter
-    implements Logging
+        extends LifecycleAdapter
+        implements Logging
 {
     @Override
-    public StringLogger getLogger( String name )
+    public StringLogger getLogger( Class loggingClass )
     {
         return StringLogger.DEV_NULL;
     }

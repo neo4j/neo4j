@@ -24,7 +24,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Loggers;
 import org.neo4j.kernel.logging.Logging;
 
 @Service.Implementation(KernelExtensionFactory.class)
@@ -48,7 +47,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogging().getLogger( Loggers
-                .EXTENSION ) );
+        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogging().getLogger( getClass()
+        ) );
     }
 }

@@ -99,7 +99,7 @@ public class LogbackService
                 public void stop()
                         throws Throwable
                 {
-                    loggerContext.getLogger( Loggers.NEO4J ).detachAndStopAllAppenders();
+                    loggerContext.getLogger( "org.neo4j" ).detachAndStopAllAppenders();
                 }
             } );
             loggingLife.start();
@@ -121,9 +121,9 @@ public class LogbackService
     }
 
     @Override
-    public StringLogger getLogger( String name )
+    public StringLogger getLogger( Class loggingClass )
     {
-        return new Slf4jStringLogger( loggerContext.getLogger( name ) );
+        return new Slf4jStringLogger( loggerContext.getLogger( loggingClass ) );
     }
 
     public static class Slf4jStringLogger

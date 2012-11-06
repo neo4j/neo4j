@@ -33,23 +33,25 @@ import org.neo4j.kernel.logging.Logging;
  * wraps around a UTF-8 {@code Writer}, which in turn wraps a {@code FileChannel}.
  */
 public class FileChannelLoggingService
-    extends LifecycleAdapter
-    implements Logging
+        extends LifecycleAdapter
+        implements Logging
 {
     private final StringLogger stringLogger;
 
-    public FileChannelLoggingService(FileChannel fileChannel) {
-        Writer writer = Channels.newWriter(fileChannel, "UTF-8");
-        stringLogger = StringLogger.wrap(writer);
+    public FileChannelLoggingService( FileChannel fileChannel )
+    {
+        Writer writer = Channels.newWriter( fileChannel, "UTF-8" );
+        stringLogger = StringLogger.wrap( writer );
     }
 
     @Override
-    public void shutdown() {
+    public void shutdown()
+    {
         stringLogger.close();
     }
 
     @Override
-    public StringLogger getLogger( String name )
+    public StringLogger getLogger( Class loggingClass )
     {
         return stringLogger;
     }

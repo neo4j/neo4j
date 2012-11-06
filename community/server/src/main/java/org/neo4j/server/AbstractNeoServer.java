@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.kernel.logging.Loggers.CYPHER;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -73,8 +71,8 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
     protected WebServer webServer;
-    
-	protected final StatisticCollector statisticsCollector = new StatisticCollector();
+
+    protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     private PreFlightTasks preflight;
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
@@ -87,16 +85,19 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
-            if(type.equals( Database.class ))
+            if ( type.equals( Database.class ) )
             {
                 return (T) database;
-            } else if(type.equals( PreFlightTasks.class ))
+            }
+            else if ( type.equals( PreFlightTasks.class ) )
             {
                 return (T) preflight;
-            } else if(type.equals( InterruptThreadTimer.class ))
+            }
+            else if ( type.equals( InterruptThreadTimer.class ) )
             {
                 return (T) interruptStartupTimer;
-            } else if(type.equals( Logging.class ))
+            }
+            else if ( type.equals( Logging.class ) )
             {
                 // TODO logging should be owned by server, waiting for logging refactoring
                 DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
@@ -111,16 +112,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract PreFlightTasks createPreflightTasks();
 
-	protected abstract Iterable<ServerModule> createServerModules();
+    protected abstract Iterable<ServerModule> createServerModules();
 
     protected abstract Database createDatabase();
-    
+
     protected abstract WebServer createWebServer();
 
     protected DatabaseActions createDatabaseActions()
     {
-        return new DatabaseActions(database,
-                new LeaseManager(new RealClock()),
+        return new DatabaseActions( database,
+                new LeaseManager( new RealClock() ),
                 ForceMode.forced,
                 configurator.configuration().getBoolean(
                         Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
@@ -128,9 +129,9 @@ public abstract class AbstractNeoServer implements NeoServer
     }
 
     @Override
-	public void init() 
+    public void init()
     {
-    	this.preflight = createPreflightTasks();
+        this.preflight = createPreflightTasks();
         this.database = createDatabase();
         this.webServer = createWebServer();
 
@@ -145,45 +146,46 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver.resolveDependency( Logging.class );
     }
 
-	@Override
+    @Override
     public void start() throws ServerStartupException
     {
         interruptStartupTimer = createInterruptStartupTimer();
-		
-		try 
-		{
-	        // Pre-flight tasks run outside the boot timeout limit
-	        runPreflightTasks();
 
-        	interruptStartupTimer.startCountdown();
+        try
+        {
+            // Pre-flight tasks run outside the boot timeout limit
+            runPreflightTasks();
+
+            interruptStartupTimer.startCountdown();
 
             database.start();
 
             databaseActions = createDatabaseActions();
 
-            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CYPHER ) );
+            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CypherExecutor.class ) );
 
             configureWebServer();
 
             cypherExecutor.start();
 
-	        DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
-	
-	        StringLogger logger = diagnosticsManager.getTargetLog();
-	        logger.logMessage( "--- SERVER STARTED START ---" );
-	
-	        diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
-	
-	        startModules( logger );
+            DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
 
-	        startWebServer( logger );
-	
-	        logger.logMessage( "--- SERVER STARTED END ---", true );
+            StringLogger logger = diagnosticsManager.getTargetLog();
+            logger.logMessage( "--- SERVER STARTED START ---" );
+
+            diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
+
+            startModules( logger );
+
+            startWebServer( logger );
+
+            logger.logMessage( "--- SERVER STARTED END ---", true );
 
             interruptStartupTimer.stopCountdown();
 
-        } catch(Throwable t)
-		{
+        }
+        catch ( Throwable t )
+        {
             // Make sure this does not trigger interrupts outside of this method.
             interruptStartupTimer.stopCountdown();
 
@@ -191,21 +193,24 @@ public abstract class AbstractNeoServer implements NeoServer
             // after having handled interrupts (looking at you, Bill).
             Thread.interrupted();
 
-			if( interruptStartupTimer.wasTriggered())
-			{
-				throw new ServerStartupException(
-						"Startup took longer than "+ interruptStartupTimer.getTimeoutMillis()+"ms, and was stopped. You can disable this behavior by setting '" + Configurator.STARTUP_TIMEOUT + "' to 0.",
-						1);
-			}
-			
-			if(t instanceof RuntimeException)
-			{
-				throw (RuntimeException)t;
-			} else 
-			{
-				throw new ServerStartupException("Starting neo server failed, see nested exception.",t);
-			}
-		}
+            if ( interruptStartupTimer.wasTriggered() )
+            {
+                throw new ServerStartupException(
+                        "Startup took longer than " + interruptStartupTimer.getTimeoutMillis() + "ms, " +
+                                "and was stopped. You can disable this behavior by setting '" + Configurator
+                                .STARTUP_TIMEOUT + "' to 0.",
+                        1 );
+            }
+
+            if ( t instanceof RuntimeException )
+            {
+                throw (RuntimeException) t;
+            }
+            else
+            {
+                throw new ServerStartupException( "Starting neo server failed, see nested exception.", t );
+            }
+        }
     }
 
     public DependencyResolver getDependencyResolver()
@@ -213,22 +218,27 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver;
     }
 
-	protected InterruptThreadTimer createInterruptStartupTimer() {
-		long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, Configurator.DEFAULT_STARTUP_TIMEOUT) * 1000;
-		InterruptThreadTimer stopStartupTimer;
-		if(startupTimeout > 0) 
+    protected InterruptThreadTimer createInterruptStartupTimer()
+    {
+        long startupTimeout = getConfiguration().getInt( Configurator.STARTUP_TIMEOUT,
+                Configurator.DEFAULT_STARTUP_TIMEOUT ) * 1000;
+        InterruptThreadTimer stopStartupTimer;
+        if ( startupTimeout > 0 )
         {
-            log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, -1));
-			stopStartupTimer = InterruptThreadTimer.createTimer(
-					startupTimeout,
-					Thread.currentThread());
-        } else {
-        	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
+            log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
+                    Configurator.STARTUP_TIMEOUT, -1 ) );
+            stopStartupTimer = InterruptThreadTimer.createTimer(
+                    startupTimeout,
+                    Thread.currentThread() );
         }
-		return stopStartupTimer;
-	}
+        else
+        {
+            stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
+        }
+        return stopStartupTimer;
+    }
 
-	/**
+    /**
      * Use this method to register server modules from subclasses
      *
      * @param module
@@ -242,7 +252,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         for ( ServerModule module : serverModules )
         {
-            module.start(logger);
+            module.start( logger );
         }
     }
 
@@ -270,15 +280,15 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-	@Override
+    @Override
     public Configuration getConfiguration()
     {
         return configurator.configuration();
     }
 
-	// TODO: Once WebServer is fully implementing LifeCycle,
-	// it should manage all but static (eg. unchangeable during runtime)
-	// configuration itself.
+    // TODO: Once WebServer is fully implementing LifeCycle,
+    // it should manage all but static (eg. unchangeable during runtime)
+    // configuration itself.
     private void configureWebServer()
     {
         int webServerPort = getWebServerPort();
@@ -297,7 +307,8 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setEnableHttps( sslEnabled );
         webServer.setHttpsPort( sslPort );
 
-        webServer.setWadlEnabled( Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator.WADL_ENABLED ) ) ) );
+        webServer.setWadlEnabled( Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator
+                .WADL_ENABLED ) ) ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
 
         if ( sslEnabled )
@@ -310,14 +321,14 @@ public abstract class AbstractNeoServer implements NeoServer
     private int getMaxThreads()
     {
         return configurator.configuration()
-            .containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ? configurator.configuration()
-            .getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
+                .containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ? configurator.configuration()
+                .getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
     }
 
     private int defaultMaxWebServerThreads()
     {
         return 10 * Runtime.getRuntime()
-            .availableProcessors();
+                .availableProcessors();
     }
 
     private void startWebServer( StringLogger logger )
@@ -327,10 +338,12 @@ public abstract class AbstractNeoServer implements NeoServer
             if ( httpLoggingProperlyConfigured() )
             {
                 webServer.setHttpLoggingConfiguration(
-                    new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString() ) );
+                        new File( getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION ).toString()
+                        ) );
             }
 
-            Integer limit = getConfiguration().getInteger( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null );
+            Integer limit = getConfiguration().getInteger( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY,
+                    null );
             if ( limit != null )
             {
                 webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
@@ -376,30 +389,31 @@ public abstract class AbstractNeoServer implements NeoServer
     protected int getWebServerPort()
     {
         return configurator.configuration()
-            .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
+                .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
     }
 
     protected boolean getHttpsEnabled()
     {
         return configurator.configuration()
-            .getBoolean( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY,
-                Configurator.DEFAULT_WEBSERVER_HTTPS_ENABLED );
+                .getBoolean( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY,
+                        Configurator.DEFAULT_WEBSERVER_HTTPS_ENABLED );
     }
 
     protected int getHttpsPort()
     {
         return configurator.configuration()
-            .getInt( Configurator.WEBSERVER_HTTPS_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_PORT );
+                .getInt( Configurator.WEBSERVER_HTTPS_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_HTTPS_PORT );
     }
 
     protected String getWebServerAddress()
     {
         return configurator.configuration()
-            .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
-                Configurator.DEFAULT_WEBSERVER_ADDRESS );
+                .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
+                        Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
     // TODO: This is jetty-specific, move to Jetty6WebServer
+
     /**
      * Jetty wants certificates stored in a key store, which is nice, but
      * to make it easier for non-java savvy users, we let them put
@@ -410,16 +424,16 @@ public abstract class AbstractNeoServer implements NeoServer
     protected KeyStoreInformation initHttpsKeyStore()
     {
         File keystorePath = new File( configurator.configuration().getString(
-            Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
-            Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH ) );
+                Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_KEYSTORE_PATH ) );
 
         File privateKeyPath = new File( configurator.configuration().getString(
-            Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
-            Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH ) );
+                Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_KEY_PATH ) );
 
         File certificatePath = new File( configurator.configuration().getString(
-            Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
-            Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH ) );
+                Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_WEBSERVER_HTTPS_CERT_PATH ) );
 
         if ( !certificatePath.exists() )
         {
@@ -449,12 +463,12 @@ public abstract class AbstractNeoServer implements NeoServer
 
     /**
      * Stops everything but the database.
-     * 
+     * <p/>
      * This is deprecated. If you would like to disconnect the database
      * life cycle from server control, then use {@link WrappingNeoServer}.
-     * 
+     * <p/>
      * To stop the server, please use {@link #stop()}.
-     * 
+     * <p/>
      * This will be removed in 1.10
      */
     @Deprecated
@@ -484,11 +498,14 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         if ( database != null )
         {
-            try {
-				database.stop();
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
+            try
+            {
+                database.stop();
+            }
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -535,7 +552,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected Collection<InjectableProvider<?>> createDefaultInjectables()
     {
-        Collection<InjectableProvider<?>> singletons = new ArrayList<InjectableProvider<?>>(  );
+        Collection<InjectableProvider<?>> singletons = new ArrayList<InjectableProvider<?>>();
 
         Database database = getDatabase();
 
@@ -561,7 +578,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private InjectableWrapper toInjectableProvider( Object service )
     {
-        return new InjectableWrapper( TypedInjectable.injectable( service ));
+        return new InjectableWrapper( TypedInjectable.injectable( service ) );
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

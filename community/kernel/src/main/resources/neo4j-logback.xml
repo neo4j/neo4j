@@ -24,7 +24,7 @@
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>${neo_store}/messages.log</file>
     <encoder>
-      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%c]: %message%n</pattern>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
     </encoder>
   </appender>
 
@@ -36,20 +36,15 @@
         <reconnectionDelay>10000</reconnectionDelay>
         <includeCallerData>true</includeCallerData>
       </appender>
-      <logger name="neo4j">
+      <logger name="org.neo4j">
         <appender-ref ref="SOCKET"/>
       </logger>
     </then>
   </if>
 
-  <logger name="neo4j.diagnostics" level="DEBUG">
-  </logger>
-
-  <logger name="neo4j" additivity="false">
+  <logger name="org.neo4j" level="info" additivity="false">
     <appender-ref ref="FILE"/>
   </logger>
-
-  <logger name="neo4j.cypher" additivity="false"/>
 
   <include resource="custom-logback.xml"/>
 
