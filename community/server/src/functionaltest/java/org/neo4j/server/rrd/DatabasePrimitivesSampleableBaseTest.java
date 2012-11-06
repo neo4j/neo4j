@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
 import org.junit.Test;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import javax.management.MalformedObjectNameException;
+import java.io.IOException;
+
+import static org.junit.Assert.assertTrue;
 
 public class DatabasePrimitivesSampleableBaseTest
 {
@@ -61,5 +60,17 @@ public class DatabasePrimitivesSampleableBaseTest
 
         assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
         */
+    }
+
+    @Test
+    public void rrd_uses_temp_dir() throws Exception
+    {
+        InternalAbstractGraphDatabase db = new ImpermanentGraphDatabase();
+
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db );
+
+        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
+
+        db.shutdown();
     }
 }

@@ -72,7 +72,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -171,7 +170,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     EntityType relationshipEntityType;
     final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
             new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
-    private DirectoryGetter directoryGetter;
+    private LuceneFilesystemFacade filesystemFacade;
 
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
@@ -200,16 +199,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
     @Override
     public void start()
     {
+        this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY : LuceneFilesystemFacade.FS;
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
         String storeDir = config.get( Configuration.store_dir );
-        this.baseStorePath = getStoreDir( storeDir ).first();
-        cleanWriteLocks( baseStorePath );
+        this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( storeDir + File.separator + "index" );
+        this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
-        this.providerStore = newIndexStore( storeDir, fileSystemAbstraction, allowUpgrade );
+        this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = config.get( Configuration.read_only );
-        this.directoryGetter = (boolean) config.get( Configuration.ephemeral ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
 
         nodeEntityType = new EntityType()
         {
@@ -263,8 +262,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( "Unable to open lucene log in " +
-                        this.baseStorePath, e );
+                throw new RuntimeException( "Unable to open lucene log in " + this.baseStorePath, e );
             }
 
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
@@ -276,46 +274,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return typeCache.getIndexType( identifier, recovery );
     }
 
-    private void cleanWriteLocks( String directory )
+    private IndexProviderStore newIndexStore( String dbStoreDir, FileSystemAbstraction fileSystem, boolean allowUpgrade )
     {
-        File dir = new File( directory );
-        if ( !dir.isDirectory() )
-        {
-            return;
-        }
-        for ( File file : dir.listFiles() )
-        {
-            if ( file.isDirectory() )
-            {
-                cleanWriteLocks( file.getAbsolutePath() );
-            }
-            else if ( file.getName().equals( "write.lock" ) )
-            {
-                boolean success = file.delete();
-                assert success;
-            }
-        }
-    }
-
-    static Pair<String, Boolean> getStoreDir( String dbStoreDir )
-    {
-        File dir = new File( new File( dbStoreDir ), "index" );
-        boolean created = false;
-        if ( !dir.exists() )
-        {
-            if ( !dir.mkdirs() )
-            {
-                throw new RuntimeException( "Unable to create directory path["
-                        + dir.getAbsolutePath() + "] for Neo4j store." );
-            }
-            created = true;
-        }
-        return Pair.of( dir.getAbsolutePath(), created );
-    }
-
-    static IndexProviderStore newIndexStore( String dbStoreDir, FileSystemAbstraction fileSystem, boolean allowUpgrade )
-    {
-        File file = new File( getStoreDir( dbStoreDir ).first() + File.separator + "lucene-store.db" );
+        String dir = dbStoreDir + File.separator + "lucene-store.db";
+        File file = new File( dir  );
         return new IndexProviderStore( file, fileSystem, INDEX_VERSION, allowUpgrade );
     }
 
@@ -697,7 +659,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         assertNotClosed();
         try
         {
-            Directory dir = directoryGetter.getDirectory( baseStorePath, identifier ); //getDirectory( baseStorePath, identifier );
+            Directory dir = filesystemFacade.getDirectory( baseStorePath, identifier ); //getDirectory( baseStorePath, identifier );
             directoryExists( dir );
             IndexType type = getType( identifier, false );
             IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
@@ -940,7 +902,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    private static enum DirectoryGetter
+    private static enum LuceneFilesystemFacade
     {
         FS
         {
@@ -948,6 +910,43 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Directory getDirectory( String baseStorePath, IndexIdentifier identifier ) throws IOException
             {
                 return FSDirectory.open( getFileDirectory( baseStorePath, identifier) );
+            }
+
+            @Override
+            void cleanWriteLocks( String directory )
+            {
+                File dir = new File( directory );
+                if ( !dir.isDirectory() )
+                {
+                    return;
+                }
+                for ( File file : dir.listFiles() )
+                {
+                    if ( file.isDirectory() )
+                    {
+                        cleanWriteLocks( file.getAbsolutePath() );
+                    } else if ( file.getName().equals( "write.lock" ) )
+                    {
+                        boolean success = file.delete();
+                        assert success;
+                    }
+                }
+            }
+
+            @Override
+            String ensureDirectoryExists( String path )
+            {
+                    File dir = new File( path);
+                    if ( !dir.exists() )
+                    {
+                        if ( !dir.mkdirs() )
+                        {
+                            String message = String.format( "Unable to create directory path[%s] for Neo4j store.", dir.getAbsolutePath() );
+                            throw new RuntimeException( message );
+                        }
+                    }
+                    return dir.getAbsolutePath();
+
             }
         },
         MEMORY
@@ -957,9 +956,22 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 return new RAMDirectory();
             }
+
+            @Override
+            void cleanWriteLocks( String path )
+            {
+            }
+
+            @Override
+            String ensureDirectoryExists( String path )
+            {
+                return path;
+            }
         };
 
         abstract Directory getDirectory( String baseStorePath, IndexIdentifier identifier ) throws IOException;
+        abstract String ensureDirectoryExists( String path );
+        abstract void cleanWriteLocks( String path);
     }
 
     void addExpectedFutureDeletion( IndexIdentifier identifier )

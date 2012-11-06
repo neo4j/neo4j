@@ -38,6 +38,8 @@ import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -63,26 +65,18 @@ public class RrdFactory
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler )
+    public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
         Sampleable[] primitives = {
-//                new MemoryUsedSampleable(),
                 new NodeIdsInUseSampleable( db.getGraph() ),
                 new PropertyCountSampleable( db.getGraph() ),
                 new RelationshipCountSampleable( db.getGraph() )
         };
 
-        Sampleable[] usage = {
-//                new RequestBytesSampleable( db ),
-//                new RequestMeanTimeSampleable( db ),
-//                new RequestMedianTimeSampleable( db ),
-//                new RequestMaxTimeSampleable( db ),
-//                new RequestMinTimeSampleable( db ),
-//                new RequestCountSampleable( db )
-        };
+        Sampleable[] usage = {};
 
         final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
-                getDefaultDirectory( (GraphDatabaseAPI) db.getGraph() ) );
+                getDefaultDirectory(db.getGraph()) );
         final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(
@@ -92,20 +86,6 @@ public class RrdFactory
                 SECONDS.toMillis( 3 )
         );
 
-//        scheduler.scheduleAtFixedRate(
-//                new RrdJob( new RrdSamplerImpl( rrdb, usage )
-//                {
-//                    @Override
-//                    public void updateSample()
-//                    {
-//                        db.statisticCollector().createSnapshot();
-//                        super.updateSample();
-//                    }
-//                } ),
-//                RRD_THREAD_NAME + "[usage]",
-//                SECONDS.toMillis( 1 ),
-//                SECONDS.toMillis( 60 )
-//        );
         return rrdb;
     }
 
@@ -119,9 +99,38 @@ public class RrdFactory
         return result.toArray( new Sampleable[result.size()] );
     }
 
-    private String getDefaultDirectory( GraphDatabaseAPI db )
+    private String getDefaultDirectory( GraphDatabaseAPI db ) throws IOException
     {
-        return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
+        if ( isEphemereal( db ) )
+        {
+            return tempDir();
+        } else
+        {
+            return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
+        }
+    }
+
+    protected String tempDir() throws IOException
+    {
+        File tempFile = File.createTempFile( "neo4j", "rrd" );
+        tempFile.delete();
+        tempFile.mkdir();
+
+        return tempFile.getAbsolutePath();
+    }
+
+    private boolean isEphemereal( GraphDatabaseAPI db )
+    {
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+
+        if ( config == null )
+        {
+            return false;
+        } else
+        {
+            Boolean aBoolean = config.get( InternalAbstractGraphDatabase.Configuration.ephemeral );
+            return aBoolean != null && aBoolean;
+        }
     }
 
     protected RrdDb createRrdb( String rrdPathx, Sampleable... sampleables )

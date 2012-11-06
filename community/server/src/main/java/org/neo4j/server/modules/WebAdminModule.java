@@ -55,7 +55,12 @@ public class WebAdminModule implements ServerModule
     @Override
 	public void start(StringLogger logger)
     {
-        startRoundRobinDB( );
+        try {
+            startRoundRobinDB( );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
         log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
         if ( logger != null ) logger.logMessage( "Mounted webadmin at: " + DEFAULT_WEB_ADMIN_PATH );
@@ -76,7 +81,7 @@ public class WebAdminModule implements ServerModule
 		}
     }
 
-    private void startRoundRobinDB( )
+    private void startRoundRobinDB( ) throws IOException
     {
         RrdFactory rrdFactory = new RrdFactory( config );
         this.rrdDb = rrdFactory.createRrdDbAndSampler( database, jobScheduler );

@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +42,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -63,11 +63,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
     LuceneBatchInserterIndex( String dbStoreDir,
             IndexIdentifier identifier, Map<String, String> config )
     {
-        Pair<String, Boolean> storeDir = LuceneDataSource.getStoreDir( dbStoreDir );
-        this.createdNow = !LuceneDataSource.getFileDirectory( storeDir.first(), identifier ).exists();
+        String storeDir = getStoreDir( dbStoreDir );
+        this.createdNow = !LuceneDataSource.getFileDirectory( storeDir, identifier ).exists();
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
-        this.writer = instantiateWriter( storeDir.first() );
+        this.writer = instantiateWriter( storeDir );
     }
     
     /**
@@ -377,19 +377,25 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
         closeSearcher();
         closeWriter();
     }
+
+    private String getStoreDir( String dbStoreDir )
+    {
+        File dir = new File( new File( dbStoreDir ), "index" );
+        if ( !dir.exists() )
+        {
+            if ( !dir.mkdirs() )
+            {
+                throw new RuntimeException( "Unable to create directory path["
+                        + dir.getAbsolutePath() + "] for Neo4j store." );
+            }
+        }
+        return dir.getAbsolutePath();
+    }
     
     @Override
     public void flush()
     {
         writerModified = true;
-//        try
-//        {
-//            writer.commit();
-//        }
-//        catch ( IOException e )
-//        {
-//            throw new RuntimeException( e );
-//        }
     }
     
     @Override
