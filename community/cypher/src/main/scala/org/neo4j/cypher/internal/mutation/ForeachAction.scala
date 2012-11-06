@@ -42,7 +42,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     })
 
     before match {
-      case None => context.remove(id)
+      case None      => context.remove(id)
       case Some(old) => context.put(id, old)
     }
 
@@ -64,8 +64,9 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   }
 
   def symbolTableDependencies = {
+    val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
     val updateActionsDeps = actions.flatMap(_.symbolTableDependencies).filterNot(_ == id).toSet
     val collectionDeps = collection.symbolTableDependencies
-    updateActionsDeps ++ collectionDeps
+    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps
   }
 }
