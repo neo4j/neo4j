@@ -103,11 +103,24 @@ define(
         description = "An unknown error occurred, was unable to retrieve a result for you."
         monospaceDescription = null
 
+        stackTraceToString = (stacktrace) ->
+          if stacktrace?
+            "StackTrace:\n#{stacktrace.join('\n')}"
+          else
+            null
+
         if error instanceof neo4j.exceptions.HttpException
-          if error.data.exception = "SyntaxException"
+          if error.data.exception == "SyntaxException"
             title = "Invalid query"
             description = null
             monospaceDescription = error.data.message
+          else if error.data.exception == "PropertyValueException"
+            title = "Issue with property value"
+            description = error.data.message
+          else
+            title = error.data.exception
+            description = error.data.message
+            monospaceDescription = stackTraceToString(error.data.stacktrace)
         
         $("#data-query-metadata", @el).html(errorTemplate(
           "title":title

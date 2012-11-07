@@ -10,6 +10,8 @@ include::streaming.asciidoc[]
 
 include::cypher.asciidoc[]
 
+include::property-values.asciidoc[]
+
 include::nodes.asciidoc[]
 
 include::relationships.asciidoc[]

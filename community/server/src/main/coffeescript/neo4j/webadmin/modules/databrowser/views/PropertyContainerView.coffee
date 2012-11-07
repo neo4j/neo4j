@@ -20,10 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/modules/databrowser/models/PropertyContainer'
+   'neo4j/webadmin/modules/databrowser/models/DataBrowserState'
    'ribcage/View'
    './propertyEditor'
    'lib/amd/jQuery'], 
-  (PropertyContainer, View, propertyEditorTemplate, $) ->
+  (PropertyContainer, DataBrowserState, View, propertyEditorTemplate, $) ->
 
     class PropertyContainerView extends View
 
@@ -39,6 +40,7 @@ define(
 
       initialize : (opts) =>
         @template = opts.template
+        @dataModel = opts.dataModel
 
       keyChanged : (ev) =>
         id = @getPropertyIdForElement(ev.target)
@@ -103,10 +105,18 @@ define(
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()
         switch state
-          when "saved" then @setSaveState "Saved", true
-          when "notSaved" then @setSaveState "Save", false
-          when "saving" then @setSaveState "Saving..", true
-          when "cantSave" then @setSaveState "Save", true
+          when "notSaved" then @setSaveState "Save",     false
+          when "saving"   then @setSaveState "Saving..", true
+          when "cantSave" then @setSaveState "Save",     true
+          when "saved" 
+            @setSaveState "Saved", true
+            # A bit of domain logic in the presentation logic. Will be 
+            # fixed as part of refactoring the domain model.
+            if @dataModel.getState() == DataBrowserState.State.ERROR
+              # The data model is in an error state, but we have successfully saved the
+              # current state, so update the data model with our state to get it back in 
+              # business.
+              @dataModel.setData(@propertyContainer.item)
 
       setSaveState : (text, disabled) =>
         button = $(".data-save-properties", @el)
@@ -122,8 +132,8 @@ define(
       setData : (@propertyContainer) =>
         @unbind()
         @propertyContainer.bind "remove:property", @renderProperties
-        @propertyContainer.bind "add:property", @renderProperties
-        @propertyContainer.bind "change:status", @updateSaveState
+        @propertyContainer.bind    "add:property", @renderProperties
+        @propertyContainer.bind   "change:status", @updateSaveState
 
       render : =>
         $(@el).html(@template(

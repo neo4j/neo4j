@@ -21,6 +21,7 @@ package org.neo4j.server.rest.domain;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,6 +107,23 @@ public class PropertySettingStrategyTest
         assertThat( (String[]) node.getProperty( "anArray" ), is(new String[]{"hello","Iamanarray"}));
     }
 
+    @Test
+    public void shouldSetAllProperties() throws Exception
+    {
+        // Given
+        Node node = db.createNode();
+        node.setProperty( "name", "bob" );
+        node.setProperty( "age", 12 );
+
+        // When
+        propSetter.setAllProperties( node, map( "name", "Steven", "color", 123 ) );
+
+        // Then
+        assertThat( (String) node.getProperty( "name" ), is("Steven"));
+        assertThat( (Integer) node.getProperty( "color" ), is(123));
+        assertThat( node.hasProperty( "age" ), is(false));
+    }
+
     // Handling empty collections
 
     @Test
@@ -173,6 +191,22 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "arr", new ArrayList<Object>() );
 
         // Then
+        assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
+    }
+
+    @Test
+    public void shouldUseOriginalTypeOnEmptyCollectionWhenSettingAllProperties() throws Exception
+    {
+        // Given
+        Node node = db.createNode();
+        node.setProperty( "name", "bob" );
+        node.setProperty( "arr", new String[]{"a","b"} );
+
+        // When
+        propSetter.setAllProperties( node, map("arr", new ArrayList<String>()) );
+
+        // Then
+        assertThat( node.hasProperty( "name" ), is(false));
         assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
     }
 

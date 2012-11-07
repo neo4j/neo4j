@@ -36,13 +36,14 @@ define(
 
       initialize : (options)->
         
-        @nodeView = new NodeView
-        @relationshipView = new RelationshipView
-        @relationshipListView = new RelationshipListView
-        @nodeListView = new NodeListView
-        @cypherResultView = new CypherResultView
-
         @dataModel = options.dataModel
+        
+        @nodeView =             new NodeView         dataModel : @dataModel
+        @relationshipView =     new RelationshipView dataModel : @dataModel
+        @relationshipListView = new RelationshipListView
+        @nodeListView =         new NodeListView
+        @cypherResultView =     new CypherResultView
+
         @dataModel.bind("change:data", @render)
 
       render : =>

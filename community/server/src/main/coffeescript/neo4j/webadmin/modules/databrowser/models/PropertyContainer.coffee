@@ -31,7 +31,11 @@ define(
       defaults :
         status : "saved"
 
-      initialize : (item, opts) =>
+      # Item should be the node or relationship we will wrap,
+      # reportError is a callback for reporting errors
+      # we don't know how to recover from.
+      constructor : (item, @reportError, opts={}) ->
+        super(opts)
         @properties = {}
 
         @urlResolver = new ItemUrlResolver
@@ -145,8 +149,9 @@ define(
           @setSaveState("saving")
           @getItem().save().then @setSaved, @saveFailed
 
-      saveFailed : (ev) =>
+      saveFailed : (response) =>
         @setNotSaved()
+        @reportError(response.error || response)
 
       setSaved : () =>
         @setSaveState("saved")

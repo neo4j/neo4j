@@ -21,8 +21,10 @@ package org.neo4j.server.rest.domain;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -39,6 +41,44 @@ public class PropertySettingStrategy
     public PropertySettingStrategy( GraphDatabaseAPI db )
     {
         this.db = db;
+    }
+
+    /**
+     * Set all properties on an entity, deleting any properties that existed on the entity but not in the
+     * provided map.
+     *
+     * @param entity
+     * @param properties
+     */
+    public void setAllProperties( PropertyContainer entity, Map<String, Object> properties ) throws PropertyValueException
+
+    {
+        Map<String, Object> propsToSet = properties == null ?
+                new HashMap<String, Object>() :
+                properties;
+
+        Transaction tx = db.beginTx();
+        try {
+
+            setProperties( entity, properties );
+            ensureHasOnlyTheseProperties( entity, propsToSet.keySet() );
+
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+    private void ensureHasOnlyTheseProperties( PropertyContainer entity, Set<String> propertiesThatShouldExist )
+    {
+        for ( String entityPropertyKey : entity.getPropertyKeys() )
+        {
+            if( ! propertiesThatShouldExist.contains( entityPropertyKey ))
+            {
+                entity.removeProperty( entityPropertyKey );
+            }
+        }
     }
 
     public void setProperties( PropertyContainer entity, Map<String, Object> properties ) throws PropertyValueException

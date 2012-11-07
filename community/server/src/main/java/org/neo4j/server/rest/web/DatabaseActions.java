@@ -169,15 +169,6 @@ public class DatabaseActions
         }
     }
 
-    private <T extends PropertyContainer> T clear( T entity )
-    {
-        for ( String key : entity.getPropertyKeys() )
-        {
-            entity.removeProperty( key );
-        }
-        return entity;
-    }
-
     // API
 
     public DatabaseRepresentation root()
@@ -306,34 +297,13 @@ public class DatabaseActions
             Map<String, Object> properties ) throws PropertyValueException,
             NodeNotFoundException
     {
-        Node node = node( nodeId );
-        Transaction tx = beginTx();
-        try
-        {
-            clear( node );
-            propertySetter.setProperties( node, properties );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setAllProperties( node( nodeId ), properties );
     }
 
     public void removeAllNodeProperties( long nodeId )
-            throws NodeNotFoundException
+            throws NodeNotFoundException, PropertyValueException
     {
-        Node node = node( nodeId );
-        Transaction tx = beginTx();
-        try
-        {
-            clear( node );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setAllProperties( node( nodeId ), null );
     }
 
     public String[] getNodeIndexNames()
@@ -644,19 +614,7 @@ public class DatabaseActions
             Map<String, Object> properties ) throws PropertyValueException,
             RelationshipNotFoundException
     {
-        Relationship relationship = relationship( relationshipId );
-        Transaction tx = beginTx();
-        try
-        {
-            clear( relationship );
-            propertySetter.setProperties( relationship, properties );
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setAllProperties( relationship( relationshipId ), properties );
     }
 
     public void setRelationshipProperty( long relationshipId, String key,
@@ -668,19 +626,9 @@ public class DatabaseActions
     }
 
     public void removeAllRelationshipProperties( long relationshipId )
-            throws RelationshipNotFoundException
+            throws RelationshipNotFoundException, PropertyValueException
     {
-        Relationship relationship = relationship( relationshipId );
-        Transaction tx = beginTx();
-        try
-        {
-            clear( relationship );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+        propertySetter.setAllProperties( relationship( relationshipId ), null );
     }
 
     public void removeRelationshipProperty( long relationshipId, String key )

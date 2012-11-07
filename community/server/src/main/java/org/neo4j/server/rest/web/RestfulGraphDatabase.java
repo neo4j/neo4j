@@ -381,6 +381,10 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
+        catch ( PropertyValueException e )
+        {
+            return output.badRequest( e );
+        }
         return nothing();
     }
 
@@ -590,6 +594,10 @@ public class RestfulGraphDatabase
         catch ( RelationshipNotFoundException e )
         {
             return output.notFound( e );
+        }
+        catch ( PropertyValueException e )
+        {
+            return output.badRequest( e );
         }
         return nothing();
     }

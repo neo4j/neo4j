@@ -50,7 +50,7 @@ define(
         getNumberOfRows  : -> @get "numberOfRows"
 
         setExecutionTime : (t) -> @set executionTime : t
-        setNumberOfRows  : (n) -> @set numberOfRows : n
+        setNumberOfRows  : (n) -> @set numberOfRows  : n
         
       
       defaults :
@@ -107,11 +107,11 @@ define(
 
         if result instanceof neo4j.models.Node
           state = DataBrowserState.State.SINGLE_NODE
-          data = new NodeProxy(result)
+          data = new NodeProxy(result, @_reportError)
 
         else if result instanceof neo4j.models.Relationship
           state = DataBrowserState.State.SINGLE_RELATIONSHIP
-          data = new RelationshipProxy(result)
+          data = new RelationshipProxy(result, @_reportError)
 
         else if _(result).isArray() and result.length is 0 
           state = DataBrowserState.State.EMPTY
@@ -151,7 +151,15 @@ define(
         if not opts.silent
           @trigger "change:data"
           @trigger "change:state" if originalState != state
-
+      
+      # Callback that gets passed to smart objects that we create that may generate errors
+      # that they don't know how to recover from. They use this to notify the data browser that
+      # something went wrong, and that we should tell the user about it. 
+      _reportError : (error) =>
+        # Currently just delegates to setData, which will move this object to the ERROR state
+        # if it does not understand the data we give it.
+        @setData(error)
+      
       _updateQueryMetaData : (data, executionTime) ->
         if data?
           if data instanceof neo4j.cypher.QueryResult
