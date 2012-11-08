@@ -276,7 +276,6 @@ public class DatabaseActionsTest
 
         // Then
         Representation val = actions.getNodeProperty( nodeId, "emptyArray" );
-        System.out.println(val);
     }
 
     @Test

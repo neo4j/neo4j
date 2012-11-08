@@ -4,17 +4,15 @@
 The REST API allows setting properties on nodes and relationships through direct RESTful operations. However, there are
 restrictions as to what types of values can be used as property values. Allowed value types are as follows:
 
-- Integers: With capacity the same as Java's Long type
-- Floats: With capacity the same as Java's Double type
+- Numbers: Both integer values, with capacity as Java's Long type, and floating points, with capacity as Java's Double.
 - Booleans
 - Strings
-- Bytes: Although this is not available through the normal JSON transport format
 - Arrays: Of the above basic types
 
 === Arrays ===
 
 There are two important points to be made about array values. First, all values in the array must be of the same type.
-That means either all integers, all floats, all booleans, all strings or all bytes. Mixing types is not currently
+That means either all integers, all floats, all booleans or all strings. Mixing types is not currently
 supported.
 
 Second, storing empty arrays is only possible given certain preconditions. Because the JSON transfer format does not

@@ -129,9 +129,9 @@ public class PropertySettingStrategy
                 {
                     throw new PropertyValueException(
                             "Unable to set property '" + key + "' to an empty array, " +
-                                    "because, since there are no values of any type in it, " +
-                                    "and no pre-existing collection I can use to infer type from, I am " +
-                                    "unable to determine what type of array to store." );
+                            "because, since there are no values of any type in it, " +
+                            "and no pre-existing collection to infer type from, it is not possible " +
+                            "to determine what type of array to store." );
                 }
             } else
             {
