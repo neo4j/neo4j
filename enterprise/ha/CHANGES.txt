@@ -1,0 +1,88 @@
+1.5.1 (2012-02-02)
+------------------
+o Numerous fixes of bugs that led to corruption of the store
+o Better handling of wrapped databases and wrapped entities
+o Added ha.lock_read_timeout configuration option
+o Added config option for ha.max_concurrent_transactions_on_master
+o Earlier finish off of failed transactions on master
+o Checksums on transactions lead to better branching detection
+o Stability improvements leading to less frequent master elections
+o Increased resiliance against zookeeper failures during store copies
+o Updated application protocol version to 2
+
+1.5.M02 (2011-10-10)
+--------------------
+o Uses new (faster, non-synchronized) way of extracting transactions when streaming transactions from master to slave.
+o Neostore logical logs are included when doing a full store copy from master.
+o Fixed a bug with old free ids not being invalidated correctly after master switch.
+o Channels aren't tied to a transaction, this to prevent some deadlock scenarios where all channels were tied up and a transaction was to be committed.
+o Fixed some possible deadlock scenarios involving at least XaResourceManager and XaLogicalLog.
+o Listens to "tx manager not ok" events and does internal restart for those.
+o How to handle cases of branched data is configurable: keep all, keep last, keep none.
+o Rotates logs before internal restart (slave->master or master->slave) to reduce potential recovery (i.e. switch) times.
+o Does some additional repairing of neostore fail after a full store copy from master so that log version is synced.
+
+1.4.M03 (2011-05-26) 
+--------------------
+o Fixed bug that did not rollback tx associated with dead channels.
+o Modified master election algo to be more robust against zookeeper hiccups.                          
+o Fixed a synchronization bug in ZooClient that could cause waits on wrong monitor.
+
+1.4.M02 (2011-05-12)
+--------------------
+o At startup, the Config.USE_MEMORY_MAPPED_LOG parameter is set to 'true' since HA member will benefit performance wise from memory mapping since they
+  continuously scan the log.
+
+1.3.M05 (2011-03-24)
+--------------------
+o Now possible to copy full store on Windows.
+o Fixed a bug that caused no new master to be elected when communication problem occured to master.
+o Cluster now respond faster to problems when a new master has to be elected.
+
+1.3.M04 (2011-03-10)
+--------------------
+o Tests disabled if run on windows due to limitations in OS/filesystem.
+
+1.3.M03 (2011-02-24)
+--------------------
+o ZooClient now knows about backup port to simplify taking backups from a running HA cluster.
+
+1.3.M02 (2011-02-10)
+------------------------
+o Broke up dependency on neo4j-shell.
+o Resolved issue with additional logical logs not being applied correctly after a master copy.
+o Resolved issue with multiple threads trying to startup/copy store from master at the same time.
+o Fixed potential problem with new master notification.
+o Extracted the server/client communication parts from HA into a separate component, neo4j-com
+o Some configuration changes related to the new online backup tool.
+
+0.6-1.3.M01 (2011-01-27)
+------------------------
+
+o Support for sending requests of unlimited size between master and slave.
+o Reduced memory usage of communication between master and slave.
+o Database store files can be copied from master on the fly over the wire when a new slave starts for the first time to avoid having to do a copy before-hand.
+o Much better traceability in multi-jvm tests.
+o Fix for an issue with the HA management bean which could prevent it from loading.
+
+0.5-1.2 (2010-12-29)
+--------------------
+
+o HighAvailability management bean loaded properly.
+
+0.5-1.2.M06 (2010-12-21)
+------------------------
+
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
+  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o Adding Log4j and Netty license information.
+o Also closes the executor containing the connections.
+o Changed dependency scopes.
+o Shuts down databases after verifying them.
+
+0.5-1.2.M05 (2010-12-02)
+------------------------
+
+o initial release
+

@@ -1,0 +1,79 @@
+[[ha-configuration]]
+Setup and configuration
+=======================
+
+Neo4j HA can be set up to accommodate differing requirements for load, fault tolerance and available hardware.
+
+Within a cluster, Neo4j HA uses Apache ZooKeeper footnote:[http://hadoop.apache.org/zookeeper/] for master election and propagation of general cluster and machine status information.
+ZooKeeper can be seen as a distributed coordination service.
+Neo4j HA requires a coordinator service for initial master election, new master election (current master failing) and to publish general status information about the current Neo4j HA cluster (for example when a server joined or left the cluster).
+Read operations through the +GraphDatabaseService+ API will always work and even writes can survive coordinator failures if a master is present.
+
+ZooKeeper requires a majority of the ZooKeeper instances to be available to operate properly.
+This means that the number of ZooKeeper instances should always be an odd number since that will make best use of available hardware.
+
+To further clarify the fault tolerance characteristics of Neo4j HA here are a few example setups:
+
+Small
+-----
+
+* 3 physical (or virtual) machines
+* 1 Coordinator running on each machine
+* 1 Neo4j HA instance running on each machine
+
+This setup is conservative in the use of hardware while being able to handle moderate read load.
+It can fully operate when at least 2 of the coordinator instances are running.
+Since the coordinator and Neo4j HA are running together on each machine this will in most scenarios mean that only one server is allowed to go down.
+
+Medium
+------
+
+* 5-7+ machines
+* Coordinator running on 3, 5 or 7 machines
+* Neo4j HA can run on 5+ machines
+
+This setup may mean that two different machine setups have to be managed (some machines run both coordinator and Neo4j HA).
+The fault tolerance will depend on how many machines there are that are running coordinators.
+With 3 coordinators the cluster can survive one coordinator going down, with 5 it can survive 2 and with 7 it can handle 3 coordinators failing.
+The number of Neo4j HA instances that can fail for normal operations is theoretically all but 1 (but for each required master election the coordinator must be available).
+
+Large
+-----
+
+* 8+ total machines
+* 3+ Neo4j HA machines
+* 5+ Coordinators, on separate dedicated machines
+
+In this setup all coordinators are running on separate machines as a dedicated service.
+The dedicated coordinator cluster can handle half of the instances, minus 1, going down.
+The Neo4j HA cluster will be able to operate with at least a single live machine.
+Adding more Neo4j HA instances is very easy in this setup since the coordinator cluster is operating as a separate service.
+
+== Installation Notes ==
+
+For installation instructions of a High Availability cluster please visit the Neo4j Wiki footnote:[http://wiki.neo4j.org/content/High_Availability_Cluster].
+
+Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the +EmbeddedGraphDatabase+, it does have additional configuration parameters. 
+
+.HighlyAvailableGraphDatabase configuration parameters
+[options="header", cols="<33m,<25,<25m,<20"]
+|========================================================================================
+| Parameter Name        | Value                                     | Example value  | Required?
+| ha.server_id          | integer >= 0                              | 1              | yes
+| ha.server             | (auto-discovered) host & port to bind when acting as master | my-domain.com:6001 | no
+| ha.coordinators       | comma delimited coordinator connections   | localhost:2181,localhost:2182,localhost:2183 | yes
+| ha.cluster_name       | name of the cluster to participate in     | neo4j.ha        | no
+| ha.pull_interval      | interval for polling master from a slave, in seconds | 30 | no
+| ha.slave_coordinator_update_mode | creates a slave-only instance that will never become a master  | none | no
+| ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
+| ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
+| ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes  | 100 | no
+| ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_none,keep_none,shutdown} | no
+| ha.zk_session_timeout | how long before a non reachable instance has its session expired from the ZooKeeper cluster and its ephemeral nodes removed, probably leading to a master election | 30 | no
+|========================================================================================
+
+[CAUTION]
+Neo4j's HA setup depends on ZooKeeper a.k.a. Coordinator which makes certain assumptions about the state of the underlying operating system. In particular ZooKeeper expects 
+that the system time on each machine is set correctly, synchronized with respect to each other. If this is not true, then Neo4j HA will appear to misbehave, caused by seemingly random ZooKeeper hiccups.
+
+
