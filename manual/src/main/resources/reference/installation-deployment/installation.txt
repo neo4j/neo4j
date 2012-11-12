@@ -1,0 +1,70 @@
+[[deployment-installation]]
+Installation
+============
+
+Neo4j can be installed as a server, running either as a headless application or system service.
+For Java developers, it is also possible to use Neo4j as a library, embedded in your application.
+
+For information on installing Neo4j as a server, see <<server-installation>>.
+
+The following table outlines the available editions and their names for use with dependency management tools.
+
+TIP: Follow the links in the table for details on dependency configuration with Apache Maven, Apache Buildr, Apache Ivy and Groovy Grape!
+
+[[editions]]
+.Neo4j editions
+[options="header"]
+|=======================
+|Edition     |Dependency      |Description  |License
+|Community   |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j] |a high performance, fully ACID transactional graph database |GPLv3
+|Advanced    |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-advanced%22[org.neo4j:neo4j-advanced] |adding advanced monitoring |AGPLv3
+|Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding online backup and High Availability clustering |AGPLv3
+|=======================
+
+NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
+
+For more information regarding licensing, see the http://neo4j.org/licensing-guide/[Licensing Guide].
+
+
+== Embedded Installation ==
+
+The latest release is always available from http://neo4j.org/download, included as part of the Neo4j download packages.
+After selecting the appropriate version for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
+Either take the jar files from the 'lib/' directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/]. Stable and milestone releases are available there.
+
+For information on how to use Neo4j as a dependency with Maven and other dependency management tools, see the following table:
+
+
+NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
+
+.Maven dependency
+[source,xml] 
+--------------------------------------------
+<project>
+...
+ <dependencies>
+  <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j</artifactId>
+   <version>${neo4j-version}</version>
+  </dependency>
+  ...
+ </dependencies>
+...
+</project>
+--------------------------------------------
+
+_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
+
+== Server Installation ==
+
+=== OS X ===
+
+Via http://mxcl.github.com/homebrew/[homebrew], you can simply do
+
+[source, bash]
+----
+brew update
+brew install neo4j
+neo4j start
+----

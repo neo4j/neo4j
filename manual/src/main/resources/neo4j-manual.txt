@@ -1,0 +1,124 @@
+The Neo4j Manual v{revnumber}
+=============================
+
+:neo4j-version: {revnumber}
+:neo4j-buildnumber: {revnumber}
+:neo4j-git-tag: {gitversion}
+
+include::preface/preface.txt[]
+
+:leveloffset: 0
+
+[[introduction]]
+Introduction
+============
+
+[partintro]
+--
+This part gives a bird's eye view of what a graph database is, and then outlines some specifics of Neo4j.
+--
+
+:leveloffset: 1
+
+include::introduction/index.txt[]
+
+:leveloffset: 0
+
+[[tutorials]]
+Tutorials
+=========
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
+
+:leveloffset: 1
+
+[[tutorials-rest]]
+Using the Neo4j REST API
+========================
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.txt[]
+
+:leveloffset: 1
+
+include::introduction/traversal-framework.txt[]
+
+:leveloffset: 0
+
+include::reference/index.txt[]
+
+:leveloffset: 0
+
+[[operations]]
+Operations
+==========
+
+[partintro]
+--
+This part describes how to maintain a Neo4j installation.
+This includes topics such as backing up the database and monitoring the health of the database as well as diagnosing issues.
+--
+
+:leveloffset: 1
+
+include::operations/index.txt[]
+
+:leveloffset: 0
+
+[[tools]]
+Tools
+=====
+
+////
+[partintro]
+////
+
+:leveloffset: 1
+
+include::tools/index.txt[]
+
+:leveloffset: 0
+
+[[community]]
+Community
+=========
+
+[partintro]
+--
+The Neo4j project has a strong community around it.
+Read about how to get help from the community and how to contribute to it.
+--
+
+:leveloffset: 1
+
+include::community/index.txt[]
+
+:leveloffset: 0
+:numbered!:
+
+include::manpages.txt[]
+
+:leveloffset: 0
+
+include::qanda/index.txt[]
+
+////
+:leveloffset: 0
+include::glossary.txt[]
+////
+

@@ -1,0 +1,5 @@
+AsciiDoc Support
+================
+
+- Terrence Brannon has set up the
+  http://groups.google.com/group/asciidoc[AsciiDoc discussion list].

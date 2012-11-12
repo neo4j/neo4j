@@ -1,0 +1,199 @@
+[[graphdb-neo4j]]
+The Neo4j Graph Database
+========================
+
+This chapter will introduce more details on the data model and behavior of Neo4j.
+
+[[graphdb-neo4j-nodes]]
+== Nodes ==
+
+The fundamental units that form a graph are nodes and relationships.
+In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,properties>>.
+
+Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
+
+Let's start out with a really simple graph, containing only a single node with one property:
+
+["dot", "graphdb-nodes.svg"]
+----
+"name: Marko"
+----
+
+
+[[graphdb-neo4j-relationships]]
+== Relationships ==
+
+Relationships between nodes are a key part of a graph database.
+They allow for finding related data.
+
+["dot", "graphdb-rels-overview.svg", "meta"]
+----
+"A Relationship" [fillcolor="NODEHIGHLIGHT"]
+"A Relationship" -> "Start node" [label="has a"]
+"A Relationship" -> "End node" [label="has a"]
+"A Relationship" -> "Relationship type" [label="has a"]
+"Relationship type" -> Name [label="uniquely identified by"]
+----
+
+A relationship connects two nodes, and is guaranteed to have valid start and end nodes.
+
+["dot", "graphdb-rels.svg"]
+----
+graph [rankdir="LR"]
+"Start node" -> "End node" [label="relationship"]
+----
+
+As relationships are always directed, they can be viewed as outgoing or incoming relative to a node, which is useful when traversing the graph:
+
+["dot", "graphdb-rels-dir.svg"]
+----
+graph [rankdir="LR"]
+START [label=""]
+MIDDLE [label="Node" fillcolor="NODEHIGHLIGHT"]
+END [label=""]
+MIDDLE -> END [label="outgoing relationship"]
+START -> MIDDLE [label="incoming relationship"]
+----
+
+'Relationships are equally well traversed in either direction.'
+This means that there is no need to add duplicate relationships in the opposite direction (with regard to traversal or performance).
+
+While relationships always have a direction, you can ignore the direction where it is not useful in your application.
+
+Note that a node can have relationships to itself as well:
+
+["dot", "graphdb-rels-loop.svg"]
+----
+"Node" -> "Node" [label="loop"]
+----
+
+To further enhance graph traversal all relationships have a relationship type.
+Note that the word _type_ might be misleading here, you could rather think of it as a _label_.
+The following example shows a simple social network with two relationship types.
+
+["dot", "graphdb-rels-twitter.svg"]
+----
+Maja -> Oscar [label="follows"]
+Oscar -> Maja [label="follows"]
+Alice -> Oscar [label="follows"]
+Oscar -> William [label="blocks" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+.Using relationship direction and type
+[options="header"]
+|========================================================
+| What | How
+| get who a person follows | outgoing +follows+ relationships, depth one
+| get the followers of a person | incoming +follows+ relationships, depth one
+| get who a person blocks | outgoing +blocks+ relationships, depth one
+| get who a person is blocked by | incoming +blocks+ relationships, depth one
+|========================================================
+
+
+This example is a simple model of a file system, which includes symbolic links:
+
+["dot", "graphdb-rels-filesys.svg"]
+----
+"/" [ fillcolor="NODEHIGHLIGHT"]
+"/" -> A
+A -> B [label="file"]
+A -> C [label="file"]
+C -> D [label="file"]
+B -> D [label="symbolic link \n{name: \"E\"}" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+Depending on what you are looking for, you will use the direction and type of relationships during traversal.
+
+[options="header"]
+|========================================================
+|What | How
+|get the full path of a file | incoming +file+ relationships
+|get all paths for a file | incoming +file+ and +symbolic link+ relationships
+|get all files in a directory | outgoing +file+ and +symbolic link+ relationships, stop at depth one
+|get all files in a directory, excluding symbolic links | outgoing +file+ relationships, stop at depth one
+|get all files in a directory, recursively | outgoing +file+ and +symbolic link+ relationships
+|========================================================
+
+
+[[graphdb-neo4j-properties]]
+== Properties ==
+
+Properties are key-value pairs where the key is a string.
+Property values can be either a primitive or an array of one primitive type.
+For example +String+, +int+ and +int[]+ values are valid for properties.
+
+[NOTE]
++null+ is not a valid property value.
+Nulls can instead be modeled by the absence of a key.
+
+["dot", "graphdb-properties.svg", "meta"]
+----
+"A Property" [fillcolor="NODEHIGHLIGHT"]
+"A Property" -> Key [label="has a"]
+Key -> Primitive:String [label="is a"]
+"A Property" -> Value [label="has a"]
+Value -> Primitive [label="can be a"]
+Value -> Primitive [label="can be an array of"]
+Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|double|char|<String>String}"]
+----
+
+.Property value types
+[options="header", cols="15m,45,40"]
+|========================================================
+|Type | Description | Value range
+|boolean| | +true+/+false+
+|byte|8-bit integer | +-128+ to +127+, inclusive 
+|short|16-bit integer | +-32768+ to +32767+, inclusive
+|int| 32-bit integer | +-2147483648+ to +2147483647+, inclusive
+|long| 64-bit integer | +-9223372036854775808+ to +9223372036854775807+, inclusive
+|float| 32-bit IEEE 754 floating-point number |
+|double| 64-bit IEEE 754 floating-point number |
+|char| 16-bit unsigned integers representing Unicode characters | +u0000+ to +uffff+ (+0+ to +65535+)
+|String| sequence of Unicode characters |
+|========================================================
+
+For further details on float/double values, see http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3[Java Language Specification].
+
+[[graphdb-neo4j-paths]]
+== Paths ==
+
+A path is one or more nodes with connecting relationships, typically retrieved as a query or traversal result.
+
+["dot", "graphdb-path.svg", "meta"]
+----
+"A Path" [fillcolor="NODEHIGHLIGHT"]
+"A Path" -> "Start Node" [label="has a"]
+"A Path" -> "Relationship" [label="can contain one or more"]raversal
+"Relationship" -> "Node" [label="accompanied by a"]
+"A Path" -> "End Node" [label="has an"]
+----
+
+The shortest possible path has length zero and looks like this:
+
+["dot", "graphdb-path-example1.svg"]
+----
+"Node"
+----
+
+A path of length one:
+
+["dot", "graphdb-path-example2.svg"]
+----
+"Node 1" -> "Node 2" [label="Relationship 1"]
+----
+
+[[graphdb-neo4j-traversal]]
+== Traversal ==
+
+Traversing a graph means visiting its nodes, following relationships according to some rules.
+In most cases only a subgraph is visited, as you already know where in the graph the interesting nodes and relationships are found.
+
+Neo4j comes with a callback based traversal API which lets you specify the traversal rules.
+At a basic level there's a choice between traversing breadth- or depth-first.
+
+For an in-depth introduction to the traversal framework, see <<tutorial-traversal>>.
+For Java code examples see <<tutorials-java-embedded-traversal>>.
+
+Other options to traverse or query graphs in Neo4j are <<cypher-query-lang, Cypher>> and <<gremlin-plugin, Gremlin>>.
+
+

@@ -1,0 +1,2 @@
+mvn clean compile -Dcheck "$@"
+

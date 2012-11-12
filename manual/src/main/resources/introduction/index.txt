@@ -1,0 +1,21 @@
+
+:leveloffset: 1
+
+include::highlights.txt[]
+
+[[graphdb-concepts]]
+Graph Database Concepts
+=======================
+
+:leveloffset: 2
+
+include::what-is-a-graphdb.txt[]
+
+:leveloffset: 2
+
+include::comparing.txt[]
+
+:leveloffset: 1
+
+include::the-neo4j-graphdb.txt[]
+
