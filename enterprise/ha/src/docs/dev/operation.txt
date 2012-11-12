@@ -1,0 +1,47 @@
+[[ha-how]]
+How Neo4j HA operates
+=====================
+
+A Neo4j HA cluster operates cooperatively, coordinating activity through Zookeeper.
+
+On startup a Neo4j HA instance will connect to the coordinator service (ZooKeeper) to register itself and ask, "who is master?"
+If some other machine is master, the new instance will start as slave and connect to that master.
+If the machine starting up was the first to register -- or should become master according to the master election algorithm -- it will start as master.
+
+When performing a write transaction on a slave each write operation will be synchronized with the master (locks will be acquired on both master and slave).
+When the transaction commits it will first occur on the master.
+If the master commit is successful the transaction will be committed on the slave as well.
+To ensure consistency, a slave has to be up to date with the master before performing a write operation.
+This is built into the communication protocol between the slave and master, so that updates will happen automatically if needed.
+
+You can make a database instance permanently slave-only by including the +ha.slave_coordinator_update_mode=none+ configuration parameter in its configuration.
+Such instances will never become a master during fail-over elections though otherwise they behave identically to any other slaves, including the ability to
+write-through permanent slaves to the master.
+
+When performing a write on the master it will execute in the same way as running in normal embedded mode.
+Currently the master will not push updates to the slave. 
+Instead, slaves can be configured to have a pull interval.
+Without polling, updates will only happen on slaves whenever they synchronize a write with the master.
+
+Having all writes go through slaves has the benefit that the data will be replicated on two machines.
+This is recommended to avoid rollbacks in case of a master failure that could potentially happen when the new master is elected.
+
+Whenever a server running a neo4j database becomes unavailable the coordinator service will detect that and remove it from the cluster.
+If the master goes down a new master will automatically be elected.
+Normally a new master is elected and started within just a few seconds and during this time no writes can take place (the write will throw an exception).
+A machine that becomes available after being unavailable will automatically reconnect to the cluster.
+The only time this is not true is when an old master had changes that did not get replicated to any other machine.
+If the new master is elected and performs changes before the old master recovers, there will be two different versions of the data.
+The old master will move away the branched database and download a full copy from the new master.
+
+All this can be summarized as:
+
+* Slaves can handle write transactions.
+* Updates to slaves are eventual consistent.
+* Neo4j HA is fault tolerant and (depending on ZooKeeper setup) can continue to operate from X machines down to a single machine.
+* Slaves will be automatically synchronized with the master on a write operation.
+* If the master fails a new master will be elected automatically.
+* Machines will be reconnected automatically to the cluster whenever the issue that caused the outage (network, maintenance) is resolved.
+* Transactions are atomic, consistent and durable but eventually propagated out to other slaves.
+* If the master goes down any running write transaction will be rolled back and during master election no write can take place.
+* Reads are highly available.

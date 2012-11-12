@@ -1,0 +1,14 @@
+*~
+\#*
+.gradle
+target
+*.swp
+.project
+.classpath
+.settings
+.externalToolBuilders/
+*.iws
+*.ipr
+*.iml
+.idea
+.DS_Store

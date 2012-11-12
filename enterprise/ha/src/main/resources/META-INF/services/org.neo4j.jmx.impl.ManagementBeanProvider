@@ -1,0 +1,2 @@
+org.neo4j.kernel.HighAvailabilityBean
+org.neo4j.kernel.BranchedStoreBean
