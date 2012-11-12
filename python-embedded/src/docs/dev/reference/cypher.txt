@@ -1,0 +1,82 @@
+[[python-embedded-reference-cypher]]
+Cypher Queries
+==============
+
+You can use the Cypher query language from neo4j-embedded. 
+Read more about cypher syntax and cool stuff you can with it here: <<cypher-query-lang>>.
+
+== Querying and reading the result ==
+
+=== Basic query ===
+
+To execute a plain text cypher query, do this:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=basicCypherQuery
+classifier=test-sources
+----
+
+=== Retrieve query result ===
+
+Cypher returns a tabular result. 
+You can either loop through the table row-by-row, or you can loop through the values in a given column.
+Here is how to loop row-by-row:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=iterateCypherResult
+classifier=test-sources
+----
+
+Here is how to loop through the values of a given column:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=getCypherResultColumn
+classifier=test-sources
+----
+
+=== List the result columns ===
+
+You can get a list of the column names in the result like this:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=listCypherResultColumns
+classifier=test-sources
+----
+
+== Parameterized and prepared queries ==
+
+=== Parameterized queries ===
+
+Cypher supports parameterized queries, see <<cypher-parameters>>. 
+This is how you use them in neo4j-embedded.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=parameterizedCypherQuery
+classifier=test-sources
+----
+
+=== Prepared queries ===
+
+Prepared queries, where you could retrieve a pre-parsed version of a cypher query to be used later,
+is deprecated. Cypher will recognize if it has previously parsed a given query, and won't parse the
+same string twice. 
+
+So, in effect, all cypher queries are prepared queries, if you use them more than once. Use parameterized
+queries to gain the full power of this - then a generic query can be pre-parsed, and modified with parameters
+each time it is executed.
+

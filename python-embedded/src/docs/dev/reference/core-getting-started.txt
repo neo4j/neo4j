@@ -1,0 +1,40 @@
+== Getting started ==
+
+=== Creating a database ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=creatingDatabase
+classifier=test-sources
+----
+
+=== Creating a database, with configuration ===
+
+Please see <<embedded-configuration>> for what options you can use here.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=creatingConfiguredDatabase
+classifier=test-sources
+----
+
+=== JPype JVM configuration ===
+
+You can set extra arguments to be passed to the JVM using the +NEO4J_PYTHON_JVMARGS+ environment variable. 
+This can be used to, for instance, increase the max memory for the database.
+
+Note that you must set this before you import the neo4j package, either by setting it before you start python, or by setting it programatically in your app.
+
+[source,python]
+----
+import os
+os.environ['NEO4J_PYTHON_JVMARGS'] = '-Xms128M -Xmx512M'
+import neo4j
+----
+
+You can also override the classpath used by neo4j-embedded, by setting the +NEO4J_PYTHON_CLASSPATH+ environment variable.
+
