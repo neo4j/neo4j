@@ -1,0 +1,40 @@
+[[python-embedded-core-paths]]
+== Paths ==
+
+A path object represents a path between two nodes in the graph.
+Paths thus contain at least two nodes and one relationship, but can reach arbitrary length.
+It is used in various parts of the API, most notably in <<python-embedded-reference-traversal,traversals>>.
+
+=== Accessing the start and end nodes ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=accessPathStartAndEndNode
+classifier=test-sources
+----
+
+=== Accessing the last relationship ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=accessPathLastRelationship
+classifier=test-sources
+----
+
+=== Looping through the entire path ===
+
+You can loop through all elements of a path directly, or you can choose to only loop through nodes or relationships.
+When you loop through all elements, the first item will be the start node, the second will be the first relationship, the third the node that the relationship led to and so on.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=loopThroughPath
+classifier=test-sources
+----
+

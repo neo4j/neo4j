@@ -1,0 +1,22 @@
+[[python-embedded]]
+Python embedded bindings
+========================
+
+This describes _neo4j-embedded_, a Python library that lets you use the embedded Neo4j database in Python.
+
+Apart from the reference documentation and installation instructions in this section, you may also want to take a look at <<tutorials-python-embedded>>.
+
+The source code for this project lives on GitHub: https://github.com/neo4j/python-embedded
+
+:leveloffset: 2
+
+include::installation.asciidoc[]
+
+include::reference/core.asciidoc[]
+
+include::reference/indexes.asciidoc[]
+
+include::reference/cypher.asciidoc[]
+
+include::reference/traversal.asciidoc[]
+

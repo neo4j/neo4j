@@ -1,0 +1,68 @@
+[[python-embedded-tutorial-invoiceapp]]
+A sample app using cypher and indexes
+=====================================
+
+For detailed documentation on the concepts used here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-cypher>>.
+
+This example shows you how to get started building something like a simple invoice tracking application with Neo4j.
+
+We start out by importing Neo4j, and creating some meta data that we will use to organize our actual data with.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=invoiceapp-setup
+classifier=test-sources
+----
+
+== Domain logic ==
+
+Then we define some domain logic that we want our application to be able to perform. Our application has two domain objects, Customers and Invoices. Let's create methods to add new customers and invoices.
+ 
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=invoiceapp-domainlogic-create
+classifier=test-sources
+----
+
+In the customer case, we create a new node to represent the customer and connect it to the _customers node_. This helps us find customers later on, as well as determine if a given node is a customer.
+
+We also index the name of the customer, to allow for quickly finding customers by name.
+
+In the invoice case, we do the same, except no indexing. We also connect each new invoice to the customer it was sent to, using a relationship of type +SENT_TO+.
+
+Next, we want to be able to retrieve customers and invoices that we have added. Because we are indexing customer names, finding them is quite simple.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=invoiceapp-domainlogic-get-by-idx
+classifier=test-sources
+----
+
+Lets say we also like to do something like finding all invoices for a given customer that are above some given amount. This could be done by writing a cypher query, like this:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=invoiceapp-domainlogic-get-by-cypher
+classifier=test-sources
+----
+
+== Creating data and getting it back ==
+
+Putting it all together, we can create customers and invoices, and use the search methods we wrote to find them.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=invoiceapp-create-and-search
+classifier=test-sources
+----
+

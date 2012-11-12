@@ -1,0 +1,18 @@
+[[python-embedded-reference-core]]
+Core API
+========
+
+This section describes how get get up and running, and how to do basic operations.
+
+include::core-getting-started.asciidoc[]
+
+include::core-transactions.asciidoc[]
+
+include::core-nodes.asciidoc[]
+
+include::core-relationships.asciidoc[]
+
+include::core-properties.asciidoc[]
+
+include::core-paths.asciidoc[]
+

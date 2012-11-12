@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2002-2011 "Neo Technology," Network Engine for Objects 
+	in Lund AB [http://neotechnology.com] This file is part of Neo4j. Neo4j is 
+	free software: you can redistribute it and/or modify it under the terms of 
+	the GNU General Public License as published by the Free Software Foundation, 
+	either version 3 of the License, or (at your option) any later version. This 
+	program is distributed in the hope that it will be useful, but WITHOUT ANY 
+	WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+	FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
+	You should have received a copy of the GNU General Public License along with 
+	this program. If not, see <http://www.gnu.org/licenses />. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.neo4j.build</groupId>
+		<artifactId>parent-central</artifactId>
+		<version>35</version>
+		<relativePath />
+	</parent>
+
+	<groupId>org.neo4j.drivers</groupId>
+	<artifactId>neo4j-python-embedded</artifactId>
+
+	<version>1.9-SNAPSHOT</version>
+	<name>Embedded Neo4j Python bindings</name>
+	<packaging>jar</packaging>
+	<description>
+		Python bindings for the embedded Neo4j graph database.
+	</description>
+
+	<scm>
+		<connection>scm:git:git://github.com/neo4j/python-embedded.git</connection>
+		<developerConnection>scm:git:git@github.com:neo4j/python-embedded.git</developerConnection>
+		<url>https://github.com/neo4j/python-embedded</url>
+	</scm>
+
+	<properties>
+		<license-text.header>GPL-3-header.txt</license-text.header>
+		<python>python</python>
+
+		<!-- Paths used while testing. These are overridden for windows platforms, 
+			see the profiles section. -->
+		<pythonpath>../../main/python:$PYTHONPATH</pythonpath>
+		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
+		<build.number>0</build.number>
+
+		<neo4j.version>1.9-SNAPSHOT</neo4j.version>
+		<gremlin.version>1.2</gremlin.version>
+		<docs.url>http://docs.neo4j.org/chunked/${project.version}/python-embedded.html</docs.url>
+	</properties>
+
+	<licenses>
+		<license>
+			<name>GNU General Public License, Version 3</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+			<comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+			</comments>
+		</license>
+	</licenses>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j</artifactId>
+			<version>${neo4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-cypher</artifactId>
+			<version>${neo4j.version}</version>
+		</dependency>
+
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>neo4j-dev</id>
+			<name>Neo4j Developer Repository</name>
+			<url>http://m2.neo4j.org/content/groups/everything/</url>
+		</repository>
+	</repositories>
+
+	<build>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<testSourceDirectory>src/test/python</testSourceDirectory>
+
+		<plugins>
+			<!-- Generate appropriate python version from current project version. 
+				See: http://www.python.org/dev/peps/pep-0386/ -->
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.3</version>
+				<executions>
+					<execution>
+						<id>pythonificate-version-number</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<source>
+								def version = project.version
+
+								// 1.5-SNAPSHOT -&gt; 1.5.dev1
+								version = version.replace("-SNAPSHOT", ".dev" +
+								project.properties['build.number'])
+
+								// 1.5.RC1 -&gt; 1.5.c1
+								version = version.replace("RC","c")
+
+								// 1.5.M01 -&gt; 1.5.b1
+								version = version.replace("M0","b")
+								version = version.replace("M","b")
+								project.properties['pythonic_version'] = version
+							</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Produce source jars, for our documentation -->
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<configuration>
+					<attach>true</attach>
+					<includes>
+						<include>**/*.py</include>
+					</includes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-python-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+							<goal>test-jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Assemble python distribution -->
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>python-distribution</id>
+						<phase>package</phase>
+						<configuration>
+							<attach>false</attach>
+							<appendAssemblyId>true</appendAssemblyId>
+							<descriptors>
+								<descriptor>src/main/assembly/python-distribution.xml</descriptor>
+							</descriptors>
+						</configuration>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.codehaus.gmaven
+										</groupId>
+										<artifactId>
+											gmaven-plugin
+										</artifactId>
+										<versionRange>
+											[1.3,)
+										</versionRange>
+										<goals>
+											<goal>execute</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+          </configuration>
+        </plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>cpython-test</id>
+			<properties>
+				<python>python</python>
+			</properties>
+		</profile>
+		<profile>
+			<id>jython-test</id>
+			<properties>
+				<python>jython</python>
+			</properties>
+		</profile>
+		<profile>
+			<id>windows</id>
+			<activation>
+				<os>
+					<family>windows</family>
+				</os>
+			</activation>
+			<properties>
+				<pythonpath>../../main/python</pythonpath>
+				<jythonpath>../../main/python</jythonpath>
+			</properties>
+		</profile>
+
+		<profile>
+			<id>run-tests</id>
+			<activation>
+				<property>
+					<name>!skipTests</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<!-- Test execution -->
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<configuration>
+									<executable>${python}</executable>
+									<workingDirectory>src/test/python</workingDirectory>
+									<arguments>
+										<!-- Uncomment this to enable remote JVM debugging under jython -->
+										<!--argument>-J-Xdebug</argument> <argument>-J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=1044</argument -->
+										<argument>unit_tests.py</argument>
+										<argument>--classpath</argument>
+										<classpath />
+										<argument>--junit</argument>
+										<argument>${basedir}/target/surefire-reports</argument>
+									</arguments>
+									<environmentVariables>
+										<PYTHONPATH>${pythonpath}</PYTHONPATH>
+										<JYTHONPATH>${jythonpath}</JYTHONPATH>
+									</environmentVariables>
+								</configuration>
+								<id>python-test</id>
+								<phase>test</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+
+		</profile>
+
+    <profile>
+			<id>performance-test</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>python-performance-test</id>
+								<phase>test</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>pdb</executable>
+									<!--executable>${python}</executable-->
+									<workingDirectory>src/perftest/python</workingDirectory>
+									<arguments>
+										<argument>performance_tests.py</argument>
+										<argument>--classpath</argument>
+										<classpath />
+									</arguments>
+									<environmentVariables>
+										<PYTHONPATH>${pythonpath}</PYTHONPATH>
+										<JYTHONPATH>${jythonpath}</JYTHONPATH>
+									</environmentVariables>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- Deploy the finished python library to pypi -->
+		<!-- NOTICE: This only works on windows machines, due to dependencies on 
+			win32api for building windows installers. -->
+		<profile>
+			<id>pypi</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>pypi-deploy</id>
+								<phase>install</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true" />
+
+										<!-- Windows 32bit installer -->
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+											<arg value="setup.py" />
+											<arg value="build" />
+											<arg value="--plat-name=win-amd64" />
+											<arg value="bdist_wininst" />
+											<arg value="upload" />
+										</exec>
+
+										<!-- Windows 64bit installer -->
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+											<arg value="setup.py" />
+											<arg value="build" />
+											<arg value="--plat-name=win32" />
+											<arg value="bdist_wininst" />
+											<arg value="upload" />
+										</exec>
+
+										<!-- Source distribution -->
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+											<arg value="setup.py" />
+											<arg value="sdist" />
+											<arg value="--formats=gztar,zip" />
+											<arg value="upload" />
+										</exec>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+
+	<distributionManagement>
+		<site>
+			<id>neo4j-site</id>
+			<url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+		</site>
+	</distributionManagement>
+
+</project>
+

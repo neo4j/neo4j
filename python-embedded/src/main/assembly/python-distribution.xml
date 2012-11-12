@@ -1,0 +1,74 @@
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<assembly>
+  <id>python-dist</id>
+  <baseDirectory>neo4j-embedded</baseDirectory>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <includes>
+        <include>**/*.py</include>
+        <include>README*</include>
+      </includes>
+      <excludes>
+        <!-- Included in the next fileSet,
+             to allow us to inject the correct
+             version number. -->
+        <exclude>setup.py</exclude>
+        <exclude>README.txt</exclude>
+        <exclude>neo4j/__init__.py</exclude>
+      </excludes>
+      <outputDirectory>/</outputDirectory>
+      <directory>src/main/python</directory>
+    </fileSet>
+    <fileSet>
+      <filtered>true</filtered>
+      <includes>
+        <include>neo4j/__init__.py</include>
+        <include>setup.py</include>
+        <include>README.txt</include>
+      </includes>
+      <outputDirectory>/</outputDirectory>
+      <directory>src/main/python</directory>
+    </fileSet>
+    <fileSet>
+      <includes>
+        <include>**/*.py</include>
+      </includes>
+      <directory>src/test/python</directory>
+      <outputDirectory>/tests</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <includes>
+        <include>LICENSE*</include>
+        <include>NOTICE*</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/neo4j/javalib</outputDirectory>
+    </dependencySet>
+  </dependencySets>
+</assembly>

@@ -1,0 +1,102 @@
+[[python-embedded-installation]]
+Installation
+============
+
+NOTE: The Neo4j database itself (from the <<editions,Community Edition>>) is included in the neo4j-embedded distribution.
+
+== Installation on OSX/Linux ==
+
+
+=== Prerequisites ===
+
+CAUTION: Make sure that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python and JPype.
+
+First, install JPype:
+
+. Download the latest version of JPype from http://sourceforge.net/projects/jpype/files/JPype/.
+. Unzip the file.
+. Open a console and navigate into the unzipped folder.
+. Run `sudo python setup.py install`
+
+JPype is also available in the Debian repos:
+
+[source, shell]
+----
+sudo apt-get install python-jpype
+----
+
+Then, make sure the +JAVA_HOME+ environment variable is set to your 'jre' or 'jdk' folder, so that JPype can find the JVM.
+
+NOTE: Installation can be problematic on OSX. See the following Stack Overflow discussion for help: http://stackoverflow.com/questions/8525193/cannot-install-jpype-on-os-x-lion-to-use-with-neo4j
+
+
+=== Installing neo4j-embedded ===
+
+You can install neo4j-embedded with your python package manager of choice:
+
+[source, shell]
+----
+sudo pip install neo4j-embedded
+----
+
+[source, shell]
+----
+sudo easy_install neo4j-embedded
+----
+
+Or install manually:
+
+. Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/ for 32bit or from http://www.lfd.uci.edu/~gohlke/pythonlibs/ for 64bit.
+. Unzip the file.
+. Open a console and navigate into the unzipped folder.
+. Run `sudo python setup.py install`
+
+== Installation on Windows ==
+
+=== Prerequisites ===
+
+WARNING: It is _imperative_ that the entire stack used is either 64bit or 32bit (no mixing, that is).
+  That means the JVM, Python, JPype and all extra DLLs (see below).
+
+First, install JPype:
+
+[NOTE]
+Notice that JPype only works with Python 2.6 and 2.7. 
+Also note that there are different downloads depending on which version you use.
+
+. Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/ for 32bit or from http://www.lfd.uci.edu/~gohlke/pythonlibs/ for 64bit.
+. Run the installer.
+
+Then, make sure the +JAVA_HOME+ environment variable is set to your 'jre' or 'jdk' folder.
+There is a description of how to set environment variables in <<python-embedded-installation-windows-dlls>>.
+
+NOTE: There may be DLL files missing from your system that are required by JPype.
+  See <<python-embedded-installation-windows-dlls>> for instructions for how to fix this.
+
+=== Installing neo4j-embedded ===
+
+. Download the latest version from http://pypi.python.org/pypi/neo4j-embedded/.
+. Run the installer.
+
+[[python-embedded-installation-windows-dlls]]
+=== Solving problems with missing DLL files ===
+
+Certain versions of Windows ship without DLL files needed to programmatically launch a JVM.
+You will need to make +IEShims.dll+ and certain debugging dlls available on Windows.
+
++IEShims.dll+ is normally included with Internet Explorer installs.
+To make windows find this file globally, you need to add the IE install folder to your +PATH+.
+
+. Right click on "My Computer" or "Computer".
+. Select "Properties".
+. Click on "Advanced" or "Advanced system settings".
+. Click the "Environment variables" button.
+. Find the path varible, and add 'C:\Program Files\Internet Explorer' to it (or the install location of IE, if you have installed it somewhere else).
+
+Required debugging dlls are bundled with Microsoft Visual C++ Redistributable libraries. 
+
+- 32bit Windows: http://www.microsoft.com/download/en/details.aspx?displaylang=en&id=5555
+- 64bit Windows: http://www.microsoft.com/download/en/details.aspx?displaylang=en&id=14632
+
+If you are still getting errors about missing DLL files, you can use http://www.dependencywalker.com/ to open your +jvm.dll+ (located in 'JAVA_HOME/bin/client/' or 'JAVA_HOME/bin/server/'), and it will tell you if there are other missing dlls.
+

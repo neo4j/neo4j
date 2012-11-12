@@ -1,0 +1,117 @@
+[[python-embedded-reference-indexes]]
+Indexes
+=======
+
+In order to rapidly find nodes or relationship based on properties, Neo4j supports indexing. 
+This is commonly used to find start nodes for <<python-embedded-reference-traversal,traversals>>.
+
+By default, the underlying index is powered by http://lucene.apache.org/java/docs/index.html[Apache Lucene], but it is also possible to use Neo4j with other index implementations.
+
+You can create an arbitrary number of named indexes. 
+Each index handles either nodes or relationships, and each index works by indexing key/value/object triplets, object being either a node or a relationship, depending on the index type.
+
+== Index management ==
+
+Just like the rest of the API, all write operations to the index must be performed from within a transaction.
+
+=== Creating an index ===
+
+Create a new index, with optional configuration.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=createIndex
+classifier=test-sources
+----
+
+=== Retrieving a pre-existing index ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=getIndex
+classifier=test-sources
+----
+
+=== Deleting indexes ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=deleteIndex
+classifier=test-sources
+----
+
+=== Checking if an index exists ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=checkIfIndexExists
+classifier=test-sources
+----
+
+== Indexing things ==
+
+=== Adding nodes or relationships to an index ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=addToIndex
+classifier=test-sources
+----
+
+=== Removing indexed items ===
+
+Removing items from an index can be done at several levels of granularity.
+See the example below.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=removeFromIndex
+classifier=test-sources
+----
+
+== Searching the index ==
+
+You can retrieve indexed items in two ways. 
+Either you do a direct lookup, or you perform a query.
+The direct lookup is the same across different index providers while the query syntax depends on what index provider you use.
+As mentioned previously, Lucene is the default and by far most common index provider.
+For querying Lucene you will want to use the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query language].
+
+There is a python library for programatically generating Lucene queries, available at https://github.com/scholrly/lucene-querybuilder[GitHub].
+
+[IMPORTANT]
+Unless you loop through the entire index result, you have to close the result when you are done with it. 
+If you do not, the database does not know when it can release the resources the result is taking up.
+
+=== Direct lookups ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=directLookup
+classifier=test-sources
+----
+
+=== Querying ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=query
+classifier=test-sources
+----
+

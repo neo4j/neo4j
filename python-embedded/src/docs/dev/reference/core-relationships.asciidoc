@@ -1,0 +1,70 @@
+[[python-embedded-core-relationships]]
+== Relationships ==
+
+This describes operations that are specific to relationship objects.
+For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties>>.
+
+=== Creating a relationship ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=createRelationship
+classifier=test-sources
+----
+
+=== Fetching a relationship by id ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getRelationshipById
+classifier=test-sources
+----
+
+=== Removing a relationship ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=deleteRelationship
+classifier=test-sources
+----
+
+TIP: See also <<transactions-delete>>.
+
+=== Removing a relationship by id ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=deleteByIdRelationship
+classifier=test-sources
+----
+
+=== Relationship start node, end node and type ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=relationshipAttributes
+classifier=test-sources
+----
+
+=== Getting and/or counting all relationships ===
+
+Use this with care, it will become extremely slow in large datasets.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getAllRelationships
+classifier=test-sources
+----
+

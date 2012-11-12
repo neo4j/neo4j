@@ -1,0 +1,4 @@
+1.6.M02 (2011-12-16)
+--------------------
+o Fix for broken cypher tests
+o Added get and set methods to nodes and relationships

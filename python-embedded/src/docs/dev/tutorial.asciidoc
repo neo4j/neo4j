@@ -1,0 +1,14 @@
+[[python-embedded-tutorial]]
+Using Neo4j embedded in Python applications
+===========================================
+
+This describes how to get started with Neo4j embedded in python.
+See <<python-embedded>> for the full reference documentation.
+
+You have to have installed the neo4j-embedded python library to try these examples, see <<python-embedded-installation>>.
+
+:leveloffset: 2
+
+include::tutorial/helloworld.asciidoc[]
+
+include::tutorial/invoiceapp.asciidoc[]

@@ -1,0 +1,17 @@
+[[tutorials-python-embedded]]
+Using Neo4j embedded in Python applications
+===========================================
+
+For instructions on how to install the Python Neo4j driver, see <<python-embedded-installation>>.
+
+For general information on the Python language binding, see <<python-embedded>>.
+
+:leveloffset: 2
+
+include::helloworld.asciidoc[]
+
+:leveloffset: 2
+
+include::invoiceapp.asciidoc[]
+
+
