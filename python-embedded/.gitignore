@@ -1,0 +1,9 @@
+*~
+/target/
+*.pyc
+*.class
+/ENV
+.classpath
+.project
+.settings/
+.pydevproject
