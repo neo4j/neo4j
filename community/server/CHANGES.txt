@@ -1,0 +1,175 @@
+1.7 (2012-04-18)
+----------------
+o Added scored index results to REST API
+o Improvements to installation docs for the server
+o Fixed issue with cache hits showing up as "undefined" in webadmin.
+o Added auto index management API to REST, fixing #399
+o Fixed unicode issues in batch operations API in windows and OS X
+o Server now disallows creating indexes with empty names. Closes #311
+o Attempting to delete a non-existing index now returns 404, closes #349
+
+1.7.M01 (2012-03-12)
+--------------------
+o Fixed issues #116
+o Fixed a NPE in guarded database for the result of Index#putIfAbsent.
+o Added Jasmine unit test framework for webadmin, with a first test and JUnit formatted test reports.
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups.
+o Added SSL support in the server.
+o SecurityRule implementations can now use simple wildcards to allow whole sub paths of URIs to be covered by the rule.
+o Added an "order" parameter to index REST queries to control result ordering.
+
+1.6 (2012-01-19)
+----------------
+o Fixes issues #173, #118, #138, #103
+
+1.6.M03 (2012-01-12)
+--------------------
+o Added request timeout, controlled with org.neo4j.server.webserver.limit.executiontime (disabled by default).
+  Request header (max-execution-time) can shorten it if specified.
+o Fixed issues #113, #166, #172
+o Allow overriding of server base url for when test browser needs to access server via a different hostname from the bind address.
+o Exposes get-or-create-uniquely via REST in ex. POST /index/node/<name>?unique {...}
+
+1.6.M02 (2011-12-16)
+--------------------
+o Webadmin data browser now supports cypher queries
+o DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated.
+o Updated to gremlin 1.4
+o Fixed bug in how auto indexes are represented
+o Max request execution time can now be limited
+o Hypermedia URLs returned by the server now set their host based on the HTTP host header
+
+1.6.M01 (2011-11-24)
+--------------------
+o Cypher console in webadmin is now a Neo4j Shell console with the exact same Cypher support included.
+o More documentation and examples.
+
+1.5 (2011-10-18)
+----------------
+o Added useful server logging to data/graph.db/messages.log at startup.
+o Visualization adds nodes/relationships to the view for each search and search is performed with CTRL+ENTER.
+
+1.5.M02 (2011-10-10)
+--------------------
+o Added a standalone visualization mode for webadmin.
+o Improved documentation generation from tests.
+o Added support for setting ip address for web server.
+o Batch API memory overhead reduction and better response codes in case of failure.
+o RRD refactorings and format changes (old RRD files will be moved).
+o Icons in the visualization in webadmin.
+o Increased query timeout in the console view so that long-running Gremlin/Cypher queries can complete.
+o When adding to an index the value is written in the JSON payload as well as the URI.
+o Added simple security and authorization hooks and configuration.
+
+1.5.M01 (2011-08-31)
+--------------------
+o Fixed bug in statistics sampling
+o Support for querying auto index via REST
+o Some status code corrections to better reflect their intents.
+o Lots of documentation and more integration with the manual as well as using neo4j-graphviz for generating graphs.
+o Rule-based visualization in webadmin.
+
+1.4.M05 (2011-06-23)
+--------------------
+o REST paging now supported
+o Cypher plugin available
+
+1.4.M03 (2011-05-26)
+--------------------
+o Ability to manage indexes via the webadmin
+o Ability to search in indexes via the webadmin 
+
+1.4.M02 (2011-05-12)
+--------------------
+o Exposed all neo4j index operations via the REST interface
+
+1.4.M01 (2011-04-28)
+--------------------
+o Removed dependency on log4j, logging now done via j.u.l
+
+1.3.M05 (2011-03-24)
+--------------------
+o New look and feel of the webadmin
+o New visual data browser
+o Updated to Gremlin 0.8
+o Added docs for server plugin initialization.
+
+1.3.M04 (2011-03-10)
+--------------------
+o All manpages are included in the manual.
+o Some fixes to be more Windows friendly.
+o Added Dijkstra to the list of graph algorithms to be used when finding paths.
+o Support for advanced index queries through REST.
+
+1.3.M03 (2011-02-24)
+--------------------
+o Numerous updates to the Webadmin tool to make it more usable and to fix some visual bugs
+o Removal of the properties service, replaced with a discovery service to allow third-party apps to bind to the server at runtime and discover what services are offered and where
+o Changed the configuration file format to make it simpler and less error prone (but it is *not*) backwards compatible with earlier versions
+o Separated out the server plugin API for easier development, making only the only development dependency for server a very thin layer and small jar
+
+
+1.3.M02 (2011-02-10)
+--------------------
+o Gremlin updated to 0.7 and trimmed down to bare bones dependencies
+o Webadmin minor improvements in Console, Data browser and monitoring
+o better REST JSON property support in Arrays
+o server started in High Availability mode
+
+
+0.6-1.3.M01 (2011-01-27)
+------------------------
+
+o Ability to start the server in HA mode.
+o Excludes the neo4j-index component (not used anyhow) to enable HA mode.
+
+0.5-1.2 (2010-12-29)
+--------------------
+
+o Minor bug fixes and some code cleanup.
+o Changed REST representations to use only underscores for keys instead of hyphens.
+
+0.5-1.2.M06 (2010-12-21)
+------------------------
+
+o Added support for server plugins that extend the functionality of the graph database, a node, or a relationship.
+o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
+o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
+  org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
+o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
+o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
+o Webadmin: Moved charts into tabbed box, minor UI updates.
+o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is needed.
+o Webadmin: Added proper tab-like styling to chart tabs and scale selectors.
+o Fixed bug in RRD memory usage sampler, making rounding happen at end of calculations, instead of in the midst of.
+o Webadmin: Made 30minutes the default view in charts.
+o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible under certain conditions).
+o Webadmin: Disallow self relationships in UI, and show error message explaining this.
+o Can now load 3rd party JAX-RS jars from the classpath.
+o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and ships properly down to neo4j-standalone.
+o Webadmin: Made the current node show up by default when adding new relations in webadmin.
+o Webadmin: Dashboard shows charts with tabs, and allows switching between charts.
+o Added a basic readme with instructions for building, running, and functional testing.
+o Updating the way to create temporary files to solve the functional test problem where lots of files stick around.
+o re-implemented REST to expose indexing of nodes and relationships (new index API)
+o single path algo works in RestfulGraphDatabase now
+o fixed duplicate paths for delete node or relationship from index
+o Http DELETE requires the proper mediatype to accept
+o All indexes must be created to use them.
+o Added the ability extend the REST API with server plugins.
+o Added back links to the first page in the HTML format.
+o updating to Gremlin 0.6
+o Updated the component site documentation with the new index API.
+
+0.1-1.2.M05 (2010-12-02)
+------------------------
+
+o Updated to Jersey 1.4,
+o Fixed bug with duplicate Content-Length header (ticket 283)
+
+0.1-1.2.M04 (2010-11-18)
+------------------------
+
+Initial release.

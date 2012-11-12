@@ -1,0 +1,43 @@
+.sidebar
+  %h1.pad Index management
+
+  %p.pad This interface lets you list, create and remove indexes from your database.
+  %p.pad Note that index creation here is provided for testing purposes, and is only capable of creating default indexes. To create indexes with more complex configurations, please use your Neo4j REST client of choice.
+  %p.pad Note: You can query your indexes through the data browser, see "syntax help" below the search bar there.
+  
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about indexes
+    .foldout_content.pad
+        %p Neo4j has two types of indexes, node and relationship indexes. With node indexes you index and find nodes, and with relationship indexes you do the same for relationships.
+        %p Each index has a provider, which is the underlying implementation handling that index. The default provider is lucene, but you can create your own index provides if you like.
+        %p Neo4j indexes take key/value/object triplets ("object" being a node or a relationship), it will index the key/value pair, and associate this with the object provided. After you have indexed a set of key/value/object triplets, you can query the index and get back objects that where indexed with key/value pairs matching your query.
+        %p For instance, if you have "User" nodes in your database, and want to rapidly find them by username or email, you could create a node index named "Users", and for each user index username and email. With the default lucene configuration, you can then search the "Users" index with a query like: "username:bob OR email:bob@gmail.com".
+        %p You can use the data browser to query your indexes this way, the syntax for the above query is "node:index:Users:username:bob OR email:bob@gmail.com".
+	
+.workarea.with-sidebar
+  .span-half.no-margin.node-indexes-wrap
+    .pad
+      %h2 Node indexes
+    .headline-bar.pad
+      %ul.button-bar
+        %li
+          %input#create-node-index-name(type="text" value="New node index")
+        %li
+          %button.create-node-index.button Create
+      .break
+    %table#node-indexes.data-table(cellspacing="0")
+
+  .span-half.last.no-margin.rel-indexes-wrap
+    .pad
+      %h2 Relationship indexes
+    .headline-bar.pad
+      %ul.button-bar
+        %li
+          %input#create-rel-index-name(type="text" value="New relationship index")
+        %li
+          %button.create-rel-index.button Create
+      .break
+    %table#rel-indexes.data-table(cellspacing="0")
+
+

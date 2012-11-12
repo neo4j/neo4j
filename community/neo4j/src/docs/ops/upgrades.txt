@@ -1,0 +1,85 @@
+
+[[deployment-upgrading]]
+Upgrading
+=========
+
+A database can be upgraded from a minor version to the next, e.g. 1.1 -> 1.2, and 1.2 -> 1.3,
+but you can not jump directly from 1.1 -> 1.3.
+The upgrade process is a one way step; databases cannot be downgraded. 
+
+For most upgrades, only small changes are required to the database store, and these changes proceed
+automatically when you start up the database using the newer version of Neo4J.
+
+However, some upgrades require more significant changes to the database store. In these cases, Neo4j will refuse
+to start without explicit configuration to allow the upgrade.
+
+The table below lists recent Neo4J versions, and the type of upgrade required.
+
+.Upgrade process for Neo4J version
+[format="csv",width="50%",cols="3"]
+[frame="topbot",grid="none",options="header"]
+|====
+From Version,To Version,Upgrade Type
+1.3,1.4,Automatic
+1.4,1.5,Explicit
+1.5,1.6,Explicit
+1.6,1.7,Automatic
+|====
+
+== Automatic Upgrade ==
+
+To perform a normal upgrade (for minor changes to the database store):
+
+. download the newer version of Neo4j
+. cleanly shutdown the database to upgrade, if it is running
+. startup the database with the newer version of Neo4j
+
+== Explicit Upgrade ==
+
+To perform a special upgrade (for significant changes to the database store):
+
+. make sure the database you are upgrading has been cleanly shut down
+. set the Neo4j configuration parameter "allow_store_upgrade=true" in your +neo4j.properties+ or embedded configuration
+. start the database
+. the upgrade will happen during startup and the process is done when the database has been successfully started
+. "allow_store_upgrade=true" configuration parameter should be removed, set to "false" or commented out
+
+[[deployment-upgrading-one-seven]]
+== Upgrade 1.6 -> 1.7 ==
+
+There are no store format changes between these versions, which means there is no particular procedure you need to upgrade a single instance.
+
+In an HA environment these steps need to be performed:
+
+. shut down all the databases in the cluster
+. shut down the ZooKeeper cluster and clear the +version-2+ directories on all the ZooKeeper instances
+. start the ZooKeeper cluster again
+. remove the databases except the master and start the master database with 1.7
+. start up the other databases so that they get a copy from the master
+
+[[deployment-upgrading-one-six]]
+== Upgrade 1.5 -> 1.6 ==
+
+This upgrade changes lucene version from 3.1 to 3.5. The upgrade itself is done by Lucene by loading an index.
+
+In an HA environment these steps need to be performed:
+
+. shut down all the databases in the cluster
+. shut down the ZooKeeper cluster and clear the +version-2+ directories on all the ZooKeeper instances
+. start the ZooKeeper cluster again
+. start up the other databases so that they get a copy from the master
+
+[[deployment-upgrading-one-five]]
+== Upgrade 1.4 -> 1.5 ==
+
+This upgrade includes a significant change to the layout of property store files, which reduces their size on disk,
+and improves IO performance.  To achieve this layout change, the upgrade process takes some time to process the
+whole of the existing database.  You should budget for several minutes per gigabyte of data as part of your upgrade planning.
+
+[WARNING]
+The upgrade process for this upgrade temporarily requires additional disk space, for the period while the
+upgrade is in progress.  Before starting the upgrade to Neo4J 1.5, you should ensure that the machine performing the
+upgrade has free space equal to the current size of of the database on disk.  You can find the current space occupied
+by the database by inspecting the store file directory (+data/graph.db+ is the default location in Neo4J server).
+Once the upgrade is complete, this additional space is no longer required.
+

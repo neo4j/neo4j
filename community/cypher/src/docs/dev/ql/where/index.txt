@@ -1,0 +1,21 @@
+[[query-where]]
+Where
+=====
+
+If you need filtering apart from the pattern of the data that you are looking
+for, you can add clauses in the where part of the query.
+
+include::cypher-where-graph.txt[]
+
+include::boolean-operations.txt[]
+include::filter-on-node-property.txt[]
+include::regular-expressions.txt[]
+include::escaping-in-regular-expressions.txt[]
+include::case-insensitive-regular-expressions.txt[]
+include::filtering-on-relationship-type.txt[]
+include::property-exists.txt[]
+include::default-true-if-property-is-missing.txt[]
+include::default-false-if-property-is-missing.txt[]
+include::filter-on-null-values.txt[]
+include::filter-on-relationships.txt[]
+include::in-operator.txt[]

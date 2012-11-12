@@ -1,0 +1,101 @@
+<project name="NeoCommunity" basedir="." default="build">
+	
+	<property name="buildNumber" value="1.5.DEVELOPER"/>
+	<property environment="env" />
+	
+	<target name="build" description="Build the Neo4j community edition" depends="clean,compile,createPackage"/>
+
+	<target name="clean" description="Cleans all of the community components">
+		<exec executable="mvn" dir="." failonerror="true">
+			<arg value="clean"/>
+		</exec>
+		<delete>
+			<fileset dir="." includes="**/pom-with-build-number.xml"/>
+		</delete>
+		<delete dir="artifacts"/>
+		<mkdir dir="artifacts"/>
+		<!-- Controversial! This is to ensure that there aren't any cached nasties -->
+		<!-- Currently commented-out so that we play nicely with other builds in TeamCity -->
+		<!-- <delete>
+			<fileset dir="${user.home}/.m2/repository/org/neo4j" includes="**/*"/>
+		</delete> -->
+	</target>
+	
+	<target name="compile" description="Compiles all of the individual community components" depends="generateKernelVersion">
+		<compileProject projectName="kernel" pom="pom.xml"/>
+		<compileProject projectName="jmx" pom="pom.xml"/>		
+		<compileProject projectName="udc" pom="pom.xml"/>
+		<compileProject projectName="lucene-index" pom="pom.xml"/>
+		<compileProject projectName="graph-algo" pom="pom.xml"/>
+		<compileProject projectName="graph-matching" pom="pom.xml"/>
+		<compileProject projectName="graphviz" pom="pom.xml"/>
+		<compileProject projectName="cypher" pom="pom.xml"/>
+		<compileProject projectName="neo4j" pom="pom.xml"/>
+		<compileProject projectName="neo4j-community" pom="pom.xml"/>
+		<compileProject projectName="shell" pom="pom.xml"/>
+		<compileProject projectName="embedded-examples" pom="pom.xml"/>
+		<compileProject projectName="server-api" pom="pom.xml"/>
+		<compileProject projectName="server" pom="pom.xml"/>
+		<compileProject projectName="server-examples" pom="pom.xml"/>	
+	</target>
+	
+	<target name="generateKernelVersion" description="Generate versioned code">
+		<mkdir dir="kernel/target/generated-sources/version/org/neo4j/kernel/impl" />
+		<exec executable="git" failifexecutionfails="false" failonerror="false">
+        <arg value="fetch" />
+        <arg value="--tags" />
+      </exec>
+		<exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false" dir="kernel">
+			<arg value="describe" />
+			<arg value="--dirty" />
+		</exec>
+		<property name="git.describe" value="${gitDescribe}" />
+		<copy file="kernel/ComponentVersion.tmpl" tofile="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"/>
+		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
+			 		token="@BUILDNUMBER@" value="${buildNumber}"/>
+		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
+			 		token="@GITDESCRIBE@" value="${git.describe}"/>
+		<!-- This is to pass the build number on to downstream builds -->
+		<echo message="buildNumber=${buildNumber}" file="artifacts/reports/buildNumber.properties"/>	
+	</target>
+	
+	<target name="createPackage" description="Creates package for linux">
+		<copy file="packaging/pom.xml" tofile="packaging/pom-with-build-number.xml" overwrite="true"/>
+		<replace file="packaging/pom-with-build-number.xml" token="1.5-SNAPSHOT" value="${buildNumber}"/>	
+		<replace file="packaging/pom-with-build-number.xml" token="@3RDPARTYVERSION@" value="1.5-SNAPSHOT"/>				
+		<replace file="packaging/pom-with-build-number.xml" token="@GREMLINVERSION@" value="1.5-SNAPSHOT"/>	
+		<replace file="packaging/pom-with-build-number.xml" token="@CYPHERPLUGINVERSION@" value="1.5-SNAPSHOT"/>
+		<replace file="packaging/pom-with-build-number.xml" token="@MANUALVERSION@" value="1.5-SNAPSHOT"/>
+		<exec executable="mvn" dir="packaging" failonerror="true">
+			<arg value="clean"/>
+			<arg value="package"/>
+			<arg value="-f"/>
+			<arg value="pom-with-build-number.xml"/>
+		</exec>
+		<copy todir="artifacts/packages">
+			<fileset dir="packaging/target">
+				<include name="*.zip"/>
+				<include name="*.tar.gz"/>
+			</fileset>
+		</copy>		
+	</target>
+	
+	<macrodef name="compileProject" description="Maven installs a single project"> 
+		<attribute name="projectName"/>
+		<attribute name="pom"/>
+		<sequential>
+			<echo message="Compiling @{projectName}"/>
+			<!-- Substitute version number into a new pom -->
+			<copy file="@{projectName}/@{pom}" tofile="@{projectName}/pom-with-build-number.xml" overwrite="true"/>
+			<replace file="@{projectName}/pom-with-build-number.xml" token="1.5-SNAPSHOT" value="${buildNumber}"/>
+			<!-- Maven's ant task doesn't compile. Have to use exec -->
+			<exec executable="mvn" dir="@{projectName}" failonerror="true">
+				<arg value="install"/>
+				<arg value="-f"/>
+				<arg value="pom-with-build-number.xml"/>
+				<arg value="-Dtests=functional"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+</project>

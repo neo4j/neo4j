@@ -1,0 +1,17 @@
+[[query-return]]
+Return
+======
+
+In the return part of your query, you define which parts of the pattern you are
+interested in. It can be nodes, relationships, or properties on these.
+
+include::cypher-return-graph.txt[]
+
+include::return-nodes.txt[]
+include::return-relationships.txt[]
+include::return-property.txt[]
+include::identifier-with-uncommon-characters.txt[]
+include::column-alias.txt[]
+include::optional-properties.txt[]
+include::unique-results.txt[]
+

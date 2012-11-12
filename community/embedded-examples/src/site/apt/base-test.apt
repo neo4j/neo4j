@@ -1,0 +1,21 @@
+Basic unit testing
+
+Unit testing a graph application
+
+  The basic pattern of unit testing with Neo4j is illustrated by the <<<Neo4jBasicTest.java>>> test.
+
+  Before each test, create a fresh database, deleting any pre-existing files:
+
+%{source-code|snippet=beforeTest|file=src/test/java/org/neo4j/examples/Neo4jBasicTest.java}
+
+  File cleanup could happen here instead, but that would miss the opporunity to inspect the 
+  database after a test run. Instead, just shutdown the database:
+
+%{source-code|snippet=afterTest|file=src/test/java/org/neo4j/examples/Neo4jBasicTest.java}
+
+  During a test, create nodes and check to see that they are there, being careful to enclose
+  write operations in a transaction.
+
+%{source-code|snippet=unitTest|file=src/test/java/org/neo4j/examples/Neo4jBasicTest.java}
+
+    Full source code: {{{https://github.com/neo4j/community/blob/master/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java}Neo4jBasicTest}}

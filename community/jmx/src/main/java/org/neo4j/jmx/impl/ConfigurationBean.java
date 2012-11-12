@@ -1,0 +1,231 @@
+/**
+ * Copyright (c) 2002-2012 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.jmx.impl;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.AttributeNotFoundException;
+import javax.management.InvalidAttributeValueException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ReflectionException;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.jmx.Description;
+import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigurationChange;
+import org.neo4j.kernel.configuration.ConfigurationChangeListener;
+
+@Description( "The configuration parameters used to configure Neo4j" )
+public final class ConfigurationBean extends Neo4jMBean
+{
+    public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
+    private final Map<String, String> config;
+    private Config configuration;
+
+    ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
+    {
+        super( CONFIGURATION_MBEAN_NAME, kernel, support );
+        this.config = new HashMap<String, String>(kernel.getConfigParams());
+        this.configuration = kernel.getConfig();
+        configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
+    }
+
+    private static final Map<String, String> parameterDescriptions;
+    static
+    {
+        final Map<String, String> descriptions = new HashMap<String, String>();
+        for ( final Field field : GraphDatabaseSettings.class.getFields() )
+        {
+            if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
+            {
+                final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
+                if ( documentation == null || !GraphDatabaseSetting.class.isAssignableFrom(field.getType()) ) continue;
+                try
+                {
+                    if ( !field.isAccessible() ) field.setAccessible( true );
+                    
+                    String description = documentation.value();
+                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
+                    if (setting instanceof GraphDatabaseSetting.OptionsSetting)
+                    {
+                        GraphDatabaseSetting.OptionsSetting optionsSetting = ( GraphDatabaseSetting.OptionsSetting) setting;
+                        description += ". Valid options:"+ Arrays.asList( optionsSetting.options() );
+                    }
+                    
+                    if (setting instanceof GraphDatabaseSetting.NumberSetting )
+                    {
+                        GraphDatabaseSetting.NumberSetting numberSetting = ( GraphDatabaseSetting.NumberSetting) setting;
+                        if (numberSetting.getMin() != null || numberSetting.getMax() != null)
+                        {
+                            description += ". ";
+                            if (numberSetting.getMin() != null)
+                                description+=numberSetting.getMin()+" < ";
+                            description += setting.name();
+                            if (numberSetting.getMax() != null)
+                                description+=" < "+numberSetting.getMax();
+                        }
+
+                    }
+                    
+                    descriptions.put( setting.name(), description );
+                }
+                catch ( Exception e )
+                {
+                    continue;
+                }
+            }
+        }
+        parameterDescriptions = Collections.unmodifiableMap( descriptions );
+    }
+
+    private static String describeConfigParameter( String param )
+    {
+        String description = parameterDescriptions.get( param );
+        return description != null ? description : "Configuration attribute";
+    }
+
+    private MBeanAttributeInfo[] keys()
+    {
+        List<MBeanAttributeInfo> keys = new ArrayList<MBeanAttributeInfo>();
+        for ( Map.Entry<String, String> entry : config.entrySet() )
+        {
+            if ( entry.getKey() instanceof String )
+            {
+                keys.add( new MBeanAttributeInfo( (String) entry.getKey(), String.class.getName(),
+                        describeConfigParameter( (String) entry.getKey() ), true, true, false ) );
+            }
+        }
+        return keys.toArray( new MBeanAttributeInfo[keys.size()] );
+    }
+
+    private MBeanOperationInfo[] methods()
+    {
+        List<MBeanOperationInfo> methods = new ArrayList<MBeanOperationInfo>();
+        try
+        {
+            methods.add( new MBeanOperationInfo( "Apply settings", getClass().getMethod( "apply" ) ) );
+        }
+        catch( NoSuchMethodException e )
+        {
+            e.printStackTrace(  );
+        }
+        return methods.toArray( new MBeanOperationInfo[methods.size()] );
+    }
+
+    @Override
+    public Object getAttribute( String attribute ) throws AttributeNotFoundException, MBeanException,
+            ReflectionException
+    {
+        return config.get( attribute );
+    }
+
+    @Override
+    public AttributeList getAttributes( String[] attributes )
+    {
+        AttributeList result = new AttributeList( attributes.length );
+        for ( String attribute : attributes )
+        {
+            try
+            {
+                result.add( new Attribute( attribute, getAttribute( attribute ) ) );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void setAttribute( Attribute attribute )
+        throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
+    {
+        if (config.containsKey( attribute.getName() ))
+            config.put( attribute.getName(), attribute.getValue().toString() );
+    }
+
+    @Override
+    public MBeanInfo getMBeanInfo()
+    {
+        Description description = getClass().getAnnotation( Description.class );
+        return new MBeanInfo( getClass().getName(), description != null ? description.value() : "Neo4j configuration",
+                keys(), null, methods(), null );
+    }
+
+    @Override
+    public Object invoke( String s, Object[] objects, String[] strings )
+        throws MBeanException, ReflectionException
+    {
+        try
+        {
+            return getClass().getMethod( s ).invoke( this );
+        }
+        catch( InvocationTargetException e )
+        {
+            throw new MBeanException( (Exception) e.getTargetException() );
+        }
+        catch( Exception e )
+        {
+            throw new MBeanException( e );
+        }
+    }
+
+    public void apply()
+    {
+        // Apply new config
+        try
+        {
+            System.out.println( "Apply new config" );
+            configuration.applyChanges( config );
+        }
+        catch( Throwable e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private class UpdatedConfigurationListener
+        implements ConfigurationChangeListener
+    {
+        @Override
+        public void notifyConfigurationChanges( Iterable<ConfigurationChange> change )
+        {
+            for( ConfigurationChange configurationChange : change )
+            {
+                config.put( configurationChange.getName(), configurationChange.getNewValue() );
+            }
+        }
+    }
+}

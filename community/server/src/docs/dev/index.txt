@@ -1,0 +1,17 @@
+[[server]]
+Neo4j Server
+============
+
+:leveloffset: 2
+
+include::server-installation.txt[]
+
+include::server-configuration.txt[]
+
+include::server-debugging.txt[]
+
+include::server-embedded.txt[]
+
+include::server-performance.txt[]
+
+include::server-cloud.txt[]

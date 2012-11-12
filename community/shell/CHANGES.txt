@@ -1,0 +1,161 @@
+1.7 (2012-04-18)
+----------------
+o No major changes
+
+
+1.7.M01 (2012-03-12)
+--------------------
+o dbinfo command now able to print simple values as well as arrays and compound values as JSON output.
+o A shell server which isn't remotely avaiable doesn't touch RMI, neither does a client which connects
+  to a server within the same JVM. This makes for less RMI garbage when forgetting to call shutdown().
+o Fixes problem with eval command in that it couldn't execute a single-line command, which made it impossible
+  to do ./shell -c 'eval ...' from outside
+
+1.6.M03 (2012-01-12)
+--------------------
+o Added mknode for creating new nodes w/o creating a relationship.
+o Some fixes regarding executing commands when the current node didn't exist.
+
+1.6.M01 (2011-11-24)
+--------------------
+o Passes the current node as {self} parameter to Cypher (start command).
+o Added multi-line support in the shell.
+o App/command names are parsed as case-insensitive.
+
+1.5.M01 (2011-08-31)
+--------------------
+o More documentation and integration with manual.
+
+1.4 (2011-07-08)
+----------------
+o Added "rmnode" command to delete nodes and also possibility to delete nodes/relationships
+  that are still connected (deleting relationships also).
+o Better handling of standing on deleted nodes.
+o Added sorting of relationships in ls.
+
+1.4.M05 (2011-06-27)
+--------------------
+o Added "start" command for Cypher queries.
+
+1.4.M03 (2011-05-26)
+-------------------
+o No changes.
+
+1.3.M03 (2011-02-25)
+-------------------
+o Updated to work with the latest changes in Neo4j:
+  o Adapted to the refactored KernelExtension API.
+  o Updated for changes in the Index API.
+
+1.3-1.3.M01 (2011-01-27)
+------------------------
+
+o Added an 'eval' app which lets you supply arbitrary JavaScript code to be executed directly on the graph database.
+o Fixed some issues in the 'index' app where the entity type (node/relationship) was ignored.
+o Better exception messages/stack traces.
+
+1.2-1.2 (2010-12-29)
+--------------------
+
+o No changes for 1.2.
+
+1.2-1.2.M06 (2010-12-21)
+------------------------
+
+o Fixed a problem where ShellServerExtension assumed the shell was enabled during shutdown, which could result in NPE.
+
+1.2-1.2.M05 (2010-12-02)
+------------------------
+
+o Added support for the integrated index.
+
+1.2-1.2.M04 (2010-11-18)
+------------------------
+
+o Implemented "paths" app which can run path algos f.ex. shortest path, all paths, all simple paths.
+o Removed "-d" option from "ls" in favor of f.ex. "-f KNOWS:out,LOVES:in" which is more flexible.
+o Some tweaking of output for relationships (and its types).
+o Support for setting initial node/relationship properties in mkrel app, f.ex: mkrel -ct KNOWS --np "{name:Mattias, title:Hacker}" --rp "{date:1234567890}"
+
+
+1.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Minor improvements of output formatting.
+
+1.2-1.2.M02 (2010-10-21)
+------------------------
+
+o Fixed a shutdown issue which could keep the JVM alive.
+
+1.2-1.2.M01 (2010-10-08)
+------------------------
+
+o Added -host as option when connecting a remote client.
+o Remote client optimizations (less communication with server).
+o Apps are discovered using service locator.
+o Better decoupling from kernel.
+o Read-only apps doesn't start transaction.
+o Added app for exposing kernel JMX beans.
+o Added -config option for when starting a local database.
+o Ability to make a graph database remotely available in read-only mode.
+o Some bugfixes regarding shutdown and connections.
+
+1.1 (2010-07-29)
+----------------
+
+o Ability to write command lines including $SOME_VARIABLE and it will be
+  expanded with its associated value (if it had any).
+o History is stored if using jLine.
+o Some more TAB-completion in "cd" command, where you now can "cd" to
+  node by writing its title and it can be TAB-completed as well.
+o Some minor changes of command options.
+
+1.0 (2010-02-16)
+----------------
+
+o Built-in support for --long-options
+o New "alias" app which works like the one in Bash.
+o New "script" app which allows you to execute a file with
+  shell commands in it.
+o New "index" app which can use Neo4j IndexService.
+
+1.0-rc (2010-01-11)
+-------------------
+
+o Updated for new naming scheme
+o Depends on kernel component
+
+1.0-b11 (2009-12-17)
+--------------------
+
+o Dependency relationship between neo4j and shell changed. Instead of neo4j
+  being compile-time dependent on shell it's the other way around.
+  It starts a ShellServer using reflections.
+o Some package renaming (org.neo4j.util.shell --> org.neo4j.shell).
+o Neo4j Apps moved from the neo component to the shell component
+  (into org.neo4j.shell.neo package).
+
+1.0-b10 (2009-11-02)
+--------------------
+
+o Added the ability to start a local shell client in read-only mode.
+o Fixed some problems with exceptions and improved classpath handling
+  of jta and neo4j to make it easier to start a local client.
+
+1.0-b9 (2009-08-15)
+------------------
+
+o Added a traverser command for creating custom traversers.
+o Added support of setting and listing array types.
+o "cd" command can now position itself on a relationship.
+o Output of "man" command has been improved.
+
+1.0-b8 (2009-05-03)
+-------------------
+
+o Improved the ls command with additional options.
+o Improved error reporting so non existing exception classes on client
+  side still get the original exception message.
+o Fixed bug in the jLineConsole causing shell client to enter infinite loop.
+

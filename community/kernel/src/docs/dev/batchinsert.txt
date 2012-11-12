@@ -1,0 +1,86 @@
+[[batchinsert]]
+Batch Insertion
+===============
+
+Neo4j has a batch insertion facility intended for initial imports, which bypasses transactions and other checks in favor of performance.
+This is useful when you have a big dataset that needs to be loaded once.
+
+Batch insertion is inlcuded in the http://search.maven.org/#search|ga|1|neo4j-kernel[neo4j-kernel] component, which is part of all Neo4j distributions and editions.
+
+Be aware of the following points when using batch insertion:
+
+* The intended use is for initial import of data.
+* Batch insertion is _not thread safe._
+* Batch insertion is _non-transactional._
+* Unless +shutdown+ is successfully invoked at the end of the import, the database files _will_ be corrupt.
+
+WARNING: Always perform batch insertion in a _single thread_ (or use synchronization to make only one thread at a time access the batch inserter) and invoke +shutdown+ when finished.
+
+[[batchinsert-examples]]
+== Batch Inserter Examples ==
+
+Creating a batch inserter is similar to how you normally create data in the database, but in this case the low-level http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/unsafe/batchinsert/BatchInserter.html[+BatchInserter+] interface is used.
+As we have already pointed out, you can't have multiple threads using the batch inserter concurrently without external synchronization.
+
+[TIP]
+The source code of the examples is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
+
+To get hold of a +BatchInseter+, use http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+] and then go from there:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/BatchInsertExampleTest.java
+tag=insert
+----
+
+To gain good performance you probably want to set some configuration settings for the batch inserter.
+Read <<configuration-batchinsert>> for information on configuring a batch inserter.
+This is how to start a batch inserter with configuration options:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/BatchInsertExampleTest.java
+tag=configuredInsert
+----
+
+In case you have stored the configuration in a file, you can load it like this:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/BatchInsertExampleTest.java
+tag=configFileInsert
+----
+
+[[batchinsert-db]]
+== Batch Graph Database ==
+
+In case you already have code for data import written against the normal Neo4j API, you could consider using a batch inserter exposing that API.
+
+NOTE: This will not perform as good as using the +BatchInserter+ API directly.
+
+Also be aware of the following:
+
+* Starting a transaction or invoking +Transaction.finish()+ or +Transaction.success()+ will do nothing.
+* Invoking the +Transaction.failure()+ method will generate a +NotInTransaction+ exception.
+* +Node.delete()+ and +Node.traverse()+ are not supported.
+* +Relationship.delete()+ is not supported.
+* Event handlers and indexes are not supported.
+* +GraphDatabaseService.getRelationshipTypes()+, +getAllNodes()+ and +getAllRelationships()+ are not supported.
+
+With these precautions in mind, this is how to do it:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/BatchInsertExampleTest.java
+tag=batchDb
+----
+
+[TIP]
+The source code of the example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
+

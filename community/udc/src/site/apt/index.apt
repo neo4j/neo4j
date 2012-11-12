@@ -1,0 +1,7 @@
+Neo4j UDC
+
+    Neo4j Usage Data Collector (UDC) is a lightweight framework for collecting
+    statistics about a Neo4j server.
+
+    For details, please see the {{{http://docs.neo4j.org/chunked/snapshot/usage-data-collector.html} Neo4j manual}}. 
+

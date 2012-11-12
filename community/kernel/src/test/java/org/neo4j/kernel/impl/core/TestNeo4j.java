@@ -1,0 +1,376 @@
+/**
+ * Copyright (c) 2002-2012 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.core;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.*;
+
+public class TestNeo4j extends AbstractNeo4jTestCase
+{
+    @Test
+    public void testReferenceNode()
+    {
+        // fix this test when we can set reference node again
+        Node oldReferenceNode = null;
+        try
+        {
+            // get old reference node if one is set
+            oldReferenceNode = getGraphDb().getReferenceNode();
+        }
+        catch ( RuntimeException e )
+        {
+            // ok no one set, oldReferenceNode is null then
+        }
+        Node newReferenceNode = getGraphDb().createNode();
+        getNodeManager().setReferenceNodeId( newReferenceNode.getId() );
+        assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
+        newReferenceNode.delete();
+        if ( oldReferenceNode != null )
+        {
+            getNodeManager().setReferenceNodeId( oldReferenceNode.getId() );
+            assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
+        }
+    }
+
+    @Test
+    public void testBasicNodeRelationships()
+    {
+        Node firstNode = null;
+        Node secondNode = null;
+        Relationship rel = null;
+        // Create nodes and a relationship between them
+        firstNode = getGraphDb().createNode();
+        assertNotNull( "Failure creating first node", firstNode );
+        secondNode = getGraphDb().createNode();
+        assertNotNull( "Failure creating second node", secondNode );
+        rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
+        assertNotNull( "Relationship is null", rel );
+        RelationshipType relType = rel.getType();
+        assertNotNull( "Relationship's type is is null", relType );
+
+        // Verify that the node reports that it has a relationship of
+        // the type we created above
+        assertTrue( firstNode.getRelationships( relType ).iterator().hasNext() );
+        assertTrue( secondNode.getRelationships( relType ).iterator().hasNext() );
+
+        Iterable<Relationship> allRels = null;
+
+        // Verify that both nodes return the relationship we created above
+        allRels = firstNode.getRelationships();
+        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        allRels = firstNode.getRelationships( relType );
+        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+
+        allRels = secondNode.getRelationships();
+        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        allRels = secondNode.getRelationships( relType );
+        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+
+        // Verify that the relationship reports that it is associated with
+        // firstNode and secondNode
+        Node[] relNodes = rel.getNodes();
+        assertEquals( "A relationship should always be connected to exactly "
+            + "two nodes", relNodes.length, 2 );
+        assertTrue( "Relationship says that it isn't connected to firstNode",
+            this.objectExistsInArray( firstNode, relNodes ) );
+        assertTrue( "Relationship says that it isn't connected to secondNode",
+            this.objectExistsInArray( secondNode, relNodes ) );
+        assertTrue( "The other node should be secondNode but it isn't", rel
+            .getOtherNode( firstNode ).equals( secondNode ) );
+        assertTrue( "The other node should be firstNode but it isn't", rel
+            .getOtherNode( secondNode ).equals( firstNode ) );
+        rel.delete();
+        secondNode.delete();
+        firstNode.delete();
+    }
+
+    private boolean objectExistsInIterable( Relationship rel,
+        Iterable<Relationship> allRels )
+    {
+        for ( Relationship iteratedRel : allRels )
+        {
+            if ( rel.equals( iteratedRel ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean objectExistsInArray( Object obj, Object[] objArray )
+    {
+        for ( int i = 0; i < objArray.length; i++ )
+        {
+            if ( objArray[i].equals( obj ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+//    private static enum RelTypes implements RelationshipType
+//    {
+//        ONE_MORE_RELATIONSHIP;
+//    }
+
+    // TODO: fix this testcase
+    @Test
+    public void testIdUsageInfo()
+    {
+        NodeManager nm = getEmbeddedGraphDb().getNodeManager();
+        long nodeCount = nm.getNumberOfIdsInUse( Node.class );
+        long relCount = nm.getNumberOfIdsInUse( Relationship.class );
+        if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )
+        {
+            // fail( "Node count greater than highest id " + nodeCount );
+        }
+        if ( relCount > nm.getHighestPossibleIdInUse( Relationship.class ) )
+        {
+            // fail( "Rel count greater than highest id " + relCount );
+        }
+        // assertTrue( nodeCount <= nm.getHighestPossibleIdInUse( Node.class )
+        // );
+        // assertTrue( relCount <= nm.getHighestPossibleIdInUse(
+        // Relationship.class ) );
+        Node n1 = nm.createNode();
+        Node n2 = nm.createNode();
+        Relationship r1 = n1.createRelationshipTo( n2, MyRelTypes.TEST );
+        // assertEquals( nodeCount + 2, nm.getNumberOfIdsInUse( Node.class ) );
+        // assertEquals( relCount + 1, nm.getNumberOfIdsInUse(
+        // Relationship.class ) );
+        r1.delete();
+        n1.delete();
+        n2.delete();
+        // must commit for ids to be reused
+        getTransaction().success();
+        getTransaction().finish();
+        // assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
+        // assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class )
+        // );
+        setTransaction( getGraphDb().beginTx() );
+    }
+
+    @Test
+    public void testRandomPropertyName()
+    {
+        Node node1 = getGraphDb().createNode();
+        String key = "random_"
+            + new Random( System.currentTimeMillis() ).nextLong();
+        node1.setProperty( key, "value" );
+        assertEquals( "value", node1.getProperty( key ) );
+        node1.delete();
+    }
+
+    @Test
+    public void testNodeChangePropertyArray() throws Exception
+    {
+        Transaction tx = getTransaction();
+        tx.finish();
+        tx = getGraphDb().beginTx();
+        Node node;
+        try
+        {
+            node = getGraphDb().createNode();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = getGraphDb().beginTx();
+        try
+        {
+            node.setProperty( "test", new String[] { "value1" } );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = getGraphDb().beginTx();
+        try
+        {
+            node.setProperty( "test", new String[] { "value1", "value2" } );
+            // no success, we wanna test rollback on this operation
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = getGraphDb().beginTx();
+        try
+        {
+            String[] value = (String[]) node.getProperty( "test" );
+            assertEquals( 1, value.length );
+            assertEquals( "value1", value[0] );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        setTransaction( getGraphDb().beginTx() );
+    }
+
+    @Test
+    public void testMultipleNeos()
+    {
+        String storePath = getStorePath( "test-neo2" );
+        deleteFileOrDirectory( storePath );
+        GraphDatabaseService graphDb2 = new GraphDatabaseFactory().newEmbeddedDatabase( storePath );
+        Transaction tx2 = graphDb2.beginTx();
+        getGraphDb().createNode();
+        graphDb2.createNode();
+        tx2.success();
+        tx2.finish();
+        graphDb2.shutdown();
+    }
+    
+    @Test
+    public void testGetAllNodes()
+    {
+        long highId = getNodeManager().getHighestPossibleIdInUse( Node.class );
+        if ( highId >= 0 && highId < 10000 )
+        {
+            int count = IteratorUtil.count( GlobalGraphOperations.at( getGraphDb() ).getAllNodes() );
+            boolean found = false;
+            Node newNode = getGraphDb().createNode();
+            newTransaction();
+            int oldCount = count;
+            count = 0;
+            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+            {
+                count++;
+                if ( node.equals( newNode ) )
+                {
+                    found = true;
+                }
+            }
+            assertTrue( found );
+            assertEquals( count, oldCount + 1 );
+            
+            // Tests a bug in the "all nodes" iterator
+            Iterator<Node> allNodesIterator = GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator();
+            assertNotNull( allNodesIterator.next() );
+            
+            newNode.delete();
+            newTransaction();
+            found = false;
+            count = 0;
+            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
+            {
+                count++;
+                if ( node.equals( newNode ) )
+                {
+                    found = true;
+                }
+            }
+            assertTrue( !found );
+            assertEquals( count, oldCount );
+        }
+        // else we skip test, takes too long
+    }
+    
+    @Test
+    public void testMultipleShutdown()
+    {
+        getGraphDb().shutdown();
+        getGraphDb().shutdown();
+    }
+    
+    @Test
+    public void testKeepLogsConfig()
+    {
+        Map<String,String> config = new HashMap<String,String>();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME );
+        String storeDir = "target/configdb";
+        deleteFileOrDirectory( storeDir );
+        GraphDatabaseFactory graphDatabaseFactory = new GraphDatabaseFactory();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        XaDataSourceManager xaDsMgr = 
+                db.getXaDataSourceManager();
+        XaDataSource xaDs = xaDsMgr.getNeoStoreDataSource();
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.remove( GraphDatabaseSettings.keep_logical_logs.name() );
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        xaDsMgr = db.getXaDataSourceManager();
+        xaDs = xaDsMgr.getNeoStoreDataSource();
+        // Here we rely on the default value being set to true due to the existence
+        // of previous log files.
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.FALSE );
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        xaDsMgr = db.getXaDataSourceManager();
+        xaDs = xaDsMgr.getNeoStoreDataSource();
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME + "=false" );
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        xaDsMgr = db.getXaDataSourceManager();
+        xaDs = xaDsMgr.getNeoStoreDataSource();
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), Config.DEFAULT_DATA_SOURCE_NAME + "=true" );
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        xaDsMgr = db.getXaDataSourceManager();
+        xaDs = xaDsMgr.getNeoStoreDataSource();
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "true" );
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir ).setConfig( config ).newGraphDatabase();
+        xaDsMgr = db.getXaDataSourceManager();
+        xaDs = xaDsMgr.getNeoStoreDataSource();
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+    }
+}

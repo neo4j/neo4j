@@ -1,0 +1,946 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2002-2012 "Neo Technology,"
+  Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+  This file is part of Neo4j.
+
+  Neo4j is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as
+  published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses />.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j.build</groupId>
+        <artifactId>parent-central</artifactId>
+        <version>35</version>
+        <relativePath />
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.neo4j.app</groupId>
+    <artifactId>neo4j-server</artifactId>
+    <version>1.7.3-SNAPSHOT</version>
+    <name>Neo4j Server</name>
+    <description>Standalone Neo4j server application.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <packaging>jar</packaging>
+
+    <properties>
+        <bundle.namespace>org.neo4j.server</bundle.namespace>
+        <short-name>server</short-name>
+        <license-text.header>GPL-3-header.txt</license-text.header>
+        <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
+        <docs-plugin.filter>true</docs-plugin.filter>
+
+        <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
+        <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
+        <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+        <neo-server.test.hostname />
+
+        <!-- This code name is injected into Webadmin, please update it
+   when updating the project version. -->
+        <neo4j.codename>Bastuträsk Bänk</neo4j.codename>
+
+        <!-- Relative to /webadmin/ -->
+        <neo4j.codename.icon>img/icons/branding/1.7.png</neo4j.codename.icon>
+
+        <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
+        <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+        <blueprints.version>1.2</blueprints.version>
+        <gremlin.version>1.5</gremlin.version>
+
+        <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
+        <testWithExternalServer>false</testWithExternalServer>
+
+        <webdriver.version>2.20.0</webdriver.version>
+        <webdriver.implementation>Firefox</webdriver.implementation>
+
+        <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
+        <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
+        <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
+        <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
+        <webdriver.override.neo-server.baseuri />
+    </properties>
+
+    <scm>
+        <url>https://github.com/neo4j/community/tree/master/server</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+            <comments>The software ("Software") developed and owned by Network Engine for
+                Objects in Lund AB (referred to in this notice as "Neo Technology") is
+                licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+                parties and that license is included below.
+
+                However, if you have executed an End User Software License and Services
+                Agreement or an OEM Software License and Support Services Agreement, or
+                another commercial license agreement with Neo Technology or one of its
+                affiliates (each, a "Commercial Agreement"), the terms of the license in
+                such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+                Version 3 and you may use the Software solely pursuant to the terms of
+                the relevant Commercial Agreement.
+            </comments>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+            <type>pom</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>server-api</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+<!--
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+-->
+
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty</artifactId>
+            <version>6.1.25</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>1.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.6</version>
+            <type>jar</type>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-digester</artifactId>
+                    <groupId>commons-digester</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Added directly to avoid version clash in commons-configuration. -->
+        <dependency>
+            <groupId>commons-digester</groupId>
+            <artifactId>commons-digester</artifactId>
+            <version>1.8.1</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-jaxrs</artifactId>
+          <version>1.8.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tinkerpop.gremlin</groupId>
+            <artifactId>gremlin-groovy</artifactId>
+            <version>${gremlin.version}</version>
+            <type>jar</type>
+            <exclusions>
+                <!-- Sail support not needed -->
+                <exclusion>
+                    <groupId>com.tinkerpop.blueprints</groupId>
+                    <artifactId>blueprints-sail-graph</artifactId>
+                </exclusion>
+                <!-- Maven support in groovy not needed -->
+                <exclusion>
+                    <groupId>org.codehaus.groovy.maven</groupId>
+                    <artifactId>gmaven-plugin</artifactId>
+                </exclusion>
+                <!-- "readline" not needed - we only expose gremlin through webadmin -->
+                <exclusion>
+                    <groupId>jline</groupId>
+                    <artifactId>jline</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-neo4j-graph</artifactId>
+            <version>${blueprints.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-ha</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-management</artifactId>
+                </exclusion>
+                <exclusion>
+                  <artifactId>jackson-jaxrs</artifactId>
+                  <groupId>org.codehaus.jackson</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.rrd4j</groupId>
+            <artifactId>rrd4j</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+    
+
+        <!-- File uploads -->
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-multipart</artifactId>
+            <version>1.9</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.8.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <scope>test</scope>
+            <version>4.1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <scope>test</scope>
+            <version>4.1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-firefox-driver</artifactId>
+            <version>${webdriver.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-htmlunit-driver</artifactId>
+            <version>${webdriver.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-chrome-driver</artifactId>
+            <version>${webdriver.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-ie-driver</artifactId>
+            <version>${webdriver.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-graphviz</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-shell</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>bouncycastle</groupId>
+          <artifactId>bcprov-jdk16</artifactId>
+          <version>140</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/generated-sources</directory>
+            </resource>
+            <resource>
+                <directory>${basedir}</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>NOTICE.txt</include>
+                    <include>LICENSE.txt</include>
+                    <include>CHANGES.txt</include>
+                    <include>LICENSES.txt</include>
+                </includes>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <!-- Development execution -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>${neo4j-server.mainClass}</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>org.neo4j.server.properties</key>
+                            <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>static-web</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>true</attach>
+                            <descriptors>
+                                <descriptor>src/main/assemblies/static-web.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sources</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <attach>true</attach>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>src/main/assemblies/sources-assembly.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>test-sources</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <attach>true</attach>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>src/main/assemblies/test-sources-assembly.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.neo4j.build.plugins</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <strictCheck>true</strictCheck>
+                    <header>${license-text.header}</header>
+                    <includes>
+                        <include>src/**/*.java</include>
+                        <include>src/**/*.js</include>
+                        <include>src/**/*.scala</include>
+                        <include>src/**/*.xml</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/lib/*.js</exclude>
+                        <exclude>**/lib/**/*.js</exclude>
+                        <exclude>**/webadmin-html/**</exclude>
+                    </excludes>
+                    <mapping>
+                        <scala>JAVADOC_STYLE</scala>
+                    </mapping>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>${neo4j-server.mainClass}</mainClass>
+                                </manifest>
+                            </archive>
+                            <excludes>
+                                <exclude>webadmin-html/**</exclude>
+                                <exclude>lib/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>attach-docs</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+                        <neo-server.test.hostname>${neo-server.test.hostname}</neo-server.test.hostname>
+                        <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
+                        <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+                        <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
+                        <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
+                        <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}</webdriver.override.neo-server.baseuri>
+                    </systemPropertyVariables>
+                    <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
+                    <forkMode>once</forkMode>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/functionaltest/java</source>
+                                <source>src/webtest/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-resource</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>src/functionaltest/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-java-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>attach-test-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.voltvoodoo</groupId>
+                <artifactId>brew</artifactId>
+                <version>0.2.10</version>
+                <executions>
+                    <execution>
+                        <id>compile-webadmin</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                    <execution>
+                        <id>minify-webadmin</id>
+                        <goals>
+                            <goal>optimize</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <modules>
+                        <module>
+                            <name>webadmin</name>
+                            <exclude>
+                                <!-- Arbor runs with WebWorkers, webworkers want are started by giving
+                           the browser a js url to fetch and run, so this needs to be separate
+                           from the webadmin js file. -->
+                                <exclude>lib/arbor.js</exclude>
+                            </exclude>
+                        </module>
+                    </modules>
+                    <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
+                    <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
+
+                    <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
+                    <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+
+                    <optimizedFileNameSuffix>false</optimizedFileNameSuffix>
+                    <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
+                </configuration>
+            </plugin>
+            
+          <plugin>
+            <groupId>com.github.searls</groupId>
+            <artifactId>jasmine-maven-plugin</artifactId>
+            <version>1.1.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
+              <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
+              <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <artifactId>maven-site-plugin</artifactId>
+            <configuration>
+              <reportPlugins combine.children="append">
+                <plugin>
+                  <artifactId>maven-javadoc-plugin</artifactId>
+                  <configuration>
+                    <detectJavaApiLink>true</detectJavaApiLink>
+                    <detectLinks>true</detectLinks>
+                    <quiet>true</quiet>
+                    <excludePackageNames>*.impl.*</excludePackageNames>
+                    <groups>
+                      <group>
+                        <title>Server</title>
+                        <packages>org.neo4j.server:org.neo4j.server.*</packages>
+                      </group>
+                      <group>
+                        <title>Server REST Interface</title>
+                        <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
+                      </group>
+                      <group>
+                        <title>Server Admin Interface</title>
+                        <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
+                      </group>
+                    </groups>
+                  </configuration>
+                  <reports>
+                    <report>javadoc</report>
+                  </reports>
+                </plugin>
+              </reportPlugins>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-descriptor</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <groups>
+                <group>
+                  <title>Server</title>
+                  <packages>org.neo4j.server:org.neo4j.server.*</packages>
+                </group>
+                <group>
+                  <title>Server REST Interface</title>
+                  <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
+                </group>
+                <group>
+                  <title>Server Admin Interface</title>
+                  <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
+                </group>
+              </groups>
+            </configuration>
+          </plugin>
+
+        </plugins>
+
+    </build>
+
+    <profiles>
+        <profile>
+            <id>surefire-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                            <argLine>-Xmx1024m -Dfile.encoding=UTF-8</argLine>
+                            <forkMode>always</forkMode>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>web-tests</id>
+            <activation>
+                <property>
+                    <name>tests</name>
+                    <value>web</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <!-- WebIT for web integration test -->
+                                <include>**/*WebIT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>all-tests</id>
+            <activation>
+                <property>
+                    <name>tests</name>
+                    <value>all</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*WebIT.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>neodev</id>
+            <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>static-web</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
+            <id>skip-brew</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.voltvoodoo</groupId>
+                        <artifactId>brew</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-webadmin</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>minify-webadmin</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>plugin-test</id>
+            <!-- Tests plugin registration functionality. Needs to be run separately in order not to package resource files and be picked up by the other functional tests -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add-test-source</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/plugintest/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>add-test-resource</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>add-test-resource</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/plugintest/resources</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Firefox is default implementation, set in properties at the top of this file. -->
+        <profile>
+            <id>chrome-mac</id>
+            <properties>
+                <webdriver.implementation>Chrome</webdriver.implementation>
+            </properties>
+        </profile>
+        <profile>
+            <id>sauce-labs-firefox-windows</id>
+            <properties>
+                <webdriver.implementation>SauceLabsFirefoxWindows</webdriver.implementation>
+            </properties>
+        </profile>
+        <profile>
+            <id>sauce-labs-chrome-windows</id>
+            <properties>
+                <webdriver.implementation>SauceLabsChromeWindows</webdriver.implementation>
+            </properties>
+        </profile>
+        <profile>
+            <id>sauce-labs-internet-explorer-windows</id>
+            <properties>
+                <webdriver.implementation>SauceLabsInternetExplorerWindows</webdriver.implementation>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>initial-build</id>
+            <repositories>
+                <repository>
+                    <id>neo4j-dev</id>
+                    <name>Neo4j Developer Repository</name>
+                    <url>http://m2.neo4j.org/content/groups/everything/</url>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <groups>
+                        <group>
+                            <title>Server</title>
+                            <packages>org.neo4j.server:org.neo4j.server.*</packages>
+                        </group>
+                        <group>
+                            <title>Server REST Interface</title>
+                            <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
+                        </group>
+                        <group>
+                            <title>Server Admin Interface</title>
+                            <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
+                        </group>
+                    </groups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+    <repositories>
+        <repository>
+            <id>java.net</id>
+            <url>http://download.java.net/maven/2/</url>
+        </repository>
+        <repository>
+            <id>selenium-repository</id>
+            <url>http://selenium.googlecode.com/svn/repository</url>
+        </repository>
+        <repository>
+            <id>neo4j-release-repository</id>
+            <name>Neo4j Maven 2 release repository</name>
+            <url>http://m2.neo4j.org/content/repositories/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>neo4j-snapshot-repository</id>
+            <name>Neo4j Maven 2 snapshot repository</name>
+            <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>cukes</id>
+            <url>http://cukes.info/maven</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jsdoctk2</id>
+            <url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>cukes</id>
+            <url>http://cukes.info/maven</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <site>
+            <id>neo4j-site</id>
+            <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+        </site>
+    </distributionManagement>
+
+</project>

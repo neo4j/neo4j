@@ -1,0 +1,32 @@
+#header
+  #header_submenu
+    #global-loading-indicator
+      .loading-spinner Loading
+    %ul.horizontal_menu
+      %li
+        %a.micro-button(href="http://docs.neo4j.org/chunked/${project.version}/") Documentation
+  %img#logo(src="img/logo.png")
+  %ul#mainmenu
+    :each item in mainmenu
+      %li.title-button
+        :if item.current
+          %a.current(href="#{htmlEscape(item.url)}")
+            %span.subtitle= htmlEscape(item.subtitle)
+            %span= htmlEscape(item.label)
+        :if !item.current
+          %a(href="#{htmlEscape(item.url)}")
+            %span.subtitle= htmlEscape(item.subtitle)
+            %span= htmlEscape(item.label)
+
+#contents
+  
+
+#footer
+  %p.copyright Copyright (c) 2002-2012
+    \ 
+    %a(href="http://neotechnology.com") Neo Technology
+    \.
+    \ This is free software, available under the 
+    \ 
+    %a(href="http://www.gnu.org/licenses/gpl.html") GNU General Public License
+    \ version 3 or greater.

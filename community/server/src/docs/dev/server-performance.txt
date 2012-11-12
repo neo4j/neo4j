@@ -1,0 +1,46 @@
+[[server-performance]]
+Server Performance Tuning
+=========================
+
+At the heart of the Neo4j server is a regular Neo4j storage engine instance.
+That engine can be tuned in the same way as the other embedded configurations, using the same file format.
+The only difference is that the server must be told where to find the fine-tuning configuration.
+
+.Quick info
+***********
+* The neo4j.properties file is a standard configuration file that databases load in order to tune their memory use and caching strategies.
+* See <<configuration-caches>> for more information.
+***********
+
+Specifying Neo4j tuning properties
+----------------------------------
+
+The +conf/neo4j-server.properties+ file in the server distribution, is the main configuration file for the server.
+In this file we can specify a second properties file that contains the database tuning settings (that is, the +neo4j.properties+ file).
+This is done by setting a single property to point to a valid +neo4j.properties+ file:
+
+[source]
+----
+org.neo4j.server.db.tuning.properties={neo4j.properties file}
+----
+ 
+On restarting the server the tuning enhancements specified in the +neo4j.properties+ file will be loaded and configured into the underlying database engine.
+
+Specifying JVM tuning properties
+--------------------------------
+
+Tuning the standalone server is achieved by editing the +neo4j-wrapper.conf+ file in the +conf+ directory of +NEO4J_HOME+.
+
+Edit the following properties:
+
+.neo4j-wrapper.conf JVM tuning properties
+[options="header", cols="<m,<"]
+|====================
+| Property Name             | Meaning
+| wrapper.java.initmemory   | initial heap size (in MB)
+| wrapper.java.maxmemory    | maximum heap size (in MB)
+| wrapper.java.additional.N | additional literal JVM parameter, where N is a number for each
+|====================
+
+For more information on the tuning properties, see <<configuration-jvm>>.
+

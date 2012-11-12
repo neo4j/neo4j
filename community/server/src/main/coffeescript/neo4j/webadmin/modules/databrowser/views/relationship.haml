@@ -1,0 +1,23 @@
+.headline-bar.pad
+  .title
+    %h3= "Relationship " + htmlEscape(item.getId())
+    %p.small = htmlEscape(item.getSelf())
+  
+  %ul.button-bar.item-controls
+    %li
+      .data-save-properties.button(disabled="true") Saved
+    %li
+      .data-delete-item.bad-button Delete
+
+  %ul.relationship-meta  
+    %li
+      %a.micro-button(href="#/data/search/#{htmlEscape(item.getStartId())}/")= "Node " + htmlEscape(item.getStartId())
+    %li.type = htmlEscape(item.getItem().getType())
+    %li
+      %a.micro-button(href="#/data/search/#{htmlEscape(item.getEndId())}/")= "Node " + htmlEscape(item.getEndId())
+
+  .break
+
+.properties
+
+.break

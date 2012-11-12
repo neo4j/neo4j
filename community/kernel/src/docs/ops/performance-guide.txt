@@ -1,0 +1,208 @@
+
+[[performance-guide]]
+Performance Guide
+=================
+
+This is the Neo4j performance guide. It will attempt to guide you in how to use Neo4j to achieve maximum performance.
+
+== Try this first ==
+
+The first thing is to make sure the JVM is running well and not spending to much 
+time in garbage collection. Monitoring heap usage on an application that uses Neo4j 
+can be a bit confusing since Neo4j will increase the size of caches if there is 
+available memory and decrease if the heap is getting full. The goal is to have a 
+large enough heap so heavy/peak load will not result in so called GC trashing 
+(performance can drop as much as two orders of magnitude when this happens).   
+
+Start the JVM with +-server+ flag and +-Xmx<good sized heap>+ 
+(f.ex. -Xmx512M for 512Mb memory or -Xmx3G for 3Gb memory). Having too large heap 
+may also hurt performance so you may have to try some different heap sizes. 
+Make sure parallel/concurrent garbage collector is running (+-XX:+UseConcMarkSweepGC+ works well in most use-cases).
+
+Finally make sure the OS has some memory to manage proper file system 
+caches meaning if your server has 8GB of RAM don't use all of that RAM for 
+heap (unless you turned off memory mapped buffers) but leave a good size of it to the OS. 
+For more information on this see <<embedded-configuration>>.
+
+For Linux specific tweaks, see <<linux-performance-guide>>.
+
+== Neo4j primitives' lifecycle ==
+
+Neo4j manages its primitives (nodes, relationships and properties) 
+different depending on how you use Neo4j. For example if you never get a 
+property from a certain node or relationship that node or relationship will 
+not have its properties loaded into memory. The first time, after loading a node or relationship,
+any property is accessed all the properties are loaded for that entity. If any of those properties
+contain an array larger than a few elements or a long string such values are loaded
+on demand when requesting them individually. Similarly, relationships of a node will
+only be loaded the first time they are requested for that node.
+
+Nodes and relationships are cached using LRU caches. If you (for some strange reason) 
+only work with nodes the relationship cache will become smaller and smaller while the 
+node cache is allowed to grow (if needed). Working with many relationships and few nodes 
+results in bigger relationship cache and smaller node cache. 
+
+The Neo4j API specification does not say anything about order regarding 
+relationships so invoking 
+
+[source,java]
+----
+Node.getRelationships()
+----
+
+may return the relationships in a different order than the previous invocation. 
+This allows us to make even heavier optimizations returning the relationships 
+that are most commonly traversed.
+
+All in all Neo4j has been designed to be very adaptive depending on how it 
+is used. The (unachievable) overall goal is to be able to handle any incoming 
+operation without having to go down and work with the file/disk I/O layer.
+
+== Configuring Neo4j ==
+
+In <<embedded-configuration>> page there's information on how to configure Neo4j and the JVM.
+These settings have a lot impact on performance.
+
+=== Disks, RAM and other tips ===
+
+As always, as with any persistence solution, performance is very much depending on the 
+persistence media used. Better disks equals better performance. 
+
+If you have multiple disks or persistence media available it may be a 
+good idea to split the store files and transaction logs across those disks. 
+Having the store files running on disks with low seek time can do wonders for 
+non cached read operations. Today a typical mechanical drive has an average 
+seek time of about 5ms, this can cause a query or traversal to be very slow 
+when available RAM is too low or caches and memory mapped settings are badly 
+configured. A new good SATA enabled SSD has an average seek time of <100 microseconds 
+meaning those scenarios will execute at least 50 times faster. 
+
+To avoid hitting disk you need more RAM. On a standard mechanical drive you 
+can handle graphs with a few tens of millions of primitives with 1-2GB of RAM. 
+4-8GB of RAM can handle graphs with hundreds of millions of primitives while you 
+need a good server with 16-32GB to handle billions of primitives. However, if you 
+invest in a good SSD you will be able to handle much larger graphs on less RAM. 
+
+Neo4j likes Java 1.6 JVMs and running in server mode so consider upgrading 
+to that if you haven't yet (or at least give the -server flag). Use tools like +vmstat+ or 
+equivalent to gather info when your application is running. If you have high I/O 
+waits and not that many blocks going out/in to disks when running write/read 
+transactions its a sign that you need to tweak your Java heap, Neo4j cache 
+and memory mapped settings (maybe even get more RAM or better disks).
+
+=== Write performance ===
+
+If you are experiencing poor write performance after writing some data 
+(initially fast, then massive slowdown) it may be the operating system 
+writing out dirty pages from the memory mapped regions of the store files. 
+These regions do not need to be written out to maintain consistency so to 
+achieve highest possible write speed that type of behavior should be avoided.
+
+Another source of writes slow down can be the transaction size. Many small 
+transactions result in a lot of I/O writes to disc and should be avoided. 
+Too big transactions can result in OutOfMemory errors, since the uncommitted 
+transaction data is held on the Java Heap in memory. On details about transaction 
+management in Neo4j, please read the <<transactions>> guidelines.
+
+The Neo4j kernel makes use of several store files and a logical log file 
+to store the graph on disk. The store files contain the actual graph and the 
+log contains mutating operations. All writes to the logical log are append-only 
+and when a transaction is committed changes to the logical log will be forced 
+(+fdatasync+) down to disk. The store files are however not flushed to disk and 
+writes to them are not append-only either. They will be written to in a more or
+less random pattern (depending on graph layout) and writes will not be forced to 
+disk until the log is rotated or the Neo4j kernel is shut down. It may be a good 
+idea to increase the logical log target size for rotation or turn off log rotation 
+if you experience problems with writes that can be linked to the actual rotation 
+of the log. Here is some example code demonstrating how to change log rotation 
+settings at runtime:
+
+[source,java]
+----
+    GraphDatabaseService graphDb; // ... 
+
+    // get the XaDataSource for the native store
+    TxModule txModule = ((EmbeddedGraphDatabase) graphDb).getConfig().getTxModule();
+    XaDataSourceManager xaDsMgr = txModule.getXaDataSourceManager();
+    XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+  
+    // turn off log rotation
+    xaDs.setAutoRotate( false );
+
+    // or to increase log target size to 100MB (default 10MB)
+    xaDs.setLogicalLogTargetSize( 100 * 1024 * 1024L );
+----
+
+Since random writes to memory mapped regions for the store files may 
+happen it is very important that the data does not get written out to disk unless 
+needed. Some operating systems have very aggressive settings regarding when to write 
+out these dirty pages to disk. If the OS decides to start writing out dirty pages 
+of these memory mapped regions, write access to disk will stop being sequential and 
+become random. That hurts performance a lot, so to get maximum write performance when 
+using Neo4j make sure the OS is configured not to write out any of the dirty pages 
+caused by writes to the memory mapped regions of the store files. As an example, 
+if the machine has 8GB of RAM and the total size of the store files is 4GB (fully 
+memory mapped) the OS has to be configured to accept at least 50% dirty pages in 
+virtual memory to make sure we do not get random disk writes.
+
+Note: make sure to read the <<linux-performance-guide>> as well for more specific information.
+
+=== Second level caching ===
+
+While normally building applications and "always assume the graph is in memory", 
+sometimes it is necessary to optimize certain performance critical sections. 
+Neo4j adds a small overhead even if the node, relationship or property in question 
+is cached when you compare to in memory data structures. If this becomes an 
+issue use a profiler to find these hot spots and then add your own second-level 
+caching. We believe second-level caching should be avoided to greatest extend 
+possible since it will force you to take care of invalidation which sometimes 
+can be hard. But when everything else fails you have to use it so here is an 
+example of how it can be done.
+
+We have some POJO that wrapps a node holding its state. In this particular 
+POJO we've overridden the equals implementation.
+
+[source,java]
+----
+   public boolean equals( Object obj )
+   {
+       return underlyingNode.getProperty( "some_property" ).equals( obj );
+   }
+
+   public int hashCode()
+   {
+       return underlyingNode.getProperty( "some_property" ).hashCode();
+   }
+----
+
+This works fine in most scenarios but in this particular scenario many instances of that POJO is being worked with in nested loops adding/removing/getting/finding to collection classes. Profiling the applications will show that the equals implementation is being called many times and can be viewed as a hot spot. Adding second-level caching for the equals override will in this particular scenario increase performance.
+
+[source,java]
+----
+    private Object cachedProperty = null;
+    
+    public boolean equals( Object obj )
+    {
+       if ( cachedProperty == null )
+       {
+           cachedProperty = underlyingNode.getProperty( "some_property" );
+       }
+       return cachedProperty.equals( obj );
+    }
+
+    public int hashCode()
+    {
+       if ( cachedPropety == null )
+       {
+           cachedProperty = underlyingNode.getProperty( "some_property" );
+       }
+       return cachedProperty.hashCode();
+    }
+----
+
+The problem now is that we need to invalidate the cached property whenever the +some_property+ 
+is changed (may not be a problem in this scenario since the state picked for equals and hash 
+code computation often won't change).
+
+[TIP]
+To sum up, avoid second-level caching if possible and only add it when you really need it.

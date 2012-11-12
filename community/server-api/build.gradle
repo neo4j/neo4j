@@ -1,0 +1,5 @@
+dependencies {
+    compile "$group:neo4j-kernel:$version",
+            "commons-configuration:commons-configuration:$commonsConfigurationVersion",
+            "javax.ws.rs:jsr311-api:$javaxWsVersion"
+}

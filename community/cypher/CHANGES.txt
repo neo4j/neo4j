@@ -1,0 +1,83 @@
+1.7.2 (2012-06-20)
+------------------------
+o Fixes issue #432, #523
+o Fixes problem with optional properties and collection predicates
+
+1.7 (2012-04-18)
+----------------
+o Added the possibility to use multiple relationship types on patterns
+o Fixed bug when aggregation is used in order by and not listed in the RETURN clause
+
+1.7.M01 (2012-03-12)
+--------------------
+o Added literal collections and the IN predicate
+o Added HEAD, TAIL, LAST and FILTER
+o Added comments
+o Added ! so that missing property can evaluate to false
+o The column names are now exactly as written in the RETURN expression
+o BREAKING CHANGE: To check whether a property exists on a node, use the HAS(...) function
+o Arithmetic & string concatenation
+o An identifier can now be assigned all the nodes/rels in the graph - START a=node(*)
+o Predicates can be specified inside of a pattern relationship description
+o Fixed issues #196, #164, #193, #217, #214, #201, #198, #240, #254
+
+1.6 (2012-01-19)
+----------------
+o Lots of changes to the parsers error reporting
+o Queries can now be pre-pended with which parser version to use
+o Database configuration can now change which version of the parser to use as default
+
+1.6.M03 (2012-01-12)
+--------------------
+o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
+o Made it possible to query on array properties
+o Fixed bug #157 - Comparing things of different types now gives false instead of type error
+o Fixed bug #140 - Identifier can now named same thing as a parameter
+o Fixed bug that tripped up the patter matchern when a node is sent in as a parameter
+o Fixed bug #168 - Ordering on renamed columns now works well
+o Fixed bug #170 - Arrays are now pretty-printed instead of Array.toString
+
+1.6.M02 (2011-12-16)
+--------------------
+o Added allShortestPaths
+o Added COALESCE
+o Added column aliasing with AS
+o Variable length relationships can now introduce a rel-iterable
+o BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
+o BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator. 
+o Fixed problems with optional graph elements
+
+1.6.M01 (2011-11-24)
+--------------------
+o Made zero length (a single node) paths possible
+o Skip, limit and regular expressions can now be parameterized
+o Column order is now preserved
+o Distinct and order by can now be used at the same time
+o Paths can now be optional
+o Execution plans can now be pretty printed
+o Solved a bug when using multiple regular expressions in the same query
+o Added the extract function
+
+1.5 (2011-10-18)
+----------------
+o Added DISTINCT for all aggregate functions
+o Nodes/relationships can be parameters as well
+
+1.5.M02 (2011-10-10)
+--------------------
+o Relationships can now be optional
+o Added new predicated for iterables: ALL/ANY/NONE/SINGLE
+o Added path functions: NODES/RELATIONSHIPS/LENGTH
+o Parameters for literals, index queries and node/relationship id
+o Shortest path added
+o Pattern matcher will, if possible, eliminate subgraphs early, by using the predicates from the WHERE clause
+o Relationships can be bound now
+o Added IS NULL for NULL checking
+o Added new aggregate function - COLLECT
+
+1.5.M01 (2011-08-31)
+--------------------
+o Added paths
+o Changed r.TYPE to type(r)
+o Variable length path supported
+
