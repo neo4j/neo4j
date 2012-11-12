@@ -1,0 +1,1 @@
+Bundle-Activator: ${bundle.namespace}.impl.osgi.OSGiActivator

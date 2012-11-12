@@ -1,0 +1,40 @@
+
+.workarea#visualization-settings
+  .pad
+    .span-half
+      :if isInCreateMode
+        %h2 Create new visualization profile
+        %input.big(id="profile-name" type="text" placeholder="Enter a name for this profile")
+        
+      :if !isInCreateMode
+        %h2 Manage visualization profile
+        %input.big(id="profile-name" type="text" value="#{htmlEscape(name)}" placeholder="Enter a name for this profile")
+        
+    .span-half.last
+      %ul.button-bar.data-toolbar
+        %li
+          %button.button.save Save
+        %li
+          %button.button.cancel Cancel
+  
+    .break
+  
+  .styleRulesWrap
+    .span-half
+      .headline-bar.pad
+        %h2 Style rules
+        .form-help-text
+          Each style rule controls how either all nodes, or a filtered subset of nodes, should look in the visualization. The first matching style rule will be used, you can re-order the rules with the drag-handle under the each rules' Remove button.
+      .break
+    .break
+    %ul.styleRules
+    .button-bar.pad
+      %button.button.addStyleRule Add style rule
+      .break
+  
+  %ul.button-bar.pad
+    %li
+      %button.button.save Save
+    %li
+      %button.button.cancel Cancel
+  

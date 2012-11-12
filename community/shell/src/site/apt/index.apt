@@ -1,0 +1,6 @@
+Neo4j Shell
+
+     A generic Neo4j command shell which you can use to do simple interactions
+     in a running graph database service instance or (by pointing it to a
+     Neo4j store directory) load a graph and browse around in it. 
+

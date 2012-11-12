@@ -1,0 +1,11 @@
+Neo4j Lucene Index
+
+	Integration layer between Neo4j and Lucene, providing one possible implementation
+	of the Index API. Implements the <<<IndexProvider>>> extension from the Neo4j kernel
+	and provides <<<Index>>> instances with lucene as backend.
+    
+	This implementation is the default to use as a backend for an index if no provider
+	is specified. The provider name is "lucene".
+	
+	See {{{http://docs.neo4j.org/chunked/snapshot/indexing.html}the documentation}} for more information.
+

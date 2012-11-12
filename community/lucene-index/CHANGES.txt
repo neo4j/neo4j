@@ -1,0 +1,138 @@
+1.6 (2012-01-19)
+----------------
+o Fixed a ConcurrentModificationException problem when rotating logs and listing store files.
+
+1.6.M03 (2012-01-12)
+--------------------
+o Upgraded to Lucene version 3.5.
+o Implemented the new Index#putIfAbsent.
+
+1.6.M02 (2011-12-16)
+--------------------
+o Better AddRelationshipCommand#toString and added script for dumping index logs
+o Added tests to ensure that the host header is used when creating link URIs in responses
+o Fix auto indexing bug on removal of non-loaded heavy properties
+
+1.6.M01 (2011-11-24)
+--------------------
+o Added LRU cache for open indexes so that a limit can be set. Thanks vivekprahlad (github id) for the patch.
+o When using ImpermanentGraphDatabase RAMDirectory is used instead of FSDirectory. Useful for speed during testing.
+o Added a LowerCaseKeywordAnalyzer to use for having an exact case-insensitive index.
+
+1.5.M02 (2011-10-10)
+--------------------
+o Fixed an issue where null would be returned for consecutive calls after it got an initial
+  IllegalStateException (if snapshoting an empty index)
+
+1.5.M01 (2011-08-31)
+--------------------
+o Auto indexing hooks in on each operation instead of transaction events.
+o Fixed an issue where some not-yet-instantiated indexes wouldn't be copied during a full backup.
+o Fix for numeric values not being indexed properly in batch inserter.
+
+1.4 (2011-07-08)
+----------------
+o Fix for numeric values not being indexed properly in fulltext indexes.
+
+1.4.M05 (2011-06-27)
+--------------------
+o Added the tests and documentation for auto indexing
+
+1.4.M04 (2011-06-09)
+--------------------
+o The LuceneBatchInserterIndex now accepts a batch size (defaults to 50K) after which
+  it automatically commits, as a way of dealing with out-of-memory issues.
+
+1.4.M03 (2011-05-26)
+--------------------
+o Moved LuceneIndexProvider to public package to work better with OSGI.
+o Tweaked lucene batch inserter settings for better performance.
+
+1.4.M02 (2011-05-12)
+--------------------
+o Upgraded lucene version to 3.1
+
+1.3.M05 (2011-03-24)
+--------------------
+o Updated documentation
+o Moved QueryContext and ValueContext to be part of API
+
+1.3.M04 (2011-03-10)
+--------------------
+o Fixed an issue where batch inserter indexes would ignore numeric values.
+o Fixed an issue which could result in batch inserted indexes trying to grab too much memory.
+
+1.3.M03 (2011-02-24)
+-------------------
+o Fixed a bug where the use of ValueContext was ignored during batch insertion.
+o Added some more convenient Index#remove methods.
+
+1.3.M02 (2011-02-10)
+------------------------
+o Broke neo4j-shell dependency.
+o Fixes a bug with the execution of RemoveCommand that could cause NPE during recovery.
+o Added a timeline index implementation based on lucene.
+o Uncommitted changes to index can now be searched within the same transaction.
+
+0.5-1.3.M01 (2011-01-27)
+------------------------
+
+o Can participate in online backups, where the full index files are requested.
+o Fix for a NPE that could occur in IndexHits#size() if that was the first method called on the instance.
+o Fix for a recovery issue which occured when there had only been modifications to relationship indexes.
+o IndexHits#close() is run in the finalizer as a safety net, although best practice is to call it your self.
+
+0.2-1.2 (2010-12-29)
+--------------------
+
+o No changes.
+
+0.2-1.2.M06 (2010-12-21)
+------------------------
+
+o More flexible caching (can instantiate an arbitrary Cache object).
+
+o Merged the fast-writes branch. Basically it makes committing changes to lucene indexes
+  faster and more throughput-friendly for multiple threads. The performance improvement
+  for committing lucene transactions shows best for small transactions, but will improve
+  all modifying operations to lucene indexes.
+
+o Fixed bug which could close an IndexSearcher before it was supposed to when
+  there was exactly one item in the result set, two or more threads did this at
+  the same time as there was another thread doing an update... AND the reading
+  threads all called IndexHits#getSingle() on the result.
+
+
+0.2-1.2.M05 (2010-12-02)
+------------------------
+
+o Added IndexHits#currentScore which exposes the most recently fetched
+  IndexHits item's score from the search, if any.
+
+0.2-1.2.M04 (2010-11-18)
+------------------------
+o Index configuration handling moved to IndexManager (graphDb.index()) and added
+setConfiguration/removeConfiguration which can modify index configuration, but
+could render existing index data invalid if wrong settings are modified, so
+consider those advanced.
+
+o Made config recognition more flexible for forNodes(indexName,config) and
+forRelationships(indexName,config) so that the config can contain differences,
+just as long as they yield the same storage format.
+
+0.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Added support for modifying index configurations as well as listing
+  and deleting indexes and index configurations.
+
+-API
+o Added Index#getName() and Index#getConfiguration()
+o Added IndexManager#nodeIndexNames() and #relationshipIndexNames()
+
+0.2-1.2.M02 (2010-10-21)
+------------------------
+
+o Moved to be an official and supported neo4j component.
+o The Index API moved to kernel, this component merely provides an
+  implementation.

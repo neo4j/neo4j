@@ -1,0 +1,76 @@
+<!--
+
+    Licensed to Neo Technology under one or more contributor
+    license agreements. See the NOTICE file distributed with
+    this work for additional information regarding copyright
+    ownership. Neo Technology licenses this file to you under
+    the Apache License, Version 2.0 (the "License"); you may
+    not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<assembly>
+  <id>download</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <!-- DOCS -->
+  <includeSiteDirectory>true</includeSiteDirectory>
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+  <fileSets>
+    <!-- SRC -->
+    <fileSet>
+      <directory>src/main/java</directory>
+      <outputDirectory>examples</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>src/test/java</directory>
+      <outputDirectory>tests</outputDirectory>
+    </fileSet>
+    <!-- INFO -->
+    <fileSet>
+      <includes>
+        <include>README*</include>
+        <include>CHANGES*</include>
+        <include>LICENSE*</include>
+        <include>NOTICE*</include>
+      </includes>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+    <!-- SHELL -->
+    <fileSet>
+      <directory>target/appassembler/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>*.bat</exclude>
+      </excludes>
+    </fileSet>
+    <!-- BAT -->
+    <fileSet>
+      <directory>target/appassembler/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0644</fileMode>
+      <includes>
+        <include>*.bat</include>
+      </includes>
+    </fileSet>
+    <!-- LIB -->
+    <fileSet>
+      <directory>target/appassembler/lib</directory>
+      <outputDirectory>lib</outputDirectory>
+      <includes>
+        <include>*.jar</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

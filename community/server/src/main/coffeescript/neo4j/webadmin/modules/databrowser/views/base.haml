@@ -1,0 +1,33 @@
+.workarea
+  .controls.pad
+    .span-half.data-console-wrap
+      %input#data-console(value="#{htmlEscape(query)}" type="text")
+      #data-execute-console.icon-button(title="Search")
+        %span.icon
+            
+      .form-tooltip
+        %a(href="#")
+          %span.form-tooltip-icon
+          %span.form-tooltip-text <b>Shortcuts:</b><br /><b>s</b> - Highlight search bar</br><b>v</b> - Toggle between visualizer and tabular view<br /><br /><b>Search bar syntax:</b><br /><b>Cypher:</b> [any cypher query]<br /><b>Get node:</b> [node id]<br /><b>Get relationship:</b> rel:[relationship id]<br /><b>Get relationships for node:</b> rels:[node id]<br /><br /><b>Indexes</b><br /><b>Search nodes</b> node:index:[index]:[query]<br /><i>Example: node:index:myindex:name:*</i><br /><b>Search relationships:</b> rel:index:[index]:[index query]<br /><b>Direct node lookup</b> node:index:[index]:[key]:[value]<br /><b>Direct relationship lookup</b> rel:index:[index]:[key]:[value]
+    .span-half.last
+      %ul.data-toolbar.button-bar
+        %li
+          #data-create-node.text-icon-button(title="Create a node")
+            %span.icon
+            Node
+        %li
+          #data-create-relationship.text-icon-button(title="Create a relationship")
+            %span.icon
+            Relationship
+        :if viewType === "tabular"      
+          %li
+            #data-switch-view.icon-button(title="Switch view mode")
+              %span.icon
+        :if viewType !== "tabular"      
+          %li
+            #data-switch-view.icon-button(title="Switch view mode")
+              %span.icon.tabular
+
+    .break
+
+  #data-area

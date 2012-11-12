@@ -1,0 +1,78 @@
+NEO4J-SHELL(1)
+==============
+:author: The Neo4j Team
+
+NAME
+----
+neo4j-shell - a command-line tool for exploring and manipulating a graph database
+
+
+[[shell-manpage]]
+SYNOPSIS
+--------
+*neo4j-shell* ['REMOTE OPTIONS']
+
+*neo4j-shell* ['LOCAL OPTIONS']
+
+[[shell-manpage-description]]
+DESCRIPTION
+-----------
+Neo4j shell is a command-line shell for browsing the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
+The shell can connect directly to a graph database on the file system.
+To access local a local database used by other processes, use the readonly mode.
+
+[[shell-manpage-remote-options]]
+REMOTE OPTIONS
+--------------
+*-port* 'PORT'::
+  Port of host to connect to (default: 1337).
+
+*-host* 'HOST'::
+  Domain name or IP of host to connect to (default: localhost).
+
+*-name* 'NAME'::
+  RMI name, i.e. rmi://<host>:<port>/<name> (default: shell).
+
+*-readonly*::
+  Access the database in read-only mode.
+  The read-only mode enables browsing a database that is used by other processes.
+
+[[shell-manpage-local-options]]    
+LOCAL OPTIONS
+--------------
+*-path* 'PATH'::
+  The path to the database directory.
+  If there is no database at the location, a new one will e created.
+
+*-pid* 'PID'::
+  Process ID to connect to.
+
+*-readonly*::
+  Access the database in read-only mode.
+  The read-only mode enables browsing a database that is used by other processes.
+
+*-c* 'COMMAND'::
+  Command line to execute. After executing it the shell exits.
+
+*-config* 'CONFIG'::
+  The path to the Neo4j configuration file to be used.
+
+[[shell-manpage-examples]]
+EXAMPLES
+--------
+
+Examples for remote:
+....
+  neo4j-shell
+  neo4j-shell -port 1337
+  neo4j-shell -host 192.168.1.234 -port 1337 -name shell
+  neo4j-shell -host localhost -readonly
+....
+
+Examples for local:
+....
+  neo4j-shell -path /path/to/db
+  neo4j-shell -path /path/to/db -config /path/to/neo4j.config
+  neo4j-shell -path /path/to/db -readonly
+....
+

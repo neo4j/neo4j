@@ -1,0 +1,26 @@
+[[query-aggregation]]
+Aggregation
+===========
+
+To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
+If any aggregation functions are found in the +RETURN+ statement, all the columns without aggregating functions are used as the grouping key.
+
+
+include::cypher-aggregation-graph.txt[]
+
+== COUNT ==
++COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms - +COUNT(*)+
+which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts
+the number of non-null values in +<identifier>+.
+
+include::count-nodes.txt[]
+include::group-count-relationship-types.txt[]
+include::count-entities.txt[]
+include::count-non-null-values.txt[]
+
+include::sum.txt[]
+include::avg.txt[]
+include::max.txt[]
+include::min.txt[]
+include::collect.txt[]
+include::distinct.txt[]

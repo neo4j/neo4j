@@ -1,0 +1,126 @@
+["dot", "The-Domain-Structure-ACL-structures-in-graphs.svg", "neoviz"]
+----
+subgraph clusterFiles{
+style=invis
+node [fontsize=16]
+edge [arrowsize=1, color=red];
+N20 -> N17 [
+  label = "leaf\n"
+]
+
+N23 [
+   label = "{Node\[23\]|'name' = 'Desktop'}"
+ ]
+ N23 -> N16 [
+   label = "leaf\n"
+ ]
+N20 [
+  label = "{Node\[20\]|'name' = 'HomeU1'}"
+]
+N10 [
+  label = "{Node\[10\]|'name' = 'Home'}"
+]
+N10 -> N20 [
+  label = "contains\n"
+]
+N10 -> N15 [
+  label = "contains\n"
+]
+N11 [
+  label = "{Node\[11\]|'name' = 'init.d'}"
+]
+N12 [
+  label = "{Node\[12\]|'name' = 'etc'}"
+]
+N12 -> N11 [
+  label = "contains\n"
+]
+N15 [
+  label = "{Node\[15\]|'name' = 'HomeU2'}"
+]
+N15 -> N23 [
+  label = "contains\n"
+]
+N16 [
+  label = "{Node\[16\]|'name' = 'File2'}"
+]
+N17 [
+  label = "{Node\[17\]|'name' = 'File1'}"
+]
+N18 [
+  label = "{Node\[18\]|'name' = 'FileRoot'}"
+]
+N18 -> N10 [
+  label = "contains\n"
+]
+N18 -> N12 [
+  label = "contains\n"
+]
+
+
+}
+ subgraph clusterUsers {
+ style=invis
+ node [fontsize=16]
+ bgcolor=white; 
+ N7 [
+   label = "{Node\[7\]|'name' = 'User'}"
+ ]
+ N7 -> N14 [
+   label = "member\n"
+ ]
+ N7 -> N13 [
+   label = "member\n"
+ ]
+ N8 [
+   label = "{Node\[8\]|'name' = 'Admin2'}"
+ ]
+ N9 [
+   label = "{Node\[9\]|'name' = 'Admin1'}"
+ ]
+ N13 [
+   label = "{Node\[13\]|'name' = 'User2'}"
+ ]
+ N13 -> N16 [
+   label = "owns\n"
+ ]
+ N14 [
+   label = "{Node\[14\]|'name' = 'User1'}"
+ ]
+ N14 -> N17 [
+   label = "owns\n"
+ ]
+ N21 [
+   label = "{Node\[21\]|'name' = 'Role'}"
+ ]
+ N21 -> N22 [
+   label = "subRole\n"
+ ]
+ N21 -> N7 [
+   label = "subRole\n"
+ ]
+ N22 [
+   label = "{Node\[22\]|'name' = 'SUDOers'}"
+ ]
+ N22 -> N9 [
+   label = "member\n"
+ ]
+ N22 -> N8 [
+   label = "member\n"
+ ]
+ N22 -> N18 [
+   label = "canRead\n"
+ ]
+ 
+ }
+ N19 [
+   label = "{Node\[19\]|'name' = 'Root'}"
+ ]
+
+ N19 -> N21 [
+   label = "has\n"
+ ]
+ N19 -> N18 [
+   label = "has\n"
+ ]
+----

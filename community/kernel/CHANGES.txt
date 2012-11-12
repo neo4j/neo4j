@@ -1,0 +1,472 @@
+1.6.1.RC2 (2012-02-01)
+---------------------
+o Many bug fixes around log rotation and transaction handling that led to corruption issues.
+o Bug fix around race condition in the cache that led to corruption of the store.
+o Performance optimizations around transaction extraction
+
+
+1.6 (2012-01-19)
+----------------
+o Minor performance optimization in property handling code.
+
+1.6.M03 (2012-01-12)
+--------------------
+o Added means of introspecting locks taken by the LockManager.
+o Added a diagnostics API.
+o Added Index#putIfAbsent which ensures uniquely put key/value pair for an entity.
+o Added UniqueFactory which gets or creates entities uniquely using Index#putIfAbsent
+o Fixed an issue with upgrading an 1.5.M02 store where a "store version" record wouldn't be added and which caused problems after non-clean shutdown.
+o Fixed an issue where sometimes dual start entries for a transaction would be added in the logical log.
+
+1.6.M02 (2011-12-16)
+--------------------
+o Lower memory usage of ImpermanentGraphDatabase.
+o Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
+o Fixed a race condition in the property cache which cuold poison the cache.
+o Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical log without
+  incrementing the logVersion, making the next log rename fail.
+o Start records in the logical log aren't written until the transaction starts preparing/committing. This fixes an issue
+  with the logical log not being rotated sometimes.
+o Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction to be "unforced"
+  meaning that logical logs won't be forced when committing. Means better performance for small non-critical transactions.
+o Reduced number of proxy object instantiation and node record loading in general.
+o Added a wrapping graphdb abstraction, which makes instances survive even if the underlying db restarts.
+o Detached LogExtractor from XaLogicaLog so that it can be used without having a db running.
+o Added an API for progress indication. With a default implementation that prints dots (every 0.5%) and percentages
+  (every 10%) to a PrintStream.
+o Added Transaction#acquire{Read,Write}Lock for manually grabbing locks on nodes/relationships. Such locks can also be released earlier than tx.finish.
+
+1.6.M01 (2011-11-24)
+--------------------
+o ImpermantentGraphDatabase now uses purely in-memory structures for speed during tests. It's done on a FileChannel level
+  so that every other aspect of the database is intact, just that the bytes end up in ByteBuffers instead of files.
+o Fixed an issue with evaluators not executing correctly for the start node of a traversal.
+o Fixed an issue with BufferOverflowException thrown sometimes during extraction of prepared transactions.
+o Added graph properties, i.e. properties that belongs to the graph itself as opposed to a specific node or relationship.
+  Useful for extensions which would like to store configuration and what not.
+o Better multi-line support in shell, as well as case insensitive app names.
+o GraphDatabaseService#getAllNodes and #getRelationshipTypes @Deprecated and moved to GlobalGraphOperations class,
+  where also #getAllRelationships is implemented.
+
+1.5 (2011-10-18)
+----------------
+o Bug fixes for batch inserter and migration regarding new store format.
+o Incremented log format version and added store version as a record in NeoStore for extra safety regarding migration.
+o Lots of useful system/environment logging added to messages.log to help investiation of problems immensely.
+
+1.5.M02 (2011-10-10)
+--------------------
+o Changes in 1.4.2
+o [STORE FORMAT CHANGE] New layout of the property store(s) which results in roughly a 30% reduction in size on disk as well as fewer I/O read operations for reading properties.
+
+1.4.2 (2011-09-27)
+------------------
+o Fixed bug where properties could temporarily disappear from cache if adding/removing properties on an entity in the same tx.
+o Removed XaLogicalLog#getCommittedTransaction, which focused on extracting a single transaction and instead implemented getLogExtractor.
+  It returns a LogExtractor which extracts transactions and keeps state after each extracted tx making it ideal to extract tx ranges.
+  The implementation has got very limited and short-lived synchronization blocks.
+o Fixed an issue where XaLogicalLog#applyCommittedTransaction didn't check log rotation.
+o Fixed some issues with updating tx start position cache on log rotation.
+o Keeping of logical logs is enabled if previous logs are discovered and configuration not explicitly disallowing it.
+o Added DumpLogicalLog for index logs.
+o Added an kernel panic event about TxManager set to "not OK" (and isn't able to begin any new transaction).
+
+1.5.M01 (2011-08-31)
+--------------------
+o Changes in 1.4.1
+o Auto indexing hooks in on each operation instead of transaction events.
+o Fixed an issue where logical logs wouldn't be rotated if all transactions happened via applyPreparedTransaction (as in HA).
+o Several recovery fixes which could produce an invalid state of the log files after a 2PC recovery.
+o Loosened some synchronized regarding applying and getting committed transactions.
+o Transaction semantics regarding call to success after failure was sync:ed with documentation.
+o messages.log is rotated at 100Mb (configurable) and keeps at most three history files.
+o Fixed bug where XaLogicalLog#applyTxWithoutTxId wouldn't force the logical log.
+o Removed synchronization on TransactionImpl#toString() to avoid a deadlock issue.
+o Fixed bug in StringLogger where it would stop logging to the underlying writer if an I/O error occurred or it was intermittently closed.
+
+1.4.1 (2011-08-02)
+------------------
+o Improved file lock for an open database. Previously the file lock could be released after a full backup.
+o Fixed a NPE exception during committing relationships to a NodeImpl representation.
+o Fixed a data visibility issue for properties on newly created entities.
+o Fixed a data visibility issue for relationships for nodes that didn't have the full relationship chain loaded.
+o Fixed an issue where deleted relationships could be visible too long within the transaction deleting them.
+o More relevant logging in messages.log.
+
+1.4 (2011-07-08)
+----------------
+o Fixed a bug in TxLog which sometimes wouldn't write out data to the log file properly during shutdown.
+
+1.4.M05 (2011-06-22)
+--------------------
+o Improved performance for recovery and extract of transaction when running HA using buffered reads to log.
+o Fixed bug that returned wrong representation of cached values for longs and ints.
+o Fixed bug with spurious wakeups that could cause threads to receive interrupts by the kernel in wrong context.
+o Fixed invalidation problem where there were more than one iterator loading a relationship chain lazily.
+o Changed ordering of writes for records during commit to make sure other transactions can't read inconsistent state.
+o Fixed performance bug when loading relationship chains that caused the arrays to be resized to many times.
+
+1.4.M04 (2011-06-10)
+--------------------
+o Added the ability to auto index properties for database primitives
+o Locks on database primitives acquired by neostore XAResources are now released during afterCompletion()
+  of the global transaction. This allows for nodes and relationships to be used as monitors in distributed
+  settings. 
+
+1.4.M03 (2011-05-26)
+--------------------
+o Kernel now supports self relationships or "loops".
+o Added new relationship direction aware cache on nodes speeding up traversals by direction.
+o Reduced memory usage by relationships.
+o Reduced call stack removing the EventConsumer/ResourceConnection wrappers glue between nioneo and kernel.
+o Fixed bug in global tx log that did not mark transactions finished when closed then crashed.
+o Fixed cache invalidation when applying external transaction.
+
+1.4.M02 (2011-05-12)
+--------------------
+o Changed the default implementation of the logical log to a DirectMappedLogBuffer.
+o Changed the TxLog to use a DirectMappedLogBuffer instead of its ad hoc implementation.
+o Added a configuration parameter (Config.USE_MEMORY_MAPPED_LOG) for controlling the log implementation (mmapped vs buffered)
+  separately from the store files with a default value of 'false'.
+  
+1.3.M05 (2011-03-24)
+--------------------
+o Added support for HA and backup on Windows.
+o Updated index API documentation.
+
+1.3.M04 (2011-03-10)
+--------------------
+o A database can now contain 32 billion nodes/relationships and 64 billion properties.
+o Fixed some issues with files not being closed, which also makes all tests pass on Windows.
+
+1.3.M03 (2011-02-24)
+--------------------
+o Incremental and full backups can now be performed over the network (configurable port) using backup tool.
+o Added optimized (compressed) storage for short strings.
+o Refactored KernelExtension to make it easier to write implementations that follow the contract.
+o Some refactorings and improvements around logging.
+
+1.3.M02 (2011-02-10)
+-----------------------
+o Fixed a write performance bug in rotate of logical log.
+o Modified persistence window allocation to be more optimistic when expanding a store file.
+
+1.3-1.3 (2011-01-27)
+--------------------
+
+o Fix for a traverser issue where the first relationship could sometimes be skipped when choosing to traverse over relationships.
+o Added SubProcess concept to ease development of tests which spawns other JVMs.
+o More memory efficient extraction of transaction streams from logs.
+o Better and safer upgrades from older index store formats.
+
+1.2-1.2 (2010-12-29)
+--------------------
+o Made it possible to detect if recovery was performed as part of startup of the current instance.
+o Fix for an issue that sometimes excluded the first relationship when iterating over the relationships of a traversal.
+
+1.2-1.2.M06 (2010-12-21)
+------------------------
+- Fixed an issues with PruneEvaluators getting invoked with the start node as argument.
+PruneEvaluators was never invoked with the start node before the arrival of Evaluator interface.
+- Added logging of recovery completion.
+- Added TransactionData#isDeleted(Node) and #isDeleted(Relationship) and also made
+the collection to hold these a HashSet instead of ArrayList. This allows fast
+lookups for asking if a node/relationship is deleted in a transaction.
+- More flexible caching (can instantiate an arbitrary Cache object).
+
+1.2-1.2.M05 (2010-12-02)
+------------------------
+
+-API
+o Added a BatchInserterIndex.setCacheCapacity(String key, int size) method
+  which can be used to enable cache for certain keys for a batch inserter
+  index so that lookups will be significantly faster.
+o Traversal: Added Evaluator which is a merge between PruneEvaluator and
+  filter (Predicate<Path> during traversal). This allows for more flexible
+  evaluators and also more performant because a pruner/filter can be merged
+  together where it has a full view of the decision making.
+
+-Optimizations
+o A memory leak was fixed, leading to decreased memory usage.
+
+1.2-1.2.M04 (2010-11-18)
+------------------------
+
+o Added ImpermanentDatabase to aid in testing
+
+o Better toString method
+
+1.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Monitoring/management over JMX was moved to the neo4j-management component.
+
+-API
+o Added ability to get the names of existing integrated indexes:
+  o Index#getName() and Index#getConfiguration()
+  o IndexManager#nodeIndexNames() and #relationshipIndexNames()
+o Added utility to expand traversals using a relationship type in any direction:
+  o Traversal.expanderForTypes(RelationshipType)
+
+1.2-1.2.M02 (2010-10-21)
+------------------------
+
+o HA branch merged into trunk
+o Made the "soft reference" cache type default.
+
+-New features
+o Added GraphDatabaseService#index() which exposes an integrated index framework.
+
+-Optimizations
+o Getting relationships requires less cache lookups and is therefore faster.
+
+1.2-1.2.M01 (2010-10-08)
+------------------------
+
+-New features
+o Kernel extensions - additional services for the Neo4j Kernel are loaded
+  automatically if they are present on the classpath.
+o The ability to inject Kernel extensions in a running instance through JVM
+  agents. This is used for loading the shell on an running instance.
+
+-API
+o Traversal: Uniqueness is now instantiated through a factory, with
+  the previous enum (moved to org.neo4j.kernel) as default implementation.
+o Filters in a traversal description are additive (just as PruneEvaluators).
+
+-Bug fixes
+o Circumvented the fact that Class.forName() sometimes throws a
+  NoClassDefFoundError instead of ClassNotFoundException.
+
+-Optimizations
+o NodeImpl/RelationshipImpl takes less memory since they no longer have
+  reference to NodeManager.
+o Fixed some low-level throughput/concurrency issues.
+o Added (default) weak reference cache option. Control with f.ex. "cache_type=weak"
+
+1.1 (2010-07-29)
+----------------
+
+-New features
+o Auto configuration by looking at available RAM and heap.
+o New event framework, see http://wiki.neo4j.org/content/Event_framework
+o JMX enabled kernel.
+o New traversal framework, see http://wiki.neo4j.org/content/Traversal_Framework
+o Block size for strings and arrays are now configurable when creating a new db.
+o Read only operations can now execute without a transaction.
+
+-API
+o Added a method to get the GraphDatabaseService on Node and Relationship.
+o Moved the commons component utilities into kernel component, 
+  see helpers package.
+
+-Bug fixes
+o Fixed issues with logical log and active log that could cause recovery 
+  to throw an exception.
+o Fixed buffer overflow for large string/array properties.
+o Fixed bug that could cause leak of NodeImpl.
+
+
+1.0 (2010-02-16)
+----------------
+
+-API 
+o Updated javadoc.
+
+-Bug fixes
+o Fixed leak of non committed property changes to other transactions.
+o Fixed cache duplication bug of relationships.
+o Fixed problem that could cause other exception to be thrown than 
+  NotFoundException on getNodeById/RelationshipById.
+o Fixed problem with recovery when LuceneFulltextIndex entries existed 
+  in global transaction log.
+o BatchInserter now throws exception when trying to create a relationship
+  with same start and end node.
+o Fixed problem with broken entries in logical log that could cause recovery 
+  to throw an exception.
+
+1.0-rc (2010-01-10)
+------------------
+
+o API: moved API to org.neo4j.grapdb and implementation to 
+  org.neo4j.kernel.impl
+
+1.0-b11 (2009-12-27)
+--------------------
+
+- Minor Enhancements, changes and tweaks
+o Removed compile-time dependency on shell component.
+o Batch inserter now has a NeoService version.
+o Minor tweak of concurrency characteristics of array map implementation.
+
+-Bug fixes
+o Fixed problem with half entries in global tx log (due to full disk).
+o Fixed some bugs in batch inserter.
+
+1.0-b10 (2009-11-02)
+--------------------
+
+-Enhancements, new features and major changes
+o Core: Read-only mode. It is now possible to start multiple read only 
+  NeoServices to the same store (using EmbeddedReadOnlyNeo).
+o Core:  Improved depth first traversal speed on nodes with many 
+  relationships by loading relationships on demand. This will also
+  reduce the stress on GC when traversing over a node with many
+  relationships since much fewer objects will be created.
+
+-Minor enhancements, changes and tweaks
+o Core: Faster rebuild of id generators after a crash
+o Core: Exception cleanup removing bad code either catching Throwable or 
+  throwing RuntimeException.
+o Core: Fixed so a read only NeoService can apply a logical log from a 
+  backup.
+
+-Bug Fixes
+o Fixed a bug when using plain buffers instead of memory mapped ones that 
+  could case recovery to fail due to buffers not being flushed properly.
+
+
+1.0-b9 (2009-08-14)
+-------------------
+
+-Enhancements
+o Core: New 'batch insert' mode, see http://wiki.neo4j.org/content/Batch_Insert,
+  typically used for initial import of bulk data.
+o Core: Added a "Windows mode" that uses plain Java buffers instead of mmap().
+o Core: Expanded id space for all primitives by adding one more bit.
+o Core: Read only transactions have been optimized to have much less overhead.
+o Core: New cache implementation based on soft references, which employs faster
+  gets and is more concurrent and memory efficient.
+o Core: OSGi enabled [thanks Andreas Kollegger]
+
+-Minor enhancements, changes and tweaks
+o Shell: Added a traverser command for creating custom traversers.
+o Shell: Added support of setting and listing array types.
+o Shell: "cd" command can now position itself on a relationship.
+o Shell: Output of "man" command has been improved.
+
+-Bug fixes
+o Core: Fixed all known batch inserter bugs.
+o Core: Fixed a bug that could cause multiple remove of same property to fail
+  (should just return null if it doesn't exist).
+
+
+1.0-b8 (2009-05-03)
+-------------------
+
+-Enhancements, new features and major changes
+o API: Added NeoService.getAllNodes for iterating across the entire node space
+  and getRelationshipTypes() to get all reltypes in the underlying store.
+o Core: Added logical log rotation and online-backup core features.
+o Core: Reduced memory footprint and object allocation.
+o Core: Moved all constraint checks to nioneo resulting in performance increase.
+o Core: Improved traversal speed reworking set oriented caches to use arrays.
+
+-Smaller enhancements, changes and tweaks
+o API: Added a convenience implementation ofRelationshipType for dynamically
+  created and named relationship types: DynamicRelationshipType.
+o API: Deprecated PropertyContainer.getPropertyValues() to be removed in later
+  releases.
+o Core: Removed event manager dependency since it needs a rewrite (event
+  generation still to be completely specified).
+o Core: Transaction events have been removed, need proper specification.
+o Core: Removed read lock on loading of non-cached node/relationship,
+  replaced with reentrant lock stripe.
+o Core: Persistence row windows in nioneo now only load data if acquired for 
+  read operation.
+o Core: Upgraded to JTA 1.1
+o Core: Improved some error messages.
+o Core: EmbeddedNeo.toString now reports object id and neo store path.
+o Core: Cleaned up logging messages during recovery.
+o Core: Increased default block size for string and array stores to better
+  fit avg. data sets out there.
+
+-Bug fixes
+o Core: Fixed missing close on TM's active log file.
+o Core: A bug with copy on write "diff" maps that could cause wrong cached value 
+  to be read (for both properties and relationships) has been fixed.
+o Core: Fixed an issue with non committed properties/relationships
+  modifications leaking to other transactions (in cache layer during cache 
+  resize).
+o Core: Fixed bug in property index manager that could cause created index
+  not to be published at the right time.
+o Core: Fixed bug that allowed for relationship/property loads on deleted
+  node (in same tx).
+o Core: Fixed some bugs caused by use of JTA tx synchronization hooks (we can't 
+  use them when ordering is required).
+o Core: Fixed bug with relationship type store not handling "holes" correctly.
+o Core: Fixed problem with multiple calls to close() on XaDataSources
+o Core: Removed use IOException( Throwable ) since it is not in Java 1.5
+o Core: Parsing of memory mapped settings can now handle G (1024*1024*1024).
+o Core: Fixed silent catch of NotFoundException in traverser implementation.
+
+-Notes
+o Testing on Windows Vista platform has revealed a strange performance
+  degradation for b8 that we've yet to find the cause of. The problem becomes
+  more visible when running many concurrent transactions/threads hammering
+  requests to Neo (10x performance decrease has been observed on same hardware).
+  For production systems we recommend using GNU Linux or Solaris OS with Sun's
+  1.6 JVM for best performance.
+
+
+1.0-b7 (2008-09-29)
+------------------
+
+o API: Removed a number of deprecated methods (primarily for relationship type
+  management) from EmbeddedNeo as per warning in the previous release.
+o API: Transaction is now an interface.
+o API: TraversalPosition now has an isStartNode() method.
+o API: NotFound and NotInTransaction runtime exceptions have been moved from
+  internal impl package to the api package.
+o API: getRelationshipById is now exposed in NeoService.
+o API: A common base interface for Node and Relationship has been added that
+  contains the set/get/remove property operations.
+o Core: Made it easy to embed Neo4j in a Spring application. Spring can also be 
+  configured to use Neo4j's transaction manager.
+o Core: All known bugs have been fixed.
+o Core: Removed singletons and made everything IoC.
+o Core: Lots of minor optimization and improvements above native store
+  layer (nioneo).
+o Core: Cleanup of code (removed non used code) and improved exception handling.
+o Core: Improved read performance and parallelism by implementing MVCC-like 
+  features. No locks are now taken during read-only operations, instead
+  concurrent operations are working against snapshot versions. Rather than full
+  versioning, for higher performance diffs are kept and applied to the right
+  transactions (those that have modified data). Result is that read operations
+  will execute taking no locks, make full use of what has already been cached
+  and can execute concurrently with a transaction that modify the same data.
+  Write operations will take locks and use diffs instead of full copy on write
+  (this proved to be faster and scale better than actually doing a in memory
+  copy of the required data).
+
+
+1.0-b6 (2007-11-19)
+-------------------
+
+o API: Added a NeoService interface that EmbededNeo implements. Left a number
+  of methods in EmbeddedNeo for backwards compatibility. They will be removed
+  the next release.
+o API: Changed relationship types to be dynamic, i.e. created in underlying
+  store when they are first used. This means that clients won't have to
+  register them with EmbeddedNeo at startup.
+o API: The semantics of relationship type equivalence has changed from being
+  based strictly on object identity to being based on name() equality.
+o API: A a new method isType() has been added to Relatinship. Due to the less
+  intuitive ways to check reltype equivalence, it's the prefered way to check
+  whether a relationship is of a particular type.
+o API: Added convenience methods hasRelationship(...) to Node.
+o API: Added a convenience method notStartNode() to TraversalPositions to
+  clean up the code (less cumbersome null-checks for edge cases) for evaluator
+  implementations.
+o Shell: Now detects and lists all available commands dynamically.
+o Shell: Integration with Groovy for easy evaluation of Groovy scripts.
+o Shell: Now auto-reconnects to server.
+o Shell: Polish like cleaner output, filters to ls and bash-style prompt with
+  variable expansion.
+o Core: Lots of performance tweaks and improvements.
+o Core: The internal version of the datastores have been changed. This release
+  will transparently upgrade old versions of the store files so there's nothing
+  manual involved. But after that, previous releases of Neo won't be able to
+  read the store files.
+o Core: Testing and robustification on Windows.
+o Core: Now fully supports array properties for all primitives and Strings.

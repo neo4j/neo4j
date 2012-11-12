@@ -1,0 +1,24 @@
+[[cypher-identifiers]]
+== Identifiers ==
+
+When you reference parts of the pattern, you do so by naming them. The names you give the different parts are
+calles identifiers.
+
+In this example:
++START n=node(1) MATCH n-->b RETURN b+
+
+The identifiers are +n+ and +b+.
+
+Identifiers can be lower or upper case, and may contain underscore.
+If other characters are needed, you can use the +`+ sign.
+The same rules apply to property names.
+
+[snippet,cypher]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=Identifier
+classifier=test-sources
+----
+
+

@@ -1,0 +1,4 @@
+%select.selectList(multiple="multiple")
+  :for item in items
+    %option(value="#{htmlEscape(item.key)}") =htmlEscape(item.label)
+

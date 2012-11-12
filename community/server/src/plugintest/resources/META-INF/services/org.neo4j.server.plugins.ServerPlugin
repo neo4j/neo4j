@@ -1,0 +1,2 @@
+org.neo4j.server.plugins.FunctionalTestPlugin
+org.neo4j.server.plugins.GraphCloner

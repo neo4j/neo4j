@@ -1,0 +1,89 @@
+
+/**
+ * DATA TABLE
+ */
+
+table.data-table {
+  width:100%;
+}
+
+table.data-table tr {
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #EFEFEF;
+}
+
+table.data-table tr:nth-child(odd) {
+  background: none repeat scroll 0 0 #DDD;
+}
+
+table.data-table tr th {
+  text-align:left;
+  border-left: 1px solid #ccc !important;
+}
+
+table.data-table tr > *:first-child {
+  padding-left:10px;
+}
+
+table.data-table tr > *:last-child {
+  padding-right:10px !important;
+} 
+
+table.data-table tr td, table.data-table tr th {    
+  vertical-align: top;
+  padding: 0 10px;
+  margin: 0;
+  padding: 5px 5px;
+  border-left: 1px solid #ccc;
+}
+
+table.data-table tr:nth-child(odd) td, table.data-table tr:nth-child(odd) th {
+  
+}
+
+table.data-table h3 {
+  font-size: 16px;
+  margin: 3px 0;
+  color: #222;
+  text-shadow: 1px -1px 0 #ddd;
+}
+
+
+
+table.data-table tr td.value {
+  font-size: 14px;
+  padding: 10px 5px;
+  font-weight:bold;
+  line-height: 25px;
+}
+
+table.data-table .small {
+  text-shadow: none;
+}
+
+/**
+ * INFO TABLE
+ */
+table.info-table {
+  width:100%;
+}
+
+table.info-table tr td, table.info-table tr th {    
+  vertical-align: top;
+  padding: 0 5px 10px;
+  margin: 2px 0;
+}
+
+table.info-table tr th {
+  text-align:left;
+  padding: 6px 5px 2px !important;
+  font-size:14px;
+  font-weight:normal;
+}
+
+table.info-table tr td {
+  font-size:18px;
+  text-align:right;
+}
+

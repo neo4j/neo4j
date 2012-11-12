@@ -1,0 +1,82 @@
+[[tutorials-java-embedded-social]]
+Social network
+==============
+
+NOTE: The following example uses the new experimental traversal API.
+
+Social networks (know as social graphs out on the web) are natural to model with a graph.
+This example shows a very simple social model that connects friends and keeps track of status updates.
+
+== Simple social model ==
+
+image::socnet-model.png[title="Social network data model", scaledwidth="60%"]
+
+The data model for a social network is pretty simple: +Persons+ with names and +StatusUpdates+ with timestamped text.
+These entities are then connected by specific relationships.
+
+* +Person+
+** +friend+: relates two distinct +Person+ instances (no self-reference)
+** +status+: connects to the most recent +StatusUpdate+
+* +StatusUpdate+
+** +next+: points to the next +StatusUpdate+ in the chain, which was posted before the current one
+
+== Status graph instance ==
+
+The +StatusUpdate+ list for a +Person+ is a linked list.
+The head of the list (the most recent status) is found by following +status+.
+Each subsequent +StatusUpdate+ is connected by +next+. 
+
+Here's an example where Andreas Kollegger micro-blogged his way to work in the morning:
+
+["dot", "andreas-status-updates.svg"]
+----
+graph [rankdir="TB"]
+andreas [label="Andreas Kollegger", fillcolor="NODEHIGHLIGHT"]
+status1 [label="started designing this graph model\n9:30 am"]
+status2 [label="rode my awesome Skeppshult to work\n8:45 am"]
+status3 [label="is getting used to muesli for breakfast\n8:00 am"]
+andreas -> status1 [label="status"]
+status1 -> status2 [label="next"]
+status2 -> status3 [label="next"]
+----
+
+To read the status updates, we can create a traversal, like so:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/socnet/Person.java
+classifier=sources
+tag=getStatusTraversal
+----
+
+This gives us a traverser that will start at one +StatusUpdate+, and will follow the chain of updates until they run out.
+Traversers are lazy loading, so it's performant even when dealing with thousands of statuses - they are not loaded until we actually consume them.
+
+== Activity stream ==
+
+Once we have friends, and they have status messages, we might want to read our friends status' messages, in reverse time order - latest first.
+To do this, we go through these steps:
+
+. Gather all friend's status update iterators in a list - latest date first.
+. Sort the list.
+. Return the first item in the list.
+. If the first iterator is exhausted, remove it from the list.
+  Otherwise, get the next item in that iterator.
+. Go to step 2 until there are no iterators left in the list.
+
+Animated, the sequence looks like http://www.slideshare.net/systay/pattern-activity-stream[this].
+
+The code looks like: 
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/socnet/FriendsStatusUpdateIterator.java
+classifier=sources
+tag=getActivityStream
+----
+	
+Full source code:
+https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet[socnet]
+

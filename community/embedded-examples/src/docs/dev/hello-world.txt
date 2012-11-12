@@ -1,0 +1,147 @@
+[[tutorials-java-embedded-hello-world]]
+Hello World
+===========
+
+Learn how to create and access nodes and relationships.
+For information on project setup, see <<tutorials-java-embedded-setup>>.
+
+Remember, from <<what-is-a-graphdb>>, that a Neo4j graph consist of:
+
+* Nodes that are connected by
+* Relationships, with
+* Properties on both nodes and relationships.
+
+
+All relationships have a type.
+For example, if the graph represents a social network, a relationship type could be +KNOWS+.
+If a relationship of the type +KNOWS+ connects two nodes, that probably represents two people that know each other.
+A lot of the semantics (that is the meaning) of a graph is encoded in the relationship types of the application.
+And although relationships are directed they are equally well traversed regardless of which direction they are traversed. 
+
+== Prepare the database ==
+
+Relationship types can be created by using an +enum+.
+In this example we only need a single relationship type. This is how to
+define it:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=createReltype
+----
+
+We also prepare some variables to use:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=vars
+----
+
+The next step is to start the database server.
+Note that if the directory given for the database doesn't already exist, it will be created.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=startDb
+----
+
+Note that starting a database server is an expensive operation, so don't start up a new instance every time you need to interact with the database!
+The instance can be shared by multiple threads.
+Transactions are thread confined.
+
+
+As seen, we register a shutdown hook that will make sure the database shuts down when the JVM exits.
+Now it's time to interact with the database.
+
+== Wrap mutating operations in a transaction ==
+
+All mutating transactions have to be performed in a transaction.
+This is a conscious design decision, since we believe transaction demarcation to be an important part of working with a real enterprise database.
+Now, transaction handling in Neo4j is very easy:
+
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=transaction
+----
+
+For more information on transactions, see <<transactions>> and
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
+
+== Create a small graph ==
+
+Now, let's create a few nodes.
+The API is very intuitive.
+Feel free to have a look at the JavaDocs at http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/.
+They're included in the distribution, as well.
+Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties: 
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=addData
+----
+
+We now have a graph that looks like this: 
+
+include::hello-world-java-graph.txt[]
+
+== Print the result ==
+
+After we've created our graph, let's read from it and print the result. 
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=readData
+----
+
+Which will output:
+
+include::hello-world-java-output.txt[]
+
+== Remove the data ==
+
+In this case we'll remove the data before committing:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=removingData
+----
+
+Note that deleting a node which still has relationships when the transaction commits will fail.
+This is to make sure relationships always have a start node and an end node.
+
+== Shut down the database server ==
+
+Finally, shut down the database server _when the application finishes:_
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=shutdownServer
+----
+
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java[EmbeddedNeo4j.java]
+

@@ -1,0 +1,18 @@
+
+:if typeof(bean) != "undefined"
+  .pad
+    %h2= htmlEscape(bean.name)
+    %p.small= htmlEscape(bean.description)
+  %table.data-table(cellspacing="0")
+    %tbody
+      :each attribute in attributes
+        %tr
+          %td(style="padding-left:#{attribute.indent*20}px;")
+            %h3= htmlEscape(attribute.name)
+            %p.small= htmlEscape(attribute.description)
+          %td.value= htmlEscape(attribute.value)
+        
+:if typeof(bean) == "undefined"
+  .pad
+    %h2 No information found
+    %p Unable to locate any info for the specified JMX bean.

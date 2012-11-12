@@ -1,0 +1,18 @@
+dependencies {
+    compile project(":neo4j-kernel"),
+            "org.apache.httpcomponents:httpcore:$httpComponentsVersion",
+            "commons-io:commons-io:$commonsIoVersion"
+
+    testCompile("org.apache.httpcomponents:httpclient:$httpComponentsVersion") {
+        artifact {
+            name = 'httpclient'
+            type = 'jar'
+            classifier = 'tests'
+        }
+        artifact {
+            name = 'httpclient'
+            type = 'jar'
+            classifier = ''
+        }
+    }
+}

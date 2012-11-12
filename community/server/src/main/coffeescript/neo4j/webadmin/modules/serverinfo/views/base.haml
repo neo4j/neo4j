@@ -1,0 +1,9 @@
+.sidebar
+  %ol
+    :each domain in domains
+      %lh= htmlEscape(domain.name)
+      :each bean in domain.beans
+        %li
+          %a(href="#/info/#{encodeURIComponent(bean.domain)}/#{encodeURIComponent(bean.name)}/")= htmlEscape(bean.name)
+
+#info-bean.workarea.with-sidebar

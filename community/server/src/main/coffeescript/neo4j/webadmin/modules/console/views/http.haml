@@ -1,0 +1,30 @@
+.sidebar
+  %p.pad HTTP Console, for prototyping REST calls to the neo4j server.
+
+  %p.pad Syntax: 
+  %pre.pad [HTTP VERB] [URI] [JSON DATA]
+  %pre.pad ex: GET /
+  
+  %p.pad
+    See the <a href="http://docs.neo4j.org/chunked/milestone/rest-api.html">Neo4j documentation</a> for details on the REST API.
+   
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") Cheat sheet
+    .foldout_content
+      %ul.info_list
+        %li
+          %h3 Get database description
+          %p GET /db/data/
+        %li 
+          %h3 Create a node
+          %p POST /db/data/node {"name":"Steven"}
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") If the console hangs
+    .foldout_content
+      %p.pad If the console hangs, you can reset it by clearing your browser cookies for webadmin.
+
+.workarea.with-sidebar#console-base

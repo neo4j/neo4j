@@ -1,0 +1,2 @@
+org.neo4j.kernel.DummyExtension
+org.neo4j.kernel.OtherExtension

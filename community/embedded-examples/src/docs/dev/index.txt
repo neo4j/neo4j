@@ -1,0 +1,43 @@
+[[tutorials-java-embedded]]
+Using Neo4j embedded in Java applications
+=========================================
+
+It's easy to use Neo4j embedded in Java applications.
+In this chapter you will find everything needed -- from setting up the environment to doing something useful with your data.
+
+:leveloffset: 2
+
+include::setup.txt[]
+
+:leveloffset: 2
+
+include::hello-world.txt[]
+
+:leveloffset: 2
+
+include::index-users.txt[]
+
+:leveloffset: 2
+
+include::traversal.txt[]
+
+:leveloffset: 3
+
+include::examples/uniqueness-of-paths-in-traversals.txt[]
+
+:leveloffset: 3
+
+include::social.txt[]
+
+:leveloffset: 2
+
+include::entities.txt[]
+
+:leveloffset: 2
+
+include::graph-algo.txt[]
+
+:leveloffset: 2
+
+include::management.txt[]
+

@@ -1,0 +1,368 @@
+/**
+ * Copyright (c) 2002-2012 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.util;
+
+import java.util.Arrays;
+
+import org.neo4j.kernel.impl.nioneo.store.Buffer;
+
+/**
+ * Got bits to store, shift and retrieve and they are more than what fits in a long?
+ * Use {@link Bits} then.
+ */
+public class Bits
+{
+    // 3: ...
+    // 2:   [   23    ][   22    ][   21    ][   20    ][   19    ][   18    ][   17    ][   16    ] <--\
+    //                                                                                                   |
+    //    /---------------------------------------------------------------------------------------------/
+    //   |
+    // 1: \-[   15    ][   14    ][   13    ][   12    ][   11    ][   10    ][    9    ][    8    ] <--\
+    //                                                                                                   |
+    //    /---------------------------------------------------------------------------------------------/
+    //   |
+    // 0: \-[    7    ][    6    ][    5    ][    4    ][    3    ][    2    ][    1    ][    0    ] <---- START
+    private final long[] longs;
+    private final int numberOfBytes;
+    private int writePosition;
+    private int readPosition;
+    
+    /*
+     * Calculate all the right overflow masks
+     */
+    private static final long[] RIGHT_OVERFLOW_MASKS;
+    static
+    {
+        RIGHT_OVERFLOW_MASKS = new long[Long.SIZE];
+        long mask = 1L;
+        for ( int i = 0; i < RIGHT_OVERFLOW_MASKS.length; i++ )
+        {
+            RIGHT_OVERFLOW_MASKS[i] = mask;
+            mask <<= 1;
+            mask |= 0x1L;
+        }
+    }
+    
+    public static Bits bits( int numberOfBytes )
+    {
+        int requiredLongs = (numberOfBytes-1)/8+1;
+        return new Bits( new long[requiredLongs], numberOfBytes );
+    }
+    
+    public static Bits bitsFromLongs( long[] longs )
+    {
+        return new Bits( longs, longs.length*8 );
+    }
+    
+    public static Bits bitsFromBytes( byte[] bytes )
+    {
+        Bits bits = bits( bytes.length );
+        for ( byte value : bytes )
+        {
+            bits.put( value );
+        }
+        return bits;
+    }
+    
+    private Bits( long[] longs, int numberOfBytes )
+    {
+        this.longs = longs;
+        this.numberOfBytes = numberOfBytes;
+    }
+
+    /**
+     * A mask which has the {@code steps} most significant bits set to 1, all others 0.
+     * It's used to carry bits over between carriers (longs) when shifting left.
+     * @param steps the number of most significant bits to have set to 1 in the mask.
+     * @return the created mask.
+     */
+    public static long leftOverflowMask( int steps )
+    {
+        long mask = 0L;
+        for ( int i = 0; i < steps; i++ )
+        {
+            mask >>= 1;
+            mask |= 0x8000000000000000L;
+        }
+        return mask;
+    }
+    
+    /**
+     * A mask which has the {@code steps} least significant bits set to 1, all others 0.
+     * It's used to carry bits over between carriers (longs) when shifting right.
+     * @param steps the number of least significant bits to have set to 1 in the mask.
+     * @return the created mask.
+     */
+    public static long rightOverflowMask( int steps )
+    {
+        return RIGHT_OVERFLOW_MASKS[steps-1];
+    }
+    
+    /**
+     * Returns the underlying long values that has got all the bits applied.
+     * The first item in the array has got the most significant bits.
+     * @return the underlying long values that has got all the bits applied.
+     */
+    public long[] getLongs()
+    {
+        return longs;
+    }
+    
+    public byte[] asBytes()
+    {
+        int readPositionBefore = readPosition;
+        readPosition = 0;
+        try
+        {
+            byte[] result = new byte[numberOfBytes];
+            for ( int i = 0; i < result.length; i++ )
+            {
+                result[i] = getByte();
+            }
+            return result;
+        }
+        finally
+        {
+            readPosition = readPositionBefore;
+        }
+    }
+    
+    /**
+     * Writes all bits to {@code buffer}.
+     * @param buffer the {@link Buffer} to write to.
+     * @return this instance.
+     */
+    public Bits apply( Buffer buffer )
+    {
+        int readPositionBefore = readPosition;
+        readPosition = 0;
+        try
+        {
+            // TODO byte for byte?
+            int rest = numberOfBytes;
+            while ( rest-- > 0 )
+            {
+                buffer.put( getByte() );
+            }
+            return this;
+        }
+        finally
+        {
+            readPosition = readPositionBefore;
+        }
+    }
+    
+    /**
+     * Reads from {@code buffer} and fills up all the bits.
+     * @param buffer the {@link Buffer} to read from.
+     * @return this instance.
+     */
+    public Bits read( Buffer buffer )
+    {
+        // TODO byte for byte?
+        int rest = numberOfBytes;
+        while ( rest > 0 )
+        {
+            byte value = buffer.get();
+            put( value );
+            rest--;
+        }
+        return this;
+    }
+
+    /**
+     * A very nice toString, showing each bit, divided into groups of bytes and
+     * lines of 8 bytes.
+     */
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int longIndex = longs.length-1; longIndex >= 0; longIndex-- )
+        {
+            long value = longs[longIndex];
+            if ( builder.length() > 0 ) builder.append( "\n" );
+            builder.append( longIndex + ":" );
+            numberToString( builder, value, 8 );
+            if ( longIndex == 0 ) builder.append( " <-- START" );
+        }
+        return builder.toString();
+    }
+    
+    public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
+    {
+        builder.append( "[" );
+        for ( int i = 8*numberOfBytes-1; i >= 0; i-- )
+        {
+            if ( i > 0 && i % 8 == 0 ) builder.append( "," );
+            boolean isSet = (value & (1L << i)) != 0;
+            builder.append( isSet ? "1" : "0" );
+        }
+        builder.append( "]" );
+        return builder;
+    }
+    
+    public static String numbersToBitString( byte[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( byte value : values ) numberToString( builder, value, 1 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( short[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( short value : values ) numberToString( builder, value, 2 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( int[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int value : values ) numberToString( builder, value, 4 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( long[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( long value : values ) numberToString( builder, value, 8 );
+        return builder.toString();
+    }
+    
+    @Override
+    public Bits clone()
+    {
+        return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
+    }
+    
+    public Bits put( byte value )
+    {
+        return put( value, Byte.SIZE );
+    }
+    
+    public Bits put( byte value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+    
+    public Bits put( short value )
+    {
+        return put( value, Short.SIZE );
+    }
+    
+    public Bits put( short value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+
+    public Bits put( int value )
+    {
+        return put( value, Integer.SIZE );
+    }
+    
+    public Bits put( int value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+
+    public Bits put( long value )
+    {
+        return put( value, Long.SIZE );
+    }
+    
+    public Bits put( long value, int steps )
+    {
+        int lowLongIndex = writePosition >> 6; // /64
+        int lowBitInLong = writePosition%64;
+        int lowBitsAvailable = 64-lowBitInLong;
+        long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
+        longs[lowLongIndex] |= ((((long)value)&lowValueMask) << lowBitInLong);
+        if ( steps > lowBitsAvailable )
+        {   // High bits
+            long highValueMask = rightOverflowMask( steps-lowBitsAvailable );
+            longs[lowLongIndex+1] |= (((long)value) >>> lowBitsAvailable)&highValueMask;
+        }
+        writePosition += steps;
+        return this;
+    }
+    
+    public boolean available()
+    {
+        return readPosition < writePosition;
+    }
+    
+    public byte getByte()
+    {
+        return getByte( Byte.SIZE );
+    }
+    
+    public byte getByte( int steps )
+    {
+        return (byte) getLong( steps );
+    }
+    
+    public short getShort()
+    {
+        return getShort( Short.SIZE );
+    }
+    
+    public short getShort( int steps )
+    {
+        return (short) getLong( steps );
+    }
+
+    public int getInt()
+    {
+        return getInt( Integer.SIZE );
+    }
+    
+    public int getInt( int steps )
+    {
+        return (int) getLong( steps );
+    }
+
+    public long getUnsignedInt()
+    {
+        return getInt( Integer.SIZE ) & 0xFFFFFFFFL;
+    }
+    
+    public long getLong()
+    {
+        return getLong( Long.SIZE );
+    }
+    
+    public long getLong( int steps )
+    {
+        int lowLongIndex = readPosition >> 6; // 64
+        int lowBitInLong = readPosition%64;
+        int lowBitsAvailable = 64-lowBitInLong;
+        long lowLongMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) ) << lowBitInLong;
+        long lowValue = longs[lowLongIndex] & lowLongMask;
+        long result = lowValue >>> lowBitInLong;
+        if ( steps > lowBitsAvailable )
+        {   // High bits
+            long highLongMask = rightOverflowMask( steps-lowBitsAvailable );
+            result |= ((longs[lowLongIndex+1] & highLongMask) << lowBitsAvailable);
+        }
+        readPosition += steps;
+        return result;
+    }
+}
