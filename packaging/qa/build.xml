@@ -1,0 +1,63 @@
+<project name="NeoCommunityQA" basedir="." default="build" xmlns:ivy="antlib:org.apache.ivy.ant">
+	
+	<path id="lib">
+		<fileset dir="lib" includes="*.jar"/>
+	</path>
+	
+	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="lib"/>
+		
+	<target name="build" description="Run the Neo4j community QA tests" depends="clean,setProperties,runCucumber"/>
+	
+	<target name="clean" description="Cleans the working copy">
+		<delete dir="target"/>
+		<mkdir dir="target/junit-report"/>
+	</target>
+
+	<target name="setProperties" description="Sets the various properties required by cucumber">
+		<property name="download_path" value="http://builder.neo4j.org/guestAuth/repository/download/bt85/.lastSuccessful"/>
+		<get dest="target/" verbose="true">
+			<url url="${download_path}/reports/buildNumber.properties"/>
+		</get>
+		<property file="target/buildNumber.properties"/>
+		<property name="jruby.home" value="${basedir}/lib/.jruby"/>
+		<copy file="env_props.rb" tofile="target/env_props.rb">
+			<filterset>
+	      <filter token="DOWNLOAD_PATH" value="${download_path}"/>
+	      <filter token="BUILDNUMBER" value="${buildNumber}"/>
+	    </filterset>
+		</copy>						
+	</target>
+	
+	<target name="runCucumber" description="Runs the cucumber tests" depends="install-dependencies">
+		<taskdef name="cucumber" classname="cuke4duke.ant.CucumberTask" classpathref="compile.classpath"/>
+		<cucumber 			args=" --verbose --require features/step_definitions
+								--require target/env_props.rb
+			 					--require features/support --color
+								--format pretty --format junit 
+								--out target/junit-report features"
+								objectFactory="pico">
+		</cucumber>
+	</target>
+	
+	<target name="install-dependencies">
+		<ivy:retrieve/>
+	   <path id="jruby.classpath">
+	      <fileset dir="lib">
+	        <include name="**/*.jar"/>
+	      </fileset>
+	    </path>
+		<path id="compile.classpath">
+	      <fileset dir="lib">
+	        <include name="**/*.jar"/>
+	      </fileset>
+      </path>
+		<taskdef name="gem" classname="cuke4duke.ant.GemTask"
+		classpathref="compile.classpath"/>
+		<gem args="install cuke4duke --version 0.4.4 --source http://gemcutter.org/"/>
+	</target>
+
+	<target name="clean-deps" description="Delete all dependencies">
+		<delete dir="${basedir}/lib"/>
+	</target>
+	
+</project>

@@ -1,0 +1,67 @@
+#!/bin/sh
+##
+## '##' is velocity comment -> use $H instead
+##
+#set( $H = '###' )
+$H BEGIN INIT INFO
+# Provides: $w_name
+# Required-Start: $start_dependencies
+# Required-Stop: $stop_dependencies
+# Default-Start:  $w_start_levels
+# Default-Stop: $w_stop_levels
+# Short-Description: yajsw wrapper for $w_long_name
+# Description: $w_description
+$H END INIT INFO
+# config: $w_conf_file
+# pidfile: $w_wrapper_pid_file
+# apppidfile: $w_app_pid_file
+#-----------------------------------------------------------------------------
+# YAJSW sh script template.  Suitable for starting and stopping
+#  wrapped daemon on POSIX platforms.
+#-----------------------------------------------------------------------------
+
+status() {
+    eval "$w_status_cmd"
+}
+
+stopit() {
+    echo "Stopping $w_name ..."
+	eval "$w_stop_cmd"
+}
+startit() {
+    echo "Starting $w_name ..."
+    eval "$w_start_cmd"
+}
+
+
+case "$1" in
+    'start')
+        startit
+        ;;
+
+    'stop')
+        stopit
+        ;;
+
+    'restart')
+        stopit
+        startit
+        ;;
+        
+        
+    'force-reload')
+        stopit
+        startit
+        ;;
+
+    'status')
+        status
+        ;;
+
+    *)
+        echo "Usage: $0 { start | stop | restart | status }"
+        exit 1
+        ;;
+esac
+
+exit $?
