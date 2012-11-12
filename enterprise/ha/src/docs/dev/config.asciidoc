@@ -1,0 +1,59 @@
+[[ha-configuration]]
+Setup and configuration
+=======================
+
+Neo4j HA can be set up to accommodate differing requirements for load, fault tolerance and available hardware.
+
+Within a cluster, Neo4j HA uses its own Paxos implementation for all cluster membership related tasks, from instances joining/leaving a cluster to master election and availability information propagation.
+Read operations through the +GraphDatabaseService+ API will always work, whereas write operations requires an available master.
+
+For reaching quorum among the members in the cluster the number of members should be odd.
+
+== Installation Notes ==
+
+For installation instructions of a High Availability cluster see <<ha-setup-tutorial>>.
+
+Note that while the HA version of Neo4j supports the same API as the single instance embedded version, it does have additional configuration parameters.
+Although there are many parameters, most of them have defaults that should work in most cases.
+
+.HA configuration parameters
+[options="header", cols="<33m,<25,<25m,<20"]
+|========================================================================================
+| Parameter Name        | Description                                     | Example value  | Required?
+| ha.server_id          | integer >= 0 and has to be unique in the cluster | 1 | yes
+| ha.server             | (auto-discovered) host & port to bind when acting as master | my-domain.com:6001 | no
+| ha.discovery.enabled  | whether or not to use the resource of ha.discovery.url to define the cluster | true | no
+| ha.discovery.url      | if ha.discovery.enabled is true, used to define the cluster | file://my.server:8080/my-cluster | no
+| ha.initial_hosts      | if ha.discovery.enabled is false, a comma-separated list of other members of the cluster to join. If no members are reachable a new cluster will be created. | my-server:5001 | no
+| ha.cluster_server     | (auto-discovered) host & port to bind the cluster management communication | |
+| ha.pull_interval      | interval for, as slave, pulling updates from the master. Default is to not pull updates regularly, only during write transactions | 30s or 1500ms | no
+| ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
+| ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
+| ha.state_switch_timeout | how long max time to gracefully await a slave/master role switch | 20s | no
+| ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes | 100 | no
+| ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_last,keep_none,shutdown} | keep_none | no
+| ha.tx_push_factor     | amount of slaves the master will push each committed transaction to | 1 (default) | no
+| ha.tx_push_strategy   | the strategy for selecting which slaves to push committed transactions to. "fixed" (default) will push to slaves with descending server_id order; "round_robin" will have slaves take turn receiving the transactions | fixed | no
+|========================================================================================
+
+[NOTE]
+Note that the +org.neo4j.server.database.mode+ setting in the 'neo4j-server.properties' file has to be set to +HA+ to run Neo4j in High Availability mode.
+
+== Different methods for participating in a cluster ==
+
+There are currently multiple ways of telling your database instance which cluster to create/join, different ways for different occasions.
+
+=== Knowing at least one other member ===
+
+A database instance can join a cluster by supplying +ha.initial_hosts+ a comma-separated list of URLs to at least one other cluster member of the cluster to join.
+It's called initial hosts since it's only for joining the cluster. After an instance joins it gets aware of all the members of the cluster.
+It will take turn contacting each one in the list until it gets a response, where it will await a decision by the existing cluster members to have it join.
+If it cannot contact any of the members in the URL list it will create a new cluster with itself as master.
+This option requires +ha.discovery.enabled+ be set to +false+.
+
+=== Discovery ===
+
+A database instance can point to URL acting as a live list of members in a cluster, by setting +ha.discovery.url+ to a valid and accessible URL.
+If the resource pointed out by that URL exists it will take turn contacting each member in that list until it gets a response, where it will await a decision by the existing cluster members to have it join.
+If the resource pointed out by the discovery URL doesn't exist it will create it and with it a cluster having itself as initial master.
+This option requires +ha.discovery.enabled+ be set to +true+.

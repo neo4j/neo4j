@@ -1,0 +1,89 @@
+[[operations-backup]]
+Backup
+======
+
+NOTE: The Backup features are only available in the Neo4j Enterprise Edition.
+
+Backups are performed over the network live from a running graph database onto a local copy.
+There are two types of backup: full and incremental.
+
+A _full backup_ copies the database files without acquiring any locks, allowing for continued operations on the target instance. This of course means that
+while copying, transactions will continue and the store will change. For this reason, the transaction that was running when the backup operation started
+is noted and, when the copy operation completes, all transactions from the latter down to the one happening at the end of the copy are replayed on the backup
+files. This ensures that the backed up data represent a consistent and up-to-date snapshot of the database storage.
+
+In contrast, an _incremental backup_ does not copy store files -- instead it copies the logs of the transactions that have taken place since the last full or
+incremental backup which are then replayed over an existing backup store. This makes incremental backups far more efficient than doing full backups every
+time but they also require that a _full backup_ has taken place before they are executed.
+
+Regardless of the mode a backup is created with, the resulting files represent a consistent database snapshot and they can be used to boot up a Neo4j instance.
+
+The database to be backed up is specified using a URI with syntax
+
+<running mode>://<host>[:port]{,<host>[:port]*}
+
+Running mode must be defined and is either _single_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
+points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
+are useful for passing multiple cluster members.
+
+[IMPORTANT]
+Backups can only be performed on databases which have the configuration parameter `online_backup_enabled=true` set.
+That will make the backup service available on the default port (6362).
+To enable the backup service on a different port use `online_backup_port=9999`.
+
+[[backup-embedded-and-server]]
+== Embedded and Server ==
+
+To perform a backup from a running embedded or server database run:
+[source,shell]
+----
+# Performing a full backup
+./neo4j-backup -full -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+
+# Performing an incremental backup
+./neo4j-backup -incremental -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+
+# Performing an incremental backup where the service is registered on a custom port
+./neo4j-backup -incremental -from single://192.168.1.34:9999 -to /mnt/backup/neo4j-backup
+----
+
+[[backup-java]]
+== Online Backup from Java ==
+
+In order to programmatically backup your data full or subsequently incremental from a 
+JVM based program, you need to write Java code like
+
+[snippet,java]
+----
+component=neo4j-backup
+source=org/neo4j/backup/TestBackup.java
+tag=onlineBackup
+classifier=test-sources
+----
+
+For more information, please see http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for 
+OnlineBackup]
+
+[[backup-ha]]
+== High Availability ==
+
+To perform a backup on an HA cluster you specify one or more members of the target HA cluster.
+Note that the addresses you must provide are the cluster server addresses and not the HA server addresses.
+That is, use the value of the +ha.cluster_server+ setting in the configuration.
+
+[source,shell]
+----
+# Performing a full backup from HA cluster, specifying two possible cluster members
+./neo4j-backup -full -from ha://192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
+
+# Performing an incremental backup from HA cluster, specifying only one cluster member
+./neo4j-backup -incremental -from ha://192.168.1.15:5001 -to /mnt/backup/neo4j-backup
+----
+
+[[backup-restoring]]
+== Restoring Your Data ==
+
+The Neo4j backups are fully functional databases.
+To use a backup, all you need to do replace your database folder with the backup.
+Just make sure the database isn't running while replacing the folder.
+

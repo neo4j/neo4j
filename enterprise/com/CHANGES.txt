@@ -1,0 +1,51 @@
+1.6 (2012-01-20)
+---------------
+o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
+
+1.6.M02 (2011-12-16)
+--------------------
+o Server stops streaming to a client if the client should crash or disconnect meanwhile.
+o Individually configurable read timeout for awaiting lock acquisition with ha.lock_read_timeout.
+  Server "silent channel checker" uses that lock timeout threshold also.
+
+1.5 (2011-10-18)
+----------------
+o Added com protocol version (one internal version and one application version) which must match in order
+  for instances to communicate.
+o Added a check to prevent "multiple roots" in ZooKeeper problem from occuring.
+
+1.5.M02 (2011-10-10)
+--------------------
+o Server limits the number of unread chunks to send to the client, preventing unecessary memory hogging.
+o Server-side exceptions are serialized to the client and thrown there instead of slave getting read timeouts.
+o Changed configuration names to reduce confusion: 'zoo keeper' -> 'coordinator', 'machine' -> 'server'.
+o Successful slave transactions are seen as committed, instead of rolled back.
+o Slaves updates coordinator asynchronously (configurable to be synchronous) to avoid bottleneck.
+
+1.5.M01 (2011-08-31)
+--------------------
+o Frame length configurable per communication interface.
+o Fixed some issues regarding monitoring of open channels and what resources they map to and occupy.
+
+1.4.M03 (2011-05-26)
+--------------------
+o Changed to always dispose channels after exception.
+o Modified slave context to include a session id.
+
+1.3.M05 (2011-03-24)
+-------------------
+o Fixed a bug that could occur when copying the store.
+
+1.3.M04 (2011-03-10)
+--------------------
+o Backup disabled when run on Windows due to limitations in OS/filesystem.
+
+1.3.M03 (2011-02-24)
+--------------------
+o Patched to work with new backup tool.
+o Added a check client-side so that server store ID matches client store ID.
+
+1.3.M02 (2011-02-10)
+--------------------
+o Initial release.
+

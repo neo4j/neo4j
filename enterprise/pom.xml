@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.build</groupId>
+  <artifactId>enterprise-build</artifactId>
+  <version>1.9-SNAPSHOT</version>
+  <name>Neo4j Enterprise Build</name>
+  <packaging>pom</packaging>
+  <description>Project that builds the Neo4j Enterprise distribution.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <short-name>enterprise-build</short-name>
+  </properties>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/enterprise.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/enterprise.git</developerConnection>
+    <url>https://github.com/neo4j/enterprise</url>
+  </scm>
+
+  <modules>
+    <module>com</module>
+    <module>cluster</module>
+    <module>consistency-check</module>
+    <module>backup</module>
+    <module>ha</module>
+    <module>neo4j-enterprise</module>
+    <module>server-enterprise</module>
+    <module>enterprise-performance-tests</module>
+  </modules>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+third parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 and you may use the Software solely pursuant to the
+terms of the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>freeze</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>freeze</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>ease-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>aggregate-artifacts</id>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>org.neo4j:*</include>
+                    <include>org.neo4j.app:*</include>
+                  </includes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.app</groupId>
+          <artifactId>neo4j-server-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+</project>
+

@@ -1,0 +1,4 @@
+Neo4j High Availability
+
+    This component provides the means to set up a cluster of Neo4j instances that act together
+    as a cluster, providing Master-Slave replication and other features.

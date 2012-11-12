@@ -1,0 +1,3 @@
+[submodule "tools/yajsw"]
+	path = tools/yajsw
+	url = git://github.com/neo4j/yajsw.git
