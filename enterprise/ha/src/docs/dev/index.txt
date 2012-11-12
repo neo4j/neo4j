@@ -1,0 +1,25 @@
+[[ha]]
+High Availability
+=================
+
+NOTE: The High Availability features are only available in the Neo4j Enterprise Edition.
+
+Neo4j High Availability or “Neo4j HA” provides the following two main features:
+
+. It enables a _fault-tolerant database architecture_, where several Neo4j slave databases can be configured to be exact replicas of a single Neo4j master database.
+  This allows the end-user system to be fully functional and both read and write to the database in the event of hardware failure.
+. It enables a _horizontally scaling read-mostly architecture_ that enables the system to handle more read load than a single Neo4j database instance can handle.
+
+:leveloffset: 2
+
+include::architecture.txt[]
+
+include::config.txt[]
+
+include::operation.txt[]
+
+include::upgrade-guide.txt[]
+
+include::ha-setup-tutorial.txt[]
+
+include::haproxy.txt[]
