@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-management</artifactId>
+  <version>1.6.4-SNAPSHOT</version>
+  <name>Neo4j - Graph Database Monitoring and Management tools</name>
+  <description>Management support using JMX.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j.management</bundle.namespace>
+    <short-name>management</short-name>
+    <neo4j.version>1.6.4-SNAPSHOT</neo4j.version>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-monitoring.html</docs.url>
+  </properties>
+
+  <packaging>jar</packaging>
+  
+  <scm>
+    <url>https://github.com/neo4j/advanced/tree/master/management</url>
+  </scm>
+
+  <profiles>
+    <profile>
+      <id>Linux-dependency-jconsole.jar</id>
+      <activation>
+        <os><name>Linux</name></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/jconsole.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>Mac-OS-X-dependency-jconsole.jar</id>
+      <activation>
+        <os><family>mac</family></os>
+        <file><exists>${java.home}/lib/jconsole.jar</exists></file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/lib/jconsole.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>Windows-dependency-jconsole.jar</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}\\..\\lib\\jconsole.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+third parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 and you may use the Software solely pursuant to the
+terms of the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-jmx</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope><!-- because it is not available when used from JConsole -->
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope><!-- because the jmx dependency is provided transitive dependencies doesn't come through -->
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${bundle.namespace}.Main</mainClass>
+              <packageName>${bundle.namespace}</packageName>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins combine.children="append">
+            <plugin>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <detectJavaApiLink>true</detectJavaApiLink>
+                <detectLinks>true</detectLinks>
+                <quiet>true</quiet>
+                <excludePackageNames>*.impl.*</excludePackageNames>
+              </configuration>
+              <reports>
+                <report>javadoc</report>
+              </reports>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
+

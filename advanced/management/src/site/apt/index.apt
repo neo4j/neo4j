@@ -1,0 +1,8 @@
+Neo4j Management Kernel extension
+
+    The Neo4j Management component provides a kernel extension to the Neo4j Kernel that, when loaded, provides convenient methods for accessing JMX-related functionality.
+
+See also
+
+    * {{{http://docs.neo4j.org/chunked/milestone/tutorials-java-embedded-jmx.html}Reading a management attribute}}
+    
