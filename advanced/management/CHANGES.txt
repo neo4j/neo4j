@@ -1,0 +1,1 @@
+o Split up the management component in two, one ("jmx") with basic support and one ("management" - this component) with advanced support.
