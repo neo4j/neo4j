@@ -1,0 +1,40 @@
+[[tutorials-java-embedded]]
+Using Neo4j embedded in Java applications
+=========================================
+
+:leveloffset: 2
+
+include::setup.txt[]
+
+:leveloffset: 2
+
+include::examples/hello-world.txt[]
+
+:leveloffset: 2
+
+include::index-users.txt[]
+
+:leveloffset: 2
+
+include::traversal.txt[]
+
+:leveloffset: 3
+
+include::social.txt[]
+
+:leveloffset: 2
+
+include::entities.txt[]
+
+:leveloffset: 2
+
+include::graph-algo.txt[]
+
+:leveloffset: 2
+
+include::examples/uniqueness-of-paths-in-traversals.txt[]
+
+:leveloffset: 2
+
+include::management.txt[]
+

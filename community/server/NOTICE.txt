@@ -1,0 +1,83 @@
+Neo4j
+Copyright © 2002-2011 Network Engine for Objects in Lund AB (referred to
+in this notice as “Neo Technology”)
+   [http://neotechnology.com]
+
+This product includes software ("Software") developed by Neo Technology.
+
+The copyright in the bundled Neo4j graph database (including the
+Software) is owned by Neo Technology. The Software developed and owned
+by Neo Technology is licensed under the GNU GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
+to all third parties and that license, as required by the GPL, is
+included in the LICENSE.txt file.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GPL and you may use the
+software solely pursuant to the terms of the relevant Commercial
+Agreement.
+
+
+Third party libraries
+---------------------
+
+Full license texts are found in LICENSES.txt.
+
+
+The  bundled JAX-RS  (JSR311) API  is licensed  under the  GNU General
+Public  License  Version 2  with  classpath exception.   Alternatively
+under the Common Development and Distribution License, version 1.1.
+
+The bundled Jersey library, containing Jersey Core, Jersey Server, and
+Jersey  Client,  is licensed  under  the  GNU  General Public  License
+Version 2  with classpath  exception.  Alternatively under  the Common
+Development and Distribution License, version 1.1.
+
+The Mime  streaming plugin library  is licensed under the  GNU General
+Public  License  Version 2  with  classpath exception.   Alternatively
+under the Common Development and Distribution License, version 1.0.
+
+Other bundled libraries are licenced according to the following listing.
+
+The Apache Software License, Version 2.0:
+ Apache ServiceMix :: Bundles :: lucene,
+ Apache Commons:
+  Commons BeanUtils, Commons BeanUtils Core, Commons Collections, Commons IO,
+  Commons Configuration, Commons Digester, Commons Lang, Commons Logging,
+ Apache Log4j,
+ Apache Felix:   Felix FileInstall, Felix Framework, Felix Main,
+ JSON.simple,
+ RRD4J,
+ Geronimo Java Transaction API,
+ Groovy,
+ Jackson:   Jackson Core, Jackson JAX-RS, Data Mapper for Jackson,
+ Jansi,
+ Jetty:  Jetty, Jetty Util, Jetty Servlet Specification API,
+
+MIT License:
+ SLF4J API Module, SLF4J Log4j-12 Binding, SLF4J JDK1.4 Logging Binding,
+ SLF4J Jakarta Commons Logging Binding,
+ Base64.js,
+ jTemplates,
+ jQuery,
+ jQuery BBQ,
+ jQuery hashchange event,
+ SimpleModal,
+ jQuery flot including colorhelpers
+
+BSD licence:
+ ASM:   ASM Core, ASM Tree, ASM Commons, ASM Util, ASM Analysis,
+ Blueprints: Data Models and their Implementations,
+ Gremlin: A Graph-Based Programming Language,
+ Pipes: A Data Flow Framework using Process Graphs,
+ JLine, Scala library
+
+provided without support or warranty: JSON (JavaScript Object Notation)
+
+Public domain:
+ Dough Lea's util.concurrent package,
+ ANTLR 2.7.7,
+ JSON2.js

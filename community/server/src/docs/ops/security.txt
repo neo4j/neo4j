@@ -1,0 +1,96 @@
+[[security-server]]
+Securing access to the Neo4j Server
+===================================
+
+== Secure the port and remote client connection accepts ==
+
+By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
+
+This is configured in the +conf/neo4j-server.properties+ file:
+
+[source]
+----
+# http port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.port=7474
+
+#let the webserver only listen on the specified IP. Default
+#is localhost (only accept local connections). Uncomment to allow
+#any connection.
+#org.neo4j.server.webserver.address=0.0.0.0
+---- 
+
+If you need to enable access from external hosts, configure the Web server in the +conf/neo4j-server.properties+ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
+
+== Server Authorization Rules ==
+
+Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.  Neo4j server supports 
+administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
+
+To facilitate domain-specific authorization policies in Neo4j Server, SecurityRules can be implemented and
+registered with the server. This makes scenarios like user and role based security and
+authentication against external lookup services possible.
+
+include::enforcing-server-authorization-rules.txt[]
+
+== Hosted Scripting ==
+
+[IMPORTANT]
+The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
+Exposing your server without implementing a security layer poses a substantial security vulnerability.
+
+== Security in Depth ==
+
+Although the Neo4j server has competent security features built-in, for sensitive deployments it is often sensible to front it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
+This provides a number of advantages:
+
+* Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
++
+[source]
+---------------
+<Proxy *>
+  Order Deny,Allow
+  Deny from all
+  Allow from 192.168.0
+</Proxy>
+---------------
+
+While equivalent functionality can be implemented with Neo4j's +SecurityRule+ plugins (see above), for operations professionals configuring servers like Apache is often preferable to developing plugins. However it should be noted that where both approaches are used, they will work harmoniously providing the behavior is consistent across proxy server and +SecurityRule+ plugins.
+
+* Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using 
++
+[source]
+---------------
+ProxyPass /neo4jdb/data http://localhost:7474/db/data
+ProxyPassReverse /neo4jdb/data http://localhost:7474/db/data
+---------------
+
+* Simple load balancing in a clustered environment to load-balance read load using the Apache `mod_proxy_balancer` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy_balancer.html] plugin
++
+[source]
+--------------
+<Proxy balancer://mycluster>
+BalancerMember http://192.168.1.50:80
+BalancerMember http://192.168.1.51:80
+</Proxy>
+ProxyPass /test balancer://mycluster
+--------------
+
+== Rewriting URLs with a Proxy installation ==
+
+When installing Neo4j Server behind proxies, you need to enable rewriting of the JSON calls, 
+otherwise they will point back to the servers own base URL (normally http://localhost:7474).
+
+To do this, you can use http://httpd.apache.org/docs/2.2/mod/mod_substitute.html[Apache mod_substitute]
+
+[source]
+----
+ProxyPass / http://localhost:7474/
+ProxyPassReverse / http://localhost:7474/
+<Location />
+    AddOutputFilterByType SUBSTITUTE application/json
+    AddOutputFilterByType SUBSTITUTE text/html
+    Substitute s/localhost:7474/myproxy.example.com/n
+    Substitute s/http/https/n
+</Location>
+----
+

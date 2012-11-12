@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>25</version>
+    <relativePath />
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-kernel</artifactId>
+  <version>1.5.4-SNAPSHOT</version>
+  <name>Neo4j - Graph Database Kernel</name>
+  <description>
+ Neo4j kernel is a lightweight, embedded Java database designed to
+ store data structured as graphs rather than tables. For more
+ information, see http://neo4j.org.
+  </description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j</bundle.namespace>
+    <short-name>kernel</short-name>
+    <git.executable>git</git.executable>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensesVersion>7</licensesVersion>
+    <currentYear>2012</currentYear>
+  </properties>
+  <inceptionYear>2002</inceptionYear>
+  
+
+  <packaging>jar</packaging>
+
+  <scm>
+    <url>https://github.com/neo4j/community/tree/master/kernel</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <profiles>
+    <profile>
+      <id>git-windows</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <properties>
+        <git.executable>git.cmd</git.executable>
+      </properties>
+    </profile>
+    <profile><!-- used for testing -->
+      <id>Linux-dependency-tools.jar</id>
+      <activation>
+        <os><name>Linux</name></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile><!-- used for testing -->
+      <id>Windows-dependency-tools.jar</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>${sun.tools.version}</version>
+          <scope>system</scope>
+          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>false</skip>
+          <argLine>-Xmx300m</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>org/neo4j/graphdb/**</include>
+          </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <compilerArgument>-proc:none</compilerArgument>
+              <includes>
+                <include>org/neo4j/kernel/impl/annotations/**</include>
+              </includes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>compile-neo4j-kernel</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <configuration>
+              <property environment="env" />
+              <target>
+                <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
+                <exec executable="${git.executable}" failifexecutionfails="false" failonerror="false">
+                  <arg value="fetch" />
+                  <arg value="--tags" />
+                </exec>
+                <exec executable="${git.executable}" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
+                  <arg value="describe" />
+                  <arg value="--dirty" />
+                  <arg value="--always" />
+                </exec>
+                <property name="git.describe" value="" />
+                <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
+
+import org.neo4j.kernel.Version;
+import org.neo4j.helpers.Service;
+
+@Service.Implementation(Version.class)
+public class ComponentVersion extends Version
+{
+    public ComponentVersion()
+    {
+        super("${project.artifactId}", "${project.version}");
+    }
+
+    @Override
+    public String getRevision()
+    {
+        return "${git.describe}";
+    }
+}
+</echo>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals><goal>add-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources/version</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- for license headers -->
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.maven</groupId>
+            <artifactId>licenses</artifactId>
+            <version>${licensesVersion}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>check-licenses</id>
+            <!-- fail as early as possible -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+          </excludes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+          <properties>
+            <inceptionYear>${project.inceptionYear}</inceptionYear>
+            <currentYear>${currentYear}</currentYear>
+          </properties>
+        </configuration>
+      </plugin>      
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-jta_1.1_spec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_compendium</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>org/neo4j/graphdb/**</include>
+          </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <detectJavaApiLink>true</detectJavaApiLink>
+          <detectLinks>true</detectLinks>
+          <quiet>true</quiet>
+          <excludePackageNames>*.impl.*</excludePackageNames>
+          <groups>
+            <group>
+              <title>Graph database</title>
+              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*:org.apache.*</packages>
+            </group>
+            <group>
+              <title>Helpers</title>
+              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
+            </group>
+          </groups>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>

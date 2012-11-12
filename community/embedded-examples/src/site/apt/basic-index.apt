@@ -1,0 +1,36 @@
+Basic index usage
+
+User database
+
+	You have a user database, and want to retrieve users by name.
+	To begin with, this is the structure of the database we want
+	to create:
+	
+[./images/users.png] Node space view of users
+
+    That is, the reference node is connected to a users-reference node
+    to which all users are connected.
+
+    To begin with, we define the relationship types we want to use:
+	
+%{source-code|snippet=createRelTypes|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
+
+    Then we have created two helper methods to handle user names and
+    adding users to the database:
+    
+%{source-code|snippet=helperMethods|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
+
+    The next step is to start the database server:
+
+%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
+
+    It's time to add the users:
+    
+%{source-code|snippet=addUsers|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
+
+    And here's how to find a user by Id:
+
+%{source-code|snippet=findUser|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
+
+    Full source code: {{{./xref/org/neo4j/examples/EmbeddedNeo4jWithIndexing.html}EmbeddedNeo4jWithIndexing}}
+    

@@ -1,0 +1,19 @@
+[[query-start]]
+Start
+=====
+
+Every query describes a pattern, and in that pattern one can have multiple
+bound points. A bound point is a relationship or a node that form the starting
+points for a pattern match. You can either bind points by id, or by
+index lookups.
+
+include::cypher-start-graph.txt[]
+
+include::node-by-id.txt[]
+include::relationship-by-id.txt[]
+include::multiple-nodes-by-id.txt[]
+include::node-by-index-lookup.txt[]
+include::relationship-by-index-lookup.txt[]
+include::node-by-index-query.txt[]
+include::multiple-start-points.txt[]
+

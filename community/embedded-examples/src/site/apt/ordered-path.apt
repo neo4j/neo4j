@@ -1,0 +1,13 @@
+Walking an ordered graph with the Traversal Framework
+
+  This example shows how to use a path context holding a representation of a path.
+
+  First, we create a toy graph:
+
+%{source-code|snippet=createGraph|file=src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java}
+
+  Now, the order of relationships (REL1 -> REL2 -> REL3) is stored in an ArrayList. Upon traversal, the Evaluator can check against it to for instance ensure that only paths are included and returned that have the predefined order of relationships:
+  
+%{source-code|snippet=walkOrderedPath|file=src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java}
+
+    Full source code: {{{./xref/org/neo4j/examples/orderedpath/OrderedPathTest.html}OrderedPathTest}}

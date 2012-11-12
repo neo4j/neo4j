@@ -1,0 +1,44 @@
+[[configuration-introduction]]
+Introduction
+===========
+
+To gain good performance, these are the things to look into first:
+
+* Make sure the JVM is not spending too much time performing garbage collection.
+  Monitoring heap usage on an application that uses Neo4j can be a bit confusing since Neo4j will increase the size of caches if there is available memory and decrease if the heap is getting full. 
+  The goal is to have a large enough heap to make sure that heavy/peak load will not result in so called GC trashing (performance can drop as much as two orders of magnitude when GC trashing happens).
+* Start the JVM with the -server flag and a good sized heap (see <<configuration-jvm>>). Having too large heap may also hurt performance so you may have to try some different heap sizes.
+* Use the parallel/concurrent garbage collector (we found that +-XX:+UseConcMarkSweepGC+ works well in most use-cases) 
+
+== How to add configuration settings ==
+
+When creating the embedded Neo4j instance it is possible to pass in parameters contained in a map where keys and values are strings.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/Neo4jBasicTest.java
+classifier=test-sources
+tag=startDbWithConfig
+----
+
+If no configuration is provided, the Database Kernel will try to determine suitable settings from the information available via the JVM settings and the underlying operating system. 
+
+The JVM is configured by passing command line flags when starting the JVM.
+The most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
+
+This is an example of starting up your applications main class using 64-bit server VM mode and a heap space of 1GB:
+
+[source]
+----
+java -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
+----
+
+Looking at the example above you will also notice one of the most basic command line parameters: the one for specifying the classpath. The classpath is the path in which the JVM searches for your classes. It is usually a list of jar-files. Specifying the classpath is done by specifying the flag +-cp+ (or +-classpath+) and then the value of the classpath. For Neo4j applications this should at least include the path to the Neo4j +neo4j-kernel.jar+ and the Java Transaction API (+jta.jar+) as well as the path where the classes for your application are located. 
+
+[TIP]
+On Linux, Unix and Mac OS X each element in the path list are separated by a colon symbol (+:+), on Windows the path elements are separated by a semicolon (+;+).
+
+//You can even look at the [[Performance Guide for a further discussion of Neo4j performance.
+
+When using the Neo4j REST server, see <<server-configuration>> for how to add configuration settings for the database to the server.

@@ -1,0 +1,12 @@
+Export-Package: !${bundle.namespace}.graphdb.impl.*,${bundle.namespace}.graphdb.*;version="${pom.version}",${bundle.namespace}.kernel.impl.*,${bundle.namespace}.kernel.*;version="${pom.version}",!${bundle.namespace}.helpers.impl.*,${bundle.namespace}.helpers.*;version="${pom.version}"
+
+Import-Package: javax.transaction;version="1.1",!com.sun.*,*
+
+# ABK: using DynamicImport-Package is inelegant, but will do for now. 
+# The registration of services should be revised to
+# use alternate facilities for injecting the implementation classes. 
+DynamicImport-Package: *
+Implementation-Title: ${project.name}
+Implementation-Version: ${project.version}
+Implementation-Vendor-Id: ${project.groupId}
+Bundle-Activator: ${bundle.namespace}.kernel.impl.osgi.OSGiActivator

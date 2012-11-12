@@ -1,0 +1,77 @@
+[[configuration-jvm]]
+JVM Settings
+============
+
+
+There are two main memory parameters for the JVM, one controls the heap space and the other controls the stack space. The heap space parameter is the most important one for Neo4j, since this governs how many objects you can allocate. The stack space parameter governs the how deep the call stack of your application is allowed to get.
+
+When it comes to heap space the general rule is: the larger heap space you have the better, but make sure the heap fits in the RAM memory of the computer. If the heap is paged out to disk performance will degrade rapidly. Having a heap that is much larger than what your application needs is not good either, since this means that the JVM will accumulate a lot of dead objects before the garbage collector is executed, this leads to long garbage collection pauses and undesired performance behavior.
+
+Having a larger heap space will mean that Neo4j can handle larger transactions and more concurrent transactions. A large heap space will also make Neo4j run faster since it means Neo4j can fit a larger portion of the graph in its caches, meaning that the nodes and relationships your application uses frequently are always available quickly. The default heap size for a 32bit JVM is 64MB (and 30% larger for 64bit), which is too small for most real applications.
+
+Neo4j works fine with the default stack space configuration, but if your application implements some recursive behavior it is a good idea to increment the stack size. Note that the stack size is shared for all threads, so if you application is running a lot of concurrent threads it is a good idea to increase the stack size.
+
+- The heap size is set by specifying the +-Xmx???m+ parameter to hotspot, where +???+ is the heap size in megabytes. Default heap size is 64MB for 32bit JVMs, 30% larger (appr. 83MB) for 64bit JVMs.
+
+- The stack size is set by specifying the +-Xss???m+ parameter to hotspot, where +???+ is the stack size in megabytes. Default stack size is 512kB for 32bit JVMs on Solaris, 320kB for 32bit JVMs on Linux (and Windows), and 1024kB for 64bit JVMs.
+
+Most modern CPUs implement a http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access[Non-Uniform Memory Access (NUMA) architecture], where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the +-XX:+UseNUMA+ parameter (works only when using the Parallel Scavenger garbage collector (default or +-XX:+UseParallelGC+ not the concurrent mark and sweep one).
+
+Properly configuring memory utilization of the JVM is crucial for optimal performance. 
+As an example, a poorly configured JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). 
+Requirements such as latency, total throughput and available hardware have to be considered to find the right setup. 
+In production, Neo4j should run on a multi core/CPU platform with the JVM in server mode.
+ 
+== Configuring heap size and GC ==
+
+A large heap allows for larger node and relationship caches -- which is a good thing -- but large heaps can also lead to latency problems caused by full garbage collection. 
+The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and garbage collection (GC) should be able to handle most workloads.
+
+The default cache (soft reference based LRU cache) works best with a heap that never gets full: a graph where the most used nodes and relationships can be cached. 
+If the heap gets too full there is a risk that a full GC will be triggered; the larger the heap, the longer it can take to determine what soft references should be cleared. 
+
+Using the strong reference cache means that 'all' the nodes and relationships being used must fit in the available heap.
+Otherwise there is a risk of getting out-of-memory exceptions. 
+The soft reference and strong reference caches are well suited for applications were the overal throughput is important.
+
+The weak reference cache basically needs enough heap to handle the peak load of the application -- peak load multiplied by the average memory required per request. 
+It is well suited for low latency requirements were GC interuptions are not acceptable.
+
+[IMPORTANT]
+When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so they need to be taken into account when determining heap size.
+
+.Guidelines for heap size
+[format="csv",width="75%",cols="4"]
+[frame="topbot",grid="none",options="header"]
+|======================================================================================================
+Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
+10M,2GB,512MB,the rest
+100M,8GB+,1-4GB,1-2GB
+1B+,16GB-32GB+,4GB+,1-2GB
+|======================================================================================================
+
+[TIP]
+The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying +-XX:+UseConcMarkSweepGC+ as a JVM parameter.
+
+When having made sure that the heap size is well configured the second thing to tune in order to tune the garbage collector for your application is to specify the sizes of the different generations of the heap. The default settings are well tuned for "normal" applications, and work quite well for most applications, but if you have an application with either really high allocation rate, or a lot of long lived objects you might want to consider tuning the sizes of the heap generation. The ratio between the young and tenured generation of the heap is specified by using the +-XX:NewRatio=\#+ command line option (where +#+ is replaced by a number). The default ratio is 1:12 for client mode JVM, and 1:8 for server mode JVM. You can also specify the size of the young generation explicitly using the +-Xmn+ command line option, which works just like the +-Xmx+ option that specifies the total heap space.
+
+[options="header", cols=",,m,"]
+|====
+|GC shortname |Generation | Command line parameter |Comment
+|Copy | Young |-XX:+UseSerialGC |The Copying collector
+|MarkSweepCompact |Tenured |-XX:+UseSerialGC |The Mark and Sweep Compactor
+|ConcurrentMarkSweep |Tenured |-XX:+UseConcMarkSweepGC |The Concurrent Mark and Sweep Compactor
+|ParNew |Young |-XX:+UseParNewGC |The parallel Young Generation Collector -- can only be used with the Concurrent mark and sweep compactor.
+|PS Scavenge |Young |-XX:+UseParallelGC |The parallel object scavenger
+|PS MarkSweep |Tenured |-XX:+UseParallelGC |The parallel mark and sweep collector
+|====
+
+These are the default configurations on some platforms according to our non-exhaustive research:
+
+[options="header"]
+|====
+|JVM |-d32 -client |-d32 -server |-d64 -client |-d64 -server
+|Mac OS X Snow Leopard, 64-bit, Hotspot 1.6.0_17 |+ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+ | +ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+
+|Ubuntu, 32-bit, Hotspot 1.6.0_16 |+Copy+ and +MarkSweepCompact+ |+Copy+ and +MarkSweepCompact+ |N/A |N/A
+|====
+

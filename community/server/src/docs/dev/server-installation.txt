@@ -1,0 +1,109 @@
+[[server-installation]]
+Server Installation
+===================
+
+Neo4j can be installed as a server, running either as a headless application or system service.
+
+1. Download the latest release from http://neo4j.org/download
+   * select the appropriate version for your platform
+2. Extract the contents of the archive
+   * refer to the top-level extracted directory as +NEO4J_HOME+
+3. Use the scripts in the +bin+ directory
+   * for Linux/MacOS, run `$NEO4J_HOME/bin/neo4j start`
+   * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j.bat`
+4. Refer to the packaged information in the +doc+ directory for details
+
+== As a Windows service ==
+
+With administrative rights, Neo4j can be installed as a Windows service.
+
+1. Click Start -> All Programs -> Accessories
+2. Right click Command Prompt -> Run as Administrator
+3. Provide authorization and/or the Administrator password
+4. Navigate to `%NEO4J_HOME%`
+5. Run `bin\Neo4j.bat install`
+
+To uninstall, run `bin\Neo4j.bat remove` as Administrator.
+
+To query the status of the service, run `bin\Neo4j.bat query`
+
+To start/stop the service from the command prompt, run `bin\Neo4j.bat +action+`
+
+== Linux Service ==
+
+Neo4j can participate in the normal system startup and shutdown process.
+The following procedure should work on most popular Linux distributions:
+
+1. `cd $NEO4J_HOME`
+2. `sudo ./bin/neo4j install`
++
+if asked, enter your password to gain super-user privileges
+
+3. `service neo4j-service status`
++
+should indicate that the server is not running
+
+4. `service neo4j-service start`
++
+will start the server
++
+During installation you will be given the option to select the user Neo4j will run as. You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the `$NEO4J_HOME/data` directory will be `chown`'ed to that user.
++
+You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under `/opt` or your site specific optional packages directory.
++
+Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
+
+== Mac OSX Service ==
+
+Neo4j can be installed as a Mac launchd job:
+
+1. `cd $NEO4J_HOME`
+2. `./bin/neo4j install`
+3. `launchctl list | grep neo`
++
+should reveal the launchd "org.neo4j.server.7474" job for running the Neo4j Server
+
+4. `./bin/neo4j status`
++
+should indicate that the server is running
+   
+   
+== Multiple Server instances on one machine ==
+
+Neo4j can be set up to run as several instances on one machine, providing for instance several databases for development. To configure, install two instances of the Neo4j Server in two different directories. Before running the Windows install or startup, change in conf/neo4j-wrapper.conf
+
+[source, shell]
+----
+# Name of the service for the first instance
+wrapper.name=neo4j_1
+----
+
+and for the second instance
+
+[source, shell]
+----
+# Name of the service for the second instance
+wrapper.name=neo4j_2
+----
+
+in order not to get name clashes installing and starting the instances as services.
+
+Also, the port numbers for the web administration and the servers should be changed to non-clashing values in conf/neo4j-server.properties:
+
+Server 1 (port 7474):
+
+[source, shell]
+----
+org.neo4j.server.webserver.port=7474
+----
+
+Server 2 (port 7475):
+
+[source, shell]
+----
+org.neo4j.server.webserver.port=7475
+----
+
+== High Availability Mode ==
+
+For information on High Availability, please refer to <<ha>>.

@@ -1,0 +1,54 @@
+Interaction points
+==================
+* Acquire lock
+* Allocate ID range
+* Commit transaction
+* Rollback transaction (release locks)
+* Slave pull
+
+All responses have the possibility to return a number of transaction logs.
+
+
+Aquire lock responses
+---------------------
+* ok, locked
+* deadlock detected
+* recoverable failure
+  Master sends transaction logs and client either realizes that the resource
+  is not lockable (removed) or that it could make a new locking attempt.
+* nonrecoverable failure
+  Transaction fails. Typically the master has died since the last sync, and
+  we now have a new (or restarted) master. All transactions from before the
+  last syncup are now invalid, since their locks are not held by the master.
+
+
+Allocate ID range
+-----------------
+
+
+Commit transaction
+------------------
+
+
+Rollback transaction
+--------------------
+
+
+Slave pull
+----------
+
+
+Features still missing
+======================
+* How does a new master know if a client has had a transaction opened before or
+  not? How do we differentiate from the first lock in a transaction and the
+  rest of them?
+
+
+Locking sequence
+================
+1. Acquire local lock
+2. Acquire lock at master
+   If fail: release local lock
+   If success: proceed
+

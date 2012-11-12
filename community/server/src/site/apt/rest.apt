@@ -1,0 +1,1131 @@
+Neo4j REST API
+
+    The Neo4j REST API is designed with discoverability in mind, so that
+    you can start with a <<<GET />>> and from there discover URIs to do
+    other stuff. Examples below uses URIs for examples; they are subject
+    to change in the future, so for future-proofness <discover URIs
+    where possible>, instead of relying on current layout. The default
+    representation is {{{http://www.json.org/}json}}, both for responses
+    and for data sent with <<<POST>>>/<<<PUT>>> requests.
+    
+    Below follows a listing of ways to interact with the REST API. You
+    can also see a (at runtime) generated description of the API be
+    pointing your browser to the (exact URI may vary)
+    {{http://localhost:7474/db/data/application.wadl}}
+
+	To interact with the JSON interface you must explicitly set request header
+	<<Accept:application/json>> for those requests that responds with data.
+	You should also set header <<Content-Type:application/json>> if your request sends data,
+	for example when you're creating a relationship.
+
+Ways to interact
+
+%{toc|section=2|fromDepth=2|toDepth=2}
+
+* {Get root}
+
+** GET /
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/
+---
+
+** Response
+
+*** 200
+
+---
+{
+  "node" : "http://localhost:7474/db/data/node",
+  "node_index" : "http://localhost:7474/db/data/index/node",
+  "relationship_index" : "http://localhost:7474/db/data/index/relationship",
+  "reference_node" : "http://localhost:7474/db/data/node/0",
+  "extensions_info" : "http://localhost:7474/db/data/ext",
+  "extensions" : {
+  }
+}
+---
+
+* {Create empty node}
+
+** POST /node
+
+** Example using curl
+
+---
+curl -H Accept:application/json -X POST http://localhost:7474/db/data/node
+---
+
+** Response
+
+*** 201: OK, a node was created
+
+    <<Location>>: http://localhost:7474/db/data/node/123
+
+* {Create node with properties}
+
+** POST /node
+
+---
+{ "name": "Thomas Anderson",
+  "profession": "Hacker"
+}
+---
+
+** Example using curl
+
+---
+curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"name": "Thomas Anderson", "profession": "Hacker"}' http://localhost:7474/db/data/node
+---
+
+** Response
+
+*** 201: OK, a node was created
+
+    <<Location>>: http://localhost:7474/db/data/node/123
+
+*** 400: Invalid data sent
+
+* {Get node}
+
+** GET /node/123
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/node/123
+---
+
+** Response
+
+*** 200: OK
+
+---
+{ "self": "http://localhost:7474/db/data/node/123",
+  "data": { "name": "Thomas Anderson",
+            "age": 29
+  },
+  "create_relationship": "http://localhost:7474/db/data/node/123/relationships",
+  "all_relationships": "http://localhost:7474/db/data/node/123/relationships/all",
+  "all_typed relationships": "http://localhost:7474/db/data/node/123/relationships/all/{-list|&|types}",
+  "incoming_relationships": "http://localhost:7474/db/data/node/123/relationships/in",
+  "incoming_typed relationships": "http://localhost:7474/db/data/node/123/relationships/in/{-list|&|types}",
+  "outgoing_relationships": "http://localhost:7474/db/data/node/123/relationships/out",
+  "outgoing_typed relationships": "http://localhost:7474/db/data/node/123/relationships/out/{-list|&|types}",
+  "properties": "http://localhost:7474/db/data/node/123/properties",
+  "property": "http://localhost:7474/db/data/node/123/property/{key}",
+  "traverse": "http://localhost:7474/db/data/node/123/traverse/{returnType}"
+}
+---
+
+*** 404: Node not found
+
+* {Set properties on node}
+
+    Replaces all properties on a node with the supplied set of properties.
+
+** PUT /node/123/properties
+
+---
+{ "name": "Thomas Anderson",
+  "profession": "Hacker"
+}
+---
+
+** Example using curl
+
+---
+curl -H Content-Type:application/json -X PUT -d '{"name": "Thomas Anderson", "profession": "Hacker"}' http://localhost:7474/db/data/node/123/properties
+---
+	
+** Response
+
+*** 204: OK, no content returned
+
+*** 400: Invalid data sent
+
+*** 404: Node node found
+
+* {Get properties on node}
+
+** GET /node/123/properties
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/node/123/properties
+---
+
+** Response
+
+*** 200: OK
+
+---
+{ "name": "Thomas Anderson",
+  "profession": "Hacker"
+}
+---
+
+*** 204: OK, no properties found
+
+*** 404: Node not found
+
+* {Remove properties from node}
+
+    Removes all properties from a node.
+
+** DELETE /node/123/properties
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/node/123/properties
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Node not found
+
+* {Set property on node}
+
+** PUT /node/123/properties/foo
+
+---
+"the_value"
+---
+
+** Example using curl
+
+---
+curl -H Content-Type:application/json -X PUT -d '"the_value"' http://localhost:7474/db/data/node/123/properties/foo
+---
+	
+** Response
+
+*** 204: OK, no content returned
+
+*** 400: Invalid data sent
+
+* {Get property on node}
+
+** GET /node/123/properties/foo
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/node/123/properties/foo
+---
+
+** Response
+
+*** 200: OK
+
+---
+"the_value"
+---
+
+*** 404: Node or property not found
+
+* {Remove property from node}
+
+** DELETE /node/123/properties/foo
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/node/123/properties/foo
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Node or property not found
+
+* {Delete node}
+
+** DELETE /node/123
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/node/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Node not found
+
+*** 409: Node could not be deleted (still has relationships?)
+
+* {Create relationship}
+
+** POST /node/123/relationships
+
+---
+{ "to": "http://localhost:7474/db/data/node/152",
+  "data": { "date", 1270559208258 },
+  "type": "KNOWS"
+}
+---
+
+** Example using curl
+
+---
+curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"to": "http://localhost:7474/db/data/node/152", "data": {"date": 1270559208258}, "type": "KNOWS"}' http://localhost:7474/db/data/node/123/relationships
+---
+	
+** Response
+
+*** 201: OK, a relationship was created
+
+    <<Location>>: http://localhost:7474/db/data/relationship/456
+
+*** 400: Invalid data sent
+
+*** 404: "to" node, or the node specified by the URI not found
+
+* {Set properties on relationship}
+
+    Replaces all properties on a relationship with the supplied set of properties.
+
+** PUT /relationship/456/properties
+
+---
+{ "date": 1270559208258 }
+---
+
+** Example using curl
+
+---
+curl -H Content-Type:application/json -X PUT -d '{"date": 1270559208258}' http://localhost:7474/db/data/relationship/456/properties
+---
+	
+** Response
+
+*** 204: OK, no content returned
+
+*** 400: Invalid data sent
+
+*** 404: Relationship node found
+
+* {Get properties on relationship}
+
+** GET /relationship/456/properties
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/relationship/456/properties
+---
+
+** Response
+
+*** 200: OK
+
+---
+{ "date": 1270559208258 }
+---
+
+*** 204: OK, no properties found
+
+*** 404: Relationship not found
+
+* {Remove properties from relationship}
+
+    Removes all properties from a relationship.
+
+** DELETE /relationship/456/properties
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/relationship/456/properties
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Relationship not found
+
+* {Set property on relationship}
+
+** PUT /relationship/456/properties/foo
+
+---
+"the_value"
+---
+
+** Example using curl
+
+---
+curl -H Content-Type:application/json -X PUT -d '"the_value"' http://localhost:7474/db/data/relationship/456/properties/foo
+---
+	
+** Response
+
+*** 204: OK, no content returned
+
+*** 400: Invalid data sent
+
+*** 404: Relationship not found
+
+* {Get property on relationship}
+
+** GET /relationship/456/properties/foo
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/relationship/456/properties/foo
+---
+
+** Response
+
+*** 200: OK
+
+---
+"the_value"
+---
+
+*** 404: Relationship or property not found
+
+* {Remove property from relationship}
+
+** DELETE /relationship/456/properties/foo
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/relationship/456/properties/foo
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Relationship or property not found
+
+
+
+* {Delete relationship}
+
+** DELETE /relationship/456
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/relationship/456
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Relationship not found
+
+
+
+* {Get relationships on node}
+
+** GET /node/123/relationships/\{dir\}/\{-list|&|types\}
+
+    Where dir is one of all,in,out and types is an ampersand-separated list of types. Some examples:
+
+    * <GET /node/123/relationships/out/KNOWS&LOVES>  -- outgoing relationships of types KNOWS and LOVES
+
+    * <GET /node/123/relationships/all/KNOWS>  -- relationships (both outgoing and incoming) of type LOVES
+
+    * <GET /node/123/relationships/in>  -- incoming relationships
+    
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/node/123/relationships/out/KNOWS\&LOVES
+---
+
+	Note: The ''&'' must be esaped in bash-like terminals (as included in the example, ''\\'')
+
+** Response
+
+*** 200: OK
+
+---
+[
+  { "self": "http://localhost:7474/db/data/relationship/56",
+    "start": "http://localhost:7474/db/data/node/123",
+    "end": "http://localhost:7474/db/data/node/93",
+    "type": "KNOWS",
+    "properties": "http://localhost:7474/db/data/relationship/56/properties",
+    "property": "http://localhost:7474/db/data/relationship/56/properties/{key}",
+    "data": { "date", 1270559208258 }
+  },
+  { "self": "http://localhost:7474/db/data/relationship/834",
+    "start": "http://localhost:7474/db/data/node/32",
+    "end": "http://localhost:7474/db/data/node/123",
+    "type": "LOVES",
+    "properties": "http://localhost:7474/db/data/relationship/834/properties",
+    "property": "http://localhost:7474/db/data/relationship/834/properties/{key}",
+    "data": { "date", 1270559203821 }
+  }
+]
+---
+
+*** 404: Node not found
+
+
+
+* {Get relationships types}
+
+** GET /relationship/types
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/relationship/types
+---
+
+** Response
+
+*** 200: OK
+
+---
+[
+  "KNOWS",
+  "LOVES"
+]
+---
+
+
+
+* {Create an index, with configuration parameters}
+
+    This is only necessary if you want to divert from the default index settings. If you
+    are happy with defaults, you can just start indexing nodes and relationships, as non-existant
+    indexes will automatically be created as you do.
+
+** POST /index/node
+
+---
+{ 
+  "name":"A unique index name", 
+  "config":{
+    "provider":"An index provider", // For instance, "lucene", which is the default
+    
+    // Other provider-specific configuration can be provided here
+    
+    "type" : "fulltext" // Lucene-specific, use to create a fulltext index. 
+  }
+}
+---
+
+** POST /index/relationship
+
+---
+{ 
+  "name":"A unique index name", 
+  "config":{
+    "provider":"An index provider", // For instance, "lucene", which is the default
+    
+    // Other provider-specific configuration can be provided here
+    
+    "type" : "fulltext" // Lucene-specific, use to create a fulltext index. 
+  }
+}
+---
+
+** Example using curl
+
+---
+curl -X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
+---
+
+** Response
+
+*** 201: OK, the index was created (or was already created)
+
+---
+{
+  "template" : "http://localhost:7474/db/data/index/node/testing-fulltext/{key}/{value}",
+  "provider" : "lucene",
+  "type" : "fulltext"
+}
+---
+
+
+
+* {Deleting an index}
+
+** DELETE /index/node/index_name
+
+** DELETE /index/relationship/index_name
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/index_name
+---
+
+** Response
+
+*** 204: OK, No content returned
+
+
+
+* {Listing node indexes}
+
+** GET /index/node
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/node
+---
+
+** Response
+
+*** 200: OK
+
+---
+{
+  "my_nodes" : {
+    "template" : "http://localhost:7474/db/data/index/node/my_nodes/{key}/{value}",
+    "provider" : "lucene",
+    "type" : "exact"
+  }
+}
+---
+
+
+
+* {Listing relationship indexes}
+
+** GET /index/relationship
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
+---
+
+** Response
+
+*** 200: OK
+
+---
+{
+  "my_relationships" : {
+    "template" : "http://localhost:7474/db/data/index/relationship/my_relationships/{key}/{value}",
+    "provider" : "lucene",
+    "type" : "exact"
+  }
+}
+---
+
+
+
+* {Index a node or a relationship}
+
+    Note: If the index you are adding a node or relationship to does not exist, one will be created
+    with default configuration.
+    
+    What "default" configuration means depends on how you have configured your database, if you haven't
+    changed any indexing configuration, it means using Lucene. 
+    
+    If you want to divert from the default index settings, see "Create an index" above.
+    
+    
+    Also: This does *not* overwrite previous entries. If you index the same key/value/item combination twice,
+    two index entries are created. To do update-type operations, you need to delete the old entry before
+    adding a new one.
+    
+** POST /index/node/my_nodes/the_key/the_value
+
+	Associates a node with the given key/value pair in the given index.
+     
+---
+"http://localhost:7474/db/data/node/123"
+---
+
+** Example using curl
+
+---
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space
+---
+
+** Response
+
+*** 201: OK, indexed the node with key/value
+
+    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space/123
+
+** POST /index/relationship/my_relationships/the_key/the_value
+
+	Associates a relationship with the given key/value pair in the given index.
+
+---
+"http://localhost:7474/db/data/relationship/456"
+---
+
+** Example using curl
+
+---
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/relationship/123"' http://localhost:7474/db/data/index/relationship/my_relationships/the_key/the_value
+---
+
+** Response
+
+*** 201: OK, indexed the node with key/value
+
+    <<Location>>: http://localhost:7474/db/data/index/relationships/my_relationships/the_key/the_value/456
+
+
+
+* {Remove items from an index}
+
+    The URIs used here can be found either in the response to a query to an index, where URIs like this
+    will be included in each node/relationship representation returned. They are also returned (as Location in response
+    header) when adding to an index.
+    
+** DELETE /index/node/my_nodes/the_key/the_value/123
+
+	Will remove the index entry for node 123 with the specified key and value.
+
+** DELETE /index/relationship/my_relationship/the_key/the_value/123
+
+	Will remove the index entry for relationship 123 with the specified key and value.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+*** 404: Index entry not found
+
+
+
+* {Remove items from an index without supplying value}
+
+** DELETE /index/node/my_nodes/the_key/123
+
+	Will remove all indexing for node 123 and the specified key, regardless of value.
+
+** DELETE /index/relationship/my_relationships/the_key/123
+
+	Will remove all indexing for relationship 123 and the specified key, regardless of value.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+
+
+* {Remove items from an from index completely}
+
+** DELETE /index/node/my_nodes/123
+
+	Will remove all mentions of node 123 in the entire index.
+
+** DELETE /index/relationship/my_relationships/123
+
+	Will remove all mentions of relationship 123 in the entire index.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+
+
+
+* {Index search - Exact key/value lookup}
+	
+	Please note: Searching in indexes is only one of the two primary ways to search your data in neo4j, 
+	for advanced graph-based queries, see the traversal API, listed below.
+
+    There are two ways to use your indexes - exact key/value lookup, or using a query language. 
+    
+    This is the simple, exact lookup operation.
+ 
+** GET /index/node/my_nodes/the_key/the_value
+
+** GET /index/relationship/my_rels/the_key/the_value
+
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key/the_value%20with%20space
+---
+
+** Response
+
+*** 200: OK
+
+---
+[
+  { "self": "http://localhost:7474/db/data/relationship/56",
+    "start": "http://localhost:7474/db/data/node/123",
+    "end": "http://localhost:7474/db/data/node/93",
+    "type": "KNOWS",
+    "properties": "http://localhost:7474/db/data/relationship/56/properties",
+    "property": "http://localhost:7474/db/data/relationship/56/properties/{key}",
+    "data": { "date", 1270559208258 },
+    "indexed": "http://localhost:7474/db/data/index/relationship/the_key/the_value%20with%20space/56"
+  },
+  { "self": "http://localhost:7474/db/data/relationship/834",
+    "start": "http://localhost:7474/db/data/node/32",
+    "end": "http://localhost:7474/db/data/node/123",
+    "type": "LOVES",
+    "properties": "http://localhost:7474/db/data/relationship/834/properties",
+    "property": "http://localhost:7474/db/data/relationship/834/properties/{key}",
+    "data": { "date", 1270559203821 },
+    "indexed": "http://localhost:7474/db/data/index/relationship/the_key/the_value/834"
+  }
+]
+---
+
+    The response is an ordered list of node or relationship
+    representations, with one new property added: indexed. This
+    property can be used to remove the indexed entity at a later point. 
+
+
+
+
+* {Index search - Using a query language}
+	
+	Please note: Searching in indexes is only one of the two primary ways to search your data in neo4j, 
+	for advanced graph-based queries, see the traversal API, listed below.
+	
+	This is the advanced query operation for an index. The query syntax used here
+	depends on what index provider you chose when you created the index.
+	
+	The most common provider is Lucene, in which case you will want to use the Lucene
+	query language, documented here: 
+	
+	http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
+	
+	If you are using another index provider, please refer to the documentation it provides for 
+	its #query(String query) method.
+	
+	The examples below are using the Lucene query syntax.
+ 
+
+** GET /index/node/my_nodes?query=the_key:the_* AND the_other_key:[1 TO 100]
+
+** GET /index/relationship/my_rels?query=the_key:the_* AND the_other_key:[1 TO 100]
+
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes?query=the_key:the_%2A%20AND%20the_other_key%3A%5B1%20TO%20100%5D
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels?query=the_key:the_%2A%20AND%20the_other_key%3A%5B1%20TO%20100%5D
+---
+
+** Response
+
+*** 200: OK
+
+---
+[
+  { "self": "http://localhost:7474/db/data/relationship/56",
+    "start": "http://localhost:7474/db/data/node/123",
+    "end": "http://localhost:7474/db/data/node/93",
+    "type": "KNOWS",
+    "properties": "http://localhost:7474/db/data/relationship/56/properties",
+    "property": "http://localhost:7474/db/data/relationship/56/properties/{key}",
+    "data": { "date", 1270559208258 },
+    "indexed": "http://localhost:7474/db/data/index/relationship/the_key/the_value%20with%20space/56"
+  },
+  { "self": "http://localhost:7474/db/data/relationship/834",
+    "start": "http://localhost:7474/db/data/node/32",
+    "end": "http://localhost:7474/db/data/node/123",
+    "type": "LOVES",
+    "properties": "http://localhost:7474/db/data/relationship/834/properties",
+    "property": "http://localhost:7474/db/data/relationship/834/properties/{key}",
+    "data": { "date", 1270559203821 },
+    "indexed": "http://localhost:7474/db/data/index/relationship/the_key/the_value/834"
+  }
+]
+---
+
+    The response is an ordered list of node or relationship
+    representations.
+
+
+
+
+* {Traverse}
+
+** POST /node/123/traverse/\{returnType\}
+
+    Where <returnType> is one if <node, relationship, path, fullpath>
+    and specifies which kind of objects to return in the response.
+    
+    The <<position>> object in the body of the prune evaluator is a
+    <<org.neo4j.graphdb.Path>> object representing the path from the
+    start node to the current traversal position.
+
+---
+{
+  "order": "depth_first",
+  "uniqueness": "node_path",
+  "relationships": [
+    { "type": "KNOWS", "direction": "out" },
+    { "type": "LOVES" }
+  ],
+  "prune_evaluator": {
+    "language": "javascript",
+    "body": "position.endNode().getProperty('date')>1234567;"
+  },
+  "return_filter": {
+    "language": "builtin",
+    "name": "all"
+  },
+  "max_depth": 2
+}
+---
+
+    "max depth" is a short-hand way of specifying a prune evaluator
+    which prunes after a certain depth. If not specified a max depth of 1 is
+    used and if a "prune evaluator" is specified instead of a max depth,
+    no max depth limit is set.
+
+    <<Builtin prune evaluators>>: none
+
+    <<Builtin return filters>>: all, all_but_start_node 
+
+** Example using curl
+
+---
+curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"order":"depth_first"}' http://localhost:7474/db/data/node/123/traverse/node
+---
+
+** Response
+
+*** 200: OK
+
+    If <returnType>=<node>:
+
+---
+[
+  { "self": "http://localhost:7474/db/data/node/64",
+    "data": { "name": "Thomas Anderson" },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/node/635",
+    "data": { "name": "Agent Smith" },
+    ...
+  }
+]
+---
+
+    If <returnType>=<relationship>:
+
+---
+[
+  { "self": "http://localhost:7474/db/data/relationship/48",
+    "data": { "date", 1270559208258 },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/relationship/75",
+    "data": { "date", 1270559209483 },
+    ...
+  }
+]
+---
+
+    If <returnType>=<path>:
+
+---
+[
+  { "nodes": [
+      "http://localhost:7474/db/data/node/2",
+      "http://localhost:7474/db/data/node/351",
+      "http://localhost:7474/db/data/node/64"
+    ],
+    "relationships": [
+      "http://localhost:7474/db/data/relationship/5",
+      "http://localhost:7474/db/data/relationship/48"
+    ],
+    "start": "http://localhost:7474/db/data/node/2",
+    "end": "http://localhost:7474/db/data/node/64",
+    "length": 3
+  },
+  { "nodes": [
+      "http://localhost:7474/db/data/node/2",
+      "http://localhost:7474/db/data/node/351",
+      "http://localhost:7474/db/data/node/635"
+    ],
+    "relationships": [
+      "http://localhost:7474/db/data/relationship/5",
+      "http://localhost:7474/db/data/relationship/75"
+    ],
+    "start": "http://localhost:7474/db/data/node/2",
+    "end": "http://localhost:7474/db/data/node/635",
+    "length": 3
+  },
+]
+---
+
+    If <returnType>=<fullpath>:
+
+---
+[
+  { "nodes": [
+  { "self": "http://localhost:7474/db/data/node/64",
+    "data": { "name": "Thomas Anderson" },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/node/635",
+    "data": { "name": "Agent Smith" },
+    ...
+  }],
+    "relationships": [
+  { "self": "http://localhost:7474/db/data/relationship/48",
+    "data": { "date", 1270559208258 },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/relationship/75",
+    "data": { "date", 1270559209483 },
+    ...
+  }],
+    "start": 
+  { "self": "http://localhost:7474/db/data/node/64",
+    "data": { "name": "Thomas Anderson" },
+    ...
+  },
+    "end": 
+	{ "self": "http://localhost:7474/db/data/node/635",
+	    "data": { "name": "Agent Smith" },
+	    ...
+	  },
+    "length": 3
+  },
+  { "nodes": [
+....
+    "length": 3
+  }
+]
+---
+
+*** 404: Node not found
+
+
+
+
+* {Finding a path between two nodes}
+
+** POST /node/123/path
+
+---
+{ "to": "http://localhost:7474/db/data/node/456",
+  "relationships": {"type": "KNOWS", "direction": "out"},
+  "max_depth": 3,
+  "algorithm", "shortestPath"
+}
+---
+
+    The "algorithm" parameter should match the name of the corresponding method
+    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths
+    and dijkstra.
+
+** Example using curl
+
+---
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max_depth":10}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost_property":"cost","default_cost":1}'
+---
+
+** Response
+
+*** 200
+
+---
+{ "start" : "http://localhost:7474/db/data/node/123",
+  "nodes" : [ "http://localhost:7474/db/data/node/123", "http://localhost:7474/db/data/node/341", "http://localhost:7474/db/data/node/456" ],
+  "length" : 2,
+  "relationships" : [ "http://localhost:7474/db/data/relationship/564", "http://localhost:7474/db/data/relationship/32" ],
+  "end" : "http://localhost:7474/db/data/node/456"
+}
+---
+
+	Results from "dijkstra" algorithm will also have "weight".
+
+*** 404: No path found using current algorithm and parameters
+
+* {Finding paths between two nodes}
+
+** POST /node/123/paths
+
+---
+{ "to": "http://localhost:7474/db/data/node/456",
+  "relationships": {"type": "KNOWS", "direction": "out"},
+  "max_depth": 3,
+  "algorithm", "shortestPath"
+}
+---
+
+    The "algorithm" parameter should match the name of the corresponding method
+    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths
+    and dijkstra. More will be supported later on.
+
+** Example using curl
+
+---
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max_depth":10}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost_property":"cost","default_cost":1}'
+---
+
+** Response
+
+*** 200
+
+---
+[ {
+  "start" : "http://localhost:7474/db/data/node/123",
+  "nodes" : [ "http://localhost:7474/db/data/node/123", "http://localhost:7474/db/data/node/341", "http://localhost:7474/db/data/node/456" ],
+  "length" : 2,
+  "relationships" : [ "http://localhost:7474/db/data/relationship/564", "http://localhost:7474/db/data/relationship/32" ],
+  "end" : "http://localhost:7474/db/data/node/456"
+}, {
+  "start" : "http://localhost:7474/db/data/node/123",
+  "nodes" : [ "http://localhost:7474/db/data/node/123", "http://localhost:7474/db/data/node/41", "http://localhost:7474/db/data/node/456" ],
+  "length" : 2,
+  "relationships" : [ "http://localhost:7474/db/data/relationship/437", "http://localhost:7474/db/data/relationship/97" ],
+  "end" : "http://localhost:7474/db/data/node/456"
+} ]
+---
+
+	Results from "dijkstra" algorithm will also have "weight".
+
+*** 204: No path found using current algorithm and parameters
+
+See also
+
+    * {{{http://wiki.neo4j.org/content/Getting_Started_REST}Getting started with REST on the Neo4j wiki}}

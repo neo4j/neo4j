@@ -1,0 +1,167 @@
+[[transactions]]
+Transaction Management
+======================
+
+In order to fully maintain data integrity and ensure good transactional behavior, Neo4j supports the ACID properties:
+
+* atomicity - if any part of a transaction fails, the database state is left unchanged
+* consistency - any transaction will leave the database in a consistent state
+* isolation - during a transaction, modified data cannot be accessed by other operations
+* durability - the DBMS can always recover the results of a committed transaction
+
+Specifically:
+
+* All modifications to Neo4j data must be wrapped in transactions.
+* The default isolation level is +READ_COMMITTED+.
+* Data retrieved by traversals is not protected from modification by other transactions.
+* Non-repeatable reads may occur (i.e., only write locks are acquired and held until the end of the transaction).
+* One can manually acquire write locks on nodes and relationships to achieve higher level of isolation (+SERIALIZABLE+).
+* Locks are acquired at the Node and Relationship level.
+* Deadlock detection is built into the core transaction management.
+
+[[transactions-interaction]]
+== Interaction cycle ==
+
+All write operations that work with the graph must be performed in a transaction.
+Transactions are thread confined and can be nested as “flat nested transactions”.
+Flat nested transactions means that all nested transactions are added to the scope of the top level transaction.
+A nested transaction can mark the top level transaction for rollback, meaning the entire transaction will be rolled back.
+To only rollback changes made in a nested transaction is not possible.
+
+When working with transactions the interaction cycle looks like this:
+
+. Begin a transaction.	
+. Operate on the graph performing write operations.
+. Mark the transaction as successful or not.
+. Finish the transaction.
+
+_It is very important to finish each transaction_. The transaction will not release the locks or memory it has acquired until it has been finished.
+The idiomatic use of transactions in Neo4j is to use a try-finally block, starting the transaction and then try to perform the write operations.
+The last operation in the try block should mark the transaction as successful while the finally block should finish the transaction.
+Finishing the transaction will perform commit or rollback depending on the success status.
+
+[CAUTION]
+_All modifications performed in a transaction are kept in memory._
+This means that very large updates have to be split into several top level transactions to avoid running out of memory.
+It must be a top level transaction since splitting up the work in many nested transactions will just add all the work to the top level transaction.
+
+In an environment that makes use of _((thread pooling))_ other errors may occur when failing to finish a transaction properly.
+Consider a leaked transaction that did not get finished properly.
+It will be tied to a thread and when that thread gets scheduled to perform work starting a new (what looks to be a) top level transaction it will actually be a nested transaction.
+If the leaked transaction state is “marked for rollback” (which will happen if a deadlock was detected) no more work can be performed on that transaction.
+Trying to do so will result in error on each call to a write operation.
+
+[[transactions-isolation]]
+== Isolation levels ==
+
+By default a read operation will read the last committed value unless a local modification within the current transaction exist.
+The default isolation level is very similar to +READ_COMMITTED+: reads do not block or take any locks so non-repeatable reads can occur.
+It is possible to achieve a stronger isolation level (such as +REPETABLE_READ+ and +SERIALIZABLE+) by manually acquiring read and write locks.
+
+[[transactions-locking]]
+== Default locking behavior ==
+
+* When adding, changing or removing a property on a node or relationship a write lock will be taken on the specific node or relationship. 	
+* When creating or deleting a node a write lock will be taken for the specific node. 	
+* When creating or deleting a relationship a write lock will be taken on the specific relationship and both its nodes.
+
+The locks will be added to the transaction and released when the transaction finishes.
+
+[[transactions-deadlocks]]
+== Deadlocks ==
+
+Since locks are used it is possible for deadlocks to happen.
+Neo4j will however detect any deadlock (caused by acquiring a lock) before they happen and throw an exception.
+Before the exception is thrown the transaction is marked for rollback.
+All locks acquired by the transaction are still being held but will be released when the transaction is finished (in the finally block as pointed out earlier).
+Once the locks are released other transactions that were waiting for locks held by the transaction causing the deadlock can proceed.
+The work performed by the transaction causing the deadlock can then be retried by the user if needed.
+
+Experiencing frequent deadlocks is an indication of concurrent write requests happening in such a way that it is not possible to execute them while at the same time live up to the intended isolation and consistency.
+The solution is to make sure concurrent updates happen in a reasonable way.
+For example given two specific nodes (A and B), adding or deleting relationships to both these nodes in random order for each transaction will result in deadlocks when there are two or more transactions doing that concurrently.
+One solution is to make sure that updates always happens in the same order (first A then B).
+Another solution is to make sure that each thread/transaction does not have any conflicting writes to a node or relationship as some other concurrent transaction.
+This can for example be achieved by letting a single thread do all updates of a specific type.
+
+[IMPORTANT]
+Deadlocks caused by the use of other synchronization than the locks managed by Neo4j can still happen.
+Since all operations in the Neo4j API are thread safe unless specified otherwise, there is no need for external synchronization.
+Other code that requires synchronization should be synchronized in such a way that it never performs any Neo4j operation in the synchronized block.
+
+[[transactions-delete]]
+== Delete semantics ==
+
+When deleting a node or a relationship all properties for that entity will be automatically removed but the relationships of a node will not be removed.
+
+[CAUTION]
+Neo4j enforces a constraint (upon commit) that all relationships must have a valid start node and end node.
+In effect this means that trying to delete a node that still has relationships attached to it will throw an exception upon commit.
+It is however possible to choose in which order to delete the node and the attached relationships as long as no relationships exist when the transaction is committed.
+
+The delete semantics can be summarized in the following bullets:
+
+* All properties of a node or relationship will be removed when it is deleted.
+* A deleted node can not have any attached relationships when the transaction commits.
+* It is possible to acquire a reference to a deleted relationship or node that has not yet been committed.
+* Any write operation on a node or relationship after it has been deleted (but not yet committed) will throw an exception
+* After commit trying to acquire a new or work with an old reference to a deleted node or relationship will throw an exception.
+
+[[transactions-unique-nodes]]
+== Creating unique nodes ==
+In many use cases, a certain level of uniqueness is desired among entities. You could for instance imagine that only
+one user with a certain e-mail address may exist in a system. If multiple concurrent threads naively try to create the
+user, duplicates will be created. There are three main strategies for ensuring uniqueness, and they all work across HA
+and single-instance deployments.
+
+=== Single thread ===
+By using a single thread, no two threads will even try to create a particular entity simultaneously. On HA,
+an external single-threaded client can perform the operations on the cluster.
+
+[[transactions-get-or-create]]
+=== Get or create ===
+By using http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/Index.html#putIfAbsent(T,%20java.lang.String,%20java.lang.Object)[+put-if-absent+] functionality,
+entity uniqueness can be guaranteed using an index. Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
+To get the more high-level +get-or-create+ functionality make use of http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
+
+Example code:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateTest.java
+classifier=test-sources
+tag=getOrCreate
+----
+
+=== Pessimistic locking ===
+[IMPORTANT]
+While this is a working solution, please consider using the preferred  <<transactions-get-or-create>> instead.
+
+By using explicit, pessimistic locking, unique creation of entities can be achieved in a multi-threaded environment.
+It is most commonly done by locking on a single or a set of common nodes.
+
+One might be tempted to use Java synchronization for this, but it is dangerous. By mixing locks in the Neo4j kernel
+and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j. As long as all locking is
+done by Neo4j, all deadlocks will be detected and avoided.
+Also, a solution using manual synchronization doesn't ensure uniqueness in an HA environment.
+
+Example code:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateTest.java
+classifier=test-sources
+tag=pessimisticLocking
+----
+
+[[transactions-events]]
+== Transaction events ==
+
+Transaction event handlers can be registered to receive Neo4j Transaction events.
+Once it has been registered at a +GraphDatabaseService+ instance it will receive events about what has happened in each transaction which is about to be committed.
+Handlers won't get notified about transactions which haven't performed any write operation or won't be committed (either if +Transaction#success()+ hasn't been called or the transaction has been marked as failed +Transaction#failure()+.
+Right before a transaction is about to be committed the +beforeCommit+ method is called with the entire diff of modifications made in the transaction.
+At this point the transaction is still running so changes can still be made. However there's no guarantee that other handlers will see such changes since the order in which handlers are executed is undefined.
+This method can also throw an exception and will, in such a case, prevent the transaction from being committed (where a call to +afterRollback+ will follow).
+If +beforeCommit+ is successfully executed the transaction will be committed and the +afterCommit+ method will be called with the same transaction data as well as the object returned from +beforeCommit+.
+This assumes that all other handlers (if more were registered) also executed +beforeCommit+ successfully.

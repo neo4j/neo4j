@@ -1,0 +1,67 @@
+.sidebar
+  %p.pad Gremlin Console, allows you to use the <a href="http://gremlin.tinkerpop.com" target="_BLANK">Gremlin graph traversal language</a> for working with your graph. Gremlin is an expressive data flow language that can be used for graph query and manipulation, built on and adding to <a href="http://groovy.codehaus.org/Documentation" target="_BLANK">Groovy</a>.
+  %p.pad Using Gremlin, you can perform powerful data manipulations. <a href="http://gremlin.tinkerpop.com" target="_BLANK">More information.</a>
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") Cheat sheet
+    .foldout_content
+      %ul.info_list
+        %li
+          %h3 Local graph
+          %p &gt; g
+        %li
+          %h3 Set variable
+          %p &gt; myVar = "My Value"
+        %li
+          %h3 Get node by id
+          %p &gt; refNode = g.v(0)
+        %li
+          %h3 Set property on Node
+          %p &gt; refNode.name = "Bob"
+        %li
+          %h3 List all node properties
+          %p &gt; refNode.map()
+        %li
+          %h3 Define a properties map
+          %p &gt; props = [:]
+        %li
+          %h3 Add a property to the map
+          %p &gt; props["name"] = "Ariel"
+        %li
+          %h3 Create a node
+          %p &gt; secondNode = g.addVertex(props)
+        %li
+          %h3 Another property map
+          %p &gt; edgeProps = ["quality":"awesome"]
+        %li
+          %h3 Create relation
+          %p &gt; myRelation = g.addEdge(refNode, secondNode, 'KNOWS', edgeProps)
+        %li
+          %h3 Remove node or relation
+          %p &gt; g.removeEdge(myRelation)
+          %p &gt; g.removeVertex(secondNode)
+        %li
+          %h3 List relations of node</h3>
+          %p 
+            %ul
+              %li &gt; refNode.bothE
+              %li &gt; refNode.inE
+              %li &gt; refNode.outE
+              %li &gt; refNode.bothE{it.label=="relation type"}
+        %li
+          %h3 List nodes of relation
+          %p 
+            %ul
+              %li &gt; myRelation.bothV
+              %li &gt; myRelation.inV
+              %li &gt; myRelation.outV
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") If the console hangs
+    .foldout_content
+      %p.pad If the console hangs, you can reset it by clearing your browser cookies for webadmin.
+  
+.workarea.with-sidebar#console-base
+

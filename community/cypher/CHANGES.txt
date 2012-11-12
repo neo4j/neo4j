@@ -1,0 +1,27 @@
+1.5.1 (2012-02-02)
+------------------
+o Fixed problems with empty result sets on SKIP/LIMIT queries
+
+1.5 (2011-10-18)
+----------------
+o Added DISTINCT for all aggregate functions
+o Nodes/relationships can be parameters as well
+
+1.5.M02 (2011-10-10)
+--------------------
+o Relationships can now be optional
+o Added new predicated for iterables: ALL/ANY/NONE/SINGLE
+o Added path functions: NODES/RELATIONSHIPS/LENGTH
+o Parameters for literals, index queries and node/relationship id
+o Shortest path added
+o Pattern matcher will, if possible, eliminate subgraphs early, by using the predicates from the WHERE clause
+o Relationships can be bound now
+o Added IS NULL for NULL checking
+o Added new aggregate function - COLLECT
+
+1.5.M01 (2011-08-31)
+--------------------
+o Added paths
+o Changed r.TYPE to type(r)
+o Variable length path supported
+

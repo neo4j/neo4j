@@ -1,0 +1,187 @@
+[[cypher-query-lang]]
+Cypher Query Language
+=====================
+
+A new query language, code-named ``Cypher'', has been added to Neo4j.
+It allows for expressive and efficient querying of the graph store without having to write traversers in code.
+Cypher is still growing and maturing, and that means that there probably will be breaking syntax changes.
+It also means that it has not undergone the same rigorous performance testing as the other components.
+
+Cypher is designed to be a humane query language, suitable for both 
+developers and (importantly, we think) operations professionals who 
+want to make ad-hoc queries on the database. Its constructs are based 
+on English prose and neat iconography, which helps to make it (somewhat) 
+self-explanatory.
+
+Cypher is inspired by a number of different approaches and builds upon
+established practices for expressive querying. Most of the keywords like
++WHERE+ and +ORDER BY+ are inspired by http://en.wikipedia.org/wiki/SQL[SQL].
+Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
+Regular expression matching is implemented using the http://www.scala-lang.org/[Scala programming language].
+
+Cypher is a declarative language. It focuses on the clarity of expressing _what_
+to retrieve from a graph, not _how_ to do it, in contrast to imperative languages like Java,
+and scripting languages like http://gremlin.tinkerpop.com[Gremlin] (supported via the <<gremlin-plugin>>) 
+and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern of how to optimize
+queries in implementation detail not exposed to the user.
+
+The query language is comprised of several distinct parts.
+
+* +START+: Starting points in the graph, obtained by element IDs or via index lookups
+
+* +MATCH+: The graph pattern to match, bound to the starting points in +START+
+
+* +WHERE+: Filtering criteria
+
+* +RETURN+: What to return
+
+Let's see three of them in action:
+
+include::intro-examples.txt[]
+
+In Java, using the query language looks something like this:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=JavaQuery
+classifier=test-sources
+----
+
+[[cypher-parameters]]
+== Parameters ==
+
+Cypher supports querying with parameters. This allows developers to not to have to do string building
+to create a query, and it also makes caching of execution plans much easier for Cypher.
+
+Parameters can be used for literals in the +WHERE+ clause, for the index key and index value in the +START+
+clause, index queries, and finally for node/relationship ids.
+
+Accepted names for parameter are letters and number, and any combination of these.
+
+
+Here follows a few examples of how you can use parameters from Java.
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForNodeId
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForNode
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForMultipleNodeIds
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithStringLiteralAsParameter
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParametersForIndexKeyAndValue
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParametersForQuery
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForSkipLimit
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterRegularExpression
+classifier=test-sources
+----
+
+[[cypher-identifiers]]
+== Identifiers ==
+
+When you reference parts of the pattern, you do so by naming them.
+
+Identifiers can be lower or upper case, and may contain underscore.
+If other characters are needed, you can use the +`+ sign.
+The same rules apply to property names.
+
+[snippet,cypher]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=Identifier
+classifier=test-sources
+----
+
+
+
+:leveloffset: 2
+
+include::ql/start/index.txt[]
+
+:leveloffset: 2
+
+include::ql/match/index.txt[]
+
+:leveloffset: 2
+
+include::ql/where/index.txt[]
+
+:leveloffset: 2
+
+include::ql/return/index.txt[]
+
+:leveloffset: 2
+
+include::ql/aggregation/index.txt[]
+
+:leveloffset: 2
+
+include::ql/order-by/index.txt[]
+
+:leveloffset: 2
+
+include::ql/skip/index.txt[]
+
+:leveloffset: 2
+
+include::ql/limit/index.txt[]
+
+:leveloffset: 2
+
+include::ql/functions/index.txt[]
+
+:leveloffset: 2
+
+include::ql/cookbook/index.txt[]

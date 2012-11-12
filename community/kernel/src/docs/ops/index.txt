@@ -1,0 +1,30 @@
+[[embedded-configuration]]
+Configuration & Performance
+===========================
+
+In order to get optimum performance out of Neo4j for your application there are a few parameters that can be tweaked.
+The two main components that can be configured are the Neo4j caches and the JVM that Neo4j runs in.
+The following sections describe how to tune these.
+
+
+:leveloffset: 2
+
+include::introduction.txt[]
+
+:leveloffset: 2
+
+include::performance-guide.txt[]
+
+include::cache.txt[]
+
+include::jvm.txt[]
+
+include::filesystem.txt[]
+
+include::short-strings.txt[]
+
+include::short-arrays.txt[]
+
+include::io-examples.txt[]
+
+include::linux-performance.txt[]

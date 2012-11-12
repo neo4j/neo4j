@@ -1,0 +1,19 @@
+%table.data-table(cellspacing="0")
+  %tbody
+    %tr
+      %th 
+        %h3 Id
+      :each key in nodeList.getPropertyKeys()
+        %th
+          %h3= htmlEscape(key)
+    :each node in nodeList.getNodes()
+      %tr
+        %td
+          %a.micro-button(href="#/data/search/#{htmlEscape(node.getId())}/")= "Node " + htmlEscape(node.getId())
+        :each key in nodeList.getPropertyKeys()
+          %td.small
+            :if node.getPropertyByKey(key)
+              = node.getPropertyByKey(key).getTruncatedHtmlValue(50)
+
+
+.break

@@ -1,0 +1,11 @@
+[[configuration-filesystem]]
+File system tuning for high IO
+==============================
+
+In order to support the high IO load of small transactions from a database, the underlying file system should be tuned.
+Symptoms for this are low CPU load with high iowait.
+In this case, there are a couple of tweaks possible on Linux systems:
+
+* Disable access-time updates: +noatime,nodiratime+ flags for disk mount command or in the '/etc/fstab' for the database disk volume mount.
+* Tune the IO scheduler for high disk IO on the database disk.
+

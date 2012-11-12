@@ -1,0 +1,74 @@
+[[server-unmanaged-extensions]]
+Unmanaged Extensions 
+====================
+
+.Quick info
+***********
+* Danger: Men at Work!
+  The unmanaged extensions are a way of deploying arbitrary JAX-RS code into the Neo4j server.
+* The unmanaged extensions are exactly that: unmanaged.
+  If you drop poorly tested code into the server, it's highly likely you'll degrade its performance, so be careful.
+***********
+
+Some projects want extremely fine control over their server-side code.
+For this we've introduced an unmanaged extension API.
+
+[WARNING]
+This is a sharp tool, allowing users to deploy arbitrary http://en.wikipedia.org/wiki/JAX-RS[JAX-RS] classes to the server and so you should be careful when thinking about using this.
+In particular you should understand that it's easy to consume lots of heap space on the server and hinder performance if you're not careful.
+
+Still, if you understand the disclaimer, then you load your JAX-RS classes into the Neo4j server simply by adding adding a @Context annotation to your code, compiling against the JAX-RS jar and any Neo4j jars you're making use of.
+Then add your classes to the runtime classpath (just drop it in the lib directory of the Neo4j server).
+In return you get access to the hosted environment of the Neo4j server like logging through the +org.neo4j.server.logging.Logger+.
+
+In your code, you get access to the underlying +GraphDatabaseService+ through the +@Context+ annotation like so:
+
+[source,java]
+--------
+public MyCoolService( @Context GraphDatabaseService database )
+{
+  // Have fun here, but be safe!
+}
+--------
+
+Remember, the unmanaged API is a very sharp tool.
+It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference.
+However, a number of context parameters can be automatically provided for you, like the reference to the database.
+
+In order to specify the mount point of your extension, a full class looks like this:
+
+.Unmanaged extension example
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/unmanaged/HelloWorldResource.java
+tag=HelloWorldResource
+classifier=sources
+----
+
+The full source code is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java[HelloWorldResource.java]
+
+
+Build this code, and place the resulting jar file (and any custom dependencies) into the +$NEO4J_SERVER_HOME/plugins+ directory, and include this class in the +neo4j-server.properties+ file, like so:
+
+[source]
+------
+#Comma separated list of JAXRS packages containing JAXRS Resource, one package name for each mountpoint.
+org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
+------
+
+Which binds the hello method to respond to +GET+ requests at the URI: +http://\{neo4j_server}:\{neo4j_port}/examples/unmanaged/helloworld/\{nodeId}+
+
+[source,bash]
+-----
+curl http://localhost:7474/examples/unmanaged/helloworld/123
+-----
+
+which results in
+  
+[source]
+----
+Hello World, nodeId=123
+----
+

@@ -1,0 +1,31 @@
+%ul.property-list
+  :each property in properties
+    %li
+      %ul.property-row
+        %li.property-key-wrap
+          .property-input-wrap
+            %input.property-id(type="hidden" value="#{htmlEscape(property.getLocalId())}")
+            :if property.hasKeyError()
+              .form-error
+                = htmlEscape(property.getKeyError())
+            :if !property.hasKeyError()
+              .form-error(style="display:none;")
+            %input.property-key(type="text" value="#{htmlEscape(property.getKey())}")
+        %li.property-value-wrap
+          .property-input-wrap
+            :if property.hasValueError()
+              .form-error
+                = htmlEscape(property.getValueError())
+            :if !property.hasValueError()
+              .form-error(style="display:none;")
+            %input.property-value(type="text" value="#{property.getValueAsHtml()}")
+        %li.property-actions-wrap
+          .property-input-wrap
+            .delete-property.bad-button Remove
+      .break
+
+  %li.property-controls
+    .add-property.text-icon-button(title="Add a new property")
+      %span.icon
+      Add property
+    .break
