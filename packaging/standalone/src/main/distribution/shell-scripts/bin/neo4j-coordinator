@@ -1,0 +1,354 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          neo4j-coord
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+# Copyright (c) 2002-2012 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+FRIENDLY_NAME="Neo4j Coordinator"
+LAUNCHD_NAME="org.neo4j.coord"
+
+function findBaseDirAndCdThere {
+  SCRIPT=$0
+
+  cd "`dirname "$SCRIPT"`"
+  SCRIPT=`basename "$SCRIPT"`
+
+  while [ -L "$SCRIPT" ]
+  do
+    SCRIPT=$( readlink "$SCRIPT" )
+    cd "$(dirname "$SCRIPT")"
+    SCRIPT=`basename "$SCRIPT"`
+  done
+  NEO4J_HOME=`cd $( dirname "$SCRIPT" )/.. && dirs -l +0`
+  NEO4J_INSTANCE=$NEO4J_HOME
+
+  cd "$NEO4J_HOME"
+}
+
+function parseConfig {
+  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
+    if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
+      getconfigquoted "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
+      return
+    fi
+  fi
+  getconfig "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
+}
+
+findBaseDirAndCdThere
+source bin/utils
+parseConfig
+
+NEO4J_OPTS="-DconfigFile=conf\coord-wrapper.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
+JAVA_OPTS="-server ${wrapper_java_additional}"
+
+wrapper_user=`( egrep "^wrapper.user=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf" ) | sed -e 's/^.*=//'`
+if [ -z "${wrapper_user}" ]; then
+  NEO4J_USER=`id -un`
+else
+  NEO4J_USER=${wrapper_user}
+fi
+
+SCRIPT_NAME="${NEO4J_HOME}/bin/neo4j-coordinator"
+SERVICE_NAME=${wrapper_ntservice_name:=neo4j-coord}
+LAUNCHD_DIR=~/Library/LaunchAgents/
+
+TIMEOUT=20
+
+PID_FILE=${NEO4J_INSTANCE}/data/neo4j-coord.pid
+
+buildclasspath() {
+  # confirm library jars
+  LIBDIR="$NEO4J_HOME"/lib
+  if [ ! -e "$LIBDIR" ] ; then
+    echo "Error: missing Neo4j Library, expected at $LIBDIR"
+    exit 1
+  fi
+
+  # confirm system jars
+  SYSLIBDIR="$NEO4J_HOME"/system/coordinator/lib
+  if [ ! -e "$SYSLIBDIR" ] ; then
+    echo "Error: missing Neo4j System Library, expected at $SYSLIBDIR"
+    exit 1
+  fi
+
+  ALL_JARS=""
+  for jar in "$LIBDIR"/zoo*.jar "$SYSLIBDIR"/*.jar ; do
+    [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
+  done
+
+  CLASSPATH=${ALL_JARS}
+}
+
+startit() {
+
+  detectos
+  exitonnojava
+  checkstatus
+
+  if [ $DIST_OS = "macosx" ] ; then
+    getlaunchdpid
+    if [ $LAUNCHDPID -eq 0 ] ; then
+      echo "Detected installation in launchd, starting it..."
+      launchctl start $LAUNCHD_NAME
+      exit 0
+    elif [ $LAUNCHDPID -gt 0 ] ; then
+      echo "Instance already running via launchd with PID $LAUNCHDPID"
+      exit 0
+    fi
+    # We fall through here since if there is no launchd install we start manually
+  fi
+
+  if [ -z $NEO4J_PID ] ; then
+    printf "Starting $FRIENDLY_NAME..."
+
+    buildclasspath
+    checkandrepairenv
+
+    if [ $UID == 0 ] ; then
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> \"$NEO4J_INSTANCE/data/log/coord-console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
+    else
+      checkwriteaccess
+      echo "WARNING: not changing user"
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> "${NEO4J_INSTANCE}/data/log/coord-console.log" 2>&1 & echo $! > "$PID_FILE"
+    fi
+    STARTED_PID=$( cat "$PID_FILE" )
+
+    printf " process [$STARTED_PID]... waiting for coordinator to be ready."
+
+    if kill -0 $STARTED_PID 2>/dev/null ; then
+      echo " OK."
+      exit 0
+    fi
+
+    echo " BAD."
+    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
+    rm "$PID_FILE"
+    exit 1
+  else
+    echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
+    exit 0
+  fi
+}
+
+console() {
+
+  checkstatus
+
+  if [ -z $NEO4J_PID ] ; then
+    echo "Starting $FRIENDLY_NAME console-mode..."
+
+    exitonnojava
+    buildclasspath
+    checkwriteaccess
+    checkandrepairenv
+
+    $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg
+
+  else
+    echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
+    exit 1
+  fi
+}
+
+# Modifies neo4j config to set the effective user when running as a service
+# usage: modify_user_config <username> <created=false>
+# pass in "true" for created to mark that the user was created (instead than pre-existing)
+modify_user_config() {
+  created=${2:-"false"}
+  if `grep -q "wrapper\.user=" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
+  else
+    echo "wrapper.user=$1" >> "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
+  fi
+
+  if `grep -q "wrapper\.user\.created=" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
+  else
+    echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
+  fi
+}
+
+installservice() {
+    detectos
+    findjava
+    if [ ! -x "$JAVACMD" ] ; then
+      if [[ $HEADLESS == false ]]; then
+        read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
+      else
+        echo "It was not possible to determine JAVA_HOME. This will need to be set to start neo4j-coordinator."
+        yn="y"
+      fi
+      case $yn in
+              [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
+              ;;
+      * ) echo "Aborting installation."
+          exit 1
+              ;;
+      esac
+    fi
+
+    if [[ -d "/etc/init.d" ]]; then
+      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
+        echo "${SERVICE_NAME} already installed."
+      else
+        # JH: Removed this check to allow installing coordinator on it's own.
+        #if ! `grep -q neo4j /etc/init.d/*` ; then
+        #  eval echo "Please install neo4j first."
+        #  exit 1
+        #fi
+        if [ $UID != 0 ] ; then
+          eval echo  'Must be root to perform this action.'
+          exit 1
+        else
+          checkstatus
+          if [ ! -z $NEO4J_PID ] ; then
+            stopit
+          fi
+          if ! `id $NEO4J_USER &> /dev/null` ; then
+            if [[ $HEADLESS == false ]]; then
+              read -p "User \"$NEO4J_USER\" does not yet exist. Shall I create the account for you? [Yn]" yn
+            else
+              yn= "y"
+            fi
+            case $yn in
+              [Nn]* ) echo "WARNING: Alright, but Neo4j Coordinator will fail to launch until that user has been created."
+              set_user $NEO4J_USER
+              ;;
+            * ) create_user $NEO4J_USER
+              ;;
+            esac
+          fi
+          ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
+          update-rc.d ${SERVICE_NAME} defaults
+        fi
+      fi
+    elif [[ $DIST_OS -eq "macosx" ]] ; then
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.coord.plist" >"${LAUNCHD_DIR}/org.neo4j.coord.plist"
+      launchctl load -w ${LAUNCHD_DIR}/org.neo4j.coord.plist
+      launchctl start org.neo4j.coord
+    else
+      echo "Sorry, don't know how to install on ${DIST_OS}."
+    fi
+
+    if [ -x "$JAVACMD" ] ; then
+      if [[ $DIST_OS -ne "macosx" ]] ; then
+        startit
+      fi
+    fi
+}
+
+showinfo() {
+  reportstatus
+
+  exitonnojava
+  buildclasspath
+
+  echo "NEO4J_HOME:        $NEO4J_HOME"
+  echo "NEO4J_INSTANCE:    $NEO4J_INSTANCE"
+  echo "JAVA_HOME:         $JAVA_HOME"
+  echo "JAVA_OPTS:         $JAVA_OPTS"
+  echo "CLASSPATH:         $CLASSPATH"
+}
+
+# END FUNCTIONS
+# BEGIN MAIN
+
+# Parse option flags
+while getopts "u:h" opt; do
+  case $opt in
+    h)
+      echo "Running in headless (-h) mode" >&2
+      HEADLESS=true
+      ;;
+    u)
+      echo "Installing with user $OPTARG"
+      NEO4J_USER=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+case "${!OPTIND}" in
+  console)
+    console
+    exit 0
+    ;;
+
+  start)
+    startit
+    exit 0
+    ;;
+
+  stop)
+    stopit
+    exit 0
+    ;;
+
+  restart)
+    stopit
+    startit
+    exit 0
+    ;;
+
+  status)
+    reportstatus
+    exit 0
+    ;;
+
+  info)
+    showinfo
+    exit 0
+    ;;
+  install)
+    installservice
+    exit 0
+    ;;
+  remove)
+    removeservice
+    exit 0
+    ;;
+  *)
+    echo "Usage: neo4j { start | stop | restart | status | info | install | remove }"
+    exit 1;;
+
+esac
+
+exit $?

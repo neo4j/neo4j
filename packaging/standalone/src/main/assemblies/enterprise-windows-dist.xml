@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<assembly>
+  <id>windows</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+
+    <!-- filter plain text -->
+    <fileSet>
+      <directory>src/main/distribution/text/enterprise</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <filtered>true</filtered>
+    </fileSet>
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>system/lib/*.jar</include>
+        <include>lib/*.jar</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/distribution/shell-scripts</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>**/*.bat</include>
+      </includes>
+      <filtered>true</filtered>
+    </fileSet>
+    <!-- upgrade text file -->
+    <fileSet>
+      <directory>target/upgrade</directory>
+      <outputDirectory>/</outputDirectory>
+      <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>UPGRADE.txt</include>
+      </includes>
+    </fileSet>
+    <!-- die manpages -->
+    <fileSet>
+      <directory>target/manpages-enterprise</directory>
+      <outputDirectory>/doc</outputDirectory>
+      <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>*.txt</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+
+  <dependencySets>
+    <dependencySet>
+  		<outputDirectory>/bin</outputDirectory>
+  		<unpack>false</unpack>
+  		<useProjectArtifact>false</useProjectArtifact>
+  		<includes>
+          <include>org.neo4j.app:windows-service-wrapper:*</include>
+  		</includes>
+  	</dependencySet>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>org.neo4j:*</include>
+        <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</include>
+        <include>org.apache.lucene:lucene-core</include>
+        <include>org.apache.zookeeper:zookeeper</include>
+        <include>org.slf4j:slf4j-api</include>
+        <!-- include>org.slf4j:log4j-over-slf4j</include-->
+        <include>org.scala-lang:scala-library</include>
+      </includes>
+      <excludes>
+        <exclude>*:javadoc:*</exclude>
+        <exclude>*:manpages:*</exclude>
+        <exclude>*:manpagesenterprise:*</exclude>
+        <exclude>*:docs:*</exclude>
+        <exclude>*:pom:*</exclude>
+        <exclude>org.neo4j:neo4j:jar</exclude>
+        <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
+        <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+        
+        <exclude>org.neo4j:neo4j-advanced</exclude>
+        <exclude>org.neo4j:neo4j-community</exclude>
+      </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <excludes>
+        <exclude>*:site:*</exclude>
+        <exclude>*:docs:*</exclude>
+        <exclude>org.neo4j:*</exclude>
+        <exclude>org.neo4j.examples:*</exclude>
+        <exclude>org.neo4j.doc:*</exclude>
+        <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</exclude>
+        <exclude>org.apache.lucene:lucene-core</exclude>
+        <exclude>org.apache.zookeeper:zookeeper</exclude>
+        <exclude>log4j:log4j</exclude>
+        <exclude>org.slf4j:slf4j-api</exclude>
+        <exclude>org.slf4j:log4j-over-slf4j</exclude>
+        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+      </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/coordinator/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>log4j:log4j</include>
+      </includes>
+    </dependencySet>
+    <!-- java api docs -->
+    <dependencySet>
+      <outputDirectory>doc/java/api</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j:neo4j-enterprise:*:javadoc</include>
+      </includes>
+    </dependencySet>
+    <!-- der manual -->
+    <dependencySet>
+      <outputDirectory>doc/manual/</outputDirectory>
+      <unpack>true</unpack>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.doc:neo4j-manual</include>
+      </includes>
+      <excludes>
+        <exclude>org.neo4j.doc:neo4j-manual:*:manpages</exclude>
+        <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+
+</assembly>

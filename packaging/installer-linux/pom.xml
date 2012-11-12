@@ -1,0 +1,333 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>25</version>
+    <relativePath />
+  </parent>
+
+  <groupId>org.neo4j</groupId>
+  <artifactId>installer-linux</artifactId>
+  <version>1.7-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Neo4j Linux Installers</name>
+  <description>Linux installers for the Neo4j Server</description>
+
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
+
+  <properties>
+    <short-name>installer-linux</short-name>
+    <neo4j.version>1.7.3-SNAPSHOT</neo4j.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+
+    <buildnumber>0</buildnumber>
+    
+    <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpages</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpagesenterprise</classifier>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <plugins>
+
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>resources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>unpack-manpages-enterprise</id>
+            <phase>generate-resources</phase>
+            <goals><goal>unpack</goal></goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                 <groupId>org.neo4j.doc</groupId>
+                 <artifactId>neo4j-manual</artifactId>
+                 <version>${neo4j.version}</version>
+                 <classifier>manpagesenterprise</classifier>
+                 <type>jar</type>
+                 <outputDirectory>${project.build.directory}/manpages</outputDirectory>
+                 <includes>*.gz</includes>
+                 <excludes>META-INF/**</excludes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.gmaven</groupId>
+        <artifactId>gmaven-plugin</artifactId>
+        <version>1.3</version>
+        <executions>
+          <execution>
+            <id>generate-debian-compliant-version</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <source>
+                def version = project.properties['neo4j.version']
+
+                // If version does not match "X.Y[.Z]"
+                if( !( version =~ /^\d+\.\d+(\.\d+)?$/) ) {
+                    project.properties['neo4j.version.stability'] = "unstable"
+                } else {
+                    project.properties['neo4j.version.stability'] = "stable"
+                }
+
+
+                // Debian does not allow hyphens
+                project.properties['neo4j.version.debian_compliant'] = version.replace("-",".")
+
+                import java.util.Date
+                import java.text.MessageFormat
+                project.properties["neo4j.debian.buildDate"] = MessageFormat.format("{0,date,EEE, dd MMM yyyy HH:mm:ss Z}", new Date())
+              </source>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>build-installers</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Unzip the standalone distributions -->
+                <untar
+                  src="${project.build.directory}/neo4j-community-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
+                <untar
+                  src="${project.build.directory}/neo4j-advanced-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
+                <untar
+                  src="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
+
+                <!-- Move distributions into build folders -->
+                <move
+                  toDir="${project.build.outputDirectory}/community/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-community-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <move toDir="${project.build.outputDirectory}/advanced/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-advanced-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <move toDir="${project.build.outputDirectory}/enterprise/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <copy toDir="${project.build.outputDirectory}/coordinator/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/enterprise/server"
+                    includes="**" />
+                </copy>
+
+                <!-- Make scripts executable -->
+                <chmod perm="700">
+                  <fileset dir="${project.build.outputDirectory}">
+                    <include name="**/server/bin/neo4j" />
+                    <include name="**/server/bin/neo4j-shell" />
+                    <include name="**/server/bin/utils" />
+                    <include name="**/server/bin/neo4j-backup" />
+                    <include name="**/server/bin/neo4j-coordinator" />
+                    <include name="**/server/bin/neo4j-coordinator-shell" />
+                  </fileset>
+                </chmod>
+
+                <!-- Copy manpages into build folder -->
+                <copy toDir="${project.build.outputDirectory}/community/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/advanced/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/enterprise/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+                <copy toDir="${project.build.outputDirectory}/coordinator/manpages">
+                  <fileset dir="${project.build.directory}/manpages" includes="**" />
+                </copy>
+
+                <!-- Run installer projects -->
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/community"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/advanced"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/enterprise"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/coordinator">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                
+                <!-- Copy installers into target/, changing the version in the filename
+                     from the debian compliant one to a maven compliant one. This makes
+                     it easier to use these artifacts in other projects (since otherwise
+                     other projects would have to figure out the debian compliant version). -->
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-advanced_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb" />
+                <copy 
+                  file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb"
+                  toFile="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <profiles>
+    <profile>
+      <!-- This project expects standalone neo4j
+      artifacts to be available under /target. You can
+      either place them there manually, or activate this
+      profile to pull them in from ../standalone/target -->
+      <id>pull-standalone-artifacts</id>
+      <activation>
+        <property>
+          <name>!pullArtifacts</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pull-artifacts</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-community-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-advanced-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-enterprise-${neo4j.version}-unix.tar.gz" />
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+</project>

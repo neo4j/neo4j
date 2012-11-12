@@ -1,0 +1,8 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant::Config.run do |config|
+  config.vm.box = "ubuntu-11.04-amd64-with-jre"
+  
+  config.vm.network :hostonly, "33.33.33.13"
+end
