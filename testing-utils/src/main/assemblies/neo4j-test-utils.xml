@@ -1,0 +1,62 @@
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<assembly>
+  <id>contents</id>
+  <formats>
+    <format>dir</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/</outputDirectory>
+      <unpack>true</unpack>
+      <scope>provided</scope>
+      <useProjectArtifact>true</useProjectArtifact>
+      <includes>
+        <include>org.neo4j*:*:test-jar:*</include>
+      </includes>
+      <unpackOptions>
+        <includes>
+          <include>org/neo4j/test/**</include>
+          <include>**/*TestAccess.class</include>
+          <include>**/*TestAccess$*.class</include>
+        </includes>
+      </unpackOptions>
+    </dependencySet>
+  </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <outputDirectory>/META-INF</outputDirectory>
+      <includes>
+        <include>COPYRIGHT.txt</include>
+        <include>NOTICE.txt</include>
+        <include>LICENSE.txt</include>
+        <include>LICENSES.txt</include>
+        <include>README*</include>
+        <include>CHANGES.txt</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+
+</assembly>
