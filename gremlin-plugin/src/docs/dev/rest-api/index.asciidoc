@@ -1,0 +1,61 @@
+[[gremlin-plugin]]
+Gremlin Plugin
+==============
+
+image::gremlin-logo.png[]
+
+http://gremlin.tinkerpop.com[Gremlin] is a Groovy based Graph Traversal Language. It provides a very expressive way of explicitly scripting traversals through a Neo4j graph.
+
+The Neo4j Gremlin Plugin provides an endpoint to send Gremlin scripts to the Neo4j Server.
+The scripts are executed on the server database and the results are returned as Neo4j Node and Relationship representations.
+This keeps the types throughout the REST API consistent.
+The results are quite verbose when returning Neo4j +Node+,
++Relationship+ or +Graph+ representations.
+On the other hand, just return properties like in the <<rest-api-send-a-gremlin-script---json-encoded-with-table-results>>
+example for responses tailored to specific needs.
+
+[WARNING]
+The Gremlin plugin lets you execute arbitrary Groovy code under the hood. In hosted and open environments, this can constitute a security risk.
+In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
+interesting Gremlin or Java routines, see <<server-plugins>> or secure your server, see <<security-server>>.
+
+[TIP]
+When returning results from pipes like `g.v(0).in()`, make sure to iterate through the results in order not to return the pipe object but its content, like `g.v(0).in().iterate()`. For more caveats, see https://github.com/tinkerpop/gremlin/wiki/Troubleshooting[Gremlin Troubleshooting]
+
+:leveloffset: 1
+
+include::send-a-gremlin-script---url-encoded.asciidoc[]
+
+include::load-a-sample-graph.asciidoc[]
+
+include::sort-a-result-using-raw-groovy-operations.asciidoc[]
+
+include::send-a-gremlin-script---json-encoded-with-table-results.asciidoc[]
+
+include::returning-nested-pipes.asciidoc[]
+
+include::set-script-variables.asciidoc[]
+
+include::send-a-gremlin-script-with-variables-in-a-json-map.asciidoc[]
+
+include::return-paths-from-a-gremlin-script.asciidoc[]
+
+include::send-an-arbitrary-groovy-script---lucene-sorting.asciidoc[]
+
+include::emit-a-sample-graph.asciidoc[]
+
+include::hyperedges---find-user-roles-in-groups.asciidoc[]
+
+include::group-count.asciidoc[]
+
+include::collect-multiple-traversal-results.asciidoc[]
+
+include::collaborative-filtering.asciidoc[]
+
+include::chunking-and-offsetting-in-gremlin.asciidoc[]
+
+include::modify-the-graph-while-traversing.asciidoc[]
+
+include::flow-algorithms-with-gremlin.asciidoc[]
+
+include::script-execution-errors.asciidoc[]
