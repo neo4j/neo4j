@@ -1,0 +1,114 @@
+// Test for lang-en.conf language file.
+:lang: en
+
+Languages Test
+==============
+:revnumber: v1.0
+:revdate:   2003-12-21
+
+ifdef::doctype-article[]
+// Translate title.
+Abstract
+--------
+Abstract special section.
+
+endif::doctype-article[]
+
+
+ifdef::doctype-book[]
+// Translate title.
+Dedication
+----------
+Dedication special section.
+
+
+// Translate title.
+Preface
+-------
+Preface special section.
+
+
+// Translate title.
+Colophon
+--------
+Colophon special section.
+
+endif::doctype-book[]
+
+
+The First Section
+-----------------
+Admonishments
+~~~~~~~~~~~~~
+Do not translate in the source file -- they are translated to the
+output file
+
+NOTE: Lorum ipsum.
+
+TIP: Lorum ipsum.
+
+WARNING: Lorum ipsum.
+
+CAUTION: Lorum ipsum.
+
+IMPORTANT: Lorum ipsum.
+
+.Tiger
+image::../../images/tiger.png[Tiger image]
+
+Followed by an example table:
+
+.Table
+[width="60%",options="header"]
+|==============================================
+| Option          | Description
+| -a 'USER GROUP' | Add 'USER' to 'GROUP'.
+| -R 'GROUP'      | Disables access to 'GROUP'.
+|==============================================
+
+And now for something completely different: ((monkeys)), lions and
+tigers.
+
+
+// Translate title.
+Appendix A: Example Appendix
+----------------------------
+Appendix special section.
+
+
+// Translate title.
+Bibliography
+------------
+Bibliography special section.
+
+[bibliography]
+- [[[taoup]]] Eric Steven Raymond. 'The Art of Unix
+  Programming'. Addison-Wesley. ISBN 0-13-142901-9.
+- [[[walsh-muellner]]] Norman Walsh & Leonard Muellner.
+  'DocBook - The Definitive Guide'. O'Reilly & Associates. 1999.
+  ISBN 1-56592-580-7.
+
+
+// Translate title.
+Glossary
+--------
+Glossary special section.
+
+[glossary]
+A glossary term::
+  The corresponding (indented) definition.
+
+A second glossary term::
+  The corresponding (indented) definition.
+
+
+ifdef::basebackend-docbook[]
+// Translate title.
+Index
+-----
+////////////////////////////////////////////////////////////////
+Index special section.
+The index is normally left completely empty, it's contents being
+generated automatically by the DocBook toolchain.
+////////////////////////////////////////////////////////////////
+endif::basebackend-docbook[]

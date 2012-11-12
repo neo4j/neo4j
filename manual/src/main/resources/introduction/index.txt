@@ -1,0 +1,31 @@
+[[introduction]]
+Introduction
+============
+
+[partintro]
+--
+This part gives a bird's eye view of what a graph database is, and then outlines some specifics of Neo4j.
+--
+
+:leveloffset: 1
+
+include::highlights.txt[]
+
+[[graphdb-concepts]]
+Graph Database Concepts
+=======================
+
+This chapter contains an introduction to the graph data model and also compares it to other data models used when persisting data.
+
+:leveloffset: 2
+
+include::what-is-a-graphdb.txt[]
+
+:leveloffset: 2
+
+include::comparing.txt[]
+
+:leveloffset: 1
+
+include::the-neo4j-graphdb.txt[]
+

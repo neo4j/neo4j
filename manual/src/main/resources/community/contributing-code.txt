@@ -1,0 +1,98 @@
+[[community-contributing-code]]
+Contributing Code to Neo4j
+==========================
+
+== Intro ==
+
+The Neo4j community is a free software and open source community centered around software and components for the Neo4j Graph Database.
+It is sponsored by [http://neotechnology.com Neo Technology], which provides infrastructure (different kinds of hosting, mailing lists, etc) as well as people to manage it.
+The Neo4j community is an open community, in so far as it welcomes any member that accepts the basic criterias of contribution and adheres to the community's Code of Conduct.
+
+Contribution can be in many forms (documentation, discussions, bug reports).
+This document outlines the rules of governance for a contributor of code.
+
+== The Fast Track ==
+
+One crucial aspect of contributing is the http://wiki.neo4j.org/content/About_Contributor_License_Agreement[Contributor License Agreement].
+In short: make sure to sign the CLA, or the Neo4j project won't be able to accept your contribution.
+
+== Governance fundamentals ==
+
+In a nutshell, you need to be aware of the following fundamentals if you wish to contribute code:
+
+* All software hosted on the Neo4j infrastructure must have been contributed under the Neo4j Code [[About Contributor License Agreement|Contributor License Agreement]] (CLA).
+* Neo4j is a free software and open source community.
+  As a contributor, you are free to place your work under any license that has been approved by either the http://fsf.org[Free Software Foundation] or the http://opensource.org[Open Source Initiative].
+  You still retain copyright, so in addition to that license you can of course release your work under any other license (for example a fully proprietary license), just not on the Neo4j infrastructure.
+* The Neo4j software is split into components.
+  A Git repository holds either a single or multiple components.
+  Every component has one or more designated maintainers. 
+* The source code should follow the Neo4j [[Coding Standard]] and "fit in" with the Neo4j infrastructure as much as is reasonable for the specific component.
+
+== Contributor roles ==
+
+Every individual that contributes code does so in the context of a role (a single individual can have multiple roles).
+The role defines their responsibilities and privileges:
+
+* A _patch submitter_ is a person who is not a Neo4j user but that wishes to contribute a patch to an existing component.
+  They attach the patch to a ticket. 
+  The patch is then reviewed and either accepted or rejected by a committer or maintainer of the component. See [[#... submit a patch|How to submit a patch]].
+* A _committer_ can contribute code directly to one or more components.
+  They are a Neo4j user that has been granted commit access to a repository. 
+  See [[#... become a committer|How to become a committer]].
+* A _component maintainer_ is in charge of a specific component.
+  See [[#... become a component maintainer|How to become a component maintainer]].
+  They can:
+** commit code in their component's repository.
+** manage tickets for the repository.
+** grant commit rights to the repository.
+* A _Neo4j admin_ manages the Neo4j infrastructure.
+  See [[#... become a Neo4j admin|How to become a Neo4j admin]]. 
+  They:
+** approve new Neo4j users.
+** define new components and assign component maintainership.
+** drive, mentor and coach Neo4j component development.
+
+==== Code Style ====
+
+The Neo4j Code style is maintained on GIThub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
+
+==== Commit messages ====
+
+Please take some care in providing good commit messages.
+Use your common sense. In particular:
+
+* Use _english_. This includes proper punctuation and correct spelling.
+  Commit messages are supposed to convey some information at a glance -- they're not a chat room.
+* Remember that a commit is a _changeset_, which describes a cohesive set of changes across potentially many files.
+  Try to group every commit as a logical change. 
+  Explain what it changes.
+* If you fix a bug or an issue that's related to a ticket, then refer to the ticket in the message.
+  For example, _"Added this-and-that and then changed this-and-that. This fixes #14."_ One of these synonyms should work:
+  fixes #xxx
+  fixed #xxx
+  fix #xxx
+  closes #xxx
+  close #xxx
+  closed #xxx.
+  Just mentioning #xxx in the commit will connect  it to the GitHub issue with that number, see https://github.com/blog/831-issues-2-0-the-next-generation[GitHub issues].
+* Remember to convey _intent_.
+  Don't be too brief but don't provide too much detail, either. 
+  That's what `git diff` is for.
+
+=== How to submit a patch ===
+
+. Create a ticket or find an existing ticket that matches your patch.
+. Attach the patch and write a comment that describes it.
+. Wait for a committer to review and either accept or reject it.
+
+=== How to become a committer ===
+
+. Talk to a maintainer of the component you want commit access to.
+. If you don't have a user, you have to ask a Neo4j admin to give you a user. Send them a mail at admins (@) youknowwhatdomain.org.
+
+=== How to become a component maintainer ===
+
+Contact a Neo4j admin at admins (@) youknowwhatdomain.org.
+
+

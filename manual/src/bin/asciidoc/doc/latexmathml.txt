@@ -1,0 +1,41 @@
+LaTeXMathML Formulae
+====================
+
+http://www.maths.nottingham.ac.uk/personal/drw/lm.html[LaTeXMathML]
+capability has been added to AsciiDoc for users who are more familar
+with or prefer LaTeX math formulas to the
+http://www.methods.co.nz/asciidoc/asciimathml.html[ASCIIMathML]
+notation.
+
+'LaTeXMathML' is a derivative of
+http://www.methods.co.nz/asciidoc/asciimathml.html[ASCIIMathML] -- in
+terms of usage the only difference it that you use the `latexmath`
+attribute instead of the `asciimath` attribute.
+
+'LaTeXMathML' processes LaTeX math formulas not arbitrary LaTeX (as
+`dblatex(1)` does). See the
+http://www.maths.nottingham.ac.uk/personal/drw/lm.html[LaTeXMathML]
+website for details.
+
+Here's the link:latexmathml.txt[AsciiDoc source] that generated this
+page.
+
+Some example 'LaTeXMathML' formulas:
+
+- latexmath:[$R_x = 10.0 \times \sin(R_\phi)$]
+
+- latexmath:[$\sum_{n=1}^\infty \frac{1}{2^n}$]
+
+- latexmath:[$\lim_{x\to\infty} f(x) = k \choose r + \frac ab
+  \sum_{n=1}^\infty a_n + \displaystyle{ \left\{ \frac{1}{13}
+  \sum_{n=1}^\infty b_n \right\} }$]
+
+- latexmath:[$\$\alpha + \$\beta = \$(\alpha + \beta)$]
+
+- latexmath:[$\begin{eqnarray} x & = & \frac{-7 \pm
+  \sqrt{49 - 24}}{6} \\ & = & -2 \textrm{ or } -\frac13.
+  \end{eqnarray}$]
+
+- latexmath:[$\displaystyle{ V_i = C_0 - C_3
+  \frac{C_1\cos(\theta_i+C_3)}{C_4+C_1\cos(\theta_i+C_2)} }$]
+

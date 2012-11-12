@@ -1,0 +1,17 @@
+
+.Neo4j REST clients contributed by the community.
+[options="header"]
+|===============================================================================
+| name | language / framework | URL
+| Neo4jClient | .NET | http://hg.readify.net/neo4jclient/
+| Neo4jRestNet | .NET | https://github.com/SepiaGroup/Neo4jRestNet
+| py2neo | Python |  http://py2neo.org/
+| Bulbflow | Python | http://bulbflow.com/
+| neo4jrestclient | Python | https://github.com/versae/neo4j-rest-client
+| neo4django | Django | https://github.com/scholrly/neo4django
+| Neo4jPHP | PHP | https://github.com/jadell/Neo4jPHP
+| neography | Ruby | https://github.com/maxdemarzi/neography
+| node.js | JavaScript | https://github.com/thingdom/node-neo4j
+|===============================================================================
+
+

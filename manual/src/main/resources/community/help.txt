@@ -1,0 +1,29 @@
+[[community-support]]
+Community Support
+=================
+
+You can learn a lot about Neo4j on different _events._
+To get information on upcoming Neo4j events, have a look here:
+
+* http://events.neo4j.org/
+* http://neo4j.meetup.com/
+
+Get help from the Neo4j open source community; here are some starting points.
+
+* http://neo4j.org/forums/[Forum / Mailing list (searchable)], http://www.mail-archive.com/user@lists.neo4j.org/info.html[archive], http://neo4j.org/#SubscribeForm[sign up].
+* Twitter: http://twitter.com/neo4j
+* IRC channel: irc://irc.freenode.net/neo4j http://webchat.freenode.net/?randomnick=1&channels=neo4j[web chat].
+* http://wiki.neo4j.org/[Neo4j wiki].
+
+Report a _bug_ or add a _feature request_:
+
+* General: https://github.com/neo4j/community/issues
+* Monitoring: https://github.com/neo4j/advanced/issues
+* Backup and High Availability: https://github.com/neo4j/enterprise/issues
+
+Questions regarding the _documentation:_
+The Neo4j Manual is published online with a comment function, please use that to post any questions or comments.
+See http://docs.neo4j.org/.
+
+
+

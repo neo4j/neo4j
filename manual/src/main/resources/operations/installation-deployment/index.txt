@@ -1,0 +1,24 @@
+[[deployment]]
+Installation & Deployment
+=========================
+
+:leveloffset: 2
+
+include::deployment.txt[]
+
+:leveloffset: 2
+
+include::requirements.txt[]
+
+:leveloffset: 2
+
+include::installation.txt[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-docs-jar/ops/upgrades.txt[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-udc-docs-jar/ops/index.txt[]
+
